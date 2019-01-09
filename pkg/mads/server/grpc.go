@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	kuma_observability "github.com/Kong/kuma/api/observability/v1alpha1"
+	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
 
 	mads_config "github.com/Kong/kuma/pkg/config/mads"
 	"github.com/Kong/kuma/pkg/core"
@@ -40,7 +40,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	}
 
 	// register services
-	kuma_observability.RegisterMonitoringAssignmentDiscoveryServiceServer(grpcServer, s.server)
+	observability_proto.RegisterMonitoringAssignmentDiscoveryServiceServer(grpcServer, s.server)
 
 	errChan := make(chan error)
 	go func() {

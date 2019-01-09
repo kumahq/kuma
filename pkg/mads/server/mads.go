@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	kuma_observability "github.com/Kong/kuma/api/observability/v1alpha1"
+	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
 	"github.com/Kong/kuma/pkg/mads"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -24,7 +24,7 @@ import (
 )
 
 type Server interface {
-	kuma_observability.MonitoringAssignmentDiscoveryServiceServer
+	observability_proto.MonitoringAssignmentDiscoveryServiceServer
 }
 
 func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks, log logr.Logger) Server {
@@ -222,11 +222,11 @@ func (s *server) handler(stream stream, typeURL string) error {
 	return err
 }
 
-func (s *server) StreamMonitoringAssignments(stream kuma_observability.MonitoringAssignmentDiscoveryService_StreamMonitoringAssignmentsServer) error {
+func (s *server) StreamMonitoringAssignments(stream observability_proto.MonitoringAssignmentDiscoveryService_StreamMonitoringAssignmentsServer) error {
 	return s.handler(stream, mads.MonitoringAssignmentType)
 }
 
-func (s *server) DeltaMonitoringAssignments(_ kuma_observability.MonitoringAssignmentDiscoveryService_DeltaMonitoringAssignmentsServer) error {
+func (s *server) DeltaMonitoringAssignments(_ observability_proto.MonitoringAssignmentDiscoveryService_DeltaMonitoringAssignmentsServer) error {
 	return errors.New("not implemented")
 }
 

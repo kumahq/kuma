@@ -1,12 +1,14 @@
 package server
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-logr/logr"
 
 	"github.com/Kong/kuma/pkg/core"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	mads_generator "github.com/Kong/kuma/pkg/mads/generator"
 	mads_reconcile "github.com/Kong/kuma/pkg/mads/reconcile"
 	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
@@ -16,8 +18,8 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
-func NewSnapshotter() mads_reconcile.Snapshotter {
-	return mads_reconcile.NewSnapshotter()
+func NewSnapshotter(rt core_runtime.Runtime) mads_reconcile.Snapshotter {
+	return mads_reconcile.NewSnapshotter(rt.ResourceManager(), mads_generator.MonitoringAssignmentsGenerator{})
 }
 
 func NewVersioner() util_xds.SnapshotVersioner {
@@ -30,17 +32,18 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
 }
 
 func NewSyncTracker(rt core_runtime.Runtime, reconciler mads_reconcile.Reconciler) envoy_xds.Callbacks {
-	return util_xds.NewWatchdogCallbacks(func(node *envoy_core.Node, _ int64) (util_watchdog.Watchdog, error) {
+	return util_xds.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
+		log := madsServerLog.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(1 * time.Second)
 			},
 			OnTick: func() error {
-				madsServerLog.V(1).Info("on tick")
-				return reconciler.Reconcile(node)
+				log.V(1).Info("on tick")
+				return reconciler.Reconcile(ctx, node)
 			},
 			OnError: func(err error) {
-				madsServerLog.Error(err, "OnTick() failed")
+				log.Error(err, "OnTick() failed")
 			},
 		}, nil
 	})

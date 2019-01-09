@@ -2,14 +2,14 @@ package generator
 
 import (
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
 
-type Context struct {
+type Args struct {
 	Meshes     []*mesh_core.MeshResource
 	Dataplanes []*mesh_core.DataplaneResource
 }
 
 type ResourceGenerator interface {
-	Generate(Context) ([]*model.Resource, error)
+	Generate(Args) ([]*core_xds.Resource, error)
 }

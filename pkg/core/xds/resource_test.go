@@ -2,6 +2,7 @@ package xds_test
 
 import (
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/Kong/kuma/pkg/core/xds"
@@ -118,5 +119,60 @@ var _ = Describe("ResourceSet", func() {
 
 		// then
 		Expect(resources.List()).To(ConsistOf(resource1, resource2))
+	})
+})
+
+var _ = Describe("ResourceList", func() {
+
+	Describe("ToIndex()", func() {
+
+		type testCase struct {
+			input    ResourceList
+			expected map[string]ResourcePayload
+		}
+
+		DescribeTable("should correctly generate an index of resources",
+			func(given testCase) {
+				Expect(given.input.ToIndex()).To(Equal(given.expected))
+			},
+			Entry("nil", testCase{
+				input:    nil,
+				expected: nil,
+			}),
+			Entry("empty", testCase{
+				input:    ResourceList{},
+				expected: nil,
+			}),
+			Entry("multiple resources with the same name", testCase{
+				input: ResourceList{
+					{
+						Name: "backend",
+						Resource: &envoy.Cluster{
+							Name: "backend",
+						},
+					},
+					{
+						Name: "backend",
+						Resource: &envoy.Listener{
+							Name: "backend",
+						},
+					},
+					{
+						Name: "web",
+						Resource: &envoy.Cluster{
+							Name: "web",
+						},
+					},
+				},
+				expected: map[string]ResourcePayload{
+					"backend": &envoy.Listener{
+						Name: "backend",
+					},
+					"web": &envoy.Cluster{
+						Name: "web",
+					},
+				},
+			}),
+		)
 	})
 })

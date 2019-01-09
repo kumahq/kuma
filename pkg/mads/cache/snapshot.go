@@ -10,9 +10,9 @@ import (
 )
 
 // NewSnapshot creates a snapshot from response types and a version.
-func NewSnapshot(version string, assignments []envoy_cache.Resource) Snapshot {
+func NewSnapshot(version string, assignments map[string]envoy_cache.Resource) Snapshot {
 	return Snapshot{
-		MonitoringAssignments: envoy_cache.NewResources(version, assignments),
+		MonitoringAssignments: envoy_cache.Resources{Version: version, Items: assignments},
 	}
 }
 
