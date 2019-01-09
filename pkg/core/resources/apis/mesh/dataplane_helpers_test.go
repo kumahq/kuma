@@ -344,4 +344,71 @@ var _ = Describe("Dataplane", func() {
 		)
 	})
 
+	Describe("GetIP()", func() {
+
+		type testCase struct {
+			dataplane string
+			expected  string
+		}
+
+		DescribeTable("should correctly determine IP for a given Dataplane",
+			func(given testCase) {
+				// given
+				var dataplane *DataplaneResource
+				if given.dataplane != "" {
+					dataplane = &DataplaneResource{}
+					Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane.Spec)).To(Succeed())
+				}
+
+				// expect
+				Expect(dataplane.GetIP()).To(Equal(given.expected))
+			},
+			Entry("`nil` dataplane", testCase{
+				dataplane: ``,
+				expected:  "",
+			}),
+			Entry("dataplane without inbound interfaces", testCase{
+				dataplane: `
+                networking: {}
+`,
+				expected: "",
+			}),
+			Entry("dataplane with 1 inbound interface", testCase{
+				dataplane: `
+                networking:
+                  inbound:
+                  - interface: 192.168.0.1:80:8080
+                    tags:
+                      service: backend
+`,
+				expected: "192.168.0.1",
+			}),
+			Entry("dataplane with 2 inbound interfaces", testCase{
+				dataplane: `
+                networking:
+                  inbound:
+                  - interface: 192.168.0.1:80:8080
+                    tags:
+                      service: backend
+                  - interface: 192.168.0.2:443:8443
+                    tags:
+                      service: backend-https
+`,
+				expected: "192.168.0.1",
+			}),
+			Entry("dataplane with invalid inbound interface", testCase{
+				dataplane: `
+                networking:
+                  inbound:
+                  - interface: 192.168.0.1:80:8080
+                    tags:
+                      service: backend
+                  - interface: x.y.z.0
+                    tags:
+                      service: backend-https
+`,
+				expected: "",
+			}),
+		)
+	})
 })

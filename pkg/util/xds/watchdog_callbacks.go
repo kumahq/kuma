@@ -11,12 +11,12 @@ import (
 	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
 )
 
-type NewNodeWatchdogFunc func(node *envoy_core.Node, streamId int64) (util_watchdog.Watchdog, error)
+type NewNodeWatchdogFunc func(ctx context.Context, node *envoy_core.Node, streamId int64) (util_watchdog.Watchdog, error)
 
 func NewWatchdogCallbacks(newNodeWatchdog NewNodeWatchdogFunc) envoy_xds.Callbacks {
 	return &watchdogCallbacks{
 		newNodeWatchdog: newNodeWatchdog,
-		streams:         make(map[int64]context.CancelFunc),
+		streams:         make(map[int64]watchdogStreamState),
 	}
 }
 
@@ -24,7 +24,12 @@ type watchdogCallbacks struct {
 	newNodeWatchdog NewNodeWatchdogFunc
 
 	mu      sync.RWMutex // protects access to the fields below
-	streams map[int64]context.CancelFunc
+	streams map[int64]watchdogStreamState
+}
+
+type watchdogStreamState struct {
+	context context.Context
+	cancel  context.CancelFunc
 }
 
 var _ envoy_xds.Callbacks = &watchdogCallbacks{}
@@ -32,6 +37,13 @@ var _ envoy_xds.Callbacks = &watchdogCallbacks{}
 // OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (cb *watchdogCallbacks) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
+	cb.mu.Lock() // write access to the map of all ADS streams
+	defer cb.mu.Unlock()
+
+	cb.streams[streamID] = watchdogStreamState{
+		context: ctx,
+	}
+
 	return nil
 }
 
@@ -42,8 +54,8 @@ func (cb *watchdogCallbacks) OnStreamClosed(streamID int64) {
 
 	defer delete(cb.streams, streamID)
 
-	if stopWatchdog := cb.streams[streamID]; stopWatchdog != nil {
-		stopWatchdog()
+	if watchdog := cb.streams[streamID]; watchdog.cancel != nil {
+		watchdog.cancel()
 	}
 }
 
@@ -51,10 +63,10 @@ func (cb *watchdogCallbacks) OnStreamClosed(streamID int64) {
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequest) error {
 	cb.mu.RLock() // read access to the map of all ADS streams
-	_, hasWatchdog := cb.streams[streamID]
+	watchdog := cb.streams[streamID]
 	cb.mu.RUnlock()
 
-	if hasWatchdog {
+	if watchdog.cancel != nil {
 		return nil
 	}
 
@@ -63,20 +75,20 @@ func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy.Discover
 
 	// create a stop chanel even if there wan't be an actual watchdog
 	stopCh := make(chan struct{})
-	cb.streams[streamID] = context.CancelFunc(func() {
+	watchdog.cancel = context.CancelFunc(func() {
 		close(stopCh)
 	})
+	cb.streams[streamID] = watchdog
 
-	watchdog, err := cb.newNodeWatchdog(req.Node, streamID)
+	runnable, err := cb.newNodeWatchdog(watchdog.context, req.Node, streamID)
 	if err != nil {
 		return err
 	}
 
-	if watchdog != nil {
+	if runnable != nil {
 		// kick off watchdag for that stream
-		go watchdog.Start(stopCh)
+		go runnable.Start(stopCh)
 	}
-
 	return nil
 }
 

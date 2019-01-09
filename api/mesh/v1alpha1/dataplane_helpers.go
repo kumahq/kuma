@@ -255,6 +255,15 @@ type SingleValueTagSet map[string]string
 // Set of tags that allows multiple values per key.
 type MultiValueTagSet map[string]map[string]bool
 
+func (t MultiValueTagSet) Keys() []string {
+	keys := make([]string, 0, len(t))
+	for key := range t {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func (t MultiValueTagSet) Values(key string) []string {
 	if t == nil {
 		return nil

@@ -70,3 +70,17 @@ func (d *DataplaneResource) GetPrometheusEndpoint(mesh *MeshResource) *mesh_prot
 	proto.Merge(result, d.Spec.GetMetrics().GetPrometheus())
 	return result
 }
+
+func (d *DataplaneResource) GetIP() string {
+	if d == nil {
+		return ""
+	}
+	ifaces, err := d.Spec.Networking.GetInboundInterfaces()
+	if err != nil {
+		return ""
+	}
+	if len(ifaces) == 0 {
+		return ""
+	}
+	return ifaces[0].DataplaneIP
+}

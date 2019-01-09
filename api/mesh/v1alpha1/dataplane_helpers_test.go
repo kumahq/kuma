@@ -9,6 +9,31 @@ import (
 	. "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
+var _ = Describe("MultiValueTagSet", func() {
+
+	Describe("Keys()", func() {
+		type testCase struct {
+			value    MultiValueTagSet
+			expected []string
+		}
+
+		DescribeTable("should return a sorted list of keys",
+			func(given testCase) {
+				Expect(given.value.Keys()).To(Equal(given.expected))
+			},
+			Entry("`service` and `services` tags", testCase{
+				value: MultiValueTagSet{
+					"versions": map[string]bool{},
+					"version":  map[string]bool{},
+					"services": map[string]bool{},
+					"service":  map[string]bool{},
+				},
+				expected: []string{"service", "services", "version", "versions"},
+			}),
+		)
+	})
+})
+
 var _ = Describe("ServiceTagValue", func() {
 
 	Describe("HasPort()", func() {
