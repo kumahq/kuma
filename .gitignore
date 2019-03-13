@@ -1,0 +1,5 @@
+bazel-*
+
+.idea/
+.clwb/
+.vscode/

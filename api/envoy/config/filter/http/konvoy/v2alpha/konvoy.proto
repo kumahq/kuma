@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package envoy.config.filter.http.konvoy.v2alpha;
+
+option go_package = "v2alpha";
+
+option java_outer_classname = "KonvoyProto";
+option java_multiple_files = true;
+option java_package = "io.envoyproxy.envoy.config.filter.http.konvoy.v2alpha";
+
+import "envoy/api/v2/core/grpc_service.proto";
+
+// [#protodoc-title: Konvoy]
+// Out-of-process request filtering :ref:`configuration overview <config_http_filters_konvoy>`.
+
+// Konvoy filter config.
+message Konvoy {
+
+    // gRPC service configuration (default timeout: 200ms).
+    envoy.api.v2.core.GrpcService grpc_service = 1;
+}

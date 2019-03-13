@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package envoy.service.konvoy.v2alpha;
+
+option go_package = "v2alpha";
+
+option java_multiple_files = true;
+option java_generic_services = true;
+option java_outer_classname = "KonvoyProto";
+option java_package = "io.envoyproxy.envoy.service.konvoy.v2alpha";
+
+import "envoy/api/v2/core/base.proto";
+
+// [#protodoc-title: Konvoy Service]
+
+// A generic interface for piping requests via an out-of-process filter.
+service Konvoy {
+    // Proxies HTTP request.
+    rpc ProxyHttpRequest (stream KonvoyHttpRequestPart) returns (stream KonvoyHttpResponsePart);
+}
+
+// Part of HTTP request, such as Headers, Body Chunk, Trailers.
+message KonvoyHttpRequestPart {
+    oneof part {
+        // HTTP request headers.
+        HttpRequestHeaders request_headers = 1;
+
+        // HTTP request body chunk.
+        HttpRequestBodyChunk request_body_chunk = 2;
+
+        // HTTP request trailers.
+        HttpRequestTrailers request_trailers = 3;
+    }
+}
+
+// HTTP request headers.
+message HttpRequestHeaders {
+    // Request headers.
+    api.v2.core.HeaderMap headers = 1;
+}
+
+// HTTP request body chunk.
+message HttpRequestBodyChunk {
+    // Request body bytes.
+    bytes bytes = 1;
+}
+
+// HTTP request trailers.
+message HttpRequestTrailers {
+    // Request trailers.
+    api.v2.core.HeaderMap trailers = 1;
+}
+
+// Part of a Konvoy's response to the HTTP request.
+// If a Konvoy wants Envoy to continue further request processing
+// then it will send back a modified version of the original request,
+// including modified request Headers, Body Chunk, Trailers.
+// If a Konvoy wants Envoy to terminate further request processing
+// and immediately reply to the downstream with a given response,
+// including response Headers, Body Chunk, Trailers.
+message KonvoyHttpResponsePart {
+    oneof part {
+        // Modified HTTP request headers for further processing.
+        HttpRequestHeaders request_headers = 1;
+
+        // Modified HTTP request body chunk for further processing.
+        HttpRequestBodyChunk request_body_chunk = 2;
+
+        // Modified HTTP request trailers for further processing.
+        HttpRequestTrailers request_trailers = 3;
+
+        // Direct HTTP response headers to downstream.
+        HttpResponseHeaders response_headers = 4;
+
+        // Direct HTTP response body chunk to downstream.
+        HttpResponseBodyChunk response_body_chunk = 5;
+
+        // Direct HTTP response trailers to downstream.
+        HttpResponseTrailers response_trailers = 6;
+    }
+}
+
+// HTTP response headers.
+message HttpResponseHeaders {
+    // Response headers.
+    api.v2.core.HeaderMap headers = 1;
+}
+
+// HTTP response body chunk.
+message HttpResponseBodyChunk {
+    // Response body bytes.
+    bytes bytes = 1;
+}
+
+// HTTP response trailers.
+message HttpResponseTrailers {
+    // Response trailers.
+    api.v2.core.HeaderMap trailers = 1;
+}
