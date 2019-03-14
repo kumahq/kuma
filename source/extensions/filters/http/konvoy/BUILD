@@ -18,6 +18,7 @@ envoy_cc_library(
     deps = [
         "@envoy//include/envoy/grpc:async_client_interface",
         "@envoy//include/envoy/server:filter_config_interface",
+        "@envoy//source/common/buffer:buffer_lib",
         "//api/envoy/config/filter/http/konvoy/v2alpha:konvoy_cc",
         "//api/envoy/service/konvoy/v2alpha:konvoy_service_cc",
         ":konvoy_proto_utils_lib",

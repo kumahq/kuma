@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "common/buffer/buffer_impl.h"
+
 #include "extensions/filters/http/konvoy/proto_utils.h"
 
 namespace Envoy {
@@ -34,7 +36,10 @@ void Filter::setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks& callb
 }
 
 Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool end_stream) {
-  ENVOY_LOG(info, "konvoy-filter: forwarding request headers to Konvoy (side car):\n{}", headers);
+  ENVOY_LOG_MISC(trace, "konvoy-filter: forwarding request headers to Konvoy (side car):\n{}", headers);
+
+  // keep original headers for later modification
+  request_headers_ = &headers;
 
   state_ = State::Calling;
 
@@ -49,11 +54,13 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
     stream_->sendMessage(KonvoyProtoUtils::requestTrailersMessage(), true);
   }
 
-  return !end_stream ? Http::FilterHeadersStatus::Continue : Http::FilterHeadersStatus::StopIteration;
+  // don't pass request headers to the next filter yet
+  return Http::FilterHeadersStatus::StopIteration;
 }
 
 Http::FilterDataStatus Filter::decodeData(Buffer::Instance& data, bool end_stream) {
-  ENVOY_LOG(info, "konvoy-filter: forwarding request body to Konvoy (side car):\n{} bytes, end_stream={}", data.length(), end_stream);
+  ENVOY_LOG_MISC(trace, "konvoy-filter: forwarding request body to Konvoy (side car):\n{} bytes, end_stream={}, buffer_size={}",
+          data.length(), end_stream, decoder_callbacks_->decodingBuffer() ? decoder_callbacks_->decodingBuffer()->length() : 0);
 
   auto message = KonvoyProtoUtils::requestBodyChunckMessage(data);
 
@@ -63,17 +70,25 @@ Http::FilterDataStatus Filter::decodeData(Buffer::Instance& data, bool end_strea
   }
 
   if (end_stream) {
+    // keep original trailers for later modification
+    request_trailers_ = &decoder_callbacks_->addDecodedTrailers();
+
     stream_->sendMessage(KonvoyProtoUtils::requestTrailersMessage(), true);
   }
 
-  return !end_stream ? Http::FilterDataStatus::Continue : Http::FilterDataStatus::StopIterationNoBuffer;
+  // don't pass request body to the next filter yet and don't buffer in the meantime
+  return Http::FilterDataStatus::StopIterationNoBuffer;
 }
 
 Http::FilterTrailersStatus Filter::decodeTrailers(Http::HeaderMap& trailers) {
-  ENVOY_LOG(info, "konvoy-filter: forwarding request trailers to Konvoy (side car):\n{}", trailers);
+  ENVOY_LOG_MISC(trace, "konvoy-filter: forwarding request trailers to Konvoy (side car):\n{}", trailers);
+
+  // keep original trailers for later modification
+  request_trailers_ = &trailers;
 
   stream_->sendMessage(KonvoyProtoUtils::requestTrailersMessage(trailers), true);
 
+  // don't pass request trailers to the next filter yet
   return Http::FilterTrailersStatus::StopIteration;
 }
 
@@ -81,19 +96,87 @@ Http::FilterTrailersStatus Filter::decodeTrailers(Http::HeaderMap& trailers) {
  * Called at the end of the stream, when all data has been decoded.
  */
 void Filter::decodeComplete() {
-  ENVOY_LOG(info, "konvoy-filter: forwarding is finished");
+  ENVOY_LOG_MISC(trace, "konvoy-filter: forwarding is finished");
 }
 
 void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart>&& message) {
-  ENVOY_LOG(info, "konvoy-filter: received message from Konvoy (side car):\n{}", message->part_case());
+  ENVOY_LOG_MISC(trace, "konvoy-filter: received message from Konvoy (side car):\n{}", message->part_case());
 
-  // TODO: pass data to the next Envoy filter
+  switch (message->part_case()) {
+      case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestHeaders: {
+
+          // clear original headers
+          request_headers_->iterate(
+                  [](const Http::HeaderEntry &header, void *context) -> Http::HeaderMap::Iterate {
+                      auto headers = static_cast<Http::HeaderMap *>(context);
+                      headers->remove(Http::LowerCaseString(header.key().c_str()));
+                      return Http::HeaderMap::Iterate::Continue;
+                  },
+                  request_headers_);
+
+          // add headers from the response
+          auto headers = message->request_headers().headers();
+          for (int index = 0; index < headers.headers_size(); index++) {
+              auto& header = headers.headers(index);
+
+              auto header_to_modify = request_headers_->get(Http::LowerCaseString(header.key()));
+              if (header_to_modify) {
+                  header_to_modify->value(header.value().c_str(), header.value().size());
+              } else {
+                  request_headers_->addCopy(Http::LowerCaseString(header.key()), header.value());
+              }
+          }
+
+          break;
+      }
+      case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestBodyChunk:
+
+          if (0 < message->request_body_chunk().bytes().size()) {
+              Buffer::OwnedImpl data;
+              data.add(message->request_body_chunk().bytes());
+
+              decoder_callbacks_->addDecodedData(data, false);
+          }
+
+          break;
+      case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestTrailers: {
+
+          if (request_trailers_) {
+              // clear original trailers
+              request_trailers_->iterate(
+                      [](const Http::HeaderEntry &header, void *context) -> Http::HeaderMap::Iterate {
+                          auto headers = static_cast<Http::HeaderMap *>(context);
+                          headers->remove(Http::LowerCaseString(header.key().c_str()));
+                          return Http::HeaderMap::Iterate::Continue;
+                      },
+                      request_trailers_);
+
+              // add trailers from the response
+              auto headers = message->request_headers().headers();
+              for (int index = 0; index < headers.headers_size(); index++) {
+                  auto &header = headers.headers(index);
+
+                  auto header_to_modify = request_trailers_->get(Http::LowerCaseString(header.key()));
+                  if (header_to_modify) {
+                      header_to_modify->value(header.value().c_str(), header.value().size());
+                  } else {
+                      request_trailers_->addCopy(Http::LowerCaseString(header.key()), header.value());
+                  }
+              }
+          }
+
+          break;
+      }
+      default:
+          break;
+  }
 }
 
 void Filter::onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& message) {
-  ENVOY_LOG(info, "konvoy-filter: received close signal from Konvoy (side car):\nstatus = {}, message = {}", status, message);
+  ENVOY_LOG_MISC(trace, "konvoy-filter: received close signal from Konvoy (side car):\nstatus = {}, message = {}", status, message);
 
   state_ = State::Complete;
+
   decoder_callbacks_->continueDecoding();
 }
 
