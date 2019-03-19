@@ -5,6 +5,9 @@
 #include "envoy/grpc/async_client.h"
 #include "envoy/server/filter_config.h"
 
+#include "envoy/stats/scope.h"
+#include "envoy/stats/stats_macros.h"
+
 #include "api/envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.h"
 #include "api/envoy/service/konvoy/v2alpha/konvoy_service.pb.h"
 
@@ -13,11 +16,35 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Konvoy {
 
+/**
+ * All Konvoy stats. @see stats_macros.h
+ */
+// clang-format off
+#define ALL_HTTP_KONVOY_STATS(COUNTER, HISTOGRAM)     \
+  COUNTER  (request_total)                            \
+  COUNTER  (request_total_stream_latency_ms)          \
+  COUNTER  (request_total_stream_start_latency_ms)    \
+  COUNTER  (request_total_stream_exchange_latency_ms) \
+  HISTOGRAM(request_stream_start_latency_ms)          \
+  HISTOGRAM(request_stream_exchange_latency_ms)       \
+  HISTOGRAM(request_stream_latency_ms)
+// clang-format on
+
+/**
+ * Struct definition for all Konvoy stats. @see stats_macros.h
+ */
+struct InstanceStats {
+    ALL_HTTP_KONVOY_STATS(GENERATE_COUNTER_STRUCT, GENERATE_HISTOGRAM_STRUCT)
+};
+
 class FilterConfig {
 public:
   FilterConfig(const envoy::config::filter::http::konvoy::v2alpha::Konvoy &proto_config,
                const LocalInfo::LocalInfo& local_info, Stats::Scope& scope,
-               Runtime::Loader& runtime, Http::Context& http_context);
+               Runtime::Loader& runtime, Http::Context& http_context, TimeSource& time_source);
+
+  const InstanceStats& stats() { return stats_; }
+  TimeSource& timeSource() const { return time_source_; }
 
   const LocalInfo::LocalInfo& localInfo() const { return local_info_; }
   Runtime::Loader& runtime() { return runtime_; }
@@ -25,6 +52,10 @@ public:
   Http::Context& httpContext() { return http_context_; }
 
 private:
+  static InstanceStats generateStats(const std::string& name, Stats::Scope& scope);
+  const InstanceStats stats_;
+  TimeSource& time_source_;
+
   const LocalInfo::LocalInfo& local_info_;
   Stats::Scope& scope_;
   Runtime::Loader& runtime_;
@@ -64,10 +95,13 @@ public:
 private:
   void endStreamIfNecessary(bool end_stream);
   void endStream(Http::HeaderMap& trailers);
+  void chargeStreamStats(Grpc::Status::GrpcStatus status);
 
   const FilterConfigSharedPtr config_;
   Grpc::AsyncClientPtr async_client_;
 
+  MonotonicTime start_stream_;
+  MonotonicTime start_stream_complete_;
   Http::StreamDecoderFilterCallbacks *decoder_callbacks_;
   Http::HeaderMap* request_headers_;
   Http::HeaderMap* request_trailers_;

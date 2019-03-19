@@ -154,6 +154,7 @@ Envoy binary as a new filter.
 http_filters:
 - name: konvoy          # before envoy.router because order matters!
   config:
+    stat_prefix: demo-grpc-server
     grpc_service:
       envoy_grpc:
         cluster_name: konvoy_side_car

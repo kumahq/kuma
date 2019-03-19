@@ -11,11 +11,17 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Konvoy {
 
+InstanceStats FilterConfig::generateStats(const std::string& name, Stats::Scope& scope) {
+  const std::string final_prefix = fmt::format("konvoy.{}.", name);
+  return {ALL_HTTP_KONVOY_STATS(POOL_COUNTER_PREFIX(scope, final_prefix), POOL_HISTOGRAM_PREFIX(scope, final_prefix))};
+}
+
 FilterConfig::FilterConfig(
-    const envoy::config::filter::http::konvoy::v2alpha::Konvoy&,
+    const envoy::config::filter::http::konvoy::v2alpha::Konvoy& config,
     const LocalInfo::LocalInfo& local_info, Stats::Scope& scope,
-    Runtime::Loader& runtime, Http::Context& http_context)
-    : local_info_(local_info), scope_(scope),
+    Runtime::Loader& runtime, Http::Context& http_context, TimeSource& time_source)
+    : stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
+      local_info_(local_info), scope_(scope),
       runtime_(runtime), http_context_(http_context) {}
 
 Filter::Filter(FilterConfigSharedPtr config, Grpc::AsyncClientPtr&& async_client)
@@ -45,7 +51,13 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
 
   state_ = State::Calling;
 
+  config_->stats().request_total_.inc();
+
+  start_stream_ = config_->timeSource().monotonicTime();
+
   stream_ = async_client_->start(service_method_, *this);
+
+  start_stream_complete_ = config_->timeSource().monotonicTime();
 
   auto message = KonvoyProtoUtils::requestHeadersMessage(headers);
 
@@ -157,6 +169,8 @@ void Filter::onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& m
 
   state_ = State::Complete;
 
+  chargeStreamStats(status);
+
   decoder_callbacks_->continueDecoding();
 }
 
@@ -173,6 +187,25 @@ void Filter::endStream(Http::HeaderMap& trailers) {
   auto message = KonvoyProtoUtils::requestTrailersMessage(trailers);
 
   stream_->sendMessage(message, true);
+}
+
+void Filter::chargeStreamStats(Grpc::Status::GrpcStatus) {
+  auto now = config_->timeSource().monotonicTime();
+
+  std::chrono::milliseconds totalLatency = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_stream_);
+
+  config_->stats().request_stream_latency_ms_.recordValue(totalLatency.count());
+  config_->stats().request_total_stream_latency_ms_.add(totalLatency.count());
+
+  std::chrono::milliseconds startLatency = std::chrono::duration_cast<std::chrono::milliseconds>(start_stream_complete_ - start_stream_);
+
+  config_->stats().request_stream_start_latency_ms_.recordValue(startLatency.count());
+  config_->stats().request_total_stream_start_latency_ms_.add(startLatency.count());
+
+  std::chrono::milliseconds exchangeLatency = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_stream_complete_);
+
+  config_->stats().request_stream_exchange_latency_ms_.recordValue(exchangeLatency.count());
+  config_->stats().request_total_stream_exchange_latency_ms_.add(exchangeLatency.count());
 }
 
 } // namespace Konvoy
