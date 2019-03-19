@@ -62,6 +62,9 @@ public:
   void onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& message) override;
 
 private:
+  void endStreamIfNecessary(bool end_stream);
+  void endStream(Http::HeaderMap& trailers);
+
   const FilterConfigSharedPtr config_;
   Grpc::AsyncClientPtr async_client_;
 
@@ -75,6 +78,8 @@ private:
   enum class State { NotStarted, Calling, Complete };
 
   State state_{State::NotStarted};
+
+  const Protobuf::MethodDescriptor& service_method_;
   Grpc::AsyncStream* stream_{};
 };
 
