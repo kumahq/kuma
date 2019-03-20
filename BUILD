@@ -7,7 +7,7 @@ load(
 )
 
 envoy_cc_binary(
-    name = "envoy",
+    name = "konvoy",
     repository = "@envoy",
     deps = [
         "//source/extensions/filters/http/konvoy:konvoy_config",
@@ -16,7 +16,7 @@ envoy_cc_binary(
 )
 
 sh_test(
-    name = "envoy_binary_test",
-    srcs = ["envoy_binary_test.sh"],
-    data = [":envoy"],
+    name = "konvoy_binary_test",
+    srcs = ["konvoy_binary_test.sh"],
+    data = [":konvoy"],
 )

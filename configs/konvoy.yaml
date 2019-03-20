@@ -1,7 +1,9 @@
 #
-# Sample Envoy configuration with
+# Sample Envoy configuration that includes Konvoy filter
 #
 admin:
+  # Support CPU Profiling
+  profile_path: /tmp/envoy.prof
   access_log_path: /tmp/admin_access.log
   address:
     socket_address:
@@ -31,14 +33,16 @@ static_resources:
               - match:
                   prefix: "/"
                 route:
-                  host_rewrite: www.google.com
-                  cluster: service_google
+                  host_rewrite: mockbin.org
+                  cluster: service_mockbin
           http_filters:
           #
           # Piping requests via an out-of-process filter.
           #
           - name: konvoy
-            config:
+            typed_config:
+              "@type": type.googleapis.com/envoy.config.filter.http.konvoy.v2alpha.Konvoy
+              stat_prefix: demo-grpc-server
               grpc_service:
                 envoy_grpc:
                   cluster_name: konvoy_side_car
@@ -57,20 +61,20 @@ static_resources:
         port_value: 8980
     lb_policy: ROUND_ROBIN
     http2_protocol_options: {}
-  - name: service_google
-    connect_timeout: 0.25s
+  - name: service_mockbin
+    connect_timeout: 5s
     type: LOGICAL_DNS
     # Comment out the following line to test on v6 networks
     dns_lookup_family: V4_ONLY
     lb_policy: ROUND_ROBIN
     load_assignment:
-      cluster_name: service_google
+      cluster_name: service_mockbin
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: www.google.com
+                address: mockbin.org
                 port_value: 443
     tls_context:
-      sni: www.google.com
+      sni: mockbin.org

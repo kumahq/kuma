@@ -11,14 +11,14 @@ of your choice.
 To build the Envoy static binary:
 
 1. `git submodule update --init`
-2. `bazel build //:envoy`
+2. `bazel build //:konvoy`
 
 ## Running
 
 To run the `Konvoy` with a demo configuration:
 
 1. Start demo `Konvoy` gRPC Service (see [Konvoy demo gRPC server][konvoy-grpc-demo-java])
-2. `bazel run -- //:envoy -c $(pwd)/configs/konvoy.yaml `
+2. `bazel run -- //:konvoy -c $(pwd)/configs/konvoy.yaml `
 3. Make arbitrary requests to `http://localhost:10000` (reverse proxied to `www.google.com`)
 and observe communication between `Konvoy Filter` and `Konvoy gRPC Service` in the logs
 
@@ -153,7 +153,8 @@ Envoy binary as a new filter.
 ```yaml
 http_filters:
 - name: konvoy          # before envoy.router because order matters!
-  config:
+  typed_config:
+    "@type": type.googleapis.com/envoy.config.filter.http.konvoy.v2alpha.Konvoy
     stat_prefix: demo-grpc-server
     grpc_service:
       envoy_grpc:

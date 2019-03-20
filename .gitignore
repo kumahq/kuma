@@ -1,5 +1,10 @@
+# Bazel
 bazel-*
+.cache/
 
+# IDE: CLion
 .idea/
 .clwb/
+
+# IDE: VS Code
 .vscode/
