@@ -1,158 +1,68 @@
 # Konvoy filter
 
-Envoy filter that delegates request processing to a side car process
-acting as a gRPC service.
+Envoy filter that pipes requests through a side car process over gRPC-based protocol.
 
-Effectively, Konvoy filter enables extending Envoy in a programming language 
+Effectively, `Konvoy filter` enables extending `Envoy` in a programming language 
 of your choice.   
 
 ## Building
 
-To build the Envoy static binary:
+To build `Konvoy` (`Envoy` + `Konvoy filter`) static binary:
 
 1. `git submodule update --init`
 2. `bazel build //:konvoy`
 
+If you're new to `Bazel`, see [Developer Guide](DEVELOPER.md) on how to set up 
+local dev environment or, alternatively,
+how to use a `Docker` image that comes with all the required tools pre-installed.
+
 ## Running
 
-To run the `Konvoy` with a demo configuration:
+To run `Konvoy` with a demo configuration:
 
-1. Start demo `Konvoy` gRPC Service (see [Konvoy demo gRPC server][konvoy-grpc-demo-java])
+1. Start demo gRPC Service (see [Konvoy demo gRPC server][konvoy-grpc-demo-java])
+   * `${KONVOY_GRPC_DEMO_JAVA_HOME}/build/install/konvoy-grpc-demo-java/bin/konvoy-demo-server`
 2. `bazel run -- //:konvoy -c $(pwd)/configs/konvoy.yaml `
-3. Make arbitrary requests to `http://localhost:10000` (reverse proxied to `www.google.com`)
-and observe communication between `Konvoy Filter` and `Konvoy gRPC Service` in the logs
+3. Enable verbose logging in `Konvoy filter`
+   * `curl -XPOST http://localhost:9901/logging?misc=trace`
+4. Make arbitrary requests to `http://localhost:10000` (reverse proxied to `mockbin.org`), e.g.
+   * `curl http://localhost:10000`
+5. Observe communication between `Konvoy filter` and `Konvoy gRPC Service` in the logs
 
-E.g.,
+See [Developer Guide](DEVELOPER.md) for further details.
 
-HTTP request
+## Observing
+
+To scrape metrics related to `Konvoy filter`:
+
+`curl -s http://localhost:9901/stats |grep 'konvoy\.'`
+
 ```
-curl -XGET http://localhost:10000/search -d q=example
-```
-
-Envoy logs
-```
-[2019-03-13 14:32:10.962][2411720][info][filter] [source/extensions/filters/http/konvoy/konvoy.cc:37] konvoy-filter: forwarding request headers to Konvoy (side car):
-':authority', 'localhost:10000'
-':path', '/search'
-':method', 'GET'
-'user-agent', 'curl/7.54.0'
-'accept', '*/*'
-'content-length', '9'
-'content-type', 'application/x-www-form-urlencoded'
-'x-forwarded-proto', 'http'
-'x-request-id', 'e511a1db-3905-4692-a0a0-29f5b72e6836'
-
-[2019-03-13 14:32:10.962][2411720][info][filter] [source/extensions/filters/http/konvoy/konvoy.cc:56] konvoy-filter: forwarding request body to Konvoy (side car):
-9 bytes, end_stream=false
-[2019-03-13 14:32:10.962][2411720][info][filter] [source/extensions/filters/http/konvoy/konvoy.cc:56] konvoy-filter: forwarding request body to Konvoy (side car):
-0 bytes, end_stream=true
-[2019-03-13 14:32:10.962][2411720][info][filter] [source/extensions/filters/http/konvoy/konvoy.cc:84] konvoy-filter: forwarding is finished
-[2019-03-13 14:32:10.964][2411720][info][filter] [source/extensions/filters/http/konvoy/konvoy.cc:88] konvoy-filter: received message from Konvoy (side car):
-1
-[2019-03-13 14:32:10.965][2411720][info][filter] [source/extensions/filters/http/konvoy/konvoy.cc:88] konvoy-filter: received message from Konvoy (side car):
-2
-[2019-03-13 14:32:10.966][2411720][info][filter] [source/extensions/filters/http/konvoy/konvoy.cc:88] konvoy-filter: received message from Konvoy (side car):
-3
-[2019-03-13 14:32:10.967][2411720][info][filter] [source/extensions/filters/http/konvoy/konvoy.cc:94] konvoy-filter: received close signal from Konvoy (side car):
-status = 0, message = 
-``` 
-
-Demo gRPC server logs
-```
-Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.KonvoyServer$KonvoyService$1 onNext
-INFO: onNext: request_headers {
-  headers {
-    headers {
-      key: ":authority"
-      value: "localhost:10000"
-    }
-    headers {
-      key: ":path"
-      value: "/search"
-    }
-    headers {
-      key: ":method"
-      value: "GET"
-    }
-    headers {
-      key: "user-agent"
-      value: "curl/7.54.0"
-    }
-    headers {
-      key: "accept"
-      value: "*/*"
-    }
-    headers {
-      key: "content-length"
-      value: "9"
-    }
-    headers {
-      key: "content-type"
-      value: "application/x-www-form-urlencoded"
-    }
-    headers {
-      key: "x-forwarded-proto"
-      value: "http"
-    }
-    headers {
-      key: "x-request-id"
-      value: "e511a1db-3905-4692-a0a0-29f5b72e6836"
-    }
-  }
-}
-
-Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.KonvoyServer$KonvoyService$1 onNext
-INFO: onNext: request_body_chunk {
-  bytes: "q=example"
-}
-
-Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.KonvoyServer$KonvoyService$1 onNext
-INFO: onNext: request_trailers {
-}
-
-Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.KonvoyServer$KonvoyService$1 onCompleted
-INFO: onCompleted
+konvoy.demo-grpc-server.request_total: 142167
+konvoy.demo-grpc-server.request_total_stream_exchange_latency_ms: 79061
+konvoy.demo-grpc-server.request_total_stream_latency_ms: 82015
+konvoy.demo-grpc-server.request_total_stream_start_latency_ms: 193
+konvoy.demo-grpc-server.request_stream_exchange_latency_ms: P0(0,0) P25(0,0) P50(0,0) P75(1.07191,1.07191) P90(2.07696,2.07696) P95(3.09033,3.09033) P99(8.05311,8.05311) P99.5(13.88,13.88) P99.9(81.5587,81.5587) P100(140,140)
+konvoy.demo-grpc-server.request_stream_latency_ms: P0(0,0) P25(0,0) P50(0,0) P75(1.07469,1.07469) P90(2.08013,2.08013) P95(3.09371,3.09371) P99(8.05959,8.05959) P99.5(13.8883,13.8883) P99.9(81.6704,81.6704) P100(140,140)
+konvoy.demo-grpc-server.request_stream_start_latency_ms: P0(0,0) P25(0,0) P50(0,0) P75(0,0) P90(0,0) P95(0,0) P99(0,0) P99.5(0,0) P99.9(1.03402,1.03402) P100(5.1,5.1)
 ```
 
-## Testing
+## Configuring
 
-To run the `Konvoy` integration test:
+To configure `Konvoy`:
+1. Add `Konvoy filter` to the `filter chain` for a particular HTTP route configuration
+2. Add a `cluster` for `Konvoy gRPC Service` (typically deployed as a side car process) 
 
-`bazel test //test/extensions/filters/http/konvoy:konvoy_integration_test`
-
-## How it works
-
-The [Envoy repository](https://github.com/envoyproxy/envoy/) is provided as a submodule.
-The [`WORKSPACE`](WORKSPACE) file maps the `@envoy` repository to this local path.
-
-The [`BUILD`](BUILD) file introduces a new Envoy static binary target, `envoy`,
-that links together the new filter and `@envoy//source/exe:envoy_main_lib`. The
-`envoy` filter registers itself during the static initialization phase of the
-Envoy binary as a new filter.
-
-## How to write and use Konvoy HTTP filter
-
-- The main task is to write a class that implements the interface
- [`Envoy::Http::StreamDecoderFilter`][StreamDecoderFilter] as in
- [`konvoy.h`](source/extensions/filters/http/konvoy/konvoy.h) and [`konvoy.cc`](source/extensions/filters/http/konvoy/konvoy.cc),
- which contains functions that handle http headers, data, and trailers.
- To write encoder filters or decoder/encoder filters
- you need to implement 
- [`Envoy::Http::StreamEncoderFilter`][StreamEncoderFilter] or
- [`Envoy::Http::StreamFilter`][StreamFilter] instead.
-- You also need a class that implements 
- `Envoy::Server::Configuration::NamedHttpFilterConfigFactory`
- to enable the Envoy binary to find your filter,
- as in [`konvoy_config.h`](source/extensions/filters/http/konvoy/config.h).
- It should be linked to the Envoy binary by modifying [`BUILD`][BUILD] file.
-- Finally, you need to modify the Envoy config file to add `konvoy` filter to the
- filter chain for a particular HTTP route configuration. For instance, if you
- wanted to change [the front-proxy example][front-envoy.yaml] to chain our
- `konvoy` filter, you'd need to modify its config to look like
+E.g., here is an excerpt from the demo configuration: 
 
 ```yaml
+...
+
 http_filters:
-- name: konvoy          # before envoy.router because order matters!
+#
+# Konvoy filter to pipe HTTP request through a side car process 
+#
+- name: konvoy
   typed_config:
     "@type": type.googleapis.com/envoy.config.filter.http.konvoy.v2alpha.Konvoy
     stat_prefix: demo-grpc-server
@@ -161,10 +71,12 @@ http_filters:
         cluster_name: konvoy_side_car
 - name: envoy.router
   config: {}
+
 ...
+
 clusters:
 #
-# Konvoy side car
+# Konvoy gRPC Service deployed as a side car process
 #
 - name: konvoy_side_car
   connect_timeout: 0.25s
@@ -176,11 +88,18 @@ clusters:
       port_value: 8980
   lb_policy: ROUND_ROBIN
   http2_protocol_options: {}
+  
+...
 ```
- 
-[StreamDecoderFilter]: https://github.com/envoyproxy/envoy/blob/b2610c84aeb1f75c804d67effcb40592d790e0f1/include/envoy/http/filter.h#L300
-[StreamEncoderFilter]: https://github.com/envoyproxy/envoy/blob/b2610c84aeb1f75c804d67effcb40592d790e0f1/include/envoy/http/filter.h#L413
-[StreamFilter]: https://github.com/envoyproxy/envoy/blob/b2610c84aeb1f75c804d67effcb40592d790e0f1/include/envoy/http/filter.h#L462
-[BUILD]: BUILD
-[front-envoy.yaml]: https://github.com/envoyproxy/envoy/blob/b2610c84aeb1f75c804d67effcb40592d790e0f1/examples/front-proxy/front-envoy.yaml#L28
+
+## Testing
+
+To run `Konvoy` integration tests:
+
+`bazel test //test/extensions/filters/http/konvoy:konvoy_integration_test`
+
+## Developing
+
+See [Developer Guide](DEVELOPER.md) for further details.
+
 [konvoy-grpc-demo-java]: https://github.com/Kong/konvoy-grpc-demo-java

@@ -37,7 +37,7 @@ static_resources:
                   cluster: service_mockbin
           http_filters:
           #
-          # Piping requests via an out-of-process filter.
+          # Konvoy filter to pipe HTTP request through a side car process
           #
           - name: konvoy
             typed_config:
@@ -49,7 +49,7 @@ static_resources:
           - name: envoy.router
   clusters:
   #
-  # Konvoy side car
+  # Konvoy gRPC Service deployed as a side car process
   #
   - name: konvoy_side_car
     connect_timeout: 0.25s
