@@ -12,7 +12,7 @@ namespace HttpFilters {
 namespace Konvoy {
 
 InstanceStats FilterConfig::generateStats(const std::string& name, Stats::Scope& scope) {
-  const std::string final_prefix = fmt::format("konvoy.{}.", name);
+  const std::string final_prefix = fmt::format("konvoy.http.{}.", name);
   return {ALL_HTTP_KONVOY_STATS(POOL_COUNTER_PREFIX(scope, final_prefix), POOL_HISTOGRAM_PREFIX(scope, final_prefix))};
 }
 
@@ -27,7 +27,7 @@ FilterConfig::FilterConfig(
 Filter::Filter(FilterConfigSharedPtr config, Grpc::AsyncClientPtr&& async_client)
     : config_(config),
     async_client_(std::move(async_client)),
-    service_method_(*Protobuf::DescriptorPool::generated_pool()->FindMethodByName("envoy.service.konvoy.v2alpha.Konvoy.ProxyHttpRequest")) {}
+    service_method_(*Protobuf::DescriptorPool::generated_pool()->FindMethodByName("envoy.service.konvoy.v2alpha.HttpKonvoy.ProxyHttpRequest")) {}
 
 Filter::~Filter() {}
 
@@ -44,7 +44,7 @@ void Filter::setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks& callb
 }
 
 Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool end_stream) {
-  ENVOY_LOG_MISC(trace, "konvoy-filter: forwarding request headers to Konvoy (side car):\n{}", headers);
+  ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding request headers to HTTP Konvoy Service (side car):\n{}", headers);
 
   // keep original headers for later modification
   request_headers_ = &headers;
@@ -70,7 +70,7 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
 }
 
 Http::FilterDataStatus Filter::decodeData(Buffer::Instance& data, bool end_stream) {
-  ENVOY_LOG_MISC(trace, "konvoy-filter: forwarding request body to Konvoy (side car):\n{} bytes, end_stream={}, buffer_size={}",
+  ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding request body to HTTP Konvoy Service (side car):\n{} bytes, end_stream={}, buffer_size={}",
           data.length(), end_stream, decoder_callbacks_->decodingBuffer() ? decoder_callbacks_->decodingBuffer()->length() : 0);
 
   if (0 < data.length()) {
@@ -88,7 +88,7 @@ Http::FilterDataStatus Filter::decodeData(Buffer::Instance& data, bool end_strea
 }
 
 Http::FilterTrailersStatus Filter::decodeTrailers(Http::HeaderMap& trailers) {
-  ENVOY_LOG_MISC(trace, "konvoy-filter: forwarding request trailers to Konvoy (side car):\n{}", trailers);
+  ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding request trailers to HTTP Konvoy Service (side car):\n{}", trailers);
 
   endStream(trailers);
 
@@ -100,11 +100,11 @@ Http::FilterTrailersStatus Filter::decodeTrailers(Http::HeaderMap& trailers) {
  * Called at the end of the stream, when all data has been decoded.
  */
 void Filter::decodeComplete() {
-  ENVOY_LOG_MISC(trace, "konvoy-filter: forwarding is finished");
+  ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding is finished");
 }
 
 void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart>&& message) {
-  ENVOY_LOG_MISC(trace, "konvoy-filter: received message from Konvoy (side car):\n{}", message->part_case());
+  ENVOY_LOG_MISC(trace, "konvoy-http-filter: received message from HTTP Konvoy Service (side car):\n{}", message->part_case());
 
   switch (message->part_case()) {
       case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestHeaders: {
@@ -165,7 +165,7 @@ void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::K
 }
 
 void Filter::onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& message) {
-  ENVOY_LOG_MISC(trace, "konvoy-filter: received close signal from Konvoy (side car):\nstatus = {}, message = {}", status, message);
+  ENVOY_LOG_MISC(trace, "konvoy-http-filter: received close signal from HTTP Konvoy Service (side car):\nstatus = {}, message = {}", status, message);
 
   state_ = State::Complete;
 

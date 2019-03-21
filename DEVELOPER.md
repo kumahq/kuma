@@ -226,7 +226,7 @@ Here is an overview of `Konvoy filter` source code:
 * all the above classes are linked to `Envoy` binary through the [`BUILD`][BUILD] file
 * [`konvoy.proto`](api/envoy/config/filter/http/konvoy/v2alpha/konvoy.proto)
   is a `Protobuf` definition of the `Konvoy filter` configuration 
-* [`konvoy_service.proto`](api/envoy/service/konvoy/v2alpha/konvoy_service.proto)
+* [`http_konvoy_service.proto`](api/envoy/service/konvoy/v2alpha/http_konvoy_service.proto)
   is a `Protobuf` definition of the `Konvoy gRPC Service` implemented by a side car process
 * [`extensions_build_config.bzl`](envoy_build_config/extensions_build_config.bzl)
   is a `Bazel` configuration that includes/excludes `Envoy` extensions (such as, `filters`) 

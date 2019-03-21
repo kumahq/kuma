@@ -1,6 +1,6 @@
 # Konvoy filter
 
-Envoy filter that pipes requests through a side car process over gRPC-based protocol.
+`Envoy` filter that pipes requests through a side car process over gRPC-based protocol.
 
 Effectively, `Konvoy filter` enables extending `Envoy` in a programming language 
 of your choice.   
@@ -20,7 +20,7 @@ how to use a `Docker` image that comes with all the required tools pre-installed
 
 To run `Konvoy` with a demo configuration:
 
-1. Start demo gRPC Service (see [Konvoy demo gRPC server][konvoy-grpc-demo-java])
+1. Start [Konvoy demo gRPC server][konvoy-grpc-demo-java]
    * `${KONVOY_GRPC_DEMO_JAVA_HOME}/build/install/konvoy-grpc-demo-java/bin/konvoy-demo-server`
 2. `bazel run -- //:konvoy -c $(pwd)/configs/konvoy.yaml `
 3. Enable verbose logging in `Konvoy filter`
@@ -35,23 +35,25 @@ See [Developer Guide](DEVELOPER.md) for further details.
 
 To scrape metrics related to `Konvoy filter`:
 
-`curl -s http://localhost:9901/stats |grep 'konvoy\.'`
+`curl -s http://localhost:9901/stats |grep -e 'konvoy\.'`
 
 ```
-konvoy.demo-grpc-server.request_total: 142167
-konvoy.demo-grpc-server.request_total_stream_exchange_latency_ms: 79061
-konvoy.demo-grpc-server.request_total_stream_latency_ms: 82015
-konvoy.demo-grpc-server.request_total_stream_start_latency_ms: 193
-konvoy.demo-grpc-server.request_stream_exchange_latency_ms: P0(0,0) P25(0,0) P50(0,0) P75(1.07191,1.07191) P90(2.07696,2.07696) P95(3.09033,3.09033) P99(8.05311,8.05311) P99.5(13.88,13.88) P99.9(81.5587,81.5587) P100(140,140)
-konvoy.demo-grpc-server.request_stream_latency_ms: P0(0,0) P25(0,0) P50(0,0) P75(1.07469,1.07469) P90(2.08013,2.08013) P95(3.09371,3.09371) P99(8.05959,8.05959) P99.5(13.8883,13.8883) P99.9(81.6704,81.6704) P100(140,140)
-konvoy.demo-grpc-server.request_stream_start_latency_ms: P0(0,0) P25(0,0) P50(0,0) P75(0,0) P90(0,0) P95(0,0) P99(0,0) P99.5(0,0) P99.9(1.03402,1.03402) P100(5.1,5.1)
+konvoy.http.demo-grpc-server.request_total: 142167
+konvoy.http.demo-grpc-server.request_total_stream_exchange_latency_ms: 79061
+konvoy.http.demo-grpc-server.request_total_stream_latency_ms: 82015
+konvoy.http.demo-grpc-server.request_total_stream_start_latency_ms: 193
+konvoy.http.demo-grpc-server.request_stream_exchange_latency_ms: P0(0,0) P25(0,0) P50(0,0) P75(1.07191,1.07191) P90(2.07696,2.07696) P95(3.09033,3.09033) P99(8.05311,8.05311) P99.5(13.88,13.88) P99.9(81.5587,81.5587) P100(140,140)
+konvoy.http.demo-grpc-server.request_stream_latency_ms: P0(0,0) P25(0,0) P50(0,0) P75(1.07469,1.07469) P90(2.08013,2.08013) P95(3.09371,3.09371) P99(8.05959,8.05959) P99.5(13.8883,13.8883) P99.9(81.6704,81.6704) P100(140,140)
+konvoy.http.demo-grpc-server.request_stream_start_latency_ms: P0(0,0) P25(0,0) P50(0,0) P75(0,0) P90(0,0) P95(0,0) P99(0,0) P99.5(0,0) P99.9(1.03402,1.03402) P100(5.1,5.1)
 ```
 
 ## Configuring
 
-To configure `Konvoy`:
-1. Add `Konvoy filter` to the `filter chain` for a particular HTTP route configuration
-2. Add a `cluster` for `Konvoy gRPC Service` (typically deployed as a side car process) 
+### Konvoy http filter
+
+To configure `Konvoy http filter`:
+1. Add `Konvoy http filter` to the `filter chain` for a particular HTTP route configuration
+2. Add a `cluster` for `Http Konvoy (gRPC Service)` (typically deployed as a side car process) 
 
 E.g., here is an excerpt from the demo configuration: 
 

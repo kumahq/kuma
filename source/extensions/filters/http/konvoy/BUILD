@@ -21,7 +21,7 @@ envoy_cc_library(
         "@envoy//include/envoy/stats:stats_macros",
         "@envoy//source/common/buffer:buffer_lib",
         "//api/envoy/config/filter/http/konvoy/v2alpha:konvoy_cc",
-        "//api/envoy/service/konvoy/v2alpha:konvoy_service_cc",
+        "//api/envoy/service/konvoy/v2alpha:http_konvoy_service_cc",
         ":konvoy_proto_utils_lib",
     ],
 )
@@ -47,6 +47,6 @@ envoy_cc_library(
     deps = [
         "@envoy//include/envoy/buffer:buffer_interface",
         "@envoy//include/envoy/http:header_map_interface",
-        "//api/envoy/service/konvoy/v2alpha:konvoy_service_cc",
+        "//api/envoy/service/konvoy/v2alpha:http_konvoy_service_cc",
     ],
 )
