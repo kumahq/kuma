@@ -109,7 +109,7 @@ private:
   // State of this filter's communication with the external Konvoy service.
   // The filter has either not started calling the external service, in the middle of calling
   // it or has completed.
-  enum class State { NotStarted, Calling, Complete };
+  enum class State { NotStarted, Calling, Complete, Responded };
 
   State state_{State::NotStarted};
 

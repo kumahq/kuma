@@ -70,6 +70,8 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
 }
 
 Http::FilterDataStatus Filter::decodeData(Buffer::Instance& data, bool end_stream) {
+  ASSERT(state_ != State::Responded);
+
   ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding request body to HTTP Konvoy Service (side car):\n{} bytes, end_stream={}, buffer_size={}",
           data.length(), end_stream, decoder_callbacks_->decodingBuffer() ? decoder_callbacks_->decodingBuffer()->length() : 0);
 
@@ -88,6 +90,8 @@ Http::FilterDataStatus Filter::decodeData(Buffer::Instance& data, bool end_strea
 }
 
 Http::FilterTrailersStatus Filter::decodeTrailers(Http::HeaderMap& trailers) {
+  ASSERT(state_ != State::Responded);
+
   ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding request trailers to HTTP Konvoy Service (side car):\n{}", trailers);
 
   endStream(trailers);
@@ -171,7 +175,12 @@ void Filter::onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& m
 
   chargeStreamStats(status);
 
-  decoder_callbacks_->continueDecoding();
+  if (status == Grpc::Status::GrpcStatus::Ok) {
+    decoder_callbacks_->continueDecoding();
+  } else {
+    state_ = State::Responded;
+    decoder_callbacks_->sendLocalReply(Http::Code::InternalServerError, "", nullptr, absl::nullopt);
+  }
 }
 
 void Filter::endStreamIfNecessary(bool end_stream) {
