@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package envoy.service.konvoy.v2alpha;
+
+option go_package = "v2alpha";
+
+option java_multiple_files = true;
+option java_generic_services = true;
+option java_outer_classname = "NetworkKonvoyProto";
+option java_package = "io.envoyproxy.envoy.service.konvoy.v2alpha";
+
+import "envoy/api/v2/core/base.proto";
+
+// [#protodoc-title: "Network Konvoy" Service]
+
+// A generic interface for piping L4 payload data through a side car process.
+service NetworkKonvoy {
+    // Proxies L4 connection.
+    rpc ProxyConnection (stream KonvoyProxyConnectionRequestMessage) returns (stream KonvoyProxyConnectionResponseMessage);
+}
+
+// Message sent by Konvoy TCP filter to "Network Konvoy" Service
+// as part of proxying a single L4 connection, i.e. Request Data Chunk.
+message KonvoyProxyConnectionRequestMessage {
+    oneof message {
+        // Request data chunk.
+        RequestDataChunk request_data_chunk = 1;
+    }
+}
+
+// Request data chunk.
+message RequestDataChunk {
+    // Request bytes.
+    bytes bytes = 1;
+}
+
+// Message sent by "Network Konvoy" Service back to Konvoy TCP filter
+// as part of proxying a single L4 connection.
+// If a "Network Konvoy" Service wants Envoy to continue further request processing,
+// it should send back a modified version of the original request data,
+// i.e. Request Data Chunk.
+// Alternatively, if a "Network Konvoy" Service wants Envoy to terminate
+// further request processing,
+// it should back response data for immediate reply to the downstream.
+message KonvoyProxyConnectionResponseMessage {
+    oneof message {
+        // Modified request data chunk for further processing.
+        RequestDataChunk request_data_chunk = 1;
+
+        // Direct response data chunk to downstream.
+        ResponseDataChunk response_data_chunk = 2;
+    }
+}
+
+// Response data chunk.
+message ResponseDataChunk {
+    // Response bytes.
+    bytes bytes = 1;
+}
