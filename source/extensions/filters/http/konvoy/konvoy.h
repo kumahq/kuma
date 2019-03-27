@@ -9,7 +9,7 @@
 #include "envoy/stats/stats_macros.h"
 
 #include "api/envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.h"
-#include "api/envoy/service/konvoy/v2alpha/konvoy_service.pb.h"
+#include "api/envoy/service/konvoy/v2alpha/http_konvoy_service.pb.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -65,11 +65,11 @@ private:
 typedef std::shared_ptr<FilterConfig> FilterConfigSharedPtr;
 
 typedef Grpc::TypedAsyncStreamCallbacks<envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart>
-        KonvoyAsyncStreamCallbacks;
+        HttpKonvoyAsyncStreamCallbacks;
 
 class Filter : public Logger::Loggable<Logger::Id::filter>,
                public Http::StreamDecoderFilter,
-               public KonvoyAsyncStreamCallbacks {
+               public HttpKonvoyAsyncStreamCallbacks {
 public:
   Filter(FilterConfigSharedPtr, Grpc::AsyncClientPtr&& async_client);
   ~Filter();
@@ -109,7 +109,7 @@ private:
   // State of this filter's communication with the external Konvoy service.
   // The filter has either not started calling the external service, in the middle of calling
   // it or has completed.
-  enum class State { NotStarted, Calling, Complete };
+  enum class State { NotStarted, Calling, Complete, Responded };
 
   State state_{State::NotStarted};
 

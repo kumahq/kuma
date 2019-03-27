@@ -1,6 +1,6 @@
 licenses(["notice"])  # Apache 2
 
-# Out-of-process request processing L7 HTTP filter
+# Out-of-process request processing L4 filter
 
 load(
     "@envoy//bazel:envoy_build_system.bzl",
@@ -20,8 +20,8 @@ envoy_cc_library(
         "@envoy//include/envoy/server:filter_config_interface",
         "@envoy//include/envoy/stats:stats_macros",
         "@envoy//source/common/buffer:buffer_lib",
-        "//api/envoy/config/filter/http/konvoy/v2alpha:konvoy_cc",
-        "//api/envoy/service/konvoy/v2alpha:http_konvoy_service_cc",
+        "//api/envoy/config/filter/network/konvoy/v2alpha:konvoy_cc",
+        "//api/envoy/service/konvoy/v2alpha:network_konvoy_service_cc",
         ":konvoy_proto_utils_lib",
     ],
 )
@@ -34,8 +34,8 @@ envoy_cc_library(
     deps = [
         ":konvoy",
         "@envoy//include/envoy/registry",
-        "@envoy//source/extensions/filters/http:well_known_names",
-        "@envoy//source/extensions/filters/http/common:factory_base_lib",
+        "@envoy//source/extensions/filters/network:well_known_names",
+        "@envoy//source/extensions/filters/network/common:factory_base_lib",
     ],
 )
 
@@ -46,7 +46,6 @@ envoy_cc_library(
     repository = "@envoy",
     deps = [
         "@envoy//include/envoy/buffer:buffer_interface",
-        "@envoy//include/envoy/http:header_map_interface",
-        "//api/envoy/service/konvoy/v2alpha:http_konvoy_service_cc",
+        "//api/envoy/service/konvoy/v2alpha:network_konvoy_service_cc",
     ],
 )

@@ -6,20 +6,22 @@ option go_package = "v2alpha";
 
 option java_multiple_files = true;
 option java_generic_services = true;
-option java_outer_classname = "KonvoyProto";
+option java_outer_classname = "HttpKonvoyProto";
 option java_package = "io.envoyproxy.envoy.service.konvoy.v2alpha";
 
 import "envoy/api/v2/core/base.proto";
 
-// [#protodoc-title: Konvoy Service]
+// [#protodoc-title: "HTTP Konvoy" Service]
 
-// A generic interface for piping requests via an out-of-process filter.
-service Konvoy {
+// A generic interface for piping HTTP requests through a side car process.
+service HttpKonvoy {
     // Proxies HTTP request.
     rpc ProxyHttpRequest (stream KonvoyHttpRequestPart) returns (stream KonvoyHttpResponsePart);
 }
 
-// Part of HTTP request, such as Headers, Body Chunk, Trailers.
+// Message sent by Konvoy HTTP filter to "HTTP Konvoy" Service
+// as part of proxying a single HTTP request,
+// i.e. HTTP Request Headers, HTTP Request Body Chunk, HTTP Request Trailers.
 message KonvoyHttpRequestPart {
     oneof part {
         // HTTP request headers.
@@ -51,12 +53,14 @@ message HttpRequestTrailers {
     api.v2.core.HeaderMap trailers = 1;
 }
 
-// Part of a Konvoy's response to the HTTP request.
-// If a Konvoy wants Envoy to continue further request processing
-// then it will send back a modified version of the original request,
+// Message sent by "HTTP Konvoy" Service back to Konvoy HTTP filter
+// as part of proxying a single HTTP request.
+// If a "HTTP Konvoy" Service wants Envoy to continue further request processing,
+// it should send back a modified version of the original request,
 // including modified request Headers, Body Chunk, Trailers.
-// If a Konvoy wants Envoy to terminate further request processing
-// and immediately reply to the downstream with a given response,
+// Alternatively, if a "HTTP Konvoy" Service wants Envoy to terminate
+// further request processing,
+// it should back response data for immediate reply to the downstream,
 // including response Headers, Body Chunk, Trailers.
 message KonvoyHttpResponsePart {
     oneof part {

@@ -2,7 +2,7 @@
 
 #include "envoy/buffer/buffer.h"
 #include "envoy/http/header_map.h"
-#include "api/envoy/service/konvoy/v2alpha/konvoy_service.pb.h"
+#include "api/envoy/service/konvoy/v2alpha/http_konvoy_service.pb.h"
 
 namespace Envoy {
 namespace Extensions {

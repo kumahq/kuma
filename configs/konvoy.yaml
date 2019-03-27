@@ -12,6 +12,7 @@ admin:
       port_value: 9901
 static_resources:
   listeners:
+  # Konvoy http filter
   - name: listener_0
     address:
       socket_address:
@@ -47,9 +48,33 @@ static_resources:
                 envoy_grpc:
                   cluster_name: konvoy_side_car
           - name: envoy.router
+  # Konvoy network filter
+  - name: listener_1
+    address:
+      socket_address:
+        protocol: TCP
+        address: 0.0.0.0
+        port_value: 10001
+    filter_chains:
+    - filters:
+      #
+      # Konvoy filter to pipe L4 payload data through a side car process
+      #
+      - name: konvoy
+        typed_config:
+          "@type": type.googleapis.com/envoy.config.filter.network.konvoy.v2alpha.Konvoy
+          stat_prefix: demo-grpc-server
+          grpc_service:
+            envoy_grpc:
+              cluster_name: konvoy_side_car
+      - name: envoy.tcp_proxy
+        typed_config:
+          "@type": type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          stat_prefix: post_konvoy_tcp_proxy
+          cluster: service_mockbin
   clusters:
   #
-  # Konvoy gRPC Service deployed as a side car process
+  # "Http Konvoy" and "Network Konvoy" gRPC Services deployed as a side car process
   #
   - name: konvoy_side_car
     connect_timeout: 0.25s

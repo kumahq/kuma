@@ -101,15 +101,16 @@ $ bazel build -c opt //:konvoy
 
 To run `Konvoy` with a demo configuration:
 
-To run `Konvoy` with a demo configuration:
+1. Start [Konvoy demo gRPC server][konvoy-grpc-demo-java]
+2. `bazel run -- //:konvoy -c $(pwd)/configs/konvoy.yaml`
 
-1. Start demo gRPC Service (see [Konvoy demo gRPC server][konvoy-grpc-demo-java])
-2. `bazel run -- //:konvoy -c $(pwd)/configs/konvoy.yaml `
-3. Enable verbose logging by `Konvoy filter`
+### Exploring Konvoy http filter 
+
+1. Enable verbose logging by `Konvoy http filter`
    * `curl -XPOST http://localhost:9901/logging?misc=trace`
-4. Make arbitrary requests to `http://localhost:10000` (reverse proxied to `mockbin.org`), e.g.
+2. Make arbitrary requests to `http://localhost:10000` (reverse proxied to `mockbin.org`), e.g.
    * `curl http://localhost:10000`
-5. Observe communication between `Konvoy filter` and `Konvoy gRPC Service` in the logs
+3. Observe communication between `Konvoy http filter` and `Http Konvoy (gRPC service)` in the logs
 
 E.g.,
 
@@ -148,7 +149,7 @@ status = 0, message =
 
 Demo gRPC server logs:
 ```
-Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.KonvoyServer$KonvoyService$1 onNext
+Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.http.HttpKonvoyService$1 onNext
 INFO: onNext: request_headers {
   headers {
     headers {
@@ -190,16 +191,82 @@ INFO: onNext: request_headers {
   }
 }
 
-Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.KonvoyServer$KonvoyService$1 onNext
+Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.http.HttpKonvoyService$1 onNext
 INFO: onNext: request_body_chunk {
   bytes: "q=example"
 }
 
-Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.KonvoyServer$KonvoyService$1 onNext
+Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.http.HttpKonvoyService$1 onNext
 INFO: onNext: request_trailers {
 }
 
-Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.KonvoyServer$KonvoyService$1 onCompleted
+Mar 13, 2019 2:32:10 PM com.konghq.konvoy.demo.http.HttpKonvoyService$1 onCompleted
+INFO: onCompleted
+```
+
+### Exploring Konvoy network filter 
+
+1. Enable verbose logging by `Konvoy network filter`
+   * `curl -XPOST http://localhost:9901/logging?misc=trace`
+2. Use `netcat` to manually generate requests to `http://localhost:10001` (reverse proxied to `mockbin.org`), e.g.
+   * `nc localhost 10001`
+3. Observe communication between `Konvoy network filter` and `Network Konvoy (gRPC Service)` in the logs
+
+E.g., 
+
+Open connection with `netcat`:
+```
+nc localhost 10001
+```
+
+Paste the following HTTP message verbatim (don't use piping):
+```
+GET /request HTTP/1.1 
+Host: mockbin.org
+
+```
+
+HTTP message will go through `Network Konvoy (gRPC Service)` and then forwarded to `mockbin.org`
+by `envoy.tcp_filter`.  
+
+`Envoy` logs:
+```
+[2019-03-27 19:15:36.275][7069761][trace][misc] [source/extensions/filters/network/konvoy/konvoy.cc:50] konvoy-network-filter: forwarding request data to Network Konvoy Service (side car):
+42 bytes, end_stream=false
+[2019-03-27 19:15:36.302][7069761][trace][misc] [source/extensions/filters/network/konvoy/konvoy.cc:103] konvoy-network-filter: received message from Network Konvoy Service (side car):
+1
+```
+
+Demo gRPC server logs:
+```
+Mar 27, 2019 7:15:36 PM com.konghq.konvoy.demo.network.NetworkKonvoyService$1 onNext
+INFO: onNext: request_data_chunk {
+  bytes: "GET /request HTTP/1.1 \nHost: mockbin.org\n\n"
+}
+```
+
+Exit `netcat`
+```
+Ctrl+C
+```
+
+`Envoy` logs:
+```
+[2019-03-27 19:20:52.063][7069761][trace][misc] [source/extensions/filters/network/konvoy/konvoy.cc:50] konvoy-network-filter: forwarding request data to Network Konvoy Service (side car):
+0 bytes, end_stream=true
+[2019-03-27 19:20:52.068][7069761][trace][misc] [source/extensions/filters/network/konvoy/konvoy.cc:103] konvoy-network-filter: received message from Network Konvoy Service (side car):
+1
+[2019-03-27 19:20:52.073][7069761][trace][misc] [source/extensions/filters/network/konvoy/konvoy.cc:132] konvoy-network-filter: received close signal from Network Konvoy Service (side car):
+status = 0, message = 
+```
+
+Demo gRPC server logs:
+```
+Mar 27, 2019 7:20:52 PM com.konghq.konvoy.demo.network.NetworkKonvoyService$1 onNext
+INFO: onNext: request_data_chunk {
+}
+
+Mar 27, 2019 7:20:52 PM com.konghq.konvoy.demo.network.NetworkKonvoyService$1 onCompleted
 INFO: onCompleted
 ```
 
@@ -213,7 +280,7 @@ $ bazel test //test/extensions/filters/http/konvoy:konvoy_integration_test
 
 ## Making changes to the source code
 
-Here is an overview of `Konvoy filter` source code: 
+### Overview of `Konvoy http filter` 
 
 * [`konvoy.h`](source/extensions/filters/http/konvoy/konvoy.h) and 
   [`konvoy.cc`](source/extensions/filters/http/konvoy/konvoy.cc) implement
@@ -222,17 +289,32 @@ Here is an overview of `Konvoy filter` source code:
 * [`config.h`](source/extensions/filters/http/konvoy/config.h) and
   [`config.cc`](source/extensions/filters/http/konvoy/config.cc) implement 
   the `Envoy::Server::Configuration::NamedHttpFilterConfigFactory` interface;
-  they enable the `Envoy` binary to find `Konvoy filter`
+  they enable the `Envoy` binary to find `Konvoy http filter`
 * all the above classes are linked to `Envoy` binary through the [`BUILD`][BUILD] file
 * [`konvoy.proto`](api/envoy/config/filter/http/konvoy/v2alpha/konvoy.proto)
-  is a `Protobuf` definition of the `Konvoy filter` configuration 
-* [`konvoy_service.proto`](api/envoy/service/konvoy/v2alpha/konvoy_service.proto)
-  is a `Protobuf` definition of the `Konvoy gRPC Service` implemented by a side car process
+  is a `Protobuf` definition of the `Konvoy http filter` configuration 
+* [`http_konvoy_service.proto`](api/envoy/service/konvoy/v2alpha/http_konvoy_service.proto)
+  is a `Protobuf` definition of the `Http Konvoy Service (gRPC)` implemented by a side car process
 * [`extensions_build_config.bzl`](envoy_build_config/extensions_build_config.bzl)
   is a `Bazel` configuration that includes/excludes `Envoy` extensions (such as, `filters`) 
   from the build and resulting binary
 * [`konvoy.yaml`](configs/konvoy.yaml) is a sample `Envoy` configuration
-  that utilizes `Konvoy filter`    
+  that utilizes `Konvoy http filter`    
+ 
+### Overview of `Konvoy network filter` 
+
+* [`konvoy.h`](source/extensions/filters/network/konvoy/konvoy.h) and 
+  [`konvoy.cc`](source/extensions/filters/network/konvoy/konvoy.cc) implement
+  the [`Envoy::Network::ReadFilter`][ReadFilter] interface;
+  they're responsible for handling L4 payload data
+* [`config.h`](source/extensions/filters/network/konvoy/config.h) and
+  [`config.cc`](source/extensions/filters/network/konvoy/config.cc) implement 
+  the `Envoy::Server::Configuration::NamedNetworkFilterConfigFactory` interface;
+  they enable the `Envoy` binary to find `Konvoy network filter`
+* [`konvoy.proto`](api/envoy/config/filter/network/konvoy/v2alpha/konvoy.proto)
+  is a `Protobuf` definition of the `Konvoy network filter` configuration 
+* [`network_konvoy_service.proto`](api/envoy/service/konvoy/v2alpha/network_konvoy_service.proto)
+  is a `Protobuf` definition of the `Network Konvoy Service (gRPC)` implemented by a side car process
  
 ## Including/excluding Envoy extensions from Konvoy
 
@@ -250,6 +332,5 @@ See `Envoy`'s [Disabling extensions][disabling-extensions] guide for further det
 [disabling-extensions]: https://github.com/envoyproxy/envoy/blob/master/bazel/README.md#disabling-extensions
 [konvoy-grpc-demo-java]: https://github.com/Kong/konvoy-grpc-demo-java
 [StreamDecoderFilter]: https://github.com/envoyproxy/envoy/blob/b2610c84aeb1f75c804d67effcb40592d790e0f1/include/envoy/http/filter.h#L300
-[StreamEncoderFilter]: https://github.com/envoyproxy/envoy/blob/b2610c84aeb1f75c804d67effcb40592d790e0f1/include/envoy/http/filter.h#L413
-[StreamFilter]: https://github.com/envoyproxy/envoy/blob/b2610c84aeb1f75c804d67effcb40592d790e0f1/include/envoy/http/filter.h#L462
+[ReadFilter]: https://github.com/envoyproxy/envoy/blob/b2610c84aeb1f75c804d67effcb40592d790e0f1/include/envoy/network/filter.h#L77
 [BUILD]: BUILD
