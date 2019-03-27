@@ -57,6 +57,9 @@ static_resources:
         port_value: 10001
     filter_chains:
     - filters:
+      #
+      # Konvoy filter to pipe L4 payload data through a side car process
+      #
       - name: konvoy
         typed_config:
           "@type": type.googleapis.com/envoy.config.filter.network.konvoy.v2alpha.Konvoy
@@ -71,7 +74,7 @@ static_resources:
           cluster: service_mockbin
   clusters:
   #
-  # Konvoy gRPC Service deployed as a side car process
+  # "Http Konvoy" and "Network Konvoy" gRPC Services deployed as a side car process
   #
   - name: konvoy_side_car
     connect_timeout: 0.25s
