@@ -99,12 +99,12 @@ void Filter::onEvent(Network::ConnectionEvent event) {
 
 // Grpc::AsyncStreamCallbacks
 
-void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::KonvoyProxyConnectionResponseMessage>&& message) {
+void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::ProxyConnectionServerMessage>&& message) {
   ENVOY_LOG_MISC(trace, "konvoy-network-filter: received message from Network Konvoy Service (side car):\n{}", message->message_case());
 
   switch (message->message_case()) {
     // Network Konvoy Service (side car) modified the original request data and wants us to pass control to the next filter in the chain
-    case envoy::service::konvoy::v2alpha::KonvoyProxyConnectionResponseMessage::MessageCase::kRequestDataChunk: {
+    case envoy::service::konvoy::v2alpha::ProxyConnectionServerMessage::MessageCase::kRequestDataChunk: {
 
       if (0 < buffer_->length()) {
         ENVOY_LOG_MISC(error, "konvoy-network-filter: buffer is expected to be empty when response from gRPC service is received, but got {} bytes instead:\n{}", buffer_->length(), buffer_->toString());
@@ -120,7 +120,7 @@ void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::K
       break;
     }
     // Network Konvoy Service (side car) returned response data and wants us to forward them to downstream verbatim
-    case envoy::service::konvoy::v2alpha::KonvoyProxyConnectionResponseMessage::MessageCase::kResponseDataChunk: {
+    case envoy::service::konvoy::v2alpha::ProxyConnectionServerMessage::MessageCase::kResponseDataChunk: {
       Buffer::OwnedImpl data{message->response_data_chunk().bytes()};
       read_callbacks_->connection().write(data, false);
       ASSERT(0 == data.length());
