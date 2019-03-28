@@ -64,7 +64,7 @@ private:
 
 typedef std::shared_ptr<FilterConfig> FilterConfigSharedPtr;
 
-typedef Grpc::TypedAsyncStreamCallbacks<envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart>
+typedef Grpc::TypedAsyncStreamCallbacks<envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage>
         HttpKonvoyAsyncStreamCallbacks;
 
 class Filter : public Logger::Loggable<Logger::Id::filter>,
@@ -89,7 +89,7 @@ public:
   void onCreateInitialMetadata(Http::HeaderMap&) override {}
   void onReceiveInitialMetadata(Http::HeaderMapPtr&&) override {}
   void onReceiveTrailingMetadata(Http::HeaderMapPtr&&) override {}
-  void onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart>&& message) override;
+  void onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage>&& message) override;
   void onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& message) override;
 
 private:

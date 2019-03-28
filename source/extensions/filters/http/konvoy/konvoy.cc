@@ -107,11 +107,11 @@ void Filter::decodeComplete() {
   ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding is finished");
 }
 
-void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart>&& message) {
-  ENVOY_LOG_MISC(trace, "konvoy-http-filter: received message from HTTP Konvoy Service (side car):\n{}", message->part_case());
+void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage>&& message) {
+  ENVOY_LOG_MISC(trace, "konvoy-http-filter: received message from HTTP Konvoy Service (side car):\n{}", message->message_case());
 
-  switch (message->part_case()) {
-      case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestHeaders: {
+  switch (message->message_case()) {
+      case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestHeaders: {
 
           // clear original headers
           request_headers_->removePrefix(Http::LowerCaseString{""});
@@ -131,7 +131,7 @@ void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::K
 
           break;
       }
-      case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestBodyChunk: {
+      case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestBodyChunk: {
 
           if (!message->request_body_chunk().bytes().empty()) {
               Buffer::OwnedImpl data{message->request_body_chunk().bytes()};
@@ -141,7 +141,7 @@ void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::K
 
           break;
       }
-      case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestTrailers: {
+      case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestTrailers: {
 
           if (request_trailers_) {
               // clear original trailers

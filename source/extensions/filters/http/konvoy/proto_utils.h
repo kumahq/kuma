@@ -11,16 +11,16 @@ namespace Konvoy {
 
 class KonvoyProtoUtils {
 public:
-    static envoy::service::konvoy::v2alpha::KonvoyHttpRequestPart
+    static envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage
     requestHeadersMessage(const Http::HeaderMap& headers);
 
-    static envoy::service::konvoy::v2alpha::KonvoyHttpRequestPart
+    static envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage
     requestBodyChunckMessage(const Buffer::Instance& data);
 
-    static envoy::service::konvoy::v2alpha::KonvoyHttpRequestPart
+    static envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage
     requestTrailersMessage();
 
-    static envoy::service::konvoy::v2alpha::KonvoyHttpRequestPart
+    static envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage
     requestTrailersMessage(const Http::HeaderMap& trailers);
 };
 
