@@ -102,6 +102,17 @@ http_filters:
     grpc_service:
       envoy_grpc:
         cluster_name: konvoy_side_car
+    per_service_config:
+      # Configuration specific to a custom "Http Konvoy" Service implementation,
+      # i.e. "Demo Http Konvoy" Service.
+      http_konvoy:
+        # Configuration defined via a YAML/JSON file has to use `google.protobuf.Struct`
+        # instead of a Proto type natively supported by a particular Konvoy Server.    
+        "@type": type.googleapis.com/google.protobuf.Struct
+        value:
+          # HTTP request header to inject
+          header_name: via-konvoy-service
+          header_value: demo-http-konvoy    
 - name: envoy.router
   config: {}
 
@@ -165,6 +176,16 @@ E.g., here is an excerpt from the demo configuration:
         grpc_service:
           envoy_grpc:
             cluster_name: konvoy_side_car
+        per_service_config:
+          # Configuration specific to a custom "Network Konvoy" Service implementation,
+          # i.e. "Demo Network Konvoy" Service.      
+          network_konvoy:
+            # Configuration defined via a YAML/JSON file has to use `google.protobuf.Struct`
+            # instead of a Proto type natively supported by a particular Konvoy Server.    
+            "@type": type.googleapis.com/google.protobuf.Struct
+            value:
+              # Delay to apply
+              fixed_delay: 2s
     - name: envoy.tcp_proxy
       typed_config:
         "@type": type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy

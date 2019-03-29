@@ -48,6 +48,8 @@ static_resources:
                 envoy_grpc:
                   cluster_name: konvoy_side_car
               per_service_config:
+                # Configuration specific to a custom "Http Konvoy" Service implementation,
+                # i.e. "Demo Http Konvoy" Service.
                 http_konvoy:
                   # If Envoy gets configured via a YAML/JSON file, one should use `google.protobuf.Struct`
                   # instead of a Proto type natively supported by a particular Konvoy Server.
@@ -82,6 +84,8 @@ static_resources:
             envoy_grpc:
               cluster_name: konvoy_side_car
           per_service_config:
+            # Configuration specific to a custom "Network Konvoy" Service implementation,
+            # i.e. "Demo Network Konvoy" Service.
             network_konvoy:
               # If Envoy gets configured via a YAML/JSON file, one should use `google.protobuf.Struct`
               # instead of a Proto type natively supported by a particular Konvoy Server.
