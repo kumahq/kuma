@@ -20,7 +20,7 @@ FilterConfig::FilterConfig(
     const envoy::config::filter::http::konvoy::v2alpha::Konvoy& config,
     const LocalInfo::LocalInfo& local_info, Stats::Scope& scope,
     Runtime::Loader& runtime, Http::Context& http_context, TimeSource& time_source)
-    : stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
+    : proto_config_(config), stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
       local_info_(local_info), scope_(scope),
       runtime_(runtime), http_context_(http_context) {}
 
@@ -58,6 +58,14 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
   stream_ = async_client_->start(service_method_, *this);
 
   start_stream_complete_ = config_->timeSource().monotonicTime();
+
+  if (config_->getProtoConfig().per_service_config().has_http_konvoy()) {
+    auto &http_konvoy_config = config_->getProtoConfig().per_service_config().http_konvoy();
+
+    auto config_message = KonvoyProtoUtils::serviceConfigurationMessage(http_konvoy_config);
+
+    stream_->sendMessage(config_message, false);
+  }
 
   auto message = KonvoyProtoUtils::requestHeadersMessage(headers);
 

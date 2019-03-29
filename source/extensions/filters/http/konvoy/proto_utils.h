@@ -12,6 +12,9 @@ namespace Konvoy {
 class KonvoyProtoUtils {
 public:
     static envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage
+    serviceConfigurationMessage(const ::google::protobuf::Any& config);
+
+    static envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage
     requestHeadersMessage(const Http::HeaderMap& headers);
 
     static envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage

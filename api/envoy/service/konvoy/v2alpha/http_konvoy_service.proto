@@ -9,6 +9,8 @@ option java_generic_services = true;
 option java_outer_classname = "HttpKonvoyProto";
 option java_package = "io.envoyproxy.envoy.service.konvoy.v2alpha";
 
+import "api/envoy/service/konvoy/v2alpha/common.proto";
+
 import "envoy/api/v2/core/base.proto";
 
 // [#protodoc-title: "HTTP Konvoy" Service]
@@ -24,6 +26,9 @@ service HttpKonvoy {
 // i.e. HTTP Request Headers, HTTP Request Body Chunk, HTTP Request Trailers.
 message ProxyHttpRequestClientMessage {
     oneof message {
+        // Configuration for HTTP proxying.
+        KonvoyServiceConfiguration configuration = 4;
+
         // HTTP request headers.
         HttpRequestHeaders request_headers = 1;
 

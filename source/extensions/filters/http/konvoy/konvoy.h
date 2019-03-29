@@ -43,6 +43,7 @@ public:
                const LocalInfo::LocalInfo& local_info, Stats::Scope& scope,
                Runtime::Loader& runtime, Http::Context& http_context, TimeSource& time_source);
 
+  const envoy::config::filter::http::konvoy::v2alpha::Konvoy& getProtoConfig() const { return proto_config_; }
   const InstanceStats& stats() { return stats_; }
   TimeSource& timeSource() const { return time_source_; }
 
@@ -53,6 +54,8 @@ public:
 
 private:
   static InstanceStats generateStats(const std::string& name, Stats::Scope& scope);
+
+  envoy::config::filter::http::konvoy::v2alpha::Konvoy proto_config_;
   const InstanceStats stats_;
   TimeSource& time_source_;
 

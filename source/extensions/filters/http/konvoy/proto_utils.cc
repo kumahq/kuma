@@ -5,6 +5,15 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Konvoy {
 
+envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage KonvoyProtoUtils::serviceConfigurationMessage(
+        const ::google::protobuf::Any& config) {
+    envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage message;
+
+    message.mutable_configuration()->mutable_config()->CopyFrom(config);
+
+    return message;
+}
+
 envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage KonvoyProtoUtils::requestHeadersMessage(
     const Http::HeaderMap& headers) {
     envoy::service::konvoy::v2alpha::ProxyHttpRequestClientMessage message;
