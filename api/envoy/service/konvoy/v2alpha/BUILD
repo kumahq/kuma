@@ -33,6 +33,7 @@ api_proto_library_internal(
     require_py = 0,
     visibility = ["//visibility:public"],
     deps = [
+        ":common",
         "@envoy_api//envoy/api/v2/core:base_export",
     ],
 )

@@ -81,6 +81,19 @@ static_resources:
           grpc_service:
             envoy_grpc:
               cluster_name: konvoy_side_car
+          per_service_config:
+            network_konvoy:
+              # If Envoy gets configured via a YAML/JSON file, one should use `google.protobuf.Struct`
+              # instead of a Proto type natively supported by a particular Konvoy Server.
+              # Otherwise, Envoy will fail on start up.
+              # The reason for that is that Envoy is trying to convert YAML/JSON configuration into a Proto message
+              # of type `@type` and crashes since that Proto type is not known to him.
+              # E.g., `demo-grpc-server` uses Proto type `com.konghq.konvoy.demo.network.DemoNetworkKonvoyConfiguration`
+              # to represent its configuration. However, Envoy has no access to that Proto definition.
+              "@type": type.googleapis.com/google.protobuf.Struct
+              value:
+                # Delay to apply
+                fixed_delay: 2s
       - name: envoy.tcp_proxy
         typed_config:
           "@type": type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy

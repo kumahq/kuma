@@ -11,6 +11,9 @@ namespace Konvoy {
 class KonvoyProtoUtils {
 public:
     static envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage
+    serviceConfigurationMessage(const ::google::protobuf::Any& config);
+
+    static envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage
     requestDataChunckMessage(const Buffer::Instance& data);
 };
 

@@ -22,7 +22,7 @@ InstanceStats Config::generateStats(const std::string& name, Stats::Scope& scope
 Config::Config(
     const envoy::config::filter::network::konvoy::v2alpha::Konvoy& config,
     Stats::Scope& scope, Runtime::Loader& runtime, TimeSource& time_source)
-    : stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
+    : proto_config_(config), stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
       scope_(scope), runtime_(runtime) {}
 
 Filter::Filter(ConfigSharedPtr config, Grpc::AsyncClientPtr&& async_client)
@@ -62,6 +62,14 @@ Network::FilterStatus Filter::onData(Buffer::Instance& data, bool end_stream) {
     start_stream_complete_ = config_->timeSource().monotonicTime();
 
     buffer_ = &data;
+
+    if (config_->getProtoConfig().per_service_config().has_network_konvoy()) {
+      auto &network_konvoy_config = config_->getProtoConfig().per_service_config().network_konvoy();
+
+      auto config_message = KonvoyProtoUtils::serviceConfigurationMessage(network_konvoy_config);
+
+      stream_->sendMessage(config_message, false);
+    }
   }
   auto message = KonvoyProtoUtils::requestDataChunckMessage(data);
 

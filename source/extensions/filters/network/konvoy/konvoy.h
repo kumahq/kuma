@@ -50,6 +50,7 @@ public:
     Config(const envoy::config::filter::network::konvoy::v2alpha::Konvoy &proto_config,
                  Stats::Scope& scope, Runtime::Loader& runtime, TimeSource& time_source);
 
+    const envoy::config::filter::network::konvoy::v2alpha::Konvoy& getProtoConfig() const { return proto_config_; }
     const InstanceStats& stats() { return stats_; }
     TimeSource& timeSource() const { return time_source_; }
 
@@ -58,6 +59,8 @@ public:
 
 private:
     static InstanceStats generateStats(const std::string& name, Stats::Scope& scope);
+
+    envoy::config::filter::network::konvoy::v2alpha::Konvoy proto_config_;
     const InstanceStats stats_;
     TimeSource& time_source_;
 

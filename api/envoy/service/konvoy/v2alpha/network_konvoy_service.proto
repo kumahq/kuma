@@ -9,6 +9,8 @@ option java_generic_services = true;
 option java_outer_classname = "NetworkKonvoyProto";
 option java_package = "io.envoyproxy.envoy.service.konvoy.v2alpha";
 
+import "api/envoy/service/konvoy/v2alpha/common.proto";
+
 import "envoy/api/v2/core/base.proto";
 
 // [#protodoc-title: "Network Konvoy" Service]
@@ -23,6 +25,9 @@ service NetworkKonvoy {
 // as part of proxying a single L4 connection, i.e. Request Data Chunk.
 message ProxyConnectionClientMessage {
     oneof message {
+        // Configuration for L4 proxying.
+        KonvoyServiceConfiguration configuration = 2;
+
         // Request data chunk.
         ConnectionDataChunk request_data_chunk = 1;
     }
