@@ -9,6 +9,8 @@ option java_generic_services = true;
 option java_outer_classname = "NetworkKonvoyProto";
 option java_package = "io.envoyproxy.envoy.service.konvoy.v2alpha";
 
+import "api/envoy/service/konvoy/v2alpha/common.proto";
+
 import "envoy/api/v2/core/base.proto";
 
 // [#protodoc-title: "Network Konvoy" Service]
@@ -16,25 +18,28 @@ import "envoy/api/v2/core/base.proto";
 // A generic interface for piping L4 payload data through a side car process.
 service NetworkKonvoy {
     // Proxies L4 connection.
-    rpc ProxyConnection (stream KonvoyProxyConnectionRequestMessage) returns (stream KonvoyProxyConnectionResponseMessage);
+    rpc ProxyConnection (stream ProxyConnectionClientMessage) returns (stream ProxyConnectionServerMessage);
 }
 
-// Message sent by Konvoy TCP filter to "Network Konvoy" Service
+// Message sent by Konvoy network filter to "Network Konvoy" Service
 // as part of proxying a single L4 connection, i.e. Request Data Chunk.
-message KonvoyProxyConnectionRequestMessage {
+message ProxyConnectionClientMessage {
     oneof message {
+        // Configuration for L4 proxying.
+        KonvoyServiceConfiguration configuration = 2;
+
         // Request data chunk.
-        RequestDataChunk request_data_chunk = 1;
+        ConnectionDataChunk request_data_chunk = 1;
     }
 }
 
-// Request data chunk.
-message RequestDataChunk {
-    // Request bytes.
+// L4 payload data chunk.
+message ConnectionDataChunk {
+    // L4 payload bytes.
     bytes bytes = 1;
 }
 
-// Message sent by "Network Konvoy" Service back to Konvoy TCP filter
+// Message sent by "Network Konvoy" Service back to Konvoy network filter
 // as part of proxying a single L4 connection.
 // If a "Network Konvoy" Service wants Envoy to continue further request processing,
 // it should send back a modified version of the original request data,
@@ -42,18 +47,12 @@ message RequestDataChunk {
 // Alternatively, if a "Network Konvoy" Service wants Envoy to terminate
 // further request processing,
 // it should back response data for immediate reply to the downstream.
-message KonvoyProxyConnectionResponseMessage {
+message ProxyConnectionServerMessage {
     oneof message {
         // Modified request data chunk for further processing.
-        RequestDataChunk request_data_chunk = 1;
+        ConnectionDataChunk request_data_chunk = 1;
 
         // Direct response data chunk to downstream.
-        ResponseDataChunk response_data_chunk = 2;
+        ConnectionDataChunk response_data_chunk = 2;
     }
-}
-
-// Response data chunk.
-message ResponseDataChunk {
-    // Response bytes.
-    bytes bytes = 1;
 }

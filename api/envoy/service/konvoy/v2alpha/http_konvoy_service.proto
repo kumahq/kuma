@@ -9,6 +9,8 @@ option java_generic_services = true;
 option java_outer_classname = "HttpKonvoyProto";
 option java_package = "io.envoyproxy.envoy.service.konvoy.v2alpha";
 
+import "api/envoy/service/konvoy/v2alpha/common.proto";
+
 import "envoy/api/v2/core/base.proto";
 
 // [#protodoc-title: "HTTP Konvoy" Service]
@@ -16,14 +18,17 @@ import "envoy/api/v2/core/base.proto";
 // A generic interface for piping HTTP requests through a side car process.
 service HttpKonvoy {
     // Proxies HTTP request.
-    rpc ProxyHttpRequest (stream KonvoyHttpRequestPart) returns (stream KonvoyHttpResponsePart);
+    rpc ProxyHttpRequest (stream ProxyHttpRequestClientMessage) returns (stream ProxyHttpRequestServerMessage);
 }
 
 // Message sent by Konvoy HTTP filter to "HTTP Konvoy" Service
 // as part of proxying a single HTTP request,
 // i.e. HTTP Request Headers, HTTP Request Body Chunk, HTTP Request Trailers.
-message KonvoyHttpRequestPart {
-    oneof part {
+message ProxyHttpRequestClientMessage {
+    oneof message {
+        // Configuration for HTTP proxying.
+        KonvoyServiceConfiguration configuration = 4;
+
         // HTTP request headers.
         HttpRequestHeaders request_headers = 1;
 
@@ -62,8 +67,8 @@ message HttpRequestTrailers {
 // further request processing,
 // it should back response data for immediate reply to the downstream,
 // including response Headers, Body Chunk, Trailers.
-message KonvoyHttpResponsePart {
-    oneof part {
+message ProxyHttpRequestServerMessage {
+    oneof message {
         // Modified HTTP request headers for further processing.
         HttpRequestHeaders request_headers = 1;
 

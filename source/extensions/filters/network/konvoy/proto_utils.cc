@@ -5,9 +5,18 @@ namespace Extensions {
 namespace NetworkFilters {
 namespace Konvoy {
 
-envoy::service::konvoy::v2alpha::KonvoyProxyConnectionRequestMessage KonvoyProtoUtils::requestDataChunckMessage(
+envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage KonvoyProtoUtils::serviceConfigurationMessage(
+        const ::google::protobuf::Any& config) {
+    envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage message;
+
+    message.mutable_configuration()->mutable_config()->CopyFrom(config);
+
+    return message;
+}
+
+envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage KonvoyProtoUtils::requestDataChunckMessage(
     const Buffer::Instance& data) {
-    envoy::service::konvoy::v2alpha::KonvoyProxyConnectionRequestMessage message;
+    envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage message;
     message.mutable_request_data_chunk();
 
     message.mutable_request_data_chunk()->set_bytes(data.toString());

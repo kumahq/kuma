@@ -20,7 +20,7 @@ FilterConfig::FilterConfig(
     const envoy::config::filter::http::konvoy::v2alpha::Konvoy& config,
     const LocalInfo::LocalInfo& local_info, Stats::Scope& scope,
     Runtime::Loader& runtime, Http::Context& http_context, TimeSource& time_source)
-    : stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
+    : proto_config_(config), stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
       local_info_(local_info), scope_(scope),
       runtime_(runtime), http_context_(http_context) {}
 
@@ -58,6 +58,14 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
   stream_ = async_client_->start(service_method_, *this);
 
   start_stream_complete_ = config_->timeSource().monotonicTime();
+
+  if (config_->getProtoConfig().per_service_config().has_http_konvoy()) {
+    auto &http_konvoy_config = config_->getProtoConfig().per_service_config().http_konvoy();
+
+    auto config_message = KonvoyProtoUtils::serviceConfigurationMessage(http_konvoy_config);
+
+    stream_->sendMessage(config_message, false);
+  }
 
   auto message = KonvoyProtoUtils::requestHeadersMessage(headers);
 
@@ -107,11 +115,11 @@ void Filter::decodeComplete() {
   ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding is finished");
 }
 
-void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart>&& message) {
-  ENVOY_LOG_MISC(trace, "konvoy-http-filter: received message from HTTP Konvoy Service (side car):\n{}", message->part_case());
+void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage>&& message) {
+  ENVOY_LOG_MISC(trace, "konvoy-http-filter: received message from HTTP Konvoy Service (side car):\n{}", message->message_case());
 
-  switch (message->part_case()) {
-      case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestHeaders: {
+  switch (message->message_case()) {
+      case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestHeaders: {
 
           // clear original headers
           request_headers_->removePrefix(Http::LowerCaseString{""});
@@ -131,7 +139,7 @@ void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::K
 
           break;
       }
-      case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestBodyChunk: {
+      case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestBodyChunk: {
 
           if (!message->request_body_chunk().bytes().empty()) {
               Buffer::OwnedImpl data{message->request_body_chunk().bytes()};
@@ -141,7 +149,7 @@ void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::K
 
           break;
       }
-      case envoy::service::konvoy::v2alpha::KonvoyHttpResponsePart::PartCase::kRequestTrailers: {
+      case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestTrailers: {
 
           if (request_trailers_) {
               // clear original trailers

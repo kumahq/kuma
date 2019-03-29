@@ -50,6 +50,7 @@ public:
     Config(const envoy::config::filter::network::konvoy::v2alpha::Konvoy &proto_config,
                  Stats::Scope& scope, Runtime::Loader& runtime, TimeSource& time_source);
 
+    const envoy::config::filter::network::konvoy::v2alpha::Konvoy& getProtoConfig() const { return proto_config_; }
     const InstanceStats& stats() { return stats_; }
     TimeSource& timeSource() const { return time_source_; }
 
@@ -58,6 +59,8 @@ public:
 
 private:
     static InstanceStats generateStats(const std::string& name, Stats::Scope& scope);
+
+    envoy::config::filter::network::konvoy::v2alpha::Konvoy proto_config_;
     const InstanceStats stats_;
     TimeSource& time_source_;
 
@@ -67,7 +70,7 @@ private:
 
 typedef std::shared_ptr<Config> ConfigSharedPtr;
 
-typedef Grpc::TypedAsyncStreamCallbacks<envoy::service::konvoy::v2alpha::KonvoyProxyConnectionResponseMessage>
+typedef Grpc::TypedAsyncStreamCallbacks<envoy::service::konvoy::v2alpha::ProxyConnectionServerMessage>
         NetworkKonvoyAsyncStreamCallbacks;
 
 class Filter : public Logger::Loggable<Logger::Id::filter>,
@@ -92,7 +95,7 @@ public:
     void onCreateInitialMetadata(Http::HeaderMap&) override {}
     void onReceiveInitialMetadata(Http::HeaderMapPtr&&) override {}
     void onReceiveTrailingMetadata(Http::HeaderMapPtr&&) override {}
-    void onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::KonvoyProxyConnectionResponseMessage>&& message) override;
+    void onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::ProxyConnectionServerMessage>&& message) override;
     void onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& message) override;
 
 private:
