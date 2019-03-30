@@ -15,6 +15,7 @@ import "envoy/api/v2/core/base.proto";
 
 // [#protodoc-title: "HTTP Konvoy" Service]
 
+// [#proto-status: experimental]
 // A generic interface for piping HTTP requests through a side car process.
 service HttpKonvoy {
     // Proxies HTTP request.

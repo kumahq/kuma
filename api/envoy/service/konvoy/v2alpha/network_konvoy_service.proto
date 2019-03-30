@@ -15,6 +15,7 @@ import "envoy/api/v2/core/base.proto";
 
 // [#protodoc-title: "Network Konvoy" Service]
 
+// [#proto-status: experimental]
 // A generic interface for piping L4 payload data through a side car process.
 service NetworkKonvoy {
     // Proxies L4 connection.
