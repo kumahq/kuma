@@ -96,8 +96,7 @@ public:
   void onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& message) override;
 
 private:
-  void endStreamIfNecessary(bool end_stream);
-  void endStream(Http::HeaderMap& trailers);
+  void endStream(Http::HeaderMap* trailers);
   void chargeStreamStats(Grpc::Status::GrpcStatus status);
 
   const FilterConfigSharedPtr config_;

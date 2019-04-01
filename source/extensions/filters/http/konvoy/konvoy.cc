@@ -71,7 +71,9 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
 
   stream_->sendMessage(message, false);
 
-  endStreamIfNecessary(end_stream);
+  if (end_stream) {
+    endStream(nullptr);
+  }
 
   // don't pass request headers to the next filter yet
   return Http::FilterHeadersStatus::StopIteration;
@@ -91,7 +93,9 @@ Http::FilterDataStatus Filter::decodeData(Buffer::Instance& data, bool end_strea
     stream_->sendMessage(message, false);
   }
 
-  endStreamIfNecessary(end_stream);
+  if (end_stream) {
+    endStream(&decoder_callbacks_->addDecodedTrailers());
+  }
 
   // don't pass request body to the next filter yet and don't buffer in the meantime
   return Http::FilterDataStatus::StopIterationNoBuffer;
@@ -102,7 +106,7 @@ Http::FilterTrailersStatus Filter::decodeTrailers(Http::HeaderMap& trailers) {
 
   ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding request trailers to HTTP Konvoy Service (side car):\n{}", trailers);
 
-  endStream(trailers);
+  endStream(&trailers);
 
   // don't pass request trailers to the next filter yet
   return Http::FilterTrailersStatus::StopIteration;
@@ -167,6 +171,8 @@ void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::P
                       request_trailers_->addCopy(Http::LowerCaseString(trailer.key()), trailer.value());
                   }
               }
+          } else if (message->request_trailers().has_trailers()) {
+              ENVOY_LOG_MISC(warn, "konvoy-http-filter: trailers from HTTP Konvoy Service will be ignored");
           }
 
           break;
@@ -191,17 +197,11 @@ void Filter::onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& m
   }
 }
 
-void Filter::endStreamIfNecessary(bool end_stream) {
-  if (end_stream) {
-    endStream(decoder_callbacks_->addDecodedTrailers());
-  }
-}
-
-void Filter::endStream(Http::HeaderMap& trailers) {
+void Filter::endStream(Http::HeaderMap* trailers) {
   // keep original trailers for later modification
-  request_trailers_ = &trailers;
+  request_trailers_ = trailers;
 
-  auto message = KonvoyProtoUtils::requestTrailersMessage(trailers);
+  auto message = request_trailers_ ? KonvoyProtoUtils::requestTrailersMessage(*request_trailers_) : KonvoyProtoUtils::requestTrailersMessage();
 
   stream_->sendMessage(message, true);
 }
