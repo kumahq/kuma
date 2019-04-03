@@ -107,6 +107,7 @@ private:
   Http::StreamDecoderFilterCallbacks *decoder_callbacks_;
   Http::HeaderMap* request_headers_;
   Http::HeaderMap* request_trailers_;
+  Http::HeaderMapPtr response_headers_;
 
   // State of this filter's communication with the external Konvoy service.
   // The filter has either not started calling the external service, in the middle of calling

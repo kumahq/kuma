@@ -3,6 +3,10 @@
 #include <string>
 
 #include "common/buffer/buffer_impl.h"
+#include "common/common/enum_to_int.h"
+#include "common/http/header_map_impl.h"
+#include "common/http/header_utility.h"
+#include "common/http/utility.h"
 
 #include "extensions/filters/http/konvoy/proto_utils.h"
 
@@ -119,66 +123,111 @@ void Filter::decodeComplete() {
   ENVOY_LOG_MISC(trace, "konvoy-http-filter: forwarding is finished");
 }
 
-void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage>&& message) {
-  ENVOY_LOG_MISC(trace, "konvoy-http-filter: received message from HTTP Konvoy Service (side car):\n{}", message->message_case());
+void Filter::onReceiveMessage(std::unique_ptr <envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage> &&message) {
+  ENVOY_LOG_MISC(trace, "konvoy-http-filter: received message from HTTP Konvoy Service (side car):\n{}",
+                 message->message_case());
 
   switch (message->message_case()) {
-      case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestHeaders: {
+    case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestHeaders: {
 
-          // clear original headers
-          request_headers_->removePrefix(Http::LowerCaseString{""});
+      // clear original headers
+      request_headers_->removePrefix(Http::LowerCaseString{""});
 
-          // add headers from the response
-          auto headers = message->request_headers().headers();
-          for (int index = 0; index < headers.headers_size(); index++) {
-              auto& header = headers.headers(index);
+      // add headers from the response
+      auto headers = message->request_headers().headers();
+      for (int index = 0; index < headers.headers_size(); index++) {
+        auto &header = headers.headers(index);
 
-              auto header_to_modify = request_headers_->get(Http::LowerCaseString(header.key()));
-              if (header_to_modify) {
-                  header_to_modify->value(header.value().c_str(), header.value().size());
-              } else {
-                  request_headers_->addCopy(Http::LowerCaseString(header.key()), header.value());
-              }
-          }
-
-          break;
+        auto header_to_modify = request_headers_->get(Http::LowerCaseString(header.key()));
+        if (header_to_modify) {
+          header_to_modify->value(header.value().c_str(), header.value().size());
+        } else {
+          request_headers_->addCopy(Http::LowerCaseString(header.key()), header.value());
+        }
       }
-      case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestBodyChunk: {
 
-          if (!message->request_body_chunk().bytes().empty()) {
-              Buffer::OwnedImpl data{message->request_body_chunk().bytes()};
+      break;
+    }
+    case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestBodyChunk: {
 
-              decoder_callbacks_->addDecodedData(data, false);
-          }
+      if (!message->request_body_chunk().bytes().empty()) {
+        Buffer::OwnedImpl data{message->request_body_chunk().bytes()};
 
-          break;
+        decoder_callbacks_->addDecodedData(data, false);
       }
-      case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestTrailers: {
 
-          if (request_trailers_) {
-              // clear original trailers
-              request_trailers_->removePrefix(Http::LowerCaseString{""});
+      break;
+    }
+    case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kRequestTrailers: {
 
-              // add trailers from the response
-              auto trailers = message->request_trailers().trailers();
-              for (int index = 0; index < trailers.headers_size(); index++) {
-                  auto &trailer = trailers.headers(index);
+      if (request_trailers_) {
+        // clear original trailers
+        request_trailers_->removePrefix(Http::LowerCaseString{""});
 
-                  auto trailer_to_modify = request_trailers_->get(Http::LowerCaseString(trailer.key()));
-                  if (trailer_to_modify) {
-                      trailer_to_modify->value(trailer.value().c_str(), trailer.value().size());
-                  } else {
-                      request_trailers_->addCopy(Http::LowerCaseString(trailer.key()), trailer.value());
-                  }
-              }
-          } else if (message->request_trailers().has_trailers()) {
-              ENVOY_LOG_MISC(warn, "konvoy-http-filter: trailers from HTTP Konvoy Service will be ignored");
+        // add trailers from the response
+        auto trailers = message->request_trailers().trailers();
+        for (int index = 0; index < trailers.headers_size(); index++) {
+          auto &trailer = trailers.headers(index);
+
+          auto trailer_to_modify = request_trailers_->get(Http::LowerCaseString(trailer.key()));
+          if (trailer_to_modify) {
+            trailer_to_modify->value(trailer.value().c_str(), trailer.value().size());
+          } else {
+            request_trailers_->addCopy(Http::LowerCaseString(trailer.key()), trailer.value());
           }
-
-          break;
+        }
+      } else if (message->request_trailers().has_trailers()) {
+        ENVOY_LOG_MISC(warn, "konvoy-http-filter: trailers from HTTP Konvoy Service will be ignored");
       }
-      default:
-          break;
+
+      break;
+    }
+    case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kResponseHeaders: {
+
+      if (!response_headers_) {
+        response_headers_ = std::make_unique<Http::HeaderMapImpl>();
+      }
+
+      // add headers from the response
+      auto headers = message->response_headers().headers();
+      for (int index = 0; index < headers.headers_size(); index++) {
+        auto &header = headers.headers(index);
+
+        auto header_to_modify = response_headers_->get(Http::LowerCaseString(header.key()));
+        if (header_to_modify) {
+          header_to_modify->value(header.value().c_str(), header.value().size());
+        } else {
+          response_headers_->addCopy(Http::LowerCaseString(header.key()), header.value());
+        }
+      }
+
+      break;
+    }
+    case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kResponseBodyChunk: {
+
+      // TODO(yskopets): support response body
+
+      break;
+    }
+    case envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage::MessageCase::kResponseTrailers: {
+
+      uint64_t status_code = enumToInt(Http::Code::InternalServerError);
+
+      const Http::HeaderEntry* status_header = response_headers_->Status();
+      if (status_header) {
+        status_code = Http::Utility::getResponseStatus(*response_headers_);
+      }
+
+      decoder_callbacks_->sendLocalReply(
+              static_cast<Http::Code>(status_code),
+              "",
+              nullptr,
+              absl::nullopt);
+
+      break;
+    }
+    default:
+      break;
   }
 }
 
