@@ -17,6 +17,7 @@ import "validate/validate.proto";
 // [#protodoc-title: Konvoy]
 // Out-of-process request filtering :ref:`configuration overview <config_network_filters_konvoy>`.
 
+// [#proto-status: experimental]
 // Konvoy network filter config.
 message Konvoy {
 

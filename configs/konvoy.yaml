@@ -1,5 +1,5 @@
 #
-# Sample Envoy configuration that includes Konvoy filter
+# Sample Envoy configuration that includes Konvoy filter and demo gRPC Server
 #
 admin:
   # Support CPU Profiling
@@ -46,7 +46,7 @@ static_resources:
               stat_prefix: demo-grpc-server
               grpc_service:
                 envoy_grpc:
-                  cluster_name: konvoy_side_car
+                  cluster_name: konvoy_demo_side_car
               per_service_config:
                 # Configuration specific to a custom "Http Konvoy" Service implementation,
                 # i.e. "Demo Http Konvoy" Service.
@@ -82,7 +82,7 @@ static_resources:
           stat_prefix: demo-grpc-server
           grpc_service:
             envoy_grpc:
-              cluster_name: konvoy_side_car
+              cluster_name: konvoy_demo_side_car
           per_service_config:
             # Configuration specific to a custom "Network Konvoy" Service implementation,
             # i.e. "Demo Network Konvoy" Service.
@@ -107,7 +107,7 @@ static_resources:
   #
   # "Http Konvoy" and "Network Konvoy" gRPC Services deployed as a side car process
   #
-  - name: konvoy_side_car
+  - name: konvoy_demo_side_car
     connect_timeout: 0.25s
     type: STATIC
     dns_lookup_family: V4_ONLY
