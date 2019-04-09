@@ -14,10 +14,10 @@ namespace Konvoy {
 /**
  * Config registration for the Konvoy filter. @see NamedHttpFilterConfigFactory.
  */
-class KonvoyFilterConfig : public Common::FactoryBase<envoy::config::filter::http::konvoy::v2alpha::Konvoy,
+class KonvoyFilterConfigFactory : public Common::FactoryBase<envoy::config::filter::http::konvoy::v2alpha::Konvoy,
                                                       envoy::config::filter::http::konvoy::v2alpha::Konvoy> {
 public:
-    KonvoyFilterConfig() : FactoryBase("konvoy") {}
+    KonvoyFilterConfigFactory() : FactoryBase("konvoy") {}
 
 private:
     Http::FilterFactoryCb createFilterFactoryFromProtoTyped(

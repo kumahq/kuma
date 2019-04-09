@@ -11,7 +11,7 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Konvoy {
 
-Http::FilterFactoryCb KonvoyFilterConfig::createFilterFactoryFromProtoTyped(
+Http::FilterFactoryCb KonvoyFilterConfigFactory::createFilterFactoryFromProtoTyped(
     const envoy::config::filter::http::konvoy::v2alpha::Konvoy& proto_config, const std::string&,
     Server::Configuration::FactoryContext& context) {
   const auto filter_config = std::make_shared<FilterConfig>(
@@ -35,7 +35,7 @@ Http::FilterFactoryCb KonvoyFilterConfig::createFilterFactoryFromProtoTyped(
 };
 
 Router::RouteSpecificFilterConfigConstSharedPtr
-KonvoyFilterConfig::createRouteSpecificFilterConfigTyped(
+KonvoyFilterConfigFactory::createRouteSpecificFilterConfigTyped(
     const envoy::config::filter::http::konvoy::v2alpha::Konvoy&,
     Server::Configuration::FactoryContext&) {
   return nullptr;
@@ -44,7 +44,7 @@ KonvoyFilterConfig::createRouteSpecificFilterConfigTyped(
 /**
  * Static registration for the Konvoy filter. @see RegisterFactory.
  */
-REGISTER_FACTORY(KonvoyFilterConfig, Server::Configuration::NamedHttpFilterConfigFactory);
+REGISTER_FACTORY(KonvoyFilterConfigFactory, Server::Configuration::NamedHttpFilterConfigFactory);
 
 } // namespace Konvoy
 } // namespace HttpFilters
