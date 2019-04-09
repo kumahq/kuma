@@ -278,6 +278,22 @@ To run the `Konvoy` integration tests, execute:
 $ bazel test //test/extensions/filters/http/konvoy:konvoy_integration_test
 ```
 
+## Verifying Test Coverage
+
+To verify test coverage:
+
+* On `Linux`:
+
+  `test/run_envoy_bazel_coverage.sh`
+
+* On `MacOS`:
+
+  `tools/mac_run_envoy_bazel_coverage.sh`
+
+To open coverage report in a browser:
+
+`open generated/coverage/coverage.html`
+
 ## Making changes to the source code
 
 ### Overview of `Konvoy http filter` 
