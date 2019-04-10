@@ -34,13 +34,6 @@ Http::FilterFactoryCb KonvoyFilterConfigFactory::createFilterFactoryFromProtoTyp
   return callback;
 };
 
-Router::RouteSpecificFilterConfigConstSharedPtr
-KonvoyFilterConfigFactory::createRouteSpecificFilterConfigTyped(
-    const envoy::config::filter::http::konvoy::v2alpha::Konvoy&,
-    Server::Configuration::FactoryContext&) {
-  return nullptr;
-}
-
 /**
  * Static registration for the Konvoy filter. @see RegisterFactory.
  */

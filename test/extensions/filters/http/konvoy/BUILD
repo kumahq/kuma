@@ -17,3 +17,13 @@ envoy_cc_test(
         "@envoy//test/integration:http_integration_lib",
     ],
 )
+
+envoy_cc_test(
+    name = "config_test",
+    srcs = ["config_test.cc"],
+    repository = "@envoy",
+    deps = [
+        "//source/extensions/filters/http/konvoy:konvoy_config",
+        "@envoy//test/mocks/server:server_mocks",
+    ],
+)

@@ -23,10 +23,6 @@ private:
     Http::FilterFactoryCb createFilterFactoryFromProtoTyped(
             const envoy::config::filter::http::konvoy::v2alpha::Konvoy& proto_config,
             const std::string& stats_prefix, Server::Configuration::FactoryContext& context) override;
-
-    Router::RouteSpecificFilterConfigConstSharedPtr createRouteSpecificFilterConfigTyped(
-            const envoy::config::filter::http::konvoy::v2alpha::Konvoy& proto_config,
-            Server::Configuration::FactoryContext& context) override;
 };
 
 } // namespace Konvoy
