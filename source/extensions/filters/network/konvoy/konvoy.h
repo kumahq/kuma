@@ -6,7 +6,6 @@
 
 #include "envoy/network/connection.h"
 #include "envoy/network/filter.h"
-#include "envoy/runtime/runtime.h"
 
 #include "envoy/stats/scope.h"
 #include "envoy/stats/stats_macros.h"
@@ -48,13 +47,12 @@ struct InstanceStats {
 class Config {
 public:
     Config(const envoy::config::filter::network::konvoy::v2alpha::Konvoy &proto_config,
-                 Stats::Scope& scope, Runtime::Loader& runtime, TimeSource& time_source);
+                 Stats::Scope& scope, TimeSource& time_source);
 
     const envoy::config::filter::network::konvoy::v2alpha::Konvoy& getProtoConfig() const { return proto_config_; }
     const InstanceStats& stats() { return stats_; }
     TimeSource& timeSource() const { return time_source_; }
 
-    Runtime::Loader& runtime() { return runtime_; }
     Stats::Scope& scope() { return scope_; }
 
 private:
@@ -65,7 +63,6 @@ private:
     TimeSource& time_source_;
 
     Stats::Scope& scope_;
-    Runtime::Loader& runtime_;
 };
 
 typedef std::shared_ptr<Config> ConfigSharedPtr;

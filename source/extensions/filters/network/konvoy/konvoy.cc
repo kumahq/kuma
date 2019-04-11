@@ -21,9 +21,9 @@ InstanceStats Config::generateStats(const std::string& name, Stats::Scope& scope
 
 Config::Config(
     const envoy::config::filter::network::konvoy::v2alpha::Konvoy& config,
-    Stats::Scope& scope, Runtime::Loader& runtime, TimeSource& time_source)
+    Stats::Scope& scope, TimeSource& time_source)
     : proto_config_(config), stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
-      scope_(scope), runtime_(runtime) {}
+      scope_(scope) {}
 
 Filter::Filter(ConfigSharedPtr config, Grpc::AsyncClientPtr&& async_client)
     : config_(config),
@@ -98,7 +98,6 @@ void Filter::onEvent(Network::ConnectionEvent event) {
     if (state_ == State::Calling) {
       state_ = State::Complete;
       stream_->resetStream();
-      stream_ = nullptr;
       config_->stats().cx_active_.dec();
       chargeStreamStats(Grpc::Status::GrpcStatus::Canceled);
     }
