@@ -24,6 +24,7 @@ envoy_cc_test(
     repository = "@envoy",
     deps = [
         "//source/extensions/filters/network/konvoy:konvoy",
+        "@envoy//source/common/protobuf:utility_lib",
         "@envoy//test/mocks/grpc:grpc_mocks",
         "@envoy//test/mocks/network:network_mocks",
         "@envoy//test/test_common:simulated_time_system_lib",
