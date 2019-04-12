@@ -207,7 +207,7 @@ TEST_F(KonvoyFilterTest, DirectResponse) {
   auto server_message = std::make_unique<ProxyConnectionServerMessage>();
   server_message->mutable_response_data_chunk()->set_bytes("Greetings!");
   // and expect : response forwarded to downstream
-  EXPECT_CALL(callbacks_.connection_, write(_, false));
+  EXPECT_CALL(callbacks_.connection_, write(BufferStringEqual("Greetings!"), false));
   // when : a message with a direct response to downstream is received from Network Konvoy Service
   EXPECT_NO_THROW(filter_->onReceiveMessage(std::move(server_message)));
   // then : buffer is consumed

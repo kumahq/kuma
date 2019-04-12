@@ -155,6 +155,8 @@ void Filter::onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& m
   state_ = State::Complete;
   config_->stats().cx_active_.dec();
 
+  chargeStreamStats(status);
+
   if (status == Grpc::Status::GrpcStatus::Ok) {
     read_callbacks_->continueReading();
   } else {
