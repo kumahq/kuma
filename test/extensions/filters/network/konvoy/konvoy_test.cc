@@ -54,6 +54,7 @@ TEST_F(KonvoyFilterTest, ConnectionWithoutPayload) {
   EXPECT_EQ(0U, config_->stats().cx_active_.value());
   EXPECT_EQ(0U, config_->stats().cx_total_.value());
   EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
 
   // when
   EXPECT_NO_THROW(filter_->onEvent(Network::ConnectionEvent::RemoteClose));
@@ -62,6 +63,7 @@ TEST_F(KonvoyFilterTest, ConnectionWithoutPayload) {
   EXPECT_EQ(0U, config_->stats().cx_active_.value());
   EXPECT_EQ(0U, config_->stats().cx_total_.value());
   EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
 }
 
 TEST_F(KonvoyFilterTest, KonvoyServiceIsDown) {
@@ -87,6 +89,7 @@ TEST_F(KonvoyFilterTest, KonvoyServiceIsDown) {
   EXPECT_EQ(0U, config_->stats().cx_active_.value());
   EXPECT_EQ(1U, config_->stats().cx_total_.value());
   EXPECT_EQ(1U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
   EXPECT_EQ("Hello", data_.toString());
 
   // given
@@ -99,6 +102,7 @@ TEST_F(KonvoyFilterTest, KonvoyServiceIsDown) {
   EXPECT_EQ(0U, config_->stats().cx_active_.value());
   EXPECT_EQ(1U, config_->stats().cx_total_.value());
   EXPECT_EQ(1U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
   EXPECT_EQ("Hello world!", data_.toString());
 }
 
@@ -127,6 +131,7 @@ TEST_F(KonvoyFilterTest, MutateSimpleRequest) {
   EXPECT_EQ(1U, config_->stats().cx_active_.value());
   EXPECT_EQ(1U, config_->stats().cx_total_.value());
   EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
 
   // given
   auto server_message = std::make_unique<ProxyConnectionServerMessage>();
@@ -145,6 +150,7 @@ TEST_F(KonvoyFilterTest, MutateSimpleRequest) {
   EXPECT_EQ(1U, config_->stats().cx_active_.value());
   EXPECT_EQ(1U, config_->stats().cx_total_.value());
   EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
 
   // expect
   EXPECT_CALL(callbacks_, continueReading())
@@ -159,6 +165,51 @@ TEST_F(KonvoyFilterTest, MutateSimpleRequest) {
   EXPECT_EQ(0U, config_->stats().cx_active_.value());
   EXPECT_EQ(1U, config_->stats().cx_total_.value());
   EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
+}
+
+TEST_F(KonvoyFilterTest, RemoteClosesConnection) {
+  // expect
+  EXPECT_EQ(Network::FilterStatus::Continue, filter_->onNewConnection());
+
+  // given
+  data_.add("Hello");
+  // expect
+  EXPECT_CALL(*async_client_, start(_, _))
+          .WillOnce(Invoke([this](const Protobuf::MethodDescriptor&, Grpc::AsyncStreamCallbacks&) {
+              return &this->async_stream_;
+          }));
+  // and expect
+  ProxyConnectionClientMessage client_message{};
+  client_message.mutable_request_data_chunk()->set_bytes("Hello");
+  EXPECT_CALL(async_stream_, sendMessage(WhenDynamicCastTo<const ProxyConnectionClientMessage&>(ProtoEq(client_message)), false));
+  // when
+  EXPECT_EQ(Network::FilterStatus::Continue, filter_->onData(data_, false));
+  // then
+  EXPECT_EQ(0U, data_.length());
+  // and then
+  EXPECT_EQ(1U, config_->stats().cx_active_.value());
+  EXPECT_EQ(1U, config_->stats().cx_total_.value());
+  EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
+
+  // expect
+  EXPECT_CALL(async_stream_, resetStream());
+  // when
+  EXPECT_NO_THROW(filter_->onEvent(Network::ConnectionEvent::RemoteClose));
+  // then
+  EXPECT_EQ(0U, config_->stats().cx_active_.value());
+  EXPECT_EQ(1U, config_->stats().cx_total_.value());
+  EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(1U, config_->stats().cx_cancel_.value());
+
+  // when : unexpected subsequent invocation
+  EXPECT_NO_THROW(filter_->onEvent(Network::ConnectionEvent::LocalClose));
+  // then : must be no-op
+  EXPECT_EQ(0U, config_->stats().cx_active_.value());
+  EXPECT_EQ(1U, config_->stats().cx_total_.value());
+  EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(1U, config_->stats().cx_cancel_.value());
 }
 
 } // namespace Konvoy

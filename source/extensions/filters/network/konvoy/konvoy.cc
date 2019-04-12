@@ -109,6 +109,7 @@ void Filter::onEvent(Network::ConnectionEvent event) {
       state_ = State::Complete;
       stream_->resetStream();
       config_->stats().cx_active_.dec();
+      config_->stats().cx_cancel_.inc();
       chargeStreamStats(Grpc::Status::GrpcStatus::Canceled);
     }
   }

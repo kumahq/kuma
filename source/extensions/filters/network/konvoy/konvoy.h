@@ -26,6 +26,7 @@ namespace Konvoy {
   GAUGE    (cx_active)                                   \
   COUNTER  (cx_total)                                    \
   COUNTER  (cx_error)                                    \
+  COUNTER  (cx_cancel)                                   \
   COUNTER  (cx_total_stream_latency_ms)                  \
   HISTOGRAM(cx_stream_latency_ms)
 // clang-format on
