@@ -14,7 +14,7 @@ envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage KonvoyProtoUtils::
     return message;
 }
 
-envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage KonvoyProtoUtils::requestDataChunckMessage(
+envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage KonvoyProtoUtils::requestDataChunkMessage(
     const Buffer::Instance& data) {
     envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage message;
     message.mutable_request_data_chunk();

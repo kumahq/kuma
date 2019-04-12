@@ -27,10 +27,6 @@ namespace Konvoy {
   COUNTER  (cx_total)                                    \
   COUNTER  (cx_error)                                    \
   COUNTER  (cx_total_stream_latency_ms)                  \
-  COUNTER  (cx_total_stream_start_latency_ms)            \
-  COUNTER  (cx_total_stream_exchange_latency_ms)         \
-  HISTOGRAM(cx_stream_start_latency_ms)                  \
-  HISTOGRAM(cx_stream_exchange_latency_ms)               \
   HISTOGRAM(cx_stream_latency_ms)
 // clang-format on
 
@@ -104,15 +100,14 @@ private:
     Grpc::AsyncClientPtr async_client_;
 
     MonotonicTime start_stream_;
-    MonotonicTime start_stream_complete_;
     Network::ReadFilterCallbacks* read_callbacks_{};
 
     Buffer::Instance* buffer_;
 
-    // State of this filter's communication with the external Konvoy service.
-    // The filter has either not started calling the external service, in the middle of calling
-    // it or has completed.
-    enum class State { NotStarted, Calling, Complete, Responded };
+    // State of this filter's communication with the Network Konvoy Service (side car).
+    // The filter has either not started streaming to the Network Konvoy Service (side car), 
+    // in the middle of streaming to it or has completed streaming.
+    enum class State { NotStarted, Streaming, Complete };
 
     State state_{State::NotStarted};
 

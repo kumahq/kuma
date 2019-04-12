@@ -10,7 +10,6 @@
 using envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage;
 using envoy::service::konvoy::v2alpha::ProxyConnectionServerMessage;
 using testing::NiceMock;
-using testing::Return;
 using testing::ReturnRef;
 using testing::StrictMock;
 using testing::WhenDynamicCastTo;
@@ -63,6 +62,44 @@ TEST_F(KonvoyFilterTest, ConnectionWithoutPayload) {
   EXPECT_EQ(0U, config_->stats().cx_active_.value());
   EXPECT_EQ(0U, config_->stats().cx_total_.value());
   EXPECT_EQ(0U, config_->stats().cx_error_.value());
+}
+
+TEST_F(KonvoyFilterTest, KonvoyServiceIsDown) {
+  // when
+  EXPECT_EQ(Network::FilterStatus::Continue, filter_->onNewConnection());
+
+  // given
+  data_.add("Hello");
+  // expect
+  EXPECT_CALL(*async_client_, start(_, _))
+          .WillOnce(Invoke([this](const Protobuf::MethodDescriptor&, Grpc::AsyncStreamCallbacks&) {
+              // simulate unavailable cluster
+              filter_->onRemoteClose(Grpc::Status::GrpcStatus::Unavailable, "Cluster not available");
+              return nullptr;
+          }));
+  // and expect
+  EXPECT_CALL(callbacks_.connection_, close(Network::ConnectionCloseType::NoFlush));
+
+  // when
+  EXPECT_EQ(Network::FilterStatus::StopIteration, filter_->onData(data_, false));
+
+  // then
+  EXPECT_EQ(0U, config_->stats().cx_active_.value());
+  EXPECT_EQ(1U, config_->stats().cx_total_.value());
+  EXPECT_EQ(1U, config_->stats().cx_error_.value());
+  EXPECT_EQ("Hello", data_.toString());
+
+  // given
+  data_.add(" world!");
+
+  // when
+  EXPECT_EQ(Network::FilterStatus::Continue, filter_->onData(data_, false));
+
+  // then
+  EXPECT_EQ(0U, config_->stats().cx_active_.value());
+  EXPECT_EQ(1U, config_->stats().cx_total_.value());
+  EXPECT_EQ(1U, config_->stats().cx_error_.value());
+  EXPECT_EQ("Hello world!", data_.toString());
 }
 
 TEST_F(KonvoyFilterTest, MutateSimpleRequest) {
