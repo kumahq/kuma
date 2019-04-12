@@ -176,10 +176,63 @@ TEST_F(KonvoyFilterTest, MutateSimpleRequest) {
   EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
 }
 
+TEST_F(KonvoyFilterTest, DirectResponse) {
+  // when : a new connection is established
+  EXPECT_EQ(Network::FilterStatus::Continue, filter_->onNewConnection());
+
+  // given : request data frame
+  data_.add("Hello");
+  // expect : an attempt to open a new stream to Network Konvoy Service to succeed
+  EXPECT_CALL(*async_client_, start(_, _))
+          .WillOnce(Invoke([this](const Protobuf::MethodDescriptor&, Grpc::AsyncStreamCallbacks&) {
+              return &this->async_stream_;
+          }));
+  // and expect : request data frame to be forwarded to Network Konvoy Service
+  ProxyConnectionClientMessage client_message{};
+  client_message.mutable_request_data_chunk()->set_bytes("Hello");
+  EXPECT_CALL(async_stream_, sendMessage(WhenDynamicCastTo<const ProxyConnectionClientMessage&>(ProtoEq(client_message)), true));
+  // and expect : stream to Network Konvoy Service to be half closed
+  EXPECT_CALL(async_stream_, closeStream());
+  // when : data frame is received
+  EXPECT_EQ(Network::FilterStatus::Continue, filter_->onData(data_, true));
+  // then : buffer is consumed
+  EXPECT_EQ(0U, data_.length());
+  // and then : metrics get updated
+  EXPECT_EQ(1U, config_->stats().cx_active_.value());
+  EXPECT_EQ(1U, config_->stats().cx_total_.value());
+  EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
+
+  // given : Network Konvoy Service responds directly to downstream
+  auto server_message = std::make_unique<ProxyConnectionServerMessage>();
+  server_message->mutable_response_data_chunk()->set_bytes("Greetings!");
+  // and expect : response forwarded to downstream
+  EXPECT_CALL(callbacks_.connection_, write(_, false));
+  // when : a message with a direct response to downstream is received from Network Konvoy Service
+  EXPECT_NO_THROW(filter_->onReceiveMessage(std::move(server_message)));
+  // then : buffer is consumed
+  EXPECT_EQ(0U, data_.length());
+  // and then : metrics don't change
+  EXPECT_EQ(1U, config_->stats().cx_active_.value());
+  EXPECT_EQ(1U, config_->stats().cx_total_.value());
+  EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
+
+  // expect : a stream to Network Konvoy Service to be terminated
+  EXPECT_CALL(async_stream_, resetStream());
+  // when : downstream closes connection
+  EXPECT_NO_THROW(filter_->onEvent(Network::ConnectionEvent::RemoteClose));
+  // and then : metrics get updated
+  EXPECT_EQ(0U, config_->stats().cx_active_.value());
+  EXPECT_EQ(1U, config_->stats().cx_total_.value());
+  EXPECT_EQ(0U, config_->stats().cx_error_.value());
+  EXPECT_EQ(1U, config_->stats().cx_cancel_.value());
+}
+
 TEST_F(KonvoyFilterTest, ServiceConfiguration) {
   // given : configuration for Network Konvoy Servivce is defined
   auto service_config = MessageUtil::keyValueStruct("fixed_delay", "2s");
-  config_ = setupConfig([&service_config](KonvoyProtoConfig& config) { 
+  config_ = setupConfig([&service_config](KonvoyProtoConfig& config) {
     config.mutable_per_service_config()->mutable_network_konvoy()->PackFrom(service_config);
   });
   // and given
