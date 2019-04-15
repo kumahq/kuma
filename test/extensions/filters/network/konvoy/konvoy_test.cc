@@ -22,7 +22,7 @@ namespace Extensions {
 namespace NetworkFilters {
 namespace Konvoy {
 
-class KonvoyFilterTest : public testing::Test {
+class KonvoyNetworkFilterTest : public testing::Test {
 public:
     ConfigSharedPtr setupConfig(std::function<void(KonvoyProtoConfig&)> configure) {
       KonvoyProtoConfig config;
@@ -33,7 +33,7 @@ public:
       return std::make_shared<Config>(config, store_, time_system_);
     }
 
-    KonvoyFilterTest() : config_(setupConfig(nullptr)), async_client_(new StrictMock<Grpc::MockAsyncClient>()) {
+    KonvoyNetworkFilterTest() : config_(setupConfig(nullptr)), async_client_(new StrictMock<Grpc::MockAsyncClient>()) {
       EXPECT_CALL(callbacks_, connection()).WillRepeatedly(ReturnRef(callbacks_.connection_));
 
       filter_ = std::make_unique<Filter>(config_, Grpc::AsyncClientPtr{async_client_});
@@ -52,7 +52,7 @@ public:
     std::unique_ptr<Filter> filter_;
 };
 
-TEST_F(KonvoyFilterTest, ConnectionWithoutPayload) {
+TEST_F(KonvoyNetworkFilterTest, ConnectionWithoutPayload) {
   // when : a new connection is established
   EXPECT_EQ(Network::FilterStatus::Continue, filter_->onNewConnection());
 
@@ -72,7 +72,7 @@ TEST_F(KonvoyFilterTest, ConnectionWithoutPayload) {
   EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
 }
 
-TEST_F(KonvoyFilterTest, KonvoyServiceIsDown) {
+TEST_F(KonvoyNetworkFilterTest, KonvoyServiceIsDown) {
   // when : a new connection is established
   EXPECT_EQ(Network::FilterStatus::Continue, filter_->onNewConnection());
 
@@ -114,7 +114,7 @@ TEST_F(KonvoyFilterTest, KonvoyServiceIsDown) {
   EXPECT_EQ("Hello world!", data_.toString());
 }
 
-TEST_F(KonvoyFilterTest, MutateSimpleRequest) {
+TEST_F(KonvoyNetworkFilterTest, MutateSimpleRequest) {
   // when : a new connection is established
   EXPECT_EQ(Network::FilterStatus::Continue, filter_->onNewConnection());
 
@@ -176,7 +176,7 @@ TEST_F(KonvoyFilterTest, MutateSimpleRequest) {
   EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
 }
 
-TEST_F(KonvoyFilterTest, DirectResponse) {
+TEST_F(KonvoyNetworkFilterTest, DirectResponse) {
   // when : a new connection is established
   EXPECT_EQ(Network::FilterStatus::Continue, filter_->onNewConnection());
 
@@ -229,7 +229,7 @@ TEST_F(KonvoyFilterTest, DirectResponse) {
   EXPECT_EQ(1U, config_->stats().cx_cancel_.value());
 }
 
-TEST_F(KonvoyFilterTest, ServiceConfiguration) {
+TEST_F(KonvoyNetworkFilterTest, ServiceConfiguration) {
   // given : configuration for Network Konvoy Servivce is defined
   auto service_config = MessageUtil::keyValueStruct("fixed_delay", "2s");
   config_ = setupConfig([&service_config](KonvoyProtoConfig& config) {
@@ -271,7 +271,7 @@ TEST_F(KonvoyFilterTest, ServiceConfiguration) {
   EXPECT_EQ(0U, config_->stats().cx_cancel_.value());
 }
 
-TEST_F(KonvoyFilterTest, RemoteClosesConnection) {
+TEST_F(KonvoyNetworkFilterTest, RemoteClosesConnection) {
   // when : a new connection is established
   EXPECT_EQ(Network::FilterStatus::Continue, filter_->onNewConnection());
 
