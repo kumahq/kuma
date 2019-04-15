@@ -18,6 +18,7 @@ envoy_cc_test(
     deps = [
         "//test/extensions/filters/http/konvoy:config_test_lib",
         "//test/extensions/filters/http/konvoy:konvoy_integration_test_lib",
+        "//test/extensions/filters/http/konvoy:konvoy_test_lib",
         "//test/extensions/filters/network/konvoy:config_test_lib",
         "//test/extensions/filters/network/konvoy:konvoy_test_lib",
     ],

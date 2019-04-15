@@ -14,9 +14,8 @@ namespace Konvoy {
 Http::FilterFactoryCb KonvoyFilterConfigFactory::createFilterFactoryFromProtoTyped(
     const envoy::config::filter::http::konvoy::v2alpha::Konvoy& proto_config, const std::string&,
     Server::Configuration::FactoryContext& context) {
-  const auto filter_config = std::make_shared<FilterConfig>(
-      proto_config, context.localInfo(), context.scope(), context.runtime(),
-      context.httpContext(), context.dispatcher().timeSource());
+  const auto filter_config = std::make_shared<Config>(
+      proto_config, context.scope(), context.dispatcher().timeSource());
   Http::FilterFactoryCb callback;
 
   // gRPC client.

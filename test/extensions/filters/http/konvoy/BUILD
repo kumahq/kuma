@@ -19,6 +19,21 @@ envoy_cc_test(
 )
 
 envoy_cc_test(
+    name = "konvoy_test",
+    srcs = ["konvoy_test.cc"],
+    repository = "@envoy",
+    deps = [
+        "//source/extensions/filters/http/konvoy:konvoy",
+        "@envoy//source/common/protobuf:utility_lib",
+        "@envoy//test/mocks/grpc:grpc_mocks",
+        "@envoy//test/mocks/http:http_mocks",
+        "@envoy//test/mocks/stats:stats_mocks",
+        "@envoy//test/test_common:simulated_time_system_lib",
+        "@envoy//test/test_common:utility_lib",
+    ],
+)
+
+envoy_cc_test(
     name = "config_test",
     srcs = ["config_test.cc"],
     repository = "@envoy",

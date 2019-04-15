@@ -15,20 +15,21 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Konvoy {
 
-InstanceStats FilterConfig::generateStats(const std::string& name, Stats::Scope& scope) {
+InstanceStats Config::generateStats(const std::string& name, Stats::Scope& scope) {
   const std::string final_prefix = fmt::format("konvoy.http.{}.", name);
-  return {ALL_HTTP_KONVOY_STATS(POOL_COUNTER_PREFIX(scope, final_prefix), POOL_HISTOGRAM_PREFIX(scope, final_prefix))};
+  return {ALL_HTTP_KONVOY_STATS(
+    POOL_GAUGE_PREFIX(scope, final_prefix),
+    POOL_COUNTER_PREFIX(scope, final_prefix),
+    POOL_HISTOGRAM_PREFIX(scope, final_prefix))};
 }
 
-FilterConfig::FilterConfig(
+Config::Config(
     const envoy::config::filter::http::konvoy::v2alpha::Konvoy& config,
-    const LocalInfo::LocalInfo& local_info, Stats::Scope& scope,
-    Runtime::Loader& runtime, Http::Context& http_context, TimeSource& time_source)
+    Stats::Scope& scope, TimeSource& time_source)
     : proto_config_(config), stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
-      local_info_(local_info), scope_(scope),
-      runtime_(runtime), http_context_(http_context) {}
+      scope_(scope) {}
 
-Filter::Filter(FilterConfigSharedPtr config, Grpc::AsyncClientPtr&& async_client)
+Filter::Filter(ConfigSharedPtr config, Grpc::AsyncClientPtr&& async_client)
     : config_(config),
     async_client_(std::move(async_client)),
     service_method_(*Protobuf::DescriptorPool::generated_pool()->FindMethodByName("envoy.service.konvoy.v2alpha.HttpKonvoy.ProxyHttpRequest")) {}
@@ -36,10 +37,12 @@ Filter::Filter(FilterConfigSharedPtr config, Grpc::AsyncClientPtr&& async_client
 Filter::~Filter() {}
 
 void Filter::onDestroy() {
-  if (state_ == State::Calling) {
+  if (state_ == State::Streaming) {
     state_ = State::Complete;
     stream_->resetStream();
-    stream_ = nullptr;
+    config_->stats().rq_active_.dec();
+    config_->stats().rq_cancel_.inc();
+    chargeStreamStats(Grpc::Status::GrpcStatus::Canceled);
   }
 }
 
@@ -53,15 +56,23 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
   // keep original headers for later modification
   request_headers_ = &headers;
 
-  state_ = State::Calling;
+  state_ = State::Streaming;
 
-  config_->stats().request_total_.inc();
+  config_->stats().rq_total_.inc();
 
   start_stream_ = config_->timeSource().monotonicTime();
 
+  // need to increment in advance to support a scenario where `onRemoteClose` is called back from `start`
+  config_->stats().rq_active_.inc();
+
   stream_ = async_client_->start(service_method_, *this);
 
-  start_stream_complete_ = config_->timeSource().monotonicTime();
+  if (stream_ == nullptr) {
+    ENVOY_LOG_MISC(debug, "konvoy-http-filter: failed to start a new stream to the Http Konvoy Service (side car)");
+    // error handling must already have happened inside `onRemoteClose`
+    ASSERT(state_ == State::Responded);
+    return Http::FilterHeadersStatus::StopIteration;
+  }
 
   if (config_->getProtoConfig().per_service_config().has_http_konvoy()) {
     auto &http_konvoy_config = config_->getProtoConfig().per_service_config().http_konvoy();
@@ -235,6 +246,7 @@ void Filter::onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& m
   ENVOY_LOG_MISC(trace, "konvoy-http-filter: received close signal from HTTP Konvoy Service (side car):\nstatus = {}, message = {}", status, message);
 
   state_ = State::Complete;
+  config_->stats().rq_active_.dec();
 
   chargeStreamStats(status);
 
@@ -242,6 +254,7 @@ void Filter::onRemoteClose(Grpc::Status::GrpcStatus status, const std::string& m
     decoder_callbacks_->continueDecoding();
   } else {
     state_ = State::Responded;
+    config_->stats().rq_error_.inc();
     decoder_callbacks_->sendLocalReply(Http::Code::InternalServerError, "", nullptr, absl::nullopt);
   }
 }
@@ -256,22 +269,17 @@ void Filter::endStream(Http::HeaderMap* trailers) {
 }
 
 void Filter::chargeStreamStats(Grpc::Status::GrpcStatus) {
+  if (!stream_) {
+    // if a stream has never been opened, stats make no sense
+    return;
+  }
+
   auto now = config_->timeSource().monotonicTime();
 
   std::chrono::milliseconds totalLatency = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_stream_);
 
-  config_->stats().request_stream_latency_ms_.recordValue(totalLatency.count());
-  config_->stats().request_total_stream_latency_ms_.add(totalLatency.count());
-
-  std::chrono::milliseconds startLatency = std::chrono::duration_cast<std::chrono::milliseconds>(start_stream_complete_ - start_stream_);
-
-  config_->stats().request_stream_start_latency_ms_.recordValue(startLatency.count());
-  config_->stats().request_total_stream_start_latency_ms_.add(startLatency.count());
-
-  std::chrono::milliseconds exchangeLatency = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_stream_complete_);
-
-  config_->stats().request_stream_exchange_latency_ms_.recordValue(exchangeLatency.count());
-  config_->stats().request_total_stream_exchange_latency_ms_.add(exchangeLatency.count());
+  config_->stats().rq_stream_latency_ms_.recordValue(totalLatency.count());
+  config_->stats().rq_total_stream_latency_ms_.add(totalLatency.count());
 }
 
 } // namespace Konvoy

@@ -20,37 +20,32 @@ namespace Konvoy {
  * All Konvoy stats. @see stats_macros.h
  */
 // clang-format off
-#define ALL_HTTP_KONVOY_STATS(COUNTER, HISTOGRAM)     \
-  COUNTER  (request_total)                            \
-  COUNTER  (request_total_stream_latency_ms)          \
-  COUNTER  (request_total_stream_start_latency_ms)    \
-  COUNTER  (request_total_stream_exchange_latency_ms) \
-  HISTOGRAM(request_stream_start_latency_ms)          \
-  HISTOGRAM(request_stream_exchange_latency_ms)       \
-  HISTOGRAM(request_stream_latency_ms)
+#define ALL_HTTP_KONVOY_STATS(GAUGE, COUNTER, HISTOGRAM) \
+  GAUGE    (rq_active)                                   \
+  COUNTER  (rq_total)                                    \
+  COUNTER  (rq_error)                                    \
+  COUNTER  (rq_cancel)                                   \
+  COUNTER  (rq_total_stream_latency_ms)                  \
+  HISTOGRAM(rq_stream_latency_ms)
 // clang-format on
 
 /**
  * Struct definition for all Konvoy stats. @see stats_macros.h
  */
 struct InstanceStats {
-    ALL_HTTP_KONVOY_STATS(GENERATE_COUNTER_STRUCT, GENERATE_HISTOGRAM_STRUCT)
+    ALL_HTTP_KONVOY_STATS(GENERATE_GAUGE_STRUCT, GENERATE_COUNTER_STRUCT, GENERATE_HISTOGRAM_STRUCT)
 };
 
-class FilterConfig {
+class Config {
 public:
-  FilterConfig(const envoy::config::filter::http::konvoy::v2alpha::Konvoy &proto_config,
-               const LocalInfo::LocalInfo& local_info, Stats::Scope& scope,
-               Runtime::Loader& runtime, Http::Context& http_context, TimeSource& time_source);
+  Config(const envoy::config::filter::http::konvoy::v2alpha::Konvoy &proto_config,
+               Stats::Scope& scope, TimeSource& time_source);
 
   const envoy::config::filter::http::konvoy::v2alpha::Konvoy& getProtoConfig() const { return proto_config_; }
   const InstanceStats& stats() { return stats_; }
   TimeSource& timeSource() const { return time_source_; }
 
-  const LocalInfo::LocalInfo& localInfo() const { return local_info_; }
-  Runtime::Loader& runtime() { return runtime_; }
   Stats::Scope& scope() { return scope_; }
-  Http::Context& httpContext() { return http_context_; }
 
 private:
   static InstanceStats generateStats(const std::string& name, Stats::Scope& scope);
@@ -59,13 +54,10 @@ private:
   const InstanceStats stats_;
   TimeSource& time_source_;
 
-  const LocalInfo::LocalInfo& local_info_;
   Stats::Scope& scope_;
-  Runtime::Loader& runtime_;
-  Http::Context& http_context_;
 };
 
-typedef std::shared_ptr<FilterConfig> FilterConfigSharedPtr;
+typedef std::shared_ptr<Config> ConfigSharedPtr;
 
 typedef Grpc::TypedAsyncStreamCallbacks<envoy::service::konvoy::v2alpha::ProxyHttpRequestServerMessage>
         HttpKonvoyAsyncStreamCallbacks;
@@ -74,7 +66,7 @@ class Filter : public Logger::Loggable<Logger::Id::filter>,
                public Http::StreamDecoderFilter,
                public HttpKonvoyAsyncStreamCallbacks {
 public:
-  Filter(FilterConfigSharedPtr, Grpc::AsyncClientPtr&& async_client);
+  Filter(ConfigSharedPtr, Grpc::AsyncClientPtr&& async_client);
   ~Filter();
 
   void setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks &) override;
@@ -99,20 +91,19 @@ private:
   void endStream(Http::HeaderMap* trailers);
   void chargeStreamStats(Grpc::Status::GrpcStatus status);
 
-  const FilterConfigSharedPtr config_;
+  const ConfigSharedPtr config_;
   Grpc::AsyncClientPtr async_client_;
 
   MonotonicTime start_stream_;
-  MonotonicTime start_stream_complete_;
   Http::StreamDecoderFilterCallbacks *decoder_callbacks_;
   Http::HeaderMap* request_headers_;
   Http::HeaderMap* request_trailers_;
   Http::HeaderMapPtr response_headers_;
 
-  // State of this filter's communication with the external Konvoy service.
-  // The filter has either not started calling the external service, in the middle of calling
-  // it or has completed.
-  enum class State { NotStarted, Calling, Complete, Responded };
+  // State of this filter's communication with the HTTP Konvoy Service.
+  // The filter has either not started streaming to the HTTP Konvoy Service,
+  // in the middle of streaming or has completed.
+  enum class State { NotStarted, Streaming, Complete, Responded };
 
   State state_{State::NotStarted};
 
