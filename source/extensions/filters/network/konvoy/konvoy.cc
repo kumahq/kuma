@@ -21,9 +21,9 @@ InstanceStats Config::generateStats(const std::string& name, Stats::Scope& scope
 
 Config::Config(
     const envoy::config::filter::network::konvoy::v2alpha::Konvoy& config,
-    Stats::Scope& scope, Runtime::Loader& runtime, TimeSource& time_source)
+    Stats::Scope& scope, TimeSource& time_source)
     : proto_config_(config), stats_(generateStats(config.stat_prefix(), scope)), time_source_(time_source),
-      scope_(scope), runtime_(runtime) {}
+      scope_(scope) {}
 
 Filter::Filter(ConfigSharedPtr config, Grpc::AsyncClientPtr&& async_client)
     : config_(config),
@@ -44,23 +44,29 @@ Network::FilterStatus Filter::onNewConnection() {
 }
 
 Network::FilterStatus Filter::onData(Buffer::Instance& data, bool end_stream) {
-  ASSERT(state_ != State::Responded);
-
   ENVOY_LOG_MISC(trace, "konvoy-network-filter: forwarding request data to Network Konvoy Service (side car):\n{} bytes, end_stream={}",
                  data.length(), end_stream);
+
   if (state_ == State::NotStarted) {
-    state_ = State::Calling;
+    state_ = State::Streaming;
 
     config_->stats().cx_total_.inc();
 
     start_stream_ = config_->timeSource().monotonicTime();
 
-    stream_ = async_client_->start(service_method_, *this);
-
+    // need to increment in advance to support a scenario where `onRemoteClose` is called back from `start`
     config_->stats().cx_active_.inc();
 
-    start_stream_complete_ = config_->timeSource().monotonicTime();
+    stream_ = async_client_->start(service_method_, *this);
 
+    if (stream_ == nullptr) {
+      ENVOY_LOG_MISC(debug, "konvoy-network-filter: failed to start a new stream to the Network Konvoy Service (side car)");
+      // error handling must already have happened inside `onRemoteClose`
+      ASSERT(state_ == State::Complete);
+      return Network::FilterStatus::StopIteration;
+    }
+
+    // remember the buffer for later use in combination with `read_callbacks_->continueReading()`
     buffer_ = &data;
 
     if (config_->getProtoConfig().per_service_config().has_network_konvoy()) {
@@ -71,13 +77,17 @@ Network::FilterStatus Filter::onData(Buffer::Instance& data, bool end_stream) {
       stream_->sendMessage(config_message, false);
     }
   }
-  auto message = KonvoyProtoUtils::requestDataChunckMessage(data);
+  if (state_ == State::Complete) {
+    return Network::FilterStatus::Continue;
+  }
+  
+  auto message = KonvoyProtoUtils::requestDataChunkMessage(data);
 
   stream_->sendMessage(message, end_stream);
 
   endStreamIfNecessary(end_stream);
 
-  // drain the buffer before passing control to the next filter (if any)
+  // drain the buffer before passing control to the next filter
   data.drain(data.length());
 
   // Konvoy Network Filter is expected to be used in one of the following ways:
@@ -95,11 +105,11 @@ Network::FilterStatus Filter::onData(Buffer::Instance& data, bool end_stream) {
 void Filter::onEvent(Network::ConnectionEvent event) {
   if (event == Network::ConnectionEvent::RemoteClose ||
       event == Network::ConnectionEvent::LocalClose) {
-    if (state_ == State::Calling) {
+    if (state_ == State::Streaming) {
       state_ = State::Complete;
       stream_->resetStream();
-      stream_ = nullptr;
       config_->stats().cx_active_.dec();
+      config_->stats().cx_cancel_.inc();
       chargeStreamStats(Grpc::Status::GrpcStatus::Canceled);
     }
   }
@@ -132,6 +142,7 @@ void Filter::onReceiveMessage(std::unique_ptr<envoy::service::konvoy::v2alpha::P
       Buffer::OwnedImpl data{message->response_data_chunk().bytes()};
       read_callbacks_->connection().write(data, false);
       ASSERT(0 == data.length());
+      break;
     }
     default:
       break;
@@ -165,22 +176,17 @@ void Filter::endStream() {
 }
 
 void Filter::chargeStreamStats(Grpc::Status::GrpcStatus) {
+  if (!stream_) {
+    // if a stream has never been opened, stats make no sense
+    return;
+  }
+
   auto now = config_->timeSource().monotonicTime();
 
   std::chrono::milliseconds totalLatency = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_stream_);
 
   config_->stats().cx_stream_latency_ms_.recordValue(totalLatency.count());
   config_->stats().cx_total_stream_latency_ms_.add(totalLatency.count());
-
-  std::chrono::milliseconds startLatency = std::chrono::duration_cast<std::chrono::milliseconds>(start_stream_complete_ - start_stream_);
-
-  config_->stats().cx_stream_start_latency_ms_.recordValue(startLatency.count());
-  config_->stats().cx_total_stream_start_latency_ms_.add(startLatency.count());
-
-  std::chrono::milliseconds exchangeLatency = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_stream_complete_);
-
-  config_->stats().cx_stream_exchange_latency_ms_.recordValue(exchangeLatency.count());
-  config_->stats().cx_total_stream_exchange_latency_ms_.add(exchangeLatency.count());
 }
 
 } // namespace Konvoy

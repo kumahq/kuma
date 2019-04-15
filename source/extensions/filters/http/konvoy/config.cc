@@ -11,12 +11,11 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Konvoy {
 
-Http::FilterFactoryCb KonvoyFilterConfig::createFilterFactoryFromProtoTyped(
+Http::FilterFactoryCb KonvoyFilterConfigFactory::createFilterFactoryFromProtoTyped(
     const envoy::config::filter::http::konvoy::v2alpha::Konvoy& proto_config, const std::string&,
     Server::Configuration::FactoryContext& context) {
-  const auto filter_config = std::make_shared<FilterConfig>(
-      proto_config, context.localInfo(), context.scope(), context.runtime(),
-      context.httpContext(), context.dispatcher().timeSource());
+  const auto filter_config = std::make_shared<Config>(
+      proto_config, context.scope(), context.dispatcher().timeSource());
   Http::FilterFactoryCb callback;
 
   // gRPC client.
@@ -34,17 +33,10 @@ Http::FilterFactoryCb KonvoyFilterConfig::createFilterFactoryFromProtoTyped(
   return callback;
 };
 
-Router::RouteSpecificFilterConfigConstSharedPtr
-KonvoyFilterConfig::createRouteSpecificFilterConfigTyped(
-    const envoy::config::filter::http::konvoy::v2alpha::Konvoy&,
-    Server::Configuration::FactoryContext&) {
-  return nullptr;
-}
-
 /**
  * Static registration for the Konvoy filter. @see RegisterFactory.
  */
-REGISTER_FACTORY(KonvoyFilterConfig, Server::Configuration::NamedHttpFilterConfigFactory);
+REGISTER_FACTORY(KonvoyFilterConfigFactory, Server::Configuration::NamedHttpFilterConfigFactory);
 
 } // namespace Konvoy
 } // namespace HttpFilters

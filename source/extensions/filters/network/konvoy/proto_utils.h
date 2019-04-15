@@ -14,7 +14,7 @@ public:
     serviceConfigurationMessage(const ::google::protobuf::Any& config);
 
     static envoy::service::konvoy::v2alpha::ProxyConnectionClientMessage
-    requestDataChunckMessage(const Buffer::Instance& data);
+    requestDataChunkMessage(const Buffer::Instance& data);
 };
 
 } // namespace Konvoy

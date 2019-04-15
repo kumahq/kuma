@@ -6,7 +6,6 @@
 
 #include "envoy/network/connection.h"
 #include "envoy/network/filter.h"
-#include "envoy/runtime/runtime.h"
 
 #include "envoy/stats/scope.h"
 #include "envoy/stats/stats_macros.h"
@@ -27,11 +26,8 @@ namespace Konvoy {
   GAUGE    (cx_active)                                   \
   COUNTER  (cx_total)                                    \
   COUNTER  (cx_error)                                    \
+  COUNTER  (cx_cancel)                                   \
   COUNTER  (cx_total_stream_latency_ms)                  \
-  COUNTER  (cx_total_stream_start_latency_ms)            \
-  COUNTER  (cx_total_stream_exchange_latency_ms)         \
-  HISTOGRAM(cx_stream_start_latency_ms)                  \
-  HISTOGRAM(cx_stream_exchange_latency_ms)               \
   HISTOGRAM(cx_stream_latency_ms)
 // clang-format on
 
@@ -48,13 +44,12 @@ struct InstanceStats {
 class Config {
 public:
     Config(const envoy::config::filter::network::konvoy::v2alpha::Konvoy &proto_config,
-                 Stats::Scope& scope, Runtime::Loader& runtime, TimeSource& time_source);
+                 Stats::Scope& scope, TimeSource& time_source);
 
     const envoy::config::filter::network::konvoy::v2alpha::Konvoy& getProtoConfig() const { return proto_config_; }
     const InstanceStats& stats() { return stats_; }
     TimeSource& timeSource() const { return time_source_; }
 
-    Runtime::Loader& runtime() { return runtime_; }
     Stats::Scope& scope() { return scope_; }
 
 private:
@@ -65,7 +60,6 @@ private:
     TimeSource& time_source_;
 
     Stats::Scope& scope_;
-    Runtime::Loader& runtime_;
 };
 
 typedef std::shared_ptr<Config> ConfigSharedPtr;
@@ -107,15 +101,14 @@ private:
     Grpc::AsyncClientPtr async_client_;
 
     MonotonicTime start_stream_;
-    MonotonicTime start_stream_complete_;
     Network::ReadFilterCallbacks* read_callbacks_{};
 
     Buffer::Instance* buffer_;
 
-    // State of this filter's communication with the external Konvoy service.
-    // The filter has either not started calling the external service, in the middle of calling
-    // it or has completed.
-    enum class State { NotStarted, Calling, Complete, Responded };
+    // State of this filter's communication with the Network Konvoy Service (side car).
+    // The filter has either not started streaming to the Network Konvoy Service (side car), 
+    // in the middle of streaming to it or has completed streaming.
+    enum class State { NotStarted, Streaming, Complete };
 
     State state_{State::NotStarted};
 

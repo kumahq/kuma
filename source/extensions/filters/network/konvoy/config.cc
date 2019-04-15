@@ -15,7 +15,7 @@ Network::FilterFactoryCb KonvoyFilterConfigFactory::createFilterFactoryFromProto
     const envoy::config::filter::network::konvoy::v2alpha::Konvoy& proto_config,
     Server::Configuration::FactoryContext& context) {
   const auto filter_config = std::make_shared<Config>(
-      proto_config, context.scope(), context.runtime(), context.dispatcher().timeSource());
+      proto_config, context.scope(), context.dispatcher().timeSource());
   Network::FilterFactoryCb callback;
 
   // gRPC client.
