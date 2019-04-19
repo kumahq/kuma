@@ -1,0 +1,35 @@
+language: cpp
+
+services:
+- docker
+
+#
+# Notice: when you set environment variables, remember to
+# explicitly propagate them into a Docker container (see ci/do_travis_ci.sh)
+#
+
+env:
+  global:
+  # TravisCI doesn't support IPv6 (see https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system)
+  - BAZEL_EXTRA_TEST_OPTIONS="--test_env=ENVOY_IP_TEST_VERSIONS=v4only"
+
+jobs:
+  include:
+  - stage: ci
+    os: linux
+    script:
+    - ci/do_travis_ci.sh build
+  - stage: ci
+    os: linux
+    script:
+    - ci/do_travis_ci.sh test
+  - stage: ci
+    os: linux
+    script:
+    - ci/do_travis_ci.sh coverage
+  - stage: ci
+    os: osx
+    install:
+    - envoy/ci/mac_ci_setup.sh
+    script:
+    - envoy/ci/mac_ci_steps.sh

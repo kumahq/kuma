@@ -84,7 +84,7 @@ mkdir -p ${GCNO_ROOT}
 NUM_GCNO_FILES=0
 for f in $(find -L bazel-out/ -name "*.gcno")
 do
-  "$TOOL_CP" --parents "$f" ${GCNO_ROOT}/
+  ${TOOL_CP} --parents "$f" ${GCNO_ROOT}/
   let NUM_GCNO_FILES=NUM_GCNO_FILES+1
 done
 echo "OK: copied ${NUM_GCNO_FILES} .gcno files"
@@ -107,7 +107,7 @@ time "${GCOVR}" -v --gcov-exclude="${GCOVR_EXCLUDE_REGEX}" \
 
 if [ "$VALIDATE_COVERAGE" == "true" ]
 then
-  COVERAGE_VALUE=$("$TOOL_GREP" -o 'lines: \K(\d|\.)*' "${COVERAGE_SUMMARY}")
+  COVERAGE_VALUE=$(${TOOL_GREP} -o 'lines: \K(\d|\.)*' "${COVERAGE_SUMMARY}")
   COVERAGE_THRESHOLD=97.5
   COVERAGE_FAILED=$(echo "${COVERAGE_VALUE}<${COVERAGE_THRESHOLD}" | bc)
   if test ${COVERAGE_FAILED} -eq 1; then
