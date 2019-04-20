@@ -5,7 +5,7 @@
 # that substitutes command line tools with incompatible behaviour on MacOS.
 #
 
-set -x # turn on command echo
+set -ex # turn on command echo
 
 BASEDIR=$(dirname "$0")
 
@@ -38,5 +38,5 @@ fi
 echo "Running test coverage build ..."
 WORKSPACE=konvoy \
   TOOL_CP=gcp \
-  TOOL_GREP=pcregrep \
-  "$BASEDIR"/../test/run_envoy_bazel_coverage.sh
+  TOOL_GREP=pcregrep\
+  "${BASEDIR}"/../ci/do_mac_ci.sh coverage
