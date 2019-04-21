@@ -15,14 +15,27 @@ env:
 
 jobs:
   include:
+  # build debian binary
   - stage: ci
     os: linux
     script:
     - ci/do_travis_ci.sh build
+  # build centos binary
+  - stage: ci
+    os: linux
+    env:
+    - IMAGE_NAME=envoyproxy/envoy-build-centos
+    # TODO(yskopets): `envoy-build-centos` images were not published until March 2019,
+    #                 that is why it's not possible to use the same tag as for `envoy-build-ubuntu` yet
+    - IMAGE_ID=latest
+    script:
+    - ci/do_travis_ci.sh build
+  # test on debian
   - stage: ci
     os: linux
     script:
     - ci/do_travis_ci.sh test
+  # test coverage on debian
   - stage: ci
     os: linux
     script:
