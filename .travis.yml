@@ -30,19 +30,27 @@ jobs:
     - IMAGE_ID=latest
     script:
     - ci/do_travis_ci.sh build
-  # test on debian
-  - stage: ci
-    os: linux
-    script:
-    - ci/do_travis_ci.sh test
-  # test coverage on debian
-  - stage: ci
-    os: linux
-    script:
-    - ci/do_travis_ci.sh coverage
+  # build MacOS binary
   - stage: ci
     os: osx
     install:
     - envoy/ci/mac_ci_setup.sh
     script:
-    - envoy/ci/mac_ci_steps.sh
+    - ci/do_mac_ci.sh build
+  # test on debian
+  - stage: ci
+    os: linux
+    script:
+    - ci/do_travis_ci.sh test
+  # test on MacOS
+  - stage: ci
+    os: osx
+    install:
+    - envoy/ci/mac_ci_setup.sh
+    script:
+    - ci/do_mac_ci.sh test
+  # test coverage on debian
+  - stage: ci
+    os: linux
+    script:
+    - ci/do_travis_ci.sh coverage
