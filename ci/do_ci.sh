@@ -2,8 +2,22 @@
 
 set -e
 
+BASEDIR=$(dirname "$0")
+
+ENVOY_BUILD_SETUP_SCRIPT="${BASEDIR}"/../envoy/ci/build_setup.sh
+ENVOY_BUILD_SETUP_SCRIPT_PATCHED="${ENVOY_BUILD_SETUP_SCRIPT}.patched"
+
+# patch the original `envoy/ci/build_setup.sh` script to support builds on MacOS
+function patch_build_setup () {
+  sed -e 's/^export BUILD_DIR=\/build$/[ -z "${BUILD_DIR}" ] \&\& export BUILD_DIR=\/build/' \
+      -e 's/^export TEST_TMPDIR=\/build\/tmp$/export TEST_TMPDIR="${BUILD_DIR}\/tmp"/' \
+      "${ENVOY_BUILD_SETUP_SCRIPT}" > "${ENVOY_BUILD_SETUP_SCRIPT_PATCHED}"
+}
+
+patch_build_setup
+
 # setup common variables
-. "$(dirname "$0")"/../envoy/ci/build_setup.sh "-nofetch"
+. "${ENVOY_BUILD_SETUP_SCRIPT_PATCHED}" "-nofetch"
 
 echo "building using ${NUM_CPUS} CPUs"
 

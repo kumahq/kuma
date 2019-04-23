@@ -15,13 +15,13 @@ env:
 
 jobs:
   include:
-  # build debian binary
   - stage: ci
+    name: "Build Debian binary"
     os: linux
     script:
     - ci/do_travis_ci.sh build
-  # build centos binary
   - stage: ci
+    name: "Build CentOS binary"
     os: linux
     env:
     - IMAGE_NAME=envoyproxy/envoy-build-centos
@@ -30,27 +30,22 @@ jobs:
     - IMAGE_ID=latest
     script:
     - ci/do_travis_ci.sh build
-  # build MacOS binary
   - stage: ci
+    name: "Build MacOS binary"
     os: osx
+    env:
+    - BUILD_DIR=/tmp/konvoy-filter/build
     install:
     - envoy/ci/mac_ci_setup.sh
     script:
     - ci/do_mac_ci.sh build
-  # test on debian
   - stage: ci
+    name: "Run tests on Debian"
     os: linux
     script:
     - ci/do_travis_ci.sh test
-  # test on MacOS
   - stage: ci
-    os: osx
-    install:
-    - envoy/ci/mac_ci_setup.sh
-    script:
-    - ci/do_mac_ci.sh test
-  # test coverage on debian
-  - stage: ci
+    name: "Collect test coverage on Debian"
     os: linux
     script:
     - ci/do_travis_ci.sh coverage

@@ -8,7 +8,7 @@ BASEDIR=$(dirname "$0")
 [ -z "${ENVOY_SRCDIR}" ] && export ENVOY_SRCDIR="${BASEDIR}/.."
 
 # overwrite https://github.com/envoyproxy/envoy/blob/v1.10.0/ci/build_setup.sh#L67
-export BAZEL_BUILD_EXTRA_OPTIONS="${BAZEL_BUILD_EXTRA_OPTIONS} --linkopt=-fuse-ld="
+export BAZEL_BUILD_EXTRA_OPTIONS="--linkopt=-fuse-ld=  --action_env=PATH=$PATH ${BAZEL_BUILD_EXTRA_OPTIONS}"
 
 # code coverage
 [ -z "${TOOL_CP}" ] && export TOOL_CP=gcp
