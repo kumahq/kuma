@@ -2,21 +2,6 @@ ARG PARENT_IMAGE="centos:7"
 
 FROM ${PARENT_IMAGE}
 
-ARG REDHAT_USERNAME
-ARG REDHAT_PASSWORD
-ARG RHEL="false"
-
-RUN if [ "$RHEL" = "true" ] ; then subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach ; fi
-RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-optional-rpms' ; fi
-
-RUN yum -y install ca-certificates
-
-RUN if [ "$RHEL" = "true" ] ; then \
-  subscription-manager remove --all \
-  && subscription-manager unregister \
-  && subscription-manager clean \
-  ; fi
-
 RUN mkdir -p /etc/konvoy
 
 COPY usr/bin/konvoy /usr/local/bin/konvoy
