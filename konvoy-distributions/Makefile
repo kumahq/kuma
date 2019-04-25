@@ -145,24 +145,11 @@ all/package: local/package upload/package
 build/image: require/binary copy/etc
 	[ ! -d $(STAGING_DIR)/docker ] && mkdir -p $(STAGING_DIR)/docker || true
 	cp images/konvoy/entrypoint.sh $(STAGING_DIR)/docker/
-ifeq ($(BASE_IMAGE_NAME),rhel)
-	@echo "Building Docker image for '$(BASE_IMAGE_NAME)' from 'Dockerfile.$(DOCKERFILE_TEMPLATE)'"
-	# silence output to avoid leaking username and password into logs
-	@docker build \
-	 --file images/konvoy/Dockerfile.$(DOCKERFILE_TEMPLATE) \
-	 --build-arg PARENT_IMAGE=$(PARENT_IMAGE) \
-	 --build-arg RHEL=true \
-	 --build-arg REDHAT_USERNAME=$(REDHAT_USERNAME) \
-	 --build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
-	 -t $(DOCKER_IMAGE) \
-	 $(STAGING_DIR)
-else
 	docker build \
 	 --file images/konvoy/Dockerfile.$(DOCKERFILE_TEMPLATE) \
 	 --build-arg PARENT_IMAGE=$(PARENT_IMAGE) \
 	 -t $(DOCKER_IMAGE) \
 	 $(STAGING_DIR)
-endif
 	# sanity check
 	docker run $(DOCKER_IMAGE) --version
 
