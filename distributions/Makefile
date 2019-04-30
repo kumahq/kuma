@@ -1,4 +1,4 @@
-.PHONY: clean \
+.PHONY: help clean \
 		local/package local/image \
 		all/package all/image \
 		download/binary download/all/binaries \
@@ -7,6 +7,9 @@
 		upload/package upload/image \
 		print/supported/target_os print/supported/base_images \
 		foreach/build/package foreach/build/image
+
+help: ## Display this help screen
+	@grep -h -E '^[a-zA-Z./_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # Supported base images
 ALL_BASE_IMAGES := ubuntu:14.04 ubuntu:16.04 ubuntu:18.04 \
@@ -25,31 +28,28 @@ PARENT_IMAGE=$(BASE_IMAGE)
 ifeq ($(BASE_IMAGE_NAME),debian)
   TARGET_OS = debian
   DOCKERFILE_TEMPLATE = deb
-endif
-ifeq ($(BASE_IMAGE_NAME),ubuntu)
+else ifeq ($(BASE_IMAGE_NAME),ubuntu)
   TARGET_OS = debian
   DOCKERFILE_TEMPLATE = deb
-endif
-ifeq ($(BASE_IMAGE_NAME),centos)
+else ifeq ($(BASE_IMAGE_NAME),centos)
   TARGET_OS = centos
   DOCKERFILE_TEMPLATE = rpm
-endif
-ifeq ($(BASE_IMAGE_NAME),rhel)
+else ifeq ($(BASE_IMAGE_NAME),rhel)
   TARGET_OS = centos
   DOCKERFILE_TEMPLATE = rpm
   PARENT_IMAGE = registry.access.redhat.com/rhel${BASE_IMAGE_TAG}
-endif
-ifeq ($(BASE_IMAGE_NAME),amazonlinux)
+else ifeq ($(BASE_IMAGE_NAME),amazonlinux)
   TARGET_OS = centos
   DOCKERFILE_TEMPLATE = rpm
-endif
-ifeq ($(BASE_IMAGE_NAME),alpine)
+else ifeq ($(BASE_IMAGE_NAME),alpine)
   TARGET_OS = debian
   DOCKERFILE_TEMPLATE = apk
   PARENT_IMAGE = frolvlad/alpine-glibc:alpine-$(BASE_IMAGE_TAG)
+else
+$(error BASE_IMAGE_NAME must be one of [debian,ubuntu,centos,rhel,amazonlinux,alpine] but got "$(BASE_IMAGE_NAME)" instead)
 endif
 # CI coordinates
-COMMIT ?= 00000000000000000000
+COMMIT ?= 0000000000000000000000000000000000000000
 PREBUILT_TAR ?= konvoy-$(TARGET_OS).tar.gz
 S3_CI_BUCKET ?= konvoy-ci
 S3_KONVOY_BINARIES ?= $(COMMIT)/binaries
@@ -81,10 +81,10 @@ IMAGE_DIR ?= $(IMAGES_DIR)/$(BASE_IMAGE_NAME)/$(BASE_IMAGE_TAG)
 DOWNLOADS_DIR ?= $(BUILD_DIR)/downloads
 STAGING_DIR ?= $(BUILD_DIR)/staging/konvoy-$(TARGET_OS)
 
-clean:
+clean: ## Remove build files
 	rm -rf $(BUILD_DIR)
 
-download/binary:
+download/binary: ## Download pre-built Konvoy binary from S3 bucket
 	@echo "Downloading pre-built binary into '$(DOWNLOADS_DIR)' ..."
 	aws s3 cp s3://$(S3_CI_BUCKET)/$(S3_KONVOY_BINARY) $(DOWNLOADS_DIR)/
 	if [ -d $(STAGING_DIR) ]; then rm -rf $(STAGING_DIR) ; fi
@@ -109,7 +109,7 @@ copy/etc:
 	[ ! -d $(STAGING_DIR)/etc/konvoy ] && mkdir -p $(STAGING_DIR)/etc/konvoy || true
 	cp configs/konvoy-demo.yaml $(STAGING_DIR)/etc/konvoy/
 
-build/package: require/binary require/image/konvoy-build-fpm copy/etc
+build/package: require/binary require/image/konvoy-build-fpm copy/etc ## Build Konvoy package (deb/rpm/tar)
 	[ ! -d $(PACKAGE_DIR) ] && mkdir -p $(PACKAGE_DIR) || true
 	docker run -t --rm \
 	 -v $(STAGING_DIR):/source \
@@ -135,14 +135,14 @@ build/package: require/binary require/image/konvoy-build-fpm copy/etc
 require/package:
 	[ $(shell find $(PACKAGE_DIR) -maxdepth 1 -type f | wc -l) -eq 1 ]
 
-upload/package: require/package
+upload/package: require/package ## Upload Konvoy package (deb/rpm/tar) into S3 bucket
 	find $(PACKAGE_DIR) -maxdepth 1 -type f -exec sh -c 'aws s3 cp {} s3://$(S3_CI_BUCKET)/$(S3_KONVOY_PACKAGE)/$$(basename {})' \;
 
 local/package: download/binary build/image/konvoy-build-fpm build/package
 
-all/package: local/package upload/package
+all/package: local/package upload/package ## Build and upload Konvoy package (deb/rpm/tar) into S3 bucket
 
-build/image: require/binary copy/etc
+build/image: require/binary copy/etc ## Build Konvoy Docker image
 	[ ! -d $(STAGING_DIR)/docker ] && mkdir -p $(STAGING_DIR)/docker || true
 	cp images/konvoy/entrypoint.sh $(STAGING_DIR)/docker/
 	docker build \
@@ -156,14 +156,14 @@ build/image: require/binary copy/etc
 require/image:
 	docker inspect --type=image $(DOCKER_IMAGE) >/dev/null
 
-upload/image: require/image
+upload/image: require/image ## Upload Konvoy Docker image into S3 bucket
 	[ ! -d $(IMAGE_DIR)/$(shell dirname $(DOCKER_IMAGE)) ] && mkdir -p $(IMAGE_DIR)/$(shell dirname $(DOCKER_IMAGE)) || true
 	docker save $(DOCKER_IMAGE) -o $(IMAGE_DIR)/$(DOCKER_IMAGE)
 	aws s3 cp $(IMAGE_DIR)/$(DOCKER_IMAGE) s3://$(S3_CI_BUCKET)/$(S3_KONVOY_IMAGE)/$(DOCKER_IMAGE)
 
 local/image: download/binary build/image
 
-all/image: local/image upload/image
+all/image: local/image upload/image ## Build and upload Konvoy Docker image into S3 bucket
 
 # Targets for local development
 

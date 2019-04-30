@@ -45,7 +45,7 @@ you can always fallback to using `Docker`.
 To start a build container with source code mounted in, run 
 
 ```bash
-$ ci/run_envoy_docker.sh
+$ make dev/shell
 ```
 
 Now, you can run individual `Bazel` commands, such as
@@ -94,7 +94,7 @@ at runtime.
 To build a version of `Konvoy` optimized for performance at runtime, run
 
 ```bash
-$ bazel build -c opt //:konvoy
+$ make build/binary
 ```
 
 ## Running Konvoy
@@ -102,7 +102,7 @@ $ bazel build -c opt //:konvoy
 To run `Konvoy` with a demo configuration:
 
 1. Start [Konvoy demo gRPC server][konvoy-grpc-demo-java]
-2. `bazel run -- //:konvoy -c $(pwd)/configs/konvoy.yaml`
+2. `make run/demo`
 
 ### Exploring Konvoy http filter 
 
@@ -275,24 +275,22 @@ INFO: onCompleted
 To run the `Konvoy` integration tests, execute:
 
 ```bash
-$ bazel test //test/extensions/filters/http/konvoy:konvoy_integration_test
+$ make run/tests
 ```
 
 ## Verifying Test Coverage
 
 To verify test coverage:
 
-* On `Linux`:
-
-  `test/run_envoy_bazel_coverage.sh`
-
-* On `MacOS`:
-
-  `tools/mac_run_envoy_bazel_coverage.sh`
+```bash
+$ make collect/coverage
+```
 
 To open coverage report in a browser:
 
-`open generated/coverage/coverage.html`
+```bash
+open generated/coverage/coverage.html
+```
 
 ## Making changes to the source code
 

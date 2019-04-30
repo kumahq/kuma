@@ -14,7 +14,8 @@ env:
   # include $HOME/.local/bin for `aws` on Linux
   # include $HOME/Library/Python/2.7/bin for `aws` on MacOS
   - PATH=$HOME/.local/bin:$HOME/Library/Python/2.7/bin:$PATH
-  - BUILD_DIR=/tmp/konvoy-filter/build
+  - KONVOY_REPO_DIR=$TRAVIS_BUILD_DIR
+  - BUILD_DIR=$HOME/konvoy/build
   - DOWNLOADS_DIR=$BUILD_DIR/downloads
   - COMMIT=$TRAVIS_COMMIT
   - S3_CI_BUCKET=konvoy-ci
@@ -43,96 +44,123 @@ jobs:
     env:
     - TARGET_OS=debian
     script:
-    - make build/binary upload/binary
+    - cd $KONVOY_REPO_DIR/components/konvoy-filter/
+    - make build/binary.tar.gz upload/binary.tar.gz
   - stage: ci
     name: "Build CentOS binary"
     os: linux
     env:
     - TARGET_OS=centos
     script:
-    - make build/binary upload/binary
+    - cd $KONVOY_REPO_DIR/components/konvoy-filter/
+    - make build/binary.tar.gz upload/binary.tar.gz
   - stage: ci
     name: "Build MacOS binary"
     os: osx
     env:
     - TARGET_OS=macos
     install:
+    - cd $KONVOY_REPO_DIR/components/konvoy-filter/
     - envoy/ci/mac_ci_setup.sh
     script:
-    - make build/binary upload/binary
+    - cd $KONVOY_REPO_DIR/components/konvoy-filter/
+    - make build/binary.tar.gz upload/binary.tar.gz
   - stage: ci
     name: "Run tests on Debian"
     os: linux
+    env:
+    - TARGET_OS=debian
     script:
+    - cd $KONVOY_REPO_DIR/components/konvoy-filter/
     - make run/tests
   - stage: ci
     name: "Collect test coverage on Debian"
     os: linux
+    env:
+    - TARGET_OS=debian
     script:
+    - cd $KONVOY_REPO_DIR/components/konvoy-filter/
     - make collect/coverage
     after_script:
+    - cd $KONVOY_REPO_DIR/components/konvoy-filter/
     - make upload/coverage
   - &build-package
     stage: package
-    name: "Build package"
+    name: "Build package (ubuntu:18.04)"
     env:
     - BASE_IMAGE=ubuntu:18.04
     script:
-    - cd konvoy-distibutions/
+    - cd $KONVOY_REPO_DIR/distributions/
     - make all/package
   - <<: *build-package
+    name: "Build package (ubuntu:16.04)"
     env:
     - BASE_IMAGE=ubuntu:16.04
   - <<: *build-package
+    name: "Build package (ubuntu:14.04)"
     env:
     - BASE_IMAGE=ubuntu:14.04
   - <<: *build-package
+    name: "Build package (debian:9)"
     env:
     - BASE_IMAGE=debian:9
   - <<: *build-package
+    name: "Build package (debian:8)"
     env:
     - BASE_IMAGE=debian:8
   - <<: *build-package
+    name: "Build package (rhel:7)"
     env:
     - BASE_IMAGE=rhel:7
   - <<: *build-package
+    name: "Build package (centos:7)"
     env:
     - BASE_IMAGE=centos:7
   - <<: *build-package
+    name: "Build package (amazonlinux:2)"
     env:
     - BASE_IMAGE=amazonlinux:2
   - <<: *build-package
+    name: "Build package (alpine:3.9)"
     env:
     - BASE_IMAGE=alpine:3.9
   - &build-image
     stage: package
-    name: "Build Docker image"
+    name: "Build Docker image (ubuntu:18.04)"
     env:
     - BASE_IMAGE=ubuntu:18.04
     script:
-    - cd konvoy-distibutions/
+    - cd $KONVOY_REPO_DIR/distributions/
     - make all/image
   - <<: *build-image
+    name: "Build Docker image (ubuntu:16.04)"
     env:
     - BASE_IMAGE=ubuntu:16.04
   - <<: *build-image
+    name: "Build Docker image (ubuntu:14.04)"
     env:
     - BASE_IMAGE=ubuntu:14.04
   - <<: *build-image
+    name: "Build Docker image (debian:9)"
     env:
     - BASE_IMAGE=debian:9
   - <<: *build-image
+    name: "Build Docker image (debian:8)"
     env:
     - BASE_IMAGE=debian:8
   - <<: *build-image
+    name: "Build Docker image (rhel:7)"
     env:
     - BASE_IMAGE=rhel:7
   - <<: *build-image
+    name: "Build Docker image (centos:7)"
     env:
     - BASE_IMAGE=centos:7
   - <<: *build-image
+    name: "Build Docker image (amazonlinux:2)"
     env:
     - BASE_IMAGE=amazonlinux:2
   - <<: *build-image
+    name: "Build Docker image (alpine:3.9)"
     env:
     - BASE_IMAGE=alpine:3.9
