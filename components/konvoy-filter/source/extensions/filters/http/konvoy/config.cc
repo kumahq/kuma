@@ -2,7 +2,7 @@
 
 #include "extensions/filters/http/konvoy/konvoy.h"
 
-#include "api/envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.validate.h"
+#include "envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.validate.h"
 
 #include "envoy/registry/registry.h"
 

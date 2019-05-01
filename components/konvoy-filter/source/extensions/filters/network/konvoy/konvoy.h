@@ -10,8 +10,8 @@
 #include "envoy/stats/scope.h"
 #include "envoy/stats/stats_macros.h"
 
-#include "api/envoy/config/filter/network/konvoy/v2alpha/konvoy.pb.h"
-#include "api/envoy/service/konvoy/v2alpha/network_konvoy_service.pb.h"
+#include "envoy/config/filter/network/konvoy/v2alpha/konvoy.pb.h"
+#include "envoy/service/konvoy/v2alpha/network_konvoy_service.pb.h"
 
 namespace Envoy {
 namespace Extensions {

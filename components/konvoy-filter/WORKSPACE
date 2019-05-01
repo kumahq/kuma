@@ -11,6 +11,12 @@ local_repository(
     path = "envoy",
 )
 
+new_local_repository(
+    name = "konvoy_filter_api",
+    path = "api",
+    build_file_content = "",
+)
+
 load("@envoy//bazel:api_repositories.bzl", "envoy_api_dependencies")
 envoy_api_dependencies()
 

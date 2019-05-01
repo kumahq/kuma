@@ -1,7 +1,7 @@
 #pragma once
 
-#include "api/envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.h"
-#include "api/envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.validate.h"
+#include "envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.h"
+#include "envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.validate.h"
 
 #include "extensions/filters/http/common/factory_base.h"
 #include "extensions/filters/http/well_known_names.h"
