@@ -1,0 +1,44 @@
+workspace(name = "konvoy")
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# When updating envoy sha manually please update the sha in istio.deps file also
+#
+# Determine SHA256 `wget https://github.com/envoyproxy/envoy/archive/COMMIT.tar.gz && sha256sum COMMIT.tar.gz`
+ENVOY_SHA = "b8bcb11f5fb8c5ae19535444a9de10a207d9cec6"
+ENVOY_SHA256 = "ee0b9ef5707604b41d6439f4a3b8ea05cfe728705d2d24f75a43e3ea74845ff7"
+
+http_archive(
+    name = "envoy",
+    sha256 = ENVOY_SHA256,
+    strip_prefix = "envoy-" + ENVOY_SHA,
+    url = "https://github.com/envoyproxy/envoy/archive/" + ENVOY_SHA + ".tar.gz",
+)
+
+load("@envoy//bazel:api_repositories.bzl", "envoy_api_dependencies")
+envoy_api_dependencies()
+
+load("@envoy//bazel:repositories.bzl", "envoy_dependencies")
+load("@envoy//bazel:cc_configure.bzl", "cc_configure")
+
+envoy_dependencies()
+
+load("@rules_foreign_cc//:workspace_definitions.bzl", "rules_foreign_cc_dependencies")
+rules_foreign_cc_dependencies()
+
+cc_configure()
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
+go_rules_dependencies()
+go_register_toolchains()
+
+new_local_repository(
+    name = "konvoy_filter_api",
+    path = "../konvoy-filter/api",
+    build_file_content = "",
+)
+
+local_repository(
+    name = "konvoy_filter",
+    path = "../konvoy-filter",
+)
