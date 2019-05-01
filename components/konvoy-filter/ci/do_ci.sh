@@ -37,10 +37,10 @@ function do_build () {
     "${ENVOY_DELIVERY_DIR}"/"${DELIVERY_PATH}"
 
   echo "Copying release binary for image build..."
-  mkdir -p "${ENVOY_SRCDIR}"/build_release
-  cp -f "${ENVOY_DELIVERY_DIR}"/"${DELIVERY_PATH}" "${ENVOY_SRCDIR}"/build_release
-  mkdir -p "${ENVOY_SRCDIR}"/build_release_stripped
-  strip "${ENVOY_DELIVERY_DIR}"/"${DELIVERY_PATH}" -o "${ENVOY_SRCDIR}"/build_release_stripped/"${DELIVERY_PATH}"
+  mkdir -p "${ENVOY_SRCDIR}"/_build/build_release
+  cp -f "${ENVOY_DELIVERY_DIR}"/"${DELIVERY_PATH}" "${ENVOY_SRCDIR}"/_build/build_release
+  mkdir -p "${ENVOY_SRCDIR}"/_build/build_release_stripped
+  strip "${ENVOY_DELIVERY_DIR}"/"${DELIVERY_PATH}" -o "${ENVOY_SRCDIR}"/_build/build_release_stripped/"${DELIVERY_PATH}"
 }
 
 function do_test() {
@@ -63,6 +63,11 @@ function do_coverage() {
   "$(dirname "$0")"/../test/run_envoy_bazel_coverage.sh
 }
 
+function do_shell() {
+  echo "launching interactive shell..."
+  bash
+}
+
 if [[ $(uname -s) == Linux ]]; then
   setup_gcc_toolchain
 elif [[ $(uname -s) == Darwin ]]; then
@@ -79,8 +84,11 @@ case "$1" in
   coverage)
     do_coverage
   ;;
+  shell)
+    do_shell
+  ;;
   *)
-    echo "must be one of [build,test,coverage]"
+    echo "must be one of [build,test,coverage,shell]"
     exit 1
   ;;
 esac

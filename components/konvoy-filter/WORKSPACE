@@ -1,4 +1,4 @@
-workspace(name = "konvoy")
+workspace(name = "konvoy_filter")
 
 local_repository(
     name = "envoy_build_config",
