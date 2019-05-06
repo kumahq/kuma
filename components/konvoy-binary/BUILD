@@ -6,16 +6,15 @@ load(
     "envoy_cc_test",
 )
 
+load(
+    "//:extensions.bzl",
+    "envoy_extensions",
+)
+
 envoy_cc_binary(
     name = "konvoy",
     repository = "@envoy",
-    deps = [
-        "@envoy//source/exe:envoy_main_entry_lib",
-
-        # Konvoy Filter
-        "@konvoy_filter//source/extensions/filters/network/konvoy:konvoy_config",
-        "@konvoy_filter//source/extensions/filters/http/konvoy:konvoy_config",
-    ],
+    deps = [ "@envoy//source/exe:envoy_main_entry_lib" ] + envoy_extensions()
 )
 
 sh_test(
