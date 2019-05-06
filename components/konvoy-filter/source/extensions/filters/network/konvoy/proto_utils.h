@@ -1,7 +1,7 @@
 #pragma once
 
 #include "envoy/buffer/buffer.h"
-#include "api/envoy/service/konvoy/v2alpha/network_konvoy_service.pb.h"
+#include "envoy/service/konvoy/v2alpha/network_konvoy_service.pb.h"
 
 namespace Envoy {
 namespace Extensions {

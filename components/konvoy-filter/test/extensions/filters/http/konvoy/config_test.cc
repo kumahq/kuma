@@ -1,5 +1,5 @@
-#include "api/envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.h"
-#include "api/envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.validate.h"
+#include "envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.h"
+#include "envoy/config/filter/http/konvoy/v2alpha/konvoy.pb.validate.h"
 
 #include "envoy/stats/scope.h"
 

@@ -23,8 +23,8 @@ envoy_cc_library(
         "@envoy//source/common/common:enum_to_int",
         "@envoy//source/common/http:header_map_lib",
         "@envoy//source/common/http:header_utility_lib",
-        "//api/envoy/config/filter/http/konvoy/v2alpha:konvoy_cc",
-        "//api/envoy/service/konvoy/v2alpha:http_konvoy_service_cc",
+        "@konvoy_filter_api//envoy/config/filter/http/konvoy/v2alpha:konvoy_cc",
+        "@konvoy_filter_api//envoy/service/konvoy/v2alpha:http_konvoy_service_cc",
         ":konvoy_proto_utils_lib",
     ],
 )
@@ -50,6 +50,6 @@ envoy_cc_library(
     deps = [
         "@envoy//include/envoy/buffer:buffer_interface",
         "@envoy//include/envoy/http:header_map_interface",
-        "//api/envoy/service/konvoy/v2alpha:http_konvoy_service_cc",
+        "@konvoy_filter_api//envoy/service/konvoy/v2alpha:http_konvoy_service_cc",
     ],
 )

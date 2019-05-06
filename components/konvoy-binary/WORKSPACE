@@ -1,23 +1,11 @@
-workspace(name = "konvoy_filter")
+workspace(name = "konvoy")
 
-#
-# Envoy core extensions to include into the build (must be configured before Envoy)
-#
-
-local_repository(
-    name = "envoy_build_config",
-    # Envoy build config with the most of extensions turned off
-    path = "envoy_build_config",
-)
+load("//bazel:repositories.bzl", "konvoy_dependencies")
+konvoy_dependencies()
 
 #
 # Envoy dependencies
 #
-
-local_repository(
-    name = "envoy",
-    path = "envoy",
-)
 
 load("@envoy//bazel:api_repositories.bzl", "envoy_api_dependencies")
 envoy_api_dependencies()
@@ -35,7 +23,17 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_to
 go_rules_dependencies()
 go_register_toolchains(go_version = GO_VERSION)
 
+#
 # Konvoy Filter API dependencies
+#
 
-load("//bazel:api_repositories.bzl", "konvoy_filter_api_dependencies")
+load("@konvoy_filter//bazel:api_repositories.bzl", "konvoy_filter_api_dependencies")
 konvoy_filter_api_dependencies()
+
+#
+# Istio Proxy dependencies
+#
+
+load("@istio_proxy//:repositories.bzl", "googletest_repositories", "mixerapi_dependencies")
+googletest_repositories()
+mixerapi_dependencies()

@@ -9,7 +9,7 @@ option java_generic_services = true;
 option java_outer_classname = "HttpKonvoyProto";
 option java_package = "io.envoyproxy.envoy.service.konvoy.v2alpha";
 
-import "api/envoy/service/konvoy/v2alpha/common.proto";
+import "envoy/service/konvoy/v2alpha/common.proto";
 
 import "envoy/api/v2/core/base.proto";
 
