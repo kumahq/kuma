@@ -29,3 +29,23 @@ Make a test `Discovery` request to `CDS`:
 ```bash
 make curl/clusters
 ```
+
+## Pointing Envoy at Control Plane
+
+Start `Control Plane`:
+
+```bash
+make run
+```
+
+Assuming `envoy` binary is on your `PATH`, run:
+
+```bash
+make run/example/envoy
+```
+
+Dump effective Envoy config:
+
+```bash
+make config_dump/example/envoy
+```
