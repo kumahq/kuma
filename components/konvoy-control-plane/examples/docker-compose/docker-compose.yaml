@@ -23,7 +23,7 @@ services:
     volumes:
       - ./istio-iptables.sh:/usr/local/bin/istio-iptables.sh
       - ./envoy-sidecar-startup.sh:/usr/local/bin/envoy-sidecar-startup.sh
-      - ./konvoy-control-plane.yaml:/etc/envoy/envoy.yaml
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
     cap_add:
       - NET_ADMIN
     command:

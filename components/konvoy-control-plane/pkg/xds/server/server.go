@@ -17,8 +17,9 @@ var (
 )
 
 type RunArgs struct {
-	GrpcPort int
-	HttpPort int
+	GrpcPort        int
+	HttpPort        int
+	DiagnosticsPort int
 }
 
 func Run(args RunArgs) error {
@@ -52,6 +53,13 @@ func Run(args RunArgs) error {
 		wg.Add(1)
 		defer wg.Done()
 		RunSyncer(ctx, configs, hasher, nodes)
+	}(wg)
+
+	// start reconciliation loop
+	go func(wg sync.WaitGroup) {
+		wg.Add(1)
+		defer wg.Done()
+		RunDiagnosticsServer(ctx, args.DiagnosticsPort)
 	}(wg)
 
 	util.WaitStopSignal()

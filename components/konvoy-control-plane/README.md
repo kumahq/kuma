@@ -50,7 +50,7 @@ Dump effective Envoy config:
 make config_dump/example/envoy
 ```
 
-## Running example setup inside Docker Compose
+## Running demo setup inside Docker Compose
 
 Start example setup (`Control Plane` + `Envoy` + app):
 
@@ -81,3 +81,7 @@ where
 
 * `cluster.localhost_8080.upstream_rq_total` is a number of `inbound` requests
 * `cluster.pass_through.upstream_rq_total` is a number of `outbound` requests
+
+## Running demo setup inside Minikube
+
+Follow instructions in [Minikube](examples/minikube/README.md) example.
