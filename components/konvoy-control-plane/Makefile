@@ -1,4 +1,6 @@
-.PHONY: help build run curl/listeners curl/clusters run/example/envoy config_dump/example/envoy image \
+.PHONY: help fmt vet build run image \
+		curl/listeners curl/clusters \
+		run/example/envoy config_dump/example/envoy \
         run/example/docker-compose curl/example/docker-compose stats/example/docker-compose
 
 BUILD_DIR ?= build
@@ -23,10 +25,16 @@ CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+fmt: ## Run go fmt
+	go fmt ./...
+
+vet: ## Run go vet
+	go vet ./...
+
 build: ## Build Control Plane binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
 
-run:  ## Run Control Plane locally
+run: fmt vet ## Run Control Plane locally
 	go run ./app/konvoy-cp/main.go run --grpc-port=$(CP_GRPC_PORT) --http-port=$(CP_HTTP_PORT)
 
 curl/listeners: ## Make Discovery request to LDS
