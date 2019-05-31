@@ -1,57 +1,69 @@
 package server
 
 import (
-	"context"
 	"fmt"
-	"log"
-	"os"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 var (
-	source = NewDummySource()
+	reconcileLog = ctrl.Log.WithName("xds-server").WithName("reconcile")
 )
 
-func RunSyncer(ctx context.Context, config cache.SnapshotCache, hasher cache.NodeHash, nodes <-chan *core.Node) {
+type reconciler struct {
+	nodes     <-chan *core.Node
+	generator snapshotGenerator
+	hasher    cache.NodeHash
+	store     cache.SnapshotCache
+}
+
+// Make sure that reconciler implements all relevant interfaces
+var (
+	_ manager.Runnable               = &reconciler{}
+	_ manager.LeaderElectionRunnable = &reconciler{}
+)
+
+func (r *reconciler) Start(stop <-chan struct{}) error {
 	for {
 		select {
-		case node, open := <-nodes:
+		case node, open := <-r.nodes:
 			if !open {
-				return
+				return nil
 			}
 
-			snapshot := source.NewSnapshot(node)
+			snapshot := r.generator.NewSnapshot(node)
 			if err := snapshot.Consistent(); err != nil {
-				log.Printf("snapshot inconsistency: %+v\n", snapshot)
+				reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot)
 			}
 
-			err := config.SetSnapshot(hasher.ID(node), snapshot)
+			err := r.store.SetSnapshot(r.hasher.ID(node), snapshot)
 			if err != nil {
-				log.Printf("snapshot error %q for %+v\n", err, snapshot)
-				os.Exit(1)
+				reconcileLog.Error(err, "failed to store snapshot", "snapshot", snapshot)
+				return err
 			}
-		case <-ctx.Done():
-			return
+		case <-stop:
+			return nil
 		}
 	}
 }
 
-type SnapshotSource interface {
+func (r *reconciler) NeedLeaderElection() bool {
+	return false
+}
+
+type snapshotGenerator interface {
 	NewSnapshot(node *core.Node) cache.Snapshot
 }
 
-func NewDummySource() SnapshotSource {
-	return &dummySource{}
+type basicSnapshotGenerator struct {
 }
 
-type dummySource struct {
-}
-
-func (s *dummySource) NewSnapshot(node *core.Node) cache.Snapshot {
+func (s *basicSnapshotGenerator) NewSnapshot(node *core.Node) cache.Snapshot {
 	nodeInfo := parseNodeInfo(node)
 
 	listeners := make([]cache.Resource, 0, 2)
@@ -85,24 +97,24 @@ func (s *dummySource) NewSnapshot(node *core.Node) cache.Snapshot {
 
 type nodeInfo struct {
 	addresses []string
-	ports []uint32
+	ports     []uint32
 }
 
 func parseNodeInfo(node *core.Node) nodeInfo {
-	node_addresses := "127.0.0.1"
-	node_ports := ""
+	nodeAddresses := "127.0.0.1"
+	nodePorts := ""
 	if node.Metadata != nil && node.Metadata.Fields != nil {
 		if value := node.Metadata.Fields["IPS"]; value != nil && value.GetStringValue() != "" {
-			node_addresses = value.GetStringValue()
+			nodeAddresses = value.GetStringValue()
 		}
 		if value := node.Metadata.Fields["PORTS"]; value != nil && value.GetStringValue() != "" {
-			node_ports = value.GetStringValue()
+			nodePorts = value.GetStringValue()
 		}
 	}
 
 	addresses := make([]string, 0, 1)
-	for _, node_address := range strings.Split(node_addresses, ",") {
-		address := strings.TrimSpace(node_address)
+	for _, nodeAddress := range strings.Split(nodeAddresses, ",") {
+		address := strings.TrimSpace(nodeAddress)
 		if address == "" {
 			continue
 		}
@@ -110,8 +122,8 @@ func parseNodeInfo(node *core.Node) nodeInfo {
 	}
 
 	ports := make([]uint32, 0, 1)
-	for _, node_port := range strings.Split(node_ports, ",") {
-		port, err := strconv.ParseUint(strings.TrimSpace(node_port), 10, 32)
+	for _, nodePort := range strings.Split(nodePorts, ",") {
+		port, err := strconv.ParseUint(strings.TrimSpace(nodePort), 10, 32)
 		if err != nil {
 			continue
 		}

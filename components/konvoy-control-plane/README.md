@@ -2,6 +2,10 @@
 
 Universal Control Plane for Envoy-based Service Mesh.
 
+## Pre-requirements
+
+1. Install [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker)
+
 ## Building
 
 Run:
@@ -12,7 +16,14 @@ make build
 
 ## Running locally
 
-Run:
+Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
+
+```bash
+kind create cluster --name konvoy
+export KUBECONFIG="$(kind get kubeconfig-path --name="konvoy")"
+```
+
+Run Control Plane:
 
 ```bash
 make run

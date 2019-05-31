@@ -2,18 +2,18 @@ package server
 
 import (
 	"context"
-	"log"
-	"sync"
+	"fmt"
 
+	util_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/manager"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
-	"github.com/envoyproxy/go-control-plane/pkg/server"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util"
+	xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var (
-	wg sync.WaitGroup
+	xdsServerLog = ctrl.Log.WithName("xds-server")
 )
 
 type RunArgs struct {
@@ -22,72 +22,51 @@ type RunArgs struct {
 	DiagnosticsPort int
 }
 
-func Run(args RunArgs) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer func() {
-		cancel()
-		wg.Wait()
-	}()
+type Server struct {
+	Args RunArgs
+}
 
-	nodes := make(chan *v2_core.Node, 10)
-	hasher := &hasher{}
+func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
+	hasher := hasher{}
 	logger := logger{}
-	configs := cache.NewSnapshotCache(true, hasher, logger)
+	nodes := make(chan *v2_core.Node, 10)
+	store := cache.NewSnapshotCache(true, hasher, logger)
 	cb := &callbacks{nodes}
-	srv := server.NewServer(configs, cb)
+	srv := xds.NewServer(store, cb)
 
-	// start xDS server
-	go func(wg sync.WaitGroup) {
-		wg.Add(1)
-		defer wg.Done()
-		RunGrpcServer(ctx, srv, args.GrpcPort)
-	}(wg)
-	go func(wg sync.WaitGroup) {
-		wg.Add(1)
-		defer wg.Done()
-		RunHttpGateway(ctx, srv, args.HttpPort)
-	}(wg)
-
-	// start reconciliation loop
-	go func(wg sync.WaitGroup) {
-		wg.Add(1)
-		defer wg.Done()
-		RunSyncer(ctx, configs, hasher, nodes)
-	}(wg)
-
-	// start reconciliation loop
-	go func(wg sync.WaitGroup) {
-		wg.Add(1)
-		defer wg.Done()
-		RunDiagnosticsServer(ctx, args.DiagnosticsPort)
-	}(wg)
-
-	util.WaitStopSignal()
-	return nil
+	return util_manager.Add(mgr,
+		// xDS gRPC API
+		&grpcServer{srv, s.Args.GrpcPort},
+		// xDS HTTP API
+		&httpGateway{srv, s.Args.HttpPort},
+		// reconciliation loop
+		&reconciler{nodes, &basicSnapshotGenerator{}, hasher, store},
+		// diagnostics server
+		&diagnosticsServer{s.Args.DiagnosticsPort})
 }
 
 type hasher struct {
 }
 
-func (h *hasher) ID(node *v2_core.Node) string {
+func (h hasher) ID(node *v2_core.Node) string {
 	if node == nil {
 		return "unknown"
 	}
 	return node.Id
 }
 
-type logger struct{
+type logger struct {
 }
 
 func (logger logger) Infof(format string, args ...interface{}) {
-	log.Printf(format+"\n", args...)
+	xdsServerLog.V(1).Info(fmt.Sprintf(format, args...))
 }
 func (logger logger) Errorf(format string, args ...interface{}) {
-	log.Printf(format+"\n", args...)
+	xdsServerLog.Error(fmt.Errorf(format, args...), "")
 }
 
 type callbacks struct {
-	nodes   chan<- *v2_core.Node
+	nodes chan<- *v2_core.Node
 }
 
 func (cb *callbacks) OnStreamOpen(_ context.Context, id int64, typ string) error {
