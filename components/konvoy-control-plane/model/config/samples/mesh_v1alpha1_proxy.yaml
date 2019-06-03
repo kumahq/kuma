@@ -1,0 +1,7 @@
+apiVersion: mesh.getkonvoy.io/v1alpha1
+kind: Proxy
+metadata:
+  name: proxy-sample
+spec:
+  # Add fields here
+  foo: bar
