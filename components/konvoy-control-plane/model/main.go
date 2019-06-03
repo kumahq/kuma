@@ -20,6 +20,8 @@ import (
 	"flag"
 	"os"
 
+	meshv1alpha1 "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/model/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,6 +36,7 @@ var (
 
 func init() {
 
+	meshv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -50,6 +53,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	err = (&controllers.ProxyReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Proxy"),
+	}).SetupWithManager(mgr)
+	if err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Proxy")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
