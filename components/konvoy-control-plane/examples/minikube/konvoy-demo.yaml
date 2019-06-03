@@ -17,12 +17,6 @@ spec:
   selector:
     app: konvoy-control-plane
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: konvoy-control-plane-service-account
-  namespace: konvoy-system
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -43,7 +37,6 @@ spec:
       labels:
         app: konvoy-control-plane
     spec:
-      serviceAccountName: konvoy-control-plane-service-account
       containers:
       - name: control-plane
         image: "konvoy/konvoy-control-plane:latest"

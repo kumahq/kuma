@@ -9,6 +9,8 @@
 		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 
+PKG_LIST := $(shell go list ./... ./model/...)
+
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts
 
@@ -158,16 +160,20 @@ clean: ## Dev: Clean
 
 fmt: ## Dev: Run go fmt
 	go fmt ./...
+	# apparently, it's not possible to simply use `go fmt ./model/...`
+	make fmt -C model
 
 vet: ## Dev: Run go vet
 	go vet ./...
+	# for consistency with `fmt`
+	make vet -C model
 
 check: fmt vet ## Dev: Run code checks (go fmt, go vet, ...)
 	git diff --quiet # fail if Git working tree is dirty
 
 test: ## Dev: Run tests
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
-	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
+	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 build: ## Dev: Build Control Plane binary
