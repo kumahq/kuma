@@ -6,8 +6,9 @@ Konvoy Control Plane inside Docker Compose
 Build and run the containers:
 
 ```bash
-docker-compose pull
-docker-compose up --build
+docker-compose pull && \
+docker-compose up --build --no-start && \
+docker-compose up
 ```
 
 Make test requests:
