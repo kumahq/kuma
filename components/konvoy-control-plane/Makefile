@@ -1,7 +1,8 @@
 .PHONY: help fmt vet build run image \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
-        run/example/docker-compose curl/example/docker-compose stats/example/docker-compose
+        run/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
+        wait/example/minikube curl/example/minikube verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts
@@ -21,6 +22,8 @@ ENVOY_ADMIN_PORT ?= 9901
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "example", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
 
 CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
+
+TEST_TOOLS_IMAGE ?= circleci/golang:1.12
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -63,3 +66,19 @@ curl/example/docker-compose: ## Make sample requests into Docker Compose setup
 
 stats/example/docker-compose: ## Observe Envoy metrics from Docker Compose setup
 	cd examples/docker-compose && watch 'docker-compose exec envoy curl -s localhost:9901/stats | grep upstream_rq_total'
+
+wait/example/minikube: ## Wait for Minikube setup to get ready
+	kubectl -n konvoy-demo run --rm -ti wait --image=$(TEST_TOOLS_IMAGE) -- dockerize -wait http://demo-app:8000/request -timeout 1m
+
+curl/example/minikube: ## Make sample requests into Minikube setup
+	kubectl -n konvoy-demo run --rm -ti curl --image=$(TEST_TOOLS_IMAGE) -- sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://demo-app:8000/request | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
+
+verify/example/minikube/inbound:
+	@echo "Checking number of Inbound requests via Envoy"
+	echo $$( kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c envoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}' | awk  '{print $$2}' | tr -d [:space:] )
+
+verify/example/minikube/outbound:
+	@echo "Checking number of Outbound requests via Envoy"
+	echo $$( kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c envoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk  '{print $$2}' | tr -d [:space:] )
+
+verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound

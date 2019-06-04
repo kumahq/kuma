@@ -82,19 +82,10 @@ jobs:
     <<: *vm-executor-defaults
     environment:
       MINIKUBE_VERSION: v1.1.0
-      KVM2_DRIVER_VERSION: v0.30.0
       KUBECTL_VERSION: v1.14.0
-      CIRCLECI_TOOLS_IMAGE: circleci/golang:1.12
+      TEST_TOOLS_IMAGE: circleci/golang:1.12
     steps:
     - checkout
-    - run:
-        name: Install VirtualBox
-        command: |
-          # See https://www.virtualbox.org/wiki/Linux_Downloads
-          echo "deb https://download.virtualbox.org/virtualbox/debian xenial contrib" | sudo tee -a /etc/apt/sources.list
-          wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
-          wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
-          sudo apt update && sudo apt install -y virtualbox-6.0
     - run:
         name: Install Minikube
         command: curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
@@ -103,7 +94,7 @@ jobs:
         command: curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
     - run:
         name: Start Minikube
-        command: minikube start --no-vtx-check --alsologtostderr -v=9
+        command: sudo CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none
     - run:
         name: Build Control Plane
         command: eval $(minikube docker-env) && make image -C components/konvoy-control-plane
@@ -112,11 +103,13 @@ jobs:
         command: kubectl apply -f components/konvoy-control-plane/examples/minikube/konvoy-demo.yaml
     - run:
         name: Wait until Envoy listener gets configured
-        command: kubectl -n konvoy-demo run --rm -ti ${CIRCLECI_TOOLS_IMAGE} dockerize -wait http://demo-app:8000/request -timeout 1m
+        command: make wait/example/minikube -C components/konvoy-control-plane
     - run:
         name: Make test requests via Envoy
-        command: |
-          kubectl -n konvoy-demo run --rm -ti ${CIRCLECI_TOOLS_IMAGE} sh -c 'set -e ; for i in `seq 1 10`; do test $(curl -s http://demo-app:8080/request | jq -r .url) = "http://mockbin.org/request" && echo "request #$i successful" ; sleep 1 ; done'
+        command: make curl/example/minikube -C components/konvoy-control-plane
+    - run:
+        name: Verify Envoy stats
+        command: make verify/example/minikube -C components/konvoy-control-plane
 
 workflows:
   version: 2
