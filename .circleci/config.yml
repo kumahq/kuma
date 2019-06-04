@@ -82,20 +82,31 @@ jobs:
     <<: *vm-executor-defaults
     environment:
       MINIKUBE_VERSION: v1.1.0
+      KVM2_DRIVER_VERSION: v0.30.0
       KUBECTL_VERSION: v1.14.0
       CIRCLECI_TOOLS_IMAGE: circleci/golang:1.12
     steps:
     - checkout
     - run:
+        name: Install KVM2
+        command: |
+          # See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver
+          sudo apt update && sudo apt install -y libvirt-bin libvirt-daemon-system qemu-kvm
+          curl -LO https://storage.googleapis.com/minikube/releases/${KVM2_DRIVER_VERSION}/docker-machine-driver-kvm2 && chmod +x docker-machine-driver-kvm2 && sudo mv docker-machine-driver-kvm2 /usr/local/bin/
+          #sudo systemctl enable libvirtd.service
+          sudo systemctl start libvirtd.service
+          #sudo systemctl status libvirtd.service
+          #sudo usermod -a -G libvirtd $(whoami)
+          #newgrp libvirtd
+    - run:
         name: Install Minikube
-        command: curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
+        command: curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
     - run:
         name: Install Kubectl
-        command: curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo cp kubectl /usr/local/bin/ && rm kubectl
+        command: curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
     - run:
         name: Start Minikube
-        # with "--vm-driver none" Minikube attempts to create a file at "/usr/bin/kubeadm"
-        command: sudo minikube start --vm-driver none
+        command: sudo minikube start --vm-driver=kvm2 --alsologtostderr -v=9
     - run:
         name: Build Control Plane
         command: eval $(minikube docker-env) && make image -C components/konvoy-control-plane
