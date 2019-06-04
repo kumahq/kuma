@@ -45,6 +45,27 @@ jobs:
     - setup_remote_docker
     - run: make image -C components/konvoy-control-plane
 
+  konvoy-control-plane/example/docker-compose:
+    <<: *remote-docker-defaults
+    steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+        name: Start Docker Compose setup
+        command: docker-compose --project-name docker-compose --project-directory components/konvoy-control-plane/examples/docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml up --build
+    - run:
+        name: Wait until Envoy listener gets configured
+        command: docker run --network docker-compose_envoymesh --rm -ti circleci/golang dockerize -wait tcp://app:8080 -timeout 1m
+    - run:
+        name: Make test requests via Envoy
+        command: docker run --network docker-compose_envoymesh --rm -ti circleci/golang sh -c 'set -e ; for i in `seq 1 10`; do test $(curl -s http://app:8080 | jq -r .url) = "http://mockbin.org/request" && echo "request #$i successfull" ; sleep 1 ; done'
+    - run:
+        name: Verify number of Inbound requests via Envoy
+        command: test $( docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8080"}' | awk  '{print $2}' | tr -d [:space:] ) -eq 10
+    - run:
+        name: Verify number of Outbound requests via Envoy
+        command: test $( docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk  '{print $2}' | tr -d [:space:] ) -eq 10
+
 workflows:
   version: 2
   konvoy-control-plane:
@@ -54,5 +75,8 @@ workflows:
         requires:
         - konvoy-control-plane/check
     - konvoy-control-plane/image:
+        requires:
+        - konvoy-control-plane/build
+    - konvoy-control-plane/example/docker-compose:
         requires:
         - konvoy-control-plane/build
