@@ -1,0 +1,44 @@
+version: 2
+
+go-defaults: &go-defaults
+  working_directory: /go/src/github.com/Kong/konvoy
+  docker:
+  - image: golang:1.12.5
+  environment:
+    GO111MODULE: "on"
+
+jobs:
+  konvoy-control-plane/check:
+    <<: *go-defaults
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+    - run: make check -C components/konvoy-control-plane
+    - save_cache:
+        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        paths:
+          - "/go/pkg/mod"
+
+  konvoy-control-plane/build:
+    <<: *go-defaults
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+    - run: make build -C components/konvoy-control-plane
+    - save_cache:
+        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        paths:
+          - "/go/pkg/mod"
+
+workflows:
+  version: 2
+  konvoy-control-plane:
+    jobs:
+    - konvoy-control-plane/check
+    - konvoy-control-plane/build:
+        requires:
+        - konvoy-control-plane/check

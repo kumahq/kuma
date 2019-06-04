@@ -31,6 +31,9 @@ fmt: ## Run go fmt
 vet: ## Run go vet
 	go vet ./...
 
+check: fmt vet ## Run code checks (go fmt, go vet, ...)
+	git diff --quiet # fail if Git working tree is dirty
+
 build: ## Build Control Plane binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
 
