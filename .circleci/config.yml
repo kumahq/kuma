@@ -88,16 +88,13 @@ jobs:
     steps:
     - checkout
     - run:
-        name: Install KVM2
+        name: Install VirtualBox
         command: |
-          # See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver
-          sudo apt update && sudo apt install -y libvirt-bin libvirt-daemon-system qemu-kvm
-          curl -LO https://storage.googleapis.com/minikube/releases/${KVM2_DRIVER_VERSION}/docker-machine-driver-kvm2 && chmod +x docker-machine-driver-kvm2 && sudo mv docker-machine-driver-kvm2 /usr/local/bin/
-          #sudo systemctl enable libvirtd.service
-          sudo systemctl start libvirtd.service
-          #sudo systemctl status libvirtd.service
-          #sudo usermod -a -G libvirtd $(whoami)
-          #newgrp libvirtd
+          # See https://www.virtualbox.org/wiki/Linux_Downloads
+          echo "deb https://download.virtualbox.org/virtualbox/debian xenial contrib" | sudo tee -a /etc/apt/sources.list
+          wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
+          wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
+          sudo apt update && sudo apt install -y virtualbox-6.0
     - run:
         name: Install Minikube
         command: curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
@@ -106,7 +103,7 @@ jobs:
         command: curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
     - run:
         name: Start Minikube
-        command: sudo minikube start --vm-driver=kvm2 --alsologtostderr -v=9
+        command: minikube start --no-vtx-check --alsologtostderr -v=9
     - run:
         name: Build Control Plane
         command: eval $(minikube docker-env) && make image -C components/konvoy-control-plane
