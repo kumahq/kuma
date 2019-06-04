@@ -78,6 +78,38 @@ jobs:
         command: |
           test $( docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk  '{print $2}' | tr -d [:space:] ) -ge 10
 
+  konvoy-control-plane/example/minikube:
+    <<: *vm-executor-defaults
+    environment:
+      MINIKUBE_VERSION: v1.1.0
+      KUBECTL_VERSION: v1.14.0
+      CIRCLECI_TOOLS_IMAGE: circleci/golang:1.12
+    steps:
+    - checkout
+    - run:
+        name: Install Minikube
+        command: curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
+    - run:
+        name: Install Kubectl
+        command: curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo cp kubectl /usr/local/bin/ && rm kubectl
+    - run:
+        name: Start Minikube
+        # with "--vm-driver none" Minikube attempts to create a file at "/usr/bin/kubeadm"
+        command: sudo minikube start --vm-driver none
+    - run:
+        name: Build Control Plane
+        command: eval $(minikube docker-env) && make image -C components/konvoy-control-plane
+    - run:
+        name: Deploy Konvoy demo
+        command: kubectl apply -f components/konvoy-control-plane/examples/minikube/konvoy-demo.yaml
+    - run:
+        name: Wait until Envoy listener gets configured
+        command: kubectl -n konvoy-demo run --rm -ti ${CIRCLECI_TOOLS_IMAGE} dockerize -wait http://demo-app:8000/request -timeout 1m
+    - run:
+        name: Make test requests via Envoy
+        command: |
+          kubectl -n konvoy-demo run --rm -ti ${CIRCLECI_TOOLS_IMAGE} sh -c 'set -e ; for i in `seq 1 10`; do test $(curl -s http://demo-app:8080/request | jq -r .url) = "http://mockbin.org/request" && echo "request #$i successful" ; sleep 1 ; done'
+
 workflows:
   version: 2
   konvoy-control-plane:
@@ -90,5 +122,8 @@ workflows:
         requires:
         - konvoy-control-plane/build
     - konvoy-control-plane/example/docker-compose:
+        requires:
+        - konvoy-control-plane/build
+    - konvoy-control-plane/example/minikube:
         requires:
         - konvoy-control-plane/build
