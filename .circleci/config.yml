@@ -7,6 +7,10 @@ go-defaults: &go-defaults
   environment:
     GO111MODULE: "on"
 
+remote-docker-defaults: &remote-docker-defaults
+  docker:
+  - image: circleci/golang:1.12
+
 jobs:
   konvoy-control-plane/check:
     <<: *go-defaults
@@ -34,6 +38,13 @@ jobs:
         paths:
           - "/go/pkg/mod"
 
+  konvoy-control-plane/image:
+    <<: *remote-docker-defaults
+    steps:
+    - checkout
+    - setup_remote_docker
+    - run: make image -C components/konvoy-control-plane
+
 workflows:
   version: 2
   konvoy-control-plane:
@@ -42,3 +53,6 @@ workflows:
     - konvoy-control-plane/build:
         requires:
         - konvoy-control-plane/check
+    - konvoy-control-plane/image:
+        requires:
+        - konvoy-control-plane/build
