@@ -11,6 +11,9 @@ remote-docker-defaults: &remote-docker-defaults
   docker:
   - image: circleci/golang:1.12
 
+vm-executor-defaults: &vm-executor-defaults
+  machine: true
+
 jobs:
   konvoy-control-plane/check:
     <<: *go-defaults
@@ -46,10 +49,9 @@ jobs:
     - run: make image -C components/konvoy-control-plane
 
   konvoy-control-plane/example/docker-compose:
-    <<: *remote-docker-defaults
+    <<: *vm-executor-defaults
     steps:
     - checkout
-    - setup_remote_docker
     - run:
         name: Start Docker Compose setup
         command: docker-compose --project-name docker-compose --project-directory components/konvoy-control-plane/examples/docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml up --build
