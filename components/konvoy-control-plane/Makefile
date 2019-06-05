@@ -1,7 +1,8 @@
 .PHONY: help fmt vet build run image \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
-        run/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
+        run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
+        verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
         wait/example/minikube curl/example/minikube verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube
 
 BUILD_DIR ?= build
@@ -24,6 +25,8 @@ SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "example", "metadata": {"IPS": "$(E
 CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 
 TEST_TOOLS_IMAGE ?= circleci/golang:1.12
+
+DOCKER_COMPOSE_OPTIONS ?=
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -59,13 +62,28 @@ image: ## Build Control Plane Docker image
 	docker build -t $(CP_DOCKER_IMAGE) .
 
 run/example/docker-compose: ## Run example setup inside Docker Compose
-	cd examples/docker-compose && docker-compose pull && docker-compose up
+	docker-compose -f examples/docker-compose/docker-compose.yaml pull
+	docker-compose -f examples/docker-compose/docker-compose.yaml up --build --no-start
+	docker-compose -f examples/docker-compose/docker-compose.yaml up $(DOCKER_COMPOSE_OPTIONS)
+
+wait/example/docker-compose: ## Wait for Docker Compose setup to get ready
+	docker run --network docker-compose_envoymesh --rm -ti $(TEST_TOOLS_IMAGE) dockerize -wait http://app:8080 -timeout 1m
 
 curl/example/docker-compose: ## Make sample requests into Docker Compose setup
-	docker run --network docker-compose_envoymesh --rm -ti tutum/curl sh -c 'while true ; do curl http://app:8080 && sleep 1 ; done'
+	docker run --network docker-compose_envoymesh --rm -ti $(TEST_TOOLS_IMAGE) sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://app:8080 | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
 
 stats/example/docker-compose: ## Observe Envoy metrics from Docker Compose setup
-	cd examples/docker-compose && watch 'docker-compose exec envoy curl -s localhost:9901/stats | grep upstream_rq_total'
+	watch 'docker-compose -f examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep upstream_rq_total'
+
+verify/example/docker-compose/inbound:
+	@echo "Checking number of Inbound requests via Envoy"
+	test $$( docker-compose --file examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8080"}' | awk  '{print $$2}' | tr -d [:space:] ) -ge 10
+
+verify/example/docker-compose/outbound:
+	@echo "Checking number of Outbound requests via Envoy"
+	test $$( docker-compose --file examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk  '{print $$2}' | tr -d [:space:] ) -ge 10
+
+verify/example/docker-compose: verify/example/docker-compose/inbound verify/example/docker-compose/outbound
 
 wait/example/minikube: ## Wait for Minikube setup to get ready
 	kubectl -n konvoy-demo run --rm -ti wait --image=$(TEST_TOOLS_IMAGE) -- dockerize -wait http://demo-app:8000/request -timeout 1m

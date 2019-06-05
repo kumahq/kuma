@@ -51,32 +51,22 @@ jobs:
 
   konvoy-control-plane/example/docker-compose:
     <<: *vm-executor-defaults
+    environment:
+      TEST_TOOLS_IMAGE: circleci/golang:1.12
     steps:
     - checkout
     - run:
-        name: Pull external Docker images
-        command: docker-compose --project-name docker-compose --project-directory components/konvoy-control-plane/examples/docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml pull
-    - run:
-        name: Build Docker Compose images
-        command: docker-compose --project-name docker-compose --project-directory components/konvoy-control-plane/examples/docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml up --build --no-start
-    - run:
         name: Start Docker Compose setup
-        command: docker-compose --project-name docker-compose --project-directory components/konvoy-control-plane/examples/docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml up --detach
+        command: make run/example/docker-compose -C components/konvoy-control-plane DOCKER_COMPOSE_OPTIONS=--detach
     - run:
         name: Wait until Envoy listener gets configured
-        command: docker run --network docker-compose_envoymesh --rm -ti circleci/golang:1.12 dockerize -wait http://app:8080 -timeout 1m
+        command: make wait/example/docker-compose -C components/konvoy-control-plane
     - run:
         name: Make test requests via Envoy
-        command: |
-          docker run --network docker-compose_envoymesh --rm -ti circleci/golang:1.12 sh -c 'set -e ; for i in `seq 1 10`; do test $(curl -s http://app:8080 | jq -r .url) = "http://mockbin.org/request" && echo "request #$i successful" ; sleep 1 ; done'
+        command: make curl/example/docker-compose -C components/konvoy-control-plane
     - run:
-        name: Verify number of Inbound requests via Envoy
-        command: |
-          test $( docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8080"}' | awk  '{print $2}' | tr -d [:space:] ) -ge 10
-    - run:
-        name: Verify number of Outbound requests via Envoy
-        command: |
-          test $( docker-compose --file components/konvoy-control-plane/examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk  '{print $2}' | tr -d [:space:] ) -ge 10
+        name: Verify Envoy stats
+        command: make verify/example/docker-compose -C components/konvoy-control-plane
 
   konvoy-control-plane/example/minikube:
     <<: *vm-executor-defaults
