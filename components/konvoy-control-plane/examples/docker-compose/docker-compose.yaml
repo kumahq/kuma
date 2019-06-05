@@ -1,0 +1,44 @@
+version: '3.5'
+services:
+
+  konvoy-control-plane:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    expose:
+      - "5678"
+      - "5679"
+    ports:
+      - "5678:5678"
+      - "5679:5679"
+    networks:
+      envoymesh:
+        aliases:
+          - konvoy-control-plane
+
+  envoy:
+    build:
+      context: .
+      dockerfile: Dockerfile.envoy-sidecar
+    volumes:
+      - ./istio-iptables.sh:/usr/local/bin/istio-iptables.sh
+      - ./envoy-sidecar-startup.sh:/usr/local/bin/envoy-sidecar-startup.sh
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+    cap_add:
+      - NET_ADMIN
+    command:
+      - /usr/local/bin/envoy-sidecar-startup.sh
+    networks:
+      envoymesh:
+        aliases:
+          - app
+
+    expose:
+      - "8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - konvoy-control-plane
+
+networks:
+  envoymesh: {}

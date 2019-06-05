@@ -1,0 +1,302 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: konvoy-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: konvoy-control-plane
+  namespace: konvoy-system
+spec:
+  ports:
+  - port: 5678
+    name: grpc-xds
+  - port: 5679
+    name: http-xds
+  selector:
+    app: konvoy-control-plane
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: konvoy-control-plane-service-account
+  namespace: konvoy-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: konvoy-control-plane
+  namespace: konvoy-system
+  labels:
+    app: konvoy-control-plane
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: konvoy-control-plane
+  template:
+    metadata:
+      labels:
+        app: konvoy-control-plane
+    spec:
+      serviceAccountName: konvoy-control-plane-service-account
+      containers:
+      - name: control-plane
+        image: "konvoy/konvoy-control-plane:latest"
+        imagePullPolicy: IfNotPresent
+        args:
+        - run
+        - --grpc-port=5678
+        - --http-port=5679
+        ports:
+        - containerPort: 5678
+        - containerPort: 5679
+        livenessProbe:
+          httpGet:
+            path: /healthy
+            port: 5680
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5680
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: konvoy-demo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: envoy-sidecar-config
+  namespace: konvoy-demo
+data:
+  launcher.sh: |
+    #!/usr/bin/env sh
+    set -e
+    exec envoy --config-yaml "node: {metadata: {'IPS': '${INSTANCE_IP}', 'PORTS': '${INBOUND_PORTS}'}}" "$@"
+  bootstrap.yaml: |
+    admin:
+      access_log_path: /tmp/admin_access.log
+      address:
+        socket_address:
+          protocol: TCP
+          address: 127.0.0.1
+          port_value: 9901
+
+    node:
+      id: side-car
+      cluster: demo-app
+
+    dynamic_resources:
+      lds_config: {ads: {}}
+      cds_config: {ads: {}}
+      ads_config:
+        api_type: GRPC
+        grpc_services:
+          envoy_grpc:
+            cluster_name: ads_cluster
+
+    static_resources:
+      clusters:
+      - name: ads_cluster
+        connect_timeout: 0.25s
+        type: STRICT_DNS
+        lb_policy: ROUND_ROBIN
+        http2_protocol_options: {}
+        upstream_connection_options:
+          # configure a TCP keep-alive to detect and reconnect to the admin
+          # server in the event of a TCP socket half open connection
+          tcp_keepalive: {}
+        load_assignment:
+          cluster_name: ads_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: konvoy-control-plane.konvoy-system
+                    port_value: 5678
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-app-config
+  namespace: konvoy-demo
+data:
+  kong.yml: |
+    _format_version: "1.1"
+
+    services:
+    - name: mockbin.org
+      url: http://mockbin.org
+      routes:
+      - name: default
+        paths:
+        - /
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app
+  namespace: konvoy-demo
+spec:
+  ports:
+  - port: 8000
+    name: http
+  selector:
+    app: demo-app
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: demo-app-service-account
+  namespace: konvoy-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: konvoy-demo
+  labels:
+    app: demo-app
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: demo-app
+  template:
+    metadata:
+      labels:
+        app: demo-app
+    spec:
+      serviceAccountName: demo-app-service-account
+      containers:
+      - name: demo-app
+        image: "kong:1.1.2-alpine"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        env:
+        - name: KONG_ADMIN_LISTEN
+          value: "off"
+        - name: KONG_DATABASE
+          value: "off"
+        - name: KONG_DECLARATIVE_CONFIG
+          value: "/etc/kong/kong.yml"
+        volumeMounts:
+        - name: demo-app-config
+          mountPath: /etc/kong
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+      - name: envoy-sidecar
+        image: envoyproxy/envoy-alpine:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: INSTANCE_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: INBOUND_PORTS
+          value: "8000"
+        args:
+        - /etc/envoy/launcher.sh
+        - -c
+        - /etc/envoy/bootstrap.yaml
+        livenessProbe:
+          exec:
+            command:
+            - wget
+            - -qO-
+            - http://localhost:9901
+        readinessProbe:
+          exec:
+            command:
+            - wget
+            - -qO-
+            - http://localhost:9901
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        securityContext:
+          runAsUser: 5678
+          runAsGroup: 5678
+        volumeMounts:
+        - name: envoy-sidecar-config
+          mountPath: /etc/envoy
+      volumes:
+      - name: demo-app-config
+        configMap:
+          name: demo-app-config
+      - name: envoy-sidecar-config
+        configMap:
+          name: envoy-sidecar-config
+          items:
+          - key: bootstrap.yaml
+            path: bootstrap.yaml
+          - key: launcher.sh
+            path: launcher.sh
+            mode: 0555
+      initContainers:
+      - args:
+        - -p
+        - "15001"
+        - -u
+        - "5678"
+        - -g
+        - "5678"
+        - -m
+        - REDIRECT
+        - -i
+        - '*'
+        - -b
+        - '*'
+        image: docker.io/istio/proxy_init:1.1.2
+        imagePullPolicy: IfNotPresent
+        name: istio-init
+        resources:
+          limits:
+            cpu: 100m
+            memory: 50Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
