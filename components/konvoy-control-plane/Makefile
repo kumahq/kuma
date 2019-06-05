@@ -1,11 +1,13 @@
-.PHONY: help fmt vet build run image \
+.PHONY: help clean \
+		dev/tools dev/install/ginkgo dev/install/kubebuilder dev/install/kustomize dev/install/kubectl dev/install/kind dev/install/minikube \
+		start/deps \
+		fmt vet check build run image \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
         run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
         verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
 		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
-		ci/install/minikube ci/install/kubectl
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts
@@ -26,14 +28,122 @@ SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "example", "metadata": {"IPS": "$(E
 
 CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 
+CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.2
+CI_KIND_VERSION ?= v0.3.0
 CI_MINIKUBE_VERSION ?= v1.1.0
 CI_KUBECTL_VERSION ?= v1.14.0
 CI_TOOLS_IMAGE ?= circleci/golang:1.12
 
+CI_TOOLS_DIR ?= $(HOME)/bin
+PATH := $(CI_TOOLS_DIR):$(PATH)
+
+KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
+KUBEBUILDER_PATH := $(CI_TOOLS_DIR)/kubebuilder
+KUSTOMIZE_PATH := $(CI_TOOLS_DIR)/kustomize
+KIND_PATH := $(CI_TOOLS_DIR)/kind
+MINIKUBE_PATH := $(CI_TOOLS_DIR)/minikube
+KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
+
 DOCKER_COMPOSE_OPTIONS ?=
+
+GOOS := $(shell go env GOOS)
+GOARCH := $(shell go env GOARCH)
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+dev/tools: dev/install/ginkgo dev/install/kubebuilder dev/install/kustomize dev/install/kubectl dev/install/kind dev/install/minikube ## Bootstrap: Install all development tools
+
+dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
+	# see https://github.com/onsi/ginkgo#set-me-up
+	echo "Installing Ginkgo ..."
+	go get -u github.com/onsi/ginkgo/ginkgo  # installs the ginkgo CLI
+	echo "Ginkgo has been installed at $(shell go env GOPATH)/bin/ginkgo"
+	echo "Installing Gomega ..."
+	go get -u github.com/onsi/gomega/...     # fetches the matcher library
+	echo "Gomega has been installed"
+
+dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and kube-apiserver)
+	# see https://book.kubebuilder.io/quick-start.html#installation
+	@if [ -e $(KUBEBUILDER_PATH) ]; then echo "Kubebuilder $$( $(KUBEBUILDER_PATH) version ) is already installed at $(KUBEBUILDER_PATH)" ; fi
+	@if [ ! -e $(KUBEBUILDER_PATH) -a -d $(KUBEBUILDER_DIR) ]; then echo "Can not install Kubebuilder since directory $(KUBEBUILDER_DIR) already exists. Please remove/rename it and try again" ; false ; fi
+	@if [ ! -e $(KUBEBUILDER_PATH) ]; then \
+		echo "Installing Kubebuilder $(CI_KUBEBUILDER_VERSION) ..." \
+		&& set -x \
+		&& curl -L https://go.kubebuilder.io/dl/$(CI_KUBEBUILDER_VERSION)/$(GOOS)/$(GOARCH) | tar -xz -C /tmp/ \
+		&& mkdir -p $(KUBEBUILDER_DIR) \
+		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
+		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH) \
+        && for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_DIR)/$${tool}" ; else echo "$(CI_TOOLS_DIR)/$${tool} already exists" ; fi; done \
+		&& set +x \
+		&& echo "Kubebuilder $(CI_KUBEBUILDER_VERSION) has been installed at $(KUBEBUILDER_PATH)" ; fi
+
+dev/install/kustomize: ## Bootstrap: Install Kustomize
+	# see https://book.kubebuilder.io/quick-start.html#installation
+	@if [ -e $(KUSTOMIZE_PATH) ]; then echo "Kustomize $$( $(KUSTOMIZE_PATH) version ) is already installed at $(KUSTOMIZE_PATH)" ; fi
+	@if [ ! -e $(KUSTOMIZE_PATH) ]; then \
+		echo "Installing Kustomize latest ..." \
+		&& set -x \
+		&& curl -Lo kustomize https://go.kubebuilder.io/kustomize/$(GOOS)/$(GOARCH) \
+		&& chmod +x kustomize \
+		&& mkdir -p $(KUBEBUILDER_DIR)/bin \
+		&& mv kustomize $(KUBEBUILDER_DIR)/bin/ \
+		&& ln -s $(KUBEBUILDER_DIR)/bin/kustomize $(KUSTOMIZE_PATH) \
+		&& set +x \
+		&& echo "Kustomize latest has been installed at $(KUSTOMIZE_PATH)" ; fi
+
+dev/install/kubectl: ## Bootstrap: Install kubectl
+	# see https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-binary-with-curl-on-linux
+	@if [ -e $(KUBECTL_PATH) ]; then echo "Kubectl $$( $(KUBECTL_PATH) version ) is already installed at $(KUBECTL_PATH)" ; fi
+	@if [ ! -e $(KUBECTL_PATH) ]; then \
+		echo "Installing Kubectl $(CI_KUBECTL_VERSION) ..." \
+		&& set -x \
+		&& curl -LO https://storage.googleapis.com/kubernetes-release/release/$(CI_KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl \
+		&& chmod +x kubectl \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mv kubectl $(KUBECTL_PATH) \
+		&& set +x \
+		&& echo "Kubectl $(CI_KUBECTL_VERSION) has been installed at $(KUBECTL_PATH)" ; fi
+
+dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
+	# see https://kind.sigs.k8s.io/docs/user/quick-start/#installation
+	@if [ -e $(KIND_PATH) ]; then echo "Kind $$( $(KIND_PATH) version ) is already installed at $(KIND_PATH)" ; fi
+	@if [ ! -e $(KIND_PATH) ]; then \
+		echo "Installing Kind $(CI_KIND_VERSION) ..." \
+		&& set -x \
+		&& curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/$(CI_KIND_VERSION)/kind-$(GOOS)-$(GOARCH) \
+		&& chmod +x kind \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mv kind $(KIND_PATH) \
+		&& set +x \
+		&& echo "Kind $(CI_KIND_VERSION) has been installed at $(KIND_PATH)" ; fi
+
+dev/install/minikube: ## Bootstrap: Install Minikube
+	# see https://kubernetes.io/docs/tasks/tools/install-minikube/#linux
+	@if [ -e $(MINIKUBE_PATH) ]; then echo "Minikube $$( $(MINIKUBE_PATH) version ) is already installed at $(MINIKUBE_PATH)" ; fi
+	@if [ ! -e $(MINIKUBE_PATH) ]; then \
+		echo "Installing Minikube $(CI_MINIKUBE_VERSION) ..." \
+		&& set -x \
+		&& curl -Lo minikube https://storage.googleapis.com/minikube/releases/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
+		&& chmod +x minikube \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mv minikube $(MINIKUBE_PATH) \
+		&& set +x \
+		&& echo "Minikube $(CI_MINIKUBE_VERSION) has been installed at $(MINIKUBE_PATH)" ; fi
+
+start/deps: start/kind ## Bootstrap: Start dependencies (etcd + kube-apiserver)
+
+start/kind:
+	kind create cluster --name konvoy 2>/dev/null || true
+	@echo
+	@echo
+	@echo "!!! You need to manually run the following command in your shell: !!!"
+	@echo
+	@echo
+	@echo export KUBECONFIG="$$(kind get kubeconfig-path --name=konvoy)"
+
+clean: ## Dev: Clean
+	rm -rf "$(BUILD_DIR)"
 
 fmt: ## Dev: Run go fmt
 	go fmt ./...
@@ -118,9 +228,3 @@ verify/example/minikube/outbound:
 	@echo "Check passed!"
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
-
-ci/install/minikube: ## CI: Install Minikube
-	curl -Lo minikube https://storage.googleapis.com/minikube/releases/$(CI_MINIKUBE_VERSION)/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
-
-ci/install/kubectl: ## CI: Install kubectl
-	curl -LO https://storage.googleapis.com/kubernetes-release/release/$(CI_KUBECTL_VERSION)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/

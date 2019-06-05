@@ -15,7 +15,60 @@ vm-executor-defaults: &vm-executor-defaults
   machine:
     image: ubuntu-1604:201903-01
 
+mac-executor-defaults: &mac-executor-defaults
+  macos:
+    xcode: "9.0"
+
 jobs:
+  kcp/dev/golang:
+    docker:
+    - image: golang:1.12.5
+    environment:
+      GO111MODULE: "on"
+    steps:
+    - checkout
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools -C components/konvoy-control-plane
+
+  kcp/dev/ubuntu:
+    docker:
+    - image: ubuntu:16.04
+    environment:
+      GO_VERSION: 1.12.5
+      GO111MODULE: "on"
+    steps:
+    - checkout
+    - run:
+        name: "Install Go"
+        command: |
+          apt update && apt install -y curl git make
+          # see https://golang.org/doc/install#tarball
+          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
+    - run:
+        name: "Install all development tools"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          make dev/tools -C components/konvoy-control-plane
+
+  kcp/dev/mac:
+    <<: *mac-executor-defaults
+    environment:
+      GO_VERSION: 1.12.5
+      GO111MODULE: "on"
+    steps:
+    - checkout
+    - run:
+        name: "Install Go"
+        command: |
+          # see https://golang.org/doc/install#tarball
+          curl -L https://dl.google.com/go/go${GO_VERSION}.darwin-amd64.tar.gz | tar -xz -C $HOME
+    - run:
+        name: "Install all development tools"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          make dev/tools -C components/konvoy-control-plane
+
   kcp/check:
     <<: *go-defaults
     steps:
@@ -72,13 +125,13 @@ jobs:
     - checkout
     - run:
         name: Install Minikube
-        command: make ci/install/minikube -C components/konvoy-control-plane
+        command: make dev/install/minikube -C components/konvoy-control-plane
     - run:
         name: Install Kubectl
-        command: make ci/install/kubectl -C components/konvoy-control-plane
+        command: make dev/install/kubectl -C components/konvoy-control-plane
     - run:
         name: Start Minikube
-        command: sudo CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none
+        command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none
     - run:
         name: Build Control Plane
         command: make build/example/minikube -C components/konvoy-control-plane
@@ -99,6 +152,9 @@ workflows:
   version: 2
   konvoy-control-plane:
     jobs:
+    - kcp/dev/golang
+    - kcp/dev/mac
+    - kcp/dev/ubuntu
     - kcp/check
     - kcp/build:
         requires:
