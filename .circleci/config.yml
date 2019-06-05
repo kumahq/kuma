@@ -16,7 +16,7 @@ vm-executor-defaults: &vm-executor-defaults
     image: ubuntu-1604:201903-01
 
 jobs:
-  konvoy-control-plane/check:
+  kcp/check:
     <<: *go-defaults
     steps:
     - checkout
@@ -29,7 +29,7 @@ jobs:
         paths:
           - "/go/pkg/mod"
 
-  konvoy-control-plane/build:
+  kcp/build:
     <<: *go-defaults
     steps:
     - checkout
@@ -42,14 +42,14 @@ jobs:
         paths:
           - "/go/pkg/mod"
 
-  konvoy-control-plane/image:
+  kcp/image:
     <<: *remote-docker-defaults
     steps:
     - checkout
     - setup_remote_docker
     - run: make image -C components/konvoy-control-plane
 
-  konvoy-control-plane/example/docker-compose:
+  kcp/example/docker-compose:
     <<: *vm-executor-defaults
     environment:
       TEST_TOOLS_IMAGE: circleci/golang:1.12
@@ -68,7 +68,7 @@ jobs:
         name: Verify Envoy stats
         command: make verify/example/docker-compose -C components/konvoy-control-plane
 
-  konvoy-control-plane/example/minikube:
+  kcp/example/minikube:
     <<: *vm-executor-defaults
     environment:
       MINIKUBE_VERSION: v1.1.0
@@ -105,16 +105,16 @@ workflows:
   version: 2
   konvoy-control-plane:
     jobs:
-    - konvoy-control-plane/check
-    - konvoy-control-plane/build:
+    - kcp/check
+    - kcp/build:
         requires:
-        - konvoy-control-plane/check
-    - konvoy-control-plane/image:
+        - kcp/check
+    - kcp/image:
         requires:
-        - konvoy-control-plane/build
-    - konvoy-control-plane/example/docker-compose:
+        - kcp/build
+    - kcp/example/docker-compose:
         requires:
-        - konvoy-control-plane/build
-    - konvoy-control-plane/example/minikube:
+        - kcp/build
+    - kcp/example/minikube:
         requires:
-        - konvoy-control-plane/build
+        - kcp/build
