@@ -51,8 +51,6 @@ jobs:
 
   kcp/example/docker-compose:
     <<: *vm-executor-defaults
-    environment:
-      TEST_TOOLS_IMAGE: circleci/golang:1.12
     steps:
     - checkout
     - run:
@@ -70,27 +68,23 @@ jobs:
 
   kcp/example/minikube:
     <<: *vm-executor-defaults
-    environment:
-      MINIKUBE_VERSION: v1.1.0
-      KUBECTL_VERSION: v1.14.0
-      TEST_TOOLS_IMAGE: circleci/golang:1.12
     steps:
     - checkout
     - run:
         name: Install Minikube
-        command: curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        command: make ci/install/minikube -C components/konvoy-control-plane
     - run:
         name: Install Kubectl
-        command: curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        command: make ci/install/kubectl -C components/konvoy-control-plane
     - run:
         name: Start Minikube
         command: sudo CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none
     - run:
         name: Build Control Plane
-        command: eval $(minikube docker-env) && make image -C components/konvoy-control-plane
+        command: make build/example/minikube -C components/konvoy-control-plane
     - run:
         name: Deploy Konvoy demo
-        command: kubectl apply -f components/konvoy-control-plane/examples/minikube/konvoy-demo.yaml
+        command: make deploy/example/minikube -C components/konvoy-control-plane
     - run:
         name: Wait until Envoy listener gets configured
         command: make wait/example/minikube -C components/konvoy-control-plane

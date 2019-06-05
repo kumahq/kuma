@@ -1,6 +1,11 @@
 Konvoy Control Plane inside Minikube
 ====================
 
+## Pre-requirements
+
+- `minikube`
+- `kubectl`
+
 ## Usage
 
 ### Start Minikube
@@ -12,39 +17,43 @@ minikube start
 ### Build Control Plane image
 
 ```bash
-# point at Docker daemon inside Minikube
-eval $(minikube docker-env)
-
-# build Docker image with Control Plane
-make image -C ../..
+make build/example/minikube -C ../..
 ```
 
 ### Deploy demo setup into Minikube
 
 ```bash
-kubectl apply -f konvoy-demo.yaml
+make deploy/example/minikube -C ../..
 ```
 
 ### Make test requests
 
 ```bash
-kubectl -n konvoy-demo run --rm -it busybox --image=busybox --restart=Never -- sh -c 'while true ; do wget -qO- demo-app:8000/request ; sleep 1 ; done'
+make wait/example/minikube -C ../..
+make curl/example/minikube -C ../..
+```
+
+### Verify Envoy stats
+
+```bash
+make verify/example/minikube -C ../..
 ```
 
 ### Observe Envoy stats
 
 ```bash
-kubectl -n konvoy-demo exec $(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c envoy-sidecar -- wget -qO- http://localhost:9901/stats | grep upstream_rq_total
+make stats/example/minikube -C ../..
 ```
 
 E.g.,
 ```
-cluster.ads_cluster.upstream_rq_total: 1
-cluster.localhost_8080.upstream_rq_total: 7
-cluster.pass_through.upstream_rq_total: 7
+# TYPE envoy_cluster_upstream_rq_total counter
+envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"} 11
+envoy_cluster_upstream_rq_total{envoy_cluster_name="ads_cluster"} 1
+envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"} 3
 ```
 
 where
 
-* `cluster.localhost_8080.upstream_rq_total` is a number of `inbound` requests
-* `cluster.pass_through.upstream_rq_total` is a number of `outbound` requests
+* `envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}` is a number of `inbound` requests
+* `envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}` is a number of `outbound` requests
