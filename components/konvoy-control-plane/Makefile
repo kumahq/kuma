@@ -34,8 +34,8 @@ CI_MINIKUBE_VERSION ?= v1.1.0
 CI_KUBECTL_VERSION ?= v1.14.0
 CI_TOOLS_IMAGE ?= circleci/golang:1.12
 
-CI_TOOLS_DIR ?= /usr/local/bin
-SUDO_CI_TOOLS_DIR := $(if $(shell test -w $(CI_TOOLS_DIR) && echo "w"),,sudo)
+CI_TOOLS_DIR ?= $(HOME)/bin
+PATH := $(CI_TOOLS_DIR):$(PATH)
 
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
 KUBEBUILDER_PATH := $(CI_TOOLS_DIR)/kubebuilder
@@ -71,10 +71,10 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 		echo "Installing Kubebuilder $(CI_KUBEBUILDER_VERSION) ..." \
 		&& set -x \
 		&& curl -L https://go.kubebuilder.io/dl/$(CI_KUBEBUILDER_VERSION)/$(GOOS)/$(GOARCH) | tar -xz -C /tmp/ \
-		&& $(SUDO_CI_TOOLS_DIR) mkdir -p $(KUBEBUILDER_DIR) \
-		&& $(SUDO_CI_TOOLS_DIR) cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
+		&& mkdir -p $(KUBEBUILDER_DIR) \
+		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
 		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH) \
-        && $(SUDO_CI_TOOLS_DIR) for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_DIR)/$${tool}" ; else echo "$(CI_TOOLS_DIR)/$${tool} already exists" ; fi; done \
+        && for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_DIR)/$${tool}" ; else echo "$(CI_TOOLS_DIR)/$${tool} already exists" ; fi; done \
 		&& set +x \
 		&& echo "Kubebuilder $(CI_KUBEBUILDER_VERSION) has been installed at $(KUBEBUILDER_PATH)" ; fi
 
@@ -86,9 +86,9 @@ dev/install/kustomize: ## Bootstrap: Install Kustomize
 		&& set -x \
 		&& curl -Lo kustomize https://go.kubebuilder.io/kustomize/$(GOOS)/$(GOARCH) \
 		&& chmod +x kustomize \
-		&& $(SUDO_CI_TOOLS_DIR) mkdir -p $(KUBEBUILDER_DIR)/bin \
-		&& $(SUDO_CI_TOOLS_DIR) mv kustomize $(KUBEBUILDER_DIR)/bin/ \
-		&& $(SUDO_CI_TOOLS_DIR) ln -s $(KUBEBUILDER_DIR)/bin/kustomize $(KUSTOMIZE_PATH) \
+		&& mkdir -p $(KUBEBUILDER_DIR)/bin \
+		&& mv kustomize $(KUBEBUILDER_DIR)/bin/ \
+		&& ln -s $(KUBEBUILDER_DIR)/bin/kustomize $(KUSTOMIZE_PATH) \
 		&& set +x \
 		&& echo "Kustomize latest has been installed at $(KUSTOMIZE_PATH)" ; fi
 
@@ -100,7 +100,8 @@ dev/install/kubectl: ## Bootstrap: Install kubectl
 		&& set -x \
 		&& curl -LO https://storage.googleapis.com/kubernetes-release/release/$(CI_KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl \
 		&& chmod +x kubectl \
-		&& $(SUDO_CI_TOOLS_DIR) mv kubectl $(KUBECTL_PATH) \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mv kubectl $(KUBECTL_PATH) \
 		&& set +x \
 		&& echo "Kubectl $(CI_KUBECTL_VERSION) has been installed at $(KUBECTL_PATH)" ; fi
 
@@ -112,7 +113,8 @@ dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 		&& set -x \
 		&& curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/$(CI_KIND_VERSION)/kind-$(GOOS)-$(GOARCH) \
 		&& chmod +x kind \
-		&& $(SUDO_CI_TOOLS_DIR) mv kind $(KIND_PATH) \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mv kind $(KIND_PATH) \
 		&& set +x \
 		&& echo "Kind $(CI_KIND_VERSION) has been installed at $(KIND_PATH)" ; fi
 
@@ -124,7 +126,8 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 		&& set -x \
 		&& curl -Lo minikube https://storage.googleapis.com/minikube/releases/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
 		&& chmod +x minikube \
-		&& $(SUDO_CI_TOOLS_DIR) mv minikube $(MINIKUBE_PATH) \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mv minikube $(MINIKUBE_PATH) \
 		&& set +x \
 		&& echo "Minikube $(CI_MINIKUBE_VERSION) has been installed at $(MINIKUBE_PATH)" ; fi
 

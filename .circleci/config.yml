@@ -44,10 +44,12 @@ jobs:
         command: |
           apt update && apt install -y curl git make
           # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C /usr/local
+          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - run:
         name: "Install all development tools"
-        command: PATH=$PATH:/usr/local/go/bin make dev/tools -C components/konvoy-control-plane
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          make dev/tools -C components/konvoy-control-plane
 
   kcp/dev/mac:
     <<: *mac-executor-defaults
@@ -60,10 +62,12 @@ jobs:
         name: "Install Go"
         command: |
           # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.darwin-amd64.tar.gz | sudo tar -xz -C /usr/local
+          curl -L https://dl.google.com/go/go${GO_VERSION}.darwin-amd64.tar.gz | tar -xz -C $HOME
     - run:
         name: "Install all development tools"
-        command: PATH=$PATH:/usr/local/go/bin make dev/tools -C components/konvoy-control-plane
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          make dev/tools -C components/konvoy-control-plane
 
   kcp/check:
     <<: *go-defaults
@@ -127,7 +131,7 @@ jobs:
         command: make dev/install/kubectl -C components/konvoy-control-plane
     - run:
         name: Start Minikube
-        command: sudo CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none
+        command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none
     - run:
         name: Build Control Plane
         command: make build/example/minikube -C components/konvoy-control-plane
