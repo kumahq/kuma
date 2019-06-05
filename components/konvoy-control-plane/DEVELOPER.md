@@ -2,7 +2,43 @@
 
 ## Pre-requirements
 
-1. Install [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker)
+- `curl`
+- `git`
+- `go`
+- `make`
+
+For a quick start, use official `golang` Docker image (which has all these tools pre-installed), e.g.
+
+```bash
+docker run --rm -ti \
+  --volume `pwd`:/go/src/github.com/Kong/konvoy/components/konvoy-control-plane \
+  --workdir /go/src/github.com/Kong/konvoy/components/konvoy-control-plane \
+  --env GO111MODULE=on \
+  golang:1.12.5 bash
+```
+
+## Helper commands
+
+```bash
+make help
+```
+
+## Installing dev tools
+
+Run:
+
+```bash
+make dev/tools
+```
+
+which will install the following tools at `/usr/local/bin`
+
+1. [Ginkgo](https://github.com/onsi/ginkgo#set-me-up) (BDD testing framework)
+2. [Kubebuilder](https://book.kubebuilder.io/quick-start.html#installation) (Kubernetes API extension framework, comes with `etcd` and `kube-apiserver`)
+3. [kustomize](https://book.kubebuilder.io/quick-start.html#installation) (Customization of kubernetes YAML configurations)
+4. [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-binary-with-curl-on-linux) (Kubernetes API client)
+5. [KIND](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) (Kubernetes IN Docker)
+6. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/#linux) (Kubernetes in VM)
 
 ## Building
 
@@ -17,8 +53,8 @@ make build
 Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
 
 ```bash
-kind create cluster --name konvoy
-export KUBECONFIG="$(kind get kubeconfig-path --name="konvoy")"
+make start/deps
+export KUBECONFIG="$(kind get kubeconfig-path --name=konvoy)"
 ```
 
 Run Control Plane:
