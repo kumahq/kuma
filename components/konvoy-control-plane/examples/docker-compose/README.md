@@ -1,35 +1,46 @@
 Konvoy Control Plane inside Docker Compose 
 ====================
 
+## Pre-requirements
+
+- `docker-compose`
+
 ## Usage
 
-Build and run the containers:
+### Build and run the containers
 
 ```bash
-docker-compose pull
-docker-compose up --build
+make run/example/docker-compose -C ../..
 ```
 
-Make test requests:
+### Make test requests
 
 ```bash
-docker run --network docker-compose_envoymesh --rm -ti tutum/curl sh -c 'while true ; do curl http://app:8080 && sleep 1 ; done'
+make wait/example/docker-compose -C ../..
+make curl/example/docker-compose -C ../..
 ```
 
-Observe Envoy stats:
+### Verify Envoy stats
 
 ```bash
-watch 'docker exec docker-compose_envoy_1 curl -s localhost:9901/stats | grep upstream_rq_total'
+make verify/example/docker-compose -C ../..
+```
+
+### Observe Envoy stats
+
+```bash
+make stats/example/docker-compose -C ../..
 ```
 
 E.g.,
 ```
-cluster.ads_cluster.upstream_rq_total: 1
-cluster.localhost_8080.upstream_rq_total: 7
-cluster.pass_through.upstream_rq_total: 7
+# TYPE envoy_cluster_upstream_rq_total counter
+envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"} 11
+envoy_cluster_upstream_rq_total{envoy_cluster_name="ads_cluster"} 1
+envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8080"} 11
 ```
 
 where
 
-* `cluster.localhost_8080.upstream_rq_total` is a number of `inbound` requests
-* `cluster.pass_through.upstream_rq_total` is a number of `outbound` requests
+* `envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8080"}` is a number of `inbound` requests
+* `envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}` is a number of `outbound` requests

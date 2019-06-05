@@ -1,10 +1,54 @@
 version: '3.5'
 services:
 
+  etcd:
+    image: quay.io/coreos/etcd:v3.3.11
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd
+      - --listen-peer-urls=http://localhost:0
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --data-dir=/var/data/etcd
+    volumes:
+      - etcd:/var/data/etcd
+    expose:
+      - "2379"
+    networks:
+      envoymesh:
+        aliases:
+          - etcd
+
+  kube-apiserver:
+    image: gcr.io/google-containers/kube-apiserver-amd64:v1.14.1
+    command:
+    - /usr/local/bin/kube-apiserver
+    - --etcd-servers=http://etcd:2379
+    - --secure-port=8443
+    - --insecure-port=8080
+    - --insecure-bind-address=0.0.0.0
+    - --admission-control=AlwaysAdmit
+    expose:
+      - "8080"
+      - "8443"
+    ports:
+      - "18443:8443"
+      - "18080:8080"
+    networks:
+      envoymesh:
+        aliases:
+          - kube-apiserver
+    depends_on:
+      - etcd
+
   konvoy-control-plane:
     build:
       context: ../..
       dockerfile: Dockerfile
+    volumes:
+      - ./kubeconfig:/etc/konvoy-control-plane/kubeconfig
+    environment:
+      - KUBECONFIG=/etc/konvoy-control-plane/kubeconfig
     expose:
       - "5678"
       - "5679"
@@ -15,6 +59,8 @@ services:
       envoymesh:
         aliases:
           - konvoy-control-plane
+    depends_on:
+      - kube-apiserver
 
   envoy:
     build:
@@ -28,17 +74,19 @@ services:
       - NET_ADMIN
     command:
       - /usr/local/bin/envoy-sidecar-startup.sh
-    networks:
-      envoymesh:
-        aliases:
-          - app
-
     expose:
       - "8080"
     ports:
       - "8080:8080"
+    networks:
+      envoymesh:
+        aliases:
+          - demo-app
     depends_on:
       - konvoy-control-plane
 
 networks:
   envoymesh: {}
+
+volumes:
+  etcd:
