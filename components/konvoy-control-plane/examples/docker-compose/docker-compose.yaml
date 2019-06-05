@@ -81,7 +81,7 @@ services:
     networks:
       envoymesh:
         aliases:
-          - app
+          - demo-app
     depends_on:
       - konvoy-control-plane
 

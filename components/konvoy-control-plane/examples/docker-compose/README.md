@@ -14,7 +14,7 @@ docker-compose up
 Make test requests:
 
 ```bash
-docker run --network docker-compose_envoymesh --rm -ti tutum/curl sh -c 'while true ; do curl http://app:8080 && sleep 1 ; done'
+docker run --network docker-compose_envoymesh --rm -ti tutum/curl sh -c 'while true ; do curl http://demo-app:8080 && sleep 1 ; done'
 ```
 
 Observe Envoy stats:

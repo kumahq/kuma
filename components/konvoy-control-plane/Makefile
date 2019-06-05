@@ -67,10 +67,10 @@ run/example/docker-compose: ## Run example setup inside Docker Compose
 	docker-compose -f examples/docker-compose/docker-compose.yaml up $(DOCKER_COMPOSE_OPTIONS)
 
 wait/example/docker-compose: ## Wait for Docker Compose setup to get ready
-	docker run --network docker-compose_envoymesh --rm -ti $(TEST_TOOLS_IMAGE) dockerize -wait http://app:8080 -timeout 1m
+	docker run --network docker-compose_envoymesh --rm -ti $(TEST_TOOLS_IMAGE) dockerize -wait http://demo-app:8080 -timeout 1m
 
 curl/example/docker-compose: ## Make sample requests into Docker Compose setup
-	docker run --network docker-compose_envoymesh --rm -ti $(TEST_TOOLS_IMAGE) sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://app:8080 | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
+	docker run --network docker-compose_envoymesh --rm -ti $(TEST_TOOLS_IMAGE) sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://demo-app:8080 | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
 
 stats/example/docker-compose: ## Observe Envoy metrics from Docker Compose setup
 	watch 'docker-compose -f examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep upstream_rq_total'
