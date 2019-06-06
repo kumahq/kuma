@@ -76,7 +76,9 @@ jobs:
     - restore_cache:
         keys:
         - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
-    - run: make check -C components/konvoy-control-plane
+    - run:
+        name: "Run code checks (go fmt, go vet, ...)"
+        command: make check -C components/konvoy-control-plane
     - save_cache:
         key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
         paths:
@@ -89,7 +91,12 @@ jobs:
     - restore_cache:
         keys:
         - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
-    - run: make test -C components/konvoy-control-plane
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools -C components/konvoy-control-plane
+    - run:
+        name: "Run unit and integration tests"
+        command: make test -C components/konvoy-control-plane
     - save_cache:
         key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
         paths:

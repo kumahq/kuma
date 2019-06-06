@@ -38,14 +38,19 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 	go func() {
 		defer close(errChan)
 		if err := httpServer.ListenAndServe(); err != nil {
-			diagnosticsServerLog.Error(err, "terminated with an error")
-			errChan <- err
+			if err.Error() != "http: Server closed" {
+				diagnosticsServerLog.Error(err, "terminated with an error")
+				errChan <- err
+				return
+			}
 		}
+		diagnosticsServerLog.Info("terminated normally")
 	}()
 	diagnosticsServerLog.Info("starting", "port", s.port)
 
 	select {
 	case <-stop:
+		diagnosticsServerLog.Info("stopping")
 		return httpServer.Shutdown(context.Background())
 	case err := <-errChan:
 		return err

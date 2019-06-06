@@ -48,6 +48,12 @@ KUSTOMIZE_PATH := $(CI_TOOLS_DIR)/kustomize
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 MINIKUBE_PATH := $(CI_TOOLS_DIR)/minikube
 KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
+KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
+ETCD_PATH := $(CI_TOOLS_DIR)/etcd
+
+export TEST_ASSET_KUBE_APISERVER=$(KUBE_APISERVER_PATH)
+export TEST_ASSET_ETCD=$(ETCD_PATH)
+export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
 DOCKER_COMPOSE_OPTIONS ?=
 
@@ -161,7 +167,8 @@ check: fmt vet ## Dev: Run code checks (go fmt, go vet, ...)
 
 test: ## Dev: Run tests
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
-	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
+	# TODO(yskopets): Add '-race' once https://github.com/kubernetes-sigs/controller-runtime/pull/466 has been merged
+	go test -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 build: ## Dev: Build Control Plane binary
