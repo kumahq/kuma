@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 
+	util_error "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/error"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
@@ -64,9 +65,7 @@ func CreateInboundListener(listenerName string, address string, port uint32, clu
 		},
 	}
 	pbst, err := types.MarshalAny(config)
-	if err != nil {
-		panic(err)
-	}
+	util_error.MustNot(err)
 	return &v2.Listener{
 		Name: listenerName,
 		Address: core.Address{
@@ -103,9 +102,7 @@ func CreateCatchAllListener(listenerName string, address string, port uint32, cl
 		},
 	}
 	pbst, err := types.MarshalAny(config)
-	if err != nil {
-		panic(err)
-	}
+	util_error.MustNot(err)
 	return &v2.Listener{
 		Name: listenerName,
 		Address: core.Address{
