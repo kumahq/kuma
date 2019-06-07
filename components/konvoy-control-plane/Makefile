@@ -167,8 +167,7 @@ check: fmt vet ## Dev: Run code checks (go fmt, go vet, ...)
 
 test: ## Dev: Run tests
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
-	# TODO(yskopets): Add '-race' once https://github.com/kubernetes-sigs/controller-runtime/pull/466 has been merged
-	go test -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
+	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 build: ## Dev: Build Control Plane binary
