@@ -5,14 +5,30 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/envoyproxy/go-control-plane/pkg/cache"
 )
 
 var _ = Describe("Reconcile", func() {
-	Describe("basicSnapshotGenerator", func() {
+	Describe("reconciler", func() {
 
-		generator := basicSnapshotGenerator{}
+		var stopCh chan struct{}
+		var hasher hasher
+		var logger logger
 
-		It("should support Nodes without metadata", func() {
+		BeforeEach(func() {
+			stopCh = make(chan struct{})
+		})
+
+		AfterEach(func() {
+			close(stopCh)
+		})
+
+		It("should generate a Snaphot per Envoy Node", func() {
+			// setup
+			store := cache.NewSnapshotCache(true, hasher, logger)
+			nodes := make(chan *core.Node)
+			r := &reconciler{nodes, &basicSnapshotGenerator{}, &simpleSnapshotCacher{hasher, store}}
+
 			// given
 			node := &core.Node{
 				Id:      "side-car",
@@ -20,10 +36,20 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			// when
-			ss := generator.NewSnapshot(node)
+			go r.Start(stopCh)
+			nodes <- node
 
 			// then
-			Expect(ss).ToNot(BeNil())
+			Eventually(func() bool {
+				_, err := store.GetSnapshot(hasher.ID(node))
+				return err == nil
+			}, "1s", "1ms").Should(BeTrue())
+
+			// when
+			close(nodes)
+
+			// then
+			// nothing bad should happen
 		})
 	})
 })

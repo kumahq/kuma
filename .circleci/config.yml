@@ -95,7 +95,7 @@ jobs:
         name: "Install all development tools"
         command: make dev/tools -C components/konvoy-control-plane
     - run:
-        name: "Run unit and integration tests"
+        name: "Run unit tests"
         command: make test -C components/konvoy-control-plane
     - save_cache:
         key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}

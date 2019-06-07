@@ -29,8 +29,8 @@ type Server struct {
 func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
 	hasher := hasher{}
 	logger := logger{}
-	nodes := make(chan *v2_core.Node, 10)
 	store := cache.NewSnapshotCache(true, hasher, logger)
+	nodes := make(chan *v2_core.Node, 10)
 	cb := &callbacks{nodes}
 	srv := xds.NewServer(store, cb)
 
@@ -40,7 +40,7 @@ func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
 		// xDS HTTP API
 		&httpGateway{srv, s.Args.HttpPort},
 		// reconciliation loop
-		&reconciler{nodes, &basicSnapshotGenerator{}, hasher, store},
+		&reconciler{nodes, &basicSnapshotGenerator{}, &simpleSnapshotCacher{hasher, store}},
 		// diagnostics server
 		&diagnosticsServer{s.Args.DiagnosticsPort})
 }
