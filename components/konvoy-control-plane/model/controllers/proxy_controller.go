@@ -45,6 +45,9 @@ func (r *ProxyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *ProxyReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := meshv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		return err
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&meshv1alpha1.Proxy{}).
 		Complete(r)

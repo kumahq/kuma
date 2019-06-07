@@ -1,3 +1,5 @@
+.PHONY: all test manager run install crd/install crd/uninstall crd/upgrade deploy manifests fmt vet generate \
+		docker-build docker-push controller-gen
 
 # Image URL to use all building/pushing image targets
 IMG ?= konvoy/konvoy-controller-manager:latest
@@ -32,6 +34,15 @@ run: generate fmt vet
 # Install CRDs into a cluster
 install: manifests
 	kubectl apply -f config/crd/bases
+
+crd/install: ## Install CRDs into a cluster
+	kubectl apply -f config/crd/bases
+
+crd/uninstall: manifests ## Uninstall CRDs from a cluster
+	kubectl delete -f config/crd/bases
+
+crd/upgrade: manifests ## Upgrade CRDs in a cluster
+	kubectl diff -f config/crd/bases || kubectl apply -f config/crd/bases
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
@@ -68,8 +79,11 @@ docker-push:
 # download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0-beta.1
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0-beta.2
 CONTROLLER_GEN=$(shell go env GOPATH)/bin/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
+help: ## Display this help screen
+	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

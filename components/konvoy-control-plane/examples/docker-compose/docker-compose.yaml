@@ -18,6 +18,7 @@ services:
       envoymesh:
         aliases:
           - etcd
+    restart: on-failure
 
   kube-apiserver:
     image: gcr.io/google-containers/kube-apiserver-amd64:v1.14.1
@@ -40,6 +41,24 @@ services:
           - kube-apiserver
     depends_on:
       - etcd
+    restart: on-failure
+
+  konvoy-control-plane-installer:
+    image: bitnami/kubectl:1.14
+    volumes:
+      - ./kubeconfig:/etc/konvoy-control-plane/kubeconfig
+      - ../../model/config/crd/bases:/etc/konvoy/crds
+    environment:
+      - KUBECONFIG=/etc/konvoy-control-plane/kubeconfig
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - "echo -n 'Waiting for kube-apiserver to get up and running: '; while [ 1 ]; do wget -qO /dev/null http://kube-apiserver:8080/apis/apiextensions.k8s.io/v1beta1/customresourcedefinitions ; test $$? -eq 0 && break; echo -n .; sleep 1; done; echo ; echo 'Installing Konvoy CRDs'; kubectl apply -f /etc/konvoy/crds ; echo 'Installation complete!'"
+    networks:
+      envoymesh: {}
+    depends_on:
+      - kube-apiserver
+    restart: on-failure
 
   konvoy-control-plane:
     build:
@@ -60,7 +79,8 @@ services:
         aliases:
           - konvoy-control-plane
     depends_on:
-      - kube-apiserver
+      - konvoy-control-plane-installer
+    restart: on-failure
 
   envoy:
     build:
@@ -84,6 +104,7 @@ services:
           - demo-app
     depends_on:
       - konvoy-control-plane
+    restart: on-failure
 
 networks:
   envoymesh: {}

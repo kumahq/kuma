@@ -75,12 +75,12 @@ jobs:
     - checkout
     - restore_cache:
         keys:
-        - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}-{{ checksum "components/konvoy-control-plane/model/go.sum" }}
     - run:
-        name: "Run code checks (go fmt, go vet, ...)"
+        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check -C components/konvoy-control-plane
     - save_cache:
-        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}-{{ checksum "components/konvoy-control-plane/model/go.sum" }}
         paths:
           - "/go/pkg/mod"
 
@@ -90,7 +90,7 @@ jobs:
     - checkout
     - restore_cache:
         keys:
-        - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}-{{ checksum "components/konvoy-control-plane/model/go.sum" }}
     - run:
         name: "Install all development tools"
         command: make dev/tools -C components/konvoy-control-plane
@@ -98,7 +98,7 @@ jobs:
         name: "Run unit tests"
         command: make test -C components/konvoy-control-plane
     - save_cache:
-        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}-{{ checksum "components/konvoy-control-plane/model/go.sum" }}
         paths:
           - "/go/pkg/mod"
     - store_artifacts:
@@ -111,10 +111,10 @@ jobs:
     - checkout
     - restore_cache:
         keys:
-        - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}-{{ checksum "components/konvoy-control-plane/model/go.sum" }}
     - run: make build -C components/konvoy-control-plane
     - save_cache:
-        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}-{{ checksum "components/konvoy-control-plane/model/go.sum" }}
         paths:
           - "/go/pkg/mod"
 
