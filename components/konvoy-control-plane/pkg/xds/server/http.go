@@ -32,14 +32,19 @@ func (g *httpGateway) Start(stop <-chan struct{}) error {
 	go func() {
 		defer close(errChan)
 		if err := httpServer.ListenAndServe(); err != nil {
-			httpServerLog.Error(err, "terminated with an error")
-			errChan <- err
+			if err.Error() != "http: Server closed" {
+				httpServerLog.Error(err, "terminated with an error")
+				errChan <- err
+				return
+			}
 		}
+		httpServerLog.Info("terminated normally")
 	}()
 	httpServerLog.Info("starting", "port", g.port)
 
 	select {
 	case <-stop:
+		httpServerLog.Info("stopping")
 		return httpServer.Shutdown(context.Background())
 	case err := <-errChan:
 		return err

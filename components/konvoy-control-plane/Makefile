@@ -1,7 +1,7 @@
 .PHONY: help clean \
 		dev/tools dev/install/ginkgo dev/install/kubebuilder dev/install/kustomize dev/install/kubectl dev/install/kind dev/install/minikube \
 		start/deps \
-		fmt vet check build run image \
+		fmt vet check test build run image \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
         run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
@@ -11,6 +11,11 @@
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts
+
+BUILD_COVERAGE_DIR ?= $(BUILD_DIR)/coverage
+
+COVERAGE_PROFILE := $(BUILD_COVERAGE_DIR)/coverage.out
+COVERAGE_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage.html
 
 CP_BIND_HOST ?= localhost
 CP_GRPC_PORT ?= 5678
@@ -28,7 +33,7 @@ SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "example", "metadata": {"IPS": "$(E
 
 CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 
-CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.2
+CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.3
 CI_KIND_VERSION ?= v0.3.0
 CI_MINIKUBE_VERSION ?= v1.1.0
 CI_KUBECTL_VERSION ?= v1.14.0
@@ -43,6 +48,12 @@ KUSTOMIZE_PATH := $(CI_TOOLS_DIR)/kustomize
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 MINIKUBE_PATH := $(CI_TOOLS_DIR)/minikube
 KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
+KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
+ETCD_PATH := $(CI_TOOLS_DIR)/etcd
+
+export TEST_ASSET_KUBE_APISERVER=$(KUBE_APISERVER_PATH)
+export TEST_ASSET_ETCD=$(ETCD_PATH)
+export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
 DOCKER_COMPOSE_OPTIONS ?=
 
@@ -153,6 +164,11 @@ vet: ## Dev: Run go vet
 
 check: fmt vet ## Dev: Run code checks (go fmt, go vet, ...)
 	git diff --quiet # fail if Git working tree is dirty
+
+test: ## Dev: Run tests
+	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
+	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
+	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 build: ## Dev: Build Control Plane binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp

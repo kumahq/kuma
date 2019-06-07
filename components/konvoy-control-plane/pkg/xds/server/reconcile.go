@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"strconv"
 	"strings"
@@ -18,8 +19,7 @@ var (
 type reconciler struct {
 	nodes     <-chan *core.Node
 	generator snapshotGenerator
-	hasher    cache.NodeHash
-	store     cache.SnapshotCache
+	cacher    snapshotCacher
 }
 
 // Make sure that reconciler implements all relevant interfaces
@@ -36,16 +36,12 @@ func (r *reconciler) Start(stop <-chan struct{}) error {
 				return nil
 			}
 
-			snapshot := r.generator.NewSnapshot(node)
+			snapshot := r.generator.GenerateSnapshot(node)
 			if err := snapshot.Consistent(); err != nil {
 				reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot)
 			}
 
-			err := r.store.SetSnapshot(r.hasher.ID(node), snapshot)
-			if err != nil {
-				reconcileLog.Error(err, "failed to store snapshot", "snapshot", snapshot)
-				return err
-			}
+			r.cacher.Cache(node, snapshot)
 		case <-stop:
 			return nil
 		}
@@ -57,13 +53,27 @@ func (r *reconciler) NeedLeaderElection() bool {
 }
 
 type snapshotGenerator interface {
-	NewSnapshot(node *core.Node) cache.Snapshot
+	GenerateSnapshot(node *core.Node) cache.Snapshot
+}
+
+type versioner interface {
+	Version(m fmt.Stringer) string
+}
+
+type hashVersioner struct {
+}
+
+func (h hashVersioner) Version(m fmt.Stringer) string {
+	hr := sha1.New()
+	hr.Write([]byte(m.String()))
+	return fmt.Sprintf("%x", hr.Sum(nil))
 }
 
 type basicSnapshotGenerator struct {
+	hashVersioner
 }
 
-func (s *basicSnapshotGenerator) NewSnapshot(node *core.Node) cache.Snapshot {
+func (s *basicSnapshotGenerator) GenerateSnapshot(node *core.Node) cache.Snapshot {
 	nodeInfo := parseNodeInfo(node)
 
 	listeners := make([]cache.Resource, 0, 2)
@@ -83,7 +93,7 @@ func (s *basicSnapshotGenerator) NewSnapshot(node *core.Node) cache.Snapshot {
 		}
 	}
 
-	version := "v1"
+	version := s.Version(node)
 	out := cache.Snapshot{
 		Endpoints: cache.NewResources(version, []cache.Resource{}),
 		Clusters:  cache.NewResources(version, clusters),
@@ -131,4 +141,20 @@ func parseNodeInfo(node *core.Node) nodeInfo {
 	}
 
 	return nodeInfo{addresses, ports}
+}
+
+type snapshotCacher interface {
+	Cache(*core.Node, cache.Snapshot)
+}
+
+type simpleSnapshotCacher struct {
+	hasher cache.NodeHash
+	store  cache.SnapshotCache
+}
+
+func (s *simpleSnapshotCacher) Cache(node *core.Node, snapshot cache.Snapshot) {
+	err := s.store.SetSnapshot(s.hasher.ID(node), snapshot)
+	if err != nil {
+		reconcileLog.Error(err, "failed to store snapshot", "snapshot", snapshot)
+	}
 }

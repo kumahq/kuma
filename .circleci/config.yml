@@ -76,11 +76,34 @@ jobs:
     - restore_cache:
         keys:
         - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
-    - run: make check -C components/konvoy-control-plane
+    - run:
+        name: "Run code checks (go fmt, go vet, ...)"
+        command: make check -C components/konvoy-control-plane
     - save_cache:
         key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
         paths:
           - "/go/pkg/mod"
+
+  kcp/test:
+    <<: *go-defaults
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools -C components/konvoy-control-plane
+    - run:
+        name: "Run unit tests"
+        command: make test -C components/konvoy-control-plane
+    - save_cache:
+        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        paths:
+          - "/go/pkg/mod"
+    - store_artifacts:
+        path: components/konvoy-control-plane/build/coverage
+        destination: /coverage
 
   kcp/build:
     <<: *go-defaults
@@ -156,9 +179,12 @@ workflows:
     - kcp/dev/mac
     - kcp/dev/ubuntu
     - kcp/check
-    - kcp/build:
+    - kcp/test:
         requires:
         - kcp/check
+    - kcp/build:
+        requires:
+        - kcp/test
     - kcp/image:
         requires:
         - kcp/build

@@ -54,12 +54,15 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 		if err = grpcServer.Serve(lis); err != nil {
 			grpcServerLog.Error(err, "terminated with an error")
 			errChan <- err
+		} else {
+			grpcServerLog.Info("terminated normally")
 		}
 	}()
 	grpcServerLog.Info("starting", "port", s.port)
 
 	select {
 	case <-stop:
+		grpcServerLog.Info("stopping gracefully")
 		grpcServer.GracefulStop()
 		return nil
 	case err := <-errChan:
