@@ -33,7 +33,7 @@ SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "example", "metadata": {"IPS": "$(E
 
 CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 
-CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.2
+CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.3
 CI_KIND_VERSION ?= v0.3.0
 CI_MINIKUBE_VERSION ?= v1.1.0
 CI_KUBECTL_VERSION ?= v1.14.0
