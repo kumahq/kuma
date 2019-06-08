@@ -1,7 +1,16 @@
 ## build image
 FROM golang:1.12.5
-ENV GOPATH=
+ENV GO111MODULE=on
+
 WORKDIR /go/src/github.com/Kong/konvoy/components/konvoy-control-plane
+
+# facilitate docker layer caching
+COPY go.mod go.mod
+COPY go.sum go.sum
+COPY model/go.mod model/go.mod
+COPY model/go.sum model/go.sum
+RUN go mod download
+
 COPY . .
 
 RUN make build

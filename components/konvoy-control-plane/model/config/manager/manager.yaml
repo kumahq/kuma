@@ -46,6 +46,8 @@ spec:
       containers:
       - command:
         - /manager
+        args:
+        - --enable-leader-election
         image: konvoy/konvoy-controller-manager:latest
         imagePullPolicy: Always
         name: manager
