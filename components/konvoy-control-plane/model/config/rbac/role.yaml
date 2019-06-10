@@ -26,3 +26,23 @@ rules:
   - get
   - update
   - patch
+- apiGroups:
+  - mesh.getkonvoy.io
+  resources:
+  - proxytemplates
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - mesh.getkonvoy.io
+  resources:
+  - proxytemplates/status
+  verbs:
+  - get
+  - update
+  - patch

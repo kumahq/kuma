@@ -68,6 +68,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Proxy")
 		os.Exit(1)
 	}
+	err = (&controllers.ProxyTemplateReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("ProxyTemplate"),
+	}).SetupWithManager(mgr)
+	if err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ProxyTemplate")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
