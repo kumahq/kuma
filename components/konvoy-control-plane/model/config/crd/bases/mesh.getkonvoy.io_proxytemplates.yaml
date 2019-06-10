@@ -384,6 +384,55 @@ spec:
               type: string
           type: object
         spec:
+          properties:
+            sources:
+              description: List of configuration sources.
+              items:
+                properties:
+                  name:
+                    description: Name of a configuration source.
+                    type: string
+                  profile:
+                    description: Profile, e.g. `transparent-outbound-proxy`.
+                    properties:
+                      name:
+                        description: Profile name.
+                        type: string
+                      params:
+                        additionalProperties:
+                          type: string
+                        description: Profile params if any.
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  raw:
+                    description: Raw xDS resources.
+                    properties:
+                      resources:
+                        description: List of raw xDS resources.
+                        items:
+                          properties:
+                            name:
+                              description: The resource's name, to distinguish it
+                                from others of the same type of resource.
+                              type: string
+                            resource:
+                              description: xDS resource.
+                              type: string
+                            version:
+                              description: The resource level version. It allows xDS
+                                to track the state of individual resources.
+                              type: string
+                          required:
+                          - name
+                          - version
+                          - resource
+                          type: object
+                        type: array
+                    type: object
+                type: object
+              type: array
           type: object
         status:
           type: object

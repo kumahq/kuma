@@ -20,13 +20,61 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// Important: Run "make" to regenerate code after modifying this file
 
 // ProxyTemplateSpec defines the desired state of ProxyTemplate
 type ProxyTemplateSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+
+	// List of configuration sources.
+	// +optional
+	Sources []ProxyTemplateSource `json:"sources,omitempty"`
+}
+
+type ProxyTemplateSource struct {
+
+	// Name of a configuration source.
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// Profile, e.g. `transparent-outbound-proxy`.
+	// +optional
+	Profile *ProxyTemplateProfileSource `json:"profile,omitempty"`
+
+	// Raw xDS resources.
+	// +optional
+	Raw *ProxyTemplateRawSource `json:"raw,omitempty"`
+}
+
+type ProxyTemplateProfileSource struct {
+
+	// Profile name.
+	Name string `json:"name"`
+
+	// Profile params if any.
+	// +optional
+	Params map[string]string `json:"params,omitempty"`
+}
+
+type ProxyTemplateRawSource struct {
+
+	// List of raw xDS resources.
+	// +optional
+	Resources []ProxyTemplateRawResource `json:"resources,omitempty"`
+}
+
+type ProxyTemplateRawResource struct {
+
+	// The resource's name, to distinguish it from others of the same type of resource.
+	Name string `json:"name"`
+
+	// The resource level version. It allows xDS to track the state of individual
+	// resources.
+	Version string `json:"version"`
+
+	// xDS resource.
+	Resource string `json:"resource"`
 }
 
 // ProxyTemplateStatus defines the observed state of ProxyTemplate

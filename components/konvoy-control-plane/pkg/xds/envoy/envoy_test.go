@@ -1,11 +1,11 @@
-package server_test
+package envoy_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
-	envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/server"
+	envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 )
 
 var _ = Describe("Envoy", func() {

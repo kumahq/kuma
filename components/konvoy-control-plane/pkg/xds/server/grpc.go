@@ -8,8 +8,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
@@ -41,12 +41,12 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	}
 
 	// register services
-	discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, s.server)
-	v2.RegisterEndpointDiscoveryServiceServer(grpcServer, s.server)
-	v2.RegisterClusterDiscoveryServiceServer(grpcServer, s.server)
-	v2.RegisterRouteDiscoveryServiceServer(grpcServer, s.server)
-	v2.RegisterListenerDiscoveryServiceServer(grpcServer, s.server)
-	discovery.RegisterSecretDiscoveryServiceServer(grpcServer, s.server)
+	envoy_discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, s.server)
+	envoy.RegisterEndpointDiscoveryServiceServer(grpcServer, s.server)
+	envoy.RegisterClusterDiscoveryServiceServer(grpcServer, s.server)
+	envoy.RegisterRouteDiscoveryServiceServer(grpcServer, s.server)
+	envoy.RegisterListenerDiscoveryServiceServer(grpcServer, s.server)
+	envoy_discovery.RegisterSecretDiscoveryServiceServer(grpcServer, s.server)
 
 	errChan := make(chan error)
 	go func() {

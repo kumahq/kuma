@@ -188,9 +188,10 @@ workflows:
     - kcp/image:
         requires:
         - kcp/build
-    - kcp/example/docker-compose:
-        requires:
-        - kcp/build
+#    TODO(yskopets): Bring back support for Docker Compose
+#    - kcp/example/docker-compose:
+#        requires:
+#        - kcp/build
     - kcp/example/minikube:
         requires:
         - kcp/build

@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/controllers"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/server"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,11 +45,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane manager")
-				return err
-			}
-
-			if err := controllers.SetupWithManager(mgr); err != nil {
-				runLog.Error(err, "unable to set up individual Controllers")
 				return err
 			}
 

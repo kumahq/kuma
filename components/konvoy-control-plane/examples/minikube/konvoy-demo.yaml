@@ -76,7 +76,7 @@ data:
   launcher.sh: |
     #!/usr/bin/env sh
     set -e
-    exec envoy --config-yaml "node: {metadata: {'IPS': '${INSTANCE_IP}', 'PORTS': '${INBOUND_PORTS}'}}" "$@"
+    exec envoy --config-yaml "node: {id: '${POD_NAME}.${POD_NAMESPACE}', metadata: {'IPS': '${INSTANCE_IP}', 'PORTS': '${INBOUND_PORTS}'}}" "$@"
   bootstrap.yaml: |
     admin:
       access_log_path: /tmp/admin_access.log
@@ -87,7 +87,6 @@ data:
           port_value: 9901
 
     node:
-      id: side-car
       cluster: demo-app
 
     dynamic_resources:
