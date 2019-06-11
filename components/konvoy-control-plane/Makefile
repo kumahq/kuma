@@ -9,7 +9,7 @@
 		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 
-PKG_LIST := $(shell go list ./... ./model/...)
+PKG_LIST := ./... ./model/...
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts

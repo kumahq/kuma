@@ -5,36 +5,22 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
 	util_cache "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/cache"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 )
 
 var _ = Describe("Reconcile", func() {
 	Describe("templateSnapshotGenerator", func() {
 
 		gen := templateSnapshotGenerator{
-			Template: &konvoy_mesh.ProxyTemplate{
-				Spec: konvoy_mesh.ProxyTemplateSpec{
-					Sources: []konvoy_mesh.ProxyTemplateSource{
-						{
-							Profile: &konvoy_mesh.ProxyTemplateProfileSource{
-								Name: "transparent-inbound-proxy",
-							},
-						},
-						{
-							Profile: &konvoy_mesh.ProxyTemplateProfileSource{
-								Name: "transparent-outbound-proxy",
-							},
-						},
-					},
-				},
+			ProxyTemplateResolver: &simpleProxyTemplateResolver{
+				DefaultProxyTemplate: TransparentProxyTemplate,
 			},
 		}
 
 		type testCase struct {
-			proxy    *generator.Proxy
+			proxy    *model.Proxy
 			expected string
 		}
 
@@ -54,9 +40,9 @@ var _ = Describe("Reconcile", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("should support Nodes without metadata", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version: "1",
 					},
 				},
@@ -90,9 +76,9 @@ var _ = Describe("Reconcile", func() {
 `,
 			}),
 			Entry("should support Nodes with IP(s) but without Port(s)", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "2",
 						Addresses: []string{"192.168.0.1"},
 					},
@@ -127,9 +113,9 @@ var _ = Describe("Reconcile", func() {
 `,
 			}),
 			Entry("should support Nodes with 1 IP and 1 Port", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "3",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080},
@@ -199,9 +185,9 @@ var _ = Describe("Reconcile", func() {
 `,
 			}),
 			Entry("should support Nodes with 1 IP and N Port(s)", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "4",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080, 8443},
@@ -305,9 +291,9 @@ var _ = Describe("Reconcile", func() {
 `,
 			}),
 			Entry("should support Nodes with M IP(s) and N Port(s)", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "5",
 						Addresses: []string{"192.168.0.1", "192.168.0.2"},
 						Ports:     []uint32{8080, 8443},

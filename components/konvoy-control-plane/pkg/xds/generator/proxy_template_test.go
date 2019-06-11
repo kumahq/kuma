@@ -8,13 +8,14 @@ import (
 	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 )
 
 var _ = Describe("Generator", func() {
 	Describe("TransparentInboundProxyProfile", func() {
 
 		type testCase struct {
-			proxy    *generator.Proxy
+			proxy    *model.Proxy
 			expected string
 		}
 
@@ -37,18 +38,18 @@ var _ = Describe("Generator", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("should support Nodes without IP addresses and Ports", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version: "v1",
 					},
 				},
 				expected: `{}`,
 			}),
 			Entry("should support Nodes with IP addresses but without Ports", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 					},
@@ -56,9 +57,9 @@ var _ = Describe("Generator", func() {
 				expected: `{}`,
 			}),
 			Entry("should support Nodes with 1 IP address and 1 Port", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080},
@@ -103,9 +104,9 @@ var _ = Describe("Generator", func() {
 `,
 			}),
 			Entry("should support Nodes with 1 IP address and 2 Ports", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080, 8443},
@@ -184,9 +185,9 @@ var _ = Describe("Generator", func() {
 `,
 			}),
 			Entry("should support Nodes with 2 IP addresses and 2 Ports", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1", "192.168.0.2"},
 						Ports:     []uint32{8080, 8443},
@@ -306,7 +307,7 @@ var _ = Describe("Generator", func() {
 	Describe("TransparentOutboundProxyProfile", func() {
 
 		type testCase struct {
-			proxy    *generator.Proxy
+			proxy    *model.Proxy
 			expected string
 		}
 
@@ -329,9 +330,9 @@ var _ = Describe("Generator", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("should support Nodes without IP addresses and ports", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version: "v1",
 					},
 				},
@@ -365,9 +366,9 @@ var _ = Describe("Generator", func() {
 `,
 			}),
 			Entry("should support Nodes with 1 IP address and 1 Port", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080},
@@ -403,9 +404,9 @@ var _ = Describe("Generator", func() {
 `,
 			}),
 			Entry("should support Nodes with 2 IP addresses and 2 Ports", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1", "192.168.0.2"},
 						Ports:     []uint32{8080, 8443},
@@ -446,7 +447,7 @@ var _ = Describe("Generator", func() {
 	Describe("ProxyTemplateProfileSource", func() {
 
 		type testCase struct {
-			proxy    *generator.Proxy
+			proxy    *model.Proxy
 			profile  *konvoy_mesh.ProxyTemplateProfileSource
 			expected string
 		}
@@ -472,16 +473,16 @@ var _ = Describe("Generator", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("should support pre-defined `transparent-inbound-proxy` profile", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080},
 					},
 				},
 				profile: &konvoy_mesh.ProxyTemplateProfileSource{
-					Name: "transparent-inbound-proxy",
+					Name: generator.ProfileTransparentInboundProxy,
 				},
 				expected: `
         resources:
@@ -522,9 +523,9 @@ var _ = Describe("Generator", func() {
 `,
 			}),
 			Entry("should support pre-defined `transparent-outbound-proxy` profile", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080},
@@ -568,7 +569,7 @@ var _ = Describe("Generator", func() {
 	Describe("ProxyTemplateRawSource", func() {
 
 		type testCase struct {
-			proxy    *generator.Proxy
+			proxy    *model.Proxy
 			raw      *konvoy_mesh.ProxyTemplateRawSource
 			expected string
 		}
@@ -594,9 +595,9 @@ var _ = Describe("Generator", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("should support empty resource list", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080},
@@ -608,9 +609,9 @@ var _ = Describe("Generator", func() {
 				expected: `{}`,
 			}),
 			Entry("should support Listener resource as YAML", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080},
@@ -660,9 +661,9 @@ var _ = Describe("Generator", func() {
 `,
 			}),
 			Entry("should support Cluster resource as YAML", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080},
@@ -710,9 +711,9 @@ var _ = Describe("Generator", func() {
 `,
 			}),
 			Entry("should support Cluster resource as JSON", testCase{
-				proxy: &generator.Proxy{
-					Id: generator.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: generator.Workload{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Workload: model.Workload{
 						Version:   "v1",
 						Addresses: []string{"192.168.0.1"},
 						Ports:     []uint32{8080},

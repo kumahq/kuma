@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
 	model_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/model/controllers"
 	util_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/manager"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -31,21 +30,8 @@ func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
 	logger := logger{}
 	store := cache.NewSnapshotCache(true, hasher, logger)
 	reconciler := reconciler{&templateSnapshotGenerator{
-		Template: &konvoy_mesh.ProxyTemplate{
-			Spec: konvoy_mesh.ProxyTemplateSpec{
-				Sources: []konvoy_mesh.ProxyTemplateSource{
-					{
-						Profile: &konvoy_mesh.ProxyTemplateProfileSource{
-							Name: "transparent-inbound-proxy",
-						},
-					},
-					{
-						Profile: &konvoy_mesh.ProxyTemplateProfileSource{
-							Name: "transparent-outbound-proxy",
-						},
-					},
-				},
-			},
+		ProxyTemplateResolver: &simpleProxyTemplateResolver{
+			DefaultProxyTemplate: TransparentProxyTemplate,
 		},
 	}, &simpleSnapshotCacher{hasher, store}}
 	srv := xds.NewServer(store, nil)
@@ -62,7 +48,7 @@ func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
 		},
 		&model_controllers.PodReconciler{
 			Client:   mgr.GetClient(),
-			Log:      ctrl.Log.WithName("controllers").WithName("Proxy"),
+			Log:      ctrl.Log.WithName("controllers").WithName("Pod"),
 			Observer: &reconciler,
 		},
 	); err != nil {

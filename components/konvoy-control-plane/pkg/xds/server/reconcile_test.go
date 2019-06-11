@@ -1,7 +1,6 @@
 package server
 
 import (
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -21,21 +20,8 @@ var _ = Describe("Reconcile", func() {
 			// setup
 			store := cache.NewSnapshotCache(true, hasher, logger)
 			r := &reconciler{&templateSnapshotGenerator{
-				Template: &konvoy_mesh.ProxyTemplate{
-					Spec: konvoy_mesh.ProxyTemplateSpec{
-						Sources: []konvoy_mesh.ProxyTemplateSource{
-							{
-								Profile: &konvoy_mesh.ProxyTemplateProfileSource{
-									Name: "transparent-inbound-proxy",
-								},
-							},
-							{
-								Profile: &konvoy_mesh.ProxyTemplateProfileSource{
-									Name: "transparent-outbound-proxy",
-								},
-							},
-						},
-					},
+				ProxyTemplateResolver: &simpleProxyTemplateResolver{
+					DefaultProxyTemplate: TransparentProxyTemplate,
 				},
 			}, &simpleSnapshotCacher{hasher, store}}
 

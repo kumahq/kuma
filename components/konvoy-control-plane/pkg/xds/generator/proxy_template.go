@@ -6,16 +6,22 @@ import (
 
 	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
 )
 
-type ProxyTemplateGenerator struct {
+const (
+	ProfileTransparentInboundProxy  = "transparent-inbound-proxy"
+	ProfileTransparentOutboundProxy = "transparent-outbound-proxy"
+)
+
+type TemplateProxyGenerator struct {
 	ProxyTemplate *konvoy_mesh.ProxyTemplate
 }
 
-func (g *ProxyTemplateGenerator) Generate(proxy *Proxy) ([]*Resource, error) {
+func (g *TemplateProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(g.ProxyTemplate.Spec.Sources))
 	for _, source := range g.ProxyTemplate.Spec.Sources {
 		var generator ResourceGenerator
@@ -41,7 +47,7 @@ type ProxyTemplateRawSource struct {
 	Raw *konvoy_mesh.ProxyTemplateRawSource
 }
 
-func (s *ProxyTemplateRawSource) Generate(proxy *Proxy) ([]*Resource, error) {
+func (s *ProxyTemplateRawSource) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(s.Raw.Resources))
 	for i := range s.Raw.Resources {
 		r := &s.Raw.Resources[i]
@@ -76,15 +82,15 @@ func (s *ProxyTemplateRawSource) Generate(proxy *Proxy) ([]*Resource, error) {
 var predefinedProfiles = make(map[string]ResourceGenerator)
 
 func init() {
-	predefinedProfiles["transparent-inbound-proxy"] = &TransparentInboundProxyProfile{}
-	predefinedProfiles["transparent-outbound-proxy"] = &TransparentOutboundProxyProfile{}
+	predefinedProfiles[ProfileTransparentInboundProxy] = &TransparentInboundProxyProfile{}
+	predefinedProfiles[ProfileTransparentOutboundProxy] = &TransparentOutboundProxyProfile{}
 }
 
 type ProxyTemplateProfileSource struct {
 	Profile *konvoy_mesh.ProxyTemplateProfileSource
 }
 
-func (s *ProxyTemplateProfileSource) Generate(proxy *Proxy) ([]*Resource, error) {
+func (s *ProxyTemplateProfileSource) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	g, ok := predefinedProfiles[s.Profile.Name]
 	if !ok {
 		return nil, fmt.Errorf("unknown profile: %s", s.Profile.Name)
@@ -95,7 +101,7 @@ func (s *ProxyTemplateProfileSource) Generate(proxy *Proxy) ([]*Resource, error)
 type TransparentInboundProxyProfile struct {
 }
 
-func (p *TransparentInboundProxyProfile) Generate(proxy *Proxy) ([]*Resource, error) {
+func (p *TransparentInboundProxyProfile) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	if len(proxy.Workload.Addresses) == 0 || len(proxy.Workload.Ports) == 0 {
 		return nil, nil
 	}
@@ -124,7 +130,7 @@ func (p *TransparentInboundProxyProfile) Generate(proxy *Proxy) ([]*Resource, er
 type TransparentOutboundProxyProfile struct {
 }
 
-func (p *TransparentOutboundProxyProfile) Generate(proxy *Proxy) ([]*Resource, error) {
+func (p *TransparentOutboundProxyProfile) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	return []*Resource{
 		&Resource{
 			Name:     "catch_all",

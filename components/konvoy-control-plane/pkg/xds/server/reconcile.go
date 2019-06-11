@@ -3,10 +3,10 @@ package server
 import (
 	"fmt"
 
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
 	model_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/model/controllers"
 	util_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/k8s"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -31,12 +31,12 @@ var (
 )
 
 func (r *reconciler) OnUpdate(pod *k8s_core.Pod) error {
-	proxyId := generator.ProxyId{Name: pod.Name, Namespace: pod.Namespace}
+	proxyId := model.ProxyId{Name: pod.Name, Namespace: pod.Namespace}
 	return r.reconcile(
 		&envoy_core.Node{Id: proxyId.String()},
-		&generator.Proxy{
+		&model.Proxy{
 			Id: proxyId,
-			Workload: generator.Workload{
+			Workload: model.Workload{
 				Version:   fmt.Sprintf("v%d", pod.Generation),
 				Addresses: []string{pod.Status.PodIP},
 				Ports:     util_k8s.GetTcpPorts(pod),
@@ -45,12 +45,12 @@ func (r *reconciler) OnUpdate(pod *k8s_core.Pod) error {
 }
 
 func (r *reconciler) OnDelete(name types.NamespacedName) error {
-	proxyId := generator.ProxyId{Name: name.Name, Namespace: name.Namespace}
+	proxyId := model.ProxyId{Name: name.Name, Namespace: name.Namespace}
 	r.cacher.Clear(&envoy_core.Node{Id: proxyId.String()})
 	return nil
 }
 
-func (r *reconciler) reconcile(node *envoy_core.Node, proxy *generator.Proxy) error {
+func (r *reconciler) reconcile(node *envoy_core.Node, proxy *model.Proxy) error {
 	snapshot, err := r.generator.GenerateSnapshot(proxy)
 	if err != nil {
 		return err
@@ -65,15 +65,15 @@ func (r *reconciler) reconcile(node *envoy_core.Node, proxy *generator.Proxy) er
 }
 
 type snapshotGenerator interface {
-	GenerateSnapshot(proxy *generator.Proxy) (cache.Snapshot, error)
+	GenerateSnapshot(proxy *model.Proxy) (cache.Snapshot, error)
 }
 
 type templateSnapshotGenerator struct {
-	Template *konvoy_mesh.ProxyTemplate
+	ProxyTemplateResolver proxyTemplateResolver
 }
 
-func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *generator.Proxy) (cache.Snapshot, error) {
-	gen := generator.ProxyTemplateGenerator{ProxyTemplate: s.Template}
+func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (cache.Snapshot, error) {
+	gen := generator.TemplateProxyGenerator{ProxyTemplate: s.ProxyTemplateResolver.GetTemplate(proxy)}
 
 	rs, err := gen.Generate(proxy)
 	if err != nil {
