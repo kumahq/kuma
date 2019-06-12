@@ -1,6 +1,8 @@
 Konvoy Control Plane inside Docker Compose 
 ====================
 
+WARNING: Docker Compose setup doesn't work at the moment
+
 ## Pre-requirements
 
 - `docker-compose`

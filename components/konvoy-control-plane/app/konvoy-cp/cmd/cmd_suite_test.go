@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -50,7 +51,9 @@ var _ = BeforeSuite(func(done Done) {
 	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
 
 	By("bootstrapping test environment")
-	testEnv = &envtest.Environment{}
+	testEnv = &envtest.Environment{
+		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "model", "config", "crd", "bases")},
+	}
 
 	cfg, err := testEnv.Start()
 	Expect(err).ToNot(HaveOccurred())

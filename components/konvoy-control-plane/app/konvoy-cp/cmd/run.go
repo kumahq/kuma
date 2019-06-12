@@ -44,7 +44,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				ctrl.Options{Scheme: scheme, MetricsBindAddress: fmt.Sprintf(":%d", args.metricsPort)},
 			)
 			if err != nil {
-				runLog.Error(err, "unable to set up Control Plane")
+				runLog.Error(err, "unable to set up Control Plane manager")
 				return err
 			}
 
@@ -67,7 +67,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 
 			runLog.Info("stopping Control Plane")
-
 			return nil
 		},
 	}

@@ -1,15 +1,19 @@
 package server
 
 import (
-	"crypto/sha1"
 	"fmt"
-	"strconv"
-	"strings"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	model_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/model/controllers"
+	util_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/k8s"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
+	k8s_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 var (
@@ -17,134 +21,103 @@ var (
 )
 
 type reconciler struct {
-	nodes     <-chan *core.Node
 	generator snapshotGenerator
 	cacher    snapshotCacher
 }
 
 // Make sure that reconciler implements all relevant interfaces
 var (
-	_ manager.Runnable               = &reconciler{}
-	_ manager.LeaderElectionRunnable = &reconciler{}
+	_ model_controllers.PodObserver = &reconciler{}
 )
 
-func (r *reconciler) Start(stop <-chan struct{}) error {
-	for {
-		select {
-		case node, open := <-r.nodes:
-			if !open {
-				return nil
-			}
-
-			snapshot := r.generator.GenerateSnapshot(node)
-			if err := snapshot.Consistent(); err != nil {
-				reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot)
-			}
-
-			r.cacher.Cache(node, snapshot)
-		case <-stop:
-			return nil
-		}
-	}
+func (r *reconciler) OnUpdate(pod *k8s_core.Pod) error {
+	proxyId := model.ProxyId{Name: pod.Name, Namespace: pod.Namespace}
+	return r.reconcile(
+		&envoy_core.Node{Id: proxyId.String()},
+		&model.Proxy{
+			Id: proxyId,
+			Workload: model.Workload{
+				Meta:      pod.GetObjectMeta(),
+				Version:   fmt.Sprintf("v%d", pod.Generation),
+				Addresses: []string{pod.Status.PodIP},
+				Ports:     util_k8s.GetTcpPorts(pod),
+			},
+		})
 }
 
-func (r *reconciler) NeedLeaderElection() bool {
-	return false
+func (r *reconciler) OnDelete(name types.NamespacedName) error {
+	proxyId := model.ProxyId{Name: name.Name, Namespace: name.Namespace}
+	r.cacher.Clear(&envoy_core.Node{Id: proxyId.String()})
+	return nil
+}
+
+func (r *reconciler) reconcile(node *envoy_core.Node, proxy *model.Proxy) error {
+	snapshot, err := r.generator.GenerateSnapshot(proxy)
+	if err != nil {
+		return err
+	}
+	if err := snapshot.Consistent(); err != nil {
+		reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot)
+	}
+	if err := r.cacher.Cache(node, snapshot); err != nil {
+		reconcileLog.Error(err, "failed to store snapshot", "snapshot", snapshot)
+	}
+	return nil
 }
 
 type snapshotGenerator interface {
-	GenerateSnapshot(node *core.Node) cache.Snapshot
+	GenerateSnapshot(proxy *model.Proxy) (cache.Snapshot, error)
 }
 
-type versioner interface {
-	Version(m fmt.Stringer) string
+type templateSnapshotGenerator struct {
+	ProxyTemplateResolver proxyTemplateResolver
 }
 
-type hashVersioner struct {
-}
+func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (cache.Snapshot, error) {
+	gen := generator.TemplateProxyGenerator{ProxyTemplate: s.ProxyTemplateResolver.GetTemplate(proxy)}
 
-func (h hashVersioner) Version(m fmt.Stringer) string {
-	hr := sha1.New()
-	hr.Write([]byte(m.String()))
-	return fmt.Sprintf("%x", hr.Sum(nil))
-}
+	rs, err := gen.Generate(proxy)
+	if err != nil {
+		return cache.Snapshot{}, err
+	}
 
-type basicSnapshotGenerator struct {
-	hashVersioner
-}
+	listeners := []cache.Resource{}
+	routes := []cache.Resource{}
+	clusters := []cache.Resource{}
+	endpoints := []cache.Resource{}
+	secrets := []cache.Resource{}
 
-func (s *basicSnapshotGenerator) GenerateSnapshot(node *core.Node) cache.Snapshot {
-	nodeInfo := parseNodeInfo(node)
-
-	listeners := make([]cache.Resource, 0, 2)
-	listeners = append(listeners, CreateCatchAllListener("catch_all", "0.0.0.0", 15001, "pass_through"))
-
-	clusters := make([]cache.Resource, 0, 2)
-	clusters = append(clusters, CreatePassThroughCluster("pass_through"))
-
-	for _, port := range nodeInfo.ports {
-		localClusterName := fmt.Sprintf("localhost:%d", port)
-		clusters = append(clusters, CreateLocalCluster(localClusterName, "127.0.0.1", port))
-
-		for _, address := range nodeInfo.addresses {
-			inboundListenerName := fmt.Sprintf("inbound:%s:%d", address, port)
-
-			listeners = append(listeners, CreateInboundListener(inboundListenerName, address, port, localClusterName))
+	for _, r := range rs {
+		switch r.Resource.(type) {
+		case *envoy.Listener:
+			listeners = append(listeners, r.Resource)
+		case *envoy.RouteConfiguration:
+			routes = append(routes, r.Resource)
+		case *envoy.Cluster:
+			clusters = append(clusters, r.Resource)
+		case *envoy.ClusterLoadAssignment:
+			endpoints = append(endpoints, r.Resource)
+		case *envoy_auth.Secret:
+			secrets = append(secrets, r.Resource)
+		default:
 		}
 	}
 
-	version := s.Version(node)
+	version := proxy.Workload.Version
 	out := cache.Snapshot{
-		Endpoints: cache.NewResources(version, []cache.Resource{}),
+		Endpoints: cache.NewResources(version, endpoints),
 		Clusters:  cache.NewResources(version, clusters),
-		Routes:    cache.NewResources(version, []cache.Resource{}),
+		Routes:    cache.NewResources(version, routes),
 		Listeners: cache.NewResources(version, listeners),
-		Secrets:   cache.NewResources(version, []cache.Resource{}),
+		Secrets:   cache.NewResources(version, secrets),
 	}
 
-	return out
-}
-
-type nodeInfo struct {
-	addresses []string
-	ports     []uint32
-}
-
-func parseNodeInfo(node *core.Node) nodeInfo {
-	nodeAddresses := "127.0.0.1"
-	nodePorts := ""
-	if node.Metadata != nil && node.Metadata.Fields != nil {
-		if value := node.Metadata.Fields["IPS"]; value != nil && value.GetStringValue() != "" {
-			nodeAddresses = value.GetStringValue()
-		}
-		if value := node.Metadata.Fields["PORTS"]; value != nil && value.GetStringValue() != "" {
-			nodePorts = value.GetStringValue()
-		}
-	}
-
-	addresses := make([]string, 0, 1)
-	for _, nodeAddress := range strings.Split(nodeAddresses, ",") {
-		address := strings.TrimSpace(nodeAddress)
-		if address == "" {
-			continue
-		}
-		addresses = append(addresses, address)
-	}
-
-	ports := make([]uint32, 0, 1)
-	for _, nodePort := range strings.Split(nodePorts, ",") {
-		port, err := strconv.ParseUint(strings.TrimSpace(nodePort), 10, 32)
-		if err != nil {
-			continue
-		}
-		ports = append(ports, uint32(port))
-	}
-
-	return nodeInfo{addresses, ports}
+	return out, nil
 }
 
 type snapshotCacher interface {
-	Cache(*core.Node, cache.Snapshot)
+	Cache(*envoy_core.Node, cache.Snapshot) error
+	Clear(*envoy_core.Node)
 }
 
 type simpleSnapshotCacher struct {
@@ -152,9 +125,10 @@ type simpleSnapshotCacher struct {
 	store  cache.SnapshotCache
 }
 
-func (s *simpleSnapshotCacher) Cache(node *core.Node, snapshot cache.Snapshot) {
-	err := s.store.SetSnapshot(s.hasher.ID(node), snapshot)
-	if err != nil {
-		reconcileLog.Error(err, "failed to store snapshot", "snapshot", snapshot)
-	}
+func (s *simpleSnapshotCacher) Cache(node *envoy_core.Node, snapshot cache.Snapshot) error {
+	return s.store.SetSnapshot(s.hasher.ID(node), snapshot)
+}
+
+func (s *simpleSnapshotCacher) Clear(node *envoy_core.Node) {
+	s.store.ClearSnapshot(s.hasher.ID(node))
 }

@@ -17,12 +17,6 @@ spec:
   selector:
     app: konvoy-control-plane
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: konvoy-control-plane-service-account
-  namespace: konvoy-system
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -43,7 +37,6 @@ spec:
       labels:
         app: konvoy-control-plane
     spec:
-      serviceAccountName: konvoy-control-plane-service-account
       containers:
       - name: control-plane
         image: "konvoy/konvoy-control-plane:latest"
@@ -83,7 +76,7 @@ data:
   launcher.sh: |
     #!/usr/bin/env sh
     set -e
-    exec envoy --config-yaml "node: {metadata: {'IPS': '${INSTANCE_IP}', 'PORTS': '${INBOUND_PORTS}'}}" "$@"
+    exec envoy --config-yaml "node: {id: '${POD_NAME}.${POD_NAMESPACE}', metadata: {'IPS': '${INSTANCE_IP}', 'PORTS': '${INBOUND_PORTS}'}}" "$@"
   bootstrap.yaml: |
     admin:
       access_log_path: /tmp/admin_access.log
@@ -94,7 +87,6 @@ data:
           port_value: 9901
 
     node:
-      id: side-car
       cluster: demo-app
 
     dynamic_resources:

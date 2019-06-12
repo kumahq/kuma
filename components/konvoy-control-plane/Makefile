@@ -8,6 +8,9 @@
         verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
 		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
+		print/kubebuilder/test_assets
+
+PKG_LIST := ./... ./model/...
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts
@@ -33,7 +36,7 @@ SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "example", "metadata": {"IPS": "$(E
 
 CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 
-CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.3
+CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.4
 CI_KIND_VERSION ?= v0.3.0
 CI_MINIKUBE_VERSION ?= v1.1.0
 CI_KUBECTL_VERSION ?= v1.14.0
@@ -158,22 +161,28 @@ clean: ## Dev: Clean
 
 fmt: ## Dev: Run go fmt
 	go fmt ./...
+	@# apparently, it's not possible to simply use `go fmt ./model/...`
+	make fmt -C model
 
 vet: ## Dev: Run go vet
 	go vet ./...
+	@# for consistency with `fmt`
+	make vet -C model
 
 check: fmt vet ## Dev: Run code checks (go fmt, go vet, ...)
-	git diff --quiet # fail if Git working tree is dirty
+	make generate manifests -C model
+	git diff --quiet || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
 test: ## Dev: Run tests
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
-	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
+	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 build: ## Dev: Build Control Plane binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
 
 run: fmt vet ## Dev: Run Control Plane locally
+	make crd/upgrade -C model
 	go run ./app/konvoy-cp/main.go run --grpc-port=$(CP_GRPC_PORT) --http-port=$(CP_HTTP_PORT)
 
 curl/listeners: ## Dev: Make Discovery request to LDS
@@ -190,6 +199,11 @@ config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 
 image: ## Dev: Build Control Plane Docker image
 	docker build -t $(CP_DOCKER_IMAGE) .
+
+print/kubebuilder/test_assets: ## Dev: Print Kubebuilder Environment variables
+	@echo export TEST_ASSET_KUBE_APISERVER=$(TEST_ASSET_KUBE_APISERVER)
+	@echo export TEST_ASSET_ETCD=$(TEST_ASSET_ETCD)
+	@echo export TEST_ASSET_KUBECTL=$(TEST_ASSET_KUBECTL)
 
 run/example/docker-compose: ## Docker Compose: Run demo setup
 	docker-compose -f examples/docker-compose/docker-compose.yaml pull
@@ -222,6 +236,8 @@ build/example/minikube: ## Minikube: build demo setup
 	make image
 
 deploy/example/minikube: ## Minikube: deploy demo setup
+	make crd/install -C model
+	kubectl kustomize model/config/rbac | kubectl apply -f -
 	kubectl apply -f examples/minikube/konvoy-demo.yaml
 
 wait/example/minikube: ## Minikube: Wait for demo setup to get ready
