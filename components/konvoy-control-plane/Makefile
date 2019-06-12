@@ -8,6 +8,7 @@
         verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
 		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
+		print/kubebuilder/test_assets
 
 PKG_LIST := ./... ./model/...
 
@@ -198,6 +199,11 @@ config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 
 image: ## Dev: Build Control Plane Docker image
 	docker build -t $(CP_DOCKER_IMAGE) .
+
+print/kubebuilder/test_assets: ## Dev: Print Kubebuilder Environment variables
+	@echo export TEST_ASSET_KUBE_APISERVER=$(TEST_ASSET_KUBE_APISERVER)
+	@echo export TEST_ASSET_ETCD=$(TEST_ASSET_ETCD)
+	@echo export TEST_ASSET_KUBECTL=$(TEST_ASSET_KUBECTL)
 
 run/example/docker-compose: ## Docker Compose: Run demo setup
 	docker-compose -f examples/docker-compose/docker-compose.yaml pull

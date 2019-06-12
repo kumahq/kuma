@@ -6,8 +6,10 @@ import (
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 	k8s_core "k8s.io/api/core/v1"
 	k8s_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("Reconcile", func() {
@@ -21,7 +23,8 @@ var _ = Describe("Reconcile", func() {
 			store := cache.NewSnapshotCache(true, hasher, logger)
 			r := &reconciler{&templateSnapshotGenerator{
 				ProxyTemplateResolver: &simpleProxyTemplateResolver{
-					DefaultProxyTemplate: TransparentProxyTemplate,
+					Client:               client_fake.NewFakeClient(),
+					DefaultProxyTemplate: template.TransparentProxyTemplate,
 				},
 			}, &simpleSnapshotCacher{hasher, store}}
 

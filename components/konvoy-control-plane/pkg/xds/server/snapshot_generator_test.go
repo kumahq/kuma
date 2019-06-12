@@ -8,6 +8,8 @@ import (
 	util_cache "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/cache"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
+	client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("Reconcile", func() {
@@ -15,7 +17,8 @@ var _ = Describe("Reconcile", func() {
 
 		gen := templateSnapshotGenerator{
 			ProxyTemplateResolver: &simpleProxyTemplateResolver{
-				DefaultProxyTemplate: TransparentProxyTemplate,
+				Client:               client_fake.NewFakeClient(),
+				DefaultProxyTemplate: template.TransparentProxyTemplate,
 			},
 		}
 

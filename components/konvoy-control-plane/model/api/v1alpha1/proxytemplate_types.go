@@ -20,6 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// ProxyTemplateAnnotation defines an annotation that can be put on Pods
+	// in order to associate them with a particular ProxyTemplate.
+	// Annotation value must be a name of a ProxyTemplate resource in the same Namespace as Pod.
+	ProxyTemplateAnnotation = "mesh.getkonvoy.io/proxy-template"
+)
+
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // Important: Run "make" to regenerate code after modifying this file

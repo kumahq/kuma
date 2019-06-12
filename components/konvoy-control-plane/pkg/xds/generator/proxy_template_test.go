@@ -9,6 +9,7 @@ import (
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 )
 
 var _ = Describe("Generator", func() {
@@ -482,7 +483,7 @@ var _ = Describe("Generator", func() {
 					},
 				},
 				profile: &konvoy_mesh.ProxyTemplateProfileSource{
-					Name: generator.ProfileTransparentInboundProxy,
+					Name: template.ProfileTransparentInboundProxy,
 				},
 				expected: `
         resources:

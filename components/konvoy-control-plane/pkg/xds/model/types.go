@@ -16,7 +16,14 @@ type Proxy struct {
 	Workload Workload
 }
 
+type WorkloadMeta interface {
+	GetName() string
+	GetNamespace() string
+	GetAnnotations() map[string]string
+}
+
 type Workload struct {
+	Meta      WorkloadMeta
 	Version   string
 	Addresses []string
 	Ports     []uint32

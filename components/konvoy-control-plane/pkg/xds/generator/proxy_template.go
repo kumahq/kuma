@@ -7,14 +7,10 @@ import (
 	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
-)
-
-const (
-	ProfileTransparentInboundProxy  = "transparent-inbound-proxy"
-	ProfileTransparentOutboundProxy = "transparent-outbound-proxy"
 )
 
 type TemplateProxyGenerator struct {
@@ -82,8 +78,8 @@ func (s *ProxyTemplateRawSource) Generate(proxy *model.Proxy) ([]*Resource, erro
 var predefinedProfiles = make(map[string]ResourceGenerator)
 
 func init() {
-	predefinedProfiles[ProfileTransparentInboundProxy] = &TransparentInboundProxyProfile{}
-	predefinedProfiles[ProfileTransparentOutboundProxy] = &TransparentOutboundProxyProfile{}
+	predefinedProfiles[template.ProfileTransparentInboundProxy] = &TransparentInboundProxyProfile{}
+	predefinedProfiles[template.ProfileTransparentOutboundProxy] = &TransparentOutboundProxyProfile{}
 }
 
 type ProxyTemplateProfileSource struct {

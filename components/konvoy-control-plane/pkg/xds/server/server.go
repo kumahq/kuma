@@ -5,6 +5,7 @@ import (
 
 	model_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/model/controllers"
 	util_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/manager"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	xds "github.com/envoyproxy/go-control-plane/pkg/server"
@@ -31,7 +32,8 @@ func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
 	store := cache.NewSnapshotCache(true, hasher, logger)
 	reconciler := reconciler{&templateSnapshotGenerator{
 		ProxyTemplateResolver: &simpleProxyTemplateResolver{
-			DefaultProxyTemplate: TransparentProxyTemplate,
+			Client:               mgr.GetClient(),
+			DefaultProxyTemplate: template.TransparentProxyTemplate,
 		},
 	}, &simpleSnapshotCacher{hasher, store}}
 	srv := xds.NewServer(store, nil)

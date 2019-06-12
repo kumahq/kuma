@@ -24,7 +24,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -69,5 +73,34 @@ func (r *PodReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Pod{}).
+		// on ProxyTemplate update reconcile affected Pods
+		Watches(&source.Kind{Type: &konvoy_mesh.ProxyTemplate{}}, &handler.EnqueueRequestsFromMapFunc{
+			ToRequests: &ProxyTemplateToPodsMapper{Client: mgr.GetClient()},
+		}).
 		Complete(r)
+}
+
+type ProxyTemplateToPodsMapper struct {
+	client.Client
+}
+
+func (m *ProxyTemplateToPodsMapper) Map(tmpl handler.MapObject) []reconcile.Request {
+	// List all Pods in the same Namespace
+	pods := &corev1.PodList{}
+	if err := m.Client.List(context.Background(), pods, client.InNamespace(tmpl.Meta.GetNamespace())); err != nil {
+		log := ctrl.Log.WithName("proxytemplate-to-pods-mapper").WithValues("proxytemplate", tmpl.Meta)
+		log.Error(err, "failed to fetch Pods", "namespace", tmpl.Meta.GetNamespace())
+		return nil
+	}
+
+	var req []reconcile.Request
+	for i := range pods.Items {
+		pod := &pods.Items[i]
+		if pod.GetAnnotations() != nil && pod.GetAnnotations()[konvoy_mesh.ProxyTemplateAnnotation] == tmpl.Meta.GetName() {
+			req = append(req, reconcile.Request{
+				NamespacedName: types.NamespacedName{Namespace: pod.GetNamespace(), Name: pod.GetName()},
+			})
+		}
+	}
+	return req
 }

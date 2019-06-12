@@ -37,6 +37,7 @@ func (r *reconciler) OnUpdate(pod *k8s_core.Pod) error {
 		&model.Proxy{
 			Id: proxyId,
 			Workload: model.Workload{
+				Meta:      pod.GetObjectMeta(),
 				Version:   fmt.Sprintf("v%d", pod.Generation),
 				Addresses: []string{pod.Status.PodIP},
 				Ports:     util_k8s.GetTcpPorts(pod),
