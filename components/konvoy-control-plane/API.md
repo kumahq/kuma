@@ -87,6 +87,7 @@ spec:
         resource: |
           '@type': type.googleapis.com/envoy.api.v2.Cluster
           connectTimeout: 5s
+          name: localhost:8080
           loadAssignment:
             clusterName: localhost:8080
             endpoints:
