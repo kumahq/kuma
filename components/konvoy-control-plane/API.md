@@ -4,14 +4,14 @@
 
 List of supported CRDs:
 
-* ProxyTemplate
+* `ProxyTemplate`
 
 ### ProxyTemplate
 
 `ProxyTemplate` CRD allows users to fully customize configuration of `Envoy` proxies.
 
 At a high level, `ProxyTemplate` specifies a list of configuration sources
-that contribute to the overall `Envoy` configuration.
+that contribute to the overall `Envoy` config.
 
 #### Sources of configuration
 
@@ -30,28 +30,53 @@ that contribute to the overall `Envoy` configuration.
 * `Konvoy Control Plane` checks whether a `Pod` defintion contains `mesh.getkonvoy.io/proxy-template` annotation
 * If `mesh.getkonvoy.io/proxy-template` annotation is present on a `Pod`, its value must be a name of a `ProxyTemplate` resource in the same namespace
 * If `ProxyTemplate` resource with that name actually exists, `Konvoy Control Plane` will use it to generate `Envoy` configuration
-* In all other cases `Konvoy Control Plane` will fall back to a default `ProxyTemplate`
+* In all other cases `Konvoy Control Plane` will fall back to a "default" `ProxyTemplate`
 
 E.g.,
 
+`mesh.getkonvoy.io/proxy-template` inside `Pod` definition:
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
   annotations:
     mesh.getkonvoy.io/proxy-template: custom-template
-  name: nginx-98f78d5f6-qpwh6
-  namespace: default
+  ...
 spec:
   ...
 ```
 
-##### Known limitations
+`mesh.getkonvoy.io/proxy-template` inside `Deployment` definition:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # not the right place for `proxy-template` annotation
+  ...
+spec:
+  template: # PodTemplateSpec
+    metadata:
+      annotations:
+        mesh.getkonvoy.io/proxy-template: custom-template
+  ...
+```
 
-1. Default `ProxyTemplate` is hardcoded inside `Konvoy Control Plane`
-2. `mesh.getkonvoy.io/proxy-template` annotation must be attached directly to a `Pod` (rather than to `Deployment`, `ReplicaSet`, `Job`, etc)
-
-It greatly simplifies the initial implementation implementation.
+`mesh.getkonvoy.io/proxy-template` inside `Job` definition:
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    # not the right place for `proxy-template` annotation
+  ...
+spec:
+  template: # PodTemplateSpec
+    metadata:
+      annotations:
+        mesh.getkonvoy.io/proxy-template: custom-template
+  ...
+```
 
 #### Examples
 
@@ -61,7 +86,7 @@ It greatly simplifies the initial implementation implementation.
 apiVersion: mesh.getkonvoy.io/v1alpha1
 kind: ProxyTemplate
 metadata:
-  name: default
+  name: uses-predefined-profiles
 spec:
   sources:
   - profile:
@@ -70,15 +95,14 @@ spec:
       name: transparent-outbound-proxy
 ```
 
-##### Raw Envoy resources
+##### Raw Envoy xDS resources
 
 `Envoy` resource as YAML string:
 ```yaml
----
 apiVersion: mesh.getkonvoy.io/v1alpha1
 kind: ProxyTemplate
 metadata:
-  name: default-and-raw
+  name: raw-envoy-xds-resources
 spec:
   sources:
   - raw:
@@ -97,6 +121,7 @@ spec:
                     socketAddress:
                       address: 127.0.0.1
                       portValue: 8080
+          type: STATIC
         version: v1
 ```
 
@@ -105,7 +130,7 @@ spec:
 apiVersion: mesh.getkonvoy.io/v1alpha1
 kind: ProxyTemplate
 metadata:
-  name: default-and-raw
+  name: raw-envoy-xds-resources
 spec:
   sources:
   - raw:
@@ -142,13 +167,13 @@ spec:
 
 ##### Templating engine (Jsonnet)
 
-WARNING: This is feature hasn't been implemented yet
+WARNING: This feature hasn't been implemented yet
 
 ```yaml
 apiVersion: mesh.getkonvoy.io/v1alpha1
 kind: ProxyTemplate
 metadata:
-  name: default-and-scripted
+  name: raw-envoy-xds-resources-generated-by-jsonnet-script
 spec:
   sources:
   - generator:
@@ -162,7 +187,7 @@ spec:
 
 ##### User-defined profiles
 
-WARNING: This is feature hasn't been implemented yet
+WARNING: This feature hasn't been implemented yet
 
 ```yaml
 apiVersion: mesh.getkonvoy.io/v1alpha1
@@ -170,18 +195,18 @@ kind: Profile
 metadata:
   name: custom-profile
 spec:
+  params:
+  - name: param1
+  - name: param2
   generator:
     jsonnet:
-    script: |
+      script: |
         ...
-    params:
-    - name: param1
-    - name: param2
 ---
 apiVersion: mesh.getkonvoy.io/v1alpha1
 kind: ProxyTemplate
 metadata:
-  name: default-and-scripted
+  name: uses-custom-profile
 spec:
   sources:
   - profile:
@@ -190,3 +215,21 @@ spec:
         param1: value1
         param2: value2
 ```
+
+#### Predefined profiles
+
+NOTE: Prefix `transparent-` in a profile name indicates dependency on IPTables-based redirection
+
+|   | Profile                      | Description | Generated Envoy xDS resources  |
+| - | ---------------------------- | - | ----------------------------- |
+| 1 | `transparent-inbound-proxy`  | Forward *inbound* requests to local `Clusters` | 1. `Listener` per each (`IP`, `PORT`) pair of the target workload <br> 2. Local `Cluster` per each `PORT` of the target workload |
+| 2 | `transparent-outbound-proxy` | Forward *outbound* requests to original destinations | 1. `Listener` on port 15001 (with `UseOriginalDst: true`) <br> 2. "Pass-through" `Cluster` with `LbPolicy: ORIGINAL_DST_LB` |
+
+#### Known limitations
+
+1. "Default" `ProxyTemplate` is hardcoded inside `Konvoy Control Plane`
+2. `mesh.getkonvoy.io/proxy-template` annotation must be attached directly to a `Pod` or `PodTemplateSpec` (see examples above)
+3. Only 2 predefined profiles
+4. If multiple configuration sources produce an xDS resource with the same name, the latest definition wins
+
+Such constraints greatly simplify the initial implementation.
