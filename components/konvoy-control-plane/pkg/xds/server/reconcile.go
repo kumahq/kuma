@@ -54,13 +54,14 @@ func (r *reconciler) OnDelete(name types.NamespacedName) error {
 func (r *reconciler) reconcile(node *envoy_core.Node, proxy *model.Proxy) error {
 	snapshot, err := r.generator.GenerateSnapshot(proxy)
 	if err != nil {
+		reconcileLog.Error(err, "failed to generate a snapshot", "node", node, "proxy", proxy)
 		return err
 	}
 	if err := snapshot.Consistent(); err != nil {
-		reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot)
+		reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
 	}
 	if err := r.cacher.Cache(node, snapshot); err != nil {
-		reconcileLog.Error(err, "failed to store snapshot", "snapshot", snapshot)
+		reconcileLog.Error(err, "failed to store snapshot", "snapshot", snapshot, "proxy", proxy)
 	}
 	return nil
 }
@@ -74,10 +75,13 @@ type templateSnapshotGenerator struct {
 }
 
 func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (cache.Snapshot, error) {
-	gen := generator.TemplateProxyGenerator{ProxyTemplate: s.ProxyTemplateResolver.GetTemplate(proxy)}
+	template := s.ProxyTemplateResolver.GetTemplate(proxy)
+
+	gen := generator.TemplateProxyGenerator{ProxyTemplate: template}
 
 	rs, err := gen.Generate(proxy)
 	if err != nil {
+		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return cache.Snapshot{}, err
 	}
 

@@ -19,7 +19,7 @@ type TemplateProxyGenerator struct {
 
 func (g *TemplateProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(g.ProxyTemplate.Spec.Sources))
-	for _, source := range g.ProxyTemplate.Spec.Sources {
+	for i, source := range g.ProxyTemplate.Spec.Sources {
 		var generator ResourceGenerator
 		switch {
 		case source.Profile != nil:
@@ -27,14 +27,13 @@ func (g *TemplateProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, erro
 		case source.Raw != nil:
 			generator = &ProxyTemplateRawSource{Raw: source.Raw}
 		default:
-			return nil, fmt.Errorf("unknown source type: %#v", source)
+			return nil, fmt.Errorf("sources[%d]{name=%q}: unknown source type", i, source.Name)
 		}
 		if rs, err := generator.Generate(proxy); err != nil {
-			return []*Resource{}, err
+			return nil, fmt.Errorf("sources[%d]{name=%q}: %s", i, source.Name, err)
 		} else {
 			resources = append(resources, rs...)
 		}
-
 	}
 	return resources, nil
 }
@@ -55,15 +54,20 @@ func (s *ProxyTemplateRawSource) Generate(proxy *model.Proxy) ([]*Resource, erro
 
 		var any types.Any
 		if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), &any); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
 		}
 		var dyn types.DynamicAny
 		if err := types.UnmarshalAny(&any, &dyn); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
 		}
 		p, ok := dyn.Message.(ResourcePayload)
 		if !ok {
-			return nil, fmt.Errorf("resource %q doesn't implement all required interfaces", r.Name)
+			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: xDS resource doesn't implement all required interfaces", i, r.Name)
+		}
+		if v, ok := p.(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
+			}
 		}
 
 		resources = append(resources, &Resource{
@@ -89,7 +93,7 @@ type ProxyTemplateProfileSource struct {
 func (s *ProxyTemplateProfileSource) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	g, ok := predefinedProfiles[s.Profile.Name]
 	if !ok {
-		return nil, fmt.Errorf("unknown profile: %s", s.Profile.Name)
+		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.Profile.Name)
 	}
 	return g.Generate(proxy)
 }
