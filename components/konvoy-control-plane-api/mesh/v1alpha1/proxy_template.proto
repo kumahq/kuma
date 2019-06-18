@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package konvoy.mesh.v1alpha1;
+
+message ProxyTemplate {
+    // TODO(yskopets)
+}
