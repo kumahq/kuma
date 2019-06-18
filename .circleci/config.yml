@@ -86,6 +86,7 @@ jobs:
 
   kcp/test:
     <<: *go-defaults
+    resource_class: large
     steps:
     - checkout
     - restore_cache:
