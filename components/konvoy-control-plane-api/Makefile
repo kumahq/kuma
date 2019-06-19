@@ -1,4 +1,4 @@
-.PHONY: help clean generate build check \
+.PHONY: help clean generate build test check \
 		dev/tools install/protoc install/protoc-gen-gogofast \
 		protoc protoc/discovery/v1alpha1 protoc/mesh/v1alpha1
 
@@ -62,5 +62,8 @@ protoc/mesh/v1alpha1:
 build: ## Build generated files
 	go build ./...
 
-check: generate build ## Verify that auto-generated code is up-to-date
+test: ## Run tests
+	go test ./...
+
+check: generate build test ## Verify that auto-generated code is up-to-date
 	git diff --quiet || ( echo "The following changes (result of code generators) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
