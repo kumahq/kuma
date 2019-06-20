@@ -1,4 +1,4 @@
-package client
+package store
 
 type CreateOptions struct {
 	Namespace string

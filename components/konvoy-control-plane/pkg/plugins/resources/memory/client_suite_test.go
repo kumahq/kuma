@@ -1,4 +1,4 @@
-package example_test
+package memory_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestClient(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Example ResourceClient Suite")
+	RunSpecs(t, "In-memory ResourceStore Suite")
 }

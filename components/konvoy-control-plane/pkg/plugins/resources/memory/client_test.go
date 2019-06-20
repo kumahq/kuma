@@ -1,4 +1,4 @@
-package example_test
+package memory_test
 
 import (
 	"context"
@@ -6,17 +6,17 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/client"
-	. "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/client/example"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 )
 
-var _ = Describe("ExampleResourceClient", func() {
-	var e *ExampleResourceClient
-	var c client.ResourceClient
+var _ = Describe("MemoryStore", func() {
+	var e *memory.MemoryStore
+	var c store.ResourceStore
 
 	BeforeEach(func() {
-		e = &ExampleResourceClient{}
-		c = client.NewStrictResourceClient(e)
+		e = &memory.MemoryStore{}
+		c = store.NewStrictResourceStore(e)
 	})
 
 	Describe("Create()", func() {
@@ -29,13 +29,13 @@ var _ = Describe("ExampleResourceClient", func() {
 			}
 
 			// when
-			err := c.Create(context.Background(), trr, client.CreateByName("demo", "example"))
+			err := c.Create(context.Background(), trr, store.CreateByName("demo", "example"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(e.PersistedRecords).To(ConsistOf(
-				&ExampleStorageRecord{
+			Expect(e.Records).To(ConsistOf(
+				&memory.MemoryStoreRecord{
 					ResourceType: "TrafficRoute",
 					Namespace:    "demo",
 					Name:         "example",
@@ -46,8 +46,8 @@ var _ = Describe("ExampleResourceClient", func() {
 
 		It("should not create a duplicate record", func() {
 			// setup
-			e.PersistedRecords = ExampleStorageRecords{
-				&ExampleStorageRecord{
+			e.Records = memory.MemoryStoreRecords{
+				&memory.MemoryStoreRecord{
 					ResourceType: "TrafficRoute",
 					Namespace:    "demo",
 					Name:         "example",
@@ -63,7 +63,7 @@ var _ = Describe("ExampleResourceClient", func() {
 			}
 
 			// when
-			err := c.Create(context.Background(), trr, client.CreateByName("demo", "example"))
+			err := c.Create(context.Background(), trr, store.CreateByName("demo", "example"))
 
 			// then
 			Expect(err).To(MatchError(`Resource already exists: type="TrafficRoute" namespace="demo" name="example"`))
@@ -74,7 +74,7 @@ var _ = Describe("ExampleResourceClient", func() {
 		It("should return an error if resource is not found", func() {
 			// given
 			trr := &TrafficRouteResource{
-				Meta: &ExampleMeta{
+				Meta: &memory.MemoryMeta{
 					Namespace: "demo",
 					Name:      "example",
 				},
@@ -89,8 +89,8 @@ var _ = Describe("ExampleResourceClient", func() {
 
 		It("should update an existing resource", func() {
 			// setup
-			e.PersistedRecords = ExampleStorageRecords{
-				&ExampleStorageRecord{
+			e.Records = memory.MemoryStoreRecords{
+				&memory.MemoryStoreRecord{
 					ResourceType: "TrafficRoute",
 					Namespace:    "demo",
 					Name:         "example",
@@ -100,7 +100,7 @@ var _ = Describe("ExampleResourceClient", func() {
 
 			// given
 			trr := &TrafficRouteResource{
-				Meta: &ExampleMeta{
+				Meta: &memory.MemoryMeta{
 					Namespace: "demo",
 					Name:      "example",
 				},
@@ -115,8 +115,8 @@ var _ = Describe("ExampleResourceClient", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(e.PersistedRecords).To(ConsistOf(
-				&ExampleStorageRecord{
+			Expect(e.Records).To(ConsistOf(
+				&memory.MemoryStoreRecord{
 					ResourceType: "TrafficRoute",
 					Namespace:    "demo",
 					Name:         "example",
@@ -132,7 +132,7 @@ var _ = Describe("ExampleResourceClient", func() {
 			trr := &TrafficRouteResource{}
 
 			// when
-			err := c.Delete(context.Background(), trr, client.DeleteByName("demo", "app"))
+			err := c.Delete(context.Background(), trr, store.DeleteByName("demo", "app"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -140,8 +140,8 @@ var _ = Describe("ExampleResourceClient", func() {
 
 		It("should delete an existing resource", func() {
 			// setup
-			e.PersistedRecords = ExampleStorageRecords{
-				&ExampleStorageRecord{
+			e.Records = memory.MemoryStoreRecords{
+				&memory.MemoryStoreRecord{
 					ResourceType: "TrafficRoute",
 					Namespace:    "demo",
 					Name:         "example",
@@ -153,12 +153,12 @@ var _ = Describe("ExampleResourceClient", func() {
 			trr := &TrafficRouteResource{}
 
 			// when
-			err := c.Delete(context.Background(), trr, client.DeleteByName("demo", "example"))
+			err := c.Delete(context.Background(), trr, store.DeleteByName("demo", "example"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(e.PersistedRecords).To(HaveLen(0))
+			Expect(e.Records).To(HaveLen(0))
 		})
 	})
 
@@ -168,7 +168,7 @@ var _ = Describe("ExampleResourceClient", func() {
 			trr := &TrafficRouteResource{}
 
 			// when
-			err := c.Get(context.Background(), trr, client.GetByName("demo", "example"))
+			err := c.Get(context.Background(), trr, store.GetByName("demo", "example"))
 
 			// then
 			Expect(err).To(MatchError(`Resource not found: type="TrafficRoute" namespace="demo" name="example"`))
@@ -176,8 +176,8 @@ var _ = Describe("ExampleResourceClient", func() {
 
 		It("should return an existing resource", func() {
 			// setup
-			e.PersistedRecords = ExampleStorageRecords{
-				&ExampleStorageRecord{
+			e.Records = memory.MemoryStoreRecords{
+				&memory.MemoryStoreRecord{
 					ResourceType: "TrafficRoute",
 					Namespace:    "demo",
 					Name:         "example",
@@ -189,7 +189,7 @@ var _ = Describe("ExampleResourceClient", func() {
 			trr := &TrafficRouteResource{}
 
 			// when
-			err := c.Get(context.Background(), trr, client.GetByName("demo", "example"))
+			err := c.Get(context.Background(), trr, store.GetByName("demo", "example"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -206,7 +206,7 @@ var _ = Describe("ExampleResourceClient", func() {
 			trr := &TrafficRouteResourceList{}
 
 			// when
-			err := c.List(context.Background(), trr, client.ListByNamespace("demo"))
+			err := c.List(context.Background(), trr, store.ListByNamespace("demo"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -216,14 +216,14 @@ var _ = Describe("ExampleResourceClient", func() {
 
 		It("should return a list of matching resource", func() {
 			// setup
-			e.PersistedRecords = ExampleStorageRecords{
-				&ExampleStorageRecord{
+			e.Records = memory.MemoryStoreRecords{
+				&memory.MemoryStoreRecord{
 					ResourceType: "TrafficRoute",
 					Namespace:    "demo",
 					Name:         "example",
 					Spec:         `{"path":"/example"}`,
 				},
-				&ExampleStorageRecord{
+				&memory.MemoryStoreRecord{
 					ResourceType: "TrafficRoute",
 					Namespace:    "demo",
 					Name:         "another",
@@ -235,7 +235,7 @@ var _ = Describe("ExampleResourceClient", func() {
 			trr := &TrafficRouteResourceList{}
 
 			// when
-			err := c.List(context.Background(), trr, client.ListByNamespace("demo"))
+			err := c.List(context.Background(), trr, store.ListByNamespace("demo"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

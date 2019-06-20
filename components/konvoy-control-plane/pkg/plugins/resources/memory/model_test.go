@@ -1,7 +1,7 @@
-package example
+package memory_test
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
 
 const (
