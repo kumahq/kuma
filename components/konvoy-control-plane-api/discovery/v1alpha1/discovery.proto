@@ -72,7 +72,7 @@ message Workload {
 
     // Additional information about a workload that powers traffic policies
     // (i.e. access control rules), subset load balancing (i.e. canary
-    // releases), zone aware routing  (i.e. multi-datacenter routing), etc.
+    // releases), etc.
     // In practice, each workload should have at least one label for grouping
     // by application it represents, i.e. `app=gmail` or `job=daily-report`.
     // To enable canary releases, grouping by version might be useful, i.e.
@@ -80,6 +80,10 @@ message Workload {
     // Usage of such labels allows to define traffic policies in terms of
     // applications, their versions and other traits.
     Meta meta = 2;
+
+    // Locality of a workload for the purposes of zone aware routing (i.e.
+    // multi-datacenter routing).
+    Locality locality = 3;
 }
 
 // Id of an entity within a mesh.
@@ -107,4 +111,15 @@ message Meta {
     // Key/value pairs for breaking objects into categories, e.g.
     // Kubernetes labels.
     map<string, string> labels = 1;
+}
+
+// Locality describes location of a workload for the purposes of
+// zone aware routing (i.e. multi-datacenter routing).
+message Locality {
+
+    // Region, i.e. cloud region.
+    string region = 1;
+
+    // Region, i.e. cloud zone.
+    string zone = 2;
 }

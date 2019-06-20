@@ -24,11 +24,13 @@ func ExampleService() {
 					},
 					Meta: &discovery.Meta{
 						Labels: map[string]string{
-							"app":                 "example",
-							"version":             "0.0.1",
-							"getkonvoy.io/region": "us-east-1",
-							"getkonvoy.io/zone":   "us-east-1b",
+							"app":     "example",
+							"version": "0.0.1",
 						},
+					},
+					Locality: &discovery.Locality{
+						Region: "us-east-1",
+						Zone:   "us-east-1b",
 					},
 				},
 			},
@@ -43,11 +45,12 @@ func ExampleService() {
 	//     id:
 	//       name: example-xgg9df
 	//       namespace: demo
+	//     locality:
+	//       region: us-east-1
+	//       zone: us-east-1b
 	//     meta:
 	//       labels:
 	//         app: example
-	//         getkonvoy.io/region: us-east-1
-	//         getkonvoy.io/zone: us-east-1b
 	//         version: 0.0.1
 	// id:
 	//   name: example
@@ -61,10 +64,12 @@ func ExampleWorkload() {
 		},
 		Meta: &discovery.Meta{
 			Labels: map[string]string{
-				"job":                 "daily-report",
-				"getkonvoy.io/region": "us-east-1",
-				"getkonvoy.io/zone":   "us-east-1b",
+				"job": "daily-report",
 			},
+		},
+		Locality: &discovery.Locality{
+			Region: "us-west-2",
+			Zone:   "us-west-2c",
 		},
 	})
 	fmt.Println(string(bytes))
@@ -72,10 +77,11 @@ func ExampleWorkload() {
 	// id:
 	//   name: daily-report-f5seg
 	//   namespace: demo
+	// locality:
+	//   region: us-west-2
+	//   zone: us-west-2c
 	// meta:
 	//   labels:
-	//     getkonvoy.io/region: us-east-1
-	//     getkonvoy.io/zone: us-east-1b
 	//     job: daily-report
 }
 
@@ -100,11 +106,13 @@ func ExampleInventory() {
 									},
 									Meta: &discovery.Meta{
 										Labels: map[string]string{
-											"app":                 "example",
-											"version":             "0.0.1",
-											"getkonvoy.io/region": "us-east-1",
-											"getkonvoy.io/zone":   "us-east-1b",
+											"app":     "example",
+											"version": "0.0.1",
 										},
+									},
+									Locality: &discovery.Locality{
+										Region: "us-east-1",
+										Zone:   "us-east-1b",
 									},
 								},
 							},
@@ -121,10 +129,12 @@ func ExampleInventory() {
 						},
 						Meta: &discovery.Meta{
 							Labels: map[string]string{
-								"job":                 "daily-report",
-								"getkonvoy.io/region": "us-east-1",
-								"getkonvoy.io/zone":   "us-east-1b",
+								"job": "daily-report",
 							},
+						},
+						Locality: &discovery.Locality{
+							Region: "us-west-2",
+							Zone:   "us-west-2c",
 						},
 					},
 				},
@@ -142,11 +152,12 @@ func ExampleInventory() {
 	//         id:
 	//           name: example-xgg9df
 	//           namespace: demo
+	//         locality:
+	//           region: us-east-1
+	//           zone: us-east-1b
 	//         meta:
 	//           labels:
 	//             app: example
-	//             getkonvoy.io/region: us-east-1
-	//             getkonvoy.io/zone: us-east-1b
 	//             version: 0.0.1
 	//     id:
 	//       name: example
@@ -155,9 +166,10 @@ func ExampleInventory() {
 	//     id:
 	//       name: daily-report-f5seg
 	//       namespace: demo
+	//     locality:
+	//       region: us-west-2
+	//       zone: us-west-2c
 	//     meta:
 	//       labels:
-	//         getkonvoy.io/region: us-east-1
-	//         getkonvoy.io/zone: us-east-1b
 	//         job: daily-report
 }
