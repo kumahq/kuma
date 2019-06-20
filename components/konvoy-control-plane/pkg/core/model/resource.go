@@ -1,8 +1,14 @@
 package model
 
+import (
+	"fmt"
+	"reflect"
+)
+
 type Resource interface {
 	GetType() ResourceType
 	GetMeta() ResourceMeta
+	SetMeta(ResourceMeta)
 	GetSpec() ResourceSpec
 }
 
@@ -19,5 +25,10 @@ type ResourceSpec interface {
 
 type ResourceList interface {
 	GetItemType() ResourceType
-	GetItems() []Resource
+	NewItem() Resource
+	AddItem(Resource) error
+}
+
+func ErrorInvalidItemType(expected, actual interface{}) error {
+	return fmt.Errorf("Invalid argument type: expected=%q got=%q", reflect.TypeOf(expected), reflect.TypeOf(actual))
 }
