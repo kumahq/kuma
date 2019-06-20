@@ -84,6 +84,27 @@ jobs:
         paths:
           - "/go/pkg/mod"
 
+  kcp-api/check:
+    <<: *go-defaults
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        - konvoy-control-plane-api/go.mod/{{ checksum "components/konvoy-control-plane-api/go.sum" }}
+    - run:
+        name: "Install pre-requirements"
+        command: apt update && apt install unzip
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools -C components/konvoy-control-plane-api
+    - run:
+        name: "Verify that auto-generated code is up-to-date"
+        command: make check -C components/konvoy-control-plane-api
+    - save_cache:
+        key: konvoy-control-plane-api/go.mod/{{ checksum "components/konvoy-control-plane-api/go.sum" }}
+        paths:
+          - "/go/pkg/mod"
+
   kcp/test:
     <<: *go-defaults
     resource_class: large
@@ -176,6 +197,7 @@ workflows:
   version: 2
   konvoy-control-plane:
     jobs:
+    - kcp-api/check
     - kcp/dev/golang
     - kcp/dev/mac
     - kcp/dev/ubuntu
@@ -183,6 +205,7 @@ workflows:
     - kcp/test:
         requires:
         - kcp/check
+        - kcp-api/check
     - kcp/build:
         requires:
         - kcp/test
