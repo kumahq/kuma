@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/client"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/client/example"
-	resources_postgres "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/resources-postgres"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/postgres"
 )
 
 func main() {
-	config := resources_postgres.PostgresConfig{
+	config := postgres.Config{
 		Host: "localhost",
 		Port: 5432,
 		User: "postgres",
 		Password: "mysecretpassword",
 		DbName: "konvoy",
 	}
-	rc, err := resources_postgres.NewResourceClient(config)
+	rc, err := postgres.NewStore(config)
 	if err != nil {
 		panic(err)
 	}

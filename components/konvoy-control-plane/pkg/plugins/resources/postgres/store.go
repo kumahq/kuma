@@ -1,22 +1,22 @@
-package resources_postgres
+package postgres
 
 import (
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/client"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	_ "github.com/lib/pq"
 )
 
-type ResourceClient struct {
+type postgresResourceStore struct {
 	db *sql.DB
 }
 
-var _ client.ResourceClient = &ResourceClient{}
+var _ store.ResourceStore = &postgresResourceStore{}
 
-type PostgresConfig struct {
+type Config struct {
 	Host     string
 	Port     int
 	User     string
@@ -24,19 +24,19 @@ type PostgresConfig struct {
 	DbName   string
 }
 
-func NewResourceClient(config PostgresConfig) (client.ResourceClient, error) {
+func NewStore(config Config) (store.ResourceStore, error) {
 	db, err := connectToDb(config)
 	if err != nil {
 		return nil, err
 	}
 
-	c := &ResourceClient{
+	c := &postgresResourceStore{
 		db: db,
 	}
-	return client.NewStrictResourceClient(c), nil
+	return store.NewStrictResourceStore(c), nil
 }
 
-func connectToDb(config PostgresConfig) (*sql.DB, error) {
+func connectToDb(config Config) (*sql.DB, error) {
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		config.Host, config.Port, config.User, config.Password, config.DbName)
 	db, err := sql.Open("postgres", connStr)
@@ -55,15 +55,15 @@ func connectToDb(config PostgresConfig) (*sql.DB, error) {
 
 //TODO(jakubdyszkiewicz) close
 
-func (r *ResourceClient) Create(_ context.Context, resource model.Resource, args ...client.CreateOptionsFunc) error {
-	opts := client.NewCreateOptions(args...)
+func (r *postgresResourceStore) Create(_ context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
+	opts := store.NewCreateOptions(fs...)
 
 	exists, err := r.exists(opts.Name, opts.Namespace, resource.GetType())
 	if err != nil {
 		return err
 	}
 	if exists {
-		return client.ErrorResourceAlreadyExists(resource.GetType(), opts.Namespace, opts.Name)
+		return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Namespace, opts.Name)
 	}
 
 	bytes, err := json.Marshal(resource.GetSpec())
@@ -85,15 +85,15 @@ func (r *ResourceClient) Create(_ context.Context, resource model.Resource, args
 	return nil
 }
 
-func (r *ResourceClient) Update(context context.Context, resource model.Resource, args ...client.UpdateOptionsFunc) error {
-	_ = client.NewUpdateOptions(args...)
+func (r *postgresResourceStore) Update(_ context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
+	_ = store.NewUpdateOptions(fs...)
 
 	exists, err := r.exists(resource.GetMeta().GetName(), resource.GetMeta().GetNamespace(), resource.GetType())
 	if err != nil {
 		return err
 	}
 	if !exists {
-		return client.ErrorResourceNotFound(resource.GetType(), resource.GetMeta().GetNamespace(), resource.GetMeta().GetName())
+		return store.ErrorResourceNotFound(resource.GetType(), resource.GetMeta().GetNamespace(), resource.GetMeta().GetName())
 	}
 
 	bytes, err := json.Marshal(resource.GetSpec())
@@ -116,8 +116,8 @@ func (r *ResourceClient) Update(context context.Context, resource model.Resource
 	return nil
 }
 
-func (r *ResourceClient) Delete(context context.Context, resource model.Resource, args ...client.DeleteOptionsFunc) error {
-	opts := client.NewDeleteOptions(args...)
+func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
+	opts := store.NewDeleteOptions(fs...)
 
 	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3;`
 	_, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType())
@@ -128,8 +128,8 @@ func (r *ResourceClient) Delete(context context.Context, resource model.Resource
 	return nil
 }
 
-func (r *ResourceClient) Get(context context.Context, resource model.Resource, args ...client.GetOptionsFunc) error {
-	opts := client.NewGetOptions(args...)
+func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, fs ...store.GetOptionsFunc) error {
+	opts := store.NewGetOptions(fs...)
 
 	statement := `SELECT spec FROM resources WHERE name=$1 AND namespace=$2 AND type=$3;`
 	row := r.db.QueryRow(statement, opts.Name, opts.Namespace, resource.GetType())
@@ -137,7 +137,7 @@ func (r *ResourceClient) Get(context context.Context, resource model.Resource, a
 	var spec string
 	err := row.Scan(&spec)
 	if err == sql.ErrNoRows {
-		return client.ErrorResourceNotFound(resource.GetType(), opts.Namespace, opts.Name)
+		return store.ErrorResourceNotFound(resource.GetType(), opts.Namespace, opts.Name)
 	}
 	if err != nil {
 		return err
@@ -157,8 +157,8 @@ func (r *ResourceClient) Get(context context.Context, resource model.Resource, a
 	return nil
 }
 
-func (r *ResourceClient) List(context context.Context, resources model.ResourceList, args ...client.ListOptionsFunc) error {
-	opts := client.NewListOptions(args...)
+func (r *postgresResourceStore) List(_ context.Context, resources model.ResourceList, args ...store.ListOptionsFunc) error {
+	opts := store.NewListOptions(args...)
 
 	statement := `SELECT name, spec FROM resources WHERE namespace=$1 AND type=$2;`
 	rows, err := r.db.Query(statement, opts.Namespace, resources.GetItemType())
@@ -195,7 +195,7 @@ func (r *ResourceClient) List(context context.Context, resources model.ResourceL
 	return nil
 }
 
-func (r *ResourceClient) exists(name string, namespace string, resourceType model.ResourceType) (bool, error) {
+func (r *postgresResourceStore) exists(name string, namespace string, resourceType model.ResourceType) (bool, error) {
 	statement := `SELECT count(*) FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
 	row := r.db.QueryRow(statement, name, namespace, resourceType)
 

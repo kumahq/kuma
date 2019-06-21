@@ -1,4 +1,4 @@
-package resources_postgres
+package postgres
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestClient(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Postgres ResourceClient Suite")
+	RunSpecs(t, "Postgres Resource Store Suite")
 }
