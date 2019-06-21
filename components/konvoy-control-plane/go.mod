@@ -11,6 +11,7 @@ require (
 	github.com/lib/pq v1.1.1
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
+	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.4
 	golang.org/x/crypto v0.0.0-20190617133340-57b3e21c3d56 // indirect
 	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect

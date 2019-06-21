@@ -8,6 +8,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
 	"strconv"
 )
 
@@ -30,6 +31,7 @@ func NewStore(config Config) (store.ResourceStore, error) {
 	if err != nil {
 		return nil, err
 	}
+	// wrap it to strict resources store so we don't have to duplicate the validations
 	return store.NewStrictResourceStore(s), nil
 }
 
@@ -49,13 +51,13 @@ func connectToDb(config Config) (*sql.DB, error) {
 		config.Host, config.Port, config.User, config.Password, config.DbName)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cannot create connection to DB")
 	}
 
 	// check connection to DB, Open() does not check it.
 	err = db.Ping()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cannot connect to DB")
 	}
 
 	return db, nil
@@ -64,7 +66,6 @@ func connectToDb(config Config) (*sql.DB, error) {
 func (r *postgresResourceStore) Create(_ context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 
-	// validate if not exists
 	exists, err := r.exists(opts.Name, opts.Namespace, resource.GetType())
 	if err != nil {
 		return err
@@ -75,15 +76,14 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 
 	bytes, err := json.Marshal(resource.GetSpec())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to convert spec to json")
 	}
 
-	// persist
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5);`
 	_, err = r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), version, string(bytes))
 	if err != nil {
-		return err
+		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
 	}
 
 	resource.SetMeta(&resourceMetaObject{
@@ -91,8 +91,20 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 		Namespace: opts.Namespace,
 		Version:   strconv.Itoa(version),
 	})
-
 	return nil
+}
+
+func (r *postgresResourceStore) exists(name string, namespace string, resourceType model.ResourceType) (bool, error) {
+	statement := `SELECT count(*) FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
+	row := r.db.QueryRow(statement, name, namespace, resourceType)
+
+	var elements int
+	err := row.Scan(&elements)
+	if err != nil {
+		return false, errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
+	}
+
+	return elements > 0, nil
 }
 
 func (r *postgresResourceStore) Update(_ context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
@@ -113,7 +125,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 
 	version, err := strconv.Atoi(resource.GetMeta().GetVersion())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to convert meta version to int")
 	}
 	statement := `UPDATE resources SET spec=$1, version=$2 WHERE name=$3 AND namespace=$4 AND type=$5 AND version=$6;`
 	_, err = r.db.Exec(
@@ -126,10 +138,10 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 		version,
 	)
 	if err != nil {
-		return err
+		return errors.Wrap(err, fmt.Sprintf("failed to execute query %s", statement))
 	}
 
-	// update meta with new version
+	// update resource's meta with new version
 	resource.SetMeta(&resourceMetaObject{
 		Name:      resource.GetMeta().GetName(),
 		Namespace: resource.GetMeta().GetNamespace(),
@@ -144,12 +156,13 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 
 	version, err := strconv.Atoi(opts.Version)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to convert meta version to int")
 	}
+
 	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3 AND version=$4;`
 	_, err = r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), version)
 	if err != nil {
-		return err
+		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
 	}
 
 	return nil
@@ -168,12 +181,12 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 		return store.ErrorResourceNotFound(resource.GetType(), opts.Namespace, opts.Name)
 	}
 	if err != nil {
-		return err
+		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
 	}
 
 	err = json.Unmarshal([]byte(spec), resource.GetSpec())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to convert json to spec")
 	}
 
 	meta := &resourceMetaObject{
@@ -191,31 +204,14 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	statement := `SELECT name, spec, version FROM resources WHERE namespace=$1 AND type=$2;`
 	rows, err := r.db.Query(statement, opts.Namespace, resources.GetItemType())
 	if err != nil {
-		return err
+		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var name string
-		var spec string
-		var version int
-		err = rows.Scan(&name, &spec, &version)
+		item, err := rowToItem(resources, opts, rows)
 		if err != nil {
 			return err
 		}
-
-		item := resources.NewItem()
-		err = json.Unmarshal([]byte(spec), item.GetSpec())
-		if err != nil {
-			return err
-		}
-
-		meta := &resourceMetaObject{
-			Name:      name,
-			Namespace: opts.Namespace,
-			Version:   strconv.Itoa(version),
-		}
-		item.SetMeta(meta)
-
 		err = resources.AddItem(item)
 		if err != nil {
 			return err
@@ -224,25 +220,32 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	return nil
 }
 
-func (r *postgresResourceStore) Close() error {
-	return r.db.Close()
+func rowToItem(resources model.ResourceList, opts *store.ListOptions, rows *sql.Rows) (model.Resource, error) {
+	var name, spec string
+	var version int
+	err := rows.Scan(&name, &spec, &version)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve elements from query")
+	}
+
+	item := resources.NewItem()
+	err = json.Unmarshal([]byte(spec), item.GetSpec())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert json to spec")
+	}
+
+	meta := &resourceMetaObject{
+		Name:      name,
+		Namespace: opts.Namespace,
+		Version:   strconv.Itoa(version),
+	}
+	item.SetMeta(meta)
+
+	return item, nil
 }
 
-func (r *postgresResourceStore) exists(name string, namespace string, resourceType model.ResourceType) (bool, error) {
-	statement := `SELECT count(*) FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
-	row := r.db.QueryRow(statement, name, namespace, resourceType)
-
-	var elements int
-	err := row.Scan(&elements)
-	if err != nil {
-		return false, err
-	}
-
-	if elements > 0 {
-		return true, nil
-	} else {
-		return false, nil
-	}
+func (r *postgresResourceStore) Close() error {
+	return r.db.Close()
 }
 
 func (r *postgresResourceStore) deleteAll() error {
