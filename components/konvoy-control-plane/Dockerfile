@@ -7,8 +7,11 @@ WORKDIR /go/src/github.com/Kong/konvoy/components/konvoy-control-plane
 # facilitate docker layer caching
 COPY go.mod go.mod
 COPY go.sum go.sum
-COPY model/go.mod model/go.mod
-COPY model/go.sum model/go.sum
+COPY api/go.mod api/go.mod
+COPY api/go.sum api/go.sum
+COPY pkg/plugins/resources/k8s/native/go.mod pkg/plugins/resources/k8s/native/go.mod
+COPY pkg/plugins/resources/k8s/native/go.sum pkg/plugins/resources/k8s/native/go.sum
+
 RUN go mod download
 
 COPY . .

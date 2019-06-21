@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 
-	model_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/model/controllers"
+	k8s_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/controllers"
 	util_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/manager"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -40,15 +40,15 @@ func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
 
 	if err := util_manager.SetupWithManager(
 		mgr,
-		&model_controllers.ProxyTemplateReconciler{
+		&k8s_controllers.ProxyTemplateReconciler{
 			Client: mgr.GetClient(),
 			Log:    ctrl.Log.WithName("controllers").WithName("ProxyTemplate"),
 		},
-		&model_controllers.ProxyReconciler{
+		&k8s_controllers.ProxyReconciler{
 			Client: mgr.GetClient(),
 			Log:    ctrl.Log.WithName("controllers").WithName("Proxy"),
 		},
-		&model_controllers.PodReconciler{
+		&k8s_controllers.PodReconciler{
 			Client:   mgr.GetClient(),
 			Log:      ctrl.Log.WithName("controllers").WithName("Pod"),
 			Observer: &reconciler,

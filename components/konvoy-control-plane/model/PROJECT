@@ -1,7 +1,0 @@
-version: "2"
-domain: getkonvoy.io
-repo: github.com/Kong/konvoy/components/konvoy-control-plane/model
-resources:
-- group: mesh
-  version: v1alpha1
-  kind: ProxyTemplate

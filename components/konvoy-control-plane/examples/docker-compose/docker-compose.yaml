@@ -47,7 +47,7 @@ services:
     image: bitnami/kubectl:1.14
     volumes:
       - ./kubeconfig:/etc/konvoy-control-plane/kubeconfig
-      - ../../model/config/crd/bases:/etc/konvoy/crds
+      - ../../pkg/plugins/resources/k8s/native/config/crd/bases:/etc/konvoy/crds
     environment:
       - KUBECONFIG=/etc/konvoy-control-plane/kubeconfig
     entrypoint: /bin/bash

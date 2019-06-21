@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package konvoy.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+// ProxyTemplate defines the desired state of ProxyTemplate
+message ProxyTemplate {
+
+	// List of configuration sources.
+	// +optional
+    repeated ProxyTemplateSource sources = 1;
+}
+
+message ProxyTemplateSource {
+
+    // Name of a configuration source.
+	// +optional
+	string name = 1;
+
+    oneof type {
+
+        // Profile, e.g. `transparent-outbound-proxy`.
+        // +optional
+        ProxyTemplateProfileSource profile = 2;
+
+        // Raw xDS resources.
+        // +optional
+        ProxyTemplateRawSource raw = 3;
+    }
+}
+
+message ProxyTemplateProfileSource {
+
+    // Profile name.
+	string name = 1;
+
+	// Profile params if any.
+	// +optional
+	map<string, string> params = 2;
+}
+
+message ProxyTemplateRawSource {
+
+    // List of raw xDS resources.
+	// +optional
+	repeated ProxyTemplateRawResource resources = 1;
+}
+
+message ProxyTemplateRawResource {
+
+	// The resource's name, to distinguish it from others of the same type of resource.
+	string name = 1;
+
+	// The resource level version. It allows xDS to track the state of individual
+	// resources.
+	string version = 2;
+
+	// xDS resource.
+	string resource = 3;
+}

@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
+	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
@@ -602,7 +602,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -621,7 +621,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 							Name:     "raw-name",
 							Version:  "raw-version",
 							Resource: `{`,
@@ -639,7 +639,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -659,7 +659,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -690,7 +690,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -765,7 +765,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -817,7 +817,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -867,7 +867,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -956,16 +956,18 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					template: &konvoy_mesh.ProxyTemplate{
-						Spec: konvoy_mesh.ProxyTemplateSpec{
-							Sources: []konvoy_mesh.ProxyTemplateSource{
-								{
+						Sources: []*konvoy_mesh.ProxyTemplateSource{
+							{
+								Type: &konvoy_mesh.ProxyTemplateSource_Profile{
 									Profile: &konvoy_mesh.ProxyTemplateProfileSource{
 										Name: template.ProfileTransparentOutboundProxy,
 									},
 								},
-								{
+							},
+							{
+								Type: &konvoy_mesh.ProxyTemplateSource_Raw{
 									Raw: &konvoy_mesh.ProxyTemplateRawSource{
-										Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+										Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 											Name:     "raw-name",
 											Version:  "raw-version",
 											Resource: `{`,
@@ -1018,16 +1020,18 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					template: &konvoy_mesh.ProxyTemplate{
-						Spec: konvoy_mesh.ProxyTemplateSpec{
-							Sources: []konvoy_mesh.ProxyTemplateSource{
-								{
+						Sources: []*konvoy_mesh.ProxyTemplateSource{
+							{
+								Type: &konvoy_mesh.ProxyTemplateSource_Profile{
 									Profile: &konvoy_mesh.ProxyTemplateProfileSource{
 										Name: template.ProfileTransparentOutboundProxy,
 									},
 								},
-								{
+							},
+							{
+								Type: &konvoy_mesh.ProxyTemplateSource_Raw{
 									Raw: &konvoy_mesh.ProxyTemplateRawSource{
-										Resources: []konvoy_mesh.ProxyTemplateRawResource{{
+										Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
 											Name:    "raw-name",
 											Version: "raw-version",
 											Resource: `
@@ -1044,7 +1048,7 @@ var _ = Describe("Generator", func() {
                                   portValue: 8443
                       name: localhost:8443
                       type: STATIC
-`,
+  `,
 										}},
 									},
 								},
