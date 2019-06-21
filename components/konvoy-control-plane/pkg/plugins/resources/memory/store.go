@@ -3,7 +3,6 @@ package memory
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -23,7 +22,6 @@ var _ model.ResourceMeta = &MemoryMeta{}
 type MemoryMeta struct {
 	Namespace string
 	Name      string
-	Version   string
 }
 
 func (m *MemoryMeta) GetName() string {
@@ -33,7 +31,7 @@ func (m *MemoryMeta) GetNamespace() string {
 	return m.Namespace
 }
 func (m *MemoryMeta) GetVersion() string {
-	return m.Version
+	return "0"
 }
 
 var _ store.ResourceStore = &MemoryStore{}
@@ -67,6 +65,12 @@ func (c *MemoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 		return err
 	}
 
+	// fill the meta
+	r.SetMeta(&MemoryMeta{
+		Name: opts.Name,
+		Namespace: opts.Namespace,
+	})
+
 	// persist
 	c.Records = append(c.Records, record)
 	return nil
@@ -77,15 +81,10 @@ func (c *MemoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 
 	_ = store.NewUpdateOptions(fs...)
 
-	meta, ok := (r.GetMeta()).(*MemoryMeta)
-	if !ok {
-		return fmt.Errorf("MemoryStore.Update() requires r.GetMeta() to be of type MemoryMeta")
-	}
-
 	// Namespace and Name must be provided via r.GetMeta()
-	idx, record := c.findRecord(string(r.GetType()), meta.Namespace, meta.Name)
+	idx, record := c.findRecord(string(r.GetType()), r.GetMeta().GetNamespace(), r.GetMeta().GetName())
 	if record == nil {
-		return store.ErrorResourceNotFound(r.GetType(), meta.Namespace, meta.Name)
+		return store.ErrorResourceNotFound(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName())
 	}
 
 	record, err := c.marshalRecord(
@@ -105,11 +104,6 @@ func (c *MemoryStore) Delete(_ context.Context, r model.Resource, fs ...store.De
 	defer c.mu.Unlock()
 
 	opts := store.NewDeleteOptions(fs...)
-
-	_, ok := (r.GetMeta()).(*MemoryMeta)
-	if r.GetMeta() != nil && !ok {
-		return fmt.Errorf("MemoryStore.Delete() requires r.GetMeta() either to be nil or to be of type MemoryMeta")
-	}
 
 	// Namespace and Name must be provided via DeleteOptions
 	idx, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name)
@@ -145,9 +139,16 @@ func (c *MemoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		if err := c.unmarshalRecord(record, r); err != nil {
 			return err
 		}
-		rs.AddItem(r)
+		err := rs.AddItem(r)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func (c *MemoryStore) Close() error {
+	return nil;
 }
 
 func (c *MemoryStore) findRecord(

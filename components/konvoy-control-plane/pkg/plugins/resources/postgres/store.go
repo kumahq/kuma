@@ -25,15 +25,22 @@ type Config struct {
 }
 
 func NewStore(config Config) (store.ResourceStore, error) {
+	s, err := newPostgresStore(config)
+	if err != nil {
+		return nil, err
+	}
+	return store.NewStrictResourceStore(s), nil
+}
+
+func newPostgresStore(config Config) (*postgresResourceStore, error) {
 	db, err := connectToDb(config)
 	if err != nil {
 		return nil, err
 	}
 
-	c := &postgresResourceStore{
+	return &postgresResourceStore{
 		db: db,
-	}
-	return store.NewStrictResourceStore(c), nil
+	}, nil
 }
 
 func connectToDb(config Config) (*sql.DB, error) {
@@ -52,8 +59,6 @@ func connectToDb(config Config) (*sql.DB, error) {
 
 	return db, nil
 }
-
-//TODO(jakubdyszkiewicz) close
 
 func (r *postgresResourceStore) Create(_ context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
@@ -195,6 +200,10 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	return nil
 }
 
+func (r *postgresResourceStore) Close() error {
+	return r.db.Close()
+}
+
 func (r *postgresResourceStore) exists(name string, namespace string, resourceType model.ResourceType) (bool, error) {
 	statement := `SELECT count(*) FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
 	row := r.db.QueryRow(statement, name, namespace, resourceType)
@@ -210,6 +219,11 @@ func (r *postgresResourceStore) exists(name string, namespace string, resourceTy
 	} else {
 		return false, nil
 	}
+}
+
+func (r *postgresResourceStore) deleteAll() error {
+	_, err := r.db.Exec("DELETE FROM resources")
+	return err
 }
 
 type resourceMetaObject struct {
