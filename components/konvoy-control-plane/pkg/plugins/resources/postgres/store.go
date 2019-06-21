@@ -8,6 +8,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	_ "github.com/lib/pq"
+	"strconv"
 )
 
 type postgresResourceStore struct {
@@ -51,7 +52,7 @@ func connectToDb(config Config) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Check connection to DB, Open does not check it.
+	// check connection to DB, Open() does not check it.
 	err = db.Ping()
 	if err != nil {
 		return nil, err
@@ -63,6 +64,7 @@ func connectToDb(config Config) (*sql.DB, error) {
 func (r *postgresResourceStore) Create(_ context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 
+	// validate if not exists
 	exists, err := r.exists(opts.Name, opts.Namespace, resource.GetType())
 	if err != nil {
 		return err
@@ -76,8 +78,10 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 		return err
 	}
 
-	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4);`
-	_, err = r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), string(bytes))
+	// persist
+	version := 0
+	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5);`
+	_, err = r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), version, string(bytes))
 	if err != nil {
 		return err
 	}
@@ -85,6 +89,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 	resource.SetMeta(&resourceMetaObject{
 		Name:      opts.Name,
 		Namespace: opts.Namespace,
+		Version:   strconv.Itoa(version),
 	})
 
 	return nil
@@ -106,17 +111,30 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 		return err
 	}
 
-	statement := `UPDATE resources SET spec=$1 WHERE name=$2 AND namespace=$3 AND type=$4;`
+	version, err := strconv.Atoi(resource.GetMeta().GetVersion())
+	if err != nil {
+		return err
+	}
+	statement := `UPDATE resources SET spec=$1, version=$2 WHERE name=$3 AND namespace=$4 AND type=$5 AND version=$6;`
 	_, err = r.db.Exec(
 		statement,
 		string(bytes),
+		version + 1,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetNamespace(),
 		resource.GetType(),
+		version,
 	)
 	if err != nil {
 		return err
 	}
+
+	// update meta with new version
+	resource.SetMeta(&resourceMetaObject{
+		Name:      resource.GetMeta().GetName(),
+		Namespace: resource.GetMeta().GetNamespace(),
+		Version:   strconv.Itoa(version),
+	})
 
 	return nil
 }
@@ -124,8 +142,12 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
-	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3;`
-	_, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType())
+	version, err := strconv.Atoi(opts.Version)
+	if err != nil {
+		return err
+	}
+	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3 AND version=$4;`
+	_, err = r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), version)
 	if err != nil {
 		return err
 	}
@@ -136,11 +158,12 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
-	statement := `SELECT spec FROM resources WHERE name=$1 AND namespace=$2 AND type=$3;`
+	statement := `SELECT spec, version FROM resources WHERE name=$1 AND namespace=$2 AND type=$3;`
 	row := r.db.QueryRow(statement, opts.Name, opts.Namespace, resource.GetType())
 
 	var spec string
-	err := row.Scan(&spec)
+	var version int
+	err := row.Scan(&spec, &version)
 	if err == sql.ErrNoRows {
 		return store.ErrorResourceNotFound(resource.GetType(), opts.Namespace, opts.Name)
 	}
@@ -156,7 +179,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 	meta := &resourceMetaObject{
 		Name:      opts.Name,
 		Namespace: opts.Namespace,
-		Version:   "v1",
+		Version:   strconv.Itoa(version),
 	}
 	resource.SetMeta(meta)
 	return nil
@@ -165,7 +188,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 func (r *postgresResourceStore) List(_ context.Context, resources model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, spec FROM resources WHERE namespace=$1 AND type=$2;`
+	statement := `SELECT name, spec, version FROM resources WHERE namespace=$1 AND type=$2;`
 	rows, err := r.db.Query(statement, opts.Namespace, resources.GetItemType())
 	if err != nil {
 		return err
@@ -174,7 +197,8 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	for rows.Next() {
 		var name string
 		var spec string
-		err = rows.Scan(&name, &spec)
+		var version int
+		err = rows.Scan(&name, &spec, &version)
 		if err != nil {
 			return err
 		}
@@ -188,7 +212,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		meta := &resourceMetaObject{
 			Name:      name,
 			Namespace: opts.Namespace,
-			Version:   "v1",
+			Version:   strconv.Itoa(version),
 		}
 		item.SetMeta(meta)
 

@@ -65,6 +65,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 				Meta: &resourceMetaObject{
 					Namespace: namespace,
 					Name:      "example",
+					Version:   "0",
 				},
 			}
 
@@ -78,11 +79,11 @@ func ExecuteStoreTests(s *ResourceStore) {
 		It("should update an existing resource", func() {
 			// given a resources in storage
 			name := "to-be-updated"
-			createResource := createResource(name)
+			createdResource := createResource(name)
 
 			// when
-			createResource.Spec.Path = "new-path"
-			err := (*s).Update(context.Background(), createResource)
+			createdResource.Spec.Path = "new-path"
+			err := (*s).Update(context.Background(), createdResource)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -105,7 +106,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 			res := TrafficRouteResource{}
 
 			// when
-			err := (*s).Delete(context.TODO(), &res, DeleteByName(namespace, "non-existent-name"))
+			err := (*s).Delete(context.TODO(), &res, DeleteByName(namespace, "non-existent-name", "0"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -114,11 +115,11 @@ func ExecuteStoreTests(s *ResourceStore) {
 		It("should delete an existing resource", func() {
 			// given a resources in storage
 			name := "to-be-deleted"
-			createResource(name)
+			created := createResource(name)
 
 			// when
 			res := TrafficRouteResource{}
-			err := (*s).Delete(context.TODO(), &res, DeleteByName(namespace, name))
+			err := (*s).Delete(context.TODO(), &res, DeleteByName(namespace, name, created.Meta.GetVersion()))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
