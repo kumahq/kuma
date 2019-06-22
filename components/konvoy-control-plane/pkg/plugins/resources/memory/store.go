@@ -2,12 +2,12 @@ package memory
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 )
 
 type memoryStoreRecord struct {
@@ -185,7 +185,7 @@ func (c *memoryStore) findRecords(
 
 func (c *memoryStore) marshalRecord(resourceType string, meta model.ResourceMeta, spec model.ResourceSpec) (*memoryStoreRecord, error) {
 	// convert spec into storage representation
-	content, err := json.Marshal(spec)
+	content, err := util_proto.ToJSON(spec)
 	if err != nil {
 		return nil, err
 	}
@@ -203,5 +203,5 @@ func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r model.Resource) er
 		Namespace: s.Namespace,
 		Name:      s.Name,
 	})
-	return json.Unmarshal([]byte(s.Spec), r.GetSpec())
+	return util_proto.FromJSON([]byte(s.Spec), r.GetSpec())
 }

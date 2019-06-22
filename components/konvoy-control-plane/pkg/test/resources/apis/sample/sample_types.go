@@ -1,23 +1,19 @@
-package memory_test
+package sample
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+	proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
 )
 
 const (
 	TrafficRouteType model.ResourceType = "TrafficRoute"
 )
 
-// TODO(yskopets): this would be a protobuf
-type TrafficRoute struct {
-	Path string `json:"path"`
-}
-
 var _ model.Resource = &TrafficRouteResource{}
 
 type TrafficRouteResource struct {
 	Meta model.ResourceMeta
-	Spec TrafficRoute
+	Spec proto.TrafficRoute
 }
 
 func (t *TrafficRouteResource) GetType() model.ResourceType {

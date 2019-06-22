@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package konvoy.test.v1alpha1;
+
+option go_package = "v1alpha1";
+
+// TrafficRoute is a sample configuration object for testing purposes.
+message TrafficRoute {
+
+  // HTTP path.
+  string path = 1;
+}

@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/gogo/protobuf/proto"
 )
 
 type Resource interface {
@@ -21,6 +23,8 @@ type ResourceMeta interface {
 }
 
 type ResourceSpec interface {
+	// all resources must be defined via Protobuf
+	proto.Message
 }
 
 type ResourceList interface {
