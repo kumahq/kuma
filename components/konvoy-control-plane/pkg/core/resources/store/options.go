@@ -38,7 +38,6 @@ func NewUpdateOptions(fs ...UpdateOptionsFunc) *UpdateOptions {
 type DeleteOptions struct {
 	Namespace string
 	Name      string
-	Version   string
 }
 
 type DeleteOptionsFunc func(*DeleteOptions)
@@ -51,11 +50,10 @@ func NewDeleteOptions(fs ...DeleteOptionsFunc) *DeleteOptions {
 	return opts
 }
 
-func DeleteByName(ns, name string, version string) DeleteOptionsFunc {
+func DeleteByName(ns, name string) DeleteOptionsFunc {
 	return func(opts *DeleteOptions) {
 		opts.Namespace = ns
 		opts.Name = name
-		opts.Version = version
 	}
 }
 

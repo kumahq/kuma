@@ -10,7 +10,10 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"strconv"
+	"strings"
 )
+
+const duplicateKeyErrorMsg = "duplicate key value violates unique constraint"
 
 type postgresResourceStore struct {
 	db *sql.DB
@@ -55,8 +58,7 @@ func connectToDb(config Config) (*sql.DB, error) {
 	}
 
 	// check connection to DB, Open() does not check it.
-	err = db.Ping()
-	if err != nil {
+	if err := db.Ping(); err != nil {
 		return nil, errors.Wrap(err, "cannot connect to DB")
 	}
 
@@ -65,14 +67,6 @@ func connectToDb(config Config) (*sql.DB, error) {
 
 func (r *postgresResourceStore) Create(_ context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
-
-	exists, err := r.exists(opts.Name, opts.Namespace, resource.GetType())
-	if err != nil {
-		return err
-	}
-	if exists {
-		return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Namespace, opts.Name)
-	}
 
 	bytes, err := json.Marshal(resource.GetSpec())
 	if err != nil {
@@ -83,6 +77,9 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5);`
 	_, err = r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), version, string(bytes))
 	if err != nil {
+		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
+			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Namespace, opts.Name)
+		}
 		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
 	}
 
@@ -94,30 +91,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 	return nil
 }
 
-func (r *postgresResourceStore) exists(name string, namespace string, resourceType model.ResourceType) (bool, error) {
-	statement := `SELECT count(*) FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
-	row := r.db.QueryRow(statement, name, namespace, resourceType)
-
-	var elements int
-	err := row.Scan(&elements)
-	if err != nil {
-		return false, errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
-	}
-
-	return elements > 0, nil
-}
-
 func (r *postgresResourceStore) Update(_ context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
-	_ = store.NewUpdateOptions(fs...)
-
-	exists, err := r.exists(resource.GetMeta().GetName(), resource.GetMeta().GetNamespace(), resource.GetType())
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return store.ErrorResourceNotFound(resource.GetType(), resource.GetMeta().GetNamespace(), resource.GetMeta().GetName())
-	}
-
 	bytes, err := json.Marshal(resource.GetSpec())
 	if err != nil {
 		return err
@@ -128,7 +102,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
 	statement := `UPDATE resources SET spec=$1, version=$2 WHERE name=$3 AND namespace=$4 AND type=$5 AND version=$6;`
-	_, err = r.db.Exec(
+	result, err := r.db.Exec(
 		statement,
 		string(bytes),
 		version + 1,
@@ -139,6 +113,9 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to execute query %s", statement))
+	}
+	if rows, _ := result.RowsAffected(); rows != 1 { // error ignored, postgres supports RowsAffected()
+		return store.ErrorResourceNotFound(resource.GetType(), resource.GetMeta().GetNamespace(), resource.GetMeta().GetName())
 	}
 
 	// update resource's meta with new version
@@ -154,13 +131,8 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
-	version, err := strconv.Atoi(opts.Version)
-	if err != nil {
-		return errors.Wrap(err, "failed to convert meta version to int")
-	}
-
-	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3 AND version=$4;`
-	_, err = r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), version)
+	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
+	_, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType())
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
 	}

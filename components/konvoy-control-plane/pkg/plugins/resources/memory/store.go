@@ -3,45 +3,50 @@ package memory
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 )
 
-type MemoryStoreRecord struct {
+type memoryStoreRecord struct {
 	ResourceType string
 	Namespace    string
 	Name         string
 	Spec         string
 }
-type MemoryStoreRecords = []*MemoryStoreRecord
+type memoryStoreRecords = []*memoryStoreRecord
 
-var _ model.ResourceMeta = &MemoryMeta{}
+var _ model.ResourceMeta = &memoryMeta{}
 
-type MemoryMeta struct {
+type memoryMeta struct {
 	Namespace string
 	Name      string
 }
 
-func (m *MemoryMeta) GetName() string {
+func (m *memoryMeta) GetName() string {
 	return m.Name
 }
-func (m *MemoryMeta) GetNamespace() string {
+func (m *memoryMeta) GetNamespace() string {
 	return m.Namespace
 }
-func (m *MemoryMeta) GetVersion() string {
+func (m *memoryMeta) GetVersion() string {
 	return "0"
 }
 
-var _ store.ResourceStore = &MemoryStore{}
+var _ store.ResourceStore = &memoryStore{}
 
-type MemoryStore struct {
-	Records MemoryStoreRecords
+type memoryStore struct {
+	Records memoryStoreRecords
 	mu      sync.RWMutex
 }
 
-func (c *MemoryStore) Create(_ context.Context, r model.Resource, fs ...store.CreateOptionsFunc) error {
+func NewStore() (store.ResourceStore) {
+	return &memoryStore{}
+}
+
+func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.CreateOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -52,11 +57,17 @@ func (c *MemoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Namespace, opts.Name)
 	}
 
+	// fill the meta
+	r.SetMeta(&memoryMeta{
+		Name: opts.Name,
+		Namespace: opts.Namespace,
+	})
+
 	// convert into storage representation
 	record, err := c.marshalRecord(
 		string(r.GetType()),
 		// Namespace and Name must be provided via CreateOptions
-		&MemoryMeta{
+		&memoryMeta{
 			Namespace: opts.Namespace,
 			Name:      opts.Name,
 		},
@@ -65,21 +76,20 @@ func (c *MemoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 		return err
 	}
 
-	// fill the meta
-	r.SetMeta(&MemoryMeta{
-		Name: opts.Name,
-		Namespace: opts.Namespace,
-	})
-
 	// persist
 	c.Records = append(c.Records, record)
 	return nil
 }
-func (c *MemoryStore) Update(_ context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
+func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	_ = store.NewUpdateOptions(fs...)
+
+	_, ok := (r.GetMeta()).(*memoryMeta)
+	if !ok {
+		return fmt.Errorf("MemoryStore.Update() requires r.GetMeta() to be of type memoryMeta")
+	}
 
 	// Namespace and Name must be provided via r.GetMeta()
 	idx, record := c.findRecord(string(r.GetType()), r.GetMeta().GetNamespace(), r.GetMeta().GetName())
@@ -99,11 +109,16 @@ func (c *MemoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	c.Records[idx] = record
 	return nil
 }
-func (c *MemoryStore) Delete(_ context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
+func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	opts := store.NewDeleteOptions(fs...)
+
+	_, ok := (r.GetMeta()).(*memoryMeta)
+	if r.GetMeta() != nil && !ok {
+		return fmt.Errorf("MemoryStore.Delete() requires r.GetMeta() either to be nil or to be of type memoryMeta")
+	}
 
 	// Namespace and Name must be provided via DeleteOptions
 	idx, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name)
@@ -113,7 +128,7 @@ func (c *MemoryStore) Delete(_ context.Context, r model.Resource, fs ...store.De
 	return nil
 }
 
-func (c *MemoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOptionsFunc) error {
+func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOptionsFunc) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -126,7 +141,7 @@ func (c *MemoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOp
 	}
 	return c.unmarshalRecord(record, r)
 }
-func (c *MemoryStore) List(_ context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
+func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -139,20 +154,17 @@ func (c *MemoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		if err := c.unmarshalRecord(record, r); err != nil {
 			return err
 		}
-		err := rs.AddItem(r)
-		if err != nil {
-			return err
-		}
+		_ = rs.AddItem(r)
 	}
 	return nil
 }
 
-func (c *MemoryStore) Close() error {
+func (c *memoryStore) Close() error {
 	return nil;
 }
 
-func (c *MemoryStore) findRecord(
-	resourceType string, namespace string, name string) (int, *MemoryStoreRecord) {
+func (c *memoryStore) findRecord(
+	resourceType string, namespace string, name string) (int, *memoryStoreRecord) {
 	for idx, rec := range c.Records {
 		if rec.ResourceType == resourceType &&
 			rec.Namespace == namespace &&
@@ -163,9 +175,9 @@ func (c *MemoryStore) findRecord(
 	return -1, nil
 }
 
-func (c *MemoryStore) findRecords(
-	resourceType string, namespace string) []*MemoryStoreRecord {
-	res := make([]*MemoryStoreRecord, 0)
+func (c *memoryStore) findRecords(
+	resourceType string, namespace string) []*memoryStoreRecord {
+	res := make([]*memoryStoreRecord, 0)
 	for _, rec := range c.Records {
 		if rec.ResourceType == resourceType &&
 			rec.Namespace == namespace {
@@ -175,13 +187,13 @@ func (c *MemoryStore) findRecords(
 	return res
 }
 
-func (c *MemoryStore) marshalRecord(resourceType string, meta model.ResourceMeta, spec model.ResourceSpec) (*MemoryStoreRecord, error) {
+func (c *memoryStore) marshalRecord(resourceType string, meta model.ResourceMeta, spec model.ResourceSpec) (*memoryStoreRecord, error) {
 	// convert spec into storage representation
 	content, err := json.Marshal(spec)
 	if err != nil {
 		return nil, err
 	}
-	return &MemoryStoreRecord{
+	return &memoryStoreRecord{
 		ResourceType: resourceType,
 		// Namespace and Name must be provided via CreateOptions
 		Namespace: meta.GetNamespace(),
@@ -190,8 +202,8 @@ func (c *MemoryStore) marshalRecord(resourceType string, meta model.ResourceMeta
 	}, nil
 }
 
-func (c *MemoryStore) unmarshalRecord(s *MemoryStoreRecord, r model.Resource) error {
-	r.SetMeta(&MemoryMeta{
+func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r model.Resource) error {
+	r.SetMeta(&memoryMeta{
 		Namespace: s.Namespace,
 		Name:      s.Name,
 	})

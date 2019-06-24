@@ -58,18 +58,12 @@ func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs .
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Delete() requires options.Name to be a non-empty value")
 	}
-	if opts.Version == "" {
-		return fmt.Errorf("ResourceStore.Delete() requires options.Version to be a non-empty value")
-	}
 	if r.GetMeta() != nil {
 		if opts.Name != r.GetMeta().GetName() {
 			return fmt.Errorf("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetName() == options.Name")
 		}
 		if opts.Namespace != r.GetMeta().GetNamespace() {
 			return fmt.Errorf("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetNamespace() == options.Namespace")
-		}
-		if opts.Version != r.GetMeta().GetVersion() {
-			return fmt.Errorf("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetVersion() == options.Version")
 		}
 	}
 	return s.delegate.Delete(ctx, r, fs...)

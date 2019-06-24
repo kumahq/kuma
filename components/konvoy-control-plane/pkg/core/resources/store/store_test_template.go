@@ -8,6 +8,19 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+// It takes a pointer to ResourceStore because with sample usage
+//
+// var _ = Describe("MemoryStore", func() {
+//	var c store.ResourceStore
+//
+//	BeforeEach(func() {
+//		c = store.NewStrictResourceStore(memory.NewStore())
+//	})
+//
+//	store.ExecuteStoreTests(&c)
+// })
+//
+// when calling ExecuteStorageTest, the `c` is not yet initialized by BeforeEach
 func ExecuteStoreTests(s *ResourceStore) {
 	const namespace = "default"
 
@@ -47,11 +60,11 @@ func ExecuteStoreTests(s *ResourceStore) {
 		It("should not create a duplicate record", func() {
 			// given
 			name := "duplicated-record"
-			created := createResource(name)
+			resource := createResource(name)
 
 			// when try to create another one with same name
-			created.SetMeta(nil)
-			err := (*s).Create(context.Background(), created, CreateByName(namespace, name))
+			resource.SetMeta(nil)
+			err := (*s).Create(context.Background(), resource, CreateByName(namespace, name))
 
 			// then
 			Expect(err).To(MatchError(fmt.Sprintf(`Resource already exists: type="TrafficRoute" namespace="%s" name="%s"`, namespace, name)))
@@ -61,29 +74,34 @@ func ExecuteStoreTests(s *ResourceStore) {
 	Describe("Update()", func() {
 		It("should return an error if resource is not found", func() {
 			// given
-			updateResource := &TrafficRouteResource{
-				Meta: &resourceMetaObject{
-					Namespace: namespace,
-					Name:      "example",
-					Version:   "0",
-				},
-			}
+			name := "to-be-updated"
+			resource := createResource(name)
 
-			// when
-			err := (*s).Update(context.Background(), updateResource)
+			// when delete resource
+			err := (*s).Delete(
+				context.Background(),
+				resource,
+				DeleteByName(resource.GetMeta().GetNamespace(), resource.Meta.GetName()),
+			)
 
 			// then
-			Expect(err).To(MatchError(fmt.Sprintf(`Resource not found: type="TrafficRoute" namespace="%s" name="example"`, namespace)))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when trying to update nonexistent resource
+			err = (*s).Update(context.Background(), resource)
+
+			// then
+			Expect(err).To(MatchError(fmt.Sprintf(`Resource not found: type="TrafficRoute" namespace="%s" name="%s"`, namespace, name)))
 		})
 
 		It("should update an existing resource", func() {
 			// given a resources in storage
 			name := "to-be-updated"
-			createdResource := createResource(name)
+			resource := createResource(name)
 
 			// when
-			createdResource.Spec.Path = "new-path"
-			err := (*s).Update(context.Background(), createdResource)
+			resource.Spec.Path = "new-path"
+			err := (*s).Update(context.Background(), resource)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -103,10 +121,10 @@ func ExecuteStoreTests(s *ResourceStore) {
 	Describe("Delete()", func() {
 		It("should succeed if resource is not found", func() {
 			// given
-			res := TrafficRouteResource{}
+			resource := TrafficRouteResource{}
 
 			// when
-			err := (*s).Delete(context.TODO(), &res, DeleteByName(namespace, "non-existent-name", "0"))
+			err := (*s).Delete(context.TODO(), &resource, DeleteByName(namespace, "non-existent-name"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -115,30 +133,30 @@ func ExecuteStoreTests(s *ResourceStore) {
 		It("should delete an existing resource", func() {
 			// given a resources in storage
 			name := "to-be-deleted"
-			created := createResource(name)
+			createResource(name)
 
 			// when
-			res := TrafficRouteResource{}
-			err := (*s).Delete(context.TODO(), &res, DeleteByName(namespace, name, created.Meta.GetVersion()))
+			resource := TrafficRouteResource{}
+			err := (*s).Delete(context.TODO(), &resource, DeleteByName(namespace, name))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when query for deleted resource
-			err = (*s).Get(context.Background(), &res, GetByName(namespace, name))
+			err = (*s).Get(context.Background(), &resource, GetByName(namespace, name))
 
 			// then resource cannot be found
-			Expect(err).To(Equal(ErrorResourceNotFound(res.GetType(), namespace, name)))
+			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, name)))
 		})
 	})
 
 	Describe("Get()", func() {
 		It("should return an error if resource is not found", func() {
 			// given
-			res := TrafficRouteResource{}
+			resource := TrafficRouteResource{}
 
 			// when
-			err := (*s).Get(context.Background(), &res, GetByName(namespace, "non-existing-resource"))
+			err := (*s).Get(context.Background(), &resource, GetByName(namespace, "non-existing-resource"))
 
 			// then
 			Expect(err).To(MatchError(fmt.Sprintf(`Resource not found: type="TrafficRoute" namespace="%s" name="non-existing-resource"`, namespace)))
@@ -147,7 +165,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 		It("should return an existing resource", func() {
 			// given a resources in storage
 			name := "existing-resource"
-			createResource := createResource(name)
+			createdResource := createResource(name)
 
 			// when
 			res := TrafficRouteResource{}
@@ -160,7 +178,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 			Expect(res.Meta.GetName()).To(Equal(name))
 			Expect(res.Meta.GetNamespace()).To(Equal(namespace))
 			Expect(res.Meta.GetVersion()).ToNot(BeEmpty())
-			Expect(res.Spec).To(Equal(createResource.Spec))
+			Expect(res.Spec).To(Equal(createdResource.Spec))
 		})
 	})
 
@@ -193,11 +211,10 @@ func ExecuteStoreTests(s *ResourceStore) {
 			// and
 			Expect(list.Items).To(HaveLen(2))
 			// and
-			Expect(list.Items[0].Meta.GetName()).To(Equal("res-1"))
+			names := []string { list.Items[0].Meta.GetName(), list.Items[1].Meta.GetName() }
+			Expect(names).To(ConsistOf("res-1", "res-2"))
 			Expect(list.Items[0].Meta.GetNamespace()).To(Equal(namespace))
 			Expect(list.Items[0].Spec.Path).To(Equal("demo"))
-			// and
-			Expect(list.Items[1].Meta.GetName()).To(Equal("res-2"))
 			Expect(list.Items[1].Meta.GetNamespace()).To(Equal(namespace))
 			Expect(list.Items[1].Spec.Path).To(Equal("demo"))
 		})
@@ -252,24 +269,4 @@ func (l *TrafficRouteResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*TrafficRouteResource)(nil), r)
 	}
-}
-
-type resourceMetaObject struct {
-	Name      string
-	Namespace string
-	Version   string
-}
-
-var _ model.ResourceMeta = &resourceMetaObject{}
-
-func (r *resourceMetaObject) GetName() string {
-	return r.Name
-}
-
-func (r *resourceMetaObject) GetNamespace() string {
-	return r.Namespace
-}
-
-func (r *resourceMetaObject) GetVersion() string {
-	return r.Version
 }
