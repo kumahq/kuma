@@ -22,11 +22,11 @@ type postgresResourceStore struct {
 var _ store.ResourceStore = &postgresResourceStore{}
 
 type Config struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DbName   string
+	Host     string `envconfig:"store_postgres_host" default:"localhost"`
+	Port     int    `envconfig:"store_postgres_port" default:"5432"`
+	User     string `envconfig:"store_postgres_user" default:"konvoy"`
+	Password string `envconfig:"store_postgres_password" default:"konvoy"`
+	DbName   string `envconfig:"store_postgres_db_name" default:"konvoy"`
 }
 
 func NewStore(config Config) (store.ResourceStore, error) {
@@ -218,11 +218,6 @@ func rowToItem(resources model.ResourceList, opts *store.ListOptions, rows *sql.
 
 func (r *postgresResourceStore) Close() error {
 	return r.db.Close()
-}
-
-func (r *postgresResourceStore) deleteAll() error {
-	_, err := r.db.Exec("DELETE FROM resources")
-	return err
 }
 
 type resourceMetaObject struct {

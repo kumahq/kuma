@@ -1,7 +1,7 @@
 .PHONY: help clean \
 		dev/tools dev/install/ginkgo dev/install/kubebuilder dev/install/kustomize dev/install/kubectl dev/install/kind dev/install/minikube \
 		start/deps \
-		fmt vet check test build run image \
+		fmt vet check test integration build run image \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
         run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
@@ -177,6 +177,9 @@ test: ## Dev: Run tests
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
 	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
+
+integration: ## Dev: Run integration tests
+	test/run-integration-tests.sh
 
 build: ## Dev: Build Control Plane binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp

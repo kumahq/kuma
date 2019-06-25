@@ -1,0 +1,11 @@
+version: '3.5'
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${KONVOY_STORE_POSTGRES_USER:-konvoy}
+      POSTGRES_PASSWORD: ${KONVOY_STORE_POSTGRES_PASSWORD:-konvoy}
+      POSTGRES_DB: ${KONVOY_STORE_POSTGRES_DB_NAME:-konvoy}
+    ports:
+      - ${KONVOY_STORE_POSTGRES_PORT:-15432}:5432
