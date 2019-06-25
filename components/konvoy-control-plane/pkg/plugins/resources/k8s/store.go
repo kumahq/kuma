@@ -7,8 +7,7 @@ import (
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	k8s_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/pkg/model"
-	sample_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
-	sample_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/apis/sample"
+	k8s_registry "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/pkg/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -126,24 +125,15 @@ type KubeFactory interface {
 var _ KubeFactory = &SimpleKubeFactory{}
 
 type SimpleKubeFactory struct {
+	KubeTypes k8s_registry.TypeRegistry
 }
 
 func (f *SimpleKubeFactory) NewObject(r core_model.Resource) (k8s_model.KubernetesObject, error) {
-	switch r.GetType() {
-	case sample_core.TrafficRouteType:
-		return &sample_k8s.TrafficRoute{}, nil
-	default:
-		return nil, fmt.Errorf("unknown type: %q", r.GetType())
-	}
+	return f.KubeTypes.NewObject(r.GetSpec())
 }
 
 func (f *SimpleKubeFactory) NewList(rl core_model.ResourceList) (k8s_model.KubernetesList, error) {
-	switch rl.GetItemType() {
-	case sample_core.TrafficRouteType:
-		return &sample_k8s.TrafficRouteList{}, nil
-	default:
-		return nil, fmt.Errorf("unknown type: %q", rl.GetItemType())
-	}
+	return f.KubeTypes.NewList(rl.NewItem().GetSpec())
 }
 
 type Converter interface {

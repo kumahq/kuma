@@ -1,7 +1,9 @@
 package v1alpha1
 
 import (
+	proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/pkg/registry"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -27,4 +29,9 @@ func (l *ProxyTemplateList) GetItems() []model.KubernetesObject {
 		result[i] = &l.Items[i]
 	}
 	return result
+}
+
+func init() {
+	registry.RegisterObjectType(&proto.ProxyTemplate{}, &ProxyTemplate{})
+	registry.RegisterListType(&proto.ProxyTemplate{}, &ProxyTemplateList{})
 }
