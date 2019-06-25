@@ -34,8 +34,7 @@ func NewStore(config Config) (store.ResourceStore, error) {
 	if err != nil {
 		return nil, err
 	}
-	// wrap it to strict resources store so we don't have to duplicate the validations
-	return store.NewStrictResourceStore(s), nil
+	return s, nil
 }
 
 func newPostgresStore(config Config) (*postgresResourceStore, error) {

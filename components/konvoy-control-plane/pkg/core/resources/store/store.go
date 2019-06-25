@@ -14,10 +14,14 @@ type ResourceStore interface {
 	Delete(context.Context, model.Resource, ...DeleteOptionsFunc) error
 	Get(context.Context, model.Resource, ...GetOptionsFunc) error
 	List(context.Context, model.ResourceList, ...ListOptionsFunc) error
-	io.Closer
 }
 
-func NewStrictResourceStore(c ResourceStore) ResourceStore {
+type ClosableResourceStore interface {
+	 ResourceStore
+	 io.Closer
+}
+
+func NewStrictResourceStore(c ResourceStore) ClosableResourceStore {
 	return &strictResourceStore{delegate: c}
 }
 
@@ -89,7 +93,11 @@ func (s *strictResourceStore) List(ctx context.Context, rs model.ResourceList, f
 }
 
 func (s *strictResourceStore) Close() error {
-	return s.delegate.Close()
+	closable, ok := s.delegate.(io.Closer)
+	if ok {
+		return closable.Close()
+	}
+	return nil
 }
 
 func ErrorResourceNotFound(rt model.ResourceType, namespace, name string) error {

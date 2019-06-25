@@ -38,7 +38,7 @@ func (m *memoryMeta) GetVersion() string {
 var _ store.ResourceStore = &memoryStore{}
 
 type memoryStore struct {
-	Records memoryStoreRecords
+	records memoryStoreRecords
 	mu      sync.RWMutex
 }
 
@@ -77,7 +77,7 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	}
 
 	// persist
-	c.Records = append(c.Records, record)
+	c.records = append(c.records, record)
 	return nil
 }
 func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
@@ -106,7 +106,7 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	}
 
 	// persist
-	c.Records[idx] = record
+	c.records[idx] = record
 	return nil
 }
 func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
@@ -123,7 +123,7 @@ func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.De
 	// Namespace and Name must be provided via DeleteOptions
 	idx, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name)
 	if record != nil {
-		c.Records = append(c.Records[:idx], c.Records[idx+1:]...)
+		c.records = append(c.records[:idx], c.records[idx+1:]...)
 	}
 	return nil
 }
@@ -159,13 +159,9 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 	return nil
 }
 
-func (c *memoryStore) Close() error {
-	return nil;
-}
-
 func (c *memoryStore) findRecord(
 	resourceType string, namespace string, name string) (int, *memoryStoreRecord) {
-	for idx, rec := range c.Records {
+	for idx, rec := range c.records {
 		if rec.ResourceType == resourceType &&
 			rec.Namespace == namespace &&
 			rec.Name == name {
@@ -178,7 +174,7 @@ func (c *memoryStore) findRecord(
 func (c *memoryStore) findRecords(
 	resourceType string, namespace string) []*memoryStoreRecord {
 	res := make([]*memoryStoreRecord, 0)
-	for _, rec := range c.Records {
+	for _, rec := range c.records {
 		if rec.ResourceType == resourceType &&
 			rec.Namespace == namespace {
 			res = append(res, rec)

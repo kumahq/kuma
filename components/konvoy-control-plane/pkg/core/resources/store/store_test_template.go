@@ -21,8 +21,20 @@ import (
 // })
 //
 // when calling ExecuteStorageTest, the `c` is not yet initialized by BeforeEach
-func ExecuteStoreTests(s *ResourceStore) {
+func ExecuteStoreTests(
+	createStore func() ResourceStore,
+) {
 	const namespace = "default"
+	var s ClosableResourceStore
+
+	BeforeEach(func() {
+		s = NewStrictResourceStore(createStore())
+	})
+
+	AfterEach(func() {
+		err := s.Close()
+		Expect(err).ToNot(HaveOccurred())
+	})
 
 	createResource := func(name string) *TrafficRouteResource {
 		res := TrafficRouteResource{
@@ -30,7 +42,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 				Path: "demo",
 			},
 		}
-		err := (*s).Create(context.Background(), &res, CreateByName(namespace, name))
+		err := s.Create(context.Background(), &res, CreateByName(namespace, name))
 		Expect(err).ToNot(HaveOccurred())
 		return &res
 	}
@@ -45,7 +57,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 
 			// when retrieve created object
 			resource := TrafficRouteResource{}
-			err := (*s).Get(context.Background(), &resource, GetByName(namespace, name))
+			err := s.Get(context.Background(), &resource, GetByName(namespace, name))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -64,7 +76,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 
 			// when try to create another one with same name
 			resource.SetMeta(nil)
-			err := (*s).Create(context.Background(), resource, CreateByName(namespace, name))
+			err := s.Create(context.Background(), resource, CreateByName(namespace, name))
 
 			// then
 			Expect(err).To(MatchError(fmt.Sprintf(`Resource already exists: type="TrafficRoute" namespace="%s" name="%s"`, namespace, name)))
@@ -78,7 +90,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 			resource := createResource(name)
 
 			// when delete resource
-			err := (*s).Delete(
+			err := s.Delete(
 				context.Background(),
 				resource,
 				DeleteByName(resource.GetMeta().GetNamespace(), resource.Meta.GetName()),
@@ -88,7 +100,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to update nonexistent resource
-			err = (*s).Update(context.Background(), resource)
+			err = s.Update(context.Background(), resource)
 
 			// then
 			Expect(err).To(MatchError(fmt.Sprintf(`Resource not found: type="TrafficRoute" namespace="%s" name="%s"`, namespace, name)))
@@ -101,14 +113,14 @@ func ExecuteStoreTests(s *ResourceStore) {
 
 			// when
 			resource.Spec.Path = "new-path"
-			err := (*s).Update(context.Background(), resource)
+			err := s.Update(context.Background(), resource)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when retrieve the resource
 			res := TrafficRouteResource{}
-			err = (*s).Get(context.Background(), &res, GetByName(namespace, name))
+			err = s.Get(context.Background(), &res, GetByName(namespace, name))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -116,6 +128,8 @@ func ExecuteStoreTests(s *ResourceStore) {
 			// and
 			Expect(res.Spec.Path).To(Equal("new-path"))
 		})
+
+		//todo(jakubdyszkiewicz) write tests for optimistic locking
 	})
 
 	Describe("Delete()", func() {
@@ -124,7 +138,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 			resource := TrafficRouteResource{}
 
 			// when
-			err := (*s).Delete(context.TODO(), &resource, DeleteByName(namespace, "non-existent-name"))
+			err := s.Delete(context.TODO(), &resource, DeleteByName(namespace, "non-existent-name"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -137,13 +151,13 @@ func ExecuteStoreTests(s *ResourceStore) {
 
 			// when
 			resource := TrafficRouteResource{}
-			err := (*s).Delete(context.TODO(), &resource, DeleteByName(namespace, name))
+			err := s.Delete(context.TODO(), &resource, DeleteByName(namespace, name))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when query for deleted resource
-			err = (*s).Get(context.Background(), &resource, GetByName(namespace, name))
+			err = s.Get(context.Background(), &resource, GetByName(namespace, name))
 
 			// then resource cannot be found
 			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, name)))
@@ -156,7 +170,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 			resource := TrafficRouteResource{}
 
 			// when
-			err := (*s).Get(context.Background(), &resource, GetByName(namespace, "non-existing-resource"))
+			err := s.Get(context.Background(), &resource, GetByName(namespace, "non-existing-resource"))
 
 			// then
 			Expect(err).To(MatchError(fmt.Sprintf(`Resource not found: type="TrafficRoute" namespace="%s" name="non-existing-resource"`, namespace)))
@@ -169,7 +183,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 
 			// when
 			res := TrafficRouteResource{}
-			err := (*s).Get(context.Background(), &res, GetByName(namespace, name))
+			err := s.Get(context.Background(), &res, GetByName(namespace, name))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -188,7 +202,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 			list := TrafficRouteResourceList{}
 
 			// when
-			err := (*s).List(context.Background(), &list, ListByNamespace("non-existent-namespace"))
+			err := s.List(context.Background(), &list, ListByNamespace("non-existent-namespace"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -204,7 +218,7 @@ func ExecuteStoreTests(s *ResourceStore) {
 			list := TrafficRouteResourceList{}
 
 			// when
-			err := (*s).List(context.Background(), &list, ListByNamespace(namespace))
+			err := s.List(context.Background(), &list, ListByNamespace(namespace))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

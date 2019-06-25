@@ -8,33 +8,22 @@ import (
 
 // todo(jakubdyszkiewicz) prepare setup with postgres to run this test
 var _ = XDescribe("postgresResourceStore", func() {
-	var p *postgresResourceStore
-	var s store.ResourceStore
 
-	config := Config{
-		Host:     "localhost",
-		Port:     5432,
-		User:     "postgres",
-		Password: "mysecretpassword",
-		DbName:   "konvoy",
-	}
+	createStore := func() store.ResourceStore {
+		config := Config{
+			Host:     "localhost",
+			Port:     5432,
+			User:     "postgres",
+			Password: "mysecretpassword",
+			DbName:   "konvoy",
+		}
 
-	BeforeSuite(func() {
 		pStore, err := newPostgresStore(config)
 		Expect(err).ToNot(HaveOccurred())
-		p = pStore
-		s = store.NewStrictResourceStore(p)
-	})
+		return pStore
+	}
 
-	BeforeEach(func() {
-		err := p.deleteAll()
-		Expect(err).ToNot(HaveOccurred())
-	})
+	// todo(jakubdyszkiewicz) reset the state of db after each test
 
-	AfterSuite(func() {
-		err := s.Close()
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	store.ExecuteStoreTests(&s)
+	store.ExecuteStoreTests(createStore)
 })

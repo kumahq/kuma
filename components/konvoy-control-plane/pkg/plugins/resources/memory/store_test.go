@@ -7,11 +7,9 @@ import (
 )
 
 var _ = Describe("MemoryStore", func() {
-	var c store.ResourceStore
+	createStore := func() store.ResourceStore {
+		return memory.NewStore()
+	}
 
-	BeforeEach(func() {
-		c = store.NewStrictResourceStore(memory.NewStore())
-	})
-
-	store.ExecuteStoreTests(&c)
+	store.ExecuteStoreTests(createStore)
 })
