@@ -1,6 +1,10 @@
 language: cpp
 dist: xenial
 
+branches:
+  only:
+  - /^envoy\/.*/
+
 services:
 - docker
 
