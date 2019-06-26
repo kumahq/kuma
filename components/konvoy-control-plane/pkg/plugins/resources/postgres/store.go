@@ -79,7 +79,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Namespace, opts.Name)
 		}
-		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
+		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 
 	resource.SetMeta(&resourceMetaObject{
@@ -104,16 +104,17 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	result, err := r.db.Exec(
 		statement,
 		string(bytes),
-		version + 1,
+		version+1,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetNamespace(),
 		resource.GetType(),
 		version,
 	)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to execute query %s", statement))
+		return errors.Wrapf(err, "failed to execute query %s", statement)
 	}
 	if rows, _ := result.RowsAffected(); rows != 1 { // error ignored, postgres supports RowsAffected()
+		// todo(jakubdyszkiewicz) throw ErrorResourceConflict when resource is found, but the version does not match
 		return store.ErrorResourceNotFound(resource.GetType(), resource.GetMeta().GetNamespace(), resource.GetMeta().GetName())
 	}
 
@@ -133,7 +134,7 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
 	_, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType())
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
+		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 
 	return nil
@@ -152,7 +153,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 		return store.ErrorResourceNotFound(resource.GetType(), opts.Namespace, opts.Name)
 	}
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
+		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 
 	err = json.Unmarshal([]byte(spec), resource.GetSpec())
@@ -175,7 +176,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	statement := `SELECT name, spec, version FROM resources WHERE namespace=$1 AND type=$2;`
 	rows, err := r.db.Query(statement, opts.Namespace, resources.GetItemType())
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to execute query: %s", statement))
+		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -242,28 +243,4 @@ func (r *resourceMetaObject) GetNamespace() string {
 
 func (r *resourceMetaObject) GetVersion() string {
 	return r.Version
-}
-
-type resourceObject struct {
-	Type model.ResourceType
-	Meta model.ResourceMeta
-	Spec model.ResourceSpec
-}
-
-var _ model.Resource = &resourceObject{}
-
-func (r *resourceObject) GetType() model.ResourceType {
-	return r.Type
-}
-
-func (r *resourceObject) GetMeta() model.ResourceMeta {
-	return r.Meta
-}
-
-func (r *resourceObject) SetMeta(meta model.ResourceMeta) {
-	r.Meta = meta
-}
-
-func (r *resourceObject) GetSpec() model.ResourceSpec {
-	return r.Spec
 }

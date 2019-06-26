@@ -8,19 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// It takes a pointer to ResourceStore because with sample usage
-//
-// var _ = Describe("MemoryStore", func() {
-//	var c store.ResourceStore
-//
-//	BeforeEach(func() {
-//		c = store.NewStrictResourceStore(memory.NewStore())
-//	})
-//
-//	store.ExecuteStoreTests(&c)
-// })
-//
-// when calling ExecuteStorageTest, the `c` is not yet initialized by BeforeEach
 func ExecuteStoreTests(
 	createStore func() ResourceStore,
 ) {
@@ -225,7 +212,7 @@ func ExecuteStoreTests(
 			// and
 			Expect(list.Items).To(HaveLen(2))
 			// and
-			names := []string { list.Items[0].Meta.GetName(), list.Items[1].Meta.GetName() }
+			names := []string{list.Items[0].Meta.GetName(), list.Items[1].Meta.GetName()}
 			Expect(names).To(ConsistOf("res-1", "res-2"))
 			Expect(list.Items[0].Meta.GetNamespace()).To(Equal(namespace))
 			Expect(list.Items[0].Spec.Path).To(Equal("demo"))

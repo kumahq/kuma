@@ -42,7 +42,7 @@ type memoryStore struct {
 	mu      sync.RWMutex
 }
 
-func NewStore() (store.ResourceStore) {
+func NewStore() store.ResourceStore {
 	return &memoryStore{}
 }
 
@@ -59,7 +59,7 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 
 	// fill the meta
 	r.SetMeta(&memoryMeta{
-		Name: opts.Name,
+		Name:      opts.Name,
 		Namespace: opts.Namespace,
 	})
 

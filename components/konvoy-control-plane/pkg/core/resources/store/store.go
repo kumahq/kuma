@@ -17,8 +17,8 @@ type ResourceStore interface {
 }
 
 type ClosableResourceStore interface {
-	 ResourceStore
-	 io.Closer
+	ResourceStore
+	io.Closer
 }
 
 func NewStrictResourceStore(c ResourceStore) ClosableResourceStore {
