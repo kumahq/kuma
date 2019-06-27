@@ -1,7 +1,7 @@
 .PHONY: help clean \
 		dev/tools dev/install/ginkgo dev/install/kubebuilder dev/install/kustomize dev/install/kubectl dev/install/kind dev/install/minikube \
 		start/deps \
-		fmt vet check test build run image \
+		fmt fmt/go fmt/proto vet check test build run image \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
         run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
@@ -53,6 +53,9 @@ MINIKUBE_PATH := $(CI_TOOLS_DIR)/minikube
 KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
 KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
 ETCD_PATH := $(CI_TOOLS_DIR)/etcd
+
+# tools we expect to be pre-installed
+CLANG_FORMAT_PATH ?= clang-format
 
 export TEST_ASSET_KUBE_APISERVER=$(KUBE_APISERVER_PATH)
 export TEST_ASSET_ETCD=$(ETCD_PATH)
@@ -159,10 +162,15 @@ start/kind:
 clean: ## Dev: Clean
 	rm -rf "$(BUILD_DIR)"
 
-fmt: ## Dev: Run go fmt
+fmt: fmt/go fmt/proto ## Dev: Run various format tools
+
+fmt/go: ## Dev: Run go fmt
 	go fmt ./...
 	@# apparently, it's not possible to simply use `go fmt ./pkg/plugins/resources/k8s/native/...`
 	make fmt -C pkg/plugins/resources/k8s/native
+
+fmt/proto: ## Dev: Run clang-format on .proto files
+	find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT_PATH) -i
 
 vet: ## Dev: Run go vet
 	go vet ./...
