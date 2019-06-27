@@ -3,7 +3,8 @@ package store
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+	sample_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
+	sample_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/apis/sample"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -23,9 +24,9 @@ func ExecuteStoreTests(
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	createResource := func(name string) *TrafficRouteResource {
-		res := TrafficRouteResource{
-			Spec: TrafficRoute{
+	createResource := func(name string) *sample_model.TrafficRouteResource {
+		res := sample_model.TrafficRouteResource{
+			Spec: sample_proto.TrafficRoute{
 				Path: "demo",
 			},
 		}
@@ -43,7 +44,7 @@ func ExecuteStoreTests(
 			created := createResource(name)
 
 			// when retrieve created object
-			resource := TrafficRouteResource{}
+			resource := sample_model.TrafficRouteResource{}
 			err := s.Get(context.Background(), &resource, GetByName(namespace, name))
 
 			// then
@@ -106,7 +107,7 @@ func ExecuteStoreTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// when retrieve the resource
-			res := TrafficRouteResource{}
+			res := sample_model.TrafficRouteResource{}
 			err = s.Get(context.Background(), &res, GetByName(namespace, name))
 
 			// then
@@ -122,7 +123,7 @@ func ExecuteStoreTests(
 	Describe("Delete()", func() {
 		It("should succeed if resource is not found", func() {
 			// given
-			resource := TrafficRouteResource{}
+			resource := sample_model.TrafficRouteResource{}
 
 			// when
 			err := s.Delete(context.TODO(), &resource, DeleteByName(namespace, "non-existent-name"))
@@ -137,7 +138,7 @@ func ExecuteStoreTests(
 			createResource(name)
 
 			// when
-			resource := TrafficRouteResource{}
+			resource := sample_model.TrafficRouteResource{}
 			err := s.Delete(context.TODO(), &resource, DeleteByName(namespace, name))
 
 			// then
@@ -154,7 +155,7 @@ func ExecuteStoreTests(
 	Describe("Get()", func() {
 		It("should return an error if resource is not found", func() {
 			// given
-			resource := TrafficRouteResource{}
+			resource := sample_model.TrafficRouteResource{}
 
 			// when
 			err := s.Get(context.Background(), &resource, GetByName(namespace, "non-existing-resource"))
@@ -169,7 +170,7 @@ func ExecuteStoreTests(
 			createdResource := createResource(name)
 
 			// when
-			res := TrafficRouteResource{}
+			res := sample_model.TrafficRouteResource{}
 			err := s.Get(context.Background(), &res, GetByName(namespace, name))
 
 			// then
@@ -186,7 +187,7 @@ func ExecuteStoreTests(
 	Describe("List()", func() {
 		It("should return an empty list if there are no matching resources", func() {
 			// given
-			list := TrafficRouteResourceList{}
+			list := sample_model.TrafficRouteResourceList{}
 
 			// when
 			err := s.List(context.Background(), &list, ListByNamespace("non-existent-namespace"))
@@ -202,7 +203,7 @@ func ExecuteStoreTests(
 			createResource("res-1")
 			createResource("res-2")
 
-			list := TrafficRouteResourceList{}
+			list := sample_model.TrafficRouteResourceList{}
 
 			// when
 			err := s.List(context.Background(), &list, ListByNamespace(namespace))
@@ -220,54 +221,4 @@ func ExecuteStoreTests(
 			Expect(list.Items[1].Spec.Path).To(Equal("demo"))
 		})
 	})
-}
-
-const (
-	TrafficRouteType model.ResourceType = "TrafficRoute"
-)
-
-// TODO(jakubdyszkiewicz): delete after introducing protobuffs
-type TrafficRoute struct {
-	Path string `json:"path"`
-}
-
-var _ model.Resource = &TrafficRouteResource{}
-
-type TrafficRouteResource struct {
-	Meta model.ResourceMeta
-	Spec TrafficRoute
-}
-
-func (t *TrafficRouteResource) GetType() model.ResourceType {
-	return TrafficRouteType
-}
-func (t *TrafficRouteResource) GetMeta() model.ResourceMeta {
-	return t.Meta
-}
-func (t *TrafficRouteResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-func (t *TrafficRouteResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
-}
-
-var _ model.ResourceList = &TrafficRouteResourceList{}
-
-type TrafficRouteResourceList struct {
-	Items []*TrafficRouteResource
-}
-
-func (l *TrafficRouteResourceList) GetItemType() model.ResourceType {
-	return TrafficRouteType
-}
-func (l *TrafficRouteResourceList) NewItem() model.Resource {
-	return &TrafficRouteResource{}
-}
-func (l *TrafficRouteResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*TrafficRouteResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*TrafficRouteResource)(nil), r)
-	}
 }
