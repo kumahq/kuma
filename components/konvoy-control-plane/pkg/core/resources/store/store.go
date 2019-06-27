@@ -107,3 +107,7 @@ func ErrorResourceNotFound(rt model.ResourceType, namespace, name string) error 
 func ErrorResourceAlreadyExists(rt model.ResourceType, namespace, name string) error {
 	return fmt.Errorf("Resource already exists: type=%q namespace=%q name=%q", rt, namespace, name)
 }
+
+func ErrorResourceConflict(rt model.ResourceType, namespace, name string) error {
+	return fmt.Errorf("Resource conflict: type=%q namespace=%q name=%q", rt, namespace, name)
+}
