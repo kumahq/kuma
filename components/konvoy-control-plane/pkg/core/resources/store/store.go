@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
@@ -15,7 +16,12 @@ type ResourceStore interface {
 	List(context.Context, model.ResourceList, ...ListOptionsFunc) error
 }
 
-func NewStrictResourceStore(c ResourceStore) ResourceStore {
+type ClosableResourceStore interface {
+	ResourceStore
+	io.Closer
+}
+
+func NewStrictResourceStore(c ResourceStore) ClosableResourceStore {
 	return &strictResourceStore{delegate: c}
 }
 
@@ -84,6 +90,14 @@ func (s *strictResourceStore) List(ctx context.Context, rs model.ResourceList, f
 		return fmt.Errorf("ResourceStore.List() requires a non-nil resource list")
 	}
 	return s.delegate.List(ctx, rs, fs...)
+}
+
+func (s *strictResourceStore) Close() error {
+	closable, ok := s.delegate.(io.Closer)
+	if ok {
+		return closable.Close()
+	}
+	return nil
 }
 
 func ErrorResourceNotFound(rt model.ResourceType, namespace, name string) error {
