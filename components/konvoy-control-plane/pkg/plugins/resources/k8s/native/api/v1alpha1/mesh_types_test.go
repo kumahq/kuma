@@ -25,10 +25,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var _ = Describe("ProxyTemplate", func() {
+var _ = Describe("Mesh", func() {
 	var (
 		key              types.NamespacedName
-		created, fetched *ProxyTemplate
+		created, fetched *Mesh
 	)
 
 	BeforeEach(func() {
@@ -51,7 +51,7 @@ var _ = Describe("ProxyTemplate", func() {
 				Name:      "foo",
 				Namespace: "default",
 			}
-			created = &ProxyTemplate{
+			created = &Mesh{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "default",
@@ -60,7 +60,7 @@ var _ = Describe("ProxyTemplate", func() {
 			By("creating an API obj")
 			Expect(k8sClient.Create(context.TODO(), created)).To(Succeed())
 
-			fetched = &ProxyTemplate{}
+			fetched = &Mesh{}
 			Expect(k8sClient.Get(context.TODO(), key, fetched)).To(Succeed())
 			Expect(fetched).To(Equal(created))
 

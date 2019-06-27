@@ -5,3 +5,6 @@ resources:
 - group: mesh
   version: v1alpha1
   kind: ProxyTemplate
+- group: mesh
+  version: v1alpha1
+  kind: Mesh

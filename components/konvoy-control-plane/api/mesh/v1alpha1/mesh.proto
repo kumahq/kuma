@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package konvoy.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+// Mesh defines configuration of a single mesh.
+message Mesh {
+
+  // mTLS settings of a Mesh.
+  message Mtls {
+
+    // Certificate Authority of a Mesh.
+    // +optional
+    CertificateAuthority ca = 1;
+  }
+
+  // mTLS settings.
+  // +optional
+  Mtls mtls = 1;
+
+  // Tracing settings.
+  // +optional
+  Tracing tracing = 2;
+}
+
+// CertificateAuthority defines configuration of a CA.
+message CertificateAuthority {
+
+  // Embedded defines configuration of the embedded CA.
+  message Embedded {}
+
+  oneof type {
+
+    // Use embedded CA.
+    Embedded embedded = 1;
+  }
+}
+
+// Tracing defines tracing configuration of the mesh.
+message Tracing {
+
+  // Zipkin defined configuration of Zipkin tracer.
+  message Zipkin {
+
+    // Address of Zipkin collector.
+    string address = 1;
+  }
+
+  oneof type {
+
+    // Use Zipkin tracer.
+    Zipkin zipkin = 1;
+  }
+}
