@@ -10,7 +10,7 @@
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		print/kubebuilder/test_assets
 
-PKG_LIST := ./... ./model/...
+PKG_LIST := ./... ./pkg/plugins/resources/k8s/native/...
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts
@@ -161,16 +161,16 @@ clean: ## Dev: Clean
 
 fmt: ## Dev: Run go fmt
 	go fmt ./...
-	@# apparently, it's not possible to simply use `go fmt ./model/...`
-	make fmt -C model
+	@# apparently, it's not possible to simply use `go fmt ./pkg/plugins/resources/k8s/native/...`
+	make fmt -C pkg/plugins/resources/k8s/native
 
 vet: ## Dev: Run go vet
 	go vet ./...
 	@# for consistency with `fmt`
-	make vet -C model
+	make vet -C pkg/plugins/resources/k8s/native
 
 check: fmt vet ## Dev: Run code checks (go fmt, go vet, ...)
-	make generate manifests -C model
+	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
 test: ## Dev: Run tests
@@ -182,7 +182,7 @@ build: ## Dev: Build Control Plane binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
 
 run: fmt vet ## Dev: Run Control Plane locally
-	make crd/upgrade -C model
+	make crd/upgrade -C pkg/plugins/resources/k8s/native
 	go run ./app/konvoy-cp/main.go run --grpc-port=$(CP_GRPC_PORT) --http-port=$(CP_HTTP_PORT)
 
 curl/listeners: ## Dev: Make Discovery request to LDS
@@ -236,8 +236,8 @@ build/example/minikube: ## Minikube: build demo setup
 	make image
 
 deploy/example/minikube: ## Minikube: deploy demo setup
-	make crd/install -C model
-	kubectl kustomize model/config/rbac | kubectl apply -f -
+	make crd/install -C pkg/plugins/resources/k8s/native
+	kubectl kustomize pkg/plugins/resources/k8s/native/config/rbac | kubectl apply -f -
 	kubectl apply -f examples/minikube/konvoy-demo.yaml
 
 wait/example/minikube: ## Minikube: Wait for demo setup to get ready

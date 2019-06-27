@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 
-	model_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/model/controllers"
+	k8s_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/controllers"
 	util_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/k8s"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
@@ -27,7 +27,7 @@ type reconciler struct {
 
 // Make sure that reconciler implements all relevant interfaces
 var (
-	_ model_controllers.PodObserver = &reconciler{}
+	_ k8s_controllers.PodObserver = &reconciler{}
 )
 
 func (r *reconciler) OnUpdate(pod *k8s_core.Pod) error {

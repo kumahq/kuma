@@ -4,7 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
+	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	konvoy_mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	k8s_core "k8s.io/api/core/v1"
 	k8s_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,23 +50,26 @@ var _ = Describe("Reconcile", func() {
 							Name:      "app",
 							Namespace: "example",
 							Annotations: map[string]string{
-								konvoy_mesh.ProxyTemplateAnnotation: "custom-proxy-template",
+								konvoy_mesh_k8s.ProxyTemplateAnnotation: "custom-proxy-template",
 							},
 						},
 					},
 				},
 			}
 
-			expected := &konvoy_mesh.ProxyTemplate{
+			expected := &konvoy_mesh_k8s.ProxyTemplate{
 				ObjectMeta: k8s_meta.ObjectMeta{
 					Name:      "custom-proxy-template",
 					Namespace: "example",
+				},
+				Spec: map[string]interface{}{
+					"sources": []interface{}{},
 				},
 			}
 
 			// setup
 			scheme := runtime.NewScheme()
-			konvoy_mesh.AddToScheme(scheme)
+			konvoy_mesh_k8s.AddToScheme(scheme)
 			resolver := &simpleProxyTemplateResolver{
 				Client:               client_fake.NewFakeClientWithScheme(scheme, expected),
 				DefaultProxyTemplate: &konvoy_mesh.ProxyTemplate{},
@@ -75,7 +79,9 @@ var _ = Describe("Reconcile", func() {
 			actual := resolver.GetTemplate(proxy)
 
 			// then
-			Expect(actual).To(Equal(expected))
+			Expect(actual).To(Equal(&konvoy_mesh.ProxyTemplate{
+				Sources: []*konvoy_mesh.ProxyTemplateSource{},
+			}))
 		})
 
 		It("should fallback to the default ProxyTemplate when a Pod refers to a ProxyTemplate that doesn't exist", func() {
@@ -87,7 +93,7 @@ var _ = Describe("Reconcile", func() {
 							Name:      "app",
 							Namespace: "example",
 							Annotations: map[string]string{
-								konvoy_mesh.ProxyTemplateAnnotation: "non-existing",
+								konvoy_mesh_k8s.ProxyTemplateAnnotation: "non-existing",
 							},
 						},
 					},

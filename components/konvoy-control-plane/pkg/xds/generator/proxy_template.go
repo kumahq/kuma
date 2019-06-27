@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/model/api/v1alpha1"
+	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
@@ -18,14 +18,14 @@ type TemplateProxyGenerator struct {
 }
 
 func (g *TemplateProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
-	resources := make([]*Resource, 0, len(g.ProxyTemplate.Spec.Sources))
-	for i, source := range g.ProxyTemplate.Spec.Sources {
+	resources := make([]*Resource, 0, len(g.ProxyTemplate.Sources))
+	for i, source := range g.ProxyTemplate.Sources {
 		var generator ResourceGenerator
-		switch {
-		case source.Profile != nil:
-			generator = &ProxyTemplateProfileSource{Profile: source.Profile}
-		case source.Raw != nil:
-			generator = &ProxyTemplateRawSource{Raw: source.Raw}
+		switch s := source.Type.(type) {
+		case *konvoy_mesh.ProxyTemplateSource_Profile:
+			generator = &ProxyTemplateProfileSource{Profile: s.Profile}
+		case *konvoy_mesh.ProxyTemplateSource_Raw:
+			generator = &ProxyTemplateRawSource{Raw: s.Raw}
 		default:
 			return nil, fmt.Errorf("sources[%d]{name=%q}: unknown source type", i, source.Name)
 		}
@@ -44,9 +44,7 @@ type ProxyTemplateRawSource struct {
 
 func (s *ProxyTemplateRawSource) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(s.Raw.Resources))
-	for i := range s.Raw.Resources {
-		r := &s.Raw.Resources[i]
-
+	for i, r := range s.Raw.Resources {
 		json, err := yaml.YAMLToJSON([]byte(r.Resource))
 		if err != nil {
 			json = []byte(r.Resource)
