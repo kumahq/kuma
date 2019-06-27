@@ -34,9 +34,6 @@ import (
 	sample_v1alpha1 "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
 )
 
-// These tests use Ginkgo (BDD-style Go testing framework). Refer to
-// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
-
 var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
