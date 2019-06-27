@@ -16,16 +16,21 @@ export KONVOY_STORE_POSTGRES_USER=konvoy
 export KONVOY_STORE_POSTGRES_PASSWORD=konvoy
 export KONVOY_STORE_POSTGRES_DB_NAME=konvoy
 
+rootDir=`pwd`
 cd `dirname "$0"`
+dockerComposeDir=`pwd`
 
 docker-compose up --build --no-start
 docker-compose up -d
-trap "docker-compose down" EXIT
+trap "cd ${dockerComposeDir} && docker-compose down" EXIT
 
 # wait for postgres
 while ! nc -z localhost ${KONVOY_STORE_POSTGRES_PORT}; do sleep 1; done;
 sleep 5;
 
-go test ../... -tags=integration -count=1
+# run tests
+cd ${rootDir}
+eval $1
 
+cd ${dockerComposeDir}
 docker-compose down

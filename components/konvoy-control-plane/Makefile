@@ -20,6 +20,9 @@ BUILD_COVERAGE_DIR ?= $(BUILD_DIR)/coverage
 COVERAGE_PROFILE := $(BUILD_COVERAGE_DIR)/coverage.out
 COVERAGE_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage.html
 
+COVERAGE_INTEGRATION_PROFILE := $(BUILD_COVERAGE_DIR)/coverage-integration.out
+COVERAGE_INTEGRATION_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage-integration.html
+
 CP_BIND_HOST ?= localhost
 CP_GRPC_PORT ?= 5678
 CP_HTTP_PORT ?= 5679
@@ -179,7 +182,9 @@ test: ## Dev: Run tests
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 integration: ## Dev: Run integration tests
-	test/run-integration-tests.sh
+	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
+	test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
+	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
 build: ## Dev: Build Control Plane binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp

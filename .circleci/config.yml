@@ -150,6 +150,9 @@ jobs:
         command: | 
           export PATH=$HOME/go/bin:$PATH
           make integration -C components/konvoy-control-plane
+    - store_artifacts:
+        path: components/konvoy-control-plane/build/coverage
+        destination: /coverage
 
   kcp/build:
     <<: *go-defaults
