@@ -343,7 +343,8 @@ func (m *ProxyTemplateRawSource) GetResources() []*ProxyTemplateRawResource {
 }
 
 type ProxyTemplateRawResource struct {
-	// The resource's name, to distinguish it from others of the same type of resource.
+	// The resource's name, to distinguish it from others of the same type of
+	// resource.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The resource level version. It allows xDS to track the state of individual
 	// resources.
