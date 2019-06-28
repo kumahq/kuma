@@ -1,7 +1,7 @@
 .PHONY: help clean \
 		dev/tools dev/install/ginkgo dev/install/kubebuilder dev/install/kustomize dev/install/kubectl dev/install/kind dev/install/minikube \
 		start/deps \
-		fmt fmt/go fmt/proto vet check test build run image \
+		fmt fmt/go fmt/proto vet check test integration build run image \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
         run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
@@ -19,6 +19,9 @@ BUILD_COVERAGE_DIR ?= $(BUILD_DIR)/coverage
 
 COVERAGE_PROFILE := $(BUILD_COVERAGE_DIR)/coverage.out
 COVERAGE_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage.html
+
+COVERAGE_INTEGRATION_PROFILE := $(BUILD_COVERAGE_DIR)/coverage-integration.out
+COVERAGE_INTEGRATION_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage-integration.html
 
 CP_BIND_HOST ?= localhost
 CP_GRPC_PORT ?= 5678
@@ -185,6 +188,11 @@ test: ## Dev: Run tests
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
 	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
+
+integration: ## Dev: Run integration tests
+	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
+	test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
+	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
 build: ## Dev: Build Control Plane binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp

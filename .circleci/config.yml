@@ -150,6 +150,33 @@ jobs:
         path: components/konvoy-control-plane/build/coverage
         destination: /coverage
 
+  kcp/integration:
+    <<: *vm-executor-defaults
+    environment:
+      GO_VERSION: 1.12.5
+      GO111MODULE: "on"
+    steps:
+    - checkout
+    - run:
+        name: "Install Go"
+        command: |
+          apt update && apt install -y curl git make
+          # see https://golang.org/doc/install#tarball
+          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
+    - run:
+        name: "Install all development tools"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          make dev/tools -C components/konvoy-control-plane
+    - run:
+        name: "Run integration tests"
+        command: | 
+          export PATH=$HOME/go/bin:$PATH
+          make integration -C components/konvoy-control-plane
+    - store_artifacts:
+        path: components/konvoy-control-plane/build/coverage
+        destination: /coverage
+
   kcp/build:
     <<: *go-defaults
     steps:
@@ -229,6 +256,9 @@ workflows:
         requires:
         - kcp/check
         - kcp-api/check
+    - kcp/integration:
+        requires:
+        - kcp/check
     - kcp/build:
         requires:
         - kcp/test
