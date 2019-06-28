@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	k8s_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/controllers"
 	util_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/k8s"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
@@ -13,11 +14,10 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	k8s_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var (
-	reconcileLog = ctrl.Log.WithName("xds-server").WithName("reconcile")
+	reconcileLog = core.Log.WithName("xds-server").WithName("reconcile")
 )
 
 type reconciler struct {

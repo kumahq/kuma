@@ -5,12 +5,12 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 )
 
 var (
-	controlPlaneLog = ctrl.Log.WithName("konvoy-cp")
+	controlPlaneLog = core.Log.WithName("konvoy-cp")
 )
 
 // newRootCmd represents the base command when called without any subcommands.
@@ -23,7 +23,7 @@ func newRootCmd() *cobra.Command {
 		Short: "Universal Control Plane for Envoy-based Service Mesh",
 		Long:  `Universal Control Plane for Envoy-based Service Mesh.`,
 		PersistentPreRun: func(_ *cobra.Command, _ []string) {
-			ctrl.SetLogger(zap.Logger(args.debug))
+			core.SetLogger(core.NewLogger(args.debug))
 		},
 	}
 	// root flags

@@ -5,28 +5,28 @@ import (
 	"fmt"
 	"net/http"
 
-	xds "github.com/envoyproxy/go-control-plane/pkg/server"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 )
 
 var (
-	httpServerLog = ctrl.Log.WithName("xds-server").WithName("http")
+	httpServerLog = core.Log.WithName("xds-server").WithName("http")
 )
 
 type httpGateway struct {
-	srv  xds.Server
+	srv  envoy_xds.Server
 	port int
 }
 
 // Make sure that httpGateway implements all relevant interfaces
 var (
-	_ manager.Runnable               = &httpGateway{}
-	_ manager.LeaderElectionRunnable = &httpGateway{}
+	_ core_runtime.Component = &httpGateway{}
 )
 
 func (g *httpGateway) Start(stop <-chan struct{}) error {
-	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", g.port), Handler: &xds.HTTPGateway{Server: g.srv}}
+	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", g.port), Handler: &envoy_xds.HTTPGateway{Server: g.srv}}
 
 	errChan := make(chan error)
 	go func() {
@@ -49,8 +49,4 @@ func (g *httpGateway) Start(stop <-chan struct{}) error {
 	case err := <-errChan:
 		return err
 	}
-}
-
-func (g *httpGateway) NeedLeaderElection() bool {
-	return false
 }
