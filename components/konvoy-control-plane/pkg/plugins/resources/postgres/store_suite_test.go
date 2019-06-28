@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestStore(t *testing.T) {
+func TestPostgresStore(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Postgres Resource Store Suite")
 }

@@ -54,6 +54,14 @@ Run:
 make build
 ```
 
+## Integration tests
+
+ Integration tests will run all dependencies (ex. Postgres). Run:
+
+ ```bash
+make integration
+```
+
 ## Running locally
 
 Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
