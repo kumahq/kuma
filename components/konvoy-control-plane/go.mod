@@ -7,6 +7,7 @@ require (
 	github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-logr/logr v0.1.0
 	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
