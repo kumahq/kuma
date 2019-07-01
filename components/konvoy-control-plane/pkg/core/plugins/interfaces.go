@@ -3,17 +3,16 @@ package plugins
 import (
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 )
 
 type Plugin interface{}
 
 type PluginConfig interface{}
 
-// TODO(yskopets): TBD
-type PluginContext interface{}
+type PluginContext = core_runtime.BuilderContext
 
-// TODO(yskopets): TBD
-type MutablePluginContext struct{}
+type MutablePluginContext = core_runtime.Builder
 
 // BootstrapPlugin is responsible for environment-specific initialization at start up,
 // e.g. Kubernetes-specific part of configuration.
