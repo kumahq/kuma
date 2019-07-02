@@ -9,5 +9,5 @@ import (
 
 func TestWs(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Traffic Route WS")
+	RunSpecs(t, "Resource WS")
 }

@@ -17,7 +17,7 @@ import (
 	"net/http"
 )
 
-var _ = Describe("Traffic Route WS", func() {
+var _ = Describe("Resource WS", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
@@ -172,6 +172,8 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string) 
 }
 
 func createTestApiServer(store store.ResourceStore, config api_server.ApiServerConfig) *api_server.ApiServer {
+	// we have to manually search for port and put it into config. There is no way to retrieve port of running
+	// http.Server and we need it later for the client
 	port, err := getFreePort()
 	Expect(err).NotTo(HaveOccurred())
 	config.BindAddress = fmt.Sprintf("localhost:%d", port)
@@ -186,8 +188,7 @@ func getFreePort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	err = ln.Close()
-	if err != nil {
+	if err := ln.Close(); err != nil {
 		return 0, err
 	}
 	return ln.Addr().(*net.TCPAddr).Port, nil
@@ -216,7 +217,7 @@ func (r *resourceApiClient) list() *http.Response {
 func (r *resourceApiClient) delete(name string) *http.Response {
 	request, err := http.NewRequest(
 		"DELETE",
-		r.fullAddress() + "/" + name,
+		r.fullAddress()+"/"+name,
 		nil,
 	)
 	Expect(err).ToNot(HaveOccurred())
@@ -230,7 +231,7 @@ func (r *resourceApiClient) put(name string, route *sample_proto.TrafficRoute) *
 	Expect(err).ToNot(HaveOccurred())
 	request, err := http.NewRequest(
 		"PUT",
-		r.fullAddress() + "/" + name,
+		r.fullAddress()+"/"+name,
 		bytes.NewBuffer(jsonBytes),
 	)
 	Expect(err).ToNot(HaveOccurred())

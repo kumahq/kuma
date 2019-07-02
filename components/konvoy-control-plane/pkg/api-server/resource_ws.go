@@ -18,7 +18,7 @@ type ResourceWsDefinition struct {
 	ResourceFactory     func() model.Resource
 	ResourceListFactory func() model.ResourceList
 	SpecFactory         func() model.ResourceSpec
-	SampleSpec			interface{}
+	SampleSpec          interface{}
 }
 
 type resourceWs struct {
@@ -28,9 +28,9 @@ type resourceWs struct {
 }
 
 type ResourceResponse struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
-	Mesh string `json:"mesh"`
+	Type string             `json:"type"`
+	Name string             `json:"name"`
+	Mesh string             `json:"mesh"`
 	Spec model.ResourceSpec `json:"-"`
 }
 
@@ -64,7 +64,7 @@ func (r *resourceWs) NewWs() *restful.WebService {
 		Path(fmt.Sprintf("/meshes/{mesh}/%s", r.Path)).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Param(ws.PathParameter("mesh-name", "Name of the Mesh").DataType("string"))
+		Param(ws.PathParameter("mesh", "Name of the Mesh").DataType("string"))
 
 	ws.Route(ws.GET("/{name}").To(r.findResource).
 		Doc(fmt.Sprintf("Get a %s", r.Name)).
@@ -95,22 +95,50 @@ func (r *resourceWs) NewWs() *restful.WebService {
 	return ws
 }
 
+func (r *resourceWs) findResource(request *restful.Request, response *restful.Response) {
+	name := request.PathParameter("name")
+	meshName := request.PathParameter("mesh")
+
+	// todo(jakubdyszkiewicz) find by mesh?
+	resource := r.ResourceFactory()
+	err := r.resourceStore.Get(context.Background(), resource, store.GetByName(namespace, name))
+	if err != nil {
+		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
+			writeError(response, 404, "")
+		} else {
+			log.Printf("Could not retrieve a resource %v", err)
+			writeError(response, 500, "Could not retrieve a resource")
+		}
+	} else {
+		res := &ResourceResponse{
+			Type: string(resource.GetType()),
+			Name: name,
+			Mesh: meshName,
+			Spec: resource.GetSpec(),
+		}
+		err = response.WriteAsJson(res)
+		if err != nil {
+			log.Printf("Could not write the response: %v", err)
+		}
+	}
+}
+
 type resourceSpecList struct {
-	Items []ResourceResponse `json:"items"`
+	Items []*ResourceResponse `json:"items"`
 }
 
 func (r *resourceWs) listResources(request *restful.Request, response *restful.Response) {
 	meshName := request.PathParameter("mesh")
 
 	list := r.ResourceListFactory()
-	err := r.resourceStore.List(context.Background(), list, store.ListByNamespace(namespace))
-	if err != nil {
+	// todo(jakubdyszkiewicz) find by mesh?
+	if err := r.resourceStore.List(context.Background(), list, store.ListByNamespace(namespace)); err != nil {
 		log.Printf("Could not retrieve resources %v", err)
 		writeError(response, 500, "Could not list a resource")
 	} else {
-		var items []ResourceResponse
+		var items []*ResourceResponse
 		for _, item := range list.GetItems() {
-			items = append(items, ResourceResponse{
+			items = append(items, &ResourceResponse{
 				Type: string(item.GetType()),
 				Name: item.GetMeta().GetName(),
 				Mesh: meshName,
@@ -125,38 +153,10 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 	}
 }
 
-func (r *resourceWs) findResource(request *restful.Request, response *restful.Response) {
-	resource := r.ResourceFactory()
-	name := request.PathParameter("name")
-	meshName := request.PathParameter("mesh")
-
-	// todo(jakubdyszkiewicz) find by mesh?
-	err := r.resourceStore.Get(context.Background(), resource, store.GetByName(namespace, name));
-	if err != nil {
-		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
-			writeError(response, 404, "")
-		} else {
-			log.Printf("Could not retrieve a resource %v", err)
-			writeError(response, 500, "Could not retrieve a resource")
-		}
-	} else {
-		res := ResourceResponse{
-			Type: string(resource.GetType()),
-			Name: name,
-			Mesh: meshName,
-			Spec: resource.GetSpec(),
-		}
-		err = response.WriteAsJson(res);
-		if err != nil {
-			log.Printf("Could not write the response: %v", err)
-		}
-	}
-}
-
 func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	spec := r.SpecFactory()
-	err := request.ReadEntity(spec);
+	err := request.ReadEntity(spec)
 	if err != nil {
 		log.Printf("Could not read an entity %+v", err)
 		writeError(response, 400, "Could not process the resource")
@@ -164,8 +164,7 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 
 	resource := r.ResourceFactory()
 	// todo(jakubdyszkiewicz) find by mesh?
-	err = r.resourceStore.Get(context.Background(), resource, store.GetByName(namespace, name))
-	if err != nil {
+	if err := r.resourceStore.Get(context.Background(), resource, store.GetByName(namespace, name)); err != nil {
 		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
 			r.createResource(name, spec, response)
 		} else {

@@ -26,10 +26,22 @@ func (a *ApiServer) Address() string {
 func NewApiServer(resourceStore store.ResourceStore, definitions []ResourceWsDefinition, config ApiServerConfig) *ApiServer {
 	container := restful.NewContainer()
 	srv := &http.Server{
-		Addr: config.BindAddress,
+		Addr:    config.BindAddress,
 		Handler: container.ServeMux,
 	}
 
+	webServices := createWebServices(definitions, resourceStore, config)
+	for _, ws := range webServices {
+		container.Add(ws)
+	}
+	configureOpenApi(config, container, webServices)
+
+	return &ApiServer{
+		server: srv,
+	}
+}
+
+func createWebServices(definitions []ResourceWsDefinition, resourceStore store.ResourceStore, config ApiServerConfig) []*restful.WebService {
 	var webServices []*restful.WebService
 	for _, definition := range definitions {
 		ws := resourceWs{
@@ -39,15 +51,7 @@ func NewApiServer(resourceStore store.ResourceStore, definitions []ResourceWsDef
 		}
 		webServices = append(webServices, ws.NewWs())
 	}
-
-	for _, ws := range webServices {
-		container.Add(ws)
-	}
-	configureOpenApi(config, container, webServices)
-
-	return &ApiServer{
-		server: srv,
-	}
+	return webServices
 }
 
 func configureOpenApi(config ApiServerConfig, container *restful.Container, webServices []*restful.WebService) {

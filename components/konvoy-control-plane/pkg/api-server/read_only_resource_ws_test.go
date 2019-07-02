@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Read only Traffic Route WS", func() {
+var _ = Describe("Read only Resource WS", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
@@ -18,7 +18,7 @@ var _ = Describe("Read only Traffic Route WS", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{ReadOnly:true})
+		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{ReadOnly: true})
 		client = resourceApiClient{address: apiServer.Address()}
 		apiServer.Start()
 
