@@ -1,21 +1,17 @@
 package server
 
 import (
-	"fmt"
-
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s"
-	k8s_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/controllers"
-	k8s_registry "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/pkg/registry"
-	util_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/manager"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
+	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/pkg/cache"
-	xds "github.com/envoyproxy/go-control-plane/pkg/server"
-	ctrl "sigs.k8s.io/controller-runtime"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
 var (
-	xdsServerLog = ctrl.Log.WithName("xds-server")
+	xdsServerLog = core.Log.WithName("xds-server")
 )
 
 type RunArgs struct {
@@ -28,45 +24,15 @@ type Server struct {
 	Args RunArgs
 }
 
-func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
-	hasher := hasher{}
-	logger := logger{}
-	store := cache.NewSnapshotCache(true, hasher, logger)
-	reconciler := reconciler{&templateSnapshotGenerator{
-		ProxyTemplateResolver: &simpleProxyTemplateResolver{
-			ResourceStore: &k8s.KubernetesStore{
-				Client: mgr.GetClient(),
-				Converter: &k8s.SimpleConverter{
-					KubeFactory: &k8s.SimpleKubeFactory{
-						KubeTypes: k8s_registry.Global(),
-					},
-				},
-			},
-			DefaultProxyTemplate: template.TransparentProxyTemplate,
-		},
-	}, &simpleSnapshotCacher{hasher, store}}
-	srv := xds.NewServer(store, nil)
-
-	if err := util_manager.SetupWithManager(
-		mgr,
-		&k8s_controllers.ProxyTemplateReconciler{
-			Client: mgr.GetClient(),
-			Log:    ctrl.Log.WithName("controllers").WithName("ProxyTemplate"),
-		},
-		&k8s_controllers.ProxyReconciler{
-			Client: mgr.GetClient(),
-			Log:    ctrl.Log.WithName("controllers").WithName("Proxy"),
-		},
-		&k8s_controllers.PodReconciler{
-			Client:   mgr.GetClient(),
-			Log:      ctrl.Log.WithName("controllers").WithName("Pod"),
-			Observer: &reconciler,
-		},
-	); err != nil {
-		return err
+func (s *Server) Setup(rt core_runtime.Runtime) error {
+	r := newReconciler(rt.XDS(), rt.ResourceStore())
+	for _, ds := range rt.DiscoverySources() {
+		ds.AddConsumer(r)
 	}
 
-	return util_manager.Add(mgr,
+	srv := envoy_xds.NewServer(rt.XDS().Cache(), nil)
+	return core_runtime.Add(
+		rt,
 		// xDS gRPC API
 		&grpcServer{srv, s.Args.GrpcPort},
 		// xDS HTTP API
@@ -75,22 +41,11 @@ func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
 		&diagnosticsServer{s.Args.DiagnosticsPort})
 }
 
-type hasher struct {
-}
-
-func (h hasher) ID(node *envoy_core.Node) string {
-	if node == nil {
-		return "unknown"
-	}
-	return node.Id
-}
-
-type logger struct {
-}
-
-func (logger logger) Infof(format string, args ...interface{}) {
-	xdsServerLog.V(1).Info(fmt.Sprintf(format, args...))
-}
-func (logger logger) Errorf(format string, args ...interface{}) {
-	xdsServerLog.Error(fmt.Errorf(format, args...), "")
+func newReconciler(xds core_xds.XdsContext, rs core_store.ResourceStore) core_discovery.DiscoveryConsumer {
+	return &reconciler{&templateSnapshotGenerator{
+		ProxyTemplateResolver: &simpleProxyTemplateResolver{
+			ResourceStore:        rs,
+			DefaultProxyTemplate: template.TransparentProxyTemplate,
+		},
+	}, &simpleSnapshotCacher{xds.Hasher(), xds.Cache()}}
 }

@@ -100,26 +100,30 @@ type TransparentInboundProxyProfile struct {
 }
 
 func (p *TransparentInboundProxyProfile) Generate(proxy *model.Proxy) ([]*Resource, error) {
-	if len(proxy.Workload.Addresses) == 0 || len(proxy.Workload.Ports) == 0 {
+	if len(proxy.Workload.Endpoints) == 0 {
 		return nil, nil
 	}
-	resources := make([]*Resource, 0, len(proxy.Workload.Addresses)*len(proxy.Workload.Ports))
-	for _, port := range proxy.Workload.Ports {
-		localClusterName := fmt.Sprintf("localhost:%d", port)
-		resources = append(resources, &Resource{
-			Name:     localClusterName,
-			Version:  proxy.Workload.Version,
-			Resource: envoy.CreateLocalCluster(localClusterName, "127.0.0.1", port),
-		})
+	resources := make([]*Resource, 0, len(proxy.Workload.Endpoints))
+	names := make(map[string]bool)
+	for _, endpoint := range proxy.Workload.Endpoints {
+		localClusterName := fmt.Sprintf("localhost:%d", endpoint.Port)
+		if used := names[localClusterName]; !used {
+			resources = append(resources, &Resource{
+				Name:     localClusterName,
+				Version:  proxy.Workload.Version,
+				Resource: envoy.CreateLocalCluster(localClusterName, "127.0.0.1", endpoint.Port),
+			})
+			names[localClusterName] = true
+		}
 
-		for _, address := range proxy.Workload.Addresses {
-			inboundListenerName := fmt.Sprintf("inbound:%s:%d", address, port)
-
+		inboundListenerName := fmt.Sprintf("inbound:%s:%d", endpoint.Address, endpoint.Port)
+		if used := names[inboundListenerName]; !used {
 			resources = append(resources, &Resource{
 				Name:     inboundListenerName,
 				Version:  proxy.Workload.Version,
-				Resource: envoy.CreateInboundListener(inboundListenerName, address, port, localClusterName),
+				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.Address, endpoint.Port, localClusterName),
 			})
+			names[inboundListenerName] = true
 		}
 	}
 	return resources, nil

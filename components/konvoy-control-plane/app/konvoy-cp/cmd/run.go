@@ -1,13 +1,11 @@
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/bootstrap"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/server"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var (
@@ -16,13 +14,11 @@ var (
 
 func newRunCmd() *cobra.Command {
 	return newRunCmdWithOpts(runCmdOpts{
-		GetConfigOrDie:     ctrl.GetConfigOrDie,
-		SetupSignalHandler: ctrl.SetupSignalHandler,
+		SetupSignalHandler: core.SetupSignalHandler,
 	})
 }
 
 type runCmdOpts struct {
-	GetConfigOrDie     func() *rest.Config
 	SetupSignalHandler func() (stopCh <-chan struct{})
 }
 
@@ -38,30 +34,24 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 		Short: "Launch Control Plane",
 		Long:  `Launch Control Plane.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			scheme := runtime.NewScheme()
-			mgr, err := ctrl.NewManager(
-				opts.GetConfigOrDie(),
-				ctrl.Options{Scheme: scheme, MetricsBindAddress: fmt.Sprintf(":%d", args.metricsPort)},
-			)
+			rt, err := bootstrap.Bootstrap(config.TODO())
 			if err != nil {
-				runLog.Error(err, "unable to set up Control Plane manager")
+				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
 			}
-
 			server := &server.Server{
 				Args: server.RunArgs{
 					GrpcPort:        args.grpcPort,
 					HttpPort:        args.httpPort,
 					DiagnosticsPort: args.diagnosticsPort,
 				}}
-
-			if err := server.SetupWithManager(mgr); err != nil {
+			if err := server.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up xDS API server")
 				return err
 			}
 
 			runLog.Info("starting Control Plane")
-			if err := mgr.Start(opts.SetupSignalHandler()); err != nil {
+			if err := rt.Start(opts.SetupSignalHandler()); err != nil {
 				runLog.Error(err, "problem running Control Plane")
 				return err
 			}
