@@ -1,6 +1,7 @@
 package sample
 
 import (
+	"errors"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
 )
@@ -28,11 +29,28 @@ func (t *TrafficRouteResource) SetMeta(m model.ResourceMeta) {
 func (t *TrafficRouteResource) GetSpec() model.ResourceSpec {
 	return &t.Spec
 }
+func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
+	route, ok := spec.(*proto.TrafficRoute)
+	if !ok {
+		return errors.New("invalid type of spec")
+	} else {
+		t.Spec = *route
+		return nil
+	}
+}
 
 var _ model.ResourceList = &TrafficRouteResourceList{}
 
 type TrafficRouteResourceList struct {
 	Items []*TrafficRouteResource
+}
+
+func (l *TrafficRouteResourceList) GetItems() []model.Resource {
+	var res []model.Resource
+	for _, elem := range l.Items {
+		res = append(res, elem)
+	}
+	return res
 }
 
 func (l *TrafficRouteResourceList) GetItemType() model.ResourceType {

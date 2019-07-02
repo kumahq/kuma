@@ -2,15 +2,17 @@ package api_server
 
 import (
 	"context"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/emicklei/go-restful"
-	"github.com/prometheus/common/log"
+	restfulspec "github.com/emicklei/go-restful-openapi"
+	"log"
 	"net/http"
 )
 
 type ApiServerConfig struct {
-	BindAddress string
+	BindAddress string `envconfig:"api_server_address" default:"0.0.0.0:8091"`
+	ReadOnly    bool   `envconfig:"api_server_read_only" default:"false"`
+	ApiPath     string `envconfig:"api_server_api_path" default:"/apidocs.json"`
 }
 
 type ApiServer struct {
@@ -21,25 +23,54 @@ func (a *ApiServer) Address() string {
 	return a.server.Addr
 }
 
-func NewApiServer(resourceStore store.ResourceStore, config ApiServerConfig) *ApiServer {
-	apiServer := &ApiServer{}
-
-	srv := &http.Server{Addr: config.BindAddress}
-	apiServer.server = srv
-
+func NewApiServer(resourceStore store.ResourceStore, definitions []ResourceWsDefinition, config ApiServerConfig) *ApiServer {
 	container := restful.NewContainer()
-	container.Add(mesh.NewProxyTemplateWs(resourceStore))
+	srv := &http.Server{
+		Addr: config.BindAddress,
+		Handler: container.ServeMux,
+	}
 
-	srv.Handler = container.ServeMux
+	var webServices []*restful.WebService
+	for _, definition := range definitions {
+		ws := resourceWs{
+			resourceStore,
+			config.ReadOnly,
+			definition,
+		}
+		webServices = append(webServices, ws.NewWs())
+	}
 
-	return apiServer
+	for _, ws := range webServices {
+		container.Add(ws)
+	}
+	configureOpenApi(config, container, webServices)
+
+	return &ApiServer{
+		server: srv,
+	}
+}
+
+func configureOpenApi(config ApiServerConfig, container *restful.Container, webServices []*restful.WebService) {
+	openApiConfig := restfulspec.Config{
+		WebServices: webServices,
+		APIPath:     config.ApiPath,
+	}
+	container.Add(restfulspec.NewOpenAPIService(openApiConfig))
+
+	// todo(jakubdyszkiewicz) figure out how to pack swagger ui dist package and expose swagger ui
+	//container.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("path/to/swagger-ui-dist"))))
 }
 
 func (a *ApiServer) Start() {
-	go func(){
+	go func() {
 		err := a.server.ListenAndServe()
 		if err != nil {
-			log.Fatalf("Could not start an HTTP Server", err)
+			switch err {
+			case http.ErrServerClosed:
+				log.Print("Shutting down server")
+			default:
+				log.Fatalf("Could not start an HTTP Server: %v", err)
+			}
 		}
 	}()
 }

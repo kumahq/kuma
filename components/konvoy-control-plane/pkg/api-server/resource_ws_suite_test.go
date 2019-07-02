@@ -1,4 +1,4 @@
-package mesh_test
+package api_server_test
 
 import (
 	"testing"
