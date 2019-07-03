@@ -155,6 +155,7 @@ jobs:
     environment:
       GO_VERSION: 1.12.5
       GO111MODULE: "on"
+      GOPATH: /home/circleci/.go
     steps:
     - checkout
     - run:
@@ -163,6 +164,19 @@ jobs:
           apt update && apt install -y curl git make
           # see https://golang.org/doc/install#tarball
           curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
+    - restore_cache:
+        keys:
+        - vm-executor/konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+    - run:
+        name: "Download Go modules"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          cd components/konvoy-control-plane && go mod download
+    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
+    - save_cache:
+        key: vm-executor/konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        paths:
+          - "/home/circleci/.go"
     - run:
         name: "Install all development tools"
         command: |
