@@ -7,7 +7,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/emicklei/go-restful"
-	"log"
+	"sigs.k8s.io/controller-runtime/pkg/log" // todo(jakubdyszkiewicz) replace with core
 )
 
 const namespace = "default"
@@ -17,7 +17,6 @@ type ResourceWsDefinition struct {
 	Path                string
 	ResourceFactory     func() model.Resource
 	ResourceListFactory func() model.ResourceList
-	SpecFactory         func() model.ResourceSpec
 	SampleSpec          interface{}
 }
 
@@ -101,12 +100,12 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 
 	// todo(jakubdyszkiewicz) find by mesh?
 	resource := r.ResourceFactory()
-	err := r.resourceStore.Get(context.Background(), resource, store.GetByName(namespace, name))
+	err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name))
 	if err != nil {
 		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
 			writeError(response, 404, "")
 		} else {
-			log.Printf("Could not retrieve a resource %v", err)
+			log.Log.Error(err, "Could not retrieve a resource", "name", name)
 			writeError(response, 500, "Could not retrieve a resource")
 		}
 	} else {
@@ -118,7 +117,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 		}
 		err = response.WriteAsJson(res)
 		if err != nil {
-			log.Printf("Could not write the response: %v", err)
+			log.Log.Error(err, "Could not write the response")
 		}
 	}
 }
@@ -132,8 +131,8 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 
 	list := r.ResourceListFactory()
 	// todo(jakubdyszkiewicz) find by mesh?
-	if err := r.resourceStore.List(context.Background(), list, store.ListByNamespace(namespace)); err != nil {
-		log.Printf("Could not retrieve resources %v", err)
+	if err := r.resourceStore.List(request.Request.Context(), list, store.ListByNamespace(namespace)); err != nil {
+		log.Log.Error(err, "Could not retrieve resources")
 		writeError(response, 500, "Could not list a resource")
 	} else {
 		var items []*ResourceResponse
@@ -147,7 +146,7 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 		}
 		specList := resourceSpecList{Items: items}
 		if err := response.WriteAsJson(specList); err != nil {
-			log.Printf("Could not write as JSON %v", err)
+			log.Log.Error(err, "Could not write as JSON", "type", string(list.GetItemType()))
 			writeError(response, 500, "Could not list a resource")
 		}
 	}
@@ -155,43 +154,43 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 
 func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
-	spec := r.SpecFactory()
+	spec := r.ResourceFactory().GetSpec()
 	err := request.ReadEntity(spec)
 	if err != nil {
-		log.Printf("Could not read an entity %+v", err)
+		log.Log.Error(err, "Could not read an entity")
 		writeError(response, 400, "Could not process the resource")
 	}
 
 	resource := r.ResourceFactory()
 	// todo(jakubdyszkiewicz) find by mesh?
-	if err := r.resourceStore.Get(context.Background(), resource, store.GetByName(namespace, name)); err != nil {
+	if err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name)); err != nil {
 		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
-			r.createResource(name, spec, response)
+			r.createResource(request.Request.Context(), name, spec, response)
 		} else {
-			log.Printf("Could not get a resource from the store %v", err)
+			log.Log.Error(err, "Could get a resource from the store", "namespace", namespace, "name", name, "type", string(resource.GetType()))
 			writeError(response, 500, "Could not create a resource")
 		}
 	} else {
-		r.updateResource(resource, spec, response)
+		r.updateResource(request.Request.Context(), resource, spec, response)
 	}
 }
 
-func (r *resourceWs) createResource(name string, spec model.ResourceSpec, response *restful.Response) {
+func (r *resourceWs) createResource(ctx context.Context, name string, spec model.ResourceSpec, response *restful.Response) {
 	res := r.ResourceFactory()
 	_ = res.SetSpec(spec)
-	if err := r.resourceStore.Create(context.Background(), res, store.CreateByName(namespace, name)); err != nil {
-		log.Printf("Could not create a resource %v", err)
+	if err := r.resourceStore.Create(ctx, res, store.CreateByName(namespace, name)); err != nil {
+		log.Log.Error(err, "Could not create a resource")
 		writeError(response, 500, "Could not create a resource")
 	} else {
 		response.WriteHeader(201)
 	}
 }
 
-func (r *resourceWs) updateResource(res model.Resource, spec model.ResourceSpec, response *restful.Response) {
+func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, spec model.ResourceSpec, response *restful.Response) {
 	_ = res.SetSpec(spec)
-	if err := r.resourceStore.Update(context.Background(), res); err != nil {
-		log.Printf("Could not create a resource %v", err)
-		writeError(response, 500, "Could not create a resource")
+	if err := r.resourceStore.Update(ctx, res); err != nil {
+		log.Log.Error(err, "Could not update a resource")
+		writeError(response, 500, "Could not update a resource")
 	} else {
 		response.WriteHeader(200)
 	}
@@ -202,15 +201,15 @@ func (r *resourceWs) deleteResource(request *restful.Request, response *restful.
 
 	resource := r.ResourceFactory()
 	// todo(jakubdyszkiewicz) delete by mesh?
-	err := r.resourceStore.Delete(context.Background(), resource, store.DeleteByName(namespace, name))
+	err := r.resourceStore.Delete(request.Request.Context(), resource, store.DeleteByName(namespace, name))
 	if err != nil {
 		writeError(response, 500, "Could not delete a resource")
-		log.Printf("Could not delete a resource %+v", err)
+		log.Log.Error(err, "Could not delete a resource", "namespace", namespace, "name", name, "type", string(resource.GetType()))
 	}
 }
 
 func writeError(response *restful.Response, httpStatus int, msg string) {
 	if err := response.WriteErrorString(httpStatus, msg); err != nil {
-		log.Printf("Could not write the response: %v", err)
+		log.Log.Error(err, "Cloud not write the response")
 	}
 }
