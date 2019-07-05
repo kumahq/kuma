@@ -5,11 +5,11 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	util_cache "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/cache"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
-	client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("Reconcile", func() {
@@ -17,7 +17,7 @@ var _ = Describe("Reconcile", func() {
 
 		gen := templateSnapshotGenerator{
 			ProxyTemplateResolver: &simpleProxyTemplateResolver{
-				Client:               client_fake.NewFakeClient(),
+				ResourceStore:        memory.NewStore(),
 				DefaultProxyTemplate: template.TransparentProxyTemplate,
 			},
 		}

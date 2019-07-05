@@ -3,7 +3,9 @@ package server
 import (
 	"fmt"
 
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s"
 	k8s_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/controllers"
+	k8s_registry "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/manager"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -32,7 +34,14 @@ func (s *Server) SetupWithManager(mgr ctrl.Manager) error {
 	store := cache.NewSnapshotCache(true, hasher, logger)
 	reconciler := reconciler{&templateSnapshotGenerator{
 		ProxyTemplateResolver: &simpleProxyTemplateResolver{
-			Client:               mgr.GetClient(),
+			ResourceStore: &k8s.KubernetesStore{
+				Client: mgr.GetClient(),
+				Converter: &k8s.SimpleConverter{
+					KubeFactory: &k8s.SimpleKubeFactory{
+						KubeTypes: k8s_registry.Global(),
+					},
+				},
+			},
 			DefaultProxyTemplate: template.TransparentProxyTemplate,
 		},
 	}, &simpleSnapshotCacher{hasher, store}}

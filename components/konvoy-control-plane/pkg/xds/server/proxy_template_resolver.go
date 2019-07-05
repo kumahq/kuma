@@ -3,13 +3,12 @@ package server
 import (
 	"context"
 
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
-	konvoy_mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -17,22 +16,20 @@ var (
 )
 
 type proxyTemplateResolver interface {
-	GetTemplate(proxy *model.Proxy) *konvoy_mesh.ProxyTemplate
+	GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate
 }
 
 type simpleProxyTemplateResolver struct {
-	client.Client
-	DefaultProxyTemplate *konvoy_mesh.ProxyTemplate
+	store.ResourceStore
+	DefaultProxyTemplate *mesh_proto.ProxyTemplate
 }
 
-func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *konvoy_mesh.ProxyTemplate {
+func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
 	if proxy.Workload.Meta != nil && proxy.Workload.Meta.GetAnnotations() != nil {
-		if templateName := proxy.Workload.Meta.GetAnnotations()[konvoy_mesh_k8s.ProxyTemplateAnnotation]; templateName != "" {
-			k8sTemplate := &konvoy_mesh_k8s.ProxyTemplate{}
-			if err := r.Client.Get(
-				context.Background(),
-				types.NamespacedName{Namespace: proxy.Workload.Meta.GetNamespace(), Name: templateName},
-				k8sTemplate); err != nil {
+		if templateName := proxy.Workload.Meta.GetAnnotations()[mesh_k8s.ProxyTemplateAnnotation]; templateName != "" {
+			template := &mesh_core.ProxyTemplateResource{}
+			if err := r.ResourceStore.Get(context.Background(), template,
+				store.GetByName(proxy.Workload.Meta.GetNamespace(), templateName)); err != nil {
 				templateResolverLog.Error(err, "failed to resolve ProxyTemplate",
 					"workloadNamespace", proxy.Workload.Meta.GetNamespace(),
 					"workloadName", proxy.Workload.Meta.GetName(),
@@ -43,15 +40,7 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *konvoy_me
 					"workloadName", proxy.Workload.Meta.GetName(),
 					"templateName", templateName,
 				)
-				template := &konvoy_mesh.ProxyTemplate{}
-				if err := util_proto.FromMap(k8sTemplate.Spec, template); err != nil {
-					templateResolverLog.Error(err, "failed to unmarshal ProxyTemplate",
-						"workloadNamespace", proxy.Workload.Meta.GetNamespace(),
-						"workloadName", proxy.Workload.Meta.GetName(),
-						"templateName", templateName)
-				} else {
-					return template
-				}
+				return &template.Spec
 			}
 		}
 	}
