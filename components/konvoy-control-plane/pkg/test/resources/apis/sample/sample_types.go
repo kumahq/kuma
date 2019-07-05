@@ -47,8 +47,8 @@ type TrafficRouteResourceList struct {
 
 func (l *TrafficRouteResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
-	for _, elem := range l.Items {
-		res = append(res, elem)
+	for i, elem := range l.Items {
+		res[i] = elem
 	}
 	return res
 }

@@ -3,7 +3,6 @@ package api_server_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -131,6 +130,60 @@ var _ = Describe("Resource WS", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Path).To(Equal("/update-sample-path"))
 		})
+
+		It("should return 400 on the type in url that is different from request", func() {
+			// given
+			json := `
+			{
+				"type": "InvalidType",
+				"name": "tr-1",
+				"mesh": "default",
+				"path": "/sample-path"
+			}
+			`
+
+			// when
+			response := client.putJson("tr-1", []byte(json))
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+		})
+
+		It("should return 400 on the name that is different from request", func() {
+			// given
+			json := `
+			{
+				"type": "TrafficRoute",
+				"name": "different-name",
+				"mesh": "default",
+				"path": "/sample-path"
+			}
+			`
+
+			// when
+			response := client.putJson("tr-1", []byte(json))
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+		})
+
+		It("should return 400 on the mesh that is different from request", func() {
+			// given
+			json := `
+			{
+				"type": "TrafficRoute",
+				"name": "tr-1",
+				"mesh": "different-mesh",
+				"path": "/sample-path"
+			}
+			`
+
+			// when
+			response := client.putJson("tr-1", []byte(json))
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+		})
 	})
 
 	Describe("On DELETE", func() {
@@ -227,12 +280,22 @@ func (r *resourceApiClient) delete(name string) *http.Response {
 }
 
 func (r *resourceApiClient) put(name string, route *sample_proto.TrafficRoute) *http.Response {
-	jsonBytes, err := json.Marshal(&route)
+	resResponse := api_server.ResourceReqResp{
+		Name: name,
+		Type: string(sample_model.TrafficRouteType),
+		Mesh: "default",
+		Spec: route,
+	}
+	jsonBytes, err := resResponse.MarshalJSON()
 	Expect(err).ToNot(HaveOccurred())
+	return r.putJson(name, jsonBytes)
+}
+
+func (r *resourceApiClient) putJson(name string, json []byte) *http.Response {
 	request, err := http.NewRequest(
 		"PUT",
 		r.fullAddress()+"/"+name,
-		bytes.NewBuffer(jsonBytes),
+		bytes.NewBuffer(json),
 	)
 	Expect(err).ToNot(HaveOccurred())
 	request.Header.Add("content-type", "application/json")

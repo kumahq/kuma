@@ -1,12 +1,15 @@
 package api_server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/emicklei/go-restful"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log" // todo(jakubdyszkiewicz) replace with core
 )
 
@@ -17,7 +20,6 @@ type ResourceWsDefinition struct {
 	Path                string
 	ResourceFactory     func() model.Resource
 	ResourceListFactory func() model.ResourceList
-	SampleSpec          interface{}
 }
 
 type resourceWs struct {
@@ -26,34 +28,54 @@ type resourceWs struct {
 	ResourceWsDefinition
 }
 
-type ResourceResponse struct {
+type ResourceReqResp struct {
 	Type string             `json:"type"`
 	Name string             `json:"name"`
 	Mesh string             `json:"mesh"`
 	Spec model.ResourceSpec `json:"-"`
 }
 
-// normally Spec would be embedded under Spec key. embedding model.ResourceSpec does not work because the marshaller
-// cannot expand embedded struct over the interface. We have to implement our marshaller to expand the Spec
-func (f ResourceResponse) MarshalJSON() ([]byte, error) {
-	type tmp ResourceResponse // otherwise we've got stackoverflow
-	g := tmp(f)
-	first, err := json.Marshal(g)
+var (
+	marshaler   = jsonpb.Marshaler{}
+	unmarshaler = jsonpb.Unmarshaler{AllowUnknownFields: true}
+)
+
+// To marshall spec we have to use package from jsonb that handle edge cases of protobuf -> json conversion
+func (r ResourceReqResp) MarshalJSON() ([]byte, error) {
+	type tmp ResourceReqResp // otherwise we've got stackoverflow
+	res := tmp(r)
+	var specJsonBytes bytes.Buffer
+	if err := marshaler.Marshal(&specJsonBytes, res.Spec); err != nil {
+		return nil, err
+	}
+	metaJsonBytes, err := json.Marshal(res)
 	if err != nil {
 		return nil, err
 	}
-	second, err := json.Marshal(f.Spec)
-	if err != nil {
-		return nil, err
-	}
+	// join both jsons
 	data := make(map[string]interface{})
-	if err := json.Unmarshal(first, &data); err != nil {
+	if err := json.Unmarshal(specJsonBytes.Bytes(), &data); err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal(second, &data); err != nil {
+	if err := json.Unmarshal(metaJsonBytes, &data); err != nil {
 		return nil, err
 	}
 	return json.Marshal(data)
+}
+
+func (r *ResourceReqResp) UnmarshalJSON(jsonBytes []byte) error {
+	if err := unmarshaler.Unmarshal(bytes.NewBuffer(jsonBytes), r.Spec); err != nil {
+		return err
+	}
+	// json.Unmarshal cannot ignore unknown fields therefore we have to unmarshall to map
+	values := map[string]string{}
+	if err := json.Unmarshal(jsonBytes, &values); err != nil {
+		return err
+	}
+	r.Name = values["name"]
+	r.Type = values["type"]
+	r.Mesh = values["mesh"]
+	return nil
 }
 
 func (r *resourceWs) NewWs() *restful.WebService {
@@ -69,19 +91,19 @@ func (r *resourceWs) NewWs() *restful.WebService {
 		Doc(fmt.Sprintf("Get a %s", r.Name)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
 		//Writes(r.SpecFactory()).
-		Returns(200, "OK", nil). // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceResponse
+		Returns(200, "OK", nil). // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
 		Returns(404, "Not found", nil))
 
 	ws.Route(ws.GET("").To(r.listResources).
 		Doc(fmt.Sprintf("List of %s", r.Name)).
 		//Writes(r.SampleListSpec).
-		Returns(200, "OK", nil)) // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceResponse
+		Returns(200, "OK", nil)) // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
 
 	if !r.readOnly {
 		ws.Route(ws.PUT("/{name}").To(r.createOrUpdateResource).
 			Doc(fmt.Sprintf("Updates a %s", r.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
-			Reads(r.SampleSpec).
+			//Reads(r.SampleSpec). // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
 			Returns(200, "OK", nil).
 			Returns(201, "Created", nil))
 
@@ -109,7 +131,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 			writeError(response, 500, "Could not retrieve a resource")
 		}
 	} else {
-		res := &ResourceResponse{
+		res := &ResourceReqResp{
 			Type: string(resource.GetType()),
 			Name: name,
 			Mesh: meshName,
@@ -123,7 +145,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 }
 
 type resourceSpecList struct {
-	Items []*ResourceResponse `json:"items"`
+	Items []*ResourceReqResp `json:"items"`
 }
 
 func (r *resourceWs) listResources(request *restful.Request, response *restful.Response) {
@@ -135,9 +157,9 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 		log.Log.Error(err, "Could not retrieve resources")
 		writeError(response, 500, "Could not list a resource")
 	} else {
-		var items []*ResourceResponse
+		var items []*ResourceReqResp
 		for _, item := range list.GetItems() {
-			items = append(items, &ResourceResponse{
+			items = append(items, &ResourceReqResp{
 				Type: string(item.GetType()),
 				Name: item.GetMeta().GetName(),
 				Mesh: meshName,
@@ -154,25 +176,48 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 
 func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
-	spec := r.ResourceFactory().GetSpec()
-	err := request.ReadEntity(spec)
+
+	resourceRes := ResourceReqResp{
+		Spec: r.ResourceFactory().GetSpec(),
+	}
+
+	err := request.ReadEntity(&resourceRes)
 	if err != nil {
 		log.Log.Error(err, "Could not read an entity")
 		writeError(response, 400, "Could not process the resource")
 	}
 
-	resource := r.ResourceFactory()
-	// todo(jakubdyszkiewicz) find by mesh?
-	if err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name)); err != nil {
-		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
-			r.createResource(request.Request.Context(), name, spec, response)
-		} else {
-			log.Log.Error(err, "Could get a resource from the store", "namespace", namespace, "name", name, "type", string(resource.GetType()))
-			writeError(response, 500, "Could not create a resource")
-		}
+	if err := r.validateResourceRequest(request, &resourceRes); err != nil {
+		writeError(response, 400, err.Error())
 	} else {
-		r.updateResource(request.Request.Context(), resource, spec, response)
+		resource := r.ResourceFactory()
+		// todo(jakubdyszkiewicz) find by mesh?
+		if err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name)); err != nil {
+			if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
+				r.createResource(request.Request.Context(), name, resourceRes.Spec, response)
+			} else {
+				log.Log.Error(err, "Could get a resource from the store", "namespace", namespace, "name", name, "type", string(resource.GetType()))
+				writeError(response, 500, "Could not create a resource")
+			}
+		} else {
+			r.updateResource(request.Request.Context(), resource, resourceRes.Spec, response)
+		}
 	}
+}
+
+func (r *resourceWs) validateResourceRequest(request *restful.Request, resourceReq *ResourceReqResp) error {
+	name := request.PathParameter("name")
+	meshName := request.PathParameter("mesh")
+	if name != resourceReq.Name {
+		return errors.New("Name from the URL has to be the same as in body")
+	}
+	if string(r.ResourceFactory().GetType()) != resourceReq.Type {
+		return errors.New("Type from the URL has to be the same as in body")
+	}
+	if meshName != resourceReq.Mesh {
+		return errors.New("Mesh from the URL has to be the same as in body")
+	}
+	return nil
 }
 
 func (r *resourceWs) createResource(ctx context.Context, name string, spec model.ResourceSpec, response *restful.Response) {
