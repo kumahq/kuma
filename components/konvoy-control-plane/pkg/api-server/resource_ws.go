@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/emicklei/go-restful"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/pkg/errors"
-	"sigs.k8s.io/controller-runtime/pkg/log" // todo(jakubdyszkiewicz) replace with core
 )
 
 const namespace = "default"
@@ -127,7 +127,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
 			writeError(response, 404, "")
 		} else {
-			log.Log.Error(err, "Could not retrieve a resource", "name", name)
+			core.Log.Error(err, "Could not retrieve a resource", "name", name)
 			writeError(response, 500, "Could not retrieve a resource")
 		}
 	} else {
@@ -139,7 +139,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 		}
 		err = response.WriteAsJson(res)
 		if err != nil {
-			log.Log.Error(err, "Could not write the response")
+			core.Log.Error(err, "Could not write the response")
 		}
 	}
 }
@@ -154,7 +154,7 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 	list := r.ResourceListFactory()
 	// todo(jakubdyszkiewicz) find by mesh?
 	if err := r.resourceStore.List(request.Request.Context(), list, store.ListByNamespace(namespace)); err != nil {
-		log.Log.Error(err, "Could not retrieve resources")
+		core.Log.Error(err, "Could not retrieve resources")
 		writeError(response, 500, "Could not list a resource")
 	} else {
 		var items []*ResourceReqResp
@@ -168,7 +168,7 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 		}
 		specList := resourceSpecList{Items: items}
 		if err := response.WriteAsJson(specList); err != nil {
-			log.Log.Error(err, "Could not write as JSON", "type", string(list.GetItemType()))
+			core.Log.Error(err, "Could not write as JSON", "type", string(list.GetItemType()))
 			writeError(response, 500, "Could not list a resource")
 		}
 	}
@@ -183,7 +183,7 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 
 	err := request.ReadEntity(&resourceRes)
 	if err != nil {
-		log.Log.Error(err, "Could not read an entity")
+		core.Log.Error(err, "Could not read an entity")
 		writeError(response, 400, "Could not process the resource")
 	}
 
@@ -196,7 +196,7 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 			if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
 				r.createResource(request.Request.Context(), name, resourceRes.Spec, response)
 			} else {
-				log.Log.Error(err, "Could get a resource from the store", "namespace", namespace, "name", name, "type", string(resource.GetType()))
+				core.Log.Error(err, "Could get a resource from the store", "namespace", namespace, "name", name, "type", string(resource.GetType()))
 				writeError(response, 500, "Could not create a resource")
 			}
 		} else {
@@ -224,7 +224,7 @@ func (r *resourceWs) createResource(ctx context.Context, name string, spec model
 	res := r.ResourceFactory()
 	_ = res.SetSpec(spec)
 	if err := r.resourceStore.Create(ctx, res, store.CreateByName(namespace, name)); err != nil {
-		log.Log.Error(err, "Could not create a resource")
+		core.Log.Error(err, "Could not create a resource")
 		writeError(response, 500, "Could not create a resource")
 	} else {
 		response.WriteHeader(201)
@@ -234,7 +234,7 @@ func (r *resourceWs) createResource(ctx context.Context, name string, spec model
 func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, spec model.ResourceSpec, response *restful.Response) {
 	_ = res.SetSpec(spec)
 	if err := r.resourceStore.Update(ctx, res); err != nil {
-		log.Log.Error(err, "Could not update a resource")
+		core.Log.Error(err, "Could not update a resource")
 		writeError(response, 500, "Could not update a resource")
 	} else {
 		response.WriteHeader(200)
@@ -249,12 +249,12 @@ func (r *resourceWs) deleteResource(request *restful.Request, response *restful.
 	err := r.resourceStore.Delete(request.Request.Context(), resource, store.DeleteByName(namespace, name))
 	if err != nil {
 		writeError(response, 500, "Could not delete a resource")
-		log.Log.Error(err, "Could not delete a resource", "namespace", namespace, "name", name, "type", string(resource.GetType()))
+		core.Log.Error(err, "Could not delete a resource", "namespace", namespace, "name", name, "type", string(resource.GetType()))
 	}
 }
 
 func writeError(response *restful.Response, httpStatus int, msg string) {
 	if err := response.WriteErrorString(httpStatus, msg); err != nil {
-		log.Log.Error(err, "Cloud not write the response")
+		core.Log.Error(err, "Cloud not write the response")
 	}
 }
