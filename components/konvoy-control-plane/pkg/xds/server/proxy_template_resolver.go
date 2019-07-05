@@ -4,16 +4,16 @@ import (
 	"context"
 
 	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	konvoy_mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
-	templateResolverLog = ctrl.Log.WithName("proxy-template-resolver")
+	templateResolverLog = core.Log.WithName("proxy-template-resolver")
 )
 
 type proxyTemplateResolver interface {

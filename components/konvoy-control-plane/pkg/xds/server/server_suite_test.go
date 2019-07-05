@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	util_test "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/test"
 )
 
 func TestServer(t *testing.T) {
@@ -14,5 +14,5 @@ func TestServer(t *testing.T) {
 
 	RunSpecsWithDefaultAndCustomReporters(t,
 		"Server Suite",
-		[]Reporter{envtest.NewlineReporter{}})
+		[]Reporter{util_test.NewlineReporter{}})
 }

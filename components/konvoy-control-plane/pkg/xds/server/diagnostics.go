@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 )
 
 var (
-	diagnosticsServerLog = ctrl.Log.WithName("xds-server").WithName("diagnostics")
+	diagnosticsServerLog = core.Log.WithName("xds-server").WithName("diagnostics")
 )
 
 type diagnosticsServer struct {
@@ -19,8 +19,7 @@ type diagnosticsServer struct {
 
 // Make sure that grpcServer implements all relevant interfaces
 var (
-	_ manager.Runnable               = &diagnosticsServer{}
-	_ manager.LeaderElectionRunnable = &diagnosticsServer{}
+	_ core_runtime.Component = &diagnosticsServer{}
 )
 
 func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
@@ -55,8 +54,4 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 	case err := <-errChan:
 		return err
 	}
-}
-
-func (s *diagnosticsServer) NeedLeaderElection() bool {
-	return false
 }

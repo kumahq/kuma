@@ -4,30 +4,29 @@ import (
 	"fmt"
 	"net"
 
-	"google.golang.org/grpc"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	"google.golang.org/grpc"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 )
 
 const grpcMaxConcurrentStreams = 1000000
 
 var (
-	grpcServerLog = ctrl.Log.WithName("xds-server").WithName("grpc")
+	grpcServerLog = core.Log.WithName("xds-server").WithName("grpc")
 )
 
 type grpcServer struct {
-	server xds.Server
+	server envoy_xds.Server
 	port   int
 }
 
 // Make sure that grpcServer implements all relevant interfaces
 var (
-	_ manager.Runnable               = &grpcServer{}
-	_ manager.LeaderElectionRunnable = &grpcServer{}
+	_ core_runtime.Component = &grpcServer{}
 )
 
 func (s *grpcServer) Start(stop <-chan struct{}) error {
@@ -68,8 +67,4 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	case err := <-errChan:
 		return err
 	}
-}
-
-func (s *grpcServer) NeedLeaderElection() bool {
-	return false
 }

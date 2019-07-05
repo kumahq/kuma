@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	util_test "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/test"
 )
 
 func TestGenerator(t *testing.T) {
@@ -14,5 +14,5 @@ func TestGenerator(t *testing.T) {
 
 	RunSpecsWithDefaultAndCustomReporters(t,
 		"Generator Suite",
-		[]Reporter{envtest.NewlineReporter{}})
+		[]Reporter{util_test.NewlineReporter{}})
 }
