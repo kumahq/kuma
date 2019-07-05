@@ -1,16 +1,19 @@
 package server
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	konvoy_mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	k8s_core "k8s.io/api/core/v1"
 	k8s_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("Reconcile", func() {
@@ -30,8 +33,8 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			resolver := &simpleProxyTemplateResolver{
-				Client:               client_fake.NewFakeClient(),
-				DefaultProxyTemplate: &konvoy_mesh.ProxyTemplate{},
+				ResourceStore:        memory.NewStore(),
+				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 
 			// when
@@ -57,30 +60,28 @@ var _ = Describe("Reconcile", func() {
 				},
 			}
 
-			expected := &konvoy_mesh_k8s.ProxyTemplate{
-				ObjectMeta: k8s_meta.ObjectMeta{
-					Name:      "custom-proxy-template",
-					Namespace: "example",
-				},
-				Spec: map[string]interface{}{
-					"sources": []interface{}{},
+			expected := &mesh_core.ProxyTemplateResource{
+				Spec: mesh_proto.ProxyTemplate{
+					Sources: []*mesh_proto.ProxyTemplateSource{},
 				},
 			}
 
 			// setup
-			scheme := runtime.NewScheme()
-			konvoy_mesh_k8s.AddToScheme(scheme)
+			ms := memory.NewStore()
+			err := ms.Create(context.Background(), expected, store.CreateByName("example", "custom-proxy-template"))
+			Expect(err).ToNot(HaveOccurred())
+
 			resolver := &simpleProxyTemplateResolver{
-				Client:               client_fake.NewFakeClientWithScheme(scheme, expected),
-				DefaultProxyTemplate: &konvoy_mesh.ProxyTemplate{},
+				ResourceStore:        ms,
+				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 
 			// when
 			actual := resolver.GetTemplate(proxy)
 
 			// then
-			Expect(actual).To(Equal(&konvoy_mesh.ProxyTemplate{
-				Sources: []*konvoy_mesh.ProxyTemplateSource{},
+			Expect(actual).To(Equal(&mesh_proto.ProxyTemplate{
+				Sources: []*mesh_proto.ProxyTemplateSource{},
 			}))
 		})
 
@@ -102,8 +103,8 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			resolver := &simpleProxyTemplateResolver{
-				Client:               client_fake.NewFakeClient(),
-				DefaultProxyTemplate: &konvoy_mesh.ProxyTemplate{},
+				ResourceStore:        memory.NewStore(),
+				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 
 			// when
