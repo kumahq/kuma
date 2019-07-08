@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+)
 
 type ProxyId struct {
 	Name      string
@@ -16,15 +19,14 @@ type Proxy struct {
 	Workload Workload
 }
 
-type WorkloadMeta interface {
-	GetName() string
-	GetNamespace() string
-	GetAnnotations() map[string]string
+type WorkloadMeta struct {
+	Name      string
+	Namespace string
+	Labels    map[string]string
 }
 
 type Workload struct {
 	Meta      WorkloadMeta
 	Version   string
-	Addresses []string
-	Ports     []uint32
+	Endpoints []core_discovery.WorkloadEndpoint
 }

@@ -4,56 +4,60 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/envoyproxy/go-control-plane/pkg/cache"
-
+	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 
-	k8s_core "k8s.io/api/core/v1"
-	k8s_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	discovery_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/discovery/v1alpha1"
 )
 
 var _ = Describe("Reconcile", func() {
 	Describe("reconciler", func() {
 
-		var hasher hasher
-		var logger logger
+		var xdsContext core_xds.XdsContext
+
+		BeforeEach(func() {
+			xdsContext = core_xds.NewXdsContext()
+		})
 
 		It("should generate a Snaphot per Envoy Node", func() {
 			// setup
-			store := cache.NewSnapshotCache(true, hasher, logger)
 			r := &reconciler{&templateSnapshotGenerator{
 				ProxyTemplateResolver: &simpleProxyTemplateResolver{
 					ResourceStore:        memory.NewStore(),
 					DefaultProxyTemplate: template.TransparentProxyTemplate,
 				},
-			}, &simpleSnapshotCacher{hasher, store}}
+			}, &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()}}
 
 			// given
-			pod := &k8s_core.Pod{
-				ObjectMeta: k8s_meta.ObjectMeta{
-					Name:      "app",
-					Namespace: "example",
+			info := &core_discovery.WorkloadInfo{
+				Workload: &discovery_proto.Workload{
+					Id: &discovery_proto.Id{
+						Namespace: "example",
+						Name:      "demo",
+					},
+					Meta: &discovery_proto.Meta{
+						Labels: map[string]string{
+							"app": "demo",
+						},
+					},
 				},
-				Spec: k8s_core.PodSpec{
-					Containers: []k8s_core.Container{{
-						Ports: []k8s_core.ContainerPort{{
-							ContainerPort: 8080,
-						}},
-					}},
-				},
-				Status: k8s_core.PodStatus{
-					PodIP: "192.168.0.1",
+				Desc: &core_discovery.WorkloadDescription{
+					Version: "v1",
+					Endpoints: []core_discovery.WorkloadEndpoint{
+						{Address: "192.168.0.1", Port: 8080},
+					},
 				},
 			}
 
 			// when
-			err := r.OnUpdate(pod)
+			err := r.OnWorkloadUpdate(info)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
 			Eventually(func() bool {
-				_, err := store.GetSnapshot("app.example")
+				_, err := xdsContext.Cache().GetSnapshot("demo.example")
 				return err == nil
 			}, "1s", "1ms").Should(BeTrue())
 		})

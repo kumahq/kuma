@@ -1,19 +1,14 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
-	k8s_controllers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/controllers"
-	util_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/k8s"
+	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/pkg/cache"
-	k8s_core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 )
 
 var (
@@ -27,27 +22,35 @@ type reconciler struct {
 
 // Make sure that reconciler implements all relevant interfaces
 var (
-	_ k8s_controllers.PodObserver = &reconciler{}
+	_ core_discovery.DiscoveryConsumer = &reconciler{}
 )
 
-func (r *reconciler) OnUpdate(pod *k8s_core.Pod) error {
-	proxyId := model.ProxyId{Name: pod.Name, Namespace: pod.Namespace}
+func (r *reconciler) OnWorkloadUpdate(info *core_discovery.WorkloadInfo) error {
+	proxyId := model.ProxyId{Name: info.Workload.Id.Name, Namespace: info.Workload.Id.Namespace}
 	return r.reconcile(
 		&envoy_core.Node{Id: proxyId.String()},
 		&model.Proxy{
 			Id: proxyId,
 			Workload: model.Workload{
-				Meta:      pod.GetObjectMeta(),
-				Version:   fmt.Sprintf("v%d", pod.Generation),
-				Addresses: []string{pod.Status.PodIP},
-				Ports:     util_k8s.GetTcpPorts(pod),
+				Meta: model.WorkloadMeta{
+					Namespace: info.Workload.Id.Namespace,
+					Name:      info.Workload.Id.Name,
+					Labels:    info.Workload.Meta.Labels,
+				},
+				Version:   info.Desc.Version,
+				Endpoints: info.Desc.Endpoints,
 			},
 		})
 }
-
-func (r *reconciler) OnDelete(name types.NamespacedName) error {
+func (r *reconciler) OnWorkloadDelete(name core.NamespacedName) error {
 	proxyId := model.ProxyId{Name: name.Name, Namespace: name.Namespace}
 	r.cacher.Clear(&envoy_core.Node{Id: proxyId.String()})
+	return nil
+}
+func (r *reconciler) OnServiceUpdate(_ *core_discovery.ServiceInfo) error {
+	return nil
+}
+func (r *reconciler) OnServiceDelete(_ core.NamespacedName) error {
 	return nil
 }
 
@@ -67,14 +70,14 @@ func (r *reconciler) reconcile(node *envoy_core.Node, proxy *model.Proxy) error 
 }
 
 type snapshotGenerator interface {
-	GenerateSnapshot(proxy *model.Proxy) (cache.Snapshot, error)
+	GenerateSnapshot(proxy *model.Proxy) (envoy_cache.Snapshot, error)
 }
 
 type templateSnapshotGenerator struct {
 	ProxyTemplateResolver proxyTemplateResolver
 }
 
-func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (cache.Snapshot, error) {
+func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (envoy_cache.Snapshot, error) {
 	template := s.ProxyTemplateResolver.GetTemplate(proxy)
 
 	gen := generator.TemplateProxyGenerator{ProxyTemplate: template}
@@ -82,14 +85,14 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (cache.
 	rs, err := gen.Generate(proxy)
 	if err != nil {
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
-		return cache.Snapshot{}, err
+		return envoy_cache.Snapshot{}, err
 	}
 
-	listeners := []cache.Resource{}
-	routes := []cache.Resource{}
-	clusters := []cache.Resource{}
-	endpoints := []cache.Resource{}
-	secrets := []cache.Resource{}
+	listeners := []envoy_cache.Resource{}
+	routes := []envoy_cache.Resource{}
+	clusters := []envoy_cache.Resource{}
+	endpoints := []envoy_cache.Resource{}
+	secrets := []envoy_cache.Resource{}
 
 	for _, r := range rs {
 		switch r.Resource.(type) {
@@ -108,28 +111,28 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (cache.
 	}
 
 	version := proxy.Workload.Version
-	out := cache.Snapshot{
-		Endpoints: cache.NewResources(version, endpoints),
-		Clusters:  cache.NewResources(version, clusters),
-		Routes:    cache.NewResources(version, routes),
-		Listeners: cache.NewResources(version, listeners),
-		Secrets:   cache.NewResources(version, secrets),
+	out := envoy_cache.Snapshot{
+		Endpoints: envoy_cache.NewResources(version, endpoints),
+		Clusters:  envoy_cache.NewResources(version, clusters),
+		Routes:    envoy_cache.NewResources(version, routes),
+		Listeners: envoy_cache.NewResources(version, listeners),
+		Secrets:   envoy_cache.NewResources(version, secrets),
 	}
 
 	return out, nil
 }
 
 type snapshotCacher interface {
-	Cache(*envoy_core.Node, cache.Snapshot) error
+	Cache(*envoy_core.Node, envoy_cache.Snapshot) error
 	Clear(*envoy_core.Node)
 }
 
 type simpleSnapshotCacher struct {
-	hasher cache.NodeHash
-	store  cache.SnapshotCache
+	hasher envoy_cache.NodeHash
+	store  envoy_cache.SnapshotCache
 }
 
-func (s *simpleSnapshotCacher) Cache(node *envoy_core.Node, snapshot cache.Snapshot) error {
+func (s *simpleSnapshotCacher) Cache(node *envoy_core.Node, snapshot envoy_cache.Snapshot) error {
 	return s.store.SetSnapshot(s.hasher.ID(node), snapshot)
 }
 

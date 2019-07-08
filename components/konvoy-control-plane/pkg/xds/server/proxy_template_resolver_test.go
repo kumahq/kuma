@@ -12,8 +12,6 @@ import (
 	konvoy_mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
-	k8s_core "k8s.io/api/core/v1"
-	k8s_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Reconcile", func() {
@@ -22,11 +20,9 @@ var _ = Describe("Reconcile", func() {
 			// given
 			proxy := &model.Proxy{
 				Workload: model.Workload{
-					Meta: &k8s_core.Pod{
-						ObjectMeta: k8s_meta.ObjectMeta{
-							Name:      "app",
-							Namespace: "example",
-						},
+					Meta: model.WorkloadMeta{
+						Name:      "app",
+						Namespace: "example",
 					},
 				},
 			}
@@ -48,13 +44,11 @@ var _ = Describe("Reconcile", func() {
 			// given
 			proxy := &model.Proxy{
 				Workload: model.Workload{
-					Meta: &k8s_core.Pod{
-						ObjectMeta: k8s_meta.ObjectMeta{
-							Name:      "app",
-							Namespace: "example",
-							Annotations: map[string]string{
-								konvoy_mesh_k8s.ProxyTemplateAnnotation: "custom-proxy-template",
-							},
+					Meta: model.WorkloadMeta{
+						Name:      "app",
+						Namespace: "example",
+						Labels: map[string]string{
+							konvoy_mesh_k8s.ProxyTemplateAnnotation: "custom-proxy-template",
 						},
 					},
 				},
@@ -89,13 +83,11 @@ var _ = Describe("Reconcile", func() {
 			// given
 			proxy := &model.Proxy{
 				Workload: model.Workload{
-					Meta: &k8s_core.Pod{
-						ObjectMeta: k8s_meta.ObjectMeta{
-							Name:      "app",
-							Namespace: "example",
-							Annotations: map[string]string{
-								konvoy_mesh_k8s.ProxyTemplateAnnotation: "non-existing",
-							},
+					Meta: model.WorkloadMeta{
+						Name:      "app",
+						Namespace: "example",
+						Labels: map[string]string{
+							konvoy_mesh_k8s.ProxyTemplateAnnotation: "non-existing",
 						},
 					},
 				},

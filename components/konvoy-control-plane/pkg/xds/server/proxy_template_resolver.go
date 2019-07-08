@@ -25,19 +25,19 @@ type simpleProxyTemplateResolver struct {
 }
 
 func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
-	if proxy.Workload.Meta != nil && proxy.Workload.Meta.GetAnnotations() != nil {
-		if templateName := proxy.Workload.Meta.GetAnnotations()[mesh_k8s.ProxyTemplateAnnotation]; templateName != "" {
+	if proxy.Workload.Meta.Labels != nil {
+		if templateName := proxy.Workload.Meta.Labels[mesh_k8s.ProxyTemplateAnnotation]; templateName != "" {
 			template := &mesh_core.ProxyTemplateResource{}
 			if err := r.ResourceStore.Get(context.Background(), template,
-				store.GetByName(proxy.Workload.Meta.GetNamespace(), templateName)); err != nil {
+				store.GetByName(proxy.Workload.Meta.Namespace, templateName)); err != nil {
 				templateResolverLog.Error(err, "failed to resolve ProxyTemplate",
-					"workloadNamespace", proxy.Workload.Meta.GetNamespace(),
-					"workloadName", proxy.Workload.Meta.GetName(),
+					"workloadNamespace", proxy.Workload.Meta.Namespace,
+					"workloadName", proxy.Workload.Meta.Name,
 					"templateName", templateName)
 			} else {
 				templateResolverLog.V(1).Info("resolved ProxyTemplate",
-					"workloadNamespace", proxy.Workload.Meta.GetNamespace(),
-					"workloadName", proxy.Workload.Meta.GetName(),
+					"workloadNamespace", proxy.Workload.Meta.Namespace,
+					"workloadName", proxy.Workload.Meta.Name,
 					"templateName", templateName,
 				)
 				return &template.Spec

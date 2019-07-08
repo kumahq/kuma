@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/testing_frameworks/integration/addr"
 )
 
@@ -32,9 +31,6 @@ var _ = Describe("run", func() {
 	It("should be possible to run `konvoy-cp run`", func(done Done) {
 		// given
 		cmd := newRunCmdWithOpts(runCmdOpts{
-			GetConfigOrDie: func() *rest.Config {
-				return testEnv.Config
-			},
 			SetupSignalHandler: func() <-chan struct{} {
 				return stopCh
 			},

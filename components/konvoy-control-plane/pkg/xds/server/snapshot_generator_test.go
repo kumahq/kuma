@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	util_cache "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/cache"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
@@ -78,50 +79,14 @@ var _ = Describe("Reconcile", func() {
                   version: "1"
 `,
 			}),
-			Entry("should support Nodes with IP(s) but without Port(s)", testCase{
-				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version:   "2",
-						Addresses: []string{"192.168.0.1"},
-					},
-				},
-				expected: `
-                resources:
-                - name: pass_through
-                  resource:
-                    '@type': type.googleapis.com/envoy.api.v2.Cluster
-                    connectTimeout: 5s
-                    lbPolicy: ORIGINAL_DST_LB
-                    name: pass_through
-                    type: ORIGINAL_DST
-                  version: "2"
-                - name: catch_all
-                  resource:
-                    '@type': type.googleapis.com/envoy.api.v2.Listener
-                    address:
-                      socketAddress:
-                        address: 0.0.0.0
-                        portValue: 15001
-                    filterChains:
-                    - filters:
-                      - name: envoy.tcp_proxy
-                        typedConfig:
-                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                          cluster: pass_through
-                          statPrefix: pass_through
-                    name: catch_all
-                    useOriginalDst: true
-                  version: "2"
-`,
-			}),
 			Entry("should support Nodes with 1 IP and 1 Port", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
-						Version:   "3",
-						Addresses: []string{"192.168.0.1"},
-						Ports:     []uint32{8080},
+						Version: "3",
+						Endpoints: []core_discovery.WorkloadEndpoint{
+							{Address: "192.168.0.1", Port: 8080},
+						},
 					},
 				},
 				expected: `
@@ -191,9 +156,11 @@ var _ = Describe("Reconcile", func() {
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
-						Version:   "4",
-						Addresses: []string{"192.168.0.1"},
-						Ports:     []uint32{8080, 8443},
+						Version: "4",
+						Endpoints: []core_discovery.WorkloadEndpoint{
+							{Address: "192.168.0.1", Port: 8080},
+							{Address: "192.168.0.1", Port: 8443},
+						},
 					},
 				},
 				expected: `
@@ -297,9 +264,13 @@ var _ = Describe("Reconcile", func() {
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
-						Version:   "5",
-						Addresses: []string{"192.168.0.1", "192.168.0.2"},
-						Ports:     []uint32{8080, 8443},
+						Version: "5",
+						Endpoints: []core_discovery.WorkloadEndpoint{
+							{Address: "192.168.0.1", Port: 8080},
+							{Address: "192.168.0.1", Port: 8443},
+							{Address: "192.168.0.2", Port: 8080},
+							{Address: "192.168.0.2", Port: 8443},
+						},
 					},
 				},
 				expected: `
