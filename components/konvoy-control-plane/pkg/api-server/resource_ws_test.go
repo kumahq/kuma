@@ -27,6 +27,7 @@ var _ = Describe("Resource WS", func() {
 		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{})
 		client = resourceApiClient{address: apiServer.Address()}
 		apiServer.Start()
+		waitForServer(&client)
 	})
 
 	AfterEach(func() {
@@ -215,6 +216,15 @@ var _ = Describe("Resource WS", func() {
 	})
 })
 
+func waitForServer(client *resourceApiClient) {
+	for {
+		response, err := client.listOrError()
+		if err == nil && response.StatusCode == 200 {
+			return
+		}
+	}
+}
+
 func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string) {
 	resource := sample_model.TrafficRouteResource{
 		Spec: sample_proto.TrafficRoute{
@@ -266,6 +276,10 @@ func (r *resourceApiClient) list() *http.Response {
 	response, err := http.Get(r.fullAddress())
 	Expect(err).NotTo(HaveOccurred())
 	return response
+}
+
+func (r *resourceApiClient) listOrError() (*http.Response, error) {
+	return http.Get(r.fullAddress())
 }
 
 func (r *resourceApiClient) delete(name string) *http.Response {

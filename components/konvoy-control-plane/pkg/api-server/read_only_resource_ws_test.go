@@ -21,6 +21,7 @@ var _ = Describe("Read only Resource WS", func() {
 		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{ReadOnly: true})
 		client = resourceApiClient{address: apiServer.Address()}
 		apiServer.Start()
+		waitForServer(&client)
 
 		putSampleResourceIntoStore(resourceStore, resourceName)
 	})
