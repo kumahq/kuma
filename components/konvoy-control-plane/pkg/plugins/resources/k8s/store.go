@@ -10,16 +10,27 @@ import (
 	k8s_registry "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/pkg/errors"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ store.ResourceStore = &KubernetesStore{}
 
 type KubernetesStore struct {
-	Client    client.Client
+	Client    kube_client.Client
 	Converter Converter
+}
+
+func NewStore(client kube_client.Client) (store.ResourceStore, error) {
+	return &KubernetesStore{
+		Client: client,
+		Converter: &SimpleConverter{
+			KubeFactory: &SimpleKubeFactory{
+				KubeTypes: k8s_registry.Global(),
+			},
+		},
+	}, nil
 }
 
 func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs ...store.CreateOptionsFunc) error {
@@ -31,7 +42,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	obj.GetObjectMeta().SetNamespace(opts.Namespace)
 	obj.GetObjectMeta().SetName(opts.Name)
 	if err := s.Client.Create(ctx, obj); err != nil {
-		if apierrs.IsAlreadyExists(err) {
+		if kube_apierrs.IsAlreadyExists(err) {
 			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Namespace, opts.Name)
 		}
 		return errors.Wrap(err, "failed to create k8s resource")
@@ -48,7 +59,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
 	if err := s.Client.Update(ctx, obj); err != nil {
-		if apierrs.IsConflict(err) {
+		if kube_apierrs.IsConflict(err) {
 			return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName())
 		}
 		return errors.Wrap(err, "failed to update k8s resource")
@@ -68,7 +79,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	obj.GetObjectMeta().SetNamespace(opts.Namespace)
 	obj.GetObjectMeta().SetName(opts.Name)
 	if err := s.Client.Delete(ctx, obj); err != nil {
-		if apierrs.IsNotFound(err) {
+		if kube_apierrs.IsNotFound(err) {
 			return nil
 		}
 		return errors.Wrap(err, "failed to delete k8s resource")
@@ -81,8 +92,8 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
-	if err := s.Client.Get(ctx, client.ObjectKey{Namespace: opts.Namespace, Name: opts.Name}, obj); err != nil {
-		if apierrs.IsNotFound(err) {
+	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: opts.Namespace, Name: opts.Name}, obj); err != nil {
+		if kube_apierrs.IsNotFound(err) {
 			return store.ErrorResourceNotFound(r.GetType(), opts.Namespace, opts.Name)
 		}
 		return errors.Wrap(err, "failed to get k8s resource")
@@ -98,7 +109,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
-	if err := s.Client.List(ctx, obj, client.InNamespace(opts.Namespace)); err != nil {
+	if err := s.Client.List(ctx, obj, kube_client.InNamespace(opts.Namespace)); err != nil {
 		return errors.Wrap(err, "failed to list k8s resources")
 	}
 	if err := s.Converter.ToCoreList(obj, rs); err != nil {
@@ -110,7 +121,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 
 type KubernetesMetaAdapter struct {
-	metav1.ObjectMeta
+	kube_meta.ObjectMeta
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {
