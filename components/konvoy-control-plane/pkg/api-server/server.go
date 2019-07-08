@@ -2,10 +2,10 @@ package api_server
 
 import (
 	"context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
-	"log"
 	"net/http"
 )
 
@@ -71,9 +71,9 @@ func (a *ApiServer) Start() {
 		if err != nil {
 			switch err {
 			case http.ErrServerClosed:
-				log.Print("Shutting down server")
+				core.Log.Info("Shutting down server")
 			default:
-				log.Fatalf("Could not start an HTTP Server: %v", err)
+				core.Log.Error(err, "Could not start an HTTP Server")
 			}
 		}
 	}()

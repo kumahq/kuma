@@ -46,9 +46,9 @@ type ProxyTemplateResourceList struct {
 }
 
 func (l *ProxyTemplateResourceList) GetItems() []model.Resource {
-	var res []model.Resource
-	for _, elem := range l.Items {
-		res = append(res, elem)
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
 	}
 	return res
 }

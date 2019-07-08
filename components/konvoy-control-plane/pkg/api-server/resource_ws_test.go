@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	sample_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
@@ -280,10 +281,12 @@ func (r *resourceApiClient) delete(name string) *http.Response {
 }
 
 func (r *resourceApiClient) put(name string, route *sample_proto.TrafficRoute) *http.Response {
-	resResponse := api_server.ResourceReqResp{
-		Name: name,
-		Type: string(sample_model.TrafficRouteType),
-		Mesh: "default",
+	resResponse := rest.Resource{
+		Meta: rest.ResourceMeta{
+			Name: name,
+			Type: string(sample_model.TrafficRouteType),
+			Mesh: "default",
+		},
 		Spec: route,
 	}
 	jsonBytes, err := resResponse.MarshalJSON()

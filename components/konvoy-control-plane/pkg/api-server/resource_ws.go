@@ -1,15 +1,13 @@
 package api_server
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/emicklei/go-restful"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/pkg/errors"
 )
 
@@ -26,56 +24,6 @@ type resourceWs struct {
 	resourceStore store.ResourceStore
 	readOnly      bool
 	ResourceWsDefinition
-}
-
-type ResourceReqResp struct {
-	Type string             `json:"type"`
-	Name string             `json:"name"`
-	Mesh string             `json:"mesh"`
-	Spec model.ResourceSpec `json:"-"`
-}
-
-var (
-	marshaler   = jsonpb.Marshaler{}
-	unmarshaler = jsonpb.Unmarshaler{AllowUnknownFields: true}
-)
-
-// To marshall spec we have to use package from jsonb that handle edge cases of protobuf -> json conversion
-func (r ResourceReqResp) MarshalJSON() ([]byte, error) {
-	type tmp ResourceReqResp // otherwise we've got stackoverflow
-	res := tmp(r)
-	var specJsonBytes bytes.Buffer
-	if err := marshaler.Marshal(&specJsonBytes, res.Spec); err != nil {
-		return nil, err
-	}
-	metaJsonBytes, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-	// join both jsons
-	data := make(map[string]interface{})
-	if err := json.Unmarshal(specJsonBytes.Bytes(), &data); err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(metaJsonBytes, &data); err != nil {
-		return nil, err
-	}
-	return json.Marshal(data)
-}
-
-func (r *ResourceReqResp) UnmarshalJSON(jsonBytes []byte) error {
-	if err := unmarshaler.Unmarshal(bytes.NewBuffer(jsonBytes), r.Spec); err != nil {
-		return err
-	}
-	// json.Unmarshal cannot ignore unknown fields therefore we have to unmarshall to map
-	values := map[string]string{}
-	if err := json.Unmarshal(jsonBytes, &values); err != nil {
-		return err
-	}
-	r.Name = values["name"]
-	r.Type = values["type"]
-	r.Mesh = values["mesh"]
-	return nil
 }
 
 func (r *resourceWs) NewWs() *restful.WebService {
@@ -131,10 +79,12 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 			writeError(response, 500, "Could not retrieve a resource")
 		}
 	} else {
-		res := &ResourceReqResp{
-			Type: string(resource.GetType()),
-			Name: name,
-			Mesh: meshName,
+		res := &rest.Resource{
+			Meta: rest.ResourceMeta{
+				Mesh: meshName,
+				Type: string(resource.GetType()),
+				Name: name,
+			},
 			Spec: resource.GetSpec(),
 		}
 		err = response.WriteAsJson(res)
@@ -145,7 +95,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 }
 
 type resourceSpecList struct {
-	Items []*ResourceReqResp `json:"items"`
+	Items []*rest.Resource `json:"items"`
 }
 
 func (r *resourceWs) listResources(request *restful.Request, response *restful.Response) {
@@ -157,12 +107,14 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 		core.Log.Error(err, "Could not retrieve resources")
 		writeError(response, 500, "Could not list a resource")
 	} else {
-		var items []*ResourceReqResp
+		var items []*rest.Resource
 		for _, item := range list.GetItems() {
-			items = append(items, &ResourceReqResp{
-				Type: string(item.GetType()),
-				Name: item.GetMeta().GetName(),
-				Mesh: meshName,
+			items = append(items, &rest.Resource{
+				Meta: rest.ResourceMeta{
+					Mesh: meshName,
+					Type: string(item.GetType()),
+					Name: item.GetMeta().GetName(),
+				},
 				Spec: item.GetSpec(),
 			})
 		}
@@ -177,7 +129,7 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 
-	resourceRes := ResourceReqResp{
+	resourceRes := rest.Resource{
 		Spec: r.ResourceFactory().GetSpec(),
 	}
 
@@ -205,16 +157,16 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 	}
 }
 
-func (r *resourceWs) validateResourceRequest(request *restful.Request, resourceReq *ResourceReqResp) error {
+func (r *resourceWs) validateResourceRequest(request *restful.Request, resource *rest.Resource) error {
 	name := request.PathParameter("name")
 	meshName := request.PathParameter("mesh")
-	if name != resourceReq.Name {
+	if name != resource.Meta.Name {
 		return errors.New("Name from the URL has to be the same as in body")
 	}
-	if string(r.ResourceFactory().GetType()) != resourceReq.Type {
+	if string(r.ResourceFactory().GetType()) != resource.Meta.Type {
 		return errors.New("Type from the URL has to be the same as in body")
 	}
-	if meshName != resourceReq.Mesh {
+	if meshName != resource.Meta.Mesh {
 		return errors.New("Mesh from the URL has to be the same as in body")
 	}
 	return nil
