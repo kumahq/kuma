@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package konvoyctl.config.v1alpha1;
+
+option go_package = "v1alpha1";
+
+// Configuration defines configuration of `konvoyctl`.
+message Configuration {
+
+  // List of known Control Planes.
+  repeated ControlPlane control_planes = 1;
+}
+
+// ControlPlane defines a Control Plane.
+message ControlPlane {
+
+  // Name defines an alias for a Control Plane.
+  string name = 1;
+
+  // Coordinates defines coordinates of a Control Plane.
+  ControlPlaneCoordinates coordinates = 2;
+}
+
+// ControlPlaneCoordinates defines coordinates of a Control Plane.
+message ControlPlaneCoordinates {
+
+  // Kubernetes defines coordinates of a Control Plane installed on Kubernetes.
+  message Kubernetes {
+
+    // Kubeconfig defines a path to a `kubectl` config file
+    // that holds connectivity settings to a Kubernetes cluster
+    // where Control Plane is installed to.
+    string kubeconfig = 1;
+
+    // Context defines a name of a context within `kubectl` config file
+    // that holds connectivity settings to a Kubernetes cluster
+    // where Control Plane is installed to.
+    string context = 2;
+
+    // Namespace defines a namespace within a Kubernetes cluster
+    // where Control Plane is installed to.
+    string namespace = 3;
+  }
+
+  // ApiServer defines coordinates of a Control Plane installed outside of
+  // Kubernetes.
+  message ApiServer {
+
+    // Address defines address of the Control Plane API server.
+    string address = 1;
+  }
+
+  oneof type {
+
+    // Coordinates of a Control Plane installed on Kubernetes.
+    Kubernetes kubernetes = 1;
+
+    // Coordinates of a Control Plane installed outside of Kubernetes.
+    ApiServer api_server = 2;
+  }
+}

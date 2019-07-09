@@ -1,6 +1,11 @@
-.PHONY: help clean \
-		dev/tools dev/install/ginkgo dev/install/kubebuilder dev/install/kustomize dev/install/kubectl dev/install/kind dev/install/minikube \
+.PHONY: help clean clean/build clean/proto \
+		dev/tools \
+		dev/install/protoc dev/install/protoc-gen-gogofast \
+		dev/install/ginkgo \
+		dev/install/kubebuilder dev/install/kustomize \
+		dev/install/kubectl dev/install/kind dev/install/minikube \
 		start/deps \
+		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
 		fmt fmt/go fmt/proto vet check test integration build run image \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
@@ -39,6 +44,9 @@ SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "example", "metadata": {"IPS": "$(E
 
 CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 
+PROTOC_VERSION := 3.6.1
+GOGO_PROTOBUF_VERSION := v1.2.1
+
 CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.4
 CI_KIND_VERSION ?= v0.3.0
 CI_MINIKUBE_VERSION ?= v1.1.0
@@ -48,6 +56,7 @@ CI_TOOLS_IMAGE ?= circleci/golang:1.12
 CI_TOOLS_DIR ?= $(HOME)/bin
 PATH := $(CI_TOOLS_DIR):$(PATH)
 
+PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
 KUBEBUILDER_PATH := $(CI_TOOLS_DIR)/kubebuilder
 KUSTOMIZE_PATH := $(CI_TOOLS_DIR)/kustomize
@@ -56,6 +65,25 @@ MINIKUBE_PATH := $(CI_TOOLS_DIR)/minikube
 KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
 KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
 ETCD_PATH := $(CI_TOOLS_DIR)/etcd
+
+PROTO_DIR := ./pkg/config
+
+# Protobuf-specifc configuration
+PROTOC_GO := protoc \
+	--proto_path=. \
+	--gogofast_out=plugins=grpc:.
+
+PROTOC_OS=unknown
+PROTOC_ARCH=$(shell uname -m)
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S), Linux)
+	PROTOC_OS=linux
+else
+	ifeq ($(UNAME_S), Darwin)
+		PROTOC_OS=osx
+	endif
+endif
 
 # tools we expect to be pre-installed
 CLANG_FORMAT_PATH ?= clang-format
@@ -72,7 +100,27 @@ GOARCH := $(shell go env GOARCH)
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-dev/tools: dev/install/ginkgo dev/install/kubebuilder dev/install/kustomize dev/install/kubectl dev/install/kind dev/install/minikube ## Bootstrap: Install all development tools
+dev/tools: dev/install/protoc dev/install/protoc-gen-gogofast \
+           dev/install/ginkgo \
+		   dev/install/kubebuilder dev/install/kustomize \
+		   dev/install/kubectl dev/install/kind dev/install/minikube ## Bootstrap: Install all development tools
+
+dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
+	@if [ -e $(PROTOC_PATH) ]; then echo "Protoc $$( $(PROTOC_PATH) --version ) is already installed at $(PROTOC_PATH)" ; fi
+	@if [ ! -e $(PROTOC_PATH) ]; then \
+		echo "Installing Protoc $(PROTOC_VERSION) ..." \
+		&& set -x \
+		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
+		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip bin/protoc -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& cp /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/bin/protoc $(PROTOC_PATH) \
+		&& rm -rf /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
+		&& rm /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
+		&& set +x \
+		&& echo "Protoc $(PROTOC_VERSION) has been installed at $(PROTOC_PATH)" ; fi
+
+dev/install/protoc-gen-gogofast: ## Bootstrap: Install Protoc Go Plugin (protobuf Go generator)
+	go get -u github.com/gogo/protobuf/protoc-gen-gogofast@$(GOGO_PROTOBUF_VERSION)
 
 dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	# see https://github.com/onsi/ginkgo#set-me-up
@@ -162,8 +210,18 @@ start/kind:
 	@echo
 	@echo export KUBECONFIG="$$(kind get kubeconfig-path --name=konvoy)"
 
-clean: ## Dev: Clean
+clean: clean/build clean/proto ## Dev: Clean
+
+clean/build: ## Dev: Remove build/ dir
 	rm -rf "$(BUILD_DIR)"
+
+clean/proto: ## Dev: Remove auto-generated Protobuf files
+	find $(PROTO_DIR) -name '*.pb.go' -delete
+
+generate: clean/proto protoc/pkg/config/app/konvoyctl/v1alpha1 ## Dev: Run code generators
+
+protoc/pkg/config/app/konvoyctl/v1alpha1:
+	$(PROTOC_GO) pkg/config/app/konvoyctl/v1alpha1/*.proto
 
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
@@ -180,7 +238,7 @@ vet: ## Dev: Run go vet
 	@# for consistency with `fmt`
 	make vet -C pkg/plugins/resources/k8s/native
 
-check: fmt vet ## Dev: Run code checks (go fmt, go vet, ...)
+check: generate fmt vet ## Dev: Run code checks (go fmt, go vet, ...)
 	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
