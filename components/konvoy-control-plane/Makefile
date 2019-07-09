@@ -1,6 +1,6 @@
 .PHONY: help clean clean/build clean/proto \
 		dev/tools \
-		dev/install/protoc dev/install/protoc-gen-gogofast \
+		dev/install/protoc dev/install/protoc-gen-gogofast dev/install/protoc-gen-validate \
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
@@ -45,6 +45,7 @@ SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "example", "metadata": {"IPS": "$(E
 CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 
 PROTOC_VERSION := 3.6.1
+PROTOC_PGV_VERSION := v0.1.0
 GOGO_PROTOBUF_VERSION := v1.2.1
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.4
@@ -71,7 +72,10 @@ PROTO_DIR := ./pkg/config
 # Protobuf-specifc configuration
 PROTOC_GO := protoc \
 	--proto_path=. \
-	--gogofast_out=plugins=grpc:.
+	--proto_path=$(shell go env GOPATH)/pkg/mod/github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION)/protobuf \
+	--proto_path=$(shell go env GOPATH)/pkg/mod/github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
+	--gogofast_out=plugins=grpc:. \
+	--validate_out=lang=gogo:.
 
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)
@@ -100,7 +104,7 @@ GOARCH := $(shell go env GOARCH)
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-dev/tools: dev/install/protoc dev/install/protoc-gen-gogofast \
+dev/tools: dev/install/protoc dev/install/protoc-gen-gogofast dev/install/protoc-gen-validate \
            dev/install/ginkgo \
 		   dev/install/kubebuilder dev/install/kustomize \
 		   dev/install/kubectl dev/install/kind dev/install/minikube ## Bootstrap: Install all development tools
@@ -121,6 +125,9 @@ dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 
 dev/install/protoc-gen-gogofast: ## Bootstrap: Install Protoc Go Plugin (protobuf Go generator)
 	go get -u github.com/gogo/protobuf/protoc-gen-gogofast@$(GOGO_PROTOBUF_VERSION)
+
+dev/install/protoc-gen-validate: ## Bootstrap: Install Protoc Gen Validate Plugin (protobuf validation code generator)
+	go get -u github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	# see https://github.com/onsi/ginkgo#set-me-up
@@ -217,6 +224,7 @@ clean/build: ## Dev: Remove build/ dir
 
 clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIR) -name '*.pb.go' -delete
+	find $(PROTO_DIR) -name '*.pb.validate.go' -delete
 
 generate: clean/proto protoc/pkg/config/app/konvoyctl/v1alpha1 ## Dev: Run code generators
 

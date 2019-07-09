@@ -4,6 +4,8 @@ package konvoyctl.config.v1alpha1;
 
 option go_package = "v1alpha1";
 
+import "validate/validate.proto";
+
 // Configuration defines configuration of `konvoyctl`.
 message Configuration {
 
@@ -15,10 +17,11 @@ message Configuration {
 message ControlPlane {
 
   // Name defines an alias for a Control Plane.
-  string name = 1;
+  string name = 1 [ (validate.rules).string.min_len = 1 ];
 
   // Coordinates defines coordinates of a Control Plane.
-  ControlPlaneCoordinates coordinates = 2;
+  ControlPlaneCoordinates coordinates = 2
+      [ (validate.rules).message.required = true ];
 }
 
 // ControlPlaneCoordinates defines coordinates of a Control Plane.
@@ -30,16 +33,16 @@ message ControlPlaneCoordinates {
     // Kubeconfig defines a path to a `kubectl` config file
     // that holds connectivity settings to a Kubernetes cluster
     // where Control Plane is installed to.
-    string kubeconfig = 1;
+    string kubeconfig = 1 [ (validate.rules).string.min_len = 1 ];
 
     // Context defines a name of a context within `kubectl` config file
     // that holds connectivity settings to a Kubernetes cluster
     // where Control Plane is installed to.
-    string context = 2;
+    string context = 2 [ (validate.rules).string.min_len = 1 ];
 
     // Namespace defines a namespace within a Kubernetes cluster
     // where Control Plane is installed to.
-    string namespace = 3;
+    string namespace = 3 [ (validate.rules).string.min_len = 1 ];
   }
 
   // ApiServer defines coordinates of a Control Plane installed outside of
@@ -47,10 +50,11 @@ message ControlPlaneCoordinates {
   message ApiServer {
 
     // Address defines address of the Control Plane API server.
-    string address = 1;
+    string address = 1 [ (validate.rules).string.address = true ];
   }
 
   oneof type {
+    option (validate.required) = true;
 
     // Coordinates of a Control Plane installed on Kubernetes.
     Kubernetes kubernetes = 1;
