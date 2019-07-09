@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"errors"
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
@@ -28,6 +29,15 @@ func (t *ProxyTemplateResource) SetMeta(m model.ResourceMeta) {
 func (t *ProxyTemplateResource) GetSpec() model.ResourceSpec {
 	return &t.Spec
 }
+func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
+	template, ok := spec.(*mesh_proto.ProxyTemplate)
+	if !ok {
+		return errors.New("invalid type of spec")
+	} else {
+		t.Spec = *template
+		return nil
+	}
+}
 
 var _ model.ResourceList = &ProxyTemplateResourceList{}
 
@@ -35,6 +45,13 @@ type ProxyTemplateResourceList struct {
 	Items []*ProxyTemplateResource
 }
 
+func (l *ProxyTemplateResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
 func (l *ProxyTemplateResourceList) GetItemType() model.ResourceType {
 	return ProxyTemplateType
 }

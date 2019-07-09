@@ -12,6 +12,7 @@ type Resource interface {
 	GetMeta() ResourceMeta
 	SetMeta(ResourceMeta)
 	GetSpec() ResourceSpec
+	SetSpec(ResourceSpec) error
 }
 
 type ResourceType string
@@ -29,6 +30,7 @@ type ResourceSpec interface {
 
 type ResourceList interface {
 	GetItemType() ResourceType
+	GetItems() []Resource
 	NewItem() Resource
 	AddItem(Resource) error
 }

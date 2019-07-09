@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"errors"
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
@@ -28,6 +29,15 @@ func (t *MeshResource) SetMeta(m model.ResourceMeta) {
 func (t *MeshResource) GetSpec() model.ResourceSpec {
 	return &t.Spec
 }
+func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
+	mesh, ok := spec.(*mesh_proto.Mesh)
+	if !ok {
+		return errors.New("invalid type of spec")
+	} else {
+		t.Spec = *mesh
+		return nil
+	}
+}
 
 var _ model.ResourceList = &MeshResourceList{}
 
@@ -35,6 +45,13 @@ type MeshResourceList struct {
 	Items []*MeshResource
 }
 
+func (l *MeshResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
 func (l *MeshResourceList) GetItemType() model.ResourceType {
 	return MeshType
 }
