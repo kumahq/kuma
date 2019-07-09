@@ -43,7 +43,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	obj.GetObjectMeta().SetName(opts.Name)
 	if err := s.Client.Create(ctx, obj); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
-			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Namespace, opts.Name)
+			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to create k8s resource")
 	}
@@ -60,7 +60,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName())
+			return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
 		}
 		return errors.Wrap(err, "failed to update k8s resource")
 	}
@@ -94,7 +94,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	}
 	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: opts.Namespace, Name: opts.Name}, obj); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return store.ErrorResourceNotFound(r.GetType(), opts.Namespace, opts.Name)
+			return store.ErrorResourceNotFound(r.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to get k8s resource")
 	}
@@ -126,6 +126,10 @@ type KubernetesMetaAdapter struct {
 
 func (m *KubernetesMetaAdapter) GetVersion() string {
 	return m.ObjectMeta.GetResourceVersion()
+}
+
+func (m *KubernetesMetaAdapter) GetMesh() string {
+	return "" //todo(jakubdyszkiewicz) implement mesh with k8s
 }
 
 type KubeFactory interface {

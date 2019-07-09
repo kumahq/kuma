@@ -3,6 +3,7 @@ package store
 type CreateOptions struct {
 	Namespace string
 	Name      string
+	Mesh      string
 }
 
 type CreateOptionsFunc func(*CreateOptions)
@@ -19,6 +20,12 @@ func CreateByName(ns, name string) CreateOptionsFunc {
 	return func(opts *CreateOptions) {
 		opts.Namespace = ns
 		opts.Name = name
+	}
+}
+
+func CreateByMesh(mesh string) CreateOptionsFunc {
+	return func(opts *CreateOptions) {
+		opts.Mesh = mesh
 	}
 }
 
@@ -60,6 +67,7 @@ func DeleteByName(ns, name string) DeleteOptionsFunc {
 type GetOptions struct {
 	Namespace string
 	Name      string
+	Mesh      string
 }
 
 type GetOptionsFunc func(*GetOptions)
@@ -79,8 +87,15 @@ func GetByName(ns, name string) GetOptionsFunc {
 	}
 }
 
+func GetByMesh(mesh string) GetOptionsFunc {
+	return func(opts *GetOptions) {
+		opts.Mesh = mesh
+	}
+}
+
 type ListOptions struct {
 	Namespace string
+	Mesh      string
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -96,5 +111,11 @@ func NewListOptions(fs ...ListOptionsFunc) *ListOptions {
 func ListByNamespace(ns string) ListOptionsFunc {
 	return func(opts *ListOptions) {
 		opts.Namespace = ns
+	}
+}
+
+func ListByMesh(mesh string) ListOptionsFunc {
+	return func(opts *ListOptions) {
+		opts.Mesh = mesh
 	}
 }

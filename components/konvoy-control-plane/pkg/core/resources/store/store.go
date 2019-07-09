@@ -43,6 +43,12 @@ func (s *strictResourceStore) Create(ctx context.Context, r model.Resource, fs .
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Create() requires options.Name to be a non-empty value")
 	}
+	if opts.Namespace == "" {
+		return fmt.Errorf("ResourceStore.Create() requires options.Namespace to be a non-empty value")
+	}
+	if opts.Mesh == "" {
+		return fmt.Errorf("ResourceStore.Create() requires options.Mesh to be a non-empty value")
+	}
 	return s.delegate.Create(ctx, r, fs...)
 }
 func (s *strictResourceStore) Update(ctx context.Context, r model.Resource, fs ...UpdateOptionsFunc) error {
@@ -83,11 +89,24 @@ func (s *strictResourceStore) Get(ctx context.Context, r model.Resource, fs ...G
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Get() requires options.Name to be a non-empty value")
 	}
+	if opts.Namespace == "" {
+		return fmt.Errorf("ResourceStore.Get() requires options.Namespace to be a non-empty value")
+	}
+	if opts.Mesh == "" {
+		return fmt.Errorf("ResourceStore.Get() requires options.Mesh to be a non-empty value")
+	}
 	return s.delegate.Get(ctx, r, fs...)
 }
 func (s *strictResourceStore) List(ctx context.Context, rs model.ResourceList, fs ...ListOptionsFunc) error {
 	if rs == nil {
 		return fmt.Errorf("ResourceStore.List() requires a non-nil resource list")
+	}
+	opts := NewListOptions(fs...)
+	if opts.Namespace == "" {
+		return fmt.Errorf("ResourceStore.List() requires options.Namespace to be a non-empty value")
+	}
+	if opts.Mesh == "" {
+		return fmt.Errorf("ResourceStore.List() requires options.Mesh to be a non-empty value")
 	}
 	return s.delegate.List(ctx, rs, fs...)
 }
@@ -100,14 +119,14 @@ func (s *strictResourceStore) Close() error {
 	return nil
 }
 
-func ErrorResourceNotFound(rt model.ResourceType, namespace, name string) error {
-	return fmt.Errorf("Resource not found: type=%q namespace=%q name=%q", rt, namespace, name)
+func ErrorResourceNotFound(rt model.ResourceType, namespace, name, mesh string) error {
+	return fmt.Errorf("Resource not found: type=%q namespace=%q name=%q mesh=%q", rt, namespace, name, mesh)
 }
 
-func ErrorResourceAlreadyExists(rt model.ResourceType, namespace, name string) error {
-	return fmt.Errorf("Resource already exists: type=%q namespace=%q name=%q", rt, namespace, name)
+func ErrorResourceAlreadyExists(rt model.ResourceType, namespace, name, mesh string) error {
+	return fmt.Errorf("Resource already exists: type=%q namespace=%q name=%q mesh=%q", rt, namespace, name, mesh)
 }
 
-func ErrorResourceConflict(rt model.ResourceType, namespace, name string) error {
-	return fmt.Errorf("Resource conflict: type=%q namespace=%q name=%q", rt, namespace, name)
+func ErrorResourceConflict(rt model.ResourceType, namespace, name, mesh string) error {
+	return fmt.Errorf("Resource conflict: type=%q namespace=%q name=%q mesh=%q", rt, namespace, name, mesh)
 }

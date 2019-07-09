@@ -15,15 +15,19 @@ var _ = Describe("Read only Resource WS", func() {
 	var client resourceApiClient
 
 	const resourceName = "tr-1"
+	const mesh = "default-mesh"
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
 		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{ReadOnly: true})
-		client = resourceApiClient{address: apiServer.Address()}
+		client = resourceApiClient{
+			address: apiServer.Address(),
+			mesh:    mesh,
+		}
 		apiServer.Start()
 		waitForServer(&client)
 
-		putSampleResourceIntoStore(resourceStore, resourceName)
+		putSampleResourceIntoStore(resourceStore, resourceName, mesh)
 	})
 
 	AfterEach(func() {

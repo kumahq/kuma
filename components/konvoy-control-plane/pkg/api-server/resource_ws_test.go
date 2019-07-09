@@ -22,10 +22,16 @@ var _ = Describe("Resource WS", func() {
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
 
+	const namespace = "default"
+	const mesh = "default"
+
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
 		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{})
-		client = resourceApiClient{address: apiServer.Address()}
+		client = resourceApiClient{
+			address: apiServer.Address(),
+			mesh:    mesh,
+		}
 		apiServer.Start()
 		waitForServer(&client)
 	})
@@ -35,12 +41,10 @@ var _ = Describe("Resource WS", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	const namespace = "default"
-
 	Describe("On GET", func() {
 		It("should return an existing resource", func() {
 			// given
-			putSampleResourceIntoStore(resourceStore, "tr-1")
+			putSampleResourceIntoStore(resourceStore, "tr-1", mesh)
 
 			// when
 			response := client.get("tr-1")
@@ -69,8 +73,8 @@ var _ = Describe("Resource WS", func() {
 
 		It("should list resources", func() {
 			// given
-			putSampleResourceIntoStore(resourceStore, "tr-1")
-			putSampleResourceIntoStore(resourceStore, "tr-2")
+			putSampleResourceIntoStore(resourceStore, "tr-1", mesh)
+			putSampleResourceIntoStore(resourceStore, "tr-2", mesh)
 
 			// when
 			response := client.list()
@@ -117,7 +121,7 @@ var _ = Describe("Resource WS", func() {
 		It("should update a resource when one already exist", func() {
 			// given
 			name := "tr-1"
-			putSampleResourceIntoStore(resourceStore, name)
+			putSampleResourceIntoStore(resourceStore, name, mesh)
 
 			// when
 			route := sample_proto.TrafficRoute{
@@ -128,7 +132,7 @@ var _ = Describe("Resource WS", func() {
 
 			// then
 			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByName(namespace, name))
+			err := resourceStore.Get(context.Background(), &resource, store.GetByName(namespace, name), store.GetByMesh(mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Path).To(Equal("/update-sample-path"))
 		})
@@ -192,7 +196,7 @@ var _ = Describe("Resource WS", func() {
 		It("should delete existing resource", func() {
 			// given
 			name := "tr-1"
-			putSampleResourceIntoStore(resourceStore, name)
+			putSampleResourceIntoStore(resourceStore, name, mesh)
 
 			// when
 			response := client.delete(name)
@@ -202,8 +206,8 @@ var _ = Describe("Resource WS", func() {
 
 			// and
 			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByName(namespace, name))
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), namespace, name)))
+			err := resourceStore.Get(context.Background(), &resource, store.GetByName(namespace, name), store.GetByMesh(mesh))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
 		})
 
 		It("should delete non-existing resource", func() {
@@ -225,13 +229,13 @@ func waitForServer(client *resourceApiClient) {
 	}
 }
 
-func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string) {
+func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string) {
 	resource := sample_model.TrafficRouteResource{
 		Spec: sample_proto.TrafficRoute{
 			Path: "/sample-path",
 		},
 	}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByName("default", name))
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByName("default", name), store.CreateByMesh(mesh))
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -260,10 +264,11 @@ func getFreePort() (int, error) {
 
 type resourceApiClient struct {
 	address string
+	mesh    string
 }
 
 func (r *resourceApiClient) fullAddress() string {
-	return "http://" + r.address + "/meshes/default/traffic-routes"
+	return "http://" + r.address + "/meshes/" + r.mesh + "/traffic-routes"
 }
 
 func (r *resourceApiClient) get(name string) *http.Response {

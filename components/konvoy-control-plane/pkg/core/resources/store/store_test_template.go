@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 	sample_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/apis/sample"
 	. "github.com/onsi/ginkgo"
@@ -13,6 +12,7 @@ func ExecuteStoreTests(
 	createStore func() ResourceStore,
 ) {
 	const namespace = "default"
+	const mesh = "default-mesh"
 	var s ClosableResourceStore
 
 	BeforeEach(func() {
@@ -30,7 +30,7 @@ func ExecuteStoreTests(
 				Path: "demo",
 			},
 		}
-		err := s.Create(context.Background(), &res, CreateByName(namespace, name))
+		err := s.Create(context.Background(), &res, CreateByName(namespace, name), CreateByMesh(mesh))
 		Expect(err).ToNot(HaveOccurred())
 		return &res
 	}
@@ -45,7 +45,7 @@ func ExecuteStoreTests(
 
 			// when retrieve created object
 			resource := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &resource, GetByName(namespace, name))
+			err := s.Get(context.Background(), &resource, GetByName(namespace, name), GetByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -53,6 +53,7 @@ func ExecuteStoreTests(
 			// and it has same data
 			Expect(resource.Meta.GetName()).To(Equal(name))
 			Expect(resource.Meta.GetNamespace()).To(Equal(namespace))
+			Expect(resource.Meta.GetMesh()).To(Equal(mesh))
 			Expect(resource.Meta.GetVersion()).ToNot(BeEmpty())
 			Expect(resource.Spec).To(Equal(created.Spec))
 		})
@@ -64,10 +65,10 @@ func ExecuteStoreTests(
 
 			// when try to create another one with same name
 			resource.SetMeta(nil)
-			err := s.Create(context.Background(), resource, CreateByName(namespace, name))
+			err := s.Create(context.Background(), resource, CreateByName(namespace, name), CreateByMesh(mesh))
 
 			// then
-			Expect(err).To(MatchError(fmt.Sprintf(`Resource already exists: type="TrafficRoute" namespace="%s" name="%s"`, namespace, name)))
+			Expect(err).To(MatchError(ErrorResourceAlreadyExists(resource.GetType(), namespace, name, mesh)))
 		})
 	})
 
@@ -91,7 +92,7 @@ func ExecuteStoreTests(
 			err = s.Update(context.Background(), resource)
 
 			// then
-			Expect(err).To(MatchError(fmt.Sprintf(`Resource not found: type="TrafficRoute" namespace="%s" name="%s"`, namespace, name)))
+			Expect(err).To(MatchError(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
 		})
 
 		It("should update an existing resource", func() {
@@ -108,7 +109,7 @@ func ExecuteStoreTests(
 
 			// when retrieve the resource
 			res := sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &res, GetByName(namespace, name))
+			err = s.Get(context.Background(), &res, GetByName(namespace, name), GetByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -145,23 +146,38 @@ func ExecuteStoreTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// when query for deleted resource
-			err = s.Get(context.Background(), &resource, GetByName(namespace, name))
+			err = s.Get(context.Background(), &resource, GetByName(namespace, name), GetByMesh(mesh))
 
 			// then resource cannot be found
-			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, name)))
+			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
 		})
 	})
 
 	Describe("Get()", func() {
 		It("should return an error if resource is not found", func() {
 			// given
+			name := "non-existing-resource"
 			resource := sample_model.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), &resource, GetByName(namespace, "non-existing-resource"))
+			err := s.Get(context.Background(), &resource, GetByName(namespace, name), GetByMesh(mesh))
 
 			// then
-			Expect(err).To(MatchError(fmt.Sprintf(`Resource not found: type="TrafficRoute" namespace="%s" name="non-existing-resource"`, namespace)))
+			Expect(err).To(MatchError(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
+		})
+
+		It("should return an error if resource is not found in given mesh", func() {
+			// given a resources in mesh "mesh"
+			name := "existing-resource"
+			mesh := "different-mesh"
+			createResource(name)
+
+			// when
+			resource := sample_model.TrafficRouteResource{}
+			err := s.Get(context.Background(), &resource, GetByName(namespace, name), GetByMesh(mesh))
+
+			// then
+			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
 		})
 
 		It("should return an existing resource", func() {
@@ -171,7 +187,7 @@ func ExecuteStoreTests(
 
 			// when
 			res := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &res, GetByName(namespace, name))
+			err := s.Get(context.Background(), &res, GetByName(namespace, name), GetByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -190,7 +206,7 @@ func ExecuteStoreTests(
 			list := sample_model.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), &list, ListByNamespace("non-existent-namespace"))
+			err := s.List(context.Background(), &list, ListByNamespace("non-existent-namespace"), ListByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -206,7 +222,7 @@ func ExecuteStoreTests(
 			list := sample_model.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), &list, ListByNamespace(namespace))
+			err := s.List(context.Background(), &list, ListByNamespace(namespace), ListByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -216,9 +232,27 @@ func ExecuteStoreTests(
 			names := []string{list.Items[0].Meta.GetName(), list.Items[1].Meta.GetName()}
 			Expect(names).To(ConsistOf("res-1", "res-2"))
 			Expect(list.Items[0].Meta.GetNamespace()).To(Equal(namespace))
+			Expect(list.Items[0].Meta.GetMesh()).To(Equal(mesh))
 			Expect(list.Items[0].Spec.Path).To(Equal("demo"))
 			Expect(list.Items[1].Meta.GetNamespace()).To(Equal(namespace))
+			Expect(list.Items[1].Meta.GetMesh()).To(Equal(mesh))
 			Expect(list.Items[1].Spec.Path).To(Equal("demo"))
+		})
+
+		It("should not return a list of resources in different mesh", func() {
+			// given two resources
+			createResource("res-1")
+			createResource("res-2")
+
+			list := sample_model.TrafficRouteResourceList{}
+
+			// when
+			err := s.List(context.Background(), &list, ListByNamespace(namespace), ListByMesh("different-mesh"))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(list.Items).To(HaveLen(0))
 		})
 	})
 }

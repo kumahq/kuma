@@ -68,11 +68,10 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 	name := request.PathParameter("name")
 	meshName := request.PathParameter("mesh")
 
-	// todo(jakubdyszkiewicz) find by mesh?
 	resource := r.ResourceFactory()
-	err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name))
+	err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name), store.GetByMesh(meshName))
 	if err != nil {
-		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
+		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name, meshName).Error() {
 			writeError(response, 404, "")
 		} else {
 			core.Log.Error(err, "Could not retrieve a resource", "name", name)
@@ -102,8 +101,7 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 	meshName := request.PathParameter("mesh")
 
 	list := r.ResourceListFactory()
-	// todo(jakubdyszkiewicz) find by mesh?
-	if err := r.resourceStore.List(request.Request.Context(), list, store.ListByNamespace(namespace)); err != nil {
+	if err := r.resourceStore.List(request.Request.Context(), list, store.ListByNamespace(namespace), store.ListByMesh(meshName)); err != nil {
 		core.Log.Error(err, "Could not retrieve resources")
 		writeError(response, 500, "Could not list a resource")
 	} else {
@@ -128,6 +126,7 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 
 func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
+	meshName := request.PathParameter("mesh")
 
 	resourceRes := rest.Resource{
 		Spec: r.ResourceFactory().GetSpec(),
@@ -143,10 +142,9 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 		writeError(response, 400, err.Error())
 	} else {
 		resource := r.ResourceFactory()
-		// todo(jakubdyszkiewicz) find by mesh?
-		if err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name)); err != nil {
-			if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name).Error() {
-				r.createResource(request.Request.Context(), name, resourceRes.Spec, response)
+		if err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name), store.GetByMesh(meshName)); err != nil {
+			if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name, meshName).Error() {
+				r.createResource(request.Request.Context(), name, meshName, resourceRes.Spec, response)
 			} else {
 				core.Log.Error(err, "Could get a resource from the store", "namespace", namespace, "name", name, "type", string(resource.GetType()))
 				writeError(response, 500, "Could not create a resource")
@@ -172,10 +170,10 @@ func (r *resourceWs) validateResourceRequest(request *restful.Request, resource 
 	return nil
 }
 
-func (r *resourceWs) createResource(ctx context.Context, name string, spec model.ResourceSpec, response *restful.Response) {
+func (r *resourceWs) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
 	res := r.ResourceFactory()
 	_ = res.SetSpec(spec)
-	if err := r.resourceStore.Create(ctx, res, store.CreateByName(namespace, name)); err != nil {
+	if err := r.resourceStore.Create(ctx, res, store.CreateByName(namespace, name), store.CreateByMesh(meshName)); err != nil {
 		core.Log.Error(err, "Could not create a resource")
 		writeError(response, 500, "Could not create a resource")
 	} else {
@@ -197,7 +195,6 @@ func (r *resourceWs) deleteResource(request *restful.Request, response *restful.
 	name := request.PathParameter("name")
 
 	resource := r.ResourceFactory()
-	// todo(jakubdyszkiewicz) delete by mesh?
 	err := r.resourceStore.Delete(request.Request.Context(), resource, store.DeleteByName(namespace, name))
 	if err != nil {
 		writeError(response, 500, "Could not delete a resource")
