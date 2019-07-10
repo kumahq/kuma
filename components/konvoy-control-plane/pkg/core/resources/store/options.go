@@ -16,15 +16,10 @@ func NewCreateOptions(fs ...CreateOptionsFunc) *CreateOptions {
 	return opts
 }
 
-func CreateByName(ns, name string) CreateOptionsFunc {
+func CreateByKey(ns, name, mesh string) CreateOptionsFunc {
 	return func(opts *CreateOptions) {
 		opts.Namespace = ns
 		opts.Name = name
-	}
-}
-
-func CreateByMesh(mesh string) CreateOptionsFunc {
-	return func(opts *CreateOptions) {
 		opts.Mesh = mesh
 	}
 }
@@ -45,6 +40,7 @@ func NewUpdateOptions(fs ...UpdateOptionsFunc) *UpdateOptions {
 type DeleteOptions struct {
 	Namespace string
 	Name      string
+	Mesh      string
 }
 
 type DeleteOptionsFunc func(*DeleteOptions)
@@ -64,6 +60,12 @@ func DeleteByName(ns, name string) DeleteOptionsFunc {
 	}
 }
 
+func DeleteByMesh(mesh string) DeleteOptionsFunc {
+	return func(opts *DeleteOptions) {
+		opts.Mesh = mesh
+	}
+}
+
 type GetOptions struct {
 	Namespace string
 	Name      string
@@ -80,16 +82,19 @@ func NewGetOptions(fs ...GetOptionsFunc) *GetOptions {
 	return opts
 }
 
+func GetByKey(ns, name, mesh string) GetOptionsFunc {
+	return func(opts *GetOptions) {
+		opts.Namespace = ns
+		opts.Name = name
+		opts.Mesh = mesh
+	}
+}
+
+// todo(jakubdyszkiewicz) delete eventually once k8s store tests are not ignored
 func GetByName(ns, name string) GetOptionsFunc {
 	return func(opts *GetOptions) {
 		opts.Namespace = ns
 		opts.Name = name
-	}
-}
-
-func GetByMesh(mesh string) GetOptionsFunc {
-	return func(opts *GetOptions) {
-		opts.Mesh = mesh
 	}
 }
 

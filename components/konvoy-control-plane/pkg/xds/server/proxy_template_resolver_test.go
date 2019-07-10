@@ -62,7 +62,7 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			ms := memory.NewStore()
-			err := ms.Create(context.Background(), expected, store.CreateByName("example", "custom-proxy-template"))
+			err := ms.Create(context.Background(), expected, store.CreateByKey("example", "custom-proxy-template", "example"))
 			Expect(err).ToNot(HaveOccurred())
 
 			resolver := &simpleProxyTemplateResolver{

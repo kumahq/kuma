@@ -135,7 +135,13 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 	opts := store.NewDeleteOptions(fs...)
 
 	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
-	_, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType())
+	var statementArgs []interface{}
+	statementArgs = append(statementArgs, opts.Name, opts.Namespace, resource.GetType())
+	if opts.Mesh != "" {
+		statement += " AND mesh=$4"
+		statementArgs = append(statementArgs, opts.Name)
+	}
+	_, err := r.db.Exec(statement, statementArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -177,8 +183,18 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 func (r *postgresResourceStore) List(_ context.Context, resources model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, spec, version FROM resources WHERE namespace=$1 AND mesh=$2 AND type=$3;`
-	rows, err := r.db.Query(statement, opts.Namespace, opts.Mesh, resources.GetItemType())
+	statement := `SELECT name, spec, version FROM resources WHERE type=?`
+	var statementArgs []interface{}
+	statementArgs = append(statementArgs, resources.GetItemType())
+	if opts.Namespace != "" {
+		statement += " AND namespace=?"
+		statementArgs = append(statementArgs, opts.Namespace)
+	}
+	if opts.Mesh != "" {
+		statement += " AND mesh=?"
+		statementArgs = append(statementArgs, opts.Mesh)
+	}
+	rows, err := r.db.Query(statement, statementArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}

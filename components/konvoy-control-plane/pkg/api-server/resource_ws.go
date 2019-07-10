@@ -69,7 +69,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 	meshName := request.PathParameter("mesh")
 
 	resource := r.ResourceFactory()
-	err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name), store.GetByMesh(meshName))
+	err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName))
 	if err != nil {
 		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name, meshName).Error() {
 			writeError(response, 404, "")
@@ -142,7 +142,7 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 		writeError(response, 400, err.Error())
 	} else {
 		resource := r.ResourceFactory()
-		if err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByName(namespace, name), store.GetByMesh(meshName)); err != nil {
+		if err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName)); err != nil {
 			if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name, meshName).Error() {
 				r.createResource(request.Request.Context(), name, meshName, resourceRes.Spec, response)
 			} else {
@@ -173,7 +173,7 @@ func (r *resourceWs) validateResourceRequest(request *restful.Request, resource 
 func (r *resourceWs) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
 	res := r.ResourceFactory()
 	_ = res.SetSpec(spec)
-	if err := r.resourceStore.Create(ctx, res, store.CreateByName(namespace, name), store.CreateByMesh(meshName)); err != nil {
+	if err := r.resourceStore.Create(ctx, res, store.CreateByKey(namespace, name, meshName)); err != nil {
 		core.Log.Error(err, "Could not create a resource")
 		writeError(response, 500, "Could not create a resource")
 	} else {

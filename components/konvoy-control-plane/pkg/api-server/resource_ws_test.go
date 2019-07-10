@@ -132,7 +132,7 @@ var _ = Describe("Resource WS", func() {
 
 			// then
 			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByName(namespace, name), store.GetByMesh(mesh))
+			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(namespace, name, mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Path).To(Equal("/update-sample-path"))
 		})
@@ -206,7 +206,7 @@ var _ = Describe("Resource WS", func() {
 
 			// and
 			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByName(namespace, name), store.GetByMesh(mesh))
+			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(namespace, name, mesh))
 			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
 		})
 
@@ -235,7 +235,7 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 			Path: "/sample-path",
 		},
 	}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByName("default", name), store.CreateByMesh(mesh))
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey("default", name, mesh))
 	Expect(err).NotTo(HaveOccurred())
 }
 

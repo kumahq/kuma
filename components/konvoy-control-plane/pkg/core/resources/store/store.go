@@ -68,6 +68,9 @@ func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs .
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Delete() requires options.Name to be a non-empty value")
 	}
+	if opts.Namespace == "" {
+		return fmt.Errorf("ResourceStore.Delete() requires options.Namespace to be a non-empty value")
+	}
 	if r.GetMeta() != nil {
 		if opts.Name != r.GetMeta().GetName() {
 			return fmt.Errorf("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetName() == options.Name")
@@ -100,13 +103,6 @@ func (s *strictResourceStore) Get(ctx context.Context, r model.Resource, fs ...G
 func (s *strictResourceStore) List(ctx context.Context, rs model.ResourceList, fs ...ListOptionsFunc) error {
 	if rs == nil {
 		return fmt.Errorf("ResourceStore.List() requires a non-nil resource list")
-	}
-	opts := NewListOptions(fs...)
-	if opts.Namespace == "" {
-		return fmt.Errorf("ResourceStore.List() requires options.Namespace to be a non-empty value")
-	}
-	if opts.Mesh == "" {
-		return fmt.Errorf("ResourceStore.List() requires options.Mesh to be a non-empty value")
 	}
 	return s.delegate.List(ctx, rs, fs...)
 }
