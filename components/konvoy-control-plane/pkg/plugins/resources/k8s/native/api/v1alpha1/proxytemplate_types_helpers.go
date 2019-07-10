@@ -15,6 +15,14 @@ func (pt *ProxyTemplate) SetObjectMeta(m *metav1.ObjectMeta) {
 	pt.ObjectMeta = *m
 }
 
+func (pt *ProxyTemplate) GetMesh() string {
+	return pt.Mesh
+}
+
+func (pt *ProxyTemplate) SetMesh(mesh string) {
+	pt.Mesh = mesh
+}
+
 func (pt *ProxyTemplate) GetSpec() map[string]interface{} {
 	return pt.Spec
 }

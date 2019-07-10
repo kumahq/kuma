@@ -18,6 +18,7 @@ require (
 	github.com/lib/pq v1.1.1
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
+	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e
 	github.com/sirupsen/logrus v1.4.2 // indirect

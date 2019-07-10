@@ -36,6 +36,7 @@ type ProxyTemplateSpec = map[string]interface{}
 type ProxyTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Mesh              string `json:"mesh,omitempty"`
 
 	Spec ProxyTemplateSpec `json:"spec,omitempty"`
 }

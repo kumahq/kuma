@@ -27,6 +27,7 @@ type TrafficRouteSpec = map[string]interface{}
 type TrafficRoute struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Mesh              string `json:"mesh"`
 
 	Spec TrafficRouteSpec `json:"spec,omitempty"`
 }

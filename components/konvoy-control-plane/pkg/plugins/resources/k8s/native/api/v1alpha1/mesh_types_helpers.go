@@ -15,6 +15,14 @@ func (pt *Mesh) SetObjectMeta(m *metav1.ObjectMeta) {
 	pt.ObjectMeta = *m
 }
 
+func (pt *Mesh) GetMesh() string {
+	return pt.Name
+}
+
+func (pt *Mesh) SetMesh(mesh string) {
+	pt.Name = mesh
+}
+
 func (pt *Mesh) GetSpec() map[string]interface{} {
 	return pt.Spec
 }
