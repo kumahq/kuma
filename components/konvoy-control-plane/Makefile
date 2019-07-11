@@ -7,6 +7,8 @@
 		start/deps \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
 		fmt fmt/go fmt/proto vet check test integration build run image \
+		build/konvoy-cp build/konvoyctl \
+		docs docs/konvoyctl \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
         run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
@@ -246,7 +248,7 @@ vet: ## Dev: Run go vet
 	@# for consistency with `fmt`
 	make vet -C pkg/plugins/resources/k8s/native
 
-check: generate fmt vet ## Dev: Run code checks (go fmt, go vet, ...)
+check: generate fmt vet docs ## Dev: Run code checks (go fmt, go vet, ...)
 	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
@@ -260,8 +262,13 @@ integration: ## Dev: Run integration tests
 	test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
-build: ## Dev: Build Control Plane binary
+build: build/konvoy-cp build/konvoyctl ## Dev: Build all binaries
+
+build/konvoy-cp: ## Dev: Build `Control Plane` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
+
+build/konvoyctl: ## Dev: Build `konvoyctl` binary
+	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoyctl/konvoyctl ./app/konvoyctl
 
 run: fmt vet ## Dev: Run Control Plane locally
 	make crd/upgrade -C pkg/plugins/resources/k8s/native
@@ -281,6 +288,11 @@ config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 
 image: ## Dev: Build Control Plane Docker image
 	docker build -t $(CP_DOCKER_IMAGE) .
+
+docs: docs/konvoyctl ## Dev: Generate all docs
+
+docs/konvoyctl: build/konvoyctl ## Dev: Generate `konvoyctl` docs
+	tools/docs/konvoyctl/gen_help.sh ${BUILD_ARTIFACTS_DIR}/konvoyctl/konvoyctl >docs/cmd/konvoyctl/HELP.md
 
 print/kubebuilder/test_assets: ## Dev: Print Kubebuilder Environment variables
 	@echo export TEST_ASSET_KUBE_APISERVER=$(TEST_ASSET_KUBE_APISERVER)
