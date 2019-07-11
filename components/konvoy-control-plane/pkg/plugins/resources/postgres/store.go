@@ -134,14 +134,8 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
-	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
-	var statementArgs []interface{}
-	statementArgs = append(statementArgs, opts.Name, opts.Namespace, resource.GetType())
-	if opts.Mesh != "" {
-		statement += " AND mesh=$4"
-		statementArgs = append(statementArgs, opts.Name)
-	}
-	_, err := r.db.Exec(statement, statementArgs...)
+	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3 AND mesh=$4`
+	_, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), opts.Mesh)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -183,15 +177,18 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 func (r *postgresResourceStore) List(_ context.Context, resources model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, spec, version FROM resources WHERE type=?`
+	statement := `SELECT name, namespace, mesh, spec, version FROM resources WHERE type=$1`
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
+	argsIndex := 1
 	if opts.Namespace != "" {
-		statement += " AND namespace=?"
+		argsIndex++
+		statement += fmt.Sprintf(" AND namespace=$%d", argsIndex)
 		statementArgs = append(statementArgs, opts.Namespace)
 	}
 	if opts.Mesh != "" {
-		statement += " AND mesh=?"
+		argsIndex++
+		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
 		statementArgs = append(statementArgs, opts.Mesh)
 	}
 	rows, err := r.db.Query(statement, statementArgs...)
@@ -200,7 +197,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	}
 	defer rows.Close()
 	for rows.Next() {
-		item, err := rowToItem(resources, opts, rows)
+		item, err := rowToItem(resources, rows)
 		if err != nil {
 			return err
 		}
@@ -212,10 +209,10 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	return nil
 }
 
-func rowToItem(resources model.ResourceList, opts *store.ListOptions, rows *sql.Rows) (model.Resource, error) {
-	var name, spec string
+func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, error) {
+	var name, namespace, mesh, spec string
 	var version int
-	err := rows.Scan(&name, &spec, &version)
+	err := rows.Scan(&name, &namespace, &mesh, &spec, &version)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve elements from query")
 	}
@@ -228,8 +225,8 @@ func rowToItem(resources model.ResourceList, opts *store.ListOptions, rows *sql.
 
 	meta := &resourceMetaObject{
 		Name:      name,
-		Namespace: opts.Namespace,
-		Mesh:      opts.Mesh,
+		Namespace: namespace,
+		Mesh:      mesh,
 		Version:   strconv.Itoa(version),
 	}
 	item.SetMeta(meta)
