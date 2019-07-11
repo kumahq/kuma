@@ -71,12 +71,18 @@ func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs .
 	if opts.Namespace == "" {
 		return fmt.Errorf("ResourceStore.Delete() requires options.Namespace to be a non-empty value")
 	}
+	if opts.Mesh == "" {
+		return fmt.Errorf("ResourceStore.Delete() requires options.Mesh to be a non-empty value")
+	}
 	if r.GetMeta() != nil {
 		if opts.Name != r.GetMeta().GetName() {
 			return fmt.Errorf("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetName() == options.Name")
 		}
 		if opts.Namespace != r.GetMeta().GetNamespace() {
 			return fmt.Errorf("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetNamespace() == options.Namespace")
+		}
+		if opts.Mesh != r.GetMeta().GetMesh() {
+			return fmt.Errorf("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetMesh() == options.Mesh")
 		}
 	}
 	return s.delegate.Delete(ctx, r, fs...)

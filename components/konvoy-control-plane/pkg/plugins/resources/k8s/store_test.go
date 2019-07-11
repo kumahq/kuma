@@ -306,7 +306,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			backend.AssertNotExists(&sample_k8s.TrafficRoute{}, ns, name)
 
 			// when
-			err := s.Delete(context.Background(), &sample_core.TrafficRouteResource{}, store.DeleteByName(ns, name))
+			err := s.Delete(context.Background(), &sample_core.TrafficRouteResource{}, store.DeleteByKey(ns, name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -324,7 +324,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), &sample_core.TrafficRouteResource{}, store.DeleteByName(ns, name))
+			err := s.Delete(context.Background(), &sample_core.TrafficRouteResource{}, store.DeleteByKey(ns, name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

@@ -82,7 +82,7 @@ func ExecuteStoreTests(
 			err := s.Delete(
 				context.Background(),
 				resource,
-				DeleteByName(resource.GetMeta().GetNamespace(), resource.Meta.GetName()),
+				DeleteByKey(resource.GetMeta().GetNamespace(), resource.Meta.GetName(), mesh),
 			)
 
 			// then
@@ -127,7 +127,7 @@ func ExecuteStoreTests(
 			resource := sample_model.TrafficRouteResource{}
 
 			// when
-			err := s.Delete(context.TODO(), &resource, DeleteByName(namespace, "non-existent-name"))
+			err := s.Delete(context.TODO(), &resource, DeleteByKey(namespace, "non-existent-name", mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -139,7 +139,8 @@ func ExecuteStoreTests(
 			resource := createResource(name)
 
 			// when
-			err := s.Delete(context.TODO(), resource, DeleteByName(namespace, name), DeleteByMesh("different-mesh"))
+			resource.SetMeta(nil) // otherwise the validation from strict client fires that mesh is different
+			err := s.Delete(context.TODO(), resource, DeleteByKey(namespace, name, "different-mesh"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -159,7 +160,7 @@ func ExecuteStoreTests(
 
 			// when
 			resource := sample_model.TrafficRouteResource{}
-			err := s.Delete(context.TODO(), &resource, DeleteByName(namespace, name))
+			err := s.Delete(context.TODO(), &resource, DeleteByKey(namespace, name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

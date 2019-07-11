@@ -193,9 +193,10 @@ func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, spe
 
 func (r *resourceWs) deleteResource(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
+	meshName := request.PathParameter("mesh")
 
 	resource := r.ResourceFactory()
-	err := r.resourceStore.Delete(request.Request.Context(), resource, store.DeleteByName(namespace, name))
+	err := r.resourceStore.Delete(request.Request.Context(), resource, store.DeleteByKey(namespace, name, meshName))
 	if err != nil {
 		writeError(response, 500, "Could not delete a resource")
 		core.Log.Error(err, "Could not delete a resource", "namespace", namespace, "name", name, "type", string(resource.GetType()))

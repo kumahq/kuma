@@ -173,7 +173,7 @@ func (c *memoryStore) findRecord(
 		if rec.ResourceType == resourceType &&
 			rec.Namespace == namespace &&
 			rec.Name == name &&
-			(mesh == "" || rec.Mesh == mesh) {
+			rec.Mesh == mesh {
 			return idx, rec
 		}
 	}

@@ -53,15 +53,10 @@ func NewDeleteOptions(fs ...DeleteOptionsFunc) *DeleteOptions {
 	return opts
 }
 
-func DeleteByName(ns, name string) DeleteOptionsFunc {
+func DeleteByKey(ns, name, mesh string) DeleteOptionsFunc {
 	return func(opts *DeleteOptions) {
 		opts.Namespace = ns
 		opts.Name = name
-	}
-}
-
-func DeleteByMesh(mesh string) DeleteOptionsFunc {
-	return func(opts *DeleteOptions) {
 		opts.Mesh = mesh
 	}
 }
