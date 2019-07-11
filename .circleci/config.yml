@@ -28,6 +28,9 @@ jobs:
     steps:
     - checkout
     - run:
+        name: "Install pre-requirements"
+        command: apt update && apt install unzip
+    - run:
         name: "Install all development tools"
         command: make dev/tools -C components/konvoy-control-plane
 
@@ -39,6 +42,9 @@ jobs:
       GO111MODULE: "on"
     steps:
     - checkout
+    - run:
+        name: "Install pre-requirements"
+        command: apt update && apt install unzip
     - run:
         name: "Install Go"
         command: |
@@ -80,6 +86,21 @@ jobs:
         keys:
         - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
     - run:
+        name: "Download Go modules"
+        command: |
+          cd components/konvoy-control-plane && go mod download
+    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
+    - save_cache:
+        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
+        paths:
+          - "/go/pkg/mod"
+    - run:
+        name: "Install pre-requirements"
+        command: apt update && apt install unzip
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools -C components/konvoy-control-plane
+    - run:
         name: "Install check tools (clang-format, ...)"
         command: |
           # see https://apt.llvm.org/
@@ -102,10 +123,6 @@ jobs:
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check -C components/konvoy-control-plane
-    - save_cache:
-        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
-        paths:
-          - "/go/pkg/mod"
 
   kcp-api/check:
     <<: *go-defaults
@@ -137,15 +154,14 @@ jobs:
         keys:
         - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
     - run:
+        name: "Install pre-requirements"
+        command: apt update && apt install unzip
+    - run:
         name: "Install all development tools"
         command: make dev/tools -C components/konvoy-control-plane
     - run:
         name: "Run unit tests"
         command: make test -C components/konvoy-control-plane
-    - save_cache:
-        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
-        paths:
-          - "/go/pkg/mod"
     - store_artifacts:
         path: components/konvoy-control-plane/build/coverage
         destination: /coverage
@@ -199,10 +215,6 @@ jobs:
         keys:
         - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
     - run: make build -C components/konvoy-control-plane
-    - save_cache:
-        key: konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
-        paths:
-          - "/go/pkg/mod"
 
   kcp/image:
     <<: *remote-docker-defaults

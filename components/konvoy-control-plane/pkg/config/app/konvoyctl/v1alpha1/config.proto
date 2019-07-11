@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package konvoyctl.config.v1alpha1;
+
+option go_package = "v1alpha1";
+
+import "validate/validate.proto";
+
+// Configuration defines configuration of `konvoyctl`.
+message Configuration {
+
+  // List of known Control Planes.
+  repeated ControlPlane control_planes = 1;
+
+  // List of configured `konvoyctl` contexts.
+  repeated Context contexts = 2;
+
+  // Name of the context to use by default.
+  string current_context = 3;
+}
+
+// ControlPlane defines a Control Plane.
+message ControlPlane {
+
+  // Name defines a reference name for a given Control Plane.
+  string name = 1 [ (validate.rules).string.min_len = 1 ];
+
+  // Coordinates defines coordinates of a given Control Plane.
+  ControlPlaneCoordinates coordinates = 2
+      [ (validate.rules).message.required = true ];
+}
+
+// ControlPlaneCoordinates defines coordinates of a Control Plane.
+message ControlPlaneCoordinates {
+
+  // Kubernetes defines coordinates of a Control Plane installed on Kubernetes.
+  message Kubernetes {
+
+    // Kubeconfig defines a path to a `kubectl` config file
+    // that holds connectivity settings to a Kubernetes cluster
+    // where Control Plane is installed to.
+    string kubeconfig = 1 [ (validate.rules).string.min_len = 1 ];
+
+    // Context defines a name of a context within `kubectl` config file
+    // that holds connectivity settings to a Kubernetes cluster
+    // where Control Plane is installed to.
+    string context = 2 [ (validate.rules).string.min_len = 1 ];
+
+    // Namespace defines a namespace within a Kubernetes cluster
+    // where Control Plane is installed to.
+    string namespace = 3 [ (validate.rules).string.min_len = 1 ];
+  }
+
+  // ApiServer defines coordinates of a Control Plane installed outside of
+  // Kubernetes.
+  message ApiServer {
+
+    // Address defines address of the Control Plane API server.
+    string address = 1 [ (validate.rules).string.address = true ];
+  }
+
+  oneof type {
+    option (validate.required) = true;
+
+    // Coordinates of a Control Plane installed on Kubernetes.
+    Kubernetes kubernetes = 1;
+
+    // Coordinates of a Control Plane installed outside of Kubernetes.
+    ApiServer api_server = 2;
+  }
+}
+
+// Context defines a context in which individual `konvoyctl` commands run.
+message Context {
+
+  // Name defines a reference name for a given context.
+  string name = 1 [ (validate.rules).string.min_len = 1 ];
+
+  // ControlPlane defines a reference to a known Control Plane.
+  string control_plane = 2 [ (validate.rules).string.min_len = 1 ];
+
+  // Defaults defines default settings for a context.
+  message Defaults {
+
+    // Mesh defines a Mesh to use in requests if one is not provided explicitly.
+    string mesh = 1;
+  }
+
+  // Defaults defines default settings for a given context.
+  Defaults defaults = 3;
+}

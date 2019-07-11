@@ -9,6 +9,14 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+func FromYAML(content []byte, pb proto.Message) error {
+	json, err := yaml.YAMLToJSON(content)
+	if err != nil {
+		return err
+	}
+	return FromJSON(json, pb)
+}
+
 func ToYAML(pb proto.Message) ([]byte, error) {
 	marshaler := &jsonpb.Marshaler{}
 	json, err := marshaler.MarshalToString(pb)
