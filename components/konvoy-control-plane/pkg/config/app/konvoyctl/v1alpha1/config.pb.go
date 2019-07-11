@@ -25,10 +25,14 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 // Configuration defines configuration of `konvoyctl`.
 type Configuration struct {
 	// List of known Control Planes.
-	ControlPlanes        []*ControlPlane `protobuf:"bytes,1,rep,name=control_planes,json=controlPlanes,proto3" json:"control_planes,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	ControlPlanes []*ControlPlane `protobuf:"bytes,1,rep,name=control_planes,json=controlPlanes,proto3" json:"control_planes,omitempty"`
+	// List of configured `konvoyctl` contexts.
+	Contexts []*Context `protobuf:"bytes,2,rep,name=contexts,proto3" json:"contexts,omitempty"`
+	// Name of the context to use by default.
+	CurrentContext       string   `protobuf:"bytes,3,opt,name=current_context,json=currentContext,proto3" json:"current_context,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *Configuration) Reset()         { *m = Configuration{} }
@@ -71,11 +75,25 @@ func (m *Configuration) GetControlPlanes() []*ControlPlane {
 	return nil
 }
 
+func (m *Configuration) GetContexts() []*Context {
+	if m != nil {
+		return m.Contexts
+	}
+	return nil
+}
+
+func (m *Configuration) GetCurrentContext() string {
+	if m != nil {
+		return m.CurrentContext
+	}
+	return ""
+}
+
 // ControlPlane defines a Control Plane.
 type ControlPlane struct {
-	// Name defines an alias for a Control Plane.
+	// Name defines a reference name for a given Control Plane.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Coordinates defines coordinates of a Control Plane.
+	// Coordinates defines coordinates of a given Control Plane.
 	Coordinates          *ControlPlaneCoordinates `protobuf:"bytes,2,opt,name=coordinates,proto3" json:"coordinates,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
@@ -406,12 +424,130 @@ func (m *ControlPlaneCoordinates_ApiServer) GetAddress() string {
 	return ""
 }
 
+// Context defines a context in which individual `konvoyctl` commands run.
+type Context struct {
+	// Name defines a reference name for a given context.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// ControlPlane defines a reference to a known Control Plane.
+	ControlPlane string `protobuf:"bytes,2,opt,name=control_plane,json=controlPlane,proto3" json:"control_plane,omitempty"`
+	// Defaults defines default settings for a given context.
+	Defaults             *Context_Defaults `protobuf:"bytes,3,opt,name=defaults,proto3" json:"defaults,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *Context) Reset()         { *m = Context{} }
+func (m *Context) String() string { return proto.CompactTextString(m) }
+func (*Context) ProtoMessage()    {}
+func (*Context) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5794df17731045dd, []int{3}
+}
+func (m *Context) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Context) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Context.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Context) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Context.Merge(m, src)
+}
+func (m *Context) XXX_Size() int {
+	return m.Size()
+}
+func (m *Context) XXX_DiscardUnknown() {
+	xxx_messageInfo_Context.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Context proto.InternalMessageInfo
+
+func (m *Context) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Context) GetControlPlane() string {
+	if m != nil {
+		return m.ControlPlane
+	}
+	return ""
+}
+
+func (m *Context) GetDefaults() *Context_Defaults {
+	if m != nil {
+		return m.Defaults
+	}
+	return nil
+}
+
+// Defaults defines default settings for a context.
+type Context_Defaults struct {
+	// Mesh defines a Mesh to use in requests if one is not provided explicitly.
+	Mesh                 string   `protobuf:"bytes,1,opt,name=mesh,proto3" json:"mesh,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Context_Defaults) Reset()         { *m = Context_Defaults{} }
+func (m *Context_Defaults) String() string { return proto.CompactTextString(m) }
+func (*Context_Defaults) ProtoMessage()    {}
+func (*Context_Defaults) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5794df17731045dd, []int{3, 0}
+}
+func (m *Context_Defaults) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Context_Defaults) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Context_Defaults.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Context_Defaults) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Context_Defaults.Merge(m, src)
+}
+func (m *Context_Defaults) XXX_Size() int {
+	return m.Size()
+}
+func (m *Context_Defaults) XXX_DiscardUnknown() {
+	xxx_messageInfo_Context_Defaults.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Context_Defaults proto.InternalMessageInfo
+
+func (m *Context_Defaults) GetMesh() string {
+	if m != nil {
+		return m.Mesh
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*Configuration)(nil), "konvoyctl.config.v1alpha1.Configuration")
 	proto.RegisterType((*ControlPlane)(nil), "konvoyctl.config.v1alpha1.ControlPlane")
 	proto.RegisterType((*ControlPlaneCoordinates)(nil), "konvoyctl.config.v1alpha1.ControlPlaneCoordinates")
 	proto.RegisterType((*ControlPlaneCoordinates_Kubernetes)(nil), "konvoyctl.config.v1alpha1.ControlPlaneCoordinates.Kubernetes")
 	proto.RegisterType((*ControlPlaneCoordinates_ApiServer)(nil), "konvoyctl.config.v1alpha1.ControlPlaneCoordinates.ApiServer")
+	proto.RegisterType((*Context)(nil), "konvoyctl.config.v1alpha1.Context")
+	proto.RegisterType((*Context_Defaults)(nil), "konvoyctl.config.v1alpha1.Context.Defaults")
 }
 
 func init() {
@@ -419,33 +555,39 @@ func init() {
 }
 
 var fileDescriptor_5794df17731045dd = []byte{
-	// 411 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0x4f, 0x6e, 0xda, 0x40,
-	0x14, 0xc6, 0x19, 0x0c, 0xa5, 0x7e, 0x94, 0xaa, 0x9a, 0x45, 0x71, 0x91, 0x8a, 0x10, 0xad, 0x04,
-	0xdd, 0xd8, 0x82, 0x6e, 0xdb, 0x45, 0xcd, 0x06, 0xa9, 0x52, 0x55, 0xb9, 0xbb, 0x4a, 0x95, 0x3b,
-	0xd8, 0x53, 0x6a, 0xe1, 0xce, 0x8c, 0xc6, 0x83, 0x55, 0x0e, 0x90, 0x4d, 0x36, 0x39, 0x44, 0x36,
-	0x39, 0x42, 0x94, 0x15, 0xcb, 0x2c, 0x73, 0x84, 0x88, 0x1d, 0xb7, 0x88, 0xfc, 0x0f, 0x9c, 0x44,
-	0x48, 0x49, 0x76, 0x9e, 0xf9, 0xbe, 0xf7, 0xfb, 0xde, 0x9b, 0x67, 0x30, 0xc5, 0x62, 0x6e, 0x79,
-	0x9c, 0xfd, 0x09, 0xe6, 0x16, 0x11, 0xc2, 0x5a, 0x70, 0x16, 0xf3, 0x95, 0xa7, 0x42, 0x2b, 0x1e,
-	0x91, 0x50, 0xfc, 0x25, 0xa3, 0x5c, 0x35, 0x85, 0xe4, 0x8a, 0xe3, 0x37, 0x3b, 0x83, 0x99, 0xdf,
-	0x17, 0xbe, 0x4e, 0x3b, 0x26, 0x61, 0xe0, 0x13, 0x45, 0xad, 0xe2, 0x23, 0xab, 0xe9, 0xbb, 0xd0,
-	0x9a, 0xa4, 0xde, 0xa5, 0x24, 0x2a, 0xe0, 0x0c, 0x7f, 0x83, 0x97, 0x1e, 0x67, 0x4a, 0xf2, 0xd0,
-	0x15, 0x21, 0x61, 0x34, 0x32, 0x50, 0x4f, 0x1b, 0x36, 0xc7, 0x03, 0xf3, 0x20, 0xdd, 0x9c, 0x64,
-	0x05, 0xdf, 0x13, 0xbf, 0xd3, 0xf2, 0x4a, 0xa7, 0xa8, 0x7f, 0x82, 0xe0, 0x45, 0x59, 0xc7, 0x6f,
-	0xa1, 0xc6, 0xc8, 0x3f, 0x6a, 0xa0, 0x1e, 0x1a, 0xea, 0xb6, 0x7e, 0xb1, 0x5d, 0x6b, 0x35, 0x59,
-	0x7d, 0x85, 0x9c, 0xf4, 0x1a, 0xff, 0x86, 0xa6, 0xc7, 0xb9, 0xf4, 0x03, 0x46, 0x14, 0x8d, 0x8c,
-	0x6a, 0x0f, 0x0d, 0x9b, 0xe3, 0xf1, 0x03, 0xc3, 0x27, 0xfb, 0x4a, 0x1b, 0x12, 0x72, 0xfd, 0x18,
-	0x25, 0xe8, 0x32, 0xb2, 0x7f, 0xaa, 0x41, 0xfb, 0x40, 0x11, 0x76, 0x01, 0x16, 0xcb, 0x19, 0x95,
-	0x8c, 0xaa, 0x74, 0xf2, 0x24, 0xfc, 0xf3, 0xe3, 0xc3, 0xcd, 0xaf, 0x3b, 0xc8, 0xb4, 0xe2, 0x94,
-	0x90, 0xf8, 0x17, 0x00, 0x11, 0x81, 0x1b, 0x51, 0x19, 0x53, 0x99, 0x4f, 0xf7, 0xe9, 0x09, 0x01,
-	0x5f, 0x44, 0xf0, 0x23, 0x65, 0x4c, 0x2b, 0x8e, 0x4e, 0x8a, 0x43, 0xe7, 0x08, 0x01, 0xec, 0xb3,
-	0xf1, 0x87, 0x6c, 0x9c, 0x0c, 0x7a, 0xff, 0xc5, 0x4b, 0x22, 0x7e, 0x07, 0x8d, 0x64, 0x71, 0xf4,
-	0xbf, 0x4a, 0xbb, 0xba, 0xe5, 0x2b, 0x14, 0x3c, 0x00, 0x3d, 0x59, 0x52, 0x24, 0x88, 0x47, 0x0d,
-	0xed, 0xae, 0x6d, 0xaf, 0x75, 0x46, 0xa0, 0xef, 0x3a, 0xc4, 0xef, 0xa1, 0x41, 0x7c, 0x5f, 0xd2,
-	0x28, 0xca, 0x5b, 0xc8, 0x56, 0x23, 0xb5, 0x33, 0x84, 0x9c, 0x42, 0xb2, 0x5b, 0x50, 0x53, 0x2b,
-	0x41, 0x71, 0xfd, 0x7c, 0xbb, 0xd6, 0x90, 0xfd, 0xfa, 0x72, 0xd3, 0x45, 0x57, 0x9b, 0x2e, 0xba,
-	0xde, 0x74, 0xd1, 0xcf, 0xe7, 0xc5, 0x83, 0xcc, 0x9e, 0xa5, 0xff, 0xed, 0xc7, 0x9b, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0x4a, 0x00, 0x26, 0x61, 0x1d, 0x03, 0x00, 0x00,
+	// 504 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x41, 0x6b, 0x13, 0x41,
+	0x14, 0xee, 0x64, 0x53, 0x93, 0x7d, 0x69, 0xaa, 0xcc, 0xc1, 0xc6, 0x80, 0xa1, 0xac, 0x42, 0x22,
+	0xc2, 0x2e, 0x89, 0x57, 0x15, 0x4c, 0x04, 0x0b, 0x82, 0xc8, 0x78, 0x13, 0x24, 0x4e, 0x77, 0xa7,
+	0xed, 0x92, 0xed, 0xcc, 0x30, 0x33, 0x09, 0xed, 0x0f, 0xf0, 0xe2, 0xc5, 0x1f, 0xe1, 0xc5, 0x9f,
+	0x20, 0x9e, 0xea, 0xad, 0x47, 0x7f, 0x82, 0xe4, 0xd6, 0x7f, 0x21, 0xbb, 0x3b, 0xbb, 0x59, 0x2d,
+	0x21, 0xea, 0x6d, 0xe6, 0x7b, 0xdf, 0xf7, 0xbd, 0xf7, 0xe6, 0xbd, 0x01, 0x5f, 0xce, 0x8e, 0x83,
+	0x50, 0xf0, 0xa3, 0xf8, 0x38, 0xa0, 0x52, 0x06, 0x33, 0xc1, 0x17, 0xe2, 0x3c, 0x34, 0x49, 0xb0,
+	0x18, 0xd2, 0x44, 0x9e, 0xd0, 0xa1, 0x8d, 0xfa, 0x52, 0x09, 0x23, 0xf0, 0x9d, 0x92, 0xe0, 0x5b,
+	0xbc, 0xe0, 0x75, 0xf7, 0x16, 0x34, 0x89, 0x23, 0x6a, 0x58, 0x50, 0x1c, 0x72, 0x8d, 0x77, 0x89,
+	0xa0, 0x3d, 0xc9, 0xc8, 0x73, 0x45, 0x4d, 0x2c, 0x38, 0x7e, 0x05, 0xbb, 0xa1, 0xe0, 0x46, 0x89,
+	0x64, 0x2a, 0x13, 0xca, 0x99, 0xee, 0xa0, 0x7d, 0x67, 0xd0, 0x1a, 0xf5, 0xfd, 0xb5, 0xf6, 0xfe,
+	0x24, 0x17, 0xbc, 0x4e, 0xf9, 0xa4, 0x1d, 0x56, 0x6e, 0x1a, 0x3f, 0x85, 0x66, 0x0a, 0xb0, 0x33,
+	0xa3, 0x3b, 0xb5, 0xcc, 0xc9, 0xdb, 0xe0, 0xc4, 0xce, 0x0c, 0x29, 0x35, 0xb8, 0x0f, 0x37, 0xc3,
+	0xb9, 0x52, 0x8c, 0x9b, 0xa9, 0xc5, 0x3a, 0xce, 0x3e, 0x1a, 0xb8, 0x64, 0xd7, 0xc2, 0x56, 0xe2,
+	0x7d, 0x42, 0xb0, 0x53, 0x2d, 0x04, 0xdf, 0x85, 0x3a, 0xa7, 0xa7, 0xac, 0x83, 0x52, 0xfa, 0xd8,
+	0xfd, 0x76, 0x75, 0xe1, 0xd4, 0x55, 0xed, 0x16, 0x22, 0x19, 0x8c, 0xdf, 0x43, 0x2b, 0x14, 0x42,
+	0x45, 0x31, 0xa7, 0x86, 0xa5, 0xb5, 0xa1, 0x41, 0x6b, 0x34, 0xfa, 0xcb, 0x2e, 0x27, 0x2b, 0xe5,
+	0x18, 0x52, 0xe7, 0xed, 0x8f, 0x28, 0xb5, 0xae, 0x5a, 0x7a, 0x9f, 0x1d, 0xd8, 0x5b, 0x23, 0xc2,
+	0x53, 0x80, 0xd9, 0xfc, 0x90, 0x29, 0xce, 0x4c, 0xf6, 0xc4, 0x69, 0xf2, 0x27, 0xff, 0x9e, 0xdc,
+	0x7f, 0x59, 0x9a, 0x1c, 0x6c, 0x91, 0x8a, 0x25, 0x7e, 0x07, 0x40, 0x65, 0x3c, 0xd5, 0x4c, 0x2d,
+	0x98, 0xb2, 0xdd, 0x3d, 0xfe, 0x8f, 0x04, 0xcf, 0x64, 0xfc, 0x26, 0xf3, 0x38, 0xd8, 0x22, 0x2e,
+	0x2d, 0x2e, 0xdd, 0x0f, 0x08, 0x60, 0x95, 0x1b, 0x3f, 0xc8, 0xdb, 0xc9, 0x4d, 0xaf, 0xbf, 0x78,
+	0x25, 0x88, 0xef, 0x41, 0xa3, 0x18, 0x64, 0xed, 0x4f, 0x5e, 0x11, 0xc1, 0x7d, 0x70, 0xd3, 0x21,
+	0x69, 0x49, 0x43, 0x96, 0xcf, 0xbb, 0x4a, 0x5b, 0xc5, 0xba, 0x43, 0x70, 0xcb, 0x0a, 0xf1, 0x7d,
+	0x68, 0xd0, 0x28, 0x52, 0x4c, 0x6b, 0x5b, 0x42, 0x3e, 0x1a, 0xe5, 0x7c, 0x41, 0x88, 0x14, 0xa1,
+	0x71, 0x1b, 0xea, 0xe6, 0x5c, 0x32, 0xbc, 0xfd, 0xf5, 0xea, 0xc2, 0x41, 0xde, 0x77, 0x04, 0x0d,
+	0xbb, 0x43, 0x9b, 0x56, 0xc6, 0x87, 0xf6, 0x6f, 0x7f, 0xe3, 0x7a, 0x03, 0x3b, 0xd5, 0xe5, 0xc7,
+	0x2f, 0xa0, 0x19, 0xb1, 0x23, 0x3a, 0x4f, 0x8c, 0xce, 0x9a, 0x68, 0x8d, 0x1e, 0x6e, 0xde, 0x7d,
+	0xff, 0xb9, 0x95, 0x90, 0x52, 0xdc, 0xed, 0x41, 0xb3, 0x40, 0x31, 0x86, 0xfa, 0x29, 0xd3, 0x27,
+	0x79, 0x8d, 0x24, 0x3b, 0x8f, 0x6f, 0x5f, 0x2e, 0x7b, 0xe8, 0xc7, 0xb2, 0x87, 0x7e, 0x2e, 0x7b,
+	0xe8, 0x6d, 0xb3, 0xb0, 0x3c, 0xbc, 0x91, 0xfd, 0xf2, 0x47, 0xbf, 0x02, 0x00, 0x00, 0xff, 0xff,
+	0x68, 0x98, 0xe6, 0x0b, 0x4b, 0x04, 0x00, 0x00,
 }
 
 func (m *Configuration) Marshal() (dAtA []byte, err error) {
@@ -474,6 +616,24 @@ func (m *Configuration) MarshalTo(dAtA []byte) (int, error) {
 			}
 			i += n
 		}
+	}
+	if len(m.Contexts) > 0 {
+		for _, msg := range m.Contexts {
+			dAtA[i] = 0x12
+			i++
+			i = encodeVarintConfig(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.CurrentContext) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.CurrentContext)))
+		i += copy(dAtA[i:], m.CurrentContext)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -640,6 +800,76 @@ func (m *ControlPlaneCoordinates_ApiServer) MarshalTo(dAtA []byte) (int, error) 
 	return i, nil
 }
 
+func (m *Context) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Context) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if len(m.ControlPlane) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.ControlPlane)))
+		i += copy(dAtA[i:], m.ControlPlane)
+	}
+	if m.Defaults != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(m.Defaults.Size()))
+		n5, err := m.Defaults.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Context_Defaults) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Context_Defaults) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Mesh) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.Mesh)))
+		i += copy(dAtA[i:], m.Mesh)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func encodeVarintConfig(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -660,6 +890,16 @@ func (m *Configuration) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovConfig(uint64(l))
 		}
+	}
+	if len(m.Contexts) > 0 {
+		for _, e := range m.Contexts {
+			l = e.Size()
+			n += 1 + l + sovConfig(uint64(l))
+		}
+	}
+	l = len(m.CurrentContext)
+	if l > 0 {
+		n += 1 + l + sovConfig(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -766,6 +1006,46 @@ func (m *ControlPlaneCoordinates_ApiServer) Size() (n int) {
 	return n
 }
 
+func (m *Context) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovConfig(uint64(l))
+	}
+	l = len(m.ControlPlane)
+	if l > 0 {
+		n += 1 + l + sovConfig(uint64(l))
+	}
+	if m.Defaults != nil {
+		l = m.Defaults.Size()
+		n += 1 + l + sovConfig(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Context_Defaults) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Mesh)
+	if l > 0 {
+		n += 1 + l + sovConfig(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func sovConfig(x uint64) (n int) {
 	for {
 		n++
@@ -841,6 +1121,72 @@ func (m *Configuration) Unmarshal(dAtA []byte) error {
 			if err := m.ControlPlanes[len(m.ControlPlanes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Contexts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Contexts = append(m.Contexts, &Context{})
+			if err := m.Contexts[len(m.Contexts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CurrentContext", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CurrentContext = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1323,6 +1669,246 @@ func (m *ControlPlaneCoordinates_ApiServer) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Address = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipConfig(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Context) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowConfig
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Context: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Context: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ControlPlane", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ControlPlane = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Defaults", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Defaults == nil {
+				m.Defaults = &Context_Defaults{}
+			}
+			if err := m.Defaults.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipConfig(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Context_Defaults) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowConfig
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Defaults: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Defaults: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Mesh", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Mesh = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

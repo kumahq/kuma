@@ -61,6 +61,28 @@ func (m *Configuration) Validate() error {
 
 	}
 
+	for idx, item := range m.GetContexts() {
+		_, _ = idx, item
+
+		{
+			tmp := item
+
+			if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
+
+				if err := v.Validate(); err != nil {
+					return ConfigurationValidationError{
+						field:  fmt.Sprintf("Contexts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for CurrentContext
+
 	return nil
 }
 
@@ -323,6 +345,99 @@ var _ interface {
 	ErrorName() string
 } = ControlPlaneCoordinatesValidationError{}
 
+// Validate checks the field values on Context with the rules defined in the
+// proto definition for this message. If any rules are violated, an error is returned.
+func (m *Context) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		return ContextValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if utf8.RuneCountInString(m.GetControlPlane()) < 1 {
+		return ContextValidationError{
+			field:  "ControlPlane",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	{
+		tmp := m.GetDefaults()
+
+		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
+
+			if err := v.Validate(); err != nil {
+				return ContextValidationError{
+					field:  "Defaults",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// ContextValidationError is the validation error returned by Context.Validate
+// if the designated constraints aren't met.
+type ContextValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ContextValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ContextValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ContextValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ContextValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ContextValidationError) ErrorName() string { return "ContextValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ContextValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sContext.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ContextValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ContextValidationError{}
+
 // Validate checks the field values on ControlPlaneCoordinates_Kubernetes with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, an error is returned.
@@ -518,3 +633,70 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ControlPlaneCoordinates_ApiServerValidationError{}
+
+// Validate checks the field values on Context_Defaults with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *Context_Defaults) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Mesh
+
+	return nil
+}
+
+// Context_DefaultsValidationError is the validation error returned by
+// Context_Defaults.Validate if the designated constraints aren't met.
+type Context_DefaultsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Context_DefaultsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Context_DefaultsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Context_DefaultsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Context_DefaultsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Context_DefaultsValidationError) ErrorName() string { return "Context_DefaultsValidationError" }
+
+// Error satisfies the builtin error interface
+func (e Context_DefaultsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sContext_Defaults.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Context_DefaultsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Context_DefaultsValidationError{}
