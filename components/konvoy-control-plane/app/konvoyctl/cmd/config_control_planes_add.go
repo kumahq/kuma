@@ -27,6 +27,12 @@ func newConfigControlPlanesAddCmd(pctx *rootContext) *cobra.Command {
 }
 
 func (c *configControlPlanesAddContext) AddControlPlane(cp *config_proto.ControlPlane) error {
-	c.pctx.Config().AddControlPlane(cp)
+	cfg := c.pctx.Config()
+	cfg.AddControlPlane(cp)
+	cfg.AddContext(&config_proto.Context{
+		Name:         cp.Name,
+		ControlPlane: cp.Name,
+	})
+	cfg.CurrentContext = cp.Name
 	return c.pctx.SaveConfig()
 }
