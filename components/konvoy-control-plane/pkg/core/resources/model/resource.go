@@ -21,6 +21,7 @@ type ResourceMeta interface {
 	GetName() string
 	GetNamespace() string
 	GetVersion() string
+	GetMesh() string
 }
 
 type ResourceSpec interface {

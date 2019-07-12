@@ -29,7 +29,7 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 		if templateName := proxy.Workload.Meta.Labels[mesh_k8s.ProxyTemplateAnnotation]; templateName != "" {
 			template := &mesh_core.ProxyTemplateResource{}
 			if err := r.ResourceStore.Get(context.Background(), template,
-				store.GetByName(proxy.Workload.Meta.Namespace, templateName)); err != nil {
+				store.GetByName(proxy.Workload.Meta.Namespace, templateName)); err != nil { // todo(jakubdyszkiewicz) GetByKey with mesh from Dataplane which will replace Proxy
 				templateResolverLog.Error(err, "failed to resolve ProxyTemplate",
 					"workloadNamespace", proxy.Workload.Meta.Namespace,
 					"workloadName", proxy.Workload.Meta.Name,

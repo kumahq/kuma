@@ -73,11 +73,11 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 	}
 
 	version := 0
-	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5);`
-	_, err = r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), version, string(bytes))
+	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6);`
+	_, err = r.db.Exec(statement, opts.Name, opts.Namespace, opts.Mesh, resource.GetType(), version, string(bytes))
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
-			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Namespace, opts.Name)
+			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 		}
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -85,6 +85,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 	resource.SetMeta(&resourceMetaObject{
 		Name:      opts.Name,
 		Namespace: opts.Namespace,
+		Mesh:      opts.Mesh,
 		Version:   strconv.Itoa(version),
 	})
 	return nil
@@ -100,13 +101,14 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	if err != nil {
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
-	statement := `UPDATE resources SET spec=$1, version=$2 WHERE name=$3 AND namespace=$4 AND type=$5 AND version=$6;`
+	statement := `UPDATE resources SET spec=$1, version=$2 WHERE name=$3 AND namespace=$4 AND mesh=$5 AND type=$6 AND version=$7;`
 	result, err := r.db.Exec(
 		statement,
 		string(bytes),
 		version+1,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetNamespace(),
+		resource.GetMeta().GetMesh(),
 		resource.GetType(),
 		version,
 	)
@@ -115,13 +117,14 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	}
 	if rows, _ := result.RowsAffected(); rows != 1 { // error ignored, postgres supports RowsAffected()
 		// todo(jakubdyszkiewicz) throw ErrorResourceConflict when resource is found, but the version does not match
-		return store.ErrorResourceNotFound(resource.GetType(), resource.GetMeta().GetNamespace(), resource.GetMeta().GetName())
+		return store.ErrorResourceNotFound(resource.GetType(), resource.GetMeta().GetNamespace(), resource.GetMeta().GetName(), resource.GetMeta().GetMesh())
 	}
 
 	// update resource's meta with new version
 	resource.SetMeta(&resourceMetaObject{
 		Name:      resource.GetMeta().GetName(),
 		Namespace: resource.GetMeta().GetNamespace(),
+		Mesh:      resource.GetMeta().GetMesh(),
 		Version:   strconv.Itoa(version),
 	})
 
@@ -131,8 +134,8 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
-	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3`
-	_, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType())
+	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3 AND mesh=$4`
+	_, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), opts.Mesh)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -143,14 +146,14 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
-	statement := `SELECT spec, version FROM resources WHERE name=$1 AND namespace=$2 AND type=$3;`
-	row := r.db.QueryRow(statement, opts.Name, opts.Namespace, resource.GetType())
+	statement := `SELECT spec, version FROM resources WHERE name=$1 AND namespace=$2 AND mesh=$3 AND type=$4;`
+	row := r.db.QueryRow(statement, opts.Name, opts.Namespace, opts.Mesh, resource.GetType())
 
 	var spec string
 	var version int
 	err := row.Scan(&spec, &version)
 	if err == sql.ErrNoRows {
-		return store.ErrorResourceNotFound(resource.GetType(), opts.Namespace, opts.Name)
+		return store.ErrorResourceNotFound(resource.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
@@ -164,6 +167,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 	meta := &resourceMetaObject{
 		Name:      opts.Name,
 		Namespace: opts.Namespace,
+		Mesh:      opts.Mesh,
 		Version:   strconv.Itoa(version),
 	}
 	resource.SetMeta(meta)
@@ -173,14 +177,27 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 func (r *postgresResourceStore) List(_ context.Context, resources model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, spec, version FROM resources WHERE namespace=$1 AND type=$2;`
-	rows, err := r.db.Query(statement, opts.Namespace, resources.GetItemType())
+	statement := `SELECT name, namespace, mesh, spec, version FROM resources WHERE type=$1`
+	var statementArgs []interface{}
+	statementArgs = append(statementArgs, resources.GetItemType())
+	argsIndex := 1
+	if opts.Namespace != "" {
+		argsIndex++
+		statement += fmt.Sprintf(" AND namespace=$%d", argsIndex)
+		statementArgs = append(statementArgs, opts.Namespace)
+	}
+	if opts.Mesh != "" {
+		argsIndex++
+		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
+		statementArgs = append(statementArgs, opts.Mesh)
+	}
+	rows, err := r.db.Query(statement, statementArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 	defer rows.Close()
 	for rows.Next() {
-		item, err := rowToItem(resources, opts, rows)
+		item, err := rowToItem(resources, rows)
 		if err != nil {
 			return err
 		}
@@ -192,10 +209,10 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	return nil
 }
 
-func rowToItem(resources model.ResourceList, opts *store.ListOptions, rows *sql.Rows) (model.Resource, error) {
-	var name, spec string
+func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, error) {
+	var name, namespace, mesh, spec string
 	var version int
-	err := rows.Scan(&name, &spec, &version)
+	err := rows.Scan(&name, &namespace, &mesh, &spec, &version)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve elements from query")
 	}
@@ -208,7 +225,8 @@ func rowToItem(resources model.ResourceList, opts *store.ListOptions, rows *sql.
 
 	meta := &resourceMetaObject{
 		Name:      name,
-		Namespace: opts.Namespace,
+		Namespace: namespace,
+		Mesh:      mesh,
 		Version:   strconv.Itoa(version),
 	}
 	item.SetMeta(meta)
@@ -224,6 +242,7 @@ type resourceMetaObject struct {
 	Name      string
 	Namespace string
 	Version   string
+	Mesh      string
 }
 
 var _ model.ResourceMeta = &resourceMetaObject{}
@@ -238,4 +257,8 @@ func (r *resourceMetaObject) GetNamespace() string {
 
 func (r *resourceMetaObject) GetVersion() string {
 	return r.Version
+}
+
+func (r *resourceMetaObject) GetMesh() string {
+	return r.Mesh
 }

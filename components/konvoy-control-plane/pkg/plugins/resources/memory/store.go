@@ -14,6 +14,7 @@ type memoryStoreRecord struct {
 	ResourceType string
 	Namespace    string
 	Name         string
+	Mesh         string
 	Spec         string
 }
 type memoryStoreRecords = []*memoryStoreRecord
@@ -23,6 +24,7 @@ var _ model.ResourceMeta = &memoryMeta{}
 type memoryMeta struct {
 	Namespace string
 	Name      string
+	Mesh      string
 }
 
 func (m *memoryMeta) GetName() string {
@@ -30,6 +32,9 @@ func (m *memoryMeta) GetName() string {
 }
 func (m *memoryMeta) GetNamespace() string {
 	return m.Namespace
+}
+func (m *memoryMeta) GetMesh() string {
+	return m.Mesh
 }
 func (m *memoryMeta) GetVersion() string {
 	return "0"
@@ -53,14 +58,15 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	opts := store.NewCreateOptions(fs...)
 
 	// Namespace and Name must be provided via CreateOptions
-	if _, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name); record != nil {
-		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Namespace, opts.Name)
+	if _, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name, opts.Mesh); record != nil {
+		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 	}
 
 	// fill the meta
 	r.SetMeta(&memoryMeta{
 		Name:      opts.Name,
 		Namespace: opts.Namespace,
+		Mesh:      opts.Mesh,
 	})
 
 	// convert into storage representation
@@ -70,6 +76,7 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 		&memoryMeta{
 			Namespace: opts.Namespace,
 			Name:      opts.Name,
+			Mesh:      opts.Mesh,
 		},
 		r.GetSpec())
 	if err != nil {
@@ -92,9 +99,10 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	}
 
 	// Namespace and Name must be provided via r.GetMeta()
-	idx, record := c.findRecord(string(r.GetType()), r.GetMeta().GetNamespace(), r.GetMeta().GetName())
+	mesh := r.GetMeta().GetMesh()
+	idx, record := c.findRecord(string(r.GetType()), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), mesh)
 	if record == nil {
-		return store.ErrorResourceNotFound(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName())
+		return store.ErrorResourceNotFound(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
 	}
 
 	record, err := c.marshalRecord(
@@ -121,7 +129,7 @@ func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.De
 	}
 
 	// Namespace and Name must be provided via DeleteOptions
-	idx, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name)
+	idx, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name, opts.Mesh)
 	if record != nil {
 		c.records = append(c.records[:idx], c.records[idx+1:]...)
 	}
@@ -135,9 +143,9 @@ func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOp
 	opts := store.NewGetOptions(fs...)
 
 	// Namespace and Name must be provided via GetOptions
-	_, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name)
+	_, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name, opts.Mesh)
 	if record == nil {
-		return store.ErrorResourceNotFound(r.GetType(), opts.Namespace, opts.Name)
+		return store.ErrorResourceNotFound(r.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 	}
 	return c.unmarshalRecord(record, r)
 }
@@ -148,7 +156,7 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 	opts := store.NewListOptions(fs...)
 
 	// Namespace must be provided via ListOptions
-	records := c.findRecords(string(rs.GetItemType()), opts.Namespace)
+	records := c.findRecords(string(rs.GetItemType()), opts.Namespace, opts.Mesh)
 	for _, record := range records {
 		r := rs.NewItem()
 		if err := c.unmarshalRecord(record, r); err != nil {
@@ -160,11 +168,12 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 }
 
 func (c *memoryStore) findRecord(
-	resourceType string, namespace string, name string) (int, *memoryStoreRecord) {
+	resourceType string, namespace string, name string, mesh string) (int, *memoryStoreRecord) {
 	for idx, rec := range c.records {
 		if rec.ResourceType == resourceType &&
 			rec.Namespace == namespace &&
-			rec.Name == name {
+			rec.Name == name &&
+			rec.Mesh == mesh {
 			return idx, rec
 		}
 	}
@@ -172,11 +181,12 @@ func (c *memoryStore) findRecord(
 }
 
 func (c *memoryStore) findRecords(
-	resourceType string, namespace string) []*memoryStoreRecord {
+	resourceType string, namespace string, mesh string) []*memoryStoreRecord {
 	res := make([]*memoryStoreRecord, 0)
 	for _, rec := range c.records {
 		if rec.ResourceType == resourceType &&
-			rec.Namespace == namespace {
+			(namespace == "" || rec.Namespace == namespace) &&
+			(mesh == "" || rec.Mesh == mesh) {
 			res = append(res, rec)
 		}
 	}
@@ -194,6 +204,7 @@ func (c *memoryStore) marshalRecord(resourceType string, meta model.ResourceMeta
 		// Namespace and Name must be provided via CreateOptions
 		Namespace: meta.GetNamespace(),
 		Name:      meta.GetName(),
+		Mesh:      meta.GetMesh(),
 		Spec:      string(content),
 	}, nil
 }
@@ -202,6 +213,7 @@ func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r model.Resource) er
 	r.SetMeta(&memoryMeta{
 		Namespace: s.Namespace,
 		Name:      s.Name,
+		Mesh:      s.Mesh,
 	})
 	return util_proto.FromJSON([]byte(s.Spec), r.GetSpec())
 }

@@ -3,6 +3,7 @@ package store
 type CreateOptions struct {
 	Namespace string
 	Name      string
+	Mesh      string
 }
 
 type CreateOptionsFunc func(*CreateOptions)
@@ -15,10 +16,11 @@ func NewCreateOptions(fs ...CreateOptionsFunc) *CreateOptions {
 	return opts
 }
 
-func CreateByName(ns, name string) CreateOptionsFunc {
+func CreateByKey(ns, name, mesh string) CreateOptionsFunc {
 	return func(opts *CreateOptions) {
 		opts.Namespace = ns
 		opts.Name = name
+		opts.Mesh = mesh
 	}
 }
 
@@ -38,6 +40,7 @@ func NewUpdateOptions(fs ...UpdateOptionsFunc) *UpdateOptions {
 type DeleteOptions struct {
 	Namespace string
 	Name      string
+	Mesh      string
 }
 
 type DeleteOptionsFunc func(*DeleteOptions)
@@ -50,16 +53,18 @@ func NewDeleteOptions(fs ...DeleteOptionsFunc) *DeleteOptions {
 	return opts
 }
 
-func DeleteByName(ns, name string) DeleteOptionsFunc {
+func DeleteByKey(ns, name, mesh string) DeleteOptionsFunc {
 	return func(opts *DeleteOptions) {
 		opts.Namespace = ns
 		opts.Name = name
+		opts.Mesh = mesh
 	}
 }
 
 type GetOptions struct {
 	Namespace string
 	Name      string
+	Mesh      string
 }
 
 type GetOptionsFunc func(*GetOptions)
@@ -72,6 +77,15 @@ func NewGetOptions(fs ...GetOptionsFunc) *GetOptions {
 	return opts
 }
 
+func GetByKey(ns, name, mesh string) GetOptionsFunc {
+	return func(opts *GetOptions) {
+		opts.Namespace = ns
+		opts.Name = name
+		opts.Mesh = mesh
+	}
+}
+
+// todo(jakubdyszkiewicz) delete eventually once k8s store tests are not ignored
 func GetByName(ns, name string) GetOptionsFunc {
 	return func(opts *GetOptions) {
 		opts.Namespace = ns
@@ -81,6 +95,7 @@ func GetByName(ns, name string) GetOptionsFunc {
 
 type ListOptions struct {
 	Namespace string
+	Mesh      string
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -96,5 +111,11 @@ func NewListOptions(fs ...ListOptionsFunc) *ListOptions {
 func ListByNamespace(ns string) ListOptionsFunc {
 	return func(opts *ListOptions) {
 		opts.Namespace = ns
+	}
+}
+
+func ListByMesh(mesh string) ListOptionsFunc {
+	return func(opts *ListOptions) {
+		opts.Mesh = mesh
 	}
 }
