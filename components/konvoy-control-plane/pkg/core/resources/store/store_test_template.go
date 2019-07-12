@@ -6,16 +6,18 @@ import (
 	sample_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/apis/sample"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pborman/uuid"
 )
 
 func ExecuteStoreTests(
 	createStore func() ResourceStore,
 ) {
-	const namespace = "default"
+	var namespace string
 	const mesh = "default-mesh"
 	var s ClosableResourceStore
 
 	BeforeEach(func() {
+		namespace = string(uuid.New())
 		s = NewStrictResourceStore(createStore())
 	})
 
@@ -92,7 +94,7 @@ func ExecuteStoreTests(
 			err = s.Update(context.Background(), resource)
 
 			// then
-			Expect(err).To(MatchError(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
+			Expect(err).To(MatchError(ErrorResourceConflict(resource.GetType(), namespace, name, mesh)))
 		})
 
 		It("should update an existing resource", func() {
@@ -166,6 +168,7 @@ func ExecuteStoreTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// when query for deleted resource
+			resource = sample_model.TrafficRouteResource{}
 			err = s.Get(context.Background(), &resource, GetByKey(namespace, name, mesh))
 
 			// then resource cannot be found
@@ -242,7 +245,7 @@ func ExecuteStoreTests(
 			list := sample_model.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), &list)
+			err := s.List(context.Background(), &list, ListByNamespace(namespace))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

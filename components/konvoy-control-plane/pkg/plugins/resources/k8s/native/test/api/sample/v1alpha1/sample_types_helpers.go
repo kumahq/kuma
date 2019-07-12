@@ -13,6 +13,14 @@ func (pt *TrafficRoute) SetObjectMeta(m *metav1.ObjectMeta) {
 	pt.ObjectMeta = *m
 }
 
+func (pt *TrafficRoute) GetMesh() string {
+	return pt.Mesh
+}
+
+func (pt *TrafficRoute) SetMesh(mesh string) {
+	pt.Mesh = mesh
+}
+
 func (pt *TrafficRoute) GetSpec() map[string]interface{} {
 	return pt.Spec
 }

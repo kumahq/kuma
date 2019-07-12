@@ -116,8 +116,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 		return errors.Wrapf(err, "failed to execute query %s", statement)
 	}
 	if rows, _ := result.RowsAffected(); rows != 1 { // error ignored, postgres supports RowsAffected()
-		// todo(jakubdyszkiewicz) throw ErrorResourceConflict when resource is found, but the version does not match
-		return store.ErrorResourceNotFound(resource.GetType(), resource.GetMeta().GetNamespace(), resource.GetMeta().GetName(), resource.GetMeta().GetMesh())
+		return store.ErrorResourceConflict(resource.GetType(), resource.GetMeta().GetNamespace(), resource.GetMeta().GetName(), resource.GetMeta().GetMesh())
 	}
 
 	// update resource's meta with new version

@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = XDescribe("KubernetesStore", func() {
+var _ = Describe("KubernetesStore", func() {
 
 	var ks *k8s.KubernetesStore
 	var s store.ResourceStore
@@ -98,6 +98,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			expected := backend.ParseYAML(`
             apiVersion: sample.test.getkonvoy.io/v1alpha1
             kind: TrafficRoute
+            mesh: default
             spec:
               path: /example
 `).(*sample_k8s.TrafficRoute)
@@ -110,6 +111,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			// and
 			Expect(tr.Meta.GetNamespace()).To(Equal(ns))
 			Expect(tr.Meta.GetName()).To(Equal(name))
+			Expect(tr.Meta.GetMesh()).To(Equal(mesh))
 			Expect(tr.Meta.GetVersion()).ToNot(Equal(""))
 
 			// when
@@ -146,6 +148,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			initial := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: sample.test.getkonvoy.io/v1alpha1
             kind: TrafficRoute
+            mesh: default
             metadata:
               namespace: %s
               name: %s
@@ -157,6 +160,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			expected := backend.ParseYAML(`
             apiVersion: sample.test.getkonvoy.io/v1alpha1
             kind: TrafficRoute
+            mesh: default
             spec:
               path: /another
 `).(*sample_k8s.TrafficRoute)
@@ -165,7 +169,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			tr := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), tr, store.GetByName(ns, name))
+			err := s.Get(context.Background(), tr, store.GetByKey(ns, name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			version := tr.Meta.GetVersion()
@@ -195,6 +199,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			initial := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: sample.test.getkonvoy.io/v1alpha1
             kind: TrafficRoute
+            mesh: default
             metadata:
               namespace: %s
               name: %s
@@ -205,7 +210,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			tr := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), tr, store.GetByName(ns, name))
+			err := s.Get(context.Background(), tr, store.GetByKey(ns, name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -223,6 +228,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			initial := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: sample.test.getkonvoy.io/v1alpha1
             kind: TrafficRoute
+            mesh: default
             metadata:
               namespace: %s
               name: %s
@@ -233,7 +239,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			tr1 := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), tr1, store.GetByName(ns, name))
+			err := s.Get(context.Background(), tr1, store.GetByKey(ns, name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -241,7 +247,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			tr2 := &sample_core.TrafficRouteResource{}
 
 			// when
-			err = s.Get(context.Background(), tr2, store.GetByName(ns, name))
+			err = s.Get(context.Background(), tr2, store.GetByKey(ns, name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -265,7 +271,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			backend.AssertNotExists(&sample_k8s.TrafficRoute{}, ns, name)
 
 			// when
-			err := s.Get(context.Background(), &sample_core.TrafficRouteResource{}, store.GetByName(ns, name))
+			err := s.Get(context.Background(), &sample_core.TrafficRouteResource{}, store.GetByKey(ns, name, mesh))
 
 			// then
 			Expect(err).To(MatchError(store.ErrorResourceNotFound(sample_core.TrafficRouteType, ns, name, mesh)))
@@ -276,6 +282,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			expected := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: sample.test.getkonvoy.io/v1alpha1
             kind: TrafficRoute
+            mesh: default
             metadata:
               namespace: %s
               name: %s
@@ -288,7 +295,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			actual := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), actual, store.GetByName(ns, name))
+			err := s.Get(context.Background(), actual, store.GetByKey(ns, name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -317,6 +324,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			initial := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: sample.test.getkonvoy.io/v1alpha1
             kind: TrafficRoute
+            mesh: default
             metadata:
               namespace: %s
               name: %s
@@ -339,7 +347,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			trl := &sample_core.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), trl, store.ListByNamespace(ns))
+			err := s.List(context.Background(), trl, store.ListByNamespace(ns), store.ListByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -352,6 +360,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			one := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: sample.test.getkonvoy.io/v1alpha1
             kind: TrafficRoute
+            mesh: default
             metadata:
               namespace: %s
               name: %s
@@ -363,6 +372,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			two := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: sample.test.getkonvoy.io/v1alpha1
             kind: TrafficRoute
+            mesh: default
             metadata:
               namespace: %s
               name: %s
@@ -375,7 +385,7 @@ var _ = XDescribe("KubernetesStore", func() {
 			trl := &sample_core.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), trl, store.ListByNamespace(ns))
+			err := s.List(context.Background(), trl, store.ListByNamespace(ns), store.ListByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

@@ -102,7 +102,7 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	mesh := r.GetMeta().GetMesh()
 	idx, record := c.findRecord(string(r.GetType()), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), mesh)
 	if record == nil {
-		return store.ErrorResourceNotFound(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
+		return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
 	}
 
 	record, err := c.marshalRecord(

@@ -9,6 +9,8 @@ type KubernetesObject interface {
 	runtime.Object
 	GetObjectMeta() *metav1.ObjectMeta
 	SetObjectMeta(*metav1.ObjectMeta)
+	GetMesh() string
+	SetMesh(string)
 	GetSpec() map[string]interface{}
 	SetSpec(map[string]interface{})
 }
