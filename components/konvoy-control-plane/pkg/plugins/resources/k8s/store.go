@@ -82,9 +82,6 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 		}
 		return err
 	}
-	if r.GetMeta().GetMesh() != opts.Mesh {
-		return nil // resource mesh is different, nothing to delete
-	}
 
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {

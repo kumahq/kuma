@@ -75,7 +75,7 @@ func ExecuteStoreTests(
 	})
 
 	Describe("Update()", func() {
-		XIt("should return an error if resource is not found", func() {
+		It("should return an error if resource is not found", func() {
 			// given
 			name := "to-be-updated"
 			resource := createResource(name)
@@ -94,8 +94,7 @@ func ExecuteStoreTests(
 			err = s.Update(context.Background(), resource)
 
 			// then
-			// todo(jakubdyszkiewicz) this is conflict for k8s and not found for inmemory and postgres. Decide which one to choose
-			Expect(err).To(MatchError(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
+			Expect(err).To(MatchError(ErrorResourceConflict(resource.GetType(), namespace, name, mesh)))
 		})
 
 		It("should update an existing resource", func() {
