@@ -10,9 +10,30 @@ PROTOC_PATH := $(TOOLS_DIR)/protoc
 PROTOC_VERSION := 3.6.1
 GOGO_PROTOBUF_VERSION := v1.2.1
 
+protoc_search_go_packages := \
+	github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION)/protobuf \
+
+protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(shell go env GOPATH)/pkg/mod/$(go_package))
+
+gogo_import_mapping_entries := \
+	google/protobuf/any.proto=github.com/gogo/protobuf/types \
+	google/protobuf/duration.proto=github.com/gogo/protobuf/types \
+	google/protobuf/struct.proto=github.com/gogo/protobuf/types \
+	google/protobuf/timestamp.proto=github.com/gogo/protobuf/types \
+	google/protobuf/wrappers.proto=github.com/gogo/protobuf/types \
+
+# see https://makefiletutorial.com/
+comma := ,
+empty:=
+space := $(empty) $(empty)
+
+gogo_mapping_with_spaces := $(foreach entry,$(gogo_import_mapping_entries),M$(entry),)
+gogo_mapping := $(subst $(space),$(empty),$(gogo_mapping_with_spaces))
+
 PROTOC_GO := protoc \
 	--proto_path=. \
-	--gogofast_out=plugins=grpc:.
+	$(protoc_search_go_paths) \
+	--gogofast_out=plugins=grpc,$(gogo_mapping):.
 
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)

@@ -60,14 +60,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = (&controllers.ProxyReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Proxy"),
-	}).SetupWithManager(mgr)
-	if err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Proxy")
-		os.Exit(1)
-	}
 	err = (&controllers.ProxyTemplateReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("ProxyTemplate"),

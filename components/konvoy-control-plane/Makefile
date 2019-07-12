@@ -71,11 +71,16 @@ ETCD_PATH := $(CI_TOOLS_DIR)/etcd
 
 PROTO_DIR := ./pkg/config
 
+protoc_search_go_packages := \
+	github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION)/protobuf \
+	github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
+
+protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(shell go env GOPATH)/pkg/mod/$(go_package))
+
 # Protobuf-specifc configuration
 PROTOC_GO := protoc \
 	--proto_path=. \
-	--proto_path=$(shell go env GOPATH)/pkg/mod/github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION)/protobuf \
-	--proto_path=$(shell go env GOPATH)/pkg/mod/github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
+	$(protoc_search_go_paths) \
 	--gogofast_out=plugins=grpc:. \
 	--validate_out=lang=gogo:.
 
