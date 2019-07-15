@@ -14,7 +14,6 @@ import (
 	"github.com/gogo/protobuf/types"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
@@ -58,11 +57,6 @@ type streamState struct {
 // OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
-	if typ != envoy_cache.AnyType {
-		// status of a Dataplane can only be tracked as part of ADS subscription
-		return nil
-	}
-
 	c.mu.Lock() // write access to the map of all ADS streams
 	defer c.mu.Unlock()
 
@@ -90,11 +84,7 @@ func (c *dataplaneStatusTracker) OnStreamClosed(streamID int64) {
 	c.mu.Lock() // write access to the map of all ADS streams
 	defer c.mu.Unlock()
 
-	state, ok := c.streams[streamID]
-	if !ok {
-		// non ADS stream
-		return
-	}
+	state := c.streams[streamID]
 
 	delete(c.streams, streamID)
 
@@ -116,11 +106,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 
-	state, ok := c.streams[streamID]
-	if !ok {
-		// non ADS stream
-		return nil
-	}
+	state := c.streams[streamID]
 
 	state.mu.Lock() // write access to the per Dataplane info
 	defer state.mu.Unlock()
@@ -158,11 +144,7 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req *envoy.Dis
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 
-	state, ok := c.streams[streamID]
-	if !ok {
-		// non ADS stream
-		return
-	}
+	state := c.streams[streamID]
 
 	state.mu.Lock() // write access to the per Dataplane info
 	defer state.mu.Unlock()
@@ -185,9 +167,9 @@ func (c *dataplaneStatusTracker) OnFetchRequest(context.Context, *envoy.Discover
 // OnFetchResponse is called immediately prior to sending a response.
 func (c *dataplaneStatusTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {}
 
-var _ DataplaneStatusAccessor = &streamState{}
+var _ SubscriptionStatusAccessor = &streamState{}
 
-func (s *streamState) GetStatusSnapshot() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription) {
+func (s *streamState) GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription) {
 	s.mu.RLock() // read access to the per Dataplane info
 	defer s.mu.RUnlock()
 	return *s.dataplaneId, proto.Clone(s.subscription).(*mesh_proto.DiscoverySubscription)
