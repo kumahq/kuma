@@ -5,6 +5,8 @@ package konvoy.mesh.v1alpha1;
 option go_package = "v1alpha1";
 
 import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "validate/validate.proto";
 
 // DataplaneStatus defines the observed state of a Dataplane.
 message DataplaneStatus {
@@ -25,13 +27,14 @@ message DataplaneStatus {
 message DiscoverySubscription {
 
   // Unique id per ADS subscription.
-  string id = 1;
+  string id = 1 [ (validate.rules).string.min_len = 1 ];
 
   // Control Plane instance that handled given subscription.
-  string control_plane_instance_id = 2;
+  string control_plane_instance_id = 2 [ (validate.rules).string.min_len = 1 ];
 
   // Time when a given Dataplane connected to the Control Plane.
-  google.protobuf.Timestamp connect_time = 3;
+  google.protobuf.Timestamp connect_time = 3
+      [ (validate.rules).timestamp.required = true ];
 
   // Time when a given Dataplane disconnected from the Control Plane.
   google.protobuf.Timestamp disconnect_time = 4;
@@ -46,28 +49,31 @@ message DiscoverySubscription {
 // DiscoverySubscriptionStatus defines status of an ADS subscription.
 message DiscoverySubscriptionStatus {
 
-  // Total number of xDS responses sent back to the Dataplane.
-  uint64 total_responses_sent = 1;
+  // Total defines an aggregate over individual xDS stats.
+  DiscoveryServiceStats total = 1 [ (gogoproto.nullable) = false ];
 
-  // Total number of xDS responses ACKed by the Dataplane.
-  uint64 total_responses_acknowledged = 2;
+  // CDS defines all CDS stats.
+  DiscoveryServiceStats cds = 2 [ (gogoproto.nullable) = false ];
 
-  // Total number of xDS responses NACKed by the Dataplane.
-  uint64 total_responses_rejected = 3;
+  // EDS defines all EDS stats.
+  DiscoveryServiceStats eds = 3 [ (gogoproto.nullable) = false ];
 
-  uint64 cds_responses_sent = 4;
-  uint64 cds_responses_acknowledged = 5;
-  uint64 cds_responses_rejected = 6;
+  // LDS defines all LDS stats.
+  DiscoveryServiceStats lds = 4 [ (gogoproto.nullable) = false ];
 
-  uint64 eds_responses_sent = 7;
-  uint64 eds_responses_acknowledged = 8;
-  uint64 eds_responses_rejected = 9;
+  // RDS defines all RDS stats.
+  DiscoveryServiceStats rds = 5 [ (gogoproto.nullable) = false ];
+}
 
-  uint64 lds_responses_sent = 10;
-  uint64 lds_responses_acknowledged = 11;
-  uint64 lds_responses_rejected = 12;
+// DiscoveryServiceStats defines all stats over a single xDS service.
+message DiscoveryServiceStats {
 
-  uint64 rds_responses_sent = 13;
-  uint64 rds_responses_acknowledged = 14;
-  uint64 rds_responses_rejected = 15;
+  // Number of xDS responses sent to the Dataplane.
+  uint64 responses_sent = 1;
+
+  // Number of xDS responses ACKed by the Dataplane.
+  uint64 responses_acknowledged = 2;
+
+  // Number of xDS responses NACKed by the Dataplane.
+  uint64 responses_rejected = 3;
 }

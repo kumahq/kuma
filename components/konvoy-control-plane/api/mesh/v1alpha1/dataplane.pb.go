@@ -5,6 +5,8 @@ package v1alpha1
 
 import (
 	fmt "fmt"
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	io "io"
@@ -175,27 +177,19 @@ func (m *DiscoverySubscription) GetStatus() *DiscoverySubscriptionStatus {
 
 // DiscoverySubscriptionStatus defines status of an ADS subscription.
 type DiscoverySubscriptionStatus struct {
-	// Total number of xDS responses sent back to the Dataplane.
-	TotalResponsesSent uint64 `protobuf:"varint,1,opt,name=total_responses_sent,json=totalResponsesSent,proto3" json:"total_responses_sent,omitempty"`
-	// Total number of xDS responses ACKed by the Dataplane.
-	TotalResponsesAcknowledged uint64 `protobuf:"varint,2,opt,name=total_responses_acknowledged,json=totalResponsesAcknowledged,proto3" json:"total_responses_acknowledged,omitempty"`
-	// Total number of xDS responses NACKed by the Dataplane.
-	TotalResponsesRejected   uint64   `protobuf:"varint,3,opt,name=total_responses_rejected,json=totalResponsesRejected,proto3" json:"total_responses_rejected,omitempty"`
-	CdsResponsesSent         uint64   `protobuf:"varint,4,opt,name=cds_responses_sent,json=cdsResponsesSent,proto3" json:"cds_responses_sent,omitempty"`
-	CdsResponsesAcknowledged uint64   `protobuf:"varint,5,opt,name=cds_responses_acknowledged,json=cdsResponsesAcknowledged,proto3" json:"cds_responses_acknowledged,omitempty"`
-	CdsResponsesRejected     uint64   `protobuf:"varint,6,opt,name=cds_responses_rejected,json=cdsResponsesRejected,proto3" json:"cds_responses_rejected,omitempty"`
-	EdsResponsesSent         uint64   `protobuf:"varint,7,opt,name=eds_responses_sent,json=edsResponsesSent,proto3" json:"eds_responses_sent,omitempty"`
-	EdsResponsesAcknowledged uint64   `protobuf:"varint,8,opt,name=eds_responses_acknowledged,json=edsResponsesAcknowledged,proto3" json:"eds_responses_acknowledged,omitempty"`
-	EdsResponsesRejected     uint64   `protobuf:"varint,9,opt,name=eds_responses_rejected,json=edsResponsesRejected,proto3" json:"eds_responses_rejected,omitempty"`
-	LdsResponsesSent         uint64   `protobuf:"varint,10,opt,name=lds_responses_sent,json=ldsResponsesSent,proto3" json:"lds_responses_sent,omitempty"`
-	LdsResponsesAcknowledged uint64   `protobuf:"varint,11,opt,name=lds_responses_acknowledged,json=ldsResponsesAcknowledged,proto3" json:"lds_responses_acknowledged,omitempty"`
-	LdsResponsesRejected     uint64   `protobuf:"varint,12,opt,name=lds_responses_rejected,json=ldsResponsesRejected,proto3" json:"lds_responses_rejected,omitempty"`
-	RdsResponsesSent         uint64   `protobuf:"varint,13,opt,name=rds_responses_sent,json=rdsResponsesSent,proto3" json:"rds_responses_sent,omitempty"`
-	RdsResponsesAcknowledged uint64   `protobuf:"varint,14,opt,name=rds_responses_acknowledged,json=rdsResponsesAcknowledged,proto3" json:"rds_responses_acknowledged,omitempty"`
-	RdsResponsesRejected     uint64   `protobuf:"varint,15,opt,name=rds_responses_rejected,json=rdsResponsesRejected,proto3" json:"rds_responses_rejected,omitempty"`
-	XXX_NoUnkeyedLiteral     struct{} `json:"-"`
-	XXX_unrecognized         []byte   `json:"-"`
-	XXX_sizecache            int32    `json:"-"`
+	// Total defines an aggregate over individual xDS stats.
+	Total DiscoveryServiceStats `protobuf:"bytes,1,opt,name=total,proto3" json:"total"`
+	// CDS defines all CDS stats.
+	Cds DiscoveryServiceStats `protobuf:"bytes,2,opt,name=cds,proto3" json:"cds"`
+	// EDS defines all EDS stats.
+	Eds DiscoveryServiceStats `protobuf:"bytes,3,opt,name=eds,proto3" json:"eds"`
+	// LDS defines all LDS stats.
+	Lds DiscoveryServiceStats `protobuf:"bytes,4,opt,name=lds,proto3" json:"lds"`
+	// RDS defines all RDS stats.
+	Rds                  DiscoveryServiceStats `protobuf:"bytes,5,opt,name=rds,proto3" json:"rds"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
 }
 
 func (m *DiscoverySubscriptionStatus) Reset()         { *m = DiscoverySubscriptionStatus{} }
@@ -231,107 +225,104 @@ func (m *DiscoverySubscriptionStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DiscoverySubscriptionStatus proto.InternalMessageInfo
 
-func (m *DiscoverySubscriptionStatus) GetTotalResponsesSent() uint64 {
+func (m *DiscoverySubscriptionStatus) GetTotal() DiscoveryServiceStats {
 	if m != nil {
-		return m.TotalResponsesSent
+		return m.Total
+	}
+	return DiscoveryServiceStats{}
+}
+
+func (m *DiscoverySubscriptionStatus) GetCds() DiscoveryServiceStats {
+	if m != nil {
+		return m.Cds
+	}
+	return DiscoveryServiceStats{}
+}
+
+func (m *DiscoverySubscriptionStatus) GetEds() DiscoveryServiceStats {
+	if m != nil {
+		return m.Eds
+	}
+	return DiscoveryServiceStats{}
+}
+
+func (m *DiscoverySubscriptionStatus) GetLds() DiscoveryServiceStats {
+	if m != nil {
+		return m.Lds
+	}
+	return DiscoveryServiceStats{}
+}
+
+func (m *DiscoverySubscriptionStatus) GetRds() DiscoveryServiceStats {
+	if m != nil {
+		return m.Rds
+	}
+	return DiscoveryServiceStats{}
+}
+
+// DiscoveryServiceStats defines all stats over a single xDS service.
+type DiscoveryServiceStats struct {
+	// Number of xDS responses sent to the Dataplane.
+	ResponsesSent uint64 `protobuf:"varint,1,opt,name=responses_sent,json=responsesSent,proto3" json:"responses_sent,omitempty"`
+	// Number of xDS responses ACKed by the Dataplane.
+	ResponsesAcknowledged uint64 `protobuf:"varint,2,opt,name=responses_acknowledged,json=responsesAcknowledged,proto3" json:"responses_acknowledged,omitempty"`
+	// Number of xDS responses NACKed by the Dataplane.
+	ResponsesRejected    uint64   `protobuf:"varint,3,opt,name=responses_rejected,json=responsesRejected,proto3" json:"responses_rejected,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DiscoveryServiceStats) Reset()         { *m = DiscoveryServiceStats{} }
+func (m *DiscoveryServiceStats) String() string { return proto.CompactTextString(m) }
+func (*DiscoveryServiceStats) ProtoMessage()    {}
+func (*DiscoveryServiceStats) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7608682fd5ea84a4, []int{3}
+}
+func (m *DiscoveryServiceStats) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DiscoveryServiceStats) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DiscoveryServiceStats.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DiscoveryServiceStats) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DiscoveryServiceStats.Merge(m, src)
+}
+func (m *DiscoveryServiceStats) XXX_Size() int {
+	return m.Size()
+}
+func (m *DiscoveryServiceStats) XXX_DiscardUnknown() {
+	xxx_messageInfo_DiscoveryServiceStats.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DiscoveryServiceStats proto.InternalMessageInfo
+
+func (m *DiscoveryServiceStats) GetResponsesSent() uint64 {
+	if m != nil {
+		return m.ResponsesSent
 	}
 	return 0
 }
 
-func (m *DiscoverySubscriptionStatus) GetTotalResponsesAcknowledged() uint64 {
+func (m *DiscoveryServiceStats) GetResponsesAcknowledged() uint64 {
 	if m != nil {
-		return m.TotalResponsesAcknowledged
+		return m.ResponsesAcknowledged
 	}
 	return 0
 }
 
-func (m *DiscoverySubscriptionStatus) GetTotalResponsesRejected() uint64 {
+func (m *DiscoveryServiceStats) GetResponsesRejected() uint64 {
 	if m != nil {
-		return m.TotalResponsesRejected
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetCdsResponsesSent() uint64 {
-	if m != nil {
-		return m.CdsResponsesSent
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetCdsResponsesAcknowledged() uint64 {
-	if m != nil {
-		return m.CdsResponsesAcknowledged
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetCdsResponsesRejected() uint64 {
-	if m != nil {
-		return m.CdsResponsesRejected
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetEdsResponsesSent() uint64 {
-	if m != nil {
-		return m.EdsResponsesSent
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetEdsResponsesAcknowledged() uint64 {
-	if m != nil {
-		return m.EdsResponsesAcknowledged
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetEdsResponsesRejected() uint64 {
-	if m != nil {
-		return m.EdsResponsesRejected
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetLdsResponsesSent() uint64 {
-	if m != nil {
-		return m.LdsResponsesSent
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetLdsResponsesAcknowledged() uint64 {
-	if m != nil {
-		return m.LdsResponsesAcknowledged
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetLdsResponsesRejected() uint64 {
-	if m != nil {
-		return m.LdsResponsesRejected
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetRdsResponsesSent() uint64 {
-	if m != nil {
-		return m.RdsResponsesSent
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetRdsResponsesAcknowledged() uint64 {
-	if m != nil {
-		return m.RdsResponsesAcknowledged
-	}
-	return 0
-}
-
-func (m *DiscoverySubscriptionStatus) GetRdsResponsesRejected() uint64 {
-	if m != nil {
-		return m.RdsResponsesRejected
+		return m.ResponsesRejected
 	}
 	return 0
 }
@@ -340,46 +331,47 @@ func init() {
 	proto.RegisterType((*DataplaneStatus)(nil), "konvoy.mesh.v1alpha1.DataplaneStatus")
 	proto.RegisterType((*DiscoverySubscription)(nil), "konvoy.mesh.v1alpha1.DiscoverySubscription")
 	proto.RegisterType((*DiscoverySubscriptionStatus)(nil), "konvoy.mesh.v1alpha1.DiscoverySubscriptionStatus")
+	proto.RegisterType((*DiscoveryServiceStats)(nil), "konvoy.mesh.v1alpha1.DiscoveryServiceStats")
 }
 
 func init() { proto.RegisterFile("mesh/v1alpha1/dataplane.proto", fileDescriptor_7608682fd5ea84a4) }
 
 var fileDescriptor_7608682fd5ea84a4 = []byte{
-	// 539 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0xd3, 0x4d, 0x8f, 0x12, 0x31,
-	0x1c, 0x06, 0xf0, 0xcc, 0xc2, 0xe2, 0x6e, 0xd9, 0x05, 0xd3, 0x20, 0x8e, 0xa8, 0x48, 0x38, 0x91,
-	0x68, 0x06, 0x59, 0x3d, 0x68, 0xa2, 0x89, 0x2f, 0x7b, 0xe1, 0xe6, 0x0e, 0x7a, 0xf1, 0x32, 0x29,
-	0xed, 0x5f, 0x76, 0xdc, 0xd2, 0x4e, 0xda, 0x82, 0xd9, 0xbb, 0x1f, 0xce, 0xa3, 0x89, 0x5f, 0xc0,
-	0xf0, 0x49, 0xcc, 0xb4, 0x8c, 0xce, 0xc0, 0xc0, 0xc6, 0xeb, 0xf6, 0x79, 0x9e, 0xfd, 0xd1, 0x66,
-	0xd0, 0xc3, 0x39, 0xe8, 0xcb, 0xe1, 0x72, 0x44, 0x78, 0x72, 0x49, 0x46, 0x43, 0x46, 0x0c, 0x49,
-	0x38, 0x11, 0x10, 0x24, 0x4a, 0x1a, 0x89, 0x5b, 0x57, 0x52, 0x2c, 0xe5, 0x75, 0x90, 0xa6, 0x82,
-	0x2c, 0xd5, 0x79, 0x34, 0x93, 0x72, 0xc6, 0x61, 0x68, 0x33, 0xd3, 0xc5, 0x97, 0xa1, 0x89, 0xe7,
-	0xa0, 0x0d, 0x99, 0x27, 0xae, 0xd6, 0x67, 0xa8, 0x79, 0x9e, 0x2d, 0x4d, 0x0c, 0x31, 0x0b, 0x8d,
-	0x2f, 0xd0, 0xa9, 0x5e, 0x4c, 0x35, 0x55, 0x71, 0x62, 0x62, 0x29, 0xb4, 0xef, 0xf5, 0x2a, 0x83,
-	0xfa, 0xd9, 0xe3, 0xa0, 0xec, 0x3f, 0x04, 0xe7, 0xb1, 0xa6, 0x72, 0x09, 0xea, 0x7a, 0x92, 0xeb,
-	0x84, 0xc5, 0x85, 0xfe, 0xf7, 0x0a, 0xba, 0x53, 0x1a, 0xc4, 0x0d, 0x74, 0x10, 0x33, 0xdf, 0xeb,
-	0x79, 0x83, 0xe3, 0xf0, 0x20, 0x66, 0xf8, 0x25, 0xba, 0x47, 0xa5, 0x30, 0x4a, 0xf2, 0xc8, 0x9a,
-	0xa2, 0x58, 0x68, 0x43, 0x04, 0x85, 0x28, 0x66, 0xfe, 0x81, 0x8d, 0xb5, 0xd7, 0x81, 0x0f, 0xe9,
-	0xf9, 0x78, 0x7d, 0x3c, 0x66, 0xf8, 0x35, 0x3a, 0xa1, 0x52, 0x08, 0xa0, 0x26, 0x4a, 0x7f, 0xa5,
-	0x5f, 0xe9, 0x79, 0x83, 0xfa, 0x59, 0x27, 0x70, 0x57, 0x10, 0x64, 0x57, 0x10, 0x7c, 0xcc, 0xae,
-	0x20, 0xac, 0xaf, 0xf3, 0xe9, 0x5f, 0xf0, 0x7b, 0xd4, 0x64, 0x29, 0x31, 0xb7, 0x50, 0xbd, 0x71,
-	0xa1, 0xf1, 0xaf, 0x62, 0x47, 0x2e, 0xd0, 0x5d, 0x4e, 0xb4, 0x89, 0xb4, 0xbd, 0xca, 0x68, 0x91,
-	0x30, 0x62, 0xc0, 0x8d, 0x1d, 0xde, 0x38, 0xd6, 0x4a, 0xab, 0xee, 0x11, 0x3e, 0xd9, 0xa2, 0x9d,
-	0x1c, 0xa3, 0x9a, 0x5b, 0xf3, 0x6b, 0x76, 0x61, 0xf4, 0x1f, 0xef, 0xe0, 0xc6, 0xc2, 0xf5, 0x40,
-	0xff, 0x57, 0x0d, 0xdd, 0xdf, 0x93, 0xc3, 0x4f, 0x51, 0xcb, 0x48, 0x43, 0x78, 0xa4, 0x40, 0x27,
-	0x52, 0x68, 0xd0, 0x91, 0x06, 0x61, 0xec, 0xf3, 0x54, 0x43, 0x6c, 0xcf, 0xc2, 0xec, 0x68, 0x02,
-	0xc2, 0xe0, 0x37, 0xe8, 0xc1, 0x66, 0x83, 0xd0, 0x2b, 0x21, 0xbf, 0x71, 0x60, 0x33, 0x70, 0x2f,
-	0x56, 0x0d, 0x3b, 0xc5, 0xe6, 0xdb, 0x5c, 0x02, 0xbf, 0x40, 0xfe, 0xe6, 0x82, 0x82, 0xaf, 0x40,
-	0x0d, 0x30, 0xfb, 0x82, 0xd5, 0xb0, 0x5d, 0x6c, 0x87, 0xeb, 0x53, 0xfc, 0x04, 0x61, 0xca, 0xf4,
-	0xa6, 0xb5, 0x6a, 0x3b, 0xb7, 0x29, 0xd3, 0x45, 0xe9, 0x2b, 0xd4, 0x29, 0xa6, 0x0b, 0xce, 0x43,
-	0xdb, 0xf2, 0xf3, 0xad, 0x82, 0xf2, 0x39, 0x6a, 0x17, 0xdb, 0x7f, 0x8d, 0x35, 0xdb, 0x6c, 0xe5,
-	0x9b, 0x79, 0x21, 0x6c, 0x0b, 0x6f, 0x39, 0x21, 0x94, 0x08, 0x61, 0xb7, 0xf0, 0xc8, 0x09, 0x61,
-	0x8f, 0x10, 0xca, 0x85, 0xc7, 0x4e, 0x08, 0x3b, 0x84, 0x7c, 0x5b, 0x88, 0x9c, 0x90, 0x97, 0x08,
-	0xf9, 0x6e, 0x61, 0xdd, 0x09, 0xf9, 0x1e, 0x21, 0x2f, 0x17, 0x9e, 0x38, 0x21, 0xdf, 0x21, 0x54,
-	0xdb, 0xc2, 0x53, 0x27, 0x54, 0x25, 0x42, 0xb5, 0x5b, 0xd8, 0x70, 0x42, 0xb5, 0x47, 0xa8, 0xca,
-	0x85, 0x4d, 0x27, 0x54, 0x25, 0xc2, 0x77, 0xed, 0x1f, 0xab, 0xae, 0xf7, 0x73, 0xd5, 0xf5, 0x7e,
-	0xaf, 0xba, 0xde, 0xe7, 0xa3, 0xec, 0x8b, 0x9c, 0xd6, 0xec, 0x27, 0xfe, 0xec, 0x4f, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0xc5, 0x17, 0xaa, 0x95, 0xb9, 0x05, 0x00, 0x00,
+	// 537 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x93, 0xc1, 0x6e, 0xd3, 0x30,
+	0x1c, 0xc6, 0x71, 0x9a, 0x56, 0x9b, 0xcb, 0x36, 0xb0, 0xba, 0xae, 0x2b, 0xa2, 0xab, 0x2a, 0x21,
+	0x55, 0x42, 0x24, 0xea, 0x10, 0x0f, 0x40, 0x57, 0x09, 0xf5, 0xc6, 0x52, 0xb8, 0x70, 0x89, 0xdc,
+	0xd8, 0x74, 0x61, 0xa9, 0x1d, 0xe5, 0xef, 0x16, 0xed, 0x7d, 0x10, 0x0f, 0xc0, 0x91, 0x13, 0xc7,
+	0x1d, 0x79, 0x02, 0x84, 0x7a, 0xe3, 0x15, 0x38, 0x21, 0xdb, 0x49, 0x1b, 0xd0, 0xc4, 0xa0, 0x37,
+	0x2b, 0xff, 0xef, 0xfb, 0xc5, 0xfe, 0x3e, 0x1b, 0x3f, 0x9c, 0x73, 0xb8, 0xf0, 0x97, 0x03, 0x9a,
+	0xa4, 0x17, 0x74, 0xe0, 0x33, 0xaa, 0x68, 0x9a, 0x50, 0xc1, 0xbd, 0x34, 0x93, 0x4a, 0x92, 0xc6,
+	0xa5, 0x14, 0x4b, 0x79, 0xe5, 0x69, 0x95, 0x57, 0xa8, 0xda, 0x27, 0x33, 0x29, 0x67, 0x09, 0xf7,
+	0x8d, 0x66, 0xba, 0x78, 0xeb, 0xab, 0x78, 0xce, 0x41, 0xd1, 0x79, 0x6a, 0x6d, 0xed, 0xc6, 0x4c,
+	0xce, 0xa4, 0x59, 0xfa, 0x7a, 0x95, 0x7f, 0x3d, 0x5a, 0xd2, 0x24, 0x66, 0x54, 0x71, 0xbf, 0x58,
+	0xd8, 0x41, 0x8f, 0xe1, 0x83, 0x51, 0xf1, 0xe3, 0x89, 0xa2, 0x6a, 0x01, 0xe4, 0x1c, 0xef, 0xc1,
+	0x62, 0x0a, 0x51, 0x16, 0xa7, 0x2a, 0x96, 0x02, 0x5a, 0xa8, 0x5b, 0xe9, 0xd7, 0x4f, 0x1f, 0x7b,
+	0x37, 0x6d, 0xc8, 0x1b, 0xc5, 0x10, 0xc9, 0x25, 0xcf, 0xae, 0x26, 0x25, 0x4f, 0xf0, 0x3b, 0xa1,
+	0xf7, 0xb1, 0x82, 0x0f, 0x6f, 0x14, 0x92, 0x63, 0xec, 0xc4, 0xac, 0x85, 0xba, 0xa8, 0xbf, 0x3b,
+	0xdc, 0xfd, 0xfc, 0xe3, 0x4b, 0xc5, 0xcd, 0x9c, 0x7b, 0x28, 0x70, 0x62, 0x46, 0x46, 0xf8, 0x38,
+	0x92, 0x42, 0x65, 0x32, 0x09, 0xcd, 0xf6, 0xc2, 0x58, 0x80, 0xa2, 0x22, 0xe2, 0x61, 0xcc, 0x5a,
+	0xce, 0x9f, 0x8e, 0x66, 0xae, 0x7d, 0xa9, 0xa5, 0xe3, 0x5c, 0x39, 0x66, 0x64, 0x8c, 0xef, 0x46,
+	0x52, 0x08, 0x1e, 0xa9, 0x50, 0x47, 0xd5, 0xaa, 0x74, 0x51, 0xbf, 0x7e, 0xda, 0xf6, 0x6c, 0x8e,
+	0x5e, 0x91, 0xa3, 0xf7, 0xaa, 0xc8, 0x71, 0x88, 0x35, 0xb4, 0xfa, 0x09, 0x39, 0x3b, 0x28, 0xa8,
+	0xe7, 0x5e, 0x3d, 0x25, 0x67, 0xf8, 0x80, 0xe9, 0x43, 0x94, 0x68, 0xee, 0x6d, 0xb4, 0x60, 0x7f,
+	0x63, 0x31, 0x90, 0x73, 0x7c, 0x94, 0x50, 0x50, 0x21, 0x98, 0xb0, 0xc3, 0x45, 0xaa, 0xcb, 0xb0,
+	0xb0, 0xea, 0xad, 0xb0, 0x86, 0xb6, 0xda, 0x9a, 0x5e, 0x1b, 0xa3, 0x41, 0x8e, 0x71, 0xcd, 0xd2,
+	0x5a, 0x35, 0x43, 0x18, 0xfc, 0x47, 0x53, 0x16, 0x16, 0xe4, 0x80, 0xde, 0x4f, 0x07, 0x3f, 0xf8,
+	0x8b, 0x8e, 0xbc, 0xc0, 0x55, 0x25, 0x15, 0x4d, 0x4c, 0x63, 0xff, 0x70, 0x27, 0x78, 0xb6, 0x8c,
+	0x23, 0x73, 0xb1, 0x60, 0xe8, 0x5e, 0x7f, 0x3b, 0xb9, 0x13, 0x58, 0x3f, 0x39, 0xc3, 0x95, 0x88,
+	0x81, 0xa9, 0x71, 0x2b, 0x8c, 0x76, 0x6b, 0x08, 0x67, 0x90, 0x57, 0xba, 0x0d, 0x84, 0x5b, 0x48,
+	0xc2, 0x20, 0x6f, 0x72, 0x1b, 0x48, 0x62, 0x21, 0x19, 0x83, 0xbc, 0xc1, 0x6d, 0x20, 0x19, 0x83,
+	0xde, 0x07, 0x54, 0x7e, 0x25, 0x25, 0x11, 0x79, 0x84, 0xf7, 0x33, 0x0e, 0xa9, 0x14, 0xc0, 0x21,
+	0x04, 0x2e, 0x94, 0xc9, 0xdf, 0x0d, 0xf6, 0xd6, 0x5f, 0x27, 0x5c, 0x28, 0xf2, 0x0c, 0x37, 0x37,
+	0x32, 0x1a, 0x5d, 0x0a, 0xf9, 0x3e, 0xe1, 0x6c, 0xc6, 0xed, 0x73, 0x71, 0x83, 0xc3, 0xf5, 0xf4,
+	0x79, 0x69, 0x48, 0x9e, 0x60, 0xb2, 0xb1, 0x65, 0xfc, 0x1d, 0x8f, 0x14, 0x67, 0x26, 0x55, 0x37,
+	0xb8, 0xbf, 0x9e, 0x04, 0xf9, 0x60, 0xd8, 0xbc, 0x5e, 0x75, 0xd0, 0xd7, 0x55, 0x07, 0x7d, 0x5f,
+	0x75, 0xd0, 0x9b, 0x9d, 0xe2, 0x7c, 0xd3, 0x9a, 0xb9, 0xb0, 0x4f, 0x7f, 0x05, 0x00, 0x00, 0xff,
+	0xff, 0xdb, 0x32, 0x31, 0x89, 0xd8, 0x04, 0x00, 0x00,
 }
 
 func (m *DataplaneStatus) Marshal() (dAtA []byte, err error) {
@@ -503,80 +495,81 @@ func (m *DiscoverySubscriptionStatus) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.TotalResponsesSent != 0 {
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintDataplane(dAtA, i, uint64(m.Total.Size()))
+	n5, err := m.Total.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n5
+	dAtA[i] = 0x12
+	i++
+	i = encodeVarintDataplane(dAtA, i, uint64(m.Cds.Size()))
+	n6, err := m.Cds.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n6
+	dAtA[i] = 0x1a
+	i++
+	i = encodeVarintDataplane(dAtA, i, uint64(m.Eds.Size()))
+	n7, err := m.Eds.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n7
+	dAtA[i] = 0x22
+	i++
+	i = encodeVarintDataplane(dAtA, i, uint64(m.Lds.Size()))
+	n8, err := m.Lds.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n8
+	dAtA[i] = 0x2a
+	i++
+	i = encodeVarintDataplane(dAtA, i, uint64(m.Rds.Size()))
+	n9, err := m.Rds.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n9
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *DiscoveryServiceStats) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DiscoveryServiceStats) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.ResponsesSent != 0 {
 		dAtA[i] = 0x8
 		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.TotalResponsesSent))
+		i = encodeVarintDataplane(dAtA, i, uint64(m.ResponsesSent))
 	}
-	if m.TotalResponsesAcknowledged != 0 {
+	if m.ResponsesAcknowledged != 0 {
 		dAtA[i] = 0x10
 		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.TotalResponsesAcknowledged))
+		i = encodeVarintDataplane(dAtA, i, uint64(m.ResponsesAcknowledged))
 	}
-	if m.TotalResponsesRejected != 0 {
+	if m.ResponsesRejected != 0 {
 		dAtA[i] = 0x18
 		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.TotalResponsesRejected))
-	}
-	if m.CdsResponsesSent != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.CdsResponsesSent))
-	}
-	if m.CdsResponsesAcknowledged != 0 {
-		dAtA[i] = 0x28
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.CdsResponsesAcknowledged))
-	}
-	if m.CdsResponsesRejected != 0 {
-		dAtA[i] = 0x30
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.CdsResponsesRejected))
-	}
-	if m.EdsResponsesSent != 0 {
-		dAtA[i] = 0x38
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.EdsResponsesSent))
-	}
-	if m.EdsResponsesAcknowledged != 0 {
-		dAtA[i] = 0x40
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.EdsResponsesAcknowledged))
-	}
-	if m.EdsResponsesRejected != 0 {
-		dAtA[i] = 0x48
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.EdsResponsesRejected))
-	}
-	if m.LdsResponsesSent != 0 {
-		dAtA[i] = 0x50
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.LdsResponsesSent))
-	}
-	if m.LdsResponsesAcknowledged != 0 {
-		dAtA[i] = 0x58
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.LdsResponsesAcknowledged))
-	}
-	if m.LdsResponsesRejected != 0 {
-		dAtA[i] = 0x60
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.LdsResponsesRejected))
-	}
-	if m.RdsResponsesSent != 0 {
-		dAtA[i] = 0x68
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.RdsResponsesSent))
-	}
-	if m.RdsResponsesAcknowledged != 0 {
-		dAtA[i] = 0x70
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.RdsResponsesAcknowledged))
-	}
-	if m.RdsResponsesRejected != 0 {
-		dAtA[i] = 0x78
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.RdsResponsesRejected))
+		i = encodeVarintDataplane(dAtA, i, uint64(m.ResponsesRejected))
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -653,50 +646,36 @@ func (m *DiscoverySubscriptionStatus) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.TotalResponsesSent != 0 {
-		n += 1 + sovDataplane(uint64(m.TotalResponsesSent))
+	l = m.Total.Size()
+	n += 1 + l + sovDataplane(uint64(l))
+	l = m.Cds.Size()
+	n += 1 + l + sovDataplane(uint64(l))
+	l = m.Eds.Size()
+	n += 1 + l + sovDataplane(uint64(l))
+	l = m.Lds.Size()
+	n += 1 + l + sovDataplane(uint64(l))
+	l = m.Rds.Size()
+	n += 1 + l + sovDataplane(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
 	}
-	if m.TotalResponsesAcknowledged != 0 {
-		n += 1 + sovDataplane(uint64(m.TotalResponsesAcknowledged))
+	return n
+}
+
+func (m *DiscoveryServiceStats) Size() (n int) {
+	if m == nil {
+		return 0
 	}
-	if m.TotalResponsesRejected != 0 {
-		n += 1 + sovDataplane(uint64(m.TotalResponsesRejected))
+	var l int
+	_ = l
+	if m.ResponsesSent != 0 {
+		n += 1 + sovDataplane(uint64(m.ResponsesSent))
 	}
-	if m.CdsResponsesSent != 0 {
-		n += 1 + sovDataplane(uint64(m.CdsResponsesSent))
+	if m.ResponsesAcknowledged != 0 {
+		n += 1 + sovDataplane(uint64(m.ResponsesAcknowledged))
 	}
-	if m.CdsResponsesAcknowledged != 0 {
-		n += 1 + sovDataplane(uint64(m.CdsResponsesAcknowledged))
-	}
-	if m.CdsResponsesRejected != 0 {
-		n += 1 + sovDataplane(uint64(m.CdsResponsesRejected))
-	}
-	if m.EdsResponsesSent != 0 {
-		n += 1 + sovDataplane(uint64(m.EdsResponsesSent))
-	}
-	if m.EdsResponsesAcknowledged != 0 {
-		n += 1 + sovDataplane(uint64(m.EdsResponsesAcknowledged))
-	}
-	if m.EdsResponsesRejected != 0 {
-		n += 1 + sovDataplane(uint64(m.EdsResponsesRejected))
-	}
-	if m.LdsResponsesSent != 0 {
-		n += 1 + sovDataplane(uint64(m.LdsResponsesSent))
-	}
-	if m.LdsResponsesAcknowledged != 0 {
-		n += 1 + sovDataplane(uint64(m.LdsResponsesAcknowledged))
-	}
-	if m.LdsResponsesRejected != 0 {
-		n += 1 + sovDataplane(uint64(m.LdsResponsesRejected))
-	}
-	if m.RdsResponsesSent != 0 {
-		n += 1 + sovDataplane(uint64(m.RdsResponsesSent))
-	}
-	if m.RdsResponsesAcknowledged != 0 {
-		n += 1 + sovDataplane(uint64(m.RdsResponsesAcknowledged))
-	}
-	if m.RdsResponsesRejected != 0 {
-		n += 1 + sovDataplane(uint64(m.RdsResponsesRejected))
+	if m.ResponsesRejected != 0 {
+		n += 1 + sovDataplane(uint64(m.ResponsesRejected))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1097,10 +1076,10 @@ func (m *DiscoverySubscriptionStatus) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TotalResponsesSent", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Total", wireType)
 			}
-			m.TotalResponsesSent = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDataplane
@@ -1110,16 +1089,235 @@ func (m *DiscoverySubscriptionStatus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalResponsesSent |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Total.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Cds", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Cds.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Eds", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Eds.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lds", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Lds.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Rds", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Rds.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDataplane(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DiscoveryServiceStats) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDataplane
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DiscoveryServiceStats: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DiscoveryServiceStats: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResponsesSent", wireType)
+			}
+			m.ResponsesSent = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ResponsesSent |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TotalResponsesAcknowledged", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ResponsesAcknowledged", wireType)
 			}
-			m.TotalResponsesAcknowledged = 0
+			m.ResponsesAcknowledged = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDataplane
@@ -1129,16 +1327,16 @@ func (m *DiscoverySubscriptionStatus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalResponsesAcknowledged |= uint64(b&0x7F) << shift
+				m.ResponsesAcknowledged |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TotalResponsesRejected", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ResponsesRejected", wireType)
 			}
-			m.TotalResponsesRejected = 0
+			m.ResponsesRejected = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDataplane
@@ -1148,235 +1346,7 @@ func (m *DiscoverySubscriptionStatus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalResponsesRejected |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CdsResponsesSent", wireType)
-			}
-			m.CdsResponsesSent = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.CdsResponsesSent |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CdsResponsesAcknowledged", wireType)
-			}
-			m.CdsResponsesAcknowledged = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.CdsResponsesAcknowledged |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CdsResponsesRejected", wireType)
-			}
-			m.CdsResponsesRejected = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.CdsResponsesRejected |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 7:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EdsResponsesSent", wireType)
-			}
-			m.EdsResponsesSent = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.EdsResponsesSent |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EdsResponsesAcknowledged", wireType)
-			}
-			m.EdsResponsesAcknowledged = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.EdsResponsesAcknowledged |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 9:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EdsResponsesRejected", wireType)
-			}
-			m.EdsResponsesRejected = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.EdsResponsesRejected |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 10:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LdsResponsesSent", wireType)
-			}
-			m.LdsResponsesSent = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.LdsResponsesSent |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 11:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LdsResponsesAcknowledged", wireType)
-			}
-			m.LdsResponsesAcknowledged = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.LdsResponsesAcknowledged |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 12:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LdsResponsesRejected", wireType)
-			}
-			m.LdsResponsesRejected = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.LdsResponsesRejected |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 13:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RdsResponsesSent", wireType)
-			}
-			m.RdsResponsesSent = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.RdsResponsesSent |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 14:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RdsResponsesAcknowledged", wireType)
-			}
-			m.RdsResponsesAcknowledged = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.RdsResponsesAcknowledged |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 15:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RdsResponsesRejected", wireType)
-			}
-			m.RdsResponsesRejected = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.RdsResponsesRejected |= uint64(b&0x7F) << shift
+				m.ResponsesRejected |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
