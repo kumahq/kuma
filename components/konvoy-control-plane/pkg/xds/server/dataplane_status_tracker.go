@@ -141,35 +141,11 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 	if req.ResponseNonce != "" {
 		subscription.LastStatusUpdateTime = types.TimestampNow()
 		if req.ErrorDetail != nil {
-			subscription.Status.TotalResponsesRejected++
+			subscription.Status.Total.ResponsesRejected++
+			subscription.Status.StatsOf(req.TypeUrl).ResponsesRejected++
 		} else {
-			subscription.Status.TotalResponsesAcknowledged++
-		}
-		switch req.TypeUrl {
-		case envoy_cache.ClusterType:
-			if req.ErrorDetail != nil {
-				subscription.Status.CdsResponsesRejected++
-			} else {
-				subscription.Status.CdsResponsesAcknowledged++
-			}
-		case envoy_cache.EndpointType:
-			if req.ErrorDetail != nil {
-				subscription.Status.EdsResponsesRejected++
-			} else {
-				subscription.Status.EdsResponsesAcknowledged++
-			}
-		case envoy_cache.ListenerType:
-			if req.ErrorDetail != nil {
-				subscription.Status.LdsResponsesRejected++
-			} else {
-				subscription.Status.LdsResponsesAcknowledged++
-			}
-		case envoy_cache.RouteType:
-			if req.ErrorDetail != nil {
-				subscription.Status.RdsResponsesRejected++
-			} else {
-				subscription.Status.RdsResponsesAcknowledged++
-			}
+			subscription.Status.Total.ResponsesAcknowledged++
+			subscription.Status.StatsOf(req.TypeUrl).ResponsesAcknowledged++
 		}
 	}
 
@@ -194,17 +170,8 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req *envoy.Dis
 	// update Dataplane status
 	subscription := state.subscription
 	subscription.LastStatusUpdateTime = types.TimestampNow()
-	subscription.Status.TotalResponsesSent++
-	switch resp.TypeUrl {
-	case envoy_cache.ClusterType:
-		subscription.Status.CdsResponsesSent++
-	case envoy_cache.EndpointType:
-		subscription.Status.EdsResponsesSent++
-	case envoy_cache.ListenerType:
-		subscription.Status.LdsResponsesSent++
-	case envoy_cache.RouteType:
-		subscription.Status.RdsResponsesSent++
-	}
+	subscription.Status.Total.ResponsesSent++
+	subscription.Status.StatsOf(resp.TypeUrl).ResponsesSent++
 
 	xdsServerLog.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
 }

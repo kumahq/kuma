@@ -63,8 +63,8 @@ func (f *dataplaneStatusSink) Start(accessor DataplaneStatusAccessor, stop <-cha
 
 func (f *dataplaneStatusSink) flush(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
 	create := false
-	dataplane := &mesh_core.DataplaneResource{}
-	err := f.rs.Get(context.Background(), dataplane, core_store.GetBy(dataplaneId))
+	dataplaneStatus := &mesh_core.DataplaneStatusResource{}
+	err := f.rs.Get(context.Background(), dataplaneStatus, core_store.GetBy(dataplaneId))
 	if err != nil {
 		if core_store.IsResourceNotFound(err) {
 			create = true
@@ -72,15 +72,15 @@ func (f *dataplaneStatusSink) flush(dataplaneId core_model.ResourceKey, subscrip
 			return err
 		}
 	}
-	originalStatus := proto.Clone(&dataplane.Status).(*mesh_proto.DataplaneStatus)
-	dataplane.Status.UpdateSubscription(subscription)
-	if dataplane.Status.Equal(originalStatus) {
+	originalStatus := proto.Clone(&dataplaneStatus.Spec).(*mesh_proto.DataplaneStatus)
+	dataplaneStatus.Spec.UpdateSubscription(subscription)
+	if dataplaneStatus.Spec.Equal(originalStatus) {
 		return nil
 	}
 	xdsServerLog.V(1).Info("going ahead with Dataplane status update", "dataplaneid", dataplaneId, "subscription", subscription)
 	if create {
-		return f.rs.Create(context.Background(), dataplane, core_store.CreateBy(dataplaneId))
+		return f.rs.Create(context.Background(), dataplaneStatus, core_store.CreateBy(dataplaneId))
 	} else {
-		return f.rs.Update(context.Background(), dataplane)
+		return f.rs.Update(context.Background(), dataplaneStatus)
 	}
 }
