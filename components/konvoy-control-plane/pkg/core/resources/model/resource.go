@@ -7,6 +7,17 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+const (
+	DefaultMesh      = "default"
+	DefaultNamespace = "default"
+)
+
+type ResourceKey struct {
+	Mesh      string
+	Namespace string
+	Name      string
+}
+
 type Resource interface {
 	GetType() ResourceType
 	GetMeta() ResourceMeta

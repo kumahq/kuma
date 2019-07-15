@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
@@ -131,4 +132,8 @@ func ErrorResourceAlreadyExists(rt model.ResourceType, namespace, name, mesh str
 
 func ErrorResourceConflict(rt model.ResourceType, namespace, name, mesh string) error {
 	return fmt.Errorf("Resource conflict: type=%q namespace=%q name=%q mesh=%q", rt, namespace, name, mesh)
+}
+
+func IsResourceNotFound(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "Resource not found")
 }

@@ -11,6 +11,7 @@ PROTOC_VERSION := 3.6.1
 GOGO_PROTOBUF_VERSION := v1.2.1
 
 protoc_search_go_packages := \
+	github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION) \
 	github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION)/protobuf \
 
 protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(shell go env GOPATH)/pkg/mod/$(go_package))

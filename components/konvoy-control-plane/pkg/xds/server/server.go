@@ -30,7 +30,7 @@ func (s *Server) Setup(rt core_runtime.Runtime) error {
 		ds.AddConsumer(r)
 	}
 
-	srv := envoy_xds.NewServer(rt.XDS().Cache(), nil)
+	srv := envoy_xds.NewServer(rt.XDS().Cache(), DefaultDataplaneStatusTracker(rt))
 	return core_runtime.Add(
 		rt,
 		// xDS gRPC API

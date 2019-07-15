@@ -9,8 +9,13 @@ import (
 
 // Runtime represents initialized application state.
 type Runtime interface {
+	RuntimeInfo
 	RuntimeContext
 	ComponentManager
+}
+
+type RuntimeInfo interface {
+	InstanceId() string
 }
 
 type RuntimeContext interface {
@@ -23,8 +28,19 @@ type RuntimeContext interface {
 var _ Runtime = &runtime{}
 
 type runtime struct {
+	RuntimeInfo
 	RuntimeContext
 	ComponentManager
+}
+
+var _ RuntimeInfo = &runtimeInfo{}
+
+type runtimeInfo struct {
+	instanceId string
+}
+
+func (i *runtimeInfo) InstanceId() string {
+	return i.instanceId
 }
 
 var _ RuntimeContext = &runtimeContext{}
