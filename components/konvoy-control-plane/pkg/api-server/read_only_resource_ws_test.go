@@ -2,9 +2,11 @@ package api_server_test
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	sample_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/apis/sample"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -22,7 +24,7 @@ var _ = Describe("Read only Resource WS", func() {
 		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{ReadOnly: true})
 		client = resourceApiClient{
 			address: apiServer.Address(),
-			mesh:    mesh,
+			path:    "/meshes/" + mesh + "/traffic-routes",
 		}
 		apiServer.Start()
 		waitForServer(&client)
@@ -56,12 +58,19 @@ var _ = Describe("Read only Resource WS", func() {
 	Describe("On PUT", func() {
 		It("should return 405", func() {
 			// given
-			route := sample_proto.TrafficRoute{
-				Path: "/sample-path",
+			res := rest.Resource{
+				Meta: rest.ResourceMeta{
+					Name: "new-resource",
+					Mesh: mesh,
+					Type: string(sample.TrafficRouteType),
+				},
+				Spec: &sample_proto.TrafficRoute{
+					Path: "/sample-path",
+				},
 			}
 
 			// when
-			response := client.put("new-resource", &route)
+			response := client.put(res)
 
 			// then
 			Expect(response.StatusCode).To(Equal(405))
