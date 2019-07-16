@@ -43,10 +43,12 @@ EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
 EXAMPLE_ENVOY_PORT ?= 8080
 ENVOY_ADMIN_PORT ?= 9901
 
+EXAMPLE_NAMESPACE ?= konvoy-demo
+
 KIND_KUBECONFIG = $(shell kind get kubeconfig-path --name=konvoy)
 
 define KIND_EXAMPLE_ENVOY_ID
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}').konvoy-demo
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}').$(EXAMPLE_NAMESPACE)
 endef
 
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
@@ -233,7 +235,9 @@ start/kind:
 	@echo
 
 start/example:
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f examples/local/demo-app.yaml
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
+	cat examples/local/external-service.yaml | sed  's/$${KONVOY_HOST_IP}/$(LOCAL_IP)/g' | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f -
 
 clean: clean/build clean/proto ## Dev: Clean
 

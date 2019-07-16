@@ -1,0 +1,20 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: konvoy-control-plane
+  namespace: konvoy-system
+spec:
+  clusterIP: None
+  ports:
+  - port: 5678
+---
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: konvoy-control-plane
+  namespace: konvoy-system
+subsets:
+- addresses:
+  - ip: ${KONVOY_HOST_IP}
+  ports:
+  - port: 5678
