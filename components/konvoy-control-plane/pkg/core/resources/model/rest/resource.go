@@ -19,6 +19,10 @@ type Resource struct {
 	Spec model.ResourceSpec
 }
 
+type ResourceList struct {
+	Items []*Resource `json:"items"`
+}
+
 var _ json.Marshaler = &Resource{}
 var _ json.Unmarshaler = &Resource{}
 

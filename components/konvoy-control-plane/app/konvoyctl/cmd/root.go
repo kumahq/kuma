@@ -44,6 +44,7 @@ func newRootCmd(root *rootContext) *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&root.args.debug, "debug", true, "enable debug-level logging")
 	// sub-commands
 	cmd.AddCommand(newConfigCmd(root))
+	cmd.AddCommand(newGetCmd(root))
 	return cmd
 }
 

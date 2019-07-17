@@ -32,6 +32,22 @@ func DetectKubeConfig() (KubeConfig, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	return newKubeConfig(clientConfig)
+}
+
+func GetKubeConfig(kubeconfig, context, namespace string) (KubeConfig, error) {
+	loadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig}
+	configOverrides := &clientcmd.ConfigOverrides{
+		Context: clientcmdapi.Context{
+			Namespace: namespace,
+		},
+		CurrentContext: context,
+	}
+	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	return newKubeConfig(clientConfig)
+}
+
+func newKubeConfig(clientConfig clientcmd.ClientConfig) (KubeConfig, error) {
 	config, err := clientConfig.ConfigAccess().GetStartingConfig()
 	if err != nil {
 		return nil, err

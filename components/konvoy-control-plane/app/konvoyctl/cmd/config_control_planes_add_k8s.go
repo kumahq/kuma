@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/k8s"
+	konvoyctl_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/k8s"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 )
 
@@ -18,7 +18,7 @@ func newConfigControlPlanesAddKubernetesCmd(pctx *configControlPlanesAddContext)
 		Short: "Add a Control Plane installed on Kubernetes",
 		Long:  `Add a Control Plane installed on Kubernetes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			config, err := k8s.DetectKubeConfig()
+			config, err := konvoyctl_k8s.DetectKubeConfig()
 			if err != nil {
 				return errors.Wrapf(err, "Failed to detect current `kubectl` context")
 			}
