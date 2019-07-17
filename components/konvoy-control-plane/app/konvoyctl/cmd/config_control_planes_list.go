@@ -19,11 +19,11 @@ func newConfigControlPlanesListCmd(pctx *rootContext) *cobra.Command {
 				NextRow: func() func() []string {
 					i := 0
 					return func() []string {
+						defer func() { i++ }()
 						if len(controlPlanes) <= i {
 							return nil
 						}
 						cp := controlPlanes[i]
-						i++
 
 						env := "non-k8s"
 						if _, ok := cp.Coordinates.Type.(*config_proto.ControlPlaneCoordinates_Kubernetes_); ok {

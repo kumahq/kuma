@@ -25,21 +25,6 @@ func (ds *DataplaneStatus) UpdateSubscription(s *DiscoverySubscription) {
 	}
 }
 
-func (s *DiscoverySubscriptionStatus) StatsOf(typeUrl string) *DiscoveryServiceStats {
-	switch typeUrl {
-	case envoy_cache.ClusterType:
-		return &s.Cds
-	case envoy_cache.EndpointType:
-		return &s.Eds
-	case envoy_cache.ListenerType:
-		return &s.Lds
-	case envoy_cache.RouteType:
-		return &s.Rds
-	default:
-		return &DiscoveryServiceStats{}
-	}
-}
-
 func (ds *DataplaneStatus) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
 	if len(ds.Subscriptions) == 0 {
 		return nil, nil
@@ -65,4 +50,19 @@ func (ds *DataplaneStatus) Sum(v func(*DiscoverySubscription) uint64) uint64 {
 		result += v(s)
 	}
 	return result
+}
+
+func (s *DiscoverySubscriptionStatus) StatsOf(typeUrl string) *DiscoveryServiceStats {
+	switch typeUrl {
+	case envoy_cache.ClusterType:
+		return &s.Cds
+	case envoy_cache.EndpointType:
+		return &s.Eds
+	case envoy_cache.ListenerType:
+		return &s.Lds
+	case envoy_cache.RouteType:
+		return &s.Rds
+	default:
+		return &DiscoveryServiceStats{}
+	}
 }

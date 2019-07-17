@@ -61,11 +61,11 @@ func (p *dataplaneStatusesTablePrinter) Print(dataplaneStatuses *mesh_core.Datap
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
+				defer func() { i++ }()
 				if len(dataplaneStatuses.Items) <= i {
 					return nil
 				}
 				dataplaneStatus := dataplaneStatuses.Items[i]
-				i++
 
 				totalSubscriptions := len(dataplaneStatus.Spec.Subscriptions)
 				_, lastConnected := dataplaneStatus.Spec.GetLatestSubscription()

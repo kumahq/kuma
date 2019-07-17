@@ -17,7 +17,7 @@
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		print/kubebuilder/test_assets
 
-PKG_LIST := ./... ./pkg/plugins/resources/k8s/native/...
+PKG_LIST := ./... ./api/... ./pkg/plugins/resources/k8s/native/...
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts

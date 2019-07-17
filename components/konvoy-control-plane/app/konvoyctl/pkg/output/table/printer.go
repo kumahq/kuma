@@ -25,8 +25,14 @@ func (p *printer) Print(data Table, out io.Writer) error {
 	table := NewWriter(out)
 	defer table.Flush()
 
-	if err := table.Headers(data.Headers...); err != nil {
-		return err
+	if 0 < len(data.Headers) {
+		if err := table.Headers(data.Headers...); err != nil {
+			return err
+		}
+	}
+
+	if data.NextRow == nil {
+		return nil
 	}
 
 	for {
