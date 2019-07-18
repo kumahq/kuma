@@ -37,7 +37,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return (&dataplaneStatusesTablePrinter{}).Print(pctx.Now(), dataplaneStatuses, cmd.OutOrStdout())
+				return printDataplaneStatuses(pctx.Now(), dataplaneStatuses, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -50,10 +50,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-type dataplaneStatusesTablePrinter struct {
-}
-
-func (p *dataplaneStatusesTablePrinter) Print(now time.Time, dataplaneStatuses *mesh_core.DataplaneStatusResourceList, out io.Writer) error {
+func printDataplaneStatuses(now time.Time, dataplaneStatuses *mesh_core.DataplaneStatusResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAMESPACE", "NAME", "SUBSCRIPTIONS", "LAST CONNECTED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
 		NextRow: func() func() []string {

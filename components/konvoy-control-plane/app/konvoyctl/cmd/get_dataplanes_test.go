@@ -98,12 +98,10 @@ var _ = Describe("konvoy get dataplanes", func() {
 
 	Describe("TablePrinter", func() {
 
-		var printer *dataplaneStatusesTablePrinter
 		var dataplaneStatuses *mesh_core.DataplaneStatusResourceList
 		var buf *bytes.Buffer
 
 		BeforeEach(func() {
-			printer = &dataplaneStatusesTablePrinter{}
 			dataplaneStatuses = &mesh_core.DataplaneStatusResourceList{}
 			buf = &bytes.Buffer{}
 		})
@@ -113,7 +111,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 			dataplaneStatuses.Items = nil
 
 			// when
-			err := printer.Print(now, dataplaneStatuses, buf)
+			err := printDataplaneStatuses(now, dataplaneStatuses, buf)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -128,7 +126,7 @@ MESH   NAMESPACE   NAME   SUBSCRIPTIONS   LAST CONNECTED AGO   TOTAL UPDATES   T
 			dataplaneStatuses.Items = sampleDataplaneStatuses
 
 			// when
-			err := printer.Print(now, dataplaneStatuses, buf)
+			err := printDataplaneStatuses(now, dataplaneStatuses, buf)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
