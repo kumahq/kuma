@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/config"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
+	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/pkg/errors"
 )
 
@@ -39,4 +42,12 @@ func (rc *rootContext) CurrentControlPlane() (*config_proto.ControlPlane, error)
 		return nil, errors.Errorf("Current context refers to a Control Plane that doesn't exist: %q", currentContext.ControlPlane)
 	}
 	return controlPlane, nil
+}
+
+func (rc *rootContext) Now() time.Time {
+	return rc.runtime.now()
+}
+
+func (rc *rootContext) NewResourceStore(cp *config_proto.ControlPlane) (core_store.ResourceStore, error) {
+	return rc.runtime.newResourceStore(cp)
 }

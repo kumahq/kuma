@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	konvoyctl_resources "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/resources"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 )
 
 var (
@@ -19,7 +22,9 @@ type rootArgs struct {
 }
 
 type rootRuntime struct {
-	config config_proto.Configuration
+	config           config_proto.Configuration
+	now              func() time.Time
+	newResourceStore func(*config_proto.ControlPlane) (core_store.ResourceStore, error)
 }
 
 type rootContext struct {
@@ -48,10 +53,23 @@ func newRootCmd(root *rootContext) *cobra.Command {
 	return cmd
 }
 
+func defaultRootCmd() *cobra.Command {
+	return newRootCmd(defaultRootContext())
+}
+
+func defaultRootContext() *rootContext {
+	return &rootContext{
+		runtime: rootRuntime{
+			now:              time.Now,
+			newResourceStore: konvoyctl_resources.NewResourceStore,
+		},
+	}
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := newRootCmd(&rootContext{}).Execute(); err != nil {
+	if err := defaultRootCmd().Execute(); err != nil {
 		os.Exit(1)
 	}
 }

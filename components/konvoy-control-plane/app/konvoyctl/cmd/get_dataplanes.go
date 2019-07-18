@@ -9,7 +9,6 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output/printers"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output/table"
-	konvoyctl_resources "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/resources"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/pkg/errors"
@@ -26,7 +25,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rs, err := konvoyctl_resources.NewResourceStore(controlPlane)
+			rs, err := pctx.NewResourceStore(controlPlane)
 			if err != nil {
 				return errors.Wrapf(err, "Failed to create a client for a given Control Plane: %s", controlPlane)
 			}
@@ -38,7 +37,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return (&dataplaneStatusesTablePrinter{}).Print(dataplaneStatuses, cmd.OutOrStdout())
+				return (&dataplaneStatusesTablePrinter{}).Print(pctx.Now(), dataplaneStatuses, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -54,8 +53,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 type dataplaneStatusesTablePrinter struct {
 }
 
-func (p *dataplaneStatusesTablePrinter) Print(dataplaneStatuses *mesh_core.DataplaneStatusResourceList, out io.Writer) error {
-	now := time.Now()
+func (p *dataplaneStatusesTablePrinter) Print(now time.Time, dataplaneStatuses *mesh_core.DataplaneStatusResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAMESPACE", "NAME", "SUBSCRIPTIONS", "LAST CONNECTED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
 		NextRow: func() func() []string {
