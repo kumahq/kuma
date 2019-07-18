@@ -65,7 +65,6 @@ func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int6
 		Id:                     core.NewUUID(),
 		ControlPlaneInstanceId: c.runtimeInfo.InstanceId(),
 		ConnectTime:            types.TimestampNow(),
-		Status:                 &mesh_proto.DiscoverySubscriptionStatus{},
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -125,7 +124,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 	// update Dataplane status
 	subscription := state.subscription
 	if req.ResponseNonce != "" {
-		subscription.LastStatusUpdateTime = types.TimestampNow()
+		subscription.Status.LastUpdateTime = types.TimestampNow()
 		if req.ErrorDetail != nil {
 			subscription.Status.Total.ResponsesRejected++
 			subscription.Status.StatsOf(req.TypeUrl).ResponsesRejected++
@@ -151,7 +150,7 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req *envoy.Dis
 
 	// update Dataplane status
 	subscription := state.subscription
-	subscription.LastStatusUpdateTime = types.TimestampNow()
+	subscription.Status.LastUpdateTime = types.TimestampNow()
 	subscription.Status.Total.ResponsesSent++
 	subscription.Status.StatsOf(resp.TypeUrl).ResponsesSent++
 

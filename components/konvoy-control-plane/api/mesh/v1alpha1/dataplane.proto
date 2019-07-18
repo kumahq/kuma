@@ -41,30 +41,30 @@ message DiscoverySubscription {
   // Time when a given Dataplane disconnected from the Control Plane.
   google.protobuf.Timestamp disconnect_time = 4;
 
-  // Time when the Control Plane updated subscription status most recently.
-  google.protobuf.Timestamp last_status_update_time = 5;
-
   // Status of the ADS subscription.
-  DiscoverySubscriptionStatus status = 6;
+  DiscoverySubscriptionStatus status = 5 [ (gogoproto.nullable) = false ];
 }
 
 // DiscoverySubscriptionStatus defines status of an ADS subscription.
 message DiscoverySubscriptionStatus {
 
+  // Time when status of a given ADS subscription was most recently updated.
+  google.protobuf.Timestamp last_update_time = 1;
+
   // Total defines an aggregate over individual xDS stats.
-  DiscoveryServiceStats total = 1 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats total = 2 [ (gogoproto.nullable) = false ];
 
   // CDS defines all CDS stats.
-  DiscoveryServiceStats cds = 2 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats cds = 3 [ (gogoproto.nullable) = false ];
 
   // EDS defines all EDS stats.
-  DiscoveryServiceStats eds = 3 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats eds = 4 [ (gogoproto.nullable) = false ];
 
   // LDS defines all LDS stats.
-  DiscoveryServiceStats lds = 4 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats lds = 5 [ (gogoproto.nullable) = false ];
 
   // RDS defines all RDS stats.
-  DiscoveryServiceStats rds = 5 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats rds = 6 [ (gogoproto.nullable) = false ];
 }
 
 // DiscoveryServiceStats defines all stats over a single xDS service.

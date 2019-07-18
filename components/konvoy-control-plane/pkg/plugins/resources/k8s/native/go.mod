@@ -4,7 +4,6 @@ go 1.12
 
 require (
 	github.com/Kong/konvoy/components/konvoy-control-plane/api v0.0.0-00010101000000-000000000000
-	github.com/envoyproxy/go-control-plane v0.8.2 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/gogo/protobuf v1.2.1
 	github.com/googleapis/gnostic v0.3.0 // indirect
