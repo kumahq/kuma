@@ -132,6 +132,15 @@ jobs:
         keys:
         - konvoy-control-plane/api/go.mod/{{ checksum "components/konvoy-control-plane/api/go.sum" }}
     - run:
+        name: "Download Go modules"
+        command: |
+          cd components/konvoy-control-plane/api && go mod download
+    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
+    - save_cache:
+        key: konvoy-control-plane/api/go.mod/{{ checksum "components/konvoy-control-plane/api/go.sum" }}
+        paths:
+          - "/go/pkg/mod"
+    - run:
         name: "Install pre-requirements"
         command: apt update && apt install unzip
     - run:
@@ -140,10 +149,6 @@ jobs:
     - run:
         name: "Verify that auto-generated code is up-to-date"
         command: make check -C components/konvoy-control-plane/api
-    - save_cache:
-        key: konvoy-control-plane/api/go.mod/{{ checksum "components/konvoy-control-plane/api/go.sum" }}
-        paths:
-          - "/go/pkg/mod"
 
   kcp/test:
     <<: *go-defaults
@@ -161,7 +166,7 @@ jobs:
         command: make dev/tools -C components/konvoy-control-plane
     - run:
         name: "Run unit tests"
-        command: make test -C components/konvoy-control-plane
+        command: GO_TEST_OPTS='-p 2' make test -C components/konvoy-control-plane
     - store_artifacts:
         path: components/konvoy-control-plane/build/coverage
         destination: /coverage
