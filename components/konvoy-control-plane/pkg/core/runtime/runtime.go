@@ -15,7 +15,7 @@ type Runtime interface {
 }
 
 type RuntimeInfo interface {
-	InstanceId() string
+	GetInstanceId() string
 }
 
 type RuntimeContext interface {
@@ -39,7 +39,7 @@ type runtimeInfo struct {
 	instanceId string
 }
 
-func (i *runtimeInfo) InstanceId() string {
+func (i *runtimeInfo) GetInstanceId() string {
 	return i.instanceId
 }
 

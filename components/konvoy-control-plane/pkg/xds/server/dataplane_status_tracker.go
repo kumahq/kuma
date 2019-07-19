@@ -9,17 +9,24 @@ import (
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
+	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
+var (
+	// overridable by unit tests
+	now     = time.Now
+	newUUID = core.NewUUID
+)
+
 type DataplaneStatusTracker interface {
 	envoy_xds.Callbacks
+	GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool)
 }
 
 func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTracker {
@@ -60,7 +67,7 @@ type dataplaneStatusTracker struct {
 type streamState struct {
 	stop         chan struct{} // is used for stopping a goroutine that flushes Dataplane status periodically
 	mu           sync.RWMutex  // protects access to the fields below
-	dataplaneId  *core_model.ResourceKey
+	dataplaneId  core_model.ResourceKey
 	subscription *mesh_proto.DiscoverySubscription
 }
 
@@ -72,9 +79,9 @@ func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int6
 
 	// initialize subscription
 	subscription := &mesh_proto.DiscoverySubscription{
-		Id:                     core.NewUUID(),
-		ControlPlaneInstanceId: c.runtimeInfo.InstanceId(),
-		ConnectTime:            types.TimestampNow(),
+		Id:                     newUUID(),
+		ControlPlaneInstanceId: c.runtimeInfo.GetInstanceId(),
+		ConnectTime:            util_proto.MustTimestampProto(now()),
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -100,7 +107,7 @@ func (c *dataplaneStatusTracker) OnStreamClosed(streamID int64) {
 	// finilize subscription
 	state.mu.Lock() // write access to the per Dataplane info
 	subscription := state.subscription
-	subscription.DisconnectTime = types.TimestampNow()
+	subscription.DisconnectTime = util_proto.MustTimestampProto(now())
 	state.mu.Unlock()
 
 	// trigger final flush
@@ -121,9 +128,9 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 	defer state.mu.Unlock()
 
 	// infer Dataplane id
-	if state.dataplaneId == nil {
+	if state.dataplaneId == (core_model.ResourceKey{}) {
 		if id, err := core_xds.ParseDataplaneId(req.Node); err == nil {
-			state.dataplaneId = id
+			state.dataplaneId = *id
 			// kick off async Dataplane status flusher
 			go c.createStatusSink(state).Start(state.stop)
 		} else {
@@ -134,7 +141,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 	// update Dataplane status
 	subscription := state.subscription
 	if req.ResponseNonce != "" {
-		subscription.Status.LastUpdateTime = types.TimestampNow()
+		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(now())
 		if req.ErrorDetail != nil {
 			subscription.Status.Total.ResponsesRejected++
 			subscription.Status.StatsOf(req.TypeUrl).ResponsesRejected++
@@ -160,7 +167,7 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req *envoy.Dis
 
 	// update Dataplane status
 	subscription := state.subscription
-	subscription.Status.LastUpdateTime = types.TimestampNow()
+	subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(now())
 	subscription.Status.Total.ResponsesSent++
 	subscription.Status.StatsOf(resp.TypeUrl).ResponsesSent++
 
@@ -176,12 +183,17 @@ func (c *dataplaneStatusTracker) OnFetchRequest(context.Context, *envoy.Discover
 // OnFetchResponse is called immediately prior to sending a response.
 func (c *dataplaneStatusTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {}
 
+func (c *dataplaneStatusTracker) GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool) {
+	state, ok := c.streams[streamID]
+	return state, ok
+}
+
 var _ SubscriptionStatusAccessor = &streamState{}
 
 func (s *streamState) GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription) {
 	s.mu.RLock() // read access to the per Dataplane info
 	defer s.mu.RUnlock()
-	return *s.dataplaneId, proto.Clone(s.subscription).(*mesh_proto.DiscoverySubscription)
+	return s.dataplaneId, proto.Clone(s.subscription).(*mesh_proto.DiscoverySubscription)
 }
 
 func (s *streamState) Close() {
