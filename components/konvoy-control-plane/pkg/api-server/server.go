@@ -30,33 +30,35 @@ func NewApiServer(resourceStore store.ResourceStore, definitions []ResourceWsDef
 		Handler: container.ServeMux,
 	}
 
-	webServices := createWebServices(definitions, resourceStore, config)
-	for _, ws := range webServices {
-		container.Add(ws)
-	}
-	configureOpenApi(config, container, webServices)
+	ws := new(restful.WebService)
+	ws.
+		Path("/meshes").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON)
+
+	addToWs(ws, definitions, resourceStore, config)
+	container.Add(ws)
+	configureOpenApi(config, container, ws)
 
 	return &ApiServer{
 		server: srv,
 	}
 }
 
-func createWebServices(definitions []ResourceWsDefinition, resourceStore store.ResourceStore, config ApiServerConfig) []*restful.WebService {
-	var webServices []*restful.WebService
+func addToWs(ws *restful.WebService, definitions []ResourceWsDefinition, resourceStore store.ResourceStore, config ApiServerConfig) {
 	for _, definition := range definitions {
-		ws := resourceWs{
-			resourceStore,
-			config.ReadOnly,
-			definition,
+		resourceWs := resourceWs{
+			resourceStore:        resourceStore,
+			readOnly:             config.ReadOnly,
+			ResourceWsDefinition: definition,
 		}
-		webServices = append(webServices, ws.NewWs())
+		resourceWs.AddToWs(ws)
 	}
-	return webServices
 }
 
-func configureOpenApi(config ApiServerConfig, container *restful.Container, webServices []*restful.WebService) {
+func configureOpenApi(config ApiServerConfig, container *restful.Container, webService *restful.WebService) {
 	openApiConfig := restfulspec.Config{
-		WebServices: webServices,
+		WebServices: []*restful.WebService{webService},
 		APIPath:     config.ApiPath,
 	}
 	container.Add(restfulspec.NewOpenAPIService(openApiConfig))

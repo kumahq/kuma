@@ -22,6 +22,8 @@ PKG_LIST := ./... ./pkg/plugins/resources/k8s/native/...
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts
 
+GO_TEST_OPTS ?=
+
 BUILD_COVERAGE_DIR ?= $(BUILD_DIR)/coverage
 
 COVERAGE_PROFILE := $(BUILD_COVERAGE_DIR)/coverage.out
@@ -259,7 +261,7 @@ check: generate fmt vet docs ## Dev: Run code checks (go fmt, go vet, ...)
 
 test: ## Dev: Run tests
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
-	go test -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
+	go test $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 integration: ## Dev: Run integration tests

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -21,52 +22,62 @@ type ResourceWsDefinition struct {
 }
 
 type resourceWs struct {
-	resourceStore store.ResourceStore
-	readOnly      bool
+	resourceStore   store.ResourceStore
+	readOnly        bool
+	nameFromRequest func(*restful.Request) string
+	meshFromRequest func(*restful.Request) string
 	ResourceWsDefinition
 }
 
-func (r *resourceWs) NewWs() *restful.WebService {
-	ws := new(restful.WebService)
+func (r *resourceWs) AddToWs(ws *restful.WebService) {
+	pathPrefix := ""
+	if r.ResourceFactory().GetType() == mesh.MeshType {
+		r.nameFromRequest = func(request *restful.Request) string {
+			return request.PathParameter("name")
+		}
+		r.meshFromRequest = func(request *restful.Request) string {
+			return request.PathParameter("name")
+		}
+	} else {
+		pathPrefix += "/{mesh}/" + r.Path
+		r.nameFromRequest = func(request *restful.Request) string {
+			return request.PathParameter("name")
+		}
+		r.meshFromRequest = func(request *restful.Request) string {
+			return request.PathParameter("mesh")
+		}
+	}
 
-	ws.
-		Path(fmt.Sprintf("/meshes/{mesh}/%s", r.Path)).
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON).
-		Param(ws.PathParameter("mesh", "Name of the Mesh").DataType("string"))
-
-	ws.Route(ws.GET("/{name}").To(r.findResource).
+	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource).
 		Doc(fmt.Sprintf("Get a %s", r.Name)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
 		//Writes(r.SpecFactory()).
 		Returns(200, "OK", nil). // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
 		Returns(404, "Not found", nil))
 
-	ws.Route(ws.GET("").To(r.listResources).
+	ws.Route(ws.GET(pathPrefix).To(r.listResources).
 		Doc(fmt.Sprintf("List of %s", r.Name)).
 		//Writes(r.SampleListSpec).
 		Returns(200, "OK", nil)) // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
 
 	if !r.readOnly {
-		ws.Route(ws.PUT("/{name}").To(r.createOrUpdateResource).
+		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
 			Doc(fmt.Sprintf("Updates a %s", r.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
 			//Reads(r.SampleSpec). // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
 			Returns(200, "OK", nil).
 			Returns(201, "Created", nil))
 
-		ws.Route(ws.DELETE("/{name}").To(r.deleteResource).
+		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
 			Doc(fmt.Sprintf("Deletes a %s", r.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
 			Returns(200, "OK", nil))
 	}
-
-	return ws
 }
 
 func (r *resourceWs) findResource(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	meshName := request.PathParameter("mesh")
+	name := r.nameFromRequest(request)
+	meshName := r.meshFromRequest(request)
 
 	resource := r.ResourceFactory()
 	err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName))
@@ -98,7 +109,7 @@ type resourceSpecList struct {
 }
 
 func (r *resourceWs) listResources(request *restful.Request, response *restful.Response) {
-	meshName := request.PathParameter("mesh")
+	meshName := r.meshFromRequest(request)
 
 	list := r.ResourceListFactory()
 	if err := r.resourceStore.List(request.Request.Context(), list, store.ListByNamespace(namespace), store.ListByMesh(meshName)); err != nil {
@@ -109,7 +120,7 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 		for _, item := range list.GetItems() {
 			items = append(items, &rest.Resource{
 				Meta: rest.ResourceMeta{
-					Mesh: meshName,
+					Mesh: item.GetMeta().GetMesh(),
 					Type: string(item.GetType()),
 					Name: item.GetMeta().GetName(),
 				},
@@ -125,8 +136,8 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 }
 
 func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	meshName := request.PathParameter("mesh")
+	name := r.nameFromRequest(request)
+	meshName := r.meshFromRequest(request)
 
 	resourceRes := rest.Resource{
 		Spec: r.ResourceFactory().GetSpec(),
@@ -156,8 +167,8 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 }
 
 func (r *resourceWs) validateResourceRequest(request *restful.Request, resource *rest.Resource) error {
-	name := request.PathParameter("name")
-	meshName := request.PathParameter("mesh")
+	name := r.nameFromRequest(request)
+	meshName := r.meshFromRequest(request)
 	if name != resource.Meta.Name {
 		return errors.New("Name from the URL has to be the same as in body")
 	}
@@ -192,8 +203,8 @@ func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, spe
 }
 
 func (r *resourceWs) deleteResource(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	meshName := request.PathParameter("mesh")
+	name := r.nameFromRequest(request)
+	meshName := r.meshFromRequest(request)
 
 	resource := r.ResourceFactory()
 	err := r.resourceStore.Delete(request.Request.Context(), resource, store.DeleteByKey(namespace, name, meshName))

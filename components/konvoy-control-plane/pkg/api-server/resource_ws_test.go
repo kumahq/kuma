@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
@@ -30,7 +31,7 @@ var _ = Describe("Resource WS", func() {
 		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{})
 		client = resourceApiClient{
 			address: apiServer.Address(),
-			mesh:    mesh,
+			path:    "/meshes/" + mesh + "/traffic-routes",
 		}
 		apiServer.Start()
 		waitForServer(&client)
@@ -107,12 +108,19 @@ var _ = Describe("Resource WS", func() {
 	Describe("On PUT", func() {
 		It("should create a resource when one does not exist", func() {
 			// given
-			route := sample_proto.TrafficRoute{
-				Path: "/sample-path",
+			res := rest.Resource{
+				Meta: rest.ResourceMeta{
+					Name: "new-resource",
+					Mesh: mesh,
+					Type: string(sample_model.TrafficRouteType),
+				},
+				Spec: &sample_proto.TrafficRoute{
+					Path: "/sample-path",
+				},
 			}
 
 			// when
-			response := client.put("new-resource", &route)
+			response := client.put(res)
 
 			// then
 			Expect(response.StatusCode).To(Equal(201))
@@ -124,10 +132,17 @@ var _ = Describe("Resource WS", func() {
 			putSampleResourceIntoStore(resourceStore, name, mesh)
 
 			// when
-			route := sample_proto.TrafficRoute{
-				Path: "/update-sample-path",
+			res := rest.Resource{
+				Meta: rest.ResourceMeta{
+					Name: name,
+					Mesh: mesh,
+					Type: string(sample_model.TrafficRouteType),
+				},
+				Spec: &sample_proto.TrafficRoute{
+					Path: "/update-sample-path",
+				},
 			}
-			response := client.put(name, &route)
+			response := client.put(res)
 			Expect(response.StatusCode).To(Equal(200))
 
 			// then
@@ -247,6 +262,7 @@ func createTestApiServer(store store.ResourceStore, config api_server.ApiServerC
 	config.BindAddress = fmt.Sprintf("localhost:%d", port)
 	definitions := []api_server.ResourceWsDefinition{
 		TrafficRouteWsDefinition,
+		mesh.MeshWsDefinition,
 	}
 	return api_server.NewApiServer(store, definitions, config)
 }
@@ -264,11 +280,11 @@ func getFreePort() (int, error) {
 
 type resourceApiClient struct {
 	address string
-	mesh    string
+	path    string
 }
 
 func (r *resourceApiClient) fullAddress() string {
-	return "http://" + r.address + "/meshes/" + r.mesh + "/traffic-routes"
+	return "http://" + r.address + r.path
 }
 
 func (r *resourceApiClient) get(name string) *http.Response {
@@ -299,18 +315,10 @@ func (r *resourceApiClient) delete(name string) *http.Response {
 	return response
 }
 
-func (r *resourceApiClient) put(name string, route *sample_proto.TrafficRoute) *http.Response {
-	resResponse := rest.Resource{
-		Meta: rest.ResourceMeta{
-			Name: name,
-			Type: string(sample_model.TrafficRouteType),
-			Mesh: "default",
-		},
-		Spec: route,
-	}
-	jsonBytes, err := resResponse.MarshalJSON()
+func (r *resourceApiClient) put(res rest.Resource) *http.Response {
+	jsonBytes, err := res.MarshalJSON()
 	Expect(err).ToNot(HaveOccurred())
-	return r.putJson(name, jsonBytes)
+	return r.putJson(res.Meta.Name, jsonBytes)
 }
 
 func (r *resourceApiClient) putJson(name string, json []byte) *http.Response {
