@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -22,12 +23,21 @@ type DataplaneStatusTracker interface {
 }
 
 func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTracker {
-	return NewDataplaneStatusTracker(rt, func() DataplaneStatusSink {
-		return DefaultDataplaneStatusSink(rt.ResourceStore())
+	return NewDataplaneStatusTracker(rt, func(accessor SubscriptionStatusAccessor) DataplaneStatusSink {
+		return NewDataplaneStatusSink(
+			accessor,
+			func() *time.Ticker {
+				return time.NewTicker(1 * time.Second)
+			},
+			NewDataplaneStatusStore(rt.ResourceStore()))
 	})
 }
 
-type DataplaneStatusSinkFactoryFunc = func() DataplaneStatusSink
+type SubscriptionStatusAccessor interface {
+	GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription)
+}
+
+type DataplaneStatusSinkFactoryFunc = func(SubscriptionStatusAccessor) DataplaneStatusSink
 
 func NewDataplaneStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 	createStatusSink DataplaneStatusSinkFactoryFunc) DataplaneStatusTracker {
@@ -115,7 +125,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 		if id, err := core_xds.ParseDataplaneId(req.Node); err == nil {
 			state.dataplaneId = id
 			// kick off async Dataplane status flusher
-			go c.createStatusSink().Start(state, state.stop)
+			go c.createStatusSink(state).Start(state.stop)
 		} else {
 			xdsServerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "req", req)
 		}
