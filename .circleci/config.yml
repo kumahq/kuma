@@ -166,7 +166,7 @@ jobs:
         command: make dev/tools -C components/konvoy-control-plane
     - run:
         name: "Run unit tests"
-        command: make test -C components/konvoy-control-plane
+        command: GO_TEST_OPTS='-p 2' make test -C components/konvoy-control-plane
     - store_artifacts:
         path: components/konvoy-control-plane/build/coverage
         destination: /coverage
