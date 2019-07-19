@@ -1,5 +1,5 @@
 .PHONY: help clean generate build test check \
-		dev/tools install/protoc install/protoc-gen-gogofast \
+		dev/tools install/protoc install/protoc-gen-gogofast install/protoc-gen-validate \
 		protoc protoc/discovery/v1alpha1 protoc/mesh/v1alpha1
 
 TOOLS_DIR ?= $(HOME)/bin
@@ -8,11 +8,35 @@ export PATH := $(TOOLS_DIR):$(shell go env GOPATH)/bin:$(PATH)
 PROTOC_PATH := $(TOOLS_DIR)/protoc
 
 PROTOC_VERSION := 3.6.1
+PROTOC_PGV_VERSION := v0.1.0
 GOGO_PROTOBUF_VERSION := v1.2.1
+
+protoc_search_go_packages := \
+	github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION) \
+	github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION)/protobuf \
+	github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
+
+protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(shell go env GOPATH)/pkg/mod/$(go_package))
+
+gogo_import_mapping_entries := \
+	google/protobuf/any.proto=github.com/gogo/protobuf/types \
+	google/protobuf/duration.proto=github.com/gogo/protobuf/types \
+	google/protobuf/struct.proto=github.com/gogo/protobuf/types \
+	google/protobuf/timestamp.proto=github.com/gogo/protobuf/types \
+	google/protobuf/wrappers.proto=github.com/gogo/protobuf/types \
+
+# see https://makefiletutorial.com/
+comma := ,
+empty:=
+space := $(empty) $(empty)
+
+gogo_mapping_with_spaces := $(foreach entry,$(gogo_import_mapping_entries),M$(entry),)
+gogo_mapping := $(subst $(space),$(empty),$(gogo_mapping_with_spaces))
 
 PROTOC_GO := protoc \
 	--proto_path=. \
-	--gogofast_out=plugins=grpc:.
+	$(protoc_search_go_paths) \
+	--gogofast_out=plugins=grpc,$(gogo_mapping):.
 
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)
@@ -29,7 +53,7 @@ endif
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-dev/tools: install/protoc install/protoc-gen-gogofast ## Install development tools
+dev/tools: install/protoc install/protoc-gen-gogofast install/protoc-gen-validate ## Install development tools
 
 install/protoc:
 	@if [ -e $(PROTOC_PATH) ]; then echo "Protoc $$( $(PROTOC_PATH) --version ) is already installed at $(PROTOC_PATH)" ; fi
@@ -47,6 +71,10 @@ install/protoc:
 
 install/protoc-gen-gogofast:
 	go get -u github.com/gogo/protobuf/protoc-gen-gogofast@$(GOGO_PROTOBUF_VERSION)
+
+install/protoc-gen-validate:
+	go get -u github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
+
 
 clean: ## Remove generated files
 	find . -name '*.pb.go' -delete

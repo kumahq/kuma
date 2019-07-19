@@ -17,7 +17,7 @@ rules:
 - apiGroups:
   - mesh.getkonvoy.io
   resources:
-  - proxies
+  - dataplanes
   verbs:
   - get
   - list
@@ -26,14 +26,6 @@ rules:
   - update
   - patch
   - delete
-- apiGroups:
-  - mesh.getkonvoy.io
-  resources:
-  - proxies/status
-  verbs:
-  - get
-  - update
-  - patch
 - apiGroups:
   - mesh.getkonvoy.io
   resources:
