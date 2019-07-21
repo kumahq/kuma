@@ -239,7 +239,8 @@ start/kind:
 start/example:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
-	cat examples/local/external-service.yaml | sed  's/$${KONVOY_HOST_IP}/$(LOCAL_IP)/g' | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f -
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace konvoy-system || true
+	cat examples/local/external-service.yaml | sed  's/$${KONVOY_HOST_IP}/$(LOCAL_IP)/g' | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f -
 
 clean: clean/build clean/proto ## Dev: Clean
 
