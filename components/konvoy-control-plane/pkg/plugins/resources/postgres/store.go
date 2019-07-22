@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	_ "github.com/lib/pq"
@@ -21,23 +22,7 @@ type postgresResourceStore struct {
 
 var _ store.ResourceStore = &postgresResourceStore{}
 
-type Config struct {
-	Host     string `envconfig:"store_postgres_host" default:"localhost"`
-	Port     int    `envconfig:"store_postgres_port" default:"5432"`
-	User     string `envconfig:"store_postgres_user" default:"konvoy"`
-	Password string `envconfig:"store_postgres_password" default:"konvoy"`
-	DbName   string `envconfig:"store_postgres_db_name" default:"konvoy"`
-}
-
-func NewStore(config Config) (store.ResourceStore, error) {
-	s, err := newPostgresStore(config)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
-func newPostgresStore(config Config) (*postgresResourceStore, error) {
+func NewStore(config config.PostgresStoreConfig) (store.ResourceStore, error) {
 	db, err := connectToDb(config)
 	if err != nil {
 		return nil, err
@@ -48,7 +33,7 @@ func newPostgresStore(config Config) (*postgresResourceStore, error) {
 	}, nil
 }
 
-func connectToDb(config Config) (*sql.DB, error) {
+func connectToDb(config config.PostgresStoreConfig) (*sql.DB, error) {
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		config.Host, config.Port, config.User, config.Password, config.DbName)
 	db, err := sql.Open("postgres", connStr)

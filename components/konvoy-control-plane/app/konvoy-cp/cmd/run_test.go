@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"io/ioutil"
+	"net/http"
 
 	"sigs.k8s.io/testing_frameworks/integration/addr"
 )
@@ -30,12 +30,24 @@ var _ = Describe("run", func() {
 
 	It("should be possible to run `konvoy-cp run`", func(done Done) {
 		// given
+		config := fmt.Sprintf(`grpcPort: 0
+httpPort: 0
+diagnosticsPort: %d
+environment: kubernetes
+store:
+  type: kubernetes
+`, diagnosticsPort)
+		file, err := ioutil.TempFile("", "*")
+		Expect(err).ToNot(HaveOccurred())
+		_, err = file.WriteString(config)
+		Expect(err).ToNot(HaveOccurred())
+
 		cmd := newRunCmdWithOpts(runCmdOpts{
 			SetupSignalHandler: func() <-chan struct{} {
 				return stopCh
 			},
 		})
-		cmd.SetArgs([]string{"--grpc-port=0", "--http-port=0", fmt.Sprintf("--diagnostics-port=%d", diagnosticsPort), "--metrics-port=0"})
+		cmd.SetArgs([]string{"--config-file=" + file.Name()})
 
 		// when
 		By("starting the Control Plane")
