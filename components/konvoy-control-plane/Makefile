@@ -4,7 +4,7 @@
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
-		start/deps \
+		start/deps start/kind start/example \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
 		fmt fmt/go fmt/proto vet check test integration build run image \
 		build/konvoy-cp build/konvoyctl \
@@ -40,11 +40,20 @@ LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
 
 ENVOY_BINARY ?= envoy
 EXAMPLE_ENVOY_CONFIG ?= $(PWD)/examples/local/konvoy-control-plane.yaml
+EXAMPLE_ENVOY_ID ?= example
 EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
 EXAMPLE_ENVOY_PORT ?= 8080
 ENVOY_ADMIN_PORT ?= 9901
 
-SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "example", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
+EXAMPLE_NAMESPACE ?= konvoy-demo
+
+KIND_KUBECONFIG = $(shell kind get kubeconfig-path --name=konvoy)
+
+define KIND_EXAMPLE_ENVOY_ID
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}').$(EXAMPLE_NAMESPACE)
+endef
+
+SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
 
 CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 
@@ -215,16 +224,23 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 		&& set +x \
 		&& echo "Minikube $(CI_MINIKUBE_VERSION) has been installed at $(MINIKUBE_PATH)" ; fi
 
-start/deps: start/kind ## Bootstrap: Start dependencies (etcd + kube-apiserver)
+start/deps: start/kind start/example ## Bootstrap: Start dependencies (etcd, kube-apiserver, sample app)
 
 start/kind:
 	kind create cluster --name konvoy 2>/dev/null || true
 	@echo
-	@echo
-	@echo "!!! You need to manually run the following command in your shell: !!!"
-	@echo
+	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
 	@echo export KUBECONFIG="$$(kind get kubeconfig-path --name=konvoy)"
+	@echo
+	@echo '<<< ------------------------------------------------------------- <<<'
+	@echo
+
+start/example:
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace konvoy-system || true
+	cat examples/local/external-service.yaml | sed  's/$${KONVOY_HOST_IP}/$(LOCAL_IP)/g' | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f -
 
 clean: clean/build clean/proto ## Dev: Clean
 
@@ -281,14 +297,17 @@ run: fmt vet ## Dev: Run Control Plane locally
 	make crd/upgrade -C pkg/plugins/resources/k8s/native
 	go run ./app/konvoy-cp/main.go run --grpc-port=$(CP_GRPC_PORT) --http-port=$(CP_HTTP_PORT)
 
+curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
 curl/listeners: ## Dev: Make Discovery request to LDS
 	curl -s $(CP_BIND_HOST):$(CP_HTTP_PORT)/v2/discovery:listeners --data-binary $(SIMPLE_DISCOVERY_REQUEST)
 
+curl/clusters: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
 curl/clusters: ## Dev: Make Discovery request to CDS
 	curl -s $(CP_BIND_HOST):$(CP_HTTP_PORT)/v2/discovery:clusters --data-binary $(SIMPLE_DISCOVERY_REQUEST)
 
+run/example/envoy: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
 run/example/envoy: ## Dev: Run Envoy configured against local Control Plane
-	$(ENVOY_BINARY) -c $(EXAMPLE_ENVOY_CONFIG) --config-yaml "node: {metadata: {'IPS': '$(EXAMPLE_ENVOY_IP)', 'PORTS': '$(EXAMPLE_ENVOY_PORT)'}}"
+	$(ENVOY_BINARY) -c $(EXAMPLE_ENVOY_CONFIG) --config-yaml "node: {id: '$(EXAMPLE_ENVOY_ID)', metadata: {'IPS': '$(EXAMPLE_ENVOY_IP)', 'PORTS': '$(EXAMPLE_ENVOY_PORT)'}}"
 
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump

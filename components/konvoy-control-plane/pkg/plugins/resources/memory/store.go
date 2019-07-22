@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -15,6 +16,7 @@ type memoryStoreRecord struct {
 	Namespace    string
 	Name         string
 	Mesh         string
+	Version      memoryVersion
 	Spec         string
 }
 type memoryStoreRecords = []*memoryStoreRecord
@@ -25,19 +27,34 @@ type memoryMeta struct {
 	Namespace string
 	Name      string
 	Mesh      string
+	Version   memoryVersion
 }
 
-func (m *memoryMeta) GetName() string {
+func (m memoryMeta) GetName() string {
 	return m.Name
 }
-func (m *memoryMeta) GetNamespace() string {
+func (m memoryMeta) GetNamespace() string {
 	return m.Namespace
 }
-func (m *memoryMeta) GetMesh() string {
+func (m memoryMeta) GetMesh() string {
 	return m.Mesh
 }
-func (m *memoryMeta) GetVersion() string {
-	return "0"
+func (m memoryMeta) GetVersion() string {
+	return m.Version.String()
+}
+
+type memoryVersion uint64
+
+func initialVersion() memoryVersion {
+	return memoryVersion(1)
+}
+
+func (v memoryVersion) Next() memoryVersion {
+	return memoryVersion(uint64(v) + 1)
+}
+
+func (v memoryVersion) String() string {
+	return strconv.FormatUint(uint64(v), 10)
 }
 
 var _ store.ResourceStore = &memoryStore{}
@@ -62,22 +79,20 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 	}
 
-	// fill the meta
-	r.SetMeta(&memoryMeta{
+	meta := memoryMeta{
 		Name:      opts.Name,
 		Namespace: opts.Namespace,
 		Mesh:      opts.Mesh,
-	})
+		Version:   initialVersion(),
+	}
+
+	// fill the meta
+	r.SetMeta(meta)
 
 	// convert into storage representation
 	record, err := c.marshalRecord(
 		string(r.GetType()),
-		// Namespace and Name must be provided via CreateOptions
-		&memoryMeta{
-			Namespace: opts.Namespace,
-			Name:      opts.Name,
-			Mesh:      opts.Mesh,
-		},
+		meta,
 		r.GetSpec())
 	if err != nil {
 		return err
@@ -93,7 +108,7 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 
 	_ = store.NewUpdateOptions(fs...)
 
-	_, ok := (r.GetMeta()).(*memoryMeta)
+	meta, ok := (r.GetMeta()).(memoryMeta)
 	if !ok {
 		return fmt.Errorf("MemoryStore.Update() requires r.GetMeta() to be of type memoryMeta")
 	}
@@ -101,14 +116,15 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	// Namespace and Name must be provided via r.GetMeta()
 	mesh := r.GetMeta().GetMesh()
 	idx, record := c.findRecord(string(r.GetType()), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), mesh)
-	if record == nil {
+	if record == nil || meta.Version != record.Version {
 		return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
 	}
+	meta.Version = meta.Version.Next()
 
 	record, err := c.marshalRecord(
 		string(r.GetType()),
-		// Namespace and Name must be provided via r.GetMeta()
-		r.GetMeta(), r.GetSpec())
+		meta,
+		r.GetSpec())
 	if err != nil {
 		return err
 	}
@@ -123,7 +139,7 @@ func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.De
 
 	opts := store.NewDeleteOptions(fs...)
 
-	_, ok := (r.GetMeta()).(*memoryMeta)
+	_, ok := (r.GetMeta()).(memoryMeta)
 	if r.GetMeta() != nil && !ok {
 		return fmt.Errorf("MemoryStore.Delete() requires r.GetMeta() either to be nil or to be of type memoryMeta")
 	}
@@ -193,7 +209,7 @@ func (c *memoryStore) findRecords(
 	return res
 }
 
-func (c *memoryStore) marshalRecord(resourceType string, meta model.ResourceMeta, spec model.ResourceSpec) (*memoryStoreRecord, error) {
+func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec model.ResourceSpec) (*memoryStoreRecord, error) {
 	// convert spec into storage representation
 	content, err := util_proto.ToJSON(spec)
 	if err != nil {
@@ -202,18 +218,20 @@ func (c *memoryStore) marshalRecord(resourceType string, meta model.ResourceMeta
 	return &memoryStoreRecord{
 		ResourceType: resourceType,
 		// Namespace and Name must be provided via CreateOptions
-		Namespace: meta.GetNamespace(),
-		Name:      meta.GetName(),
-		Mesh:      meta.GetMesh(),
+		Namespace: meta.Namespace,
+		Name:      meta.Name,
+		Mesh:      meta.Mesh,
+		Version:   meta.Version,
 		Spec:      string(content),
 	}, nil
 }
 
 func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r model.Resource) error {
-	r.SetMeta(&memoryMeta{
+	r.SetMeta(memoryMeta{
 		Namespace: s.Namespace,
 		Name:      s.Name,
 		Mesh:      s.Mesh,
+		Version:   s.Version,
 	})
 	return util_proto.FromJSON([]byte(s.Spec), r.GetSpec())
 }

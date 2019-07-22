@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 	"google.golang.org/grpc"
@@ -41,11 +40,6 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 
 	// register services
 	envoy_discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, s.server)
-	envoy.RegisterEndpointDiscoveryServiceServer(grpcServer, s.server)
-	envoy.RegisterClusterDiscoveryServiceServer(grpcServer, s.server)
-	envoy.RegisterRouteDiscoveryServiceServer(grpcServer, s.server)
-	envoy.RegisterListenerDiscoveryServiceServer(grpcServer, s.server)
-	envoy_discovery.RegisterSecretDiscoveryServiceServer(grpcServer, s.server)
 
 	errChan := make(chan error)
 	go func() {
