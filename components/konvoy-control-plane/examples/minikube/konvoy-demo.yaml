@@ -14,6 +14,8 @@ spec:
     name: grpc-xds
   - port: 5679
     name: http-xds
+  - port: 5681
+    name: http-api-server
   selector:
     app: konvoy-control-plane
 ---
@@ -50,11 +52,14 @@ spec:
           value: "5678"
         - name: KONVOY_XDS_SERVER_HTTP_PORT
           value: "5679"
+        - name: KONVOY_API_SERVER_PORT
+          value: "5681"
         args:
         - run
         ports:
         - containerPort: 5678
         - containerPort: 5679
+        - containerPort: 5681
         livenessProbe:
           httpGet:
             path: /healthy
