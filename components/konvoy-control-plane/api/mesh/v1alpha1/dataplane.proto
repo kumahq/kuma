@@ -8,6 +8,8 @@ import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 import "validate/validate.proto";
 
+option (gogoproto.equal_all) = true;
+
 // DataplaneStatus defines the observed state of a Dataplane.
 message DataplaneStatus {
 

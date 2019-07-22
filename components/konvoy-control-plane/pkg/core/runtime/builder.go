@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
@@ -64,6 +65,9 @@ func (b *Builder) Build() (Runtime, error) {
 		return nil, errors.Errorf("xDS Context has not been configured")
 	}
 	return &runtime{
+		RuntimeInfo: &runtimeInfo{
+			instanceId: core.NewUUID(),
+		},
 		RuntimeContext: &runtimeContext{
 			cfg: b.cfg,
 			rs:  b.rs,

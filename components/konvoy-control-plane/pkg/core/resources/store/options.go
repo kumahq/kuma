@@ -1,5 +1,9 @@
 package store
 
+import (
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+)
+
 type CreateOptions struct {
 	Namespace string
 	Name      string
@@ -14,6 +18,10 @@ func NewCreateOptions(fs ...CreateOptionsFunc) *CreateOptions {
 		f(opts)
 	}
 	return opts
+}
+
+func CreateBy(key model.ResourceKey) CreateOptionsFunc {
+	return CreateByKey(key.Namespace, key.Name, key.Mesh)
 }
 
 func CreateByKey(ns, name, mesh string) CreateOptionsFunc {
@@ -75,6 +83,10 @@ func NewGetOptions(fs ...GetOptionsFunc) *GetOptions {
 		f(opts)
 	}
 	return opts
+}
+
+func GetBy(key model.ResourceKey) GetOptionsFunc {
+	return GetByKey(key.Namespace, key.Name, key.Mesh)
 }
 
 func GetByKey(ns, name, mesh string) GetOptionsFunc {
