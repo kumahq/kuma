@@ -6,14 +6,15 @@ import (
 )
 
 type configControlPlanesAddContext struct {
-	pctx *rootContext
+	*rootContext
+
 	args struct {
 		name string
 	}
 }
 
 func newConfigControlPlanesAddCmd(pctx *rootContext) *cobra.Command {
-	ctx := &configControlPlanesAddContext{pctx: pctx}
+	ctx := &configControlPlanesAddContext{rootContext: pctx}
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add a Control Plane",
@@ -27,12 +28,12 @@ func newConfigControlPlanesAddCmd(pctx *rootContext) *cobra.Command {
 }
 
 func (c *configControlPlanesAddContext) AddControlPlane(cp *config_proto.ControlPlane) error {
-	cfg := c.pctx.Config()
+	cfg := c.Config()
 	cfg.AddControlPlane(cp)
 	cfg.AddContext(&config_proto.Context{
 		Name:         cp.Name,
 		ControlPlane: cp.Name,
 	})
 	cfg.CurrentContext = cp.Name
-	return c.pctx.SaveConfig()
+	return c.SaveConfig()
 }

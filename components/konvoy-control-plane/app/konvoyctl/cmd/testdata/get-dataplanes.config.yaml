@@ -1,0 +1,11 @@
+contexts:
+- controlPlane: test
+  name: test
+controlPlanes:
+- coordinates:
+    kubernetes:
+      context: pseudo-context
+      kubeconfig: /path/to/kubeconfig
+      namespace: konvoy-system
+  name: test
+currentContext: test
