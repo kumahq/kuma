@@ -8,6 +8,7 @@ Usage:
 
 Available Commands:
   config      Manage konvoyctl config
+  get         Show Konvoy resources
   help        Help about any command
 
 Flags:
@@ -131,5 +132,44 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
       --name string          reference name for a Control Plane
+```
+
+## konvoyctl get
+
+```
+Show Konvoy resources.
+
+Usage:
+  konvoyctl get [command]
+
+Available Commands:
+  dataplanes  Show running Dataplanes
+
+Flags:
+  -h, --help            help for get
+  -o, --output string   Output format: one of table|yaml|json (default "table")
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --debug                enable debug-level logging (default true)
+
+Use "konvoyctl get [command] --help" for more information about a command.
+```
+
+### konvoyctl get dataplanes
+
+```
+Show running Dataplanes.
+
+Usage:
+  konvoyctl get dataplanes [flags]
+
+Flags:
+  -h, --help   help for dataplanes
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --debug                enable debug-level logging (default true)
+  -o, --output string        Output format: one of table|yaml|json (default "table")
 ```
 
