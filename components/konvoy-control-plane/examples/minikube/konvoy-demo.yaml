@@ -41,10 +41,17 @@ spec:
       - name: control-plane
         image: "konvoy/konvoy-control-plane:latest"
         imagePullPolicy: IfNotPresent
+        env:
+        - name: KONVOY_ENVIRONMENT
+          value: "kubernetes"
+        - name: KONVOY_STORE_TYPE
+          value: "kubernetes"
+        - name: KONVOY_GRPC_PORT
+          value: "5678"
+        - name: KONVOY_HTTP_PORT
+          value: "5679"
         args:
         - run
-        - --grpc-port=5678
-        - --http-port=5679
         ports:
         - containerPort: 5678
         - containerPort: 5679
