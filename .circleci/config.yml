@@ -29,10 +29,17 @@ jobs:
     - checkout
     - run:
         name: "Install pre-requirements"
-        command: apt update && apt install unzip
+        # `unzip` is necessary to install `protoc`
+        command: apt update && apt install -y unzip
     - run:
         name: "Install all development tools"
         command: make dev/tools -C components/konvoy-control-plane
+    - run:
+        name: "Build all binaries"
+        command: make build -C components/konvoy-control-plane
+    - run:
+        name: "Run unit tests"
+        command: GO_TEST_OPTS='-p 2' make test -C components/konvoy-control-plane
 
   kcp/dev/ubuntu:
     docker:
@@ -44,7 +51,9 @@ jobs:
     - checkout
     - run:
         name: "Install pre-requirements"
-        command: apt update && apt install unzip
+        # `unzip` is necessary to install `protoc`
+        # `gcc`   is necessary to run `go test -race`
+        command: apt update && apt install -y unzip gcc
     - run:
         name: "Install Go"
         command: |
@@ -56,6 +65,16 @@ jobs:
         command: |
           export PATH=$HOME/go/bin:$PATH
           make dev/tools -C components/konvoy-control-plane
+    - run:
+        name: "Build all binaries"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          make build -C components/konvoy-control-plane
+    - run:
+        name: "Run unit tests"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          GO_TEST_OPTS='-p 2' make test -C components/konvoy-control-plane
 
   kcp/dev/mac:
     <<: *mac-executor-defaults
@@ -74,6 +93,16 @@ jobs:
         command: |
           export PATH=$HOME/go/bin:$PATH
           make dev/tools -C components/konvoy-control-plane
+    - run:
+        name: "Build all binaries"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          make build -C components/konvoy-control-plane
+    - run:
+        name: "Run unit tests"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          GO_TEST_OPTS='-p 2' make test -C components/konvoy-control-plane
 
   kcp/check:
     <<: *go-defaults
@@ -96,7 +125,8 @@ jobs:
           - "/go/pkg/mod"
     - run:
         name: "Install pre-requirements"
-        command: apt update && apt install unzip
+        # `unzip` is necessary to install `protoc`
+        command: apt update && apt install -y unzip
     - run:
         name: "Install all development tools"
         command: make dev/tools -C components/konvoy-control-plane
@@ -142,7 +172,8 @@ jobs:
           - "/go/pkg/mod"
     - run:
         name: "Install pre-requirements"
-        command: apt update && apt install unzip
+        # `unzip` is necessary to install `protoc`
+        command: apt update && apt install -y unzip
     - run:
         name: "Install all development tools"
         command: make dev/tools -C components/konvoy-control-plane/api
@@ -160,7 +191,8 @@ jobs:
         - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
     - run:
         name: "Install pre-requirements"
-        command: apt update && apt install unzip
+        # `unzip` is necessary to install `protoc`
+        command: apt update && apt install -y unzip
     - run:
         name: "Install all development tools"
         command: make dev/tools -C components/konvoy-control-plane
