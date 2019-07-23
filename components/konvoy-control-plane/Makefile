@@ -69,8 +69,9 @@ CI_TOOLS_IMAGE ?= circleci/golang:1.12
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 PATH := $(CI_TOOLS_DIR):$(PATH)
-GO_BIN_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')/bin
-export PATH := $(CI_TOOLS_DIR):$(GO_BIN_DIR):$(PATH)
+GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
+GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
+export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
 
 PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
@@ -88,7 +89,7 @@ protoc_search_go_packages := \
 	github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION)/protobuf \
 	github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
 
-protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(shell go env GOPATH)/pkg/mod/$(go_package))
+protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(GOPATH_DIR)/pkg/mod/$(go_package))
 
 # Protobuf-specifc configuration
 PROTOC_GO := protoc \
@@ -153,7 +154,7 @@ dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	# see https://github.com/onsi/ginkgo#set-me-up
 	echo "Installing Ginkgo ..."
 	go get -u github.com/onsi/ginkgo/ginkgo  # installs the ginkgo CLI
-	echo "Ginkgo has been installed at $(shell go env GOPATH)/bin/ginkgo"
+	echo "Ginkgo has been installed at $(GOPATH_BIN_DIR)/ginkgo"
 	echo "Installing Gomega ..."
 	go get -u github.com/onsi/gomega/...     # fetches the matcher library
 	echo "Gomega has been installed"

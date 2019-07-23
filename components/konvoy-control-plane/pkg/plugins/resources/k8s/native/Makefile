@@ -10,7 +10,9 @@ IMG ?= konvoy/konvoy-controller-manager:latest
 #CRD_OUTPUT := output:crd:artifacts:config=config/crd/bases
 
 CI_TOOLS_DIR ?= $(HOME)/bin
-PATH := $(CI_TOOLS_DIR):$(PATH)
+GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
+GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
+export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
 
 KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
 ETCD_PATH := $(CI_TOOLS_DIR)/etcd
@@ -83,7 +85,7 @@ docker-push:
 controller-gen:
 ifeq (, $(shell which controller-gen))
 	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0-beta.2
-CONTROLLER_GEN=$(shell go env GOPATH)/bin/controller-gen
+CONTROLLER_GEN=$(GOPATH_BIN_DIR)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
