@@ -1,7 +1,7 @@
 # konvoyctl
 
 ```
-Management tool for Konvoy Service Mesh.
+Management tool for Konvoy.
 
 Usage:
   konvoyctl [command]
