@@ -3,7 +3,8 @@
 		protoc protoc/discovery/v1alpha1 protoc/mesh/v1alpha1
 
 TOOLS_DIR ?= $(HOME)/bin
-export PATH := $(TOOLS_DIR):$(shell go env GOPATH)/bin:$(PATH)
+GO_BIN_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')/bin
+export PATH := $(TOOLS_DIR):$(GO_BIN_DIR):$(PATH)
 
 PROTOC_PATH := $(TOOLS_DIR)/protoc
 

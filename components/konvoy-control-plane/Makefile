@@ -69,6 +69,8 @@ CI_TOOLS_IMAGE ?= circleci/golang:1.12
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 PATH := $(CI_TOOLS_DIR):$(PATH)
+GO_BIN_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')/bin
+export PATH := $(CI_TOOLS_DIR):$(GO_BIN_DIR):$(PATH)
 
 PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
@@ -242,7 +244,7 @@ start/example:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace konvoy-system || true
 	cat examples/local/external-service.yaml | sed  's/$${KONVOY_HOST_IP}/$(LOCAL_IP)/g' | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f -
 
-clean: clean/build clean/proto ## Dev: Clean
+clean: clean/build ## Dev: Clean
 
 clean/build: ## Dev: Remove build/ dir
 	rm -rf "$(BUILD_DIR)"
