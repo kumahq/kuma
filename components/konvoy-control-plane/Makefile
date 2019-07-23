@@ -4,7 +4,8 @@
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
-		start/deps start/kind start/example \
+		start/k8s start/kind start/control-plane/k8s \
+		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
 		fmt fmt/go fmt/proto vet check test integration build run image \
 		build/konvoy-cp build/konvoyctl \
@@ -39,7 +40,7 @@ CP_HTTP_PORT ?= 5679
 LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
 
 ENVOY_BINARY ?= envoy
-EXAMPLE_ENVOY_CONFIG ?= $(PWD)/examples/local/konvoy-control-plane.yaml
+EXAMPLE_ENVOY_CONFIG ?= $(PWD)/examples/local/envoy-bootstrap.yaml
 EXAMPLE_ENVOY_ID ?= example
 EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
 EXAMPLE_ENVOY_PORT ?= 8080
@@ -123,7 +124,7 @@ GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
 help: ## Display this help screen
-	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -h -E '^[a-zA-Z0-9_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 dev/tools: dev/install/protoc dev/install/protoc-gen-gogofast dev/install/protoc-gen-validate \
            dev/install/ginkgo \
@@ -227,7 +228,7 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 		&& set +x \
 		&& echo "Minikube $(CI_MINIKUBE_VERSION) has been installed at $(MINIKUBE_PATH)" ; fi
 
-start/deps: start/kind start/example ## Bootstrap: Start dependencies (etcd, kube-apiserver, sample app)
+start/k8s: start/kind deploy/example-app/k8s ## Bootstrap: Start Kubernetes locally (KIND) and deploy sample app
 
 start/kind:
 	kind create cluster --name konvoy 2>/dev/null || true
@@ -239,11 +240,19 @@ start/kind:
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
 
-start/example:
+deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace konvoy-system || true
-	cat examples/local/external-service.yaml | sed  's/$${KONVOY_HOST_IP}/$(LOCAL_IP)/g' | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f -
+
+kind/load/control-plane: image
+	kind load docker-image $(CP_DOCKER_IMAGE) --name=konvoy
+
+deploy/control-plane/k8s:
+	KUBECONFIG=$(KIND_KUBECONFIG) make crd/install -C pkg/plugins/resources/k8s/native
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl kustomize pkg/plugins/resources/k8s/native/config/rbac | kubectl apply -f -
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f examples/local/control-plane.yaml
+
+start/control-plane/k8s: kind/load/control-plane deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
 clean: clean/build ## Dev: Clean
 
@@ -297,8 +306,8 @@ build/konvoyctl: ## Dev: Build `konvoyctl` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoyctl/konvoyctl ./app/konvoyctl
 
 run: fmt vet ## Dev: Run Control Plane locally
-	make crd/upgrade -C pkg/plugins/resources/k8s/native
-	go run ./app/konvoy-cp/main.go run --grpc-port=$(CP_GRPC_PORT) --http-port=$(CP_HTTP_PORT)
+	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
+	KUBECONFIG=$(KIND_KUBECONFIG) go run ./app/konvoy-cp/main.go run --grpc-port=$(CP_GRPC_PORT) --http-port=$(CP_HTTP_PORT)
 
 curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
 curl/listeners: ## Dev: Make Discovery request to LDS
