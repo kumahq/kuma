@@ -47,6 +47,7 @@ jobs:
     environment:
       GO_VERSION: 1.12.5
       GO111MODULE: "on"
+      CLANG_FORMAT_PATH: clang-format-6.0
     steps:
     - checkout
     - run:
@@ -65,6 +66,16 @@ jobs:
         command: |
           export PATH=$HOME/go/bin:$PATH
           make dev/tools -C components/konvoy-control-plane
+    - run:
+        name: "Install check tools (clang-format, ...)"
+        # `clang-format` is used to format `*.proto` files
+        command: |
+          apt update && apt install -y clang-format-6.0
+    - run:
+        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          make check -C components/konvoy-control-plane
     - run:
         name: "Build all binaries"
         command: |
@@ -93,6 +104,16 @@ jobs:
         command: |
           export PATH=$HOME/go/bin:$PATH
           make dev/tools -C components/konvoy-control-plane
+    - run:
+        name: "Install check tools (clang-format, ...)"
+        # `clang-format` is used to format `*.proto` files
+        command: |
+          brew install clang-format
+    - run:
+        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          make check -C components/konvoy-control-plane
     - run:
         name: "Build all binaries"
         command: |
