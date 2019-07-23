@@ -69,6 +69,8 @@ CI_TOOLS_IMAGE ?= circleci/golang:1.12
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 PATH := $(CI_TOOLS_DIR):$(PATH)
+GO_BIN_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')/bin
+export PATH := $(CI_TOOLS_DIR):$(GO_BIN_DIR):$(PATH)
 
 PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
