@@ -3,8 +3,9 @@
 		protoc protoc/discovery/v1alpha1 protoc/mesh/v1alpha1
 
 TOOLS_DIR ?= $(HOME)/bin
-GO_BIN_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')/bin
-export PATH := $(TOOLS_DIR):$(GO_BIN_DIR):$(PATH)
+GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
+GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
+export PATH := $(TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
 
 PROTOC_PATH := $(TOOLS_DIR)/protoc
 
@@ -17,7 +18,7 @@ protoc_search_go_packages := \
 	github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION)/protobuf \
 	github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
 
-protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(shell go env GOPATH)/pkg/mod/$(go_package))
+protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(GOPATH_DIR)/pkg/mod/$(go_package))
 
 gogo_import_mapping_entries := \
 	google/protobuf/any.proto=github.com/gogo/protobuf/types \
