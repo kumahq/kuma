@@ -6,6 +6,8 @@ import (
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/gogo/protobuf/jsonpb"
+
+	"github.com/pkg/errors"
 )
 
 type ResourceMeta struct {
@@ -60,6 +62,50 @@ func (r *Resource) UnmarshalJSON(data []byte) error {
 	}
 	if err := (&jsonpb.Unmarshaler{AllowUnknownFields: true}).Unmarshal(bytes.NewReader(data), r.Spec); err != nil {
 		return err
+	}
+	return nil
+}
+
+type ResourceListReceiver struct {
+	ResourceList
+	model.ResourceRegistry
+}
+
+var _ json.Unmarshaler = &ResourceListReceiver{}
+
+func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
+	newResource := func(typ model.ResourceType) (model.Resource, error) {
+		return nil, errors.Errorf("unknown type %q", typ)
+	}
+	if rec.ResourceRegistry != nil {
+		newResource = rec.ResourceRegistry.NewResource
+	}
+	type List struct {
+		Items []*json.RawMessage `json:"items"`
+	}
+	list := List{}
+	if err := json.Unmarshal(data, &list); err != nil {
+		return err
+	}
+	rec.ResourceList.Items = make([]*Resource, len(list.Items))
+	for i, li := range list.Items {
+		b, err := json.Marshal(li)
+		if err != nil {
+			return err
+		}
+		r := &Resource{}
+		if err := json.Unmarshal(b, &r.Meta); err != nil {
+			return err
+		}
+		cr, err := newResource(model.ResourceType(r.Meta.Type))
+		if err != nil {
+			return err
+		}
+		r.Spec = cr.GetSpec()
+		if err := json.Unmarshal(b, r); err != nil {
+			return err
+		}
+		rec.ResourceList.Items[i] = r
 	}
 	return nil
 }
