@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"sigs.k8s.io/testing_frameworks/integration/addr"
 )
@@ -14,6 +15,7 @@ var _ = Describe("run", func() {
 
 	var stopCh chan struct{}
 	var errCh chan error
+	var configFile *os.File
 
 	var diagnosticsPort int
 
@@ -26,20 +28,31 @@ var _ = Describe("run", func() {
 		freePort, _, err := addr.Suggest()
 		Expect(err).NotTo(HaveOccurred())
 		diagnosticsPort = freePort
+
+		file, err := ioutil.TempFile("", "*")
+		Expect(err).ToNot(HaveOccurred())
+		configFile = file
+	})
+
+	AfterEach(func() {
+		if configFile != nil {
+			err := os.Remove(configFile.Name())
+			Expect(err).ToNot(HaveOccurred())
+		}
 	})
 
 	It("should be possible to run `konvoy-cp run`", func(done Done) {
 		// given
-		config := fmt.Sprintf(`grpcPort: 0
-httpPort: 0
-diagnosticsPort: %d
+		config := fmt.Sprintf(`
+xdsServer:
+  grpcPort: 0
+  httpPort: 0
+  diagnosticsPort: %d
 environment: kubernetes
 store:
   type: kubernetes
 `, diagnosticsPort)
-		file, err := ioutil.TempFile("", "*")
-		Expect(err).ToNot(HaveOccurred())
-		_, err = file.WriteString(config)
+		_, err := configFile.WriteString(config)
 		Expect(err).ToNot(HaveOccurred())
 
 		cmd := newRunCmdWithOpts(runCmdOpts{
@@ -47,7 +60,7 @@ store:
 				return stopCh
 			},
 		})
-		cmd.SetArgs([]string{"--config-file=" + file.Name()})
+		cmd.SetArgs([]string{"--config-file=" + configFile.Name()})
 
 		// when
 		By("starting the Control Plane")

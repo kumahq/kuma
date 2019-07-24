@@ -46,9 +46,9 @@ spec:
           value: "kubernetes"
         - name: KONVOY_STORE_TYPE
           value: "kubernetes"
-        - name: KONVOY_GRPC_PORT
+        - name: KONVOY_XDS_SERVER_GRPC_PORT
           value: "5678"
-        - name: KONVOY_HTTP_PORT
+        - name: KONVOY_XDS_SERVER_HTTP_PORT
           value: "5679"
         args:
         - run

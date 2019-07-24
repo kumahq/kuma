@@ -1,7 +1,7 @@
 package runtime
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
@@ -19,7 +19,7 @@ type RuntimeInfo interface {
 }
 
 type RuntimeContext interface {
-	Config() config.Config
+	Config() konvoy_cp.Config
 	ResourceStore() core_store.ResourceStore
 	DiscoverySources() []core_discovery.DiscoverySource
 	XDS() core_xds.XdsContext
@@ -46,13 +46,13 @@ func (i *runtimeInfo) GetInstanceId() string {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg config.Config
+	cfg konvoy_cp.Config
 	rs  core_store.ResourceStore
 	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
 }
 
-func (rc *runtimeContext) Config() config.Config {
+func (rc *runtimeContext) Config() konvoy_cp.Config {
 	return rc.cfg
 }
 func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {

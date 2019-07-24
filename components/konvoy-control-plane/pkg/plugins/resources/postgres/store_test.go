@@ -5,32 +5,28 @@ package postgres
 import (
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"math/rand"
-	"os"
 )
 
 var _ = Describe("postgresResourceStore", func() {
 
 	createStore := func() store.ResourceStore {
-		err := os.Setenv("KONVOY_STORE_TYPE", "postgres")
-		Expect(err).ToNot(HaveOccurred())
-		err = os.Setenv("KONVOY_ENVIRONMENT", "standalone")
-		Expect(err).ToNot(HaveOccurred())
-		cfg, err := config.Load("")
-		Expect(err).ToNot(HaveOccurred())
-		postgresCfg := *cfg.Store.Postgres
-
-		dbName, err := createRandomDb(postgresCfg)
-		Expect(err).ToNot(HaveOccurred())
-		cfg.Store.Postgres.DbName = dbName
-
-		err = prepareDb(postgresCfg)
+		cfg := postgres.PostgresStoreConfig{}
+		err := config.Load("", &cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		pStore, err := NewStore(postgresCfg)
+		dbName, err := createRandomDb(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		cfg.DbName = dbName
+
+		err = prepareDb(cfg)
+		Expect(err).ToNot(HaveOccurred())
+
+		pStore, err := NewStore(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		return pStore
@@ -39,7 +35,7 @@ var _ = Describe("postgresResourceStore", func() {
 	store.ExecuteStoreTests(createStore)
 })
 
-func createRandomDb(cfg config.PostgresStoreConfig) (string, error) {
+func createRandomDb(cfg postgres.PostgresStoreConfig) (string, error) {
 	db, err := connectToDb(cfg)
 	if err != nil {
 		return "", err
@@ -55,7 +51,7 @@ func createRandomDb(cfg config.PostgresStoreConfig) (string, error) {
 	return dbName, err
 }
 
-func prepareDb(cfg config.PostgresStoreConfig) error {
+func prepareDb(cfg postgres.PostgresStoreConfig) error {
 	db, err := connectToDb(cfg)
 	if err != nil {
 		return err

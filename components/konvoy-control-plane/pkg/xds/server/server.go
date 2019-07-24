@@ -24,11 +24,11 @@ func SetupServer(rt core_runtime.Runtime) error {
 	return core_runtime.Add(
 		rt,
 		// xDS gRPC API
-		&grpcServer{srv, rt.Config().GrpcPort},
+		&grpcServer{srv, rt.Config().XdsServerConfig.GrpcPort},
 		// xDS HTTP API
-		&httpGateway{srv, rt.Config().HttpPort},
+		&httpGateway{srv, rt.Config().XdsServerConfig.HttpPort},
 		// diagnostics server
-		&diagnosticsServer{rt.Config().DiagnosticsPort})
+		&diagnosticsServer{rt.Config().XdsServerConfig.DiagnosticsPort})
 }
 
 func newReconciler(xds core_xds.XdsContext, rs core_store.ResourceStore) core_discovery.DiscoveryConsumer {

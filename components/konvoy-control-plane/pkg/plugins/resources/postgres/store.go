@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	_ "github.com/lib/pq"
