@@ -18,6 +18,7 @@ var (
 
 type rootArgs struct {
 	configFile string
+	mesh       string
 	debug      bool
 }
 
@@ -46,6 +47,7 @@ func newRootCmd(root *rootContext) *cobra.Command {
 	}
 	// root flags
 	cmd.PersistentFlags().StringVar(&root.args.configFile, "config-file", "", "path to the configuration file to use")
+	cmd.PersistentFlags().StringVar(&root.args.mesh, "mesh", "", "mesh to use")
 	cmd.PersistentFlags().BoolVar(&root.args.debug, "debug", true, "enable debug-level logging")
 	// sub-commands
 	cmd.AddCommand(newConfigCmd(root))

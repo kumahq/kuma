@@ -11,6 +11,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output/table"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
+	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +32,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 			}
 
 			dataplaneStatuses := &mesh_core.DataplaneStatusResourceList{}
-			if err := rs.List(context.Background(), dataplaneStatuses); err != nil {
+			if err := rs.List(context.Background(), dataplaneStatuses, core_store.ListByMesh(pctx.CurrentMesh())); err != nil {
 				return errors.Wrapf(err, "Failed to list Dataplanes")
 			}
 

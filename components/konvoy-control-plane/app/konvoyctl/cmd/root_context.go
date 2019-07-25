@@ -5,6 +5,7 @@ import (
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/config"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
+	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/pkg/errors"
 )
@@ -42,6 +43,13 @@ func (rc *rootContext) CurrentControlPlane() (*config_proto.ControlPlane, error)
 		return nil, errors.Errorf("Current context refers to a Control Plane that doesn't exist: %q", currentContext.ControlPlane)
 	}
 	return controlPlane, nil
+}
+
+func (rc *rootContext) CurrentMesh() string {
+	if rc.args.mesh != "" {
+		return rc.args.mesh
+	}
+	return core_model.DefaultMesh
 }
 
 func (rc *rootContext) Now() time.Time {
