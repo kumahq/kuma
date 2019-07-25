@@ -1,13 +1,13 @@
 package bootstrap
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 )
 
-func Bootstrap(cfg config.Config) (core_runtime.Runtime, error) {
+func Bootstrap(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 	// 1. init Runtime Builder with passed-in configuration
 	builder := core_runtime.BuilderFor(cfg)
 

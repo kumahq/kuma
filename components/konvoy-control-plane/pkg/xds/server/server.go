@@ -14,17 +14,7 @@ var (
 	xdsServerLog = core.Log.WithName("xds-server")
 )
 
-type RunArgs struct {
-	GrpcPort        int
-	HttpPort        int
-	DiagnosticsPort int
-}
-
-type Server struct {
-	Args RunArgs
-}
-
-func (s *Server) Setup(rt core_runtime.Runtime) error {
+func SetupServer(rt core_runtime.Runtime) error {
 	r := newReconciler(rt.XDS(), rt.ResourceStore())
 	for _, ds := range rt.DiscoverySources() {
 		ds.AddConsumer(r)
@@ -34,11 +24,11 @@ func (s *Server) Setup(rt core_runtime.Runtime) error {
 	return core_runtime.Add(
 		rt,
 		// xDS gRPC API
-		&grpcServer{srv, s.Args.GrpcPort},
+		&grpcServer{srv, rt.Config().XdsServer.GrpcPort},
 		// xDS HTTP API
-		&httpGateway{srv, s.Args.HttpPort},
+		&httpGateway{srv, rt.Config().XdsServer.HttpPort},
 		// diagnostics server
-		&diagnosticsServer{s.Args.DiagnosticsPort})
+		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort})
 }
 
 func newReconciler(xds core_xds.XdsContext, rs core_store.ResourceStore) core_discovery.DiscoveryConsumer {

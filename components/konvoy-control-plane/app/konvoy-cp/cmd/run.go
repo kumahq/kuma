@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/bootstrap"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/server"
@@ -24,28 +25,25 @@ type runCmdOpts struct {
 
 func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 	args := struct {
-		grpcPort        int
-		httpPort        int
-		diagnosticsPort int
-		metricsPort     int
+		configPath string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Control Plane",
 		Long:  `Launch Control Plane.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			rt, err := bootstrap.Bootstrap(config.TODO())
+			cfg := konvoy_cp.DefaultConfig()
+			err := config.Load(args.configPath, &cfg)
+			if err != nil {
+				runLog.Error(err, "could not load the configuration")
+				return err
+			}
+			rt, err := bootstrap.Bootstrap(cfg)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
 			}
-			server := &server.Server{
-				Args: server.RunArgs{
-					GrpcPort:        args.grpcPort,
-					HttpPort:        args.httpPort,
-					DiagnosticsPort: args.diagnosticsPort,
-				}}
-			if err := server.Setup(rt); err != nil {
+			if err := server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up xDS API server")
 				return err
 			}
@@ -61,9 +59,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 		},
 	}
 	// flags
-	cmd.PersistentFlags().IntVar(&args.grpcPort, "grpc-port", 5678, "port to run gRPC xDS API server on")
-	cmd.PersistentFlags().IntVar(&args.httpPort, "http-port", 5679, "port to run HTTP xDS API server on")
-	cmd.PersistentFlags().IntVar(&args.diagnosticsPort, "diagnostics-port", 5680, "port to run diagnostics server on")
-	cmd.PersistentFlags().IntVar(&args.metricsPort, "metrics-port", 5681, "port to run metrics server on")
+	cmd.PersistentFlags().StringVarP(&args.configPath, "config-file", "c", "", "configuration file")
 	return cmd
 }

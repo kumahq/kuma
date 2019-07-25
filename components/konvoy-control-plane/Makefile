@@ -307,7 +307,12 @@ build/konvoyctl: ## Dev: Build `konvoyctl` binary
 
 run: fmt vet ## Dev: Run Control Plane locally
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
-	KUBECONFIG=$(KIND_KUBECONFIG) go run ./app/konvoy-cp/main.go run --grpc-port=$(CP_GRPC_PORT) --http-port=$(CP_HTTP_PORT)
+	KUBECONFIG=$(KIND_KUBECONFIG) \
+	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
+    KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
+    KONVOY_ENVIRONMENT=kubernetes \
+    KONVOY_STORE_TYPE=kubernetes \
+	go run ./app/konvoy-cp/main.go run
 
 curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
 curl/listeners: ## Dev: Make Discovery request to LDS

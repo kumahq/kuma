@@ -1,7 +1,7 @@
 package runtime
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -20,14 +20,14 @@ var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg config.Config
+	cfg konvoy_cp.Config
 	cm  ComponentManager
 	rs  core_store.ResourceStore
 	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
 }
 
-func BuilderFor(cfg config.Config) *Builder {
+func BuilderFor(cfg konvoy_cp.Config) *Builder {
 	return &Builder{cfg: cfg}
 }
 
