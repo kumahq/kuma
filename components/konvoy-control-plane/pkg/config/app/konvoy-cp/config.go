@@ -18,27 +18,27 @@ const (
 )
 
 type Config struct {
-	// Environment Type, can be
+	// Environment Type, can be either "kubernetes" or "standalone"
 	Environment EnvironmentType `yaml:"environment" envconfig:"konvoy_environment"`
 	// Resource Store configuration
 	Store *store.StoreConfig `yaml:"store"`
 	// Envoy XDS server configuration
-	XdsServerConfig *xds.XdsServerConfig `yaml:"xdsServer"`
+	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
 }
 
 func DefaultConfig() Config {
 	return Config{
-		Environment:     StandaloneEnvironmentType,
-		XdsServerConfig: xds.DefaultXdsServerConfig(),
-		ApiServer:       api_server.DefaultApiServerConfig(),
-		Store:           store.DefaultStoreConfig(),
+		Environment: StandaloneEnvironmentType,
+		XdsServer:   xds.DefaultXdsServerConfig(),
+		ApiServer:   api_server.DefaultApiServerConfig(),
+		Store:       store.DefaultStoreConfig(),
 	}
 }
 
 func (c *Config) Validate() error {
-	if err := c.XdsServerConfig.Validate(); err != nil {
+	if err := c.XdsServer.Validate(); err != nil {
 		return errors.Wrap(err, "Xds Server validation failed")
 	}
 	if c.Environment != KubernetesEnvironmentType && c.Environment != StandaloneEnvironmentType {

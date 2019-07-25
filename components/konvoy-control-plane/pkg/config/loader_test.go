@@ -61,9 +61,9 @@ apiServer:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(cfg.XdsServerConfig.GrpcPort).To(Equal(5000))
-		Expect(cfg.XdsServerConfig.HttpPort).To(Equal(5001))
-		Expect(cfg.XdsServerConfig.DiagnosticsPort).To(Equal(5003))
+		Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
+		Expect(cfg.XdsServer.HttpPort).To(Equal(5001))
+		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
 		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironmentType))
 
@@ -107,9 +107,9 @@ apiServer:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(cfg.XdsServerConfig.GrpcPort).To(Equal(5000))
-		Expect(cfg.XdsServerConfig.HttpPort).To(Equal(5001))
-		Expect(cfg.XdsServerConfig.DiagnosticsPort).To(Equal(5003))
+		Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
+		Expect(cfg.XdsServer.HttpPort).To(Equal(5001))
+		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
 		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironmentType))
 
