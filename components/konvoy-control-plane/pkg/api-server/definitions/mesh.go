@@ -1,12 +1,11 @@
-package mesh
+package definitions
 
 import (
-	api_server "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
 
-var MeshWsDefinition = api_server.ResourceWsDefinition{
+var MeshWsDefinition = ResourceWsDefinition{
 	Name: "Mesh",
 	Path: "meshes",
 	ResourceFactory: func() model.Resource {
