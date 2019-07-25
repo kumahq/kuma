@@ -2,6 +2,7 @@ package api_server_test
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
+	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
@@ -15,26 +16,32 @@ var _ = Describe("Read only Resource WS", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
+	var stop chan struct{}
 
 	const resourceName = "tr-1"
 	const mesh = "default-mesh"
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{ReadOnly: true})
+		cfg := *config.DefaultApiServerConfig()
+		cfg.ReadOnly = true
+		apiServer = createTestApiServer(resourceStore, cfg)
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/traffic-routes",
 		}
-		apiServer.Start()
+		stop = make(chan struct{})
+		go func() {
+			err := apiServer.Start(stop)
+			Expect(err).ToNot(HaveOccurred())
+		}()
 		waitForServer(&client)
 
 		putSampleResourceIntoStore(resourceStore, resourceName, mesh)
-	})
+	}, 5)
 
 	AfterEach(func() {
-		err := apiServer.Stop()
-		Expect(err).NotTo(HaveOccurred())
+		close(stop)
 	})
 
 	Describe("On GET", func() {

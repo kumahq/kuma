@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	api_server "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/bootstrap"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/server"
+	xds_server "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/server"
 	"github.com/spf13/cobra"
 )
 
@@ -43,8 +44,12 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
 			}
-			if err := server.SetupServer(rt); err != nil {
+			if err := xds_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up xDS API server")
+				return err
+			}
+			if err := api_server.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up API server")
 				return err
 			}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
+	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -18,23 +19,27 @@ var _ = Describe("Resource WS", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
+	var stop chan struct{}
 
 	const namespace = "default"
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{})
+		apiServer = createTestApiServer(resourceStore, *config.DefaultApiServerConfig())
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes",
 		}
-		apiServer.Start()
+		stop = make(chan struct{})
+		go func() {
+			err := apiServer.Start(stop)
+			Expect(err).ToNot(HaveOccurred())
+		}()
 		waitForServer(&client)
-	})
+	}, 5)
 
 	AfterEach(func() {
-		err := apiServer.Stop()
-		Expect(err).NotTo(HaveOccurred())
+		close(stop)
 	})
 
 	Describe("On GET", func() {

@@ -3,6 +3,7 @@ package api_server
 import (
 	"context"
 	"fmt"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/definitions"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -14,19 +15,12 @@ import (
 
 const namespace = "default"
 
-type ResourceWsDefinition struct {
-	Name                string
-	Path                string
-	ResourceFactory     func() model.Resource
-	ResourceListFactory func() model.ResourceList
-}
-
 type resourceWs struct {
 	resourceStore   store.ResourceStore
 	readOnly        bool
 	nameFromRequest func(*restful.Request) string
 	meshFromRequest func(*restful.Request) string
-	ResourceWsDefinition
+	definitions.ResourceWsDefinition
 }
 
 func (r *resourceWs) AddToWs(ws *restful.WebService) {
@@ -112,11 +106,11 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 	meshName := r.meshFromRequest(request)
 
 	list := r.ResourceListFactory()
-	if err := r.resourceStore.List(request.Request.Context(), list, store.ListByNamespace(namespace), store.ListByMesh(meshName)); err != nil {
+	if err := r.resourceStore.List(request.Request.Context(), list, store.ListByMesh(meshName)); err != nil {
 		core.Log.Error(err, "Could not retrieve resources")
 		writeError(response, 500, "Could not list a resource")
 	} else {
-		var items []*rest.Resource
+		items := []*rest.Resource{}
 		for _, item := range list.GetItems() {
 			items = append(items, &rest.Resource{
 				Meta: rest.ResourceMeta{

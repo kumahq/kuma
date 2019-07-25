@@ -5,7 +5,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/mesh"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/definitions"
+	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
@@ -22,24 +23,28 @@ var _ = Describe("Resource WS", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
+	var stop chan struct{}
 
 	const namespace = "default"
 	const mesh = "default"
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, api_server.ApiServerConfig{})
+		apiServer = createTestApiServer(resourceStore, *config.DefaultApiServerConfig())
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/traffic-routes",
 		}
-		apiServer.Start()
+		stop = make(chan struct{})
+		go func() {
+			err := apiServer.Start(stop)
+			Expect(err).ToNot(HaveOccurred())
+		}()
 		waitForServer(&client)
-	})
+	}, 5)
 
 	AfterEach(func() {
-		err := apiServer.Stop()
-		Expect(err).NotTo(HaveOccurred())
+		close(stop)
 	})
 
 	Describe("On GET", func() {
@@ -236,12 +241,10 @@ var _ = Describe("Resource WS", func() {
 })
 
 func waitForServer(client *resourceApiClient) {
-	for {
+	Eventually(func() bool {
 		response, err := client.listOrError()
-		if err == nil && response.StatusCode == 200 {
-			return
-		}
-	}
+		return err == nil && response.StatusCode == 200
+	}, "5s", "100ms").Should(BeTrue())
 }
 
 func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string) {
@@ -254,17 +257,17 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createTestApiServer(store store.ResourceStore, config api_server.ApiServerConfig) *api_server.ApiServer {
+func createTestApiServer(store store.ResourceStore, config config.ApiServerConfig) *api_server.ApiServer {
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
 	port, err := getFreePort()
 	Expect(err).NotTo(HaveOccurred())
-	config.BindAddress = fmt.Sprintf("localhost:%d", port)
-	definitions := []api_server.ResourceWsDefinition{
+	config.Port = port
+	defs := []definitions.ResourceWsDefinition{
 		TrafficRouteWsDefinition,
-		mesh.MeshWsDefinition,
+		definitions.MeshWsDefinition,
 	}
-	return api_server.NewApiServer(store, definitions, config)
+	return api_server.NewApiServer(store, defs, config)
 }
 
 func getFreePort() (int, error) {
