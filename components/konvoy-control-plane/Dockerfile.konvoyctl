@@ -1,0 +1,32 @@
+## build image
+FROM golang:1.12.5
+ENV GO111MODULE=on
+
+WORKDIR /go/src/github.com/Kong/konvoy/components/konvoy-control-plane
+
+# facilitate docker layer caching
+COPY go.mod go.mod
+COPY go.sum go.sum
+COPY api/go.mod api/go.mod
+COPY api/go.sum api/go.sum
+COPY pkg/plugins/resources/k8s/native/go.mod pkg/plugins/resources/k8s/native/go.mod
+COPY pkg/plugins/resources/k8s/native/go.sum pkg/plugins/resources/k8s/native/go.sum
+
+RUN go mod download
+
+COPY . .
+
+RUN make build/konvoyctl
+
+## runtime image
+FROM alpine:latest
+
+COPY --from=0 /go/src/github.com/Kong/konvoy/components/konvoy-control-plane/build/artifacts/konvoyctl/konvoyctl /usr/local/bin/
+
+RUN addgroup -S -g 5678 konvoyctl \
+ && adduser -S -D -G konvoyctl -u 5678 konvoyctl
+
+USER konvoyctl
+WORKDIR /home/konvoyctl
+
+CMD ["/bin/sh"]

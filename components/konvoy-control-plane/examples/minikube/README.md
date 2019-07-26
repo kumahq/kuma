@@ -57,3 +57,9 @@ where
 
 * `envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}` is a number of `inbound` requests
 * `envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}` is a number of `outbound` requests
+
+### Verify konvoyctl workflow
+
+```bash
+make konvoyctl/example/minikube -C ../..
+```

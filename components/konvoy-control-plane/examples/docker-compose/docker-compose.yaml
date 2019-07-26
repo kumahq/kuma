@@ -63,7 +63,7 @@ services:
   konvoy-control-plane:
     build:
       context: ../..
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.konvoy-cp
     volumes:
       - ./kubeconfig:/etc/konvoy-control-plane/kubeconfig
     environment:
