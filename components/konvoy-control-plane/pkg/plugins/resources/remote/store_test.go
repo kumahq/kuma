@@ -23,7 +23,7 @@ var _ = Describe("RemoteStore", func() {
 	Describe("List()", func() {
 		It("should successfully list known resources", func() {
 			// setup
-			client := http.Client{
+			client := &http.Client{
 				Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 					Expect(req.URL.Path).To(Equal("/meshes/pilot/trafficroutes"))
 
