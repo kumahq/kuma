@@ -164,7 +164,7 @@ make build/konvoyctl
 4. Add `Control Plane` to your `konvoyctl` config:
 
 ```bash
-build/artifacts/konvoyctl/konvoyctl config control-planes add k8s
+build/artifacts/konvoyctl/konvoyctl config control-planes add k8s --name demo
 ```
 
 5. Verify that `Control Plane` has been added:

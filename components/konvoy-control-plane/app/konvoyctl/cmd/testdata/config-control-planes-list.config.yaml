@@ -8,7 +8,7 @@ control_planes:
 - name: vm_test
   coordinates:
     api_server:
-      address: konvoy-control-plane.internal
+      url: https://konvoy-control-plane.internal:5681
 
 contexts:
 - name: k8s_minikube

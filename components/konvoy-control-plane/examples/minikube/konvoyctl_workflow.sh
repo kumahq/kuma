@@ -16,7 +16,7 @@ run konvoyctl config view
 
 run konvoyctl config control-planes list
 
-run konvoyctl config control-planes add k8s
+run konvoyctl config control-planes add k8s --name demo
 
 run konvoyctl config view
 

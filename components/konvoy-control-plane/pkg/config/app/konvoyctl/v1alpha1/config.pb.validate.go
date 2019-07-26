@@ -535,42 +535,16 @@ func (m *ControlPlaneCoordinates_ApiServer) Validate() error {
 		return nil
 	}
 
-	if err := m._validateHostname(m.GetAddress()); err != nil {
-		if ip := net.ParseIP(m.GetAddress()); ip == nil {
-			return ControlPlaneCoordinates_ApiServerValidationError{
-				field:  "Address",
-				reason: "value must be a valid hostname, or ip address",
-			}
+	if uri, err := url.Parse(m.GetUrl()); err != nil {
+		return ControlPlaneCoordinates_ApiServerValidationError{
+			field:  "Url",
+			reason: "value must be a valid URI",
+			cause:  err,
 		}
-	}
-
-	return nil
-}
-
-func (m *ControlPlaneCoordinates_ApiServer) _validateHostname(host string) error {
-	s := strings.ToLower(strings.TrimSuffix(host, "."))
-
-	if len(host) > 253 {
-		return errors.New("hostname cannot exceed 253 characters")
-	}
-
-	for _, part := range strings.Split(s, ".") {
-		if l := len(part); l == 0 || l > 63 {
-			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
-		}
-
-		if part[0] == '-' {
-			return errors.New("hostname parts cannot begin with hyphens")
-		}
-
-		if part[len(part)-1] == '-' {
-			return errors.New("hostname parts cannot end with hyphens")
-		}
-
-		for _, r := range part {
-			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
-				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
-			}
+	} else if !uri.IsAbs() {
+		return ControlPlaneCoordinates_ApiServerValidationError{
+			field:  "Url",
+			reason: "value must be absolute",
 		}
 	}
 

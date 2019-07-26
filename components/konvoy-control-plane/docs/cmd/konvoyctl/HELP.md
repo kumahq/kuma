@@ -110,10 +110,10 @@ Usage:
 
 Available Commands:
   k8s         Add a Control Plane installed on Kubernetes
+  other       Add a Control Plane installed elsewhere
 
 Flags:
-  -h, --help          help for add
-      --name string   reference name for a Control Plane
+  -h, --help   help for add
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -132,13 +132,32 @@ Usage:
   konvoyctl config control-planes add k8s [flags]
 
 Flags:
-  -h, --help   help for k8s
+  -h, --help          help for k8s
+      --name string   reference name for the Control Plane (required)
 
 Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
       --mesh string          mesh to use
-      --name string          reference name for a Control Plane
+```
+
+##### konvoyctl config control-planes add other
+
+```
+Add a Control Plane installed elsewhere.
+
+Usage:
+  konvoyctl config control-planes add other [flags]
+
+Flags:
+      --api-server-url string   URL of the Control Plane API Server (required)
+  -h, --help                    help for other
+      --name string             reference name for the Control Plane (required)
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
 ```
 
 ## konvoyctl get
