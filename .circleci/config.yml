@@ -326,6 +326,9 @@ jobs:
     - run:
         name: Verify Envoy stats
         command: make verify/example/minikube -C components/konvoy-control-plane
+    - run:
+        name: Verify konvoyctl workflow
+        command: make konvoyctl/example/minikube -C components/konvoy-control-plane
 
 workflows:
   version: 2

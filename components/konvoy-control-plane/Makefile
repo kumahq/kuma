@@ -7,7 +7,8 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
-		fmt fmt/go fmt/proto vet check test integration build run image \
+		fmt fmt/go fmt/proto vet check test integration build run \
+		image image/konvoy-cp image/konvoyctl \
 		build/konvoy-cp build/konvoyctl \
 		docs docs/konvoyctl \
 		curl/listeners curl/clusters \
@@ -56,7 +57,8 @@ endef
 
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
 
-CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
+KONVOY_CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
+KONVOYCTL_DOCKER_IMAGE ?= konvoy/konvoyctl:latest
 
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.1.0
@@ -245,7 +247,7 @@ deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
 
 kind/load/control-plane: image
-	kind load docker-image $(CP_DOCKER_IMAGE) --name=konvoy
+	kind load docker-image $(KONVOY_CP_DOCKER_IMAGE) --name=konvoy
 
 deploy/control-plane/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/install -C pkg/plugins/resources/k8s/native
@@ -329,8 +331,13 @@ run/example/envoy: ## Dev: Run Envoy configured against local Control Plane
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-image: ## Dev: Build Control Plane Docker image
-	docker build -t $(CP_DOCKER_IMAGE) .
+image: image/konvoy-cp ## Dev: Build Control Plane Docker image
+
+image/konvoy-cp:
+	docker build -t $(KONVOY_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
+
+image/konvoyctl:
+	docker build -t $(KONVOYCTL_DOCKER_IMAGE) -f Dockerfile.konvoyctl .
 
 docs: docs/konvoyctl ## Dev: Generate all docs
 
@@ -397,3 +404,6 @@ verify/example/minikube/outbound:
 	@echo "Check passed!"
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
+
+konvoyctl/example/minikube: image/konvoyctl
+	cat examples/minikube/konvoyctl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:/home/$$USER/.minikube -e HOME=/tmp $(KONVOYCTL_DOCKER_IMAGE)
