@@ -39,7 +39,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 		sampleDataplaneStatuses = []*mesh_core.DataplaneStatusResource{
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "pilot",
+					Mesh:      "default",
 					Namespace: "trial",
 					Name:      "experiment",
 				},
@@ -93,6 +93,21 @@ var _ = Describe("konvoy get dataplanes", func() {
 					},
 				},
 			},
+			{
+				Meta: &test_model.ResourceMeta{
+					Mesh:      "pilot",
+					Namespace: "default",
+					Name:      "simple",
+				},
+				Spec: mesh_proto.DataplaneStatus{
+					Subscriptions: []*mesh_proto.DiscoverySubscription{
+						{
+							Id:                     "1",
+							ControlPlaneInstanceId: "node-001",
+						},
+					},
+				},
+			},
 		}
 	})
 
@@ -133,8 +148,9 @@ MESH   NAMESPACE   NAME   SUBSCRIPTIONS   LAST CONNECTED AGO   TOTAL UPDATES   T
 			// and
 			Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(`
 MESH      NAMESPACE   NAME         SUBSCRIPTIONS   LAST CONNECTED AGO   TOTAL UPDATES   TOTAL ERRORS
-pilot     trial       experiment   2               2h3m4s               30              3
+default   trial       experiment   2               2h3m4s               30              3
 default   demo        example      3               never                0               0
+pilot     default     simple       1               never                0               0
 `)))
 		})
 	})

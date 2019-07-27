@@ -15,6 +15,7 @@ Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
   -h, --help                 help for konvoyctl
+      --mesh string          mesh to use
 
 Use "konvoyctl [command] --help" for more information about a command.
 ```
@@ -37,6 +38,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
 
 Use "konvoyctl config [command] --help" for more information about a command.
 ```
@@ -55,6 +57,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
 ```
 
 ### konvoyctl config control-planes
@@ -75,6 +78,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
 
 Use "konvoyctl config control-planes [command] --help" for more information about a command.
 ```
@@ -93,6 +97,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
 ```
 
 #### konvoyctl config control-planes add
@@ -113,6 +118,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
 
 Use "konvoyctl config control-planes add [command] --help" for more information about a command.
 ```
@@ -131,6 +137,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
       --name string          reference name for a Control Plane
 ```
 
@@ -152,6 +159,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
 
 Use "konvoyctl get [command] --help" for more information about a command.
 ```
@@ -170,6 +178,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
   -o, --output string        Output format: one of table|yaml|json (default "table")
 ```
 
