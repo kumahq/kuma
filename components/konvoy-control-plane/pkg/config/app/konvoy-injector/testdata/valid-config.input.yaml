@@ -1,0 +1,4 @@
+webHookServer:
+  address: 127.0.0.2
+  port: 8442
+  certDir: /var/secret/konvoy-injector

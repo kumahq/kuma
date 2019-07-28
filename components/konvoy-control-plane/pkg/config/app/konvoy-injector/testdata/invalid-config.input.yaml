@@ -1,0 +1,4 @@
+webHookServer:
+  address: x.y.z
+  port: 123456
+  certDir:
