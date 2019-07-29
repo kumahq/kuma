@@ -4,8 +4,9 @@
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
-		start/k8s start/kind start/control-plane/k8s \
+		start/k8s start/kind start/control-plane/k8s start/konvoy-injector/k8s \
 		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
+		deploy/konvoy-injector/k8s kind/load/konvoy-injector \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory \
 		fmt fmt/go fmt/proto vet check test integration build run \
@@ -259,6 +260,17 @@ deploy/control-plane/k8s:
 
 start/control-plane/k8s: kind/load/control-plane deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
+kind/load/konvoy-injector: image/konvoy-injector
+	kind load docker-image $(KONVOY_INJECTOR_DOCKER_IMAGE) --name=konvoy
+
+deploy/konvoy-injector/k8s:
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n konvoy-system secret konvoy-injector-tls-cert || true
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create -n konvoy-system secret tls konvoy-injector-tls-cert --key=app/konvoy-injector/cmd/testdata/tls.key --cert=app/konvoy-injector/cmd/testdata/tls.crt
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f examples/local/konvoy-injector.yaml
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl patch mutatingwebhookconfiguration konvoy-injector-webhook-configuration -p "{\"webhooks\":[{\"name\":\"konvoy-injector.getkonvoy.io\",\"clientConfig\":{\"caBundle\": \"$$(cat app/konvoy-injector/cmd/testdata/tls.crt | base64 )\"}}]}"
+
+start/konvoy-injector/k8s: kind/load/konvoy-injector deploy/konvoy-injector/k8s ## Bootstrap: Deploy `konvoy-injector` on Kubernetes (KIND)
+
 clean: clean/build ## Dev: Clean
 
 clean/build: ## Dev: Remove build/ dir
@@ -428,7 +440,7 @@ generate/test/cert/konvoy-injector:  ## Dev: Generate TLS cert for Konvoy Inject
 	OUTPUT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata && \
 	TMP_DIR=$(shell mktemp -d) && \
 	cd $$TMP_DIR && \
-	go run $(shell go env GOROOT)/src/crypto/tls/generate_cert.go --host=* --duration=87660h && \
+	go run $(shell go env GOROOT)/src/crypto/tls/generate_cert.go --host=*,*.konvoy-system.svc --duration=87660h && \
 	mv cert.pem $$OUTPUT_DIR/tls.crt && \
 	mv key.pem $$OUTPUT_DIR/tls.key && \
 	rm -rf $$TMP_DIR
