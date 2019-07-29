@@ -1,12 +1,10 @@
 package standalone
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 )
 
 var _ runtime.ComponentManager = &componentManager{}
-var log = core.Log.WithName("component-manager")
 
 type componentManager struct {
 	components []runtime.Component

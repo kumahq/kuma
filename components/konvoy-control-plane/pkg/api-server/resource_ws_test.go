@@ -37,6 +37,7 @@ var _ = Describe("Resource WS", func() {
 		}
 		stop = make(chan struct{})
 		go func() {
+			defer GinkgoRecover()
 			err := apiServer.Start(stop)
 			Expect(err).ToNot(HaveOccurred())
 		}()

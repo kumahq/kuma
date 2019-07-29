@@ -24,21 +24,6 @@ func Bootstrap(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 	return builder.Build()
 }
 
-func initializeDiscovery(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
-	if cfg.Environment == konvoy_cp.KubernetesEnvironmentType {
-		plugin, err := core_plugins.Plugins().Discovery(core_plugins.Kubernetes)
-		if err != nil {
-			return nil
-		}
-		if source, err := plugin.NewDiscoverySource(builder, nil); err != nil {
-			return nil
-		} else {
-			builder.AddDiscoverySource(source)
-		}
-	}
-	return nil
-}
-
 func initializeBootstrap(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
 	var plugin core_plugins.BootstrapPlugin
 	switch cfg.Environment {
@@ -93,6 +78,21 @@ func initializeResourceStore(cfg konvoy_cp.Config, builder *core_runtime.Builder
 		builder.WithResourceStore(rs)
 		return nil
 	}
+}
+
+func initializeDiscovery(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
+	if cfg.Environment == konvoy_cp.KubernetesEnvironmentType {
+		plugin, err := core_plugins.Plugins().Discovery(core_plugins.Kubernetes)
+		if err != nil {
+			return nil
+		}
+		if source, err := plugin.NewDiscoverySource(builder, nil); err != nil {
+			return nil
+		} else {
+			builder.AddDiscoverySource(source)
+		}
+	}
+	return nil
 }
 
 func initializeXds(builder *core_runtime.Builder) {
