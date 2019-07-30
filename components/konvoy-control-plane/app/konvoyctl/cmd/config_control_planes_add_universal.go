@@ -6,7 +6,7 @@ import (
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 )
 
-type configControlPlanesAddOtherContext struct {
+type configControlPlanesAddUniversalContext struct {
 	*configControlPlanesAddContext
 
 	args struct {
@@ -14,10 +14,10 @@ type configControlPlanesAddOtherContext struct {
 	}
 }
 
-func newConfigControlPlanesAddOtherCmd(pctx *configControlPlanesAddContext) *cobra.Command {
-	ctx := &configControlPlanesAddOtherContext{configControlPlanesAddContext: pctx}
+func newConfigControlPlanesAddUniversalCmd(pctx *configControlPlanesAddContext) *cobra.Command {
+	ctx := &configControlPlanesAddUniversalContext{configControlPlanesAddContext: pctx}
 	cmd := &cobra.Command{
-		Use:   "other",
+		Use:   "universal",
 		Short: "Add a Control Plane installed elsewhere",
 		Long:  `Add a Control Plane installed elsewhere.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {

@@ -31,6 +31,6 @@ gen_help konvoyctl config control-planes
 gen_help konvoyctl config control-planes list
 gen_help konvoyctl config control-planes add
 gen_help konvoyctl config control-planes add k8s
-gen_help konvoyctl config control-planes add other
+gen_help konvoyctl config control-planes add universal
 gen_help konvoyctl get
 gen_help konvoyctl get dataplanes

@@ -30,7 +30,7 @@ func newConfigControlPlanesAddCmd(pctx *rootContext) *cobra.Command {
 	}
 	// sub-commands
 	cmd.AddCommand(withCommonFlags(newConfigControlPlanesAddKubernetesCmd(ctx)))
-	cmd.AddCommand(withCommonFlags(newConfigControlPlanesAddOtherCmd(ctx)))
+	cmd.AddCommand(withCommonFlags(newConfigControlPlanesAddUniversalCmd(ctx)))
 	return cmd
 }
 
