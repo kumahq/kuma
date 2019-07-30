@@ -14,6 +14,7 @@ type BuilderContext interface {
 	ComponentManager() ComponentManager
 	ResourceStore() core_store.ResourceStore
 	XdsContext() core_xds.XdsContext
+	Config() konvoy_cp.Config
 }
 
 var _ BuilderContext = &Builder{}
@@ -88,4 +89,7 @@ func (b *Builder) ResourceStore() core_store.ResourceStore {
 }
 func (b *Builder) XdsContext() core_xds.XdsContext {
 	return b.xds
+}
+func (b *Builder) Config() konvoy_cp.Config {
+	return b.cfg
 }

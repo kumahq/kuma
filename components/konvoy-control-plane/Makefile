@@ -8,7 +8,7 @@
 		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
 		deploy/konvoy-injector/k8s kind/load/konvoy-injector \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
-		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory \
+		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/standalone/postgres \
 		fmt fmt/go fmt/proto vet check test integration build run \
 		image image/konvoy-cp image/konvoyctl image/konvoy-injector \
 		build/konvoy-cp build/konvoyctl build/konvoy-injector \
@@ -311,7 +311,7 @@ test: ## Dev: Run tests
 
 integration: ## Dev: Run integration tests
 	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
-	test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
+	tools/test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
 build: build/konvoy-cp build/konvoyctl build/konvoy-injector ## Dev: Build all binaries
@@ -339,6 +339,22 @@ run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mod
 	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
 	KONVOY_ENVIRONMENT=universal \
 	KONVOY_STORE_TYPE=memory \
+	go run ./app/konvoy-cp/main.go run
+
+start/postgres: ## Boostrap: start Postgres for Control Plane with initial schema
+	docker-compose -f tools/postgres/docker-compose.yaml up $(DOCKER_COMPOSE_OPTIONS) -d
+	tools/postgres/wait-for-postgres.sh 15432
+
+run/standalone/postgres: fmt vet ## Dev: Run Control Plane locally in standalone mode with Postgres store
+	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
+	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
+	KONVOY_ENVIRONMENT=standalone \
+	KONVOY_STORE_TYPE=postgres \
+	KONVOY_STORE_POSTGRES_HOST=localhost \
+	KONVOY_STORE_POSTGRES_PORT=15432 \
+	KONVOY_STORE_POSTGRES_USER=konvoy \
+	KONVOY_STORE_POSTGRES_PASSWORD=konvoy \
+	KONVOY_STORE_POSTGRES_DB_NAME=konvoy \
 	go run ./app/konvoy-cp/main.go run
 
 curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)

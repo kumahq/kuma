@@ -72,6 +72,23 @@ make integration
 make run/universal/memory
 ```
 
+### Standalone with Postgres as a storage
+
+1. Run Postgres with initial schema using docker-compose.
+It will run on port 15432 with username: `konvoy`, password: `konvoy` and db name: `konvoy`.
+
+```bash
+make start/postgres
+```
+
+2. Run `Control Plane` on local machine.
+
+```bash
+make run/standalone/postgres
+```
+
+This will also start
+
 ### Kubernetes
 
 1. Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
