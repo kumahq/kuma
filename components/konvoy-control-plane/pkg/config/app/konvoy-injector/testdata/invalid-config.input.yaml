@@ -2,3 +2,19 @@ webHookServer:
   address: x.y.z
   port: 123456
   certDir:
+injector:
+  controlPlane:
+    xdsServer:
+      address:
+      port: 223456
+    apiServer:
+      address:
+      port: 323456
+  sidecarContainer:
+    image:
+    redirectPort: 423456
+    uid: -1
+    gid: -2
+    adminPort: 523456
+  initContainer:
+    image:

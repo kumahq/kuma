@@ -16,7 +16,7 @@ func Setup(mgr kube_manager.Manager, cfg *konvoy_injector_conf.Config) error {
 		Port:    int(cfg.WebHookServer.Port),
 		CertDir: cfg.WebHookServer.CertDir,
 	}
-	webhookServer.Register("/inject-sidecar", PodMutatingWebhook(injector.InjectKonvoy))
+	webhookServer.Register("/inject-sidecar", PodMutatingWebhook(injector.New(cfg.Injector).InjectKonvoy))
 	webhookServer.WebhookMux.HandleFunc("/healthy", func(resp http.ResponseWriter, _ *http.Request) {
 		resp.WriteHeader(http.StatusOK)
 	})
