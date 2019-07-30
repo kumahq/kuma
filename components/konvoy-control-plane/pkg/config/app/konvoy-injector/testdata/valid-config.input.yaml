@@ -8,8 +8,7 @@ injector:
       address: xds-server
       port: 9876
     apiServer:
-      address: api-server
-      port: 8765
+      url: https://api-server:8765
   sidecarContainer:
     image: konvoy-sidecar:latest
     redirectPort: 1234

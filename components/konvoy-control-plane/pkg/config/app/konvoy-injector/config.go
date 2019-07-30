@@ -2,6 +2,7 @@ package konvoyinjector
 
 import (
 	"net"
+	"net/url"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 
@@ -26,8 +27,7 @@ func DefaultConfig() Config {
 					Port:    5678,
 				},
 				ApiServer: ApiServer{
-					Address: "konvoy-control-plane.konvoy-system",
-					Port:    5681,
+					URL: "https://konvoy-control-plane.konvoy-system:5681",
 				},
 			},
 			SidecarContainer: SidecarContainer{
@@ -74,24 +74,26 @@ type Injector struct {
 	InitContainer InitContainer `yaml:"initContainer,omitempty"`
 }
 
-// ControlPlane defines coordinates of the Konvoy Control Plane.
+// ControlPlane defines coordinates of the Control Plane.
 type ControlPlane struct {
-	// XdsServer defines coordinates of the Konvoy xDS Server.
+	// XdsServer defines coordinates of the Control Plane xDS Server.
 	XdsServer XdsServer `yaml:"xdsServer,omitempty"`
-	// ApiServer defines coordinates of the Konvoy API Server.
+	// ApiServer defines coordinates of the Control Plane API Server.
 	ApiServer ApiServer `yaml:"apiServer,omitempty"`
 }
 
-// XdsServer defines coordinates of the Konvoy xDS Server.
+// XdsServer defines coordinates of the Control Plane xDS Server.
 type XdsServer struct {
+	// Address defines the address of xDS server.
 	Address string `yaml:"address,omitempty" envconfig:"konvoy_injector_control_plane_xds_server_address"`
-	Port    uint32 `yaml:"port,omitempty" envconfig:"konvoy_injector_control_plane_xds_server_port"`
+	// Port defines the port of xDS server.
+	Port uint32 `yaml:"port,omitempty" envconfig:"konvoy_injector_control_plane_xds_server_port"`
 }
 
-// ApiServer defines coordinates of the Konvoy API Server.
+// ApiServer defines coordinates of the Control Plane API Server.
 type ApiServer struct {
-	Address string `yaml:"address,omitempty" envconfig:"konvoy_injector_control_plane_api_server_address"`
-	Port    uint32 `yaml:"port,omitempty" envconfig:"konvoy_injector_control_plane_api_server_port"`
+	// URL defines URL of the Control Plane API Server.
+	URL string `yaml:"url,omitempty" envconfig:"konvoy_injector_control_plane_api_server_url"`
 }
 
 // SidecarContainer defines configuration of the Konvoy sidecar container.
@@ -183,11 +185,13 @@ func (s *XdsServer) Validate() (errs error) {
 var _ config.Config = &ApiServer{}
 
 func (s *ApiServer) Validate() (errs error) {
-	if s.Address == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Address must be non-empty"))
+	if s.URL == "" {
+		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
 	}
-	if 65535 < s.Port {
-		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
+	if url, err := url.Parse(s.URL); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".URL must be a valid absolute URI"))
+	} else if !url.IsAbs() {
+		errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
 	}
 	return
 }

@@ -8,8 +8,7 @@ injector:
       address:
       port: 223456
     apiServer:
-      address:
-      port: 323456
+      url: api-server
   sidecarContainer:
     image:
     redirectPort: 423456

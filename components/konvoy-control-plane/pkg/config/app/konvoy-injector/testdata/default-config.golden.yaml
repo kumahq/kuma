@@ -6,8 +6,7 @@ injector:
       address: konvoy-control-plane.konvoy-system
       port: 5678
     apiServer:
-      address: konvoy-control-plane.konvoy-system
-      port: 5681
+      url: https://konvoy-control-plane.konvoy-system:5681
   sidecarContainer:
     image: envoyproxy/envoy-alpine:latest
     redirectPort: 15001
