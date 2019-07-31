@@ -13,9 +13,6 @@ option (gogoproto.equal_all) = true;
 // Dataplane defines the connected Dataplane to the Control Plane.
 message Dataplane {
 
-    // ID of the Dataplane
-    string id = 1 [ (validate.rules).string.min_len = 1 ];
-
-    // Tags of the Dataplane, ex. service: web, version: 1.0
-    map<string, string> tags = 2;
+  // Tags of the Dataplane, ex. service: web, version: 1.0
+  map<string, string> tags = 2;
 }

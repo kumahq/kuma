@@ -8,62 +8,62 @@ import (
 )
 
 const (
-	DataplaneStatusType model.ResourceType = "DataplaneStatus"
+	DataplaneType model.ResourceType = "Dataplane"
 )
 
-var _ model.Resource = &DataplaneStatusResource{}
+var _ model.Resource = &DataplaneResource{}
 
-type DataplaneStatusResource struct {
+type DataplaneResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.DataplaneStatus
+	Spec mesh_proto.Dataplane
 }
 
-func (t *DataplaneStatusResource) GetType() model.ResourceType {
-	return DataplaneStatusType
+func (t *DataplaneResource) GetType() model.ResourceType {
+	return DataplaneType
 }
-func (t *DataplaneStatusResource) GetMeta() model.ResourceMeta {
+func (t *DataplaneResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
-func (t *DataplaneStatusResource) SetMeta(m model.ResourceMeta) {
+func (t *DataplaneResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
-func (t *DataplaneStatusResource) GetSpec() model.ResourceSpec {
+func (t *DataplaneResource) GetSpec() model.ResourceSpec {
 	return &t.Spec
 }
-func (t *DataplaneStatusResource) SetSpec(spec model.ResourceSpec) error {
-	status, ok := spec.(*mesh_proto.DataplaneStatus)
+func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
+	dataplane, ok := spec.(*mesh_proto.Dataplane)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *status
+		t.Spec = *dataplane
 		return nil
 	}
 }
 
-var _ model.ResourceList = &DataplaneStatusResourceList{}
+var _ model.ResourceList = &DataplaneResourceList{}
 
-type DataplaneStatusResourceList struct {
-	Items []*DataplaneStatusResource
+type DataplaneResourceList struct {
+	Items []*DataplaneResource
 }
 
-func (l *DataplaneStatusResourceList) GetItems() []model.Resource {
+func (l *DataplaneResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
 }
-func (l *DataplaneStatusResourceList) GetItemType() model.ResourceType {
-	return DataplaneStatusType
+func (l *DataplaneResourceList) GetItemType() model.ResourceType {
+	return DataplaneType
 }
-func (l *DataplaneStatusResourceList) NewItem() model.Resource {
-	return &DataplaneStatusResource{}
+func (l *DataplaneResourceList) NewItem() model.Resource {
+	return &DataplaneResource{}
 }
-func (l *DataplaneStatusResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*DataplaneStatusResource); ok {
+func (l *DataplaneResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*DataplaneResource); ok {
 		l.Items = append(l.Items, trr)
 		return nil
 	} else {
-		return model.ErrorInvalidItemType((*DataplaneStatusResource)(nil), r)
+		return model.ErrorInvalidItemType((*DataplaneResource)(nil), r)
 	}
 }

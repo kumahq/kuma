@@ -96,6 +96,7 @@ func SetupServer(rt runtime.Runtime) error {
 	apiServer := NewApiServer(rt.ResourceStore(), []definitions.ResourceWsDefinition{
 		definitions.MeshWsDefinition,
 		definitions.DataplaneWsDefinition,
+		definitions.DataplaneStatusWsDefinition,
 	}, *rt.Config().ApiServer)
 	return rt.Add(apiServer)
 }
