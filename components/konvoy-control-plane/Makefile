@@ -4,12 +4,14 @@
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
-		start/k8s start/kind start/control-plane/k8s \
+		start/k8s start/kind start/control-plane/k8s start/konvoy-injector/k8s \
 		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
+		deploy/konvoy-injector/k8s kind/load/konvoy-injector \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory \
-		image image/konvoy-cp image/konvoyctl \
-		build/konvoy-cp build/konvoyctl \
+		fmt fmt/go fmt/proto vet check test integration build run \
+		image image/konvoy-cp image/konvoyctl image/konvoy-injector \
+		build/konvoy-cp build/konvoyctl build/konvoy-injector \
 		docs docs/konvoyctl \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
@@ -17,7 +19,8 @@
         verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
 		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
-		print/kubebuilder/test_assets
+		print/kubebuilder/test_assets \
+		generate/test/cert/konvoy-injector run/konvoy-injector
 
 PKG_LIST := ./... ./api/... ./pkg/plugins/resources/k8s/native/...
 
@@ -59,6 +62,7 @@ SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": 
 
 KONVOY_CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 KONVOYCTL_DOCKER_IMAGE ?= konvoy/konvoyctl:latest
+KONVOY_INJECTOR_DOCKER_IMAGE ?= konvoy/konvoy-injector:latest
 
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.1.0
@@ -246,7 +250,7 @@ deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
 
-kind/load/control-plane: image
+kind/load/control-plane: image/konvoy-cp
 	kind load docker-image $(KONVOY_CP_DOCKER_IMAGE) --name=konvoy
 
 deploy/control-plane/k8s:
@@ -255,6 +259,17 @@ deploy/control-plane/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f examples/local/control-plane.yaml
 
 start/control-plane/k8s: kind/load/control-plane deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
+
+kind/load/konvoy-injector: image/konvoy-injector
+	kind load docker-image $(KONVOY_INJECTOR_DOCKER_IMAGE) --name=konvoy
+
+deploy/konvoy-injector/k8s:
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n konvoy-system secret konvoy-injector-tls-cert || true
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create -n konvoy-system secret tls konvoy-injector-tls-cert --key=app/konvoy-injector/cmd/testdata/tls.key --cert=app/konvoy-injector/cmd/testdata/tls.crt
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f examples/local/konvoy-injector.yaml
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl patch mutatingwebhookconfiguration konvoy-injector-webhook-configuration -p "{\"webhooks\":[{\"name\":\"konvoy-injector.getkonvoy.io\",\"clientConfig\":{\"caBundle\": \"$$(cat app/konvoy-injector/cmd/testdata/tls.crt | base64 )\"}}]}"
+
+start/konvoy-injector/k8s: kind/load/konvoy-injector deploy/konvoy-injector/k8s ## Bootstrap: Deploy `konvoy-injector` on Kubernetes (KIND)
 
 clean: clean/build ## Dev: Clean
 
@@ -299,13 +314,16 @@ integration: ## Dev: Run integration tests
 	test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
-build: build/konvoy-cp build/konvoyctl ## Dev: Build all binaries
+build: build/konvoy-cp build/konvoyctl build/konvoy-injector ## Dev: Build all binaries
 
 build/konvoy-cp: ## Dev: Build `Control Plane` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
 
 build/konvoyctl: ## Dev: Build `konvoyctl` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoyctl/konvoyctl ./app/konvoyctl
+
+build/konvoy-injector: ## Dev: Build `konvoy-injector` binary
+	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-injector/konvoy-injector ./app/konvoy-injector
 
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
@@ -338,13 +356,16 @@ run/example/envoy: ## Dev: Run Envoy configured against local Control Plane
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-image: image/konvoy-cp ## Dev: Build Control Plane Docker image
+image: image/konvoy-cp image/konvoyctl image/konvoy-injector ## Dev: Build all Docker images
 
-image/konvoy-cp:
+image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
 	docker build -t $(KONVOY_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
 
-image/konvoyctl:
+image/konvoyctl: ## Dev: Build `konvoyctl` Docker image
 	docker build -t $(KONVOYCTL_DOCKER_IMAGE) -f Dockerfile.konvoyctl .
+
+image/konvoy-injector: ## Dev: Build `konvoy-injector` Docker image
+	docker build -t $(KONVOY_INJECTOR_DOCKER_IMAGE) -f Dockerfile.konvoy-injector .
 
 docs: docs/konvoyctl ## Dev: Generate all docs
 
@@ -414,3 +435,20 @@ verify/example/minikube: verify/example/minikube/inbound verify/example/minikube
 
 konvoyctl/example/minikube: image/konvoyctl
 	cat examples/minikube/konvoyctl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:/home/$$USER/.minikube -e HOME=/tmp $(KONVOYCTL_DOCKER_IMAGE)
+
+generate/test/cert/konvoy-injector:  ## Dev: Generate TLS cert for Konvoy Injector (for use in development and unit tests)
+	OUTPUT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata && \
+	TMP_DIR=$(shell mktemp -d) && \
+	cd $$TMP_DIR && \
+	go run $(shell go env GOROOT)/src/crypto/tls/generate_cert.go --host=*,*.konvoy-system.svc --duration=87660h && \
+	mv cert.pem $$OUTPUT_DIR/tls.crt && \
+	mv key.pem $$OUTPUT_DIR/tls.key && \
+	rm -rf $$TMP_DIR
+
+run/konvoy-injector: ## Dev: Run Konvoy Injector locally
+	KUBECONFIG=$(KIND_KUBECONFIG) \
+	KONVOY_INJECTOR_WEBHOOK_SERVER_CERT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata \
+	go run ./app/konvoy-injector/main.go run
+
+test/konvoy-injector: PKG_LIST=./app/konvoy-injector/... ./pkg/config/app/konvoy-injector/...
+test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
