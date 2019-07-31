@@ -65,9 +65,9 @@ apiServer:
 		Expect(cfg.XdsServer.HttpPort).To(Equal(5001))
 		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
-		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironmentType))
+		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironment))
 
-		Expect(cfg.Store.Type).To(Equal(store.PostgresStoreType))
+		Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
 
 		Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
 		Expect(int(cfg.Store.Postgres.Port)).To(Equal(5432))
@@ -111,9 +111,9 @@ apiServer:
 		Expect(cfg.XdsServer.HttpPort).To(Equal(5001))
 		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
-		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironmentType))
+		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironment))
 
-		Expect(cfg.Store.Type).To(Equal(store.PostgresStoreType))
+		Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
 		Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
 		Expect(int(cfg.Store.Postgres.Port)).To(Equal(5432))
 		Expect(cfg.Store.Postgres.User).To(Equal("konvoy"))
