@@ -38,6 +38,7 @@ store:
     user: konvoy
     password: konvoy
     dbName: konvoy
+    connectionTimeout: 10
 xdsServer:
   grpcPort: 5000
   httpPort: 5001
@@ -74,6 +75,7 @@ apiServer:
 		Expect(cfg.Store.Postgres.User).To(Equal("konvoy"))
 		Expect(cfg.Store.Postgres.Password).To(Equal("konvoy"))
 		Expect(cfg.Store.Postgres.DbName).To(Equal("konvoy"))
+		Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
@@ -97,6 +99,7 @@ apiServer:
 		setEnv("KONVOY_STORE_POSTGRES_USER", "konvoy")
 		setEnv("KONVOY_STORE_POSTGRES_PASSWORD", "konvoy")
 		setEnv("KONVOY_STORE_POSTGRES_DB_NAME", "konvoy")
+		setEnv("KONVOY_STORE_POSTGRES_CONNECTION_TIMEOUT", "10")
 		setEnv("KONVOY_API_SERVER_READ_ONLY", "true")
 		setEnv("KONVOY_API_SERVER_PORT", "9090")
 		setEnv("KONVOY_API_SERVER_API_DOCS_PATH", "/apidocs.json")
@@ -119,6 +122,7 @@ apiServer:
 		Expect(cfg.Store.Postgres.User).To(Equal("konvoy"))
 		Expect(cfg.Store.Postgres.Password).To(Equal("konvoy"))
 		Expect(cfg.Store.Postgres.DbName).To(Equal("konvoy"))
+		Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))

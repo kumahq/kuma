@@ -26,7 +26,8 @@ type StoreConfig struct {
 
 func DefaultStoreConfig() *StoreConfig {
 	return &StoreConfig{
-		Type: MemoryStore,
+		Type:     MemoryStore,
+		Postgres: postgres.DefaultPostgresStoreConfig(),
 	}
 }
 
