@@ -15,7 +15,7 @@ xdsServer:
   diagnosticsPort: %d
 apiServer:
   port: 0
-environment: standalone
+environment: universal
 store:
   type: postgres
 `)

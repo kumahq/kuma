@@ -56,7 +56,7 @@ func initializeResourceStore(cfg konvoy_cp.Config, builder *core_runtime.Builder
 		pluginConfig = nil
 	case store.PostgresStoreType:
 		pluginName = core_plugins.Postgres
-		pluginConfig = nil
+		pluginConfig = cfg.Store.Postgres
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}

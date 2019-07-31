@@ -8,7 +8,7 @@
 		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
 		deploy/konvoy-injector/k8s kind/load/konvoy-injector \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
-		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/standalone/postgres \
+		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
 		fmt fmt/go fmt/proto vet check test integration build run \
 		image image/konvoy-cp image/konvoyctl image/konvoy-injector \
 		build/konvoy-cp build/konvoyctl build/konvoy-injector \
@@ -345,10 +345,10 @@ start/postgres: ## Boostrap: start Postgres for Control Plane with initial schem
 	docker-compose -f tools/postgres/docker-compose.yaml up $(DOCKER_COMPOSE_OPTIONS) -d
 	tools/postgres/wait-for-postgres.sh 15432
 
-run/standalone/postgres: fmt vet ## Dev: Run Control Plane locally in standalone mode with Postgres store
+run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
 	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
 	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
-	KONVOY_ENVIRONMENT=standalone \
+	KONVOY_ENVIRONMENT=universal \
 	KONVOY_STORE_TYPE=postgres \
 	KONVOY_STORE_POSTGRES_HOST=localhost \
 	KONVOY_STORE_POSTGRES_PORT=15432 \

@@ -84,7 +84,7 @@ make start/postgres
 2. Run `Control Plane` on local machine.
 
 ```bash
-make run/standalone/postgres
+make run/universal/postgres
 ```
 
 This will also start
