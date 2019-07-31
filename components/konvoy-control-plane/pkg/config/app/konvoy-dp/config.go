@@ -11,13 +11,18 @@ func DefaultConfig() Config {
 	return Config{
 		ControlPlane: ControlPlane{
 			XdsServer: XdsServer{
-				// Address of the xDS Server must be set explicitly.
-				Address: "",
+				Address: "", // Address of the xDS Server must be set explicitly
 				Port:    5678,
 			},
 		},
 		Dataplane: Dataplane{
+			Id:        "", // Envoy Id must must be set explicitly
+			Service:   "", // Envoy Cluster must must be set explicitly
 			AdminPort: 9901,
+		},
+		DataplaneRuntime: DataplaneRuntime{
+			BinaryPath: "envoy",
+			ConfigDir:  "/tmp/getkonvoy.io/envoy",
 		},
 	}
 }
@@ -26,8 +31,10 @@ func DefaultConfig() Config {
 type Config struct {
 	// ControlPlane defines coordinates of the Konvoy Control Plane.
 	ControlPlane ControlPlane `yaml:"controlPlane,omitempty"`
-	// Dataplane defines bootstrap configuration of the Konvoy Dataplane (Envoy).
+	// Dataplane defines bootstrap configuration of the dataplane (Envoy).
 	Dataplane Dataplane `yaml:"dataplane,omitempty"`
+	// DataplaneRuntime defines the context in which dataplane (Envoy) runs.
+	DataplaneRuntime DataplaneRuntime `yaml:"dataplaneRuntime,omitempty"`
 }
 
 // ControlPlane defines coordinates of the Control Plane.
@@ -44,10 +51,22 @@ type XdsServer struct {
 	Port uint32 `yaml:"port,omitempty" envconfig:"konvoy_control_plane_xds_server_port"`
 }
 
-// Dataplane defines bootstrap configuration of the Konvoy Dataplane (Envoy).
+// Dataplane defines bootstrap configuration of the dataplane (Envoy).
 type Dataplane struct {
+	// Envoy node Id.
+	Id string `yaml:"id,omitempty" envconfig:"konvoy_dataplane_id"`
+	// Envoy node cluster.
+	Service string `yaml:"service,omitempty" envconfig:"konvoy_dataplane_service"`
 	// Envoy Admin port.
 	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"konvoy_dataplane_admin_port"`
+}
+
+// DataplaneRuntime defines the context in which dataplane (Envoy) runs.
+type DataplaneRuntime struct {
+	// Path to Envoy binary.
+	BinaryPath string `yaml:"binaryPath,omitempty" envconfig:"konvoy_dataplane_runtime_binary_path"`
+	// Dir to store auto-generated Envoy bootstrap config in.
+	ConfigDir string `yaml:"configDir,omitempty" envconfig:"konvoy_dataplane_runtime_config_dir"`
 }
 
 var _ config.Config = &Config{}
@@ -58,6 +77,9 @@ func (c *Config) Validate() (errs error) {
 	}
 	if err := c.Dataplane.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
+	}
+	if err := c.DataplaneRuntime.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".DataplaneRuntime is not valid"))
 	}
 	return
 }
@@ -85,9 +107,27 @@ func (s *XdsServer) Validate() (errs error) {
 
 var _ config.Config = &Dataplane{}
 
-func (c *Dataplane) Validate() (errs error) {
-	if 65535 < c.AdminPort {
+func (d *Dataplane) Validate() (errs error) {
+	if d.Id == "" {
+		errs = multierr.Append(errs, errors.Errorf(".Id must be non-empty"))
+	}
+	if d.Service == "" {
+		errs = multierr.Append(errs, errors.Errorf(".Service must be non-empty"))
+	}
+	if 65535 < d.AdminPort {
 		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
+	}
+	return
+}
+
+var _ config.Config = &DataplaneRuntime{}
+
+func (d *DataplaneRuntime) Validate() (errs error) {
+	if d.BinaryPath == "" {
+		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
+	}
+	if d.ConfigDir == "" {
+		errs = multierr.Append(errs, errors.Errorf(".ConfigDir must be non-empty"))
 	}
 	return
 }

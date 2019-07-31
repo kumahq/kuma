@@ -46,6 +46,7 @@ LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
 ENVOY_BINARY ?= envoy
 EXAMPLE_ENVOY_CONFIG ?= $(PWD)/examples/local/envoy-bootstrap.yaml
 EXAMPLE_ENVOY_ID ?= example
+EXAMPLE_ENVOY_CLUSTER ?= demo
 EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
 EXAMPLE_ENVOY_PORT ?= 8080
 ENVOY_ADMIN_PORT ?= 9901
@@ -477,6 +478,11 @@ test/konvoy-injector: PKG_LIST=./app/konvoy-injector/... ./pkg/config/app/konvoy
 test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
 
 run/konvoy-dp: ## Dev: Run `konvoy-dataplane` locally
+	KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=localhost \
+	KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=$(CP_GRPC_PORT) \
+	KONVOY_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
+	KONVOY_DATAPLANE_SERVICE=$(EXAMPLE_ENVOY_CLUSTER) \
+	KONVOY_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	go run ./app/konvoy-dp/main.go run
 
 test/konvoy-dp: PKG_LIST=./app/konvoy-dp/... ./pkg/config/app/konvoy-dp/...

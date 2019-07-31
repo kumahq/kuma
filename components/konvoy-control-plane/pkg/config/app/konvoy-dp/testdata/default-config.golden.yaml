@@ -3,3 +3,6 @@ controlPlane:
     port: 5678
 dataplane:
   adminPort: 9901
+dataplaneRuntime:
+  binaryPath: envoy
+  configDir: /tmp/getkonvoy.io/envoy
