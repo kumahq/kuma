@@ -1,4 +1,4 @@
-package standalone
+package universal
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"

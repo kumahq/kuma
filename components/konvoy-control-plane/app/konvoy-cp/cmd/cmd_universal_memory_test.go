@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 )
 
-var _ = Describe("Standalone In-Memory test", func() {
+var _ = Describe("Universal In-Memory test", func() {
 	RunSmokeTest(`
 xdsServer:
   grpcPort: 0
@@ -12,7 +12,7 @@ xdsServer:
   diagnosticsPort: %d
 apiServer:
   port: 0
-environment: standalone
+environment: universal
 store:
   type: memory
 `)

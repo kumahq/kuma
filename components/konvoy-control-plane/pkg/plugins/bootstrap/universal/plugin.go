@@ -1,4 +1,4 @@
-package standalone
+package universal
 
 import (
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
@@ -10,7 +10,7 @@ var _ core_plugins.BootstrapPlugin = &plugin{}
 type plugin struct{}
 
 func init() {
-	core_plugins.Register(core_plugins.Standalone, &plugin{})
+	core_plugins.Register(core_plugins.Universal, &plugin{})
 }
 
 func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {

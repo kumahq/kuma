@@ -25,22 +25,18 @@ func Bootstrap(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 }
 
 func initializeBootstrap(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
-	var plugin core_plugins.BootstrapPlugin
+	var pluginName core_plugins.PluginName
 	switch cfg.Environment {
 	case konvoy_cp.KubernetesEnvironmentType:
-		bp, err := core_plugins.Plugins().Bootstrap(core_plugins.Kubernetes)
-		if err != nil {
-			return errors.Wrap(err, "could not retrieve boostrap Kubernetes plugin")
-		}
-		plugin = bp
-	case konvoy_cp.StandaloneEnvironmentType:
-		bp, err := core_plugins.Plugins().Bootstrap(core_plugins.Standalone)
-		if err != nil {
-			return errors.Wrap(err, "could not retrieve boostrap Standalone plugin")
-		}
-		plugin = bp
+		pluginName = core_plugins.Kubernetes
+	case konvoy_cp.UniversalEnvironmentType:
+		pluginName = core_plugins.Universal
 	default:
 		return errors.Errorf("unknown environment type %s", cfg.Environment)
+	}
+	plugin, err := core_plugins.Plugins().Bootstrap(pluginName)
+	if err != nil {
+		return errors.Wrapf(err, "could not retrieve bootstrap %s plugin", pluginName)
 	}
 	if err := plugin.Bootstrap(builder, nil); err != nil {
 		return err
@@ -49,30 +45,26 @@ func initializeBootstrap(cfg konvoy_cp.Config, builder *core_runtime.Builder) er
 }
 
 func initializeResourceStore(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
-	var plugin core_plugins.ResourceStorePlugin
+	var pluginName core_plugins.PluginName
+	var pluginConfig core_plugins.PluginConfig
 	switch cfg.Store.Type {
 	case store.KubernetesStoreType:
-		rsp, err := core_plugins.Plugins().ResourceStore(core_plugins.Kubernetes)
-		if err != nil {
-			return errors.Wrap(err, "could not retrieve store Kubernetes plugin")
-		}
-		plugin = rsp
+		pluginName = core_plugins.Kubernetes
+		pluginConfig = nil
 	case store.MemoryStoreType:
-		rsp, err := core_plugins.Plugins().ResourceStore(core_plugins.Memory)
-		if err != nil {
-			return errors.Wrap(err, "could not retrieve store Memory plugin")
-		}
-		plugin = rsp
+		pluginName = core_plugins.Memory
+		pluginConfig = nil
 	case store.PostgresStoreType:
-		rsp, err := core_plugins.Plugins().ResourceStore(core_plugins.Postgres)
-		if err != nil {
-			return errors.Wrap(err, "could not retrieve store Postgres plugin")
-		}
-		plugin = rsp
+		pluginName = core_plugins.Postgres
+		pluginConfig = nil
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
-	if rs, err := plugin.NewResourceStore(builder, nil); err != nil {
+	plugin, err := core_plugins.Plugins().ResourceStore(pluginName)
+	if err != nil {
+		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
+	}
+	if rs, err := plugin.NewResourceStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
 		builder.WithResourceStore(rs)

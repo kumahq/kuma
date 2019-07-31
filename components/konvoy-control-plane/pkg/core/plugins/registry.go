@@ -16,7 +16,7 @@ type PluginName string
 
 const (
 	Kubernetes PluginName = "k8s"
-	Standalone PluginName = "standalone"
+	Universal  PluginName = "universal"
 	Memory     PluginName = "memory"
 	Postgres   PluginName = "postgres"
 )

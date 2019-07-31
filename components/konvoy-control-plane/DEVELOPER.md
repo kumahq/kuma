@@ -64,12 +64,12 @@ make integration
 
 ## Running Control Plane on local machine
 
-### Standalone without any external dependency
+### Universal without any external dependency
 
 1. Run `Control Plane` on local machine:
 
 ```bash
-make run/standalone/memory
+make run/universal/memory
 ```
 
 ### Kubernetes

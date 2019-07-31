@@ -6,7 +6,7 @@ import (
 	_ "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/discovery/k8s"
 	_ "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s"
 
-	_ "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/bootstrap/standalone"
+	_ "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/bootstrap/universal"
 	_ "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	_ "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/postgres"
 )

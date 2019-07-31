@@ -7,7 +7,7 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
-		fmt fmt/go fmt/proto vet check test integration build run/k8s run/standalone/memory \
+		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory \
 		image image/konvoy-cp image/konvoyctl \
 		build/konvoy-cp build/konvoyctl \
 		docs docs/konvoyctl \
@@ -316,10 +316,10 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
     KONVOY_STORE_TYPE=kubernetes \
 	go run ./app/konvoy-cp/main.go run
 
-run/standalone/memory: fmt vet ## Dev: Run Control Plane locally in standalone mode with in-memory store
+run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
 	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
-	KONVOY_ENVIRONMENT=standalone \
+	KONVOY_ENVIRONMENT=universal \
 	KONVOY_STORE_TYPE=memory \
 	go run ./app/konvoy-cp/main.go run
 
