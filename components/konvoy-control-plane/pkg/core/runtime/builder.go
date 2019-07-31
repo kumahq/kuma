@@ -58,9 +58,10 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.rs == nil {
 		return nil, errors.Errorf("ResourceStore has not been configured")
 	}
-	if len(b.dss) == 0 {
-		return nil, errors.Errorf("DiscoverySources have not been configured")
-	}
+	// todo(jakubdyszkiewicz) restore when we've got store based discovery source
+	//if len(b.dss) == 0 {
+	//	return nil, errors.Errorf("DiscoverySources have not been configured")
+	//}
 	if b.xds == nil {
 		return nil, errors.Errorf("xDS Context has not been configured")
 	}

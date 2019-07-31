@@ -64,6 +64,16 @@ make integration
 
 ## Running Control Plane on local machine
 
+### Universal without any external dependency
+
+1. Run `Control Plane` on local machine:
+
+```bash
+make run/universal/memory
+```
+
+### Kubernetes
+
 1. Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
 
 ```bash
@@ -76,16 +86,20 @@ export KUBECONFIG="$(kind get kubeconfig-path --name=konvoy)"
 2. Run `Control Plane` on local machine:
 
 ```bash
-make run
+make run/k8s
 ```
 
-3. Make a test `Discovery` request to `LDS`:
+### Check the setup
+
+Note: for the moment. Only K8S setup passes checks.
+
+1. Make a test `Discovery` request to `LDS`:
 
 ```bash
 make curl/listeners
 ```
 
-4. Make a test `Discovery` request to `CDS`:
+2. Make a test `Discovery` request to `CDS`:
 
 ```bash
 make curl/clusters
@@ -93,28 +107,15 @@ make curl/clusters
 
 ## Pointing Envoy at Control Plane
 
-1. Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
+1. Start the Control Plane in your preferable choice described above 
 
-```bash
-make start/k8s
-
-# set KUBECONFIG for use by `konvoyctl` and `kubectl`
-export KUBECONFIG="$(kind get kubeconfig-path --name=konvoy)"
-```
-
-2. Start `Control Plane` on local machine:
-
-```bash
-make run
-```
-
-3. Start `Envoy` on local machine (requires `envoy` binary to be on your `PATH`):
+2. Start `Envoy` on local machine (requires `envoy` binary to be on your `PATH`):
 
 ```bash
 make run/example/envoy
 ```
 
-4. Dump effective `Envoy` config:
+3. Dump effective `Envoy` config:
 
 ```bash
 make config_dump/example/envoy

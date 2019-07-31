@@ -16,6 +16,9 @@ type PluginName string
 
 const (
 	Kubernetes PluginName = "k8s"
+	Universal  PluginName = "universal"
+	Memory     PluginName = "memory"
+	Postgres   PluginName = "postgres"
 )
 
 type Registry interface {

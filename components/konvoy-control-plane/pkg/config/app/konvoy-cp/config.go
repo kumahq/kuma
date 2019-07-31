@@ -14,11 +14,11 @@ type EnvironmentType = string
 
 const (
 	KubernetesEnvironmentType EnvironmentType = "kubernetes"
-	StandaloneEnvironmentType EnvironmentType = "standalone"
+	UniversalEnvironmentType  EnvironmentType = "universal"
 )
 
 type Config struct {
-	// Environment Type, can be either "kubernetes" or "standalone"
+	// Environment Type, can be either "kubernetes" or "universal"
 	Environment EnvironmentType `yaml:"environment" envconfig:"konvoy_environment"`
 	// Resource Store configuration
 	Store *store.StoreConfig `yaml:"store"`
@@ -30,7 +30,7 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
-		Environment: StandaloneEnvironmentType,
+		Environment: UniversalEnvironmentType,
 		XdsServer:   xds.DefaultXdsServerConfig(),
 		ApiServer:   api_server.DefaultApiServerConfig(),
 		Store:       store.DefaultStoreConfig(),
@@ -41,8 +41,8 @@ func (c *Config) Validate() error {
 	if err := c.XdsServer.Validate(); err != nil {
 		return errors.Wrap(err, "Xds Server validation failed")
 	}
-	if c.Environment != KubernetesEnvironmentType && c.Environment != StandaloneEnvironmentType {
-		return errors.Errorf("Environment should be either %s or %s", KubernetesEnvironmentType, StandaloneEnvironmentType)
+	if c.Environment != KubernetesEnvironmentType && c.Environment != UniversalEnvironmentType {
+		return errors.Errorf("Environment should be either %s or %s", KubernetesEnvironmentType, UniversalEnvironmentType)
 	}
 	if err := c.Store.Validate(); err != nil {
 		return errors.Wrap(err, "Store validation failed")

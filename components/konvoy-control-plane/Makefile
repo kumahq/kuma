@@ -7,7 +7,7 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
-		fmt fmt/go fmt/proto vet check test integration build run \
+		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory \
 		image image/konvoy-cp image/konvoyctl \
 		build/konvoy-cp build/konvoyctl \
 		docs docs/konvoyctl \
@@ -307,13 +307,20 @@ build/konvoy-cp: ## Dev: Build `Control Plane` binary
 build/konvoyctl: ## Dev: Build `konvoyctl` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoyctl/konvoyctl ./app/konvoyctl
 
-run: fmt vet ## Dev: Run Control Plane locally
+run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
     KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
     KONVOY_ENVIRONMENT=kubernetes \
     KONVOY_STORE_TYPE=kubernetes \
+	go run ./app/konvoy-cp/main.go run
+
+run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
+	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
+	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
+	KONVOY_ENVIRONMENT=universal \
+	KONVOY_STORE_TYPE=memory \
 	go run ./app/konvoy-cp/main.go run
 
 curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
