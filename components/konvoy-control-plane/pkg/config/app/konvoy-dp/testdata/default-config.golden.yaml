@@ -1,0 +1,5 @@
+controlPlane:
+  xdsServer:
+    port: 5678
+dataplane:
+  adminPort: 9901

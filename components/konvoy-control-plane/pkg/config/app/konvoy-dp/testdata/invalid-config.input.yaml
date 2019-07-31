@@ -1,0 +1,6 @@
+controlPlane:
+  xdsServer:
+    address:
+    port: 91234
+dataplane:
+  adminPort: 82345
