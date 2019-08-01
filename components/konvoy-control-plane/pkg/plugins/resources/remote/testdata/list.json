@@ -1,0 +1,16 @@
+{
+    "items": [
+        {
+            "type": "TrafficRoute",
+            "mesh": "default",
+            "name": "one",
+            "path": "/example"
+        },
+        {
+            "type": "TrafficRoute",
+            "mesh": "pilot",
+            "name": "two",
+            "path": "/another"
+        }
+    ]
+}
