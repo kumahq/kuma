@@ -14,13 +14,13 @@ func (cfg *Configuration) GetContext(name string) (int, *Context) {
 	return -1, nil
 }
 
-func (cfg *Configuration) AddContext(c *Context) {
-	i, old := cfg.GetContext(c.Name)
+func (cfg *Configuration) AddContext(c *Context) bool {
+	_, old := cfg.GetContext(c.Name)
 	if old != nil {
-		cfg.Contexts[i] = c
-	} else {
-		cfg.Contexts = append(cfg.Contexts, c)
+		return false
 	}
+	cfg.Contexts = append(cfg.Contexts, c)
+	return true
 }
 
 func (cfg *Configuration) GetControlPlane(name string) (int, *ControlPlane) {
@@ -32,11 +32,11 @@ func (cfg *Configuration) GetControlPlane(name string) (int, *ControlPlane) {
 	return -1, nil
 }
 
-func (cfg *Configuration) AddControlPlane(cp *ControlPlane) {
-	i, old := cfg.GetControlPlane(cp.Name)
+func (cfg *Configuration) AddControlPlane(cp *ControlPlane) bool {
+	_, old := cfg.GetControlPlane(cp.Name)
 	if old != nil {
-		cfg.ControlPlanes[i] = cp
-	} else {
-		cfg.ControlPlanes = append(cfg.ControlPlanes, cp)
+		return false
 	}
+	cfg.ControlPlanes = append(cfg.ControlPlanes, cp)
+	return true
 }

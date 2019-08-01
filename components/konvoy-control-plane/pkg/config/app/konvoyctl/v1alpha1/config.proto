@@ -55,8 +55,8 @@ message ControlPlaneCoordinates {
   // Kubernetes.
   message ApiServer {
 
-    // Address defines address of the Control Plane API server.
-    string address = 1 [ (validate.rules).string.address = true ];
+    // URL defines URL of the Control Plane API Server.
+    string url = 1 [ (validate.rules).string.uri = true ];
   }
 
   oneof type {
