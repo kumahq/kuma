@@ -47,7 +47,10 @@ var _ = Describe("run", func() {
 	})
 	AfterEach(func() {
 		if configDir != "" {
-			os.RemoveAll(configDir)
+			// when
+			err := os.RemoveAll(configDir)
+			// then
+			Expect(err).ToNot(HaveOccurred())
 		}
 	})
 
@@ -66,7 +69,7 @@ var _ = Describe("run", func() {
 
 	It("should be possible to start dataplane (Envoy) using `konvoy-dataplane run`", func(done Done) {
 		// setup
-		pidFile := filepath.Join(configDir, "konvoy-mock.pid")
+		pidFile := filepath.Join(configDir, "envoy-mock.pid")
 
 		// and
 		env := map[string]string{
@@ -77,7 +80,7 @@ var _ = Describe("run", func() {
 			"KONVOY_DATAPLANE_ADMIN_PORT":             "2345",
 			"KONVOY_DATAPLANE_RUNTIME_BINARY_PATH":    filepath.Join("testdata", "envoy-mock.sleep.sh"),
 			"KONVOY_DATAPLANE_RUNTIME_CONFIG_DIR":     configDir,
-			"TEST_SCRIPT_PID_FILE":                    pidFile,
+			"ENVOY_MOCK_PID_FILE":                     pidFile,
 		}
 		for key, value := range env {
 			os.Setenv(key, value)

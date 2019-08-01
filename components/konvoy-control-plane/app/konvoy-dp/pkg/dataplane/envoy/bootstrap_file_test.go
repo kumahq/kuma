@@ -26,7 +26,10 @@ var _ = Describe("Bootstrap File", func() {
 		})
 		AfterEach(func() {
 			if configDir != "" {
-				os.RemoveAll(configDir)
+				// when
+				err := os.RemoveAll(configDir)
+				// then
+				Expect(err).ToNot(HaveOccurred())
 			}
 		})
 

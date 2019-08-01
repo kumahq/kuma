@@ -33,7 +33,10 @@ var _ = Describe("Envoy", func() {
 	})
 	AfterEach(func() {
 		if configDir != "" {
-			os.RemoveAll(configDir)
+			// when
+			err := os.RemoveAll(configDir)
+			// then
+			Expect(err).ToNot(HaveOccurred())
 		}
 	})
 
@@ -41,8 +44,11 @@ var _ = Describe("Envoy", func() {
 	var outWriter, errWriter *os.File
 
 	BeforeEach(func() {
-		outReader, outWriter, _ = os.Pipe()
-		_, errWriter, _ = os.Pipe()
+		var err error
+		outReader, outWriter, err = os.Pipe()
+		Expect(err).ToNot(HaveOccurred())
+		_, errWriter, err = os.Pipe()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	var stopCh chan struct{}

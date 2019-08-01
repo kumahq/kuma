@@ -17,7 +17,10 @@ var _ = Describe("Bootstrap Config", func() {
 	Describe("MinimalBootstrapConfig(..)", func() {
 		It("should generate minimal Envoy bootstrap config", func() {
 			// given
-			input, _ := ioutil.ReadFile(filepath.Join("testdata", "minimal-bootstrap-config.input.yaml"))
+			input, err := ioutil.ReadFile(filepath.Join("testdata", "minimal-bootstrap-config.input.yaml"))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and
 			cfg := konvoy_dp.Config{}
 			Expect(config.FromYAML(input, &cfg)).To(Succeed())
 
@@ -32,8 +35,10 @@ var _ = Describe("Bootstrap Config", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			expected, _ := ioutil.ReadFile(filepath.Join("testdata", "minimal-bootstrap-config.golden.yaml"))
+			expected, err := ioutil.ReadFile(filepath.Join("testdata", "minimal-bootstrap-config.golden.yaml"))
 			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
 			Expect(actual).To(MatchYAML(expected))
 		})
 	})
