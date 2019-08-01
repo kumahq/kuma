@@ -8,8 +8,8 @@ import (
 )
 
 type KubeConfig interface {
-	Filename() string
-	CurrentContext() string
+	GetFilename() string
+	GetCurrentContext() string
 	NewClient() (Client, error)
 	NewServiceProxyTransport(namespace, service string) (http.RoundTripper, error)
 }
@@ -21,10 +21,10 @@ type kubeConfig struct {
 
 var _ KubeConfig = &kubeConfig{}
 
-func (c *kubeConfig) Filename() string {
+func (c *kubeConfig) GetFilename() string {
 	return c.clientConfig.ConfigAccess().GetDefaultFilename()
 }
-func (c *kubeConfig) CurrentContext() string {
+func (c *kubeConfig) GetCurrentContext() string {
 	return c.config.CurrentContext
 }
 func (c *kubeConfig) NewClient() (Client, error) {

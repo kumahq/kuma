@@ -132,8 +132,9 @@ Usage:
   konvoyctl config control-planes add k8s [flags]
 
 Flags:
-  -h, --help          help for k8s
-      --name string   reference name for the Control Plane (required)
+  -h, --help               help for k8s
+      --name string        reference name for the Control Plane (required)
+      --namespace string   Kubernetes namespace where the Control Plane have been installed to (default "konvoy-system")
 
 Global Flags:
       --config-file string   path to the configuration file to use

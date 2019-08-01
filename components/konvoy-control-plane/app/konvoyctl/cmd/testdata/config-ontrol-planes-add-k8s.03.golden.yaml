@@ -1,0 +1,11 @@
+contexts:
+- controlPlane: example
+  name: example
+controlPlanes:
+- coordinates:
+    kubernetes:
+      context: minikube
+      kubeconfig: /home/user/.kube/config
+      namespace: konvoy
+  name: example
+currentContext: example
