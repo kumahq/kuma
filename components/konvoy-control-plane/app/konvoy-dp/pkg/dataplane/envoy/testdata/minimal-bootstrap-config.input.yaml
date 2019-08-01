@@ -1,0 +1,8 @@
+controlPlane:
+  xdsServer:
+    address: localhost
+    port: 5678
+dataplane:
+  id: example
+  service: demo
+  adminPort: 9901

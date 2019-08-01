@@ -9,9 +9,8 @@
 		deploy/konvoy-injector/k8s kind/load/konvoy-injector \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
-		fmt fmt/go fmt/proto vet check test integration build run \
-		image image/konvoy-cp image/konvoyctl image/konvoy-injector \
-		build/konvoy-cp build/konvoyctl build/konvoy-injector \
+		image image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector \
+		build/konvoy-cp build/konvoy-dp build/konvoyctl build/konvoy-injector \
 		docs docs/konvoyctl \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
@@ -21,6 +20,7 @@
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		print/kubebuilder/test_assets \
 		generate/test/cert/konvoy-injector run/konvoy-injector
+		run/konvoy-dp
 
 PKG_LIST := ./... ./api/... ./pkg/plugins/resources/k8s/native/...
 
@@ -46,6 +46,7 @@ LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
 ENVOY_BINARY ?= envoy
 EXAMPLE_ENVOY_CONFIG ?= $(PWD)/examples/local/envoy-bootstrap.yaml
 EXAMPLE_ENVOY_ID ?= example
+EXAMPLE_ENVOY_CLUSTER ?= demo
 EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
 EXAMPLE_ENVOY_PORT ?= 8080
 ENVOY_ADMIN_PORT ?= 9901
@@ -61,6 +62,7 @@ endef
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
 
 KONVOY_CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
+KONVOY_DP_DOCKER_IMAGE ?= konvoy/konvoy-dataplane:latest
 KONVOYCTL_DOCKER_IMAGE ?= konvoy/konvoyctl:latest
 KONVOY_INJECTOR_DOCKER_IMAGE ?= konvoy/konvoy-injector:latest
 
@@ -314,10 +316,13 @@ integration: ## Dev: Run integration tests
 	tools/test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
-build: build/konvoy-cp build/konvoyctl build/konvoy-injector ## Dev: Build all binaries
+build: build/konvoy-cp build/konvoy-dp build/konvoyctl build/konvoy-injector ## Dev: Build all binaries
 
 build/konvoy-cp: ## Dev: Build `Control Plane` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
+
+build/konvoy-dp: ## Dev: Build `konvoy-dataplane` binary
+	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-dataplane/konvoy-dataplane ./app/konvoy-dp
 
 build/konvoyctl: ## Dev: Build `konvoyctl` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoyctl/konvoyctl ./app/konvoyctl
@@ -372,10 +377,13 @@ run/example/envoy: ## Dev: Run Envoy configured against local Control Plane
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-image: image/konvoy-cp image/konvoyctl image/konvoy-injector ## Dev: Build all Docker images
+image: image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector ## Dev: Build all Docker images
 
 image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
 	docker build -t $(KONVOY_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
+
+image/konvoy-dp: ## Dev: Build `konvoy-dataplane` Docker image
+	docker build -t $(KONVOY_DP_DOCKER_IMAGE) -f Dockerfile.konvoy-dp .
 
 image/konvoyctl: ## Dev: Build `konvoyctl` Docker image
 	docker build -t $(KONVOYCTL_DOCKER_IMAGE) -f Dockerfile.konvoyctl .
@@ -468,3 +476,14 @@ run/konvoy-injector: ## Dev: Run Konvoy Injector locally
 
 test/konvoy-injector: PKG_LIST=./app/konvoy-injector/... ./pkg/config/app/konvoy-injector/...
 test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
+
+run/konvoy-dp: ## Dev: Run `konvoy-dataplane` locally
+	KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=localhost \
+	KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=$(CP_GRPC_PORT) \
+	KONVOY_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
+	KONVOY_DATAPLANE_SERVICE=$(EXAMPLE_ENVOY_CLUSTER) \
+	KONVOY_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
+	go run ./app/konvoy-dp/main.go run
+
+test/konvoy-dp: PKG_LIST=./app/konvoy-dp/... ./pkg/config/app/konvoy-dp/...
+test/konvoy-dp: test ## Dev: Run `konvoy-dataplane` tests only

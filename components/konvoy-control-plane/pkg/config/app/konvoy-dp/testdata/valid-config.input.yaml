@@ -1,0 +1,11 @@
+controlPlane:
+  xdsServer:
+    address: konvoy-control-plane.internal
+    port: 1234
+dataplane:
+  id: example
+  service: demo
+  adminPort: 2345
+dataplaneRuntime:
+  binaryPath: envoy.sh
+  configDir: /var/run/envoy

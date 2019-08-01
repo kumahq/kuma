@@ -1,0 +1,11 @@
+controlPlane:
+  xdsServer:
+    address:
+    port: 91234
+dataplane:
+  id:
+  service:
+  adminPort: 82345
+dataplaneRuntime:
+  binaryPath:
+  configDir:
