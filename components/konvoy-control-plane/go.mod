@@ -18,6 +18,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.1.1
+	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c

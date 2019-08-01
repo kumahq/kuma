@@ -1,6 +1,8 @@
 package k8s
 
 import (
+	"net/http"
+
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -9,6 +11,7 @@ type KubeConfig interface {
 	Filename() string
 	CurrentContext() string
 	NewClient() (Client, error)
+	NewServiceProxyTransport(namespace, service string) (http.RoundTripper, error)
 }
 
 type kubeConfig struct {
@@ -25,7 +28,22 @@ func (c *kubeConfig) CurrentContext() string {
 	return c.config.CurrentContext
 }
 func (c *kubeConfig) NewClient() (Client, error) {
-	return newClient(c)
+	cfg, err := c.clientConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+	return NewClient(cfg)
+}
+func (c *kubeConfig) NewServiceProxyTransport(namespace, name string) (http.RoundTripper, error) {
+	cfg, err := c.clientConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+	kubeApiProxy, err := NewKubeApiProxyTransport(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return NewServiceProxyTransport(kubeApiProxy, namespace, name), nil
 }
 
 func DetectKubeConfig() (KubeConfig, error) {
