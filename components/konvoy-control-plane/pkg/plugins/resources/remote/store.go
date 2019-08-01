@@ -10,6 +10,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	util_http "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/http"
 
 	"github.com/pkg/errors"
 )
@@ -36,7 +37,7 @@ func (m remoteMeta) GetVersion() string {
 	return m.Version
 }
 
-func NewStore(client http.Client, api rest.Api) store.ResourceStore {
+func NewStore(client util_http.Client, api rest.Api) store.ResourceStore {
 	return &remoteStore{
 		client: client,
 		api:    api,
@@ -46,7 +47,7 @@ func NewStore(client http.Client, api rest.Api) store.ResourceStore {
 var _ store.ResourceStore = &remoteStore{}
 
 type remoteStore struct {
-	client http.Client
+	client util_http.Client
 	api    rest.Api
 }
 
