@@ -37,14 +37,14 @@ var _ = Describe("RemoteStore", func() {
 					}, nil
 				}),
 			}
-			mapper := &core_rest.SimpleMapper{
-				Resources: map[core_model.ResourceType]core_rest.ResourceMapping{
-					(sample_core.TrafficRouteType): core_rest.ResourceMapping{CollectionPath: "trafficroutes"},
+			apis := &core_rest.ApiDescriptor{
+				Resources: map[core_model.ResourceType]core_rest.ResourceApi{
+					sample_core.TrafficRouteType: core_rest.ResourceApi{CollectionPath: "trafficroutes"},
 				},
 			}
 
 			// given
-			store := remote.NewStore(client, mapper)
+			store := remote.NewStore(client, apis)
 
 			// when
 			rs := sample_core.TrafficRouteResourceList{}

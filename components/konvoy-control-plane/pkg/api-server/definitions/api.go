@@ -5,17 +5,17 @@ import (
 	core_rest "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 )
 
-func DefaultRESTMapper() core_rest.Mapper {
-	return NewRESTMapper(MeshWsDefinition)
+func AllApis() core_rest.Api {
+	return Apis(MeshWsDefinition)
 }
 
-func NewRESTMapper(wss ...ResourceWsDefinition) core_rest.Mapper {
-	mapping := make(map[core_model.ResourceType]core_rest.ResourceMapping)
+func Apis(wss ...ResourceWsDefinition) core_rest.Api {
+	mapping := make(map[core_model.ResourceType]core_rest.ResourceApi)
 	for _, ws := range wss {
 		resourceType := ws.ResourceFactory().GetType()
-		mapping[resourceType] = core_rest.ResourceMapping{CollectionPath: ws.Path}
+		mapping[resourceType] = core_rest.ResourceApi{CollectionPath: ws.Path}
 	}
-	return &core_rest.SimpleMapper{
+	return &core_rest.ApiDescriptor{
 		Resources: mapping,
 	}
 }

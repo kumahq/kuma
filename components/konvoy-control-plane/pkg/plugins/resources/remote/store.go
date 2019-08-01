@@ -36,10 +36,10 @@ func (m remoteMeta) GetVersion() string {
 	return m.Version
 }
 
-func NewStore(client http.Client, mapper rest.Mapper) store.ResourceStore {
+func NewStore(client http.Client, api rest.Api) store.ResourceStore {
 	return &remoteStore{
 		client: client,
-		mapper: mapper,
+		api:    api,
 	}
 }
 
@@ -47,7 +47,7 @@ var _ store.ResourceStore = &remoteStore{}
 
 type remoteStore struct {
 	client http.Client
-	mapper rest.Mapper
+	api    rest.Api
 }
 
 func (s *remoteStore) Create(context.Context, model.Resource, ...store.CreateOptionsFunc) error {
@@ -63,7 +63,7 @@ func (s *remoteStore) Get(context.Context, model.Resource, ...store.GetOptionsFu
 	return errors.Errorf("not implemented yet")
 }
 func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
-	resourceApi, err := s.mapper.GetMapping(rs.GetItemType())
+	resourceApi, err := s.api.GetResourceApi(rs.GetItemType())
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", rs.GetItemType())
 	}
