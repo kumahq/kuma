@@ -27,9 +27,9 @@ func Bootstrap(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 func initializeBootstrap(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
 	var pluginName core_plugins.PluginName
 	switch cfg.Environment {
-	case konvoy_cp.KubernetesEnvironmentType:
+	case konvoy_cp.KubernetesEnvironment:
 		pluginName = core_plugins.Kubernetes
-	case konvoy_cp.UniversalEnvironmentType:
+	case konvoy_cp.UniversalEnvironment:
 		pluginName = core_plugins.Universal
 	default:
 		return errors.Errorf("unknown environment type %s", cfg.Environment)
@@ -48,15 +48,15 @@ func initializeResourceStore(cfg konvoy_cp.Config, builder *core_runtime.Builder
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
 	switch cfg.Store.Type {
-	case store.KubernetesStoreType:
+	case store.KubernetesStore:
 		pluginName = core_plugins.Kubernetes
 		pluginConfig = nil
-	case store.MemoryStoreType:
+	case store.MemoryStore:
 		pluginName = core_plugins.Memory
 		pluginConfig = nil
-	case store.PostgresStoreType:
+	case store.PostgresStore:
 		pluginName = core_plugins.Postgres
-		pluginConfig = nil
+		pluginConfig = cfg.Store.Postgres
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
@@ -73,7 +73,7 @@ func initializeResourceStore(cfg konvoy_cp.Config, builder *core_runtime.Builder
 }
 
 func initializeDiscovery(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
-	if cfg.Environment == konvoy_cp.KubernetesEnvironmentType {
+	if cfg.Environment == konvoy_cp.KubernetesEnvironment {
 		plugin, err := core_plugins.Plugins().Discovery(core_plugins.Kubernetes)
 		if err != nil {
 			return nil

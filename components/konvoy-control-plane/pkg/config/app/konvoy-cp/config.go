@@ -13,8 +13,8 @@ var _ config.Config = &Config{}
 type EnvironmentType = string
 
 const (
-	KubernetesEnvironmentType EnvironmentType = "kubernetes"
-	UniversalEnvironmentType  EnvironmentType = "universal"
+	KubernetesEnvironment EnvironmentType = "kubernetes"
+	UniversalEnvironment  EnvironmentType = "universal"
 )
 
 type Config struct {
@@ -30,7 +30,7 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
-		Environment: UniversalEnvironmentType,
+		Environment: UniversalEnvironment,
 		XdsServer:   xds.DefaultXdsServerConfig(),
 		ApiServer:   api_server.DefaultApiServerConfig(),
 		Store:       store.DefaultStoreConfig(),
@@ -41,8 +41,8 @@ func (c *Config) Validate() error {
 	if err := c.XdsServer.Validate(); err != nil {
 		return errors.Wrap(err, "Xds Server validation failed")
 	}
-	if c.Environment != KubernetesEnvironmentType && c.Environment != UniversalEnvironmentType {
-		return errors.Errorf("Environment should be either %s or %s", KubernetesEnvironmentType, UniversalEnvironmentType)
+	if c.Environment != KubernetesEnvironment && c.Environment != UniversalEnvironment {
+		return errors.Errorf("Environment should be either %s or %s", KubernetesEnvironment, UniversalEnvironment)
 	}
 	if err := c.Store.Validate(); err != nil {
 		return errors.Wrap(err, "Store validation failed")

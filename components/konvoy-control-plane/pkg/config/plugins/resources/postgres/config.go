@@ -19,6 +19,8 @@ type PostgresStoreConfig struct {
 	Password string `yaml:"password" envconfig:"konvoy_store_postgres_password"`
 	// Database name of the Postgres DB
 	DbName string `yaml:"dbName" envconfig:"konvoy_store_postgres_db_name"`
+	// Connection Timeout to the DB in seconds
+	ConnectionTimeout int `yaml:"connectionTimeout" envconfig:"konvoy_store_postgres_connection_timeout"`
 }
 
 func (p *PostgresStoreConfig) Validate() error {
@@ -38,4 +40,10 @@ func (p *PostgresStoreConfig) Validate() error {
 		return errors.New("DbName should not be empty")
 	}
 	return nil
+}
+
+func DefaultPostgresStoreConfig() *PostgresStoreConfig {
+	return &PostgresStoreConfig{
+		ConnectionTimeout: 5,
+	}
 }

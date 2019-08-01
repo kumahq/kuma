@@ -11,9 +11,9 @@ var _ config.Config = &StoreConfig{}
 type StoreType = string
 
 const (
-	KubernetesStoreType StoreType = "kubernetes"
-	PostgresStoreType   StoreType = "postgres"
-	MemoryStoreType     StoreType = "memory"
+	KubernetesStore StoreType = "kubernetes"
+	PostgresStore   StoreType = "postgres"
+	MemoryStore     StoreType = "memory"
 )
 
 // Resource Store configuration
@@ -26,22 +26,23 @@ type StoreConfig struct {
 
 func DefaultStoreConfig() *StoreConfig {
 	return &StoreConfig{
-		Type: MemoryStoreType,
+		Type:     MemoryStore,
+		Postgres: postgres.DefaultPostgresStoreConfig(),
 	}
 }
 
 func (s *StoreConfig) Validate() error {
 	switch s.Type {
-	case PostgresStoreType:
+	case PostgresStore:
 		if err := s.Postgres.Validate(); err != nil {
 			return errors.Wrap(err, "Postgres validation failed")
 		}
-	case KubernetesStoreType:
+	case KubernetesStore:
 		return nil
-	case MemoryStoreType:
+	case MemoryStore:
 		return nil
 	default:
-		return errors.Errorf("Type should be either %s, %s or %s", PostgresStoreType, KubernetesStoreType, MemoryStoreType)
+		return errors.Errorf("Type should be either %s, %s or %s", PostgresStore, KubernetesStore, MemoryStore)
 	}
 	return nil
 }
