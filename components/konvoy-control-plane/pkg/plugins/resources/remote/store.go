@@ -86,10 +86,8 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 		return err
 	}
 	rsr := &rest.ResourceListReceiver{
-		ResourceRegistry: &model.SimpleResourceRegistry{
-			ResourceTypes: map[model.ResourceType]model.Resource{
-				(rs.GetItemType()): rs.NewItem(),
-			},
+		NewResource: func() model.Resource {
+			return rs.NewItem()
 		},
 	}
 	if err := json.Unmarshal(b, rsr); err != nil {

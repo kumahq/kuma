@@ -16,13 +16,6 @@ import (
 var _ = Describe("ResourceListReceiver", func() {
 	Describe("UnmarshalJSON", func() {
 		It("it should be possible to unmarshal JSON response from Konvoy API Server", func() {
-			// setup
-			resourceRegistry := &model.SimpleResourceRegistry{
-				ResourceTypes: map[model.ResourceType]model.Resource{
-					sample_core.TrafficRouteType: (*sample_core.TrafficRouteResource)(nil),
-				},
-			}
-
 			// given
 			content := `
 			{
@@ -43,7 +36,11 @@ var _ = Describe("ResourceListReceiver", func() {
 			}`
 
 			// when
-			rsr := &rest.ResourceListReceiver{ResourceRegistry: resourceRegistry}
+			rsr := &rest.ResourceListReceiver{
+				NewResource: func() model.Resource {
+					return &sample_core.TrafficRouteResource{}
+				},
+			}
 			err := json.Unmarshal([]byte(content), rsr)
 
 			// then

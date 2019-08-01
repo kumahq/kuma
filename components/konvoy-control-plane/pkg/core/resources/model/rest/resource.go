@@ -68,17 +68,14 @@ func (r *Resource) UnmarshalJSON(data []byte) error {
 
 type ResourceListReceiver struct {
 	ResourceList
-	model.ResourceRegistry
+	NewResource func() model.Resource
 }
 
 var _ json.Unmarshaler = &ResourceListReceiver{}
 
 func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
-	newResource := func(typ model.ResourceType) (model.Resource, error) {
-		return nil, errors.Errorf("unknown type %q", typ)
-	}
-	if rec.ResourceRegistry != nil {
-		newResource = rec.ResourceRegistry.NewResource
+	if rec.NewResource == nil {
+		return errors.Errorf("NewResource must not be nil")
 	}
 	type List struct {
 		Items []*json.RawMessage `json:"items"`
@@ -97,11 +94,7 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(b, &r.Meta); err != nil {
 			return err
 		}
-		cr, err := newResource(model.ResourceType(r.Meta.Type))
-		if err != nil {
-			return err
-		}
-		r.Spec = cr.GetSpec()
+		r.Spec = rec.NewResource().GetSpec()
 		if err := json.Unmarshal(b, r); err != nil {
 			return err
 		}
