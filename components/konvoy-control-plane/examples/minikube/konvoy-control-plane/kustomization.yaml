@@ -1,5 +1,9 @@
 resources:
 - konvoy-control-plane.yaml
+- rbac.yaml
+- crds/mesh.getkonvoy.io_dataplanes.yaml
+- crds/mesh.getkonvoy.io_meshes.yaml
+- crds/mesh.getkonvoy.io_proxytemplates.yaml
 
 patchesStrategicMerge:
 - konvoy-injector-webhook-ca.yaml
