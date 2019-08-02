@@ -70,11 +70,14 @@ var _ = Describe("Injector", func() {
 			// and
 			Expect(actual).To(MatchYAML(expected))
 		},
-		Entry("Pod without init containers and annotations", testCase{
+		Entry("01. Pod without init containers and annotations", testCase{
 			num: "01",
 		}),
-		Entry("Pod with init containers and annotations", testCase{
+		Entry("02. Pod with init containers and annotations", testCase{
 			num: "02",
+		}),
+		Entry("03. Pod without Namespace and Name", testCase{
+			num: "03",
 		}),
 	)
 })
