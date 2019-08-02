@@ -33,6 +33,14 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
+    - name: KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS
+      value: konvoy-control-plane.konvoy-system
+    - name: KONVOY_CONTROL_PLANE_XDS_SERVER_PORT
+      value: "5678"
+    - name: KONVOY_DATAPLANE_ID
+      value: $(POD_NAME).$(POD_NAMESPACE)
+    - name: KONVOY_DATAPLANE_SERVICE
+      value: $(POD_NAME).$(POD_NAMESPACE)
     image: konvoy/konvoy-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:

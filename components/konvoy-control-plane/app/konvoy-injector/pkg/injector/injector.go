@@ -80,6 +80,25 @@ func (i *KonvoyInjector) NewSidecarContainer() kube_core.Container {
 					},
 				},
 			},
+			{
+				Name:  "KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS",
+				Value: i.cfg.ControlPlane.XdsServer.Address,
+			},
+			{
+				Name:  "KONVOY_CONTROL_PLANE_XDS_SERVER_PORT",
+				Value: fmt.Sprintf("%d", i.cfg.ControlPlane.XdsServer.Port),
+			},
+			{
+				Name: "KONVOY_DATAPLANE_ID",
+				// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
+				// that is why we have to use a runtime reference to POD_NAME instead
+				Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
+			},
+			{
+				Name: "KONVOY_DATAPLANE_SERVICE",
+				// for now, just pick any reasonable name
+				Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
+			},
 		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,
