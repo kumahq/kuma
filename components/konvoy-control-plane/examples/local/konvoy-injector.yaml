@@ -78,6 +78,9 @@ metadata:
   name: konvoy-injector-webhook-configuration
 webhooks:
 - name: konvoy-injector.getkonvoy.io
+  namespaceSelector:
+    matchLabels:
+      getkonvoy.io/sidecar-injection: enabled
   failurePolicy: Ignore
   clientConfig:
     caBundle:

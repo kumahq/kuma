@@ -9,7 +9,7 @@
 		deploy/konvoy-injector/k8s kind/load/konvoy-injector \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
-		image image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector \
+		images image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector \
 		build/konvoy-cp build/konvoy-dp build/konvoyctl build/konvoy-injector \
 		docs docs/konvoyctl \
 		curl/listeners curl/clusters \
@@ -44,7 +44,6 @@ CP_HTTP_PORT ?= 5679
 LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
 
 ENVOY_BINARY ?= envoy
-EXAMPLE_ENVOY_CONFIG ?= $(PWD)/examples/local/envoy-bootstrap.yaml
 EXAMPLE_ENVOY_ID ?= example
 EXAMPLE_ENVOY_CLUSTER ?= demo
 EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
@@ -250,6 +249,7 @@ start/kind:
 
 deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl label namespace $(EXAMPLE_NAMESPACE) getkonvoy.io/sidecar-injection=enabled --overwrite
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
 
 kind/load/control-plane: image/konvoy-cp
@@ -260,18 +260,23 @@ deploy/control-plane/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl kustomize pkg/plugins/resources/k8s/native/config/rbac | kubectl apply -f -
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f examples/local/control-plane.yaml
 
-start/control-plane/k8s: kind/load/control-plane deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
+start/control-plane/k8s: start/konvoy-injector/k8s kind/load/control-plane deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
+
+kind/load/konvoy-dp: image/konvoy-dp
+	kind load docker-image $(KONVOY_DP_DOCKER_IMAGE) --name=konvoy
 
 kind/load/konvoy-injector: image/konvoy-injector
 	kind load docker-image $(KONVOY_INJECTOR_DOCKER_IMAGE) --name=konvoy
 
 deploy/konvoy-injector/k8s:
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create ns konvoy-system || true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n konvoy-system secret konvoy-injector-tls-cert || true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create -n konvoy-system secret tls konvoy-injector-tls-cert --key=app/konvoy-injector/cmd/testdata/tls.key --cert=app/konvoy-injector/cmd/testdata/tls.crt
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f examples/local/konvoy-injector.yaml
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl patch mutatingwebhookconfiguration konvoy-injector-webhook-configuration -p "{\"webhooks\":[{\"name\":\"konvoy-injector.getkonvoy.io\",\"clientConfig\":{\"caBundle\": \"$$(cat app/konvoy-injector/cmd/testdata/tls.crt | base64 )\"}}]}"
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n konvoy-system pod -l app=konvoy-injector
 
-start/konvoy-injector/k8s: kind/load/konvoy-injector deploy/konvoy-injector/k8s ## Bootstrap: Deploy `konvoy-injector` on Kubernetes (KIND)
+start/konvoy-injector/k8s: kind/load/konvoy-dp kind/load/konvoy-injector deploy/konvoy-injector/k8s ## Bootstrap: Deploy `konvoy-injector` on Kubernetes (KIND)
 
 clean: clean/build ## Dev: Clean
 
@@ -371,13 +376,18 @@ curl/clusters: ## Dev: Make Discovery request to CDS
 	curl -s $(CP_BIND_HOST):$(CP_HTTP_PORT)/v2/discovery:clusters --data-binary $(SIMPLE_DISCOVERY_REQUEST)
 
 run/example/envoy: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
-run/example/envoy: ## Dev: Run Envoy configured against local Control Plane
-	$(ENVOY_BINARY) -c $(EXAMPLE_ENVOY_CONFIG) --config-yaml "node: {id: '$(EXAMPLE_ENVOY_ID)', metadata: {'IPS': '$(EXAMPLE_ENVOY_IP)', 'PORTS': '$(EXAMPLE_ENVOY_PORT)'}}"
+run/example/envoy: build/konvoy-dp ## Dev: Run Envoy configured against local Control Plane
+	KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=localhost \
+	KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=5678 \
+	KONVOY_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
+	KONVOY_DATAPLANE_SERVICE=$(EXAMPLE_ENVOY_CLUSTER) \
+	KONVOY_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
+	${BUILD_ARTIFACTS_DIR}/konvoy-dataplane/konvoy-dataplane run
 
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-image: image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector ## Dev: Build all Docker images
+images: image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector ## Dev: Build all Docker images
 
 image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
 	docker build -t $(KONVOY_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
@@ -429,7 +439,7 @@ verify/example/docker-compose: verify/example/docker-compose/inbound verify/exam
 
 build/example/minikube: ## Minikube: build demo setup
 	eval $(minikube docker-env)
-	make image
+	make images
 
 deploy/example/minikube: ## Minikube: deploy demo setup
 	make crd/install -C pkg/plugins/resources/k8s/native

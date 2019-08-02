@@ -155,22 +155,30 @@ export KUBECONFIG="$(kind get kubeconfig-path --name=konvoy)"
 make start/control-plane/k8s
 ```
 
-3. Build `konvoyctl`
+3. Redeploy demo app (to get Konvoy sidecar injected)
+
+```bash
+kubectl delete -n konvoy-demo pod -l app=demo-app
+```
+
+4. Build `konvoyctl`
 
 ```bash
 make build/konvoyctl
+
+export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
 ```
 
 4. Add `Control Plane` to your `konvoyctl` config:
 
 ```bash
-build/artifacts/konvoyctl/konvoyctl config control-planes add k8s --name demo
+konvoyctl config control-planes add k8s --name demo
 ```
 
 5. Verify that `Control Plane` has been added:
 
 ```bash
-build/artifacts/konvoyctl/konvoyctl config control-planes list
+konvoyctl config control-planes list
 
 NAME                      ENVIRONMENT
 kubernetes-admin@konvoy   k8s
@@ -179,7 +187,7 @@ kubernetes-admin@konvoy   k8s
 6. List `Dataplanes` connected to the `Control Plane`:
 
 ```bash
-build/artifacts/konvoyctl/konvoyctl get dataplanes
+konvoyctl get dataplanes
 
 MESH      NAMESPACE   NAME                        SUBSCRIPTIONS   LAST CONNECTED AGO   TOTAL UPDATES   TOTAL ERRORS
 default               demo-app-685444477b-dnx9t   1               21m9s                2               0
