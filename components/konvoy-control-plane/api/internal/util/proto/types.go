@@ -2,6 +2,7 @@ package proto
 
 import (
 	"time"
+
 	"github.com/gogo/protobuf/types"
 )
 

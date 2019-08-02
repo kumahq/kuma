@@ -7,6 +7,15 @@ import (
 	"github.com/gogo/protobuf/types"
 )
 
+func (ds *DataplaneStatus) IsOnline() bool {
+	for _, s := range ds.Subscriptions {
+		if s.ConnectTime != nil && s.DisconnectTime == nil {
+			return true
+		}
+	}
+	return false
+}
+
 func (ds *DataplaneStatus) GetSubscription(id string) (int, *DiscoverySubscription) {
 	for i, s := range ds.Subscriptions {
 		if s.Id == id {
