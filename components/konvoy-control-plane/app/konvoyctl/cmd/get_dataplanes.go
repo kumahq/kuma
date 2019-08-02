@@ -12,6 +12,7 @@ import (
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -53,7 +54,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 
 func printDataplaneStatuses(now time.Time, dataplaneStatuses *mesh_core.DataplaneStatusResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAMESPACE", "NAME", "SUBSCRIPTIONS", "LAST CONNECTED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
+		Headers: []string{"MESH", "NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -63,20 +64,24 @@ func printDataplaneStatuses(now time.Time, dataplaneStatuses *mesh_core.Dataplan
 				}
 				dataplaneStatus := dataplaneStatuses.Items[i]
 
-				totalSubscriptions := len(dataplaneStatus.Spec.Subscriptions)
-				_, lastConnected := dataplaneStatus.Spec.GetLatestSubscription()
+				lastSubscription, lastConnected := dataplaneStatus.Spec.GetLatestSubscription()
 				totalResponsesSent := dataplaneStatus.Spec.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 					return s.Status.Total.ResponsesSent
 				})
 				totalResponsesRejected := dataplaneStatus.Spec.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 					return s.Status.Total.ResponsesRejected
 				})
+				onlineStatus := "Offline"
+				if dataplaneStatus.Spec.IsOnline() {
+					onlineStatus = "Online"
+				}
+				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().LastUpdateTime)
 				return []string{
 					dataplaneStatus.Meta.GetMesh(),       // MESH
-					dataplaneStatus.Meta.GetNamespace(),  // NAMESPACE
 					dataplaneStatus.Meta.GetName(),       // NAME
-					table.Number(totalSubscriptions),     // SUBSCRIPTIONS
+					onlineStatus,                         // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
+					table.Ago(lastUpdated, now),          // LAST UPDATED AGO
 					table.Number(totalResponsesSent),     // TOTAL UPDATES
 					table.Number(totalResponsesRejected), // TOTAL ERRORS
 				}
