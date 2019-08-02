@@ -84,6 +84,14 @@ konvoyctl config view
 konvoyctl get dataplanes
 ```
 
+```
+konvoyctl get dataplanes -oyaml
+```
+
+```
+konvoyctl get dataplanes --mesh pilot
+```
+
 ### k8s-native route (deprecated)
 
 ```
@@ -111,7 +119,6 @@ konvoyctl get dataplanes --mesh pilot
 ### Prerequirements
 
 * dev tools (installed by `make dev/tools`)
-* `docker-compose` (to run `Postgres`)
 
 ### Build all components
 
@@ -135,6 +142,10 @@ export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
 
 ### Install Control Plane
 
+Chose between options `A` and `B`.
+
+#### A. Run Control Plane configured via YAML file
+
 ```
 mkdir -p /tmp/getkonvoy.io/demo1/vm/memory/control-plane
 
@@ -153,6 +164,8 @@ EOL
 konvoy-control-plane run --config-file /tmp/getkonvoy.io/demo1/vm/memory/control-plane/config.yaml
 ```
 
+#### B. Run Control Plane configured via environment variables
+
 ```
 KONVOY_GRPC_PORT=5678 \
 KONVOY_HTTP_PORT=5679 \
@@ -166,6 +179,8 @@ konvoy-control-plane run
 
 ### Deploy Dataplane
 
+#### Dataplane 1
+
 ```
 KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=localhost \
 KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=5678 \
@@ -175,6 +190,8 @@ KONVOY_DATAPLANE_ADMIN_PORT=9901 \
 \
 konvoy-dataplane run
 ```
+
+#### Dataplane 2
 
 ```
 KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=localhost \
@@ -220,16 +237,44 @@ konvoyctl get dataplanes -oyaml
 konvoyctl get dataplanes --mesh pilot
 ```
 
-Notes:
-- `NAMESPACE` column
-
 ## VM environment (Postgres)
 
-### Install Control Plane
+### Prerequirements
+
+* dev tools (installed by `make dev/tools`)
+* `docker-compose` (to run `Postgres`)
+
+### Build all components
+
+* `konvoy-control-plane` - `xDS` and `API` server
+* `konvoy-dataplane` - launches `Envoy`
+* `konvoyctl` - command-line client for end users
+
+```
+make dev/tools
+```
+
+```
+make build
+```
+
+```
+export PATH=`pwd`/build/artifacts/konvoy-control-plane:$PATH
+export PATH=`pwd`/build/artifacts/konvoy-dataplane:$PATH
+export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
+```
+
+### Start Postgres
 
 ```bash
 make start/postgres
 ```
+
+### Install Control Plane
+
+Chose between options `A` and `B`
+
+#### A. Run Control Plane configured via YAML file
 
 ```
 mkdir -p /tmp/getkonvoy.io/demo1/vm/postgres/control-plane
@@ -256,11 +301,11 @@ EOL
 konvoy-control-plane run --config-file /tmp/getkonvoy.io/demo1/vm/postgres/control-plane/config.yaml
 ```
 
-```
-mkdir -p /tmp/getkonvoy.io/demo1/vm/postgres
+#### A. Run Control Plane configured via environment variables
 
-KONVOY_GRPC_PORT= \
-KONVOY_HTTP_PORT= \
+```
+KONVOY_GRPC_PORT= 5678 \
+KONVOY_HTTP_PORT= 5679 \
 KONVOY_XDS_SERVER_DIAGNOSTICS_PORT=5680 \
 KONVOY_API_SERVER_PORT=5681 \
 KONVOY_ENVIRONMENT=universal \
@@ -276,6 +321,8 @@ konvoy-control-plane run
 
 ### Deploy Dataplane
 
+#### Dataplane 1
+
 ```
 KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=localhost \
 KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=5678 \
@@ -286,12 +333,14 @@ KONVOY_DATAPLANE_ADMIN_PORT=9901 \
 konvoy-dataplane run
 ```
 
+#### Dataplane 2
+
 ```
 KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=localhost \
 KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=5678 \
 KONVOY_DATAPLANE_ID=gcalendar-02 \
 KONVOY_DATAPLANE_SERVICE=gcalendar \
-KONVOY_DATAPLANE_ADMIN_PORT=9901 \
+KONVOY_DATAPLANE_ADMIN_PORT=9902 \
 \
 konvoy-dataplane run
 ```
