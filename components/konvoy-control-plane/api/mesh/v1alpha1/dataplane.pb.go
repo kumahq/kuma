@@ -9,7 +9,7 @@ import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
-	types "github.com/gogo/protobuf/types"
+	_ "github.com/gogo/protobuf/types"
 	io "io"
 	math "math"
 )
@@ -25,27 +25,27 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// DataplaneStatus defines the observed state of a Dataplane.
-type DataplaneStatus struct {
-	// List of ADS subscriptions created by a given Dataplane.
-	Subscriptions        []*DiscoverySubscription `protobuf:"bytes,1,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
-	XXX_unrecognized     []byte                   `json:"-"`
-	XXX_sizecache        int32                    `json:"-"`
+// Dataplane defines the connected Dataplane to the Control Plane.
+type Dataplane struct {
+	// Tags of the Dataplane, ex. service: web, version: 1.0
+	Tags                 map[string]string `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
-func (m *DataplaneStatus) Reset()         { *m = DataplaneStatus{} }
-func (m *DataplaneStatus) String() string { return proto.CompactTextString(m) }
-func (*DataplaneStatus) ProtoMessage()    {}
-func (*DataplaneStatus) Descriptor() ([]byte, []int) {
+func (m *Dataplane) Reset()         { *m = Dataplane{} }
+func (m *Dataplane) String() string { return proto.CompactTextString(m) }
+func (*Dataplane) ProtoMessage()    {}
+func (*Dataplane) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7608682fd5ea84a4, []int{0}
 }
-func (m *DataplaneStatus) XXX_Unmarshal(b []byte) error {
+func (m *Dataplane) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *DataplaneStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *Dataplane) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_DataplaneStatus.Marshal(b, m, deterministic)
+		return xxx_messageInfo_Dataplane.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalTo(b)
@@ -55,334 +55,59 @@ func (m *DataplaneStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *DataplaneStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DataplaneStatus.Merge(m, src)
+func (m *Dataplane) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Dataplane.Merge(m, src)
 }
-func (m *DataplaneStatus) XXX_Size() int {
+func (m *Dataplane) XXX_Size() int {
 	return m.Size()
 }
-func (m *DataplaneStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_DataplaneStatus.DiscardUnknown(m)
+func (m *Dataplane) XXX_DiscardUnknown() {
+	xxx_messageInfo_Dataplane.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_DataplaneStatus proto.InternalMessageInfo
+var xxx_messageInfo_Dataplane proto.InternalMessageInfo
 
-func (m *DataplaneStatus) GetSubscriptions() []*DiscoverySubscription {
+func (m *Dataplane) GetTags() map[string]string {
 	if m != nil {
-		return m.Subscriptions
+		return m.Tags
 	}
 	return nil
-}
-
-// DiscoverySubscription describes a single ADS subscription
-// created by a Dataplane to the Control Plane.
-// Ideally, there should be only one such subscription per Dataplane lifecycle.
-// Presence of multiple subscriptions might indicate one of the following
-// events:
-// - transient loss of network connection between Dataplane and Control Plane
-// - Dataplane restart (i.e. hot restart or crash)
-// - Control Plane restart (i.e. rolling update or crash)
-// - etc
-type DiscoverySubscription struct {
-	// Unique id per ADS subscription.
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// Control Plane instance that handled given subscription.
-	ControlPlaneInstanceId string `protobuf:"bytes,2,opt,name=control_plane_instance_id,json=controlPlaneInstanceId,proto3" json:"control_plane_instance_id,omitempty"`
-	// Time when a given Dataplane connected to the Control Plane.
-	ConnectTime *types.Timestamp `protobuf:"bytes,3,opt,name=connect_time,json=connectTime,proto3" json:"connect_time,omitempty"`
-	// Time when a given Dataplane disconnected from the Control Plane.
-	DisconnectTime *types.Timestamp `protobuf:"bytes,4,opt,name=disconnect_time,json=disconnectTime,proto3" json:"disconnect_time,omitempty"`
-	// Status of the ADS subscription.
-	Status               DiscoverySubscriptionStatus `protobuf:"bytes,5,opt,name=status,proto3" json:"status"`
-	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
-	XXX_unrecognized     []byte                      `json:"-"`
-	XXX_sizecache        int32                       `json:"-"`
-}
-
-func (m *DiscoverySubscription) Reset()         { *m = DiscoverySubscription{} }
-func (m *DiscoverySubscription) String() string { return proto.CompactTextString(m) }
-func (*DiscoverySubscription) ProtoMessage()    {}
-func (*DiscoverySubscription) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7608682fd5ea84a4, []int{1}
-}
-func (m *DiscoverySubscription) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *DiscoverySubscription) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DiscoverySubscription.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *DiscoverySubscription) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DiscoverySubscription.Merge(m, src)
-}
-func (m *DiscoverySubscription) XXX_Size() int {
-	return m.Size()
-}
-func (m *DiscoverySubscription) XXX_DiscardUnknown() {
-	xxx_messageInfo_DiscoverySubscription.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DiscoverySubscription proto.InternalMessageInfo
-
-func (m *DiscoverySubscription) GetId() string {
-	if m != nil {
-		return m.Id
-	}
-	return ""
-}
-
-func (m *DiscoverySubscription) GetControlPlaneInstanceId() string {
-	if m != nil {
-		return m.ControlPlaneInstanceId
-	}
-	return ""
-}
-
-func (m *DiscoverySubscription) GetConnectTime() *types.Timestamp {
-	if m != nil {
-		return m.ConnectTime
-	}
-	return nil
-}
-
-func (m *DiscoverySubscription) GetDisconnectTime() *types.Timestamp {
-	if m != nil {
-		return m.DisconnectTime
-	}
-	return nil
-}
-
-func (m *DiscoverySubscription) GetStatus() DiscoverySubscriptionStatus {
-	if m != nil {
-		return m.Status
-	}
-	return DiscoverySubscriptionStatus{}
-}
-
-// DiscoverySubscriptionStatus defines status of an ADS subscription.
-type DiscoverySubscriptionStatus struct {
-	// Time when status of a given ADS subscription was most recently updated.
-	LastUpdateTime *types.Timestamp `protobuf:"bytes,1,opt,name=last_update_time,json=lastUpdateTime,proto3" json:"last_update_time,omitempty"`
-	// Total defines an aggregate over individual xDS stats.
-	Total DiscoveryServiceStats `protobuf:"bytes,2,opt,name=total,proto3" json:"total"`
-	// CDS defines all CDS stats.
-	Cds DiscoveryServiceStats `protobuf:"bytes,3,opt,name=cds,proto3" json:"cds"`
-	// EDS defines all EDS stats.
-	Eds DiscoveryServiceStats `protobuf:"bytes,4,opt,name=eds,proto3" json:"eds"`
-	// LDS defines all LDS stats.
-	Lds DiscoveryServiceStats `protobuf:"bytes,5,opt,name=lds,proto3" json:"lds"`
-	// RDS defines all RDS stats.
-	Rds                  DiscoveryServiceStats `protobuf:"bytes,6,opt,name=rds,proto3" json:"rds"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
-}
-
-func (m *DiscoverySubscriptionStatus) Reset()         { *m = DiscoverySubscriptionStatus{} }
-func (m *DiscoverySubscriptionStatus) String() string { return proto.CompactTextString(m) }
-func (*DiscoverySubscriptionStatus) ProtoMessage()    {}
-func (*DiscoverySubscriptionStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7608682fd5ea84a4, []int{2}
-}
-func (m *DiscoverySubscriptionStatus) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *DiscoverySubscriptionStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DiscoverySubscriptionStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *DiscoverySubscriptionStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DiscoverySubscriptionStatus.Merge(m, src)
-}
-func (m *DiscoverySubscriptionStatus) XXX_Size() int {
-	return m.Size()
-}
-func (m *DiscoverySubscriptionStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_DiscoverySubscriptionStatus.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DiscoverySubscriptionStatus proto.InternalMessageInfo
-
-func (m *DiscoverySubscriptionStatus) GetLastUpdateTime() *types.Timestamp {
-	if m != nil {
-		return m.LastUpdateTime
-	}
-	return nil
-}
-
-func (m *DiscoverySubscriptionStatus) GetTotal() DiscoveryServiceStats {
-	if m != nil {
-		return m.Total
-	}
-	return DiscoveryServiceStats{}
-}
-
-func (m *DiscoverySubscriptionStatus) GetCds() DiscoveryServiceStats {
-	if m != nil {
-		return m.Cds
-	}
-	return DiscoveryServiceStats{}
-}
-
-func (m *DiscoverySubscriptionStatus) GetEds() DiscoveryServiceStats {
-	if m != nil {
-		return m.Eds
-	}
-	return DiscoveryServiceStats{}
-}
-
-func (m *DiscoverySubscriptionStatus) GetLds() DiscoveryServiceStats {
-	if m != nil {
-		return m.Lds
-	}
-	return DiscoveryServiceStats{}
-}
-
-func (m *DiscoverySubscriptionStatus) GetRds() DiscoveryServiceStats {
-	if m != nil {
-		return m.Rds
-	}
-	return DiscoveryServiceStats{}
-}
-
-// DiscoveryServiceStats defines all stats over a single xDS service.
-type DiscoveryServiceStats struct {
-	// Number of xDS responses sent to the Dataplane.
-	ResponsesSent uint64 `protobuf:"varint,1,opt,name=responses_sent,json=responsesSent,proto3" json:"responses_sent,omitempty"`
-	// Number of xDS responses ACKed by the Dataplane.
-	ResponsesAcknowledged uint64 `protobuf:"varint,2,opt,name=responses_acknowledged,json=responsesAcknowledged,proto3" json:"responses_acknowledged,omitempty"`
-	// Number of xDS responses NACKed by the Dataplane.
-	ResponsesRejected    uint64   `protobuf:"varint,3,opt,name=responses_rejected,json=responsesRejected,proto3" json:"responses_rejected,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *DiscoveryServiceStats) Reset()         { *m = DiscoveryServiceStats{} }
-func (m *DiscoveryServiceStats) String() string { return proto.CompactTextString(m) }
-func (*DiscoveryServiceStats) ProtoMessage()    {}
-func (*DiscoveryServiceStats) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7608682fd5ea84a4, []int{3}
-}
-func (m *DiscoveryServiceStats) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *DiscoveryServiceStats) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DiscoveryServiceStats.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *DiscoveryServiceStats) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DiscoveryServiceStats.Merge(m, src)
-}
-func (m *DiscoveryServiceStats) XXX_Size() int {
-	return m.Size()
-}
-func (m *DiscoveryServiceStats) XXX_DiscardUnknown() {
-	xxx_messageInfo_DiscoveryServiceStats.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DiscoveryServiceStats proto.InternalMessageInfo
-
-func (m *DiscoveryServiceStats) GetResponsesSent() uint64 {
-	if m != nil {
-		return m.ResponsesSent
-	}
-	return 0
-}
-
-func (m *DiscoveryServiceStats) GetResponsesAcknowledged() uint64 {
-	if m != nil {
-		return m.ResponsesAcknowledged
-	}
-	return 0
-}
-
-func (m *DiscoveryServiceStats) GetResponsesRejected() uint64 {
-	if m != nil {
-		return m.ResponsesRejected
-	}
-	return 0
 }
 
 func init() {
-	proto.RegisterType((*DataplaneStatus)(nil), "konvoy.mesh.v1alpha1.DataplaneStatus")
-	proto.RegisterType((*DiscoverySubscription)(nil), "konvoy.mesh.v1alpha1.DiscoverySubscription")
-	proto.RegisterType((*DiscoverySubscriptionStatus)(nil), "konvoy.mesh.v1alpha1.DiscoverySubscriptionStatus")
-	proto.RegisterType((*DiscoveryServiceStats)(nil), "konvoy.mesh.v1alpha1.DiscoveryServiceStats")
+	proto.RegisterType((*Dataplane)(nil), "konvoy.mesh.v1alpha1.Dataplane")
+	proto.RegisterMapType((map[string]string)(nil), "konvoy.mesh.v1alpha1.Dataplane.TagsEntry")
 }
 
 func init() { proto.RegisterFile("mesh/v1alpha1/dataplane.proto", fileDescriptor_7608682fd5ea84a4) }
 
 var fileDescriptor_7608682fd5ea84a4 = []byte{
-	// 539 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x93, 0xcf, 0x6e, 0xd3, 0x4c,
-	0x14, 0xc5, 0xbf, 0x71, 0x9c, 0xa8, 0x9d, 0x7c, 0xfd, 0xc3, 0xa8, 0x2d, 0x6e, 0x10, 0x69, 0x14,
-	0x09, 0x29, 0x12, 0xc2, 0x56, 0x8a, 0x78, 0x00, 0xd2, 0x48, 0x28, 0x2b, 0xc0, 0x81, 0x0d, 0x1b,
-	0x6b, 0xe2, 0xb9, 0xa4, 0xa6, 0xce, 0x8c, 0x35, 0x33, 0x09, 0xea, 0xfb, 0xb0, 0x60, 0xcd, 0x92,
-	0x55, 0x97, 0x5d, 0xb2, 0x65, 0x83, 0x50, 0x76, 0xbc, 0x05, 0x9a, 0xb1, 0x9d, 0x18, 0x54, 0x51,
-	0xc8, 0x6e, 0xe4, 0x7b, 0xce, 0xcf, 0x77, 0xce, 0xbd, 0x83, 0xef, 0xcf, 0x40, 0x9d, 0x07, 0x8b,
-	0x3e, 0x4d, 0xb3, 0x73, 0xda, 0x0f, 0x18, 0xd5, 0x34, 0x4b, 0x29, 0x07, 0x3f, 0x93, 0x42, 0x0b,
-	0x72, 0x70, 0x21, 0xf8, 0x42, 0x5c, 0xfa, 0x46, 0xe5, 0x97, 0xaa, 0xd6, 0xc9, 0x54, 0x88, 0x69,
-	0x0a, 0x81, 0xd5, 0x4c, 0xe6, 0x6f, 0x03, 0x9d, 0xcc, 0x40, 0x69, 0x3a, 0xcb, 0x72, 0x5b, 0xeb,
-	0x60, 0x2a, 0xa6, 0xc2, 0x1e, 0x03, 0x73, 0x2a, 0xbe, 0xde, 0x5d, 0xd0, 0x34, 0x61, 0x54, 0x43,
-	0x50, 0x1e, 0xf2, 0x42, 0x97, 0xe1, 0xbd, 0x61, 0xf9, 0xe3, 0xb1, 0xa6, 0x7a, 0xae, 0xc8, 0x4b,
-	0xbc, 0xa3, 0xe6, 0x13, 0x15, 0xcb, 0x24, 0xd3, 0x89, 0xe0, 0xca, 0x43, 0x9d, 0x5a, 0xaf, 0x79,
-	0xfa, 0xd0, 0xbf, 0xa9, 0x21, 0x7f, 0x98, 0xa8, 0x58, 0x2c, 0x40, 0x5e, 0x8e, 0x2b, 0x9e, 0xf0,
-	0x57, 0x42, 0xf7, 0xab, 0x83, 0x0f, 0x6f, 0x14, 0x92, 0x63, 0xec, 0x24, 0xcc, 0x43, 0x1d, 0xd4,
-	0xdb, 0x1e, 0x6c, 0x7f, 0xfe, 0x71, 0x55, 0x73, 0xa5, 0xb3, 0x8f, 0x42, 0x27, 0x61, 0x64, 0x88,
-	0x8f, 0x63, 0xc1, 0xb5, 0x14, 0x69, 0x64, 0xdb, 0x8b, 0x12, 0xae, 0x34, 0xe5, 0x31, 0x44, 0x09,
-	0xf3, 0x9c, 0xdf, 0x1d, 0x47, 0x85, 0xf6, 0x85, 0x91, 0x8e, 0x0a, 0xe5, 0x88, 0x91, 0x11, 0xfe,
-	0x3f, 0x16, 0x9c, 0x43, 0xac, 0x23, 0x13, 0x95, 0x57, 0xeb, 0xa0, 0x5e, 0xf3, 0xb4, 0xe5, 0xe7,
-	0x39, 0xfa, 0x65, 0x8e, 0xfe, 0xab, 0x32, 0xc7, 0x01, 0x36, 0xd0, 0xfa, 0x27, 0xe4, 0x6c, 0xa1,
-	0xb0, 0x59, 0x78, 0x4d, 0x95, 0x9c, 0xe1, 0x3d, 0x66, 0x2e, 0x51, 0xa1, 0xb9, 0xb7, 0xd1, 0xc2,
-	0xdd, 0xb5, 0xc5, 0x42, 0x9e, 0xe3, 0x86, 0xb2, 0x39, 0x7b, 0x75, 0xeb, 0xed, 0xff, 0x43, 0xac,
-	0xf9, 0x80, 0x06, 0xee, 0xf5, 0xb7, 0x93, 0xff, 0xc2, 0x02, 0xd3, 0xbd, 0xaa, 0xe1, 0x7b, 0x7f,
-	0x50, 0x93, 0x21, 0xde, 0x4f, 0xa9, 0xd2, 0xd1, 0x3c, 0x33, 0x63, 0xcf, 0xdb, 0x46, 0xb7, 0xb7,
-	0x6d, 0x3c, 0xaf, 0xad, 0xc5, 0xb6, 0xfd, 0x0c, 0xd7, 0xb5, 0xd0, 0x34, 0xb5, 0xc1, 0xff, 0xc5,
-	0x32, 0x80, 0x5c, 0x24, 0xb1, 0xdd, 0xa8, 0xb2, 0xdf, 0xdc, 0x4f, 0xce, 0x70, 0x2d, 0x66, 0xaa,
-	0x18, 0xc3, 0x06, 0x18, 0xe3, 0x36, 0x10, 0x60, 0xaa, 0x48, 0x7f, 0x13, 0x08, 0xe4, 0x90, 0x94,
-	0x95, 0x63, 0xd8, 0x04, 0x92, 0xe6, 0x10, 0xc9, 0x94, 0xd7, 0xd8, 0x18, 0x22, 0x99, 0xea, 0x7e,
-	0x40, 0xd5, 0xe7, 0x51, 0x11, 0x91, 0x07, 0x78, 0x57, 0x82, 0xca, 0x04, 0x57, 0xa0, 0x22, 0x05,
-	0x5c, 0xdb, 0xd1, 0xb9, 0xe1, 0xce, 0xea, 0xeb, 0x18, 0xb8, 0x26, 0x4f, 0xf0, 0xd1, 0x5a, 0x46,
-	0xe3, 0x0b, 0x2e, 0xde, 0xa7, 0xc0, 0xa6, 0x90, 0xbf, 0x13, 0x37, 0x3c, 0x5c, 0x55, 0x9f, 0x56,
-	0x8a, 0xe4, 0x11, 0x26, 0x6b, 0x9b, 0x84, 0x77, 0x10, 0x6b, 0x60, 0x76, 0x34, 0x6e, 0x78, 0x67,
-	0x55, 0x09, 0x8b, 0xc2, 0xa0, 0xf5, 0x71, 0xd9, 0x46, 0xd7, 0xcb, 0x36, 0xfa, 0xb2, 0x6c, 0xa3,
-	0xef, 0xcb, 0x36, 0x7a, 0xb3, 0x55, 0xde, 0x71, 0xd2, 0xb0, 0x3b, 0xf4, 0xf8, 0x67, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0x3e, 0x0d, 0x28, 0x4d, 0xd5, 0x04, 0x00, 0x00,
+	// 233 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0xcd, 0x4d, 0x2d, 0xce,
+	0xd0, 0x2f, 0x33, 0x4c, 0xcc, 0x29, 0xc8, 0x48, 0x34, 0xd4, 0x4f, 0x49, 0x2c, 0x49, 0x2c, 0xc8,
+	0x49, 0xcc, 0x4b, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0xc9, 0xce, 0xcf, 0x2b, 0xcb,
+	0xaf, 0xd4, 0x03, 0xa9, 0xd2, 0x83, 0xa9, 0x92, 0x92, 0x4f, 0xcf, 0xcf, 0x4f, 0xcf, 0x49, 0xd5,
+	0x07, 0xab, 0x49, 0x2a, 0x4d, 0xd3, 0x2f, 0xc9, 0xcc, 0x4d, 0x2d, 0x2e, 0x49, 0xcc, 0x2d, 0x80,
+	0x68, 0x93, 0x12, 0x49, 0xcf, 0x4f, 0xcf, 0x07, 0x33, 0xf5, 0x41, 0x2c, 0xa8, 0xa8, 0x78, 0x59,
+	0x62, 0x4e, 0x66, 0x4a, 0x62, 0x49, 0xaa, 0x3e, 0x8c, 0x01, 0x91, 0x50, 0x6a, 0x66, 0xe4, 0xe2,
+	0x74, 0x81, 0xd9, 0x2c, 0x64, 0xcb, 0xc5, 0x52, 0x92, 0x98, 0x5e, 0x2c, 0xc1, 0xa4, 0xc0, 0xac,
+	0xc1, 0x6d, 0xa4, 0xa9, 0x87, 0xcd, 0x09, 0x7a, 0x70, 0xe5, 0x7a, 0x21, 0x89, 0xe9, 0xc5, 0xae,
+	0x79, 0x25, 0x45, 0x95, 0x41, 0x60, 0x6d, 0x52, 0xe6, 0x5c, 0x9c, 0x70, 0x21, 0x21, 0x01, 0x2e,
+	0xe6, 0xec, 0xd4, 0x4a, 0x09, 0x46, 0x05, 0x46, 0x0d, 0xce, 0x20, 0x10, 0x53, 0x48, 0x84, 0x8b,
+	0xb5, 0x2c, 0x31, 0xa7, 0x34, 0x55, 0x82, 0x09, 0x2c, 0x06, 0xe1, 0x58, 0x31, 0x59, 0x30, 0x3a,
+	0x49, 0xad, 0x78, 0x24, 0xc7, 0x78, 0xe2, 0x91, 0x1c, 0xe3, 0x85, 0x47, 0x72, 0x8c, 0x0f, 0x1e,
+	0xc9, 0x31, 0x46, 0x71, 0xc0, 0xac, 0x4b, 0x62, 0x03, 0x3b, 0xd4, 0x18, 0x10, 0x00, 0x00, 0xff,
+	0xff, 0xc7, 0x66, 0x57, 0xe7, 0x2f, 0x01, 0x00, 0x00,
 }
 
-func (this *DataplaneStatus) Equal(that interface{}) bool {
+func (this *Dataplane) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*DataplaneStatus)
+	that1, ok := that.(*Dataplane)
 	if !ok {
-		that2, ok := that.(DataplaneStatus)
+		that2, ok := that.(Dataplane)
 		if ok {
 			that1 = &that2
 		} else {
@@ -394,11 +119,11 @@ func (this *DataplaneStatus) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if len(this.Subscriptions) != len(that1.Subscriptions) {
+	if len(this.Tags) != len(that1.Tags) {
 		return false
 	}
-	for i := range this.Subscriptions {
-		if !this.Subscriptions[i].Equal(that1.Subscriptions[i]) {
+	for i := range this.Tags {
+		if this.Tags[i] != that1.Tags[i] {
 			return false
 		}
 	}
@@ -407,121 +132,7 @@ func (this *DataplaneStatus) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *DiscoverySubscription) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*DiscoverySubscription)
-	if !ok {
-		that2, ok := that.(DiscoverySubscription)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Id != that1.Id {
-		return false
-	}
-	if this.ControlPlaneInstanceId != that1.ControlPlaneInstanceId {
-		return false
-	}
-	if !this.ConnectTime.Equal(that1.ConnectTime) {
-		return false
-	}
-	if !this.DisconnectTime.Equal(that1.DisconnectTime) {
-		return false
-	}
-	if !this.Status.Equal(&that1.Status) {
-		return false
-	}
-	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
-		return false
-	}
-	return true
-}
-func (this *DiscoverySubscriptionStatus) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*DiscoverySubscriptionStatus)
-	if !ok {
-		that2, ok := that.(DiscoverySubscriptionStatus)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.LastUpdateTime.Equal(that1.LastUpdateTime) {
-		return false
-	}
-	if !this.Total.Equal(&that1.Total) {
-		return false
-	}
-	if !this.Cds.Equal(&that1.Cds) {
-		return false
-	}
-	if !this.Eds.Equal(&that1.Eds) {
-		return false
-	}
-	if !this.Lds.Equal(&that1.Lds) {
-		return false
-	}
-	if !this.Rds.Equal(&that1.Rds) {
-		return false
-	}
-	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
-		return false
-	}
-	return true
-}
-func (this *DiscoveryServiceStats) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*DiscoveryServiceStats)
-	if !ok {
-		that2, ok := that.(DiscoveryServiceStats)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.ResponsesSent != that1.ResponsesSent {
-		return false
-	}
-	if this.ResponsesAcknowledged != that1.ResponsesAcknowledged {
-		return false
-	}
-	if this.ResponsesRejected != that1.ResponsesRejected {
-		return false
-	}
-	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
-		return false
-	}
-	return true
-}
-func (m *DataplaneStatus) Marshal() (dAtA []byte, err error) {
+func (m *Dataplane) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -531,190 +142,27 @@ func (m *DataplaneStatus) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *DataplaneStatus) MarshalTo(dAtA []byte) (int, error) {
+func (m *Dataplane) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Subscriptions) > 0 {
-		for _, msg := range m.Subscriptions {
+	if len(m.Tags) > 0 {
+		for k, _ := range m.Tags {
+			dAtA[i] = 0x12
+			i++
+			v := m.Tags[k]
+			mapSize := 1 + len(k) + sovDataplane(uint64(len(k))) + 1 + len(v) + sovDataplane(uint64(len(v)))
+			i = encodeVarintDataplane(dAtA, i, uint64(mapSize))
 			dAtA[i] = 0xa
 			i++
-			i = encodeVarintDataplane(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
+			i = encodeVarintDataplane(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			dAtA[i] = 0x12
+			i++
+			i = encodeVarintDataplane(dAtA, i, uint64(len(v)))
+			i += copy(dAtA[i:], v)
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *DiscoverySubscription) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *DiscoverySubscription) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Id) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(len(m.Id)))
-		i += copy(dAtA[i:], m.Id)
-	}
-	if len(m.ControlPlaneInstanceId) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(len(m.ControlPlaneInstanceId)))
-		i += copy(dAtA[i:], m.ControlPlaneInstanceId)
-	}
-	if m.ConnectTime != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.ConnectTime.Size()))
-		n1, err := m.ConnectTime.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if m.DisconnectTime != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.DisconnectTime.Size()))
-		n2, err := m.DisconnectTime.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
-	dAtA[i] = 0x2a
-	i++
-	i = encodeVarintDataplane(dAtA, i, uint64(m.Status.Size()))
-	n3, err := m.Status.MarshalTo(dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n3
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *DiscoverySubscriptionStatus) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *DiscoverySubscriptionStatus) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.LastUpdateTime != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.LastUpdateTime.Size()))
-		n4, err := m.LastUpdateTime.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n4
-	}
-	dAtA[i] = 0x12
-	i++
-	i = encodeVarintDataplane(dAtA, i, uint64(m.Total.Size()))
-	n5, err := m.Total.MarshalTo(dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n5
-	dAtA[i] = 0x1a
-	i++
-	i = encodeVarintDataplane(dAtA, i, uint64(m.Cds.Size()))
-	n6, err := m.Cds.MarshalTo(dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n6
-	dAtA[i] = 0x22
-	i++
-	i = encodeVarintDataplane(dAtA, i, uint64(m.Eds.Size()))
-	n7, err := m.Eds.MarshalTo(dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n7
-	dAtA[i] = 0x2a
-	i++
-	i = encodeVarintDataplane(dAtA, i, uint64(m.Lds.Size()))
-	n8, err := m.Lds.MarshalTo(dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n8
-	dAtA[i] = 0x32
-	i++
-	i = encodeVarintDataplane(dAtA, i, uint64(m.Rds.Size()))
-	n9, err := m.Rds.MarshalTo(dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n9
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *DiscoveryServiceStats) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *DiscoveryServiceStats) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.ResponsesSent != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.ResponsesSent))
-	}
-	if m.ResponsesAcknowledged != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.ResponsesAcknowledged))
-	}
-	if m.ResponsesRejected != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintDataplane(dAtA, i, uint64(m.ResponsesRejected))
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -731,94 +179,19 @@ func encodeVarintDataplane(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return offset + 1
 }
-func (m *DataplaneStatus) Size() (n int) {
+func (m *Dataplane) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Subscriptions) > 0 {
-		for _, e := range m.Subscriptions {
-			l = e.Size()
-			n += 1 + l + sovDataplane(uint64(l))
+	if len(m.Tags) > 0 {
+		for k, v := range m.Tags {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovDataplane(uint64(len(k))) + 1 + len(v) + sovDataplane(uint64(len(v)))
+			n += mapEntrySize + 1 + sovDataplane(uint64(mapEntrySize))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *DiscoverySubscription) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Id)
-	if l > 0 {
-		n += 1 + l + sovDataplane(uint64(l))
-	}
-	l = len(m.ControlPlaneInstanceId)
-	if l > 0 {
-		n += 1 + l + sovDataplane(uint64(l))
-	}
-	if m.ConnectTime != nil {
-		l = m.ConnectTime.Size()
-		n += 1 + l + sovDataplane(uint64(l))
-	}
-	if m.DisconnectTime != nil {
-		l = m.DisconnectTime.Size()
-		n += 1 + l + sovDataplane(uint64(l))
-	}
-	l = m.Status.Size()
-	n += 1 + l + sovDataplane(uint64(l))
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *DiscoverySubscriptionStatus) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.LastUpdateTime != nil {
-		l = m.LastUpdateTime.Size()
-		n += 1 + l + sovDataplane(uint64(l))
-	}
-	l = m.Total.Size()
-	n += 1 + l + sovDataplane(uint64(l))
-	l = m.Cds.Size()
-	n += 1 + l + sovDataplane(uint64(l))
-	l = m.Eds.Size()
-	n += 1 + l + sovDataplane(uint64(l))
-	l = m.Lds.Size()
-	n += 1 + l + sovDataplane(uint64(l))
-	l = m.Rds.Size()
-	n += 1 + l + sovDataplane(uint64(l))
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *DiscoveryServiceStats) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ResponsesSent != 0 {
-		n += 1 + sovDataplane(uint64(m.ResponsesSent))
-	}
-	if m.ResponsesAcknowledged != 0 {
-		n += 1 + sovDataplane(uint64(m.ResponsesAcknowledged))
-	}
-	if m.ResponsesRejected != 0 {
-		n += 1 + sovDataplane(uint64(m.ResponsesRejected))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -839,7 +212,7 @@ func sovDataplane(x uint64) (n int) {
 func sozDataplane(x uint64) (n int) {
 	return sovDataplane(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *DataplaneStatus) Unmarshal(dAtA []byte) error {
+func (m *Dataplane) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -862,167 +235,15 @@ func (m *DataplaneStatus) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: DataplaneStatus: wiretype end group for non-group")
+			return fmt.Errorf("proto: Dataplane: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DataplaneStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Dataplane: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Subscriptions", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Subscriptions = append(m.Subscriptions, &DiscoverySubscription{})
-			if err := m.Subscriptions[len(m.Subscriptions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipDataplane(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *DiscoverySubscription) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowDataplane
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: DiscoverySubscription: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DiscoverySubscription: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Id = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ControlPlaneInstanceId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ControlPlaneInstanceId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ConnectTime", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Tags", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1049,448 +270,104 @@ func (m *DiscoverySubscription) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ConnectTime == nil {
-				m.ConnectTime = &types.Timestamp{}
+			if m.Tags == nil {
+				m.Tags = make(map[string]string)
 			}
-			if err := m.ConnectTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowDataplane
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowDataplane
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthDataplane
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthDataplane
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowDataplane
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthDataplane
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthDataplane
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipDataplane(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if skippy < 0 {
+						return ErrInvalidLengthDataplane
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
 			}
+			m.Tags[mapkey] = mapvalue
 			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DisconnectTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.DisconnectTime == nil {
-				m.DisconnectTime = &types.Timestamp{}
-			}
-			if err := m.DisconnectTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipDataplane(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *DiscoverySubscriptionStatus) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowDataplane
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: DiscoverySubscriptionStatus: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DiscoverySubscriptionStatus: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastUpdateTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.LastUpdateTime == nil {
-				m.LastUpdateTime = &types.Timestamp{}
-			}
-			if err := m.LastUpdateTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Total", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Total.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Cds", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Cds.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Eds", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Eds.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Lds", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Lds.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Rds", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Rds.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipDataplane(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthDataplane
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *DiscoveryServiceStats) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowDataplane
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: DiscoveryServiceStats: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DiscoveryServiceStats: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResponsesSent", wireType)
-			}
-			m.ResponsesSent = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ResponsesSent |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResponsesAcknowledged", wireType)
-			}
-			m.ResponsesAcknowledged = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ResponsesAcknowledged |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResponsesRejected", wireType)
-			}
-			m.ResponsesRejected = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDataplane
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ResponsesRejected |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDataplane(dAtA[iNdEx:])
