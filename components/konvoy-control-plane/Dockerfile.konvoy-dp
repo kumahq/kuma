@@ -19,7 +19,7 @@ COPY . .
 RUN make build/konvoy-dp
 
 ## runtime image
-FROM alpine:latest
+FROM envoyproxy/envoy-alpine:latest
 
 ENV PATH=$PATH:/konvoy-dataplane
 COPY --from=0 /go/src/github.com/Kong/konvoy/components/konvoy-control-plane/build/artifacts/konvoy-dataplane/konvoy-dataplane /konvoy-dataplane/konvoy-dataplane
