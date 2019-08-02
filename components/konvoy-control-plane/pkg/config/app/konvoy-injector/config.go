@@ -31,7 +31,7 @@ func DefaultConfig() Config {
 				},
 			},
 			SidecarContainer: SidecarContainer{
-				Image:        "envoyproxy/envoy-alpine:latest",
+				Image:        "konvoy/konvoy-dataplane:latest",
 				RedirectPort: 15001,
 				UID:          5678,
 				GID:          5678,
