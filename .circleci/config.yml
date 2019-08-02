@@ -274,12 +274,12 @@ jobs:
         - konvoy-control-plane/go.mod/{{ checksum "components/konvoy-control-plane/go.sum" }}
     - run: make build -C components/konvoy-control-plane
 
-  kcp/image:
+  kcp/images:
     <<: *remote-docker-defaults
     steps:
     - checkout
     - setup_remote_docker
-    - run: make image -C components/konvoy-control-plane
+    - run: make images -C components/konvoy-control-plane
 
   kcp/example/docker-compose:
     <<: *vm-executor-defaults
@@ -349,7 +349,7 @@ workflows:
     - kcp/build:
         requires:
         - kcp/test
-    - kcp/image:
+    - kcp/images:
         requires:
         - kcp/build
 #    TODO(yskopets): Bring back support for Docker Compose
