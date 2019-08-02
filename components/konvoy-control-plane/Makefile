@@ -438,31 +438,33 @@ verify/example/docker-compose/outbound:
 verify/example/docker-compose: verify/example/docker-compose/inbound verify/example/docker-compose/outbound ## Docker Compose: Verify Envoy stats (after sample requests)
 
 build/example/minikube: ## Minikube: build demo setup
-	eval $(minikube docker-env)
-	make images
+	eval $$(minikube docker-env) && $(MAKE) images
 
 deploy/example/minikube: ## Minikube: deploy demo setup
 	make crd/install -C pkg/plugins/resources/k8s/native
 	kubectl kustomize pkg/plugins/resources/k8s/native/config/rbac | kubectl apply -f -
-	kubectl apply -f examples/minikube/konvoy-demo.yaml
+	kubectl apply -k examples/minikube/konvoy-control-plane/
+	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pod/$$( kubectl -n konvoy-system get pods -l app=konvoy-injector -o=jsonpath='{.items[0].metadata.name}' )
+	kubectl apply -f examples/minikube/konvoy-demo/
+	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-demo pod/$$( kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}' )
 
 wait/example/minikube: ## Minikube: Wait for demo setup to get ready
-	kubectl -n konvoy-demo run wait --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- dockerize -wait http://demo-app:8000/request -timeout 1m
+	kubectl -n default run wait --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- dockerize -wait http://demo-app.konvoy-demo:8000/request -timeout 1m
 
 curl/example/minikube: ## Minikube: Make sample requests to demo setup
-	kubectl -n konvoy-demo run curl --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://demo-app:8000/request | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
+	kubectl -n default run curl --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://demo-app.konvoy-demo:8000/request | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
 
 stats/example/minikube: ## Minikube: Observe Envoy metrics from demo setup
-	kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c envoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
+	kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
 
 verify/example/minikube/inbound:
 	@echo "Checking number of Inbound requests via Envoy ..."
-	test $$( kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c envoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 10
+	test $$( kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 10
 	@echo "Check passed!"
 
 verify/example/minikube/outbound:
 	@echo "Checking number of Outbound requests via Envoy ..."
-	test $$( kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c envoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 1
+	test $$( kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 1
 	@echo "Check passed!"
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
