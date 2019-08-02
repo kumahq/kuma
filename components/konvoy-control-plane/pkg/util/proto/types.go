@@ -1,8 +1,9 @@
 package proto
 
 import (
-	"github.com/gogo/protobuf/types"
 	"time"
+
+	"github.com/gogo/protobuf/types"
 )
 
 func MustTimestampProto(t time.Time) *types.Timestamp {
@@ -11,4 +12,15 @@ func MustTimestampProto(t time.Time) *types.Timestamp {
 		panic(err.Error())
 	}
 	return ts
+}
+
+func MustTimestampFromProto(ts *types.Timestamp) *time.Time {
+	if ts == nil {
+		return nil
+	}
+	t, err := types.TimestampFromProto(ts)
+	if err != nil {
+		panic(err.Error())
+	}
+	return &t
 }

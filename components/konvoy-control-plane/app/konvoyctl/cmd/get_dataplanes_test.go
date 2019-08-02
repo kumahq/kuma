@@ -132,7 +132,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(`
-MESH   NAMESPACE   NAME   SUBSCRIPTIONS   LAST CONNECTED AGO   TOTAL UPDATES   TOTAL ERRORS
+MESH   NAME   STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
 `)))
 		})
 
@@ -147,10 +147,10 @@ MESH   NAMESPACE   NAME   SUBSCRIPTIONS   LAST CONNECTED AGO   TOTAL UPDATES   T
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(`
-MESH      NAMESPACE   NAME         SUBSCRIPTIONS   LAST CONNECTED AGO   TOTAL UPDATES   TOTAL ERRORS
-default   trial       experiment   2               2h3m4s               30              3
-default   demo        example      3               never                0               0
-pilot     default     simple       1               never                0               0
+MESH      NAME         STATUS    LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
+default   experiment   Online    2h3m4s               never              30              3
+default   example      Offline   never                never              0               0
+pilot     simple       Offline   never                never              0               0
 `)))
 		})
 	})
