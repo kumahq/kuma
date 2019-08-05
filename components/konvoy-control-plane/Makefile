@@ -7,7 +7,7 @@
 		start/k8s start/kind start/control-plane/k8s start/konvoy-injector/k8s \
 		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
 		deploy/konvoy-injector/k8s kind/load/konvoy-injector \
-		generate protoc/pkg/config/app/konvoyctl/v1alpha1 \
+		generate protoc/pkg/config/app/konvoyctl/v1alpha1 generate/konvoyctl/install/control-plane \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector \
 		build/konvoy-cp build/konvoy-dp build/konvoyctl build/konvoy-injector \
@@ -19,7 +19,7 @@
 		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		print/kubebuilder/test_assets \
-		generate/test/cert/konvoy-injector run/konvoy-injector
+		generate/test/cert/konvoy-injector run/konvoy-injector \
 		run/konvoy-dp
 
 PKG_LIST := ./... ./api/... ./pkg/plugins/resources/k8s/native/...
@@ -291,6 +291,10 @@ generate: clean/proto protoc/pkg/config/app/konvoyctl/v1alpha1 ## Dev: Run code 
 
 protoc/pkg/config/app/konvoyctl/v1alpha1:
 	$(PROTOC_GO) pkg/config/app/konvoyctl/v1alpha1/*.proto
+
+# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+generate/konvoyctl/install/control-plane:
+	go generate ./app/konvoyctl/pkg/install/k8s/control-plane/...
 
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 

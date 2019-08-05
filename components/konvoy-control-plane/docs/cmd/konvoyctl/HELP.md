@@ -10,6 +10,7 @@ Available Commands:
   config      Manage konvoyctl config
   get         Show Konvoy resources
   help        Help about any command
+  install     Install Konvoy on Kubernetes
 
 Flags:
       --config-file string   path to the configuration file to use
@@ -117,6 +118,28 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --debug                enable debug-level logging (default true)
       --mesh string          mesh to use
+```
+
+## konvoyctl install
+
+```
+Install Konvoy on Kubernetes.
+
+Usage:
+  konvoyctl install [command]
+
+Available Commands:
+  control-plane Install Konvoy Control Plane on Kubernetes
+
+Flags:
+  -h, --help   help for install
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
+
+Use "konvoyctl install [command] --help" for more information about a command.
 ```
 
 ## konvoyctl get
