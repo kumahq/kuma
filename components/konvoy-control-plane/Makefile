@@ -4,9 +4,9 @@
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
-		start/k8s start/kind start/control-plane/k8s start/konvoy-injector/k8s \
-		deploy/example-app/k8s kind/load/control-plane deploy/control-plane/k8s \
-		deploy/konvoy-injector/k8s kind/load/konvoy-injector \
+		start/k8s start/kind start/control-plane/k8s \
+		deploy/example-app/k8s deploy/control-plane/k8s \
+		kind/load/control-plane kind/load/konvoy-dp kind/load/konvoy-injector \
 		generate protoc/pkg/config/app/konvoyctl/v1alpha1 generate/konvoyctl/install/control-plane \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector \
@@ -76,10 +76,10 @@ CI_KUBECTL_VERSION ?= v1.14.0
 CI_TOOLS_IMAGE ?= circleci/golang:1.12
 
 CI_TOOLS_DIR ?= $(HOME)/bin
-PATH := $(CI_TOOLS_DIR):$(PATH)
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
-export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
+BUILD_KONVOYCTL_DIR := ${BUILD_ARTIFACTS_DIR}/konvoyctl
+export PATH := $(BUILD_KONVOYCTL_DIR):$(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
 
 PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
@@ -251,16 +251,11 @@ deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl label namespace $(EXAMPLE_NAMESPACE) getkonvoy.io/sidecar-injection=enabled --overwrite
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n konvoy-demo deployment/demo-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n konvoy-demo pods -l app=demo-app
 
 kind/load/control-plane: image/konvoy-cp
 	kind load docker-image $(KONVOY_CP_DOCKER_IMAGE) --name=konvoy
-
-deploy/control-plane/k8s:
-	KUBECONFIG=$(KIND_KUBECONFIG) make crd/install -C pkg/plugins/resources/k8s/native
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl kustomize pkg/plugins/resources/k8s/native/config/rbac | kubectl apply -f -
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f examples/local/control-plane.yaml
-
-start/control-plane/k8s: start/konvoy-injector/k8s kind/load/control-plane deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
 kind/load/konvoy-dp: image/konvoy-dp
 	kind load docker-image $(KONVOY_DP_DOCKER_IMAGE) --name=konvoy
@@ -268,15 +263,13 @@ kind/load/konvoy-dp: image/konvoy-dp
 kind/load/konvoy-injector: image/konvoy-injector
 	kind load docker-image $(KONVOY_INJECTOR_DOCKER_IMAGE) --name=konvoy
 
-deploy/konvoy-injector/k8s:
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create ns konvoy-system || true
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n konvoy-system secret konvoy-injector-tls-cert || true
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create -n konvoy-system secret tls konvoy-injector-tls-cert --key=app/konvoy-injector/cmd/testdata/tls.key --cert=app/konvoy-injector/cmd/testdata/tls.crt
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n konvoy-system -f examples/local/konvoy-injector.yaml
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl patch mutatingwebhookconfiguration konvoy-injector-webhook-configuration -p "{\"webhooks\":[{\"name\":\"konvoy-injector.getkonvoy.io\",\"clientConfig\":{\"caBundle\": \"$$(cat app/konvoy-injector/cmd/testdata/tls.crt | base64 )\"}}]}"
+deploy/control-plane/k8s: build/konvoyctl
+	KUBECONFIG=$(KIND_KUBECONFIG) konvoyctl install control-plane | kubectl apply -f -
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n konvoy-system pod -l app=konvoy-injector
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
 
-start/konvoy-injector/k8s: kind/load/konvoy-dp kind/load/konvoy-injector deploy/konvoy-injector/k8s ## Bootstrap: Deploy `konvoy-injector` on Kubernetes (KIND)
+start/control-plane/k8s: kind/load/control-plane kind/load/konvoy-dp kind/load/konvoy-injector deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
 clean: clean/build ## Dev: Clean
 
@@ -334,7 +327,7 @@ build/konvoy-dp: ## Dev: Build `konvoy-dataplane` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-dataplane/konvoy-dataplane ./app/konvoy-dp
 
 build/konvoyctl: ## Dev: Build `konvoyctl` binary
-	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoyctl/konvoyctl ./app/konvoyctl
+	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o $(BUILD_KONVOYCTL_DIR)/konvoyctl ./app/konvoyctl
 
 build/konvoy-injector: ## Dev: Build `konvoy-injector` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-injector/konvoy-injector ./app/konvoy-injector
@@ -408,7 +401,7 @@ image/konvoy-injector: ## Dev: Build `konvoy-injector` Docker image
 docs: docs/konvoyctl ## Dev: Generate all docs
 
 docs/konvoyctl: build/konvoyctl ## Dev: Generate `konvoyctl` docs
-	tools/docs/konvoyctl/gen_help.sh ${BUILD_ARTIFACTS_DIR}/konvoyctl/konvoyctl >docs/cmd/konvoyctl/HELP.md
+	tools/docs/konvoyctl/gen_help.sh ${BUILD_KONVOYCTL_DIR}/konvoyctl >docs/cmd/konvoyctl/HELP.md
 
 print/kubebuilder/test_assets: ## Dev: Print Kubebuilder Environment variables
 	@echo export TEST_ASSET_KUBE_APISERVER=$(TEST_ASSET_KUBE_APISERVER)
@@ -444,10 +437,8 @@ verify/example/docker-compose: verify/example/docker-compose/inbound verify/exam
 build/example/minikube: ## Minikube: build demo setup
 	eval $$(minikube docker-env) && $(MAKE) images
 
-deploy/example/minikube: ## Minikube: deploy demo setup
-	make crd/install -C pkg/plugins/resources/k8s/native
-	kubectl kustomize pkg/plugins/resources/k8s/native/config/rbac | kubectl apply -f -
-	kubectl apply -k examples/minikube/konvoy-control-plane/
+deploy/example/minikube: image/konvoyctl ## Minikube: deploy demo setup
+	docker run --rm konvoy/konvoyctl konvoyctl install control-plane | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
 	kubectl apply -f examples/minikube/konvoy-demo/
