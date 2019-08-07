@@ -1,3 +1,3 @@
-NAME           ENVIRONMENT
-k8s_minikube   k8s
-vm_test        non-k8s
+NAME    API SERVER
+test1   https://test1.internal:5681
+test2   https://test2.internal:5681

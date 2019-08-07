@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output/printers"
-	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +14,7 @@ func newConfigControlPlanesListCmd(pctx *rootContext) *cobra.Command {
 			controlPlanes := pctx.Config().ControlPlanes
 
 			data := printers.Table{
-				Headers: []string{"NAME", "ENVIRONMENT"},
+				Headers: []string{"NAME", "API SERVER"},
 				NextRow: func() func() []string {
 					i := 0
 					return func() []string {
@@ -25,13 +24,9 @@ func newConfigControlPlanesListCmd(pctx *rootContext) *cobra.Command {
 						}
 						cp := controlPlanes[i]
 
-						env := "non-k8s"
-						if _, ok := cp.Coordinates.Type.(*config_proto.ControlPlaneCoordinates_Kubernetes_); ok {
-							env = "k8s"
-						}
 						return []string{
-							cp.Name, // NAME
-							env,     // ENVIRONMENT
+							cp.GetName(), // NAME
+							cp.GetCoordinates().GetApiServer().GetUrl(), // URL
 						}
 					}
 				}(),

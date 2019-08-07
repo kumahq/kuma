@@ -3,9 +3,7 @@ contexts:
   name: test
 controlPlanes:
 - coordinates:
-    kubernetes:
-      context: pseudo-context
-      kubeconfig: /path/to/kubeconfig
-      namespace: konvoy-system
+    apiServer:
+      url: https://test1.internal:5681
   name: test
 currentContext: test

@@ -32,42 +32,13 @@ message ControlPlane {
 
 // ControlPlaneCoordinates defines coordinates of a Control Plane.
 message ControlPlaneCoordinates {
-
-  // Kubernetes defines coordinates of a Control Plane installed on Kubernetes.
-  message Kubernetes {
-
-    // Kubeconfig defines a path to a `kubectl` config file
-    // that holds connectivity settings to a Kubernetes cluster
-    // where Control Plane is installed to.
-    string kubeconfig = 1 [ (validate.rules).string.min_len = 1 ];
-
-    // Context defines a name of a context within `kubectl` config file
-    // that holds connectivity settings to a Kubernetes cluster
-    // where Control Plane is installed to.
-    string context = 2 [ (validate.rules).string.min_len = 1 ];
-
-    // Namespace defines a namespace within a Kubernetes cluster
-    // where Control Plane is installed to.
-    string namespace = 3 [ (validate.rules).string.min_len = 1 ];
-  }
-
-  // ApiServer defines coordinates of a Control Plane installed outside of
-  // Kubernetes.
   message ApiServer {
 
     // URL defines URL of the Control Plane API Server.
     string url = 1 [ (validate.rules).string.uri = true ];
   }
 
-  oneof type {
-    option (validate.required) = true;
-
-    // Coordinates of a Control Plane installed on Kubernetes.
-    Kubernetes kubernetes = 1;
-
-    // Coordinates of a Control Plane installed outside of Kubernetes.
-    ApiServer api_server = 2;
-  }
+  ApiServer api_server = 1 [ (validate.rules).message.required = true ];
 }
 
 // Context defines a context in which individual `konvoyctl` commands run.

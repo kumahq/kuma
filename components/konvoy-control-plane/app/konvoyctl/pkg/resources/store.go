@@ -25,31 +25,12 @@ const (
 )
 
 func NewResourceStore(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
-	switch coordinates := controlPlane.GetCoordinates().GetType().(type) {
-	case *config_proto.ControlPlaneCoordinates_Kubernetes_:
-		kubeConfig, err := getKubeConfig(coordinates.Kubernetes.Kubeconfig, coordinates.Kubernetes.Context, coordinates.Kubernetes.Namespace)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to load `kubectl` config: kubeconfig=%q context=%q namespace=%q",
-				coordinates.Kubernetes.Kubeconfig, coordinates.Kubernetes.Context, coordinates.Kubernetes.Namespace)
-		}
-		// create a Transport that proxies requests to the Control Plane through kube-apiserver
-		t, err := kubeConfig.NewServiceProxyTransport(coordinates.Kubernetes.Namespace, "konvoy-control-plane:http-api-server")
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to create Kubernetes proxy transport")
-		}
-		client := newClient()
-		client.Transport = t
-		return remote_resources.NewStore(client, konvoy_rest.AllApis()), nil
-	case *config_proto.ControlPlaneCoordinates_ApiServer_:
-		baseURL, err := url.Parse(coordinates.ApiServer.Url)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to parse API Server URL")
-		}
-		client := util_http.ClientWithBaseURL(newClient(), baseURL)
-		return remote_resources.NewStore(client, konvoy_rest.AllApis()), nil
-	default:
-		return nil, errors.Errorf("Control Plane has coordinates that are not supported yet: %v", controlPlane.GetCoordinates().GetType())
+	baseURL, err := url.Parse(controlPlane.GetCoordinates().ApiServer.Url)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
 	}
+	client := util_http.ClientWithBaseURL(newClient(), baseURL)
+	return remote_resources.NewStore(client, konvoy_rest.AllApis()), nil
 }
 
 func newClient() *http.Client {

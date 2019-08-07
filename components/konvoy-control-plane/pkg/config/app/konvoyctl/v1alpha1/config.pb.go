@@ -149,13 +149,10 @@ func (m *ControlPlane) GetCoordinates() *ControlPlaneCoordinates {
 
 // ControlPlaneCoordinates defines coordinates of a Control Plane.
 type ControlPlaneCoordinates struct {
-	// Types that are valid to be assigned to Type:
-	//	*ControlPlaneCoordinates_Kubernetes_
-	//	*ControlPlaneCoordinates_ApiServer_
-	Type                 isControlPlaneCoordinates_Type `protobuf_oneof:"type"`
-	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
-	XXX_unrecognized     []byte                         `json:"-"`
-	XXX_sizecache        int32                          `json:"-"`
+	ApiServer            *ControlPlaneCoordinates_ApiServer `protobuf:"bytes,1,opt,name=api_server,json=apiServer,proto3" json:"api_server,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                           `json:"-"`
+	XXX_unrecognized     []byte                             `json:"-"`
+	XXX_sizecache        int32                              `json:"-"`
 }
 
 func (m *ControlPlaneCoordinates) Reset()         { *m = ControlPlaneCoordinates{} }
@@ -191,191 +188,13 @@ func (m *ControlPlaneCoordinates) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ControlPlaneCoordinates proto.InternalMessageInfo
 
-type isControlPlaneCoordinates_Type interface {
-	isControlPlaneCoordinates_Type()
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type ControlPlaneCoordinates_Kubernetes_ struct {
-	Kubernetes *ControlPlaneCoordinates_Kubernetes `protobuf:"bytes,1,opt,name=kubernetes,proto3,oneof"`
-}
-type ControlPlaneCoordinates_ApiServer_ struct {
-	ApiServer *ControlPlaneCoordinates_ApiServer `protobuf:"bytes,2,opt,name=api_server,json=apiServer,proto3,oneof"`
-}
-
-func (*ControlPlaneCoordinates_Kubernetes_) isControlPlaneCoordinates_Type() {}
-func (*ControlPlaneCoordinates_ApiServer_) isControlPlaneCoordinates_Type()  {}
-
-func (m *ControlPlaneCoordinates) GetType() isControlPlaneCoordinates_Type {
-	if m != nil {
-		return m.Type
-	}
-	return nil
-}
-
-func (m *ControlPlaneCoordinates) GetKubernetes() *ControlPlaneCoordinates_Kubernetes {
-	if x, ok := m.GetType().(*ControlPlaneCoordinates_Kubernetes_); ok {
-		return x.Kubernetes
-	}
-	return nil
-}
-
 func (m *ControlPlaneCoordinates) GetApiServer() *ControlPlaneCoordinates_ApiServer {
-	if x, ok := m.GetType().(*ControlPlaneCoordinates_ApiServer_); ok {
-		return x.ApiServer
+	if m != nil {
+		return m.ApiServer
 	}
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*ControlPlaneCoordinates) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _ControlPlaneCoordinates_OneofMarshaler, _ControlPlaneCoordinates_OneofUnmarshaler, _ControlPlaneCoordinates_OneofSizer, []interface{}{
-		(*ControlPlaneCoordinates_Kubernetes_)(nil),
-		(*ControlPlaneCoordinates_ApiServer_)(nil),
-	}
-}
-
-func _ControlPlaneCoordinates_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*ControlPlaneCoordinates)
-	// type
-	switch x := m.Type.(type) {
-	case *ControlPlaneCoordinates_Kubernetes_:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Kubernetes); err != nil {
-			return err
-		}
-	case *ControlPlaneCoordinates_ApiServer_:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ApiServer); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("ControlPlaneCoordinates.Type has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _ControlPlaneCoordinates_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*ControlPlaneCoordinates)
-	switch tag {
-	case 1: // type.kubernetes
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ControlPlaneCoordinates_Kubernetes)
-		err := b.DecodeMessage(msg)
-		m.Type = &ControlPlaneCoordinates_Kubernetes_{msg}
-		return true, err
-	case 2: // type.api_server
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ControlPlaneCoordinates_ApiServer)
-		err := b.DecodeMessage(msg)
-		m.Type = &ControlPlaneCoordinates_ApiServer_{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _ControlPlaneCoordinates_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*ControlPlaneCoordinates)
-	// type
-	switch x := m.Type.(type) {
-	case *ControlPlaneCoordinates_Kubernetes_:
-		s := proto.Size(x.Kubernetes)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ControlPlaneCoordinates_ApiServer_:
-		s := proto.Size(x.ApiServer)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
-}
-
-// Kubernetes defines coordinates of a Control Plane installed on Kubernetes.
-type ControlPlaneCoordinates_Kubernetes struct {
-	// Kubeconfig defines a path to a `kubectl` config file
-	// that holds connectivity settings to a Kubernetes cluster
-	// where Control Plane is installed to.
-	Kubeconfig string `protobuf:"bytes,1,opt,name=kubeconfig,proto3" json:"kubeconfig,omitempty"`
-	// Context defines a name of a context within `kubectl` config file
-	// that holds connectivity settings to a Kubernetes cluster
-	// where Control Plane is installed to.
-	Context string `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
-	// Namespace defines a namespace within a Kubernetes cluster
-	// where Control Plane is installed to.
-	Namespace            string   `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ControlPlaneCoordinates_Kubernetes) Reset()         { *m = ControlPlaneCoordinates_Kubernetes{} }
-func (m *ControlPlaneCoordinates_Kubernetes) String() string { return proto.CompactTextString(m) }
-func (*ControlPlaneCoordinates_Kubernetes) ProtoMessage()    {}
-func (*ControlPlaneCoordinates_Kubernetes) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5794df17731045dd, []int{2, 0}
-}
-func (m *ControlPlaneCoordinates_Kubernetes) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ControlPlaneCoordinates_Kubernetes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ControlPlaneCoordinates_Kubernetes.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ControlPlaneCoordinates_Kubernetes) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ControlPlaneCoordinates_Kubernetes.Merge(m, src)
-}
-func (m *ControlPlaneCoordinates_Kubernetes) XXX_Size() int {
-	return m.Size()
-}
-func (m *ControlPlaneCoordinates_Kubernetes) XXX_DiscardUnknown() {
-	xxx_messageInfo_ControlPlaneCoordinates_Kubernetes.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ControlPlaneCoordinates_Kubernetes proto.InternalMessageInfo
-
-func (m *ControlPlaneCoordinates_Kubernetes) GetKubeconfig() string {
-	if m != nil {
-		return m.Kubeconfig
-	}
-	return ""
-}
-
-func (m *ControlPlaneCoordinates_Kubernetes) GetContext() string {
-	if m != nil {
-		return m.Context
-	}
-	return ""
-}
-
-func (m *ControlPlaneCoordinates_Kubernetes) GetNamespace() string {
-	if m != nil {
-		return m.Namespace
-	}
-	return ""
-}
-
-// ApiServer defines coordinates of a Control Plane installed outside of
-// Kubernetes.
 type ControlPlaneCoordinates_ApiServer struct {
 	// URL defines URL of the Control Plane API Server.
 	Url                  string   `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -388,7 +207,7 @@ func (m *ControlPlaneCoordinates_ApiServer) Reset()         { *m = ControlPlaneC
 func (m *ControlPlaneCoordinates_ApiServer) String() string { return proto.CompactTextString(m) }
 func (*ControlPlaneCoordinates_ApiServer) ProtoMessage()    {}
 func (*ControlPlaneCoordinates_ApiServer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5794df17731045dd, []int{2, 1}
+	return fileDescriptor_5794df17731045dd, []int{2, 0}
 }
 func (m *ControlPlaneCoordinates_ApiServer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -544,7 +363,6 @@ func init() {
 	proto.RegisterType((*Configuration)(nil), "konvoyctl.config.v1alpha1.Configuration")
 	proto.RegisterType((*ControlPlane)(nil), "konvoyctl.config.v1alpha1.ControlPlane")
 	proto.RegisterType((*ControlPlaneCoordinates)(nil), "konvoyctl.config.v1alpha1.ControlPlaneCoordinates")
-	proto.RegisterType((*ControlPlaneCoordinates_Kubernetes)(nil), "konvoyctl.config.v1alpha1.ControlPlaneCoordinates.Kubernetes")
 	proto.RegisterType((*ControlPlaneCoordinates_ApiServer)(nil), "konvoyctl.config.v1alpha1.ControlPlaneCoordinates.ApiServer")
 	proto.RegisterType((*Context)(nil), "konvoyctl.config.v1alpha1.Context")
 	proto.RegisterType((*Context_Defaults)(nil), "konvoyctl.config.v1alpha1.Context.Defaults")
@@ -555,39 +373,34 @@ func init() {
 }
 
 var fileDescriptor_5794df17731045dd = []byte{
-	// 500 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x41, 0x6b, 0x13, 0x41,
-	0x14, 0xee, 0x64, 0x53, 0x9b, 0x7d, 0x69, 0xaa, 0xcc, 0xc1, 0xc6, 0xa0, 0xa1, 0xac, 0x87, 0xa4,
-	0x08, 0xbb, 0x34, 0x5e, 0x55, 0x30, 0x11, 0x2c, 0x08, 0x22, 0xe3, 0x4d, 0x90, 0x38, 0xdd, 0x4c,
-	0xdb, 0x25, 0xdb, 0x99, 0x61, 0x76, 0x76, 0x69, 0x7f, 0x80, 0x20, 0x5e, 0xfc, 0x01, 0xfe, 0x11,
-	0xf1, 0x54, 0x6f, 0x3d, 0xfa, 0x13, 0x24, 0xb7, 0xfe, 0x0b, 0x99, 0xdd, 0xd9, 0xcd, 0x6a, 0x29,
-	0xd1, 0xde, 0x66, 0xbe, 0xf7, 0x7d, 0xdf, 0x7b, 0x6f, 0xde, 0x1b, 0xf0, 0xe5, 0xfc, 0x28, 0x08,
-	0x05, 0x3f, 0x8c, 0x8e, 0x02, 0x2a, 0x65, 0x30, 0x17, 0x3c, 0x13, 0x67, 0xa1, 0x8e, 0x83, 0x6c,
-	0x8f, 0xc6, 0xf2, 0x98, 0xee, 0xd9, 0xa8, 0x2f, 0x95, 0xd0, 0x02, 0xdf, 0xab, 0x08, 0xbe, 0xc5,
-	0x4b, 0x5e, 0x6f, 0x3b, 0xa3, 0x71, 0x34, 0xa3, 0x9a, 0x05, 0xe5, 0xa1, 0xd0, 0x78, 0x17, 0x08,
-	0x3a, 0x93, 0x9c, 0x9c, 0x2a, 0xaa, 0x23, 0xc1, 0xf1, 0x6b, 0xd8, 0x0a, 0x05, 0xd7, 0x4a, 0xc4,
-	0x53, 0x19, 0x53, 0xce, 0x92, 0x2e, 0xda, 0x71, 0x86, 0xed, 0xd1, 0xc0, 0xbf, 0xd6, 0xde, 0x9f,
-	0x14, 0x82, 0x37, 0x86, 0x4f, 0x3a, 0x61, 0xed, 0x96, 0xe0, 0x67, 0xd0, 0x32, 0x00, 0x3b, 0xd5,
-	0x49, 0xb7, 0x91, 0x3b, 0x79, 0x2b, 0x9c, 0xd8, 0xa9, 0x26, 0x95, 0x06, 0x0f, 0xe0, 0x76, 0x98,
-	0x2a, 0xc5, 0xb8, 0x9e, 0x5a, 0xac, 0xeb, 0xec, 0xa0, 0xa1, 0x4b, 0xb6, 0x2c, 0x6c, 0x25, 0xde,
-	0x17, 0x04, 0x9b, 0xf5, 0x42, 0xf0, 0x03, 0x68, 0x72, 0x7a, 0xc2, 0xba, 0xc8, 0xd0, 0xc7, 0xee,
-	0xf7, 0xcb, 0x73, 0xa7, 0xa9, 0x1a, 0x77, 0x10, 0xc9, 0x61, 0xfc, 0x01, 0xda, 0xa1, 0x10, 0x6a,
-	0x16, 0x71, 0xaa, 0x99, 0xa9, 0x0d, 0x0d, 0xdb, 0xa3, 0xd1, 0x3f, 0x76, 0x39, 0x59, 0x2a, 0xc7,
-	0x60, 0x9c, 0xd7, 0x3f, 0x23, 0x63, 0x5d, 0xb7, 0xf4, 0xbe, 0x3a, 0xb0, 0x7d, 0x8d, 0x08, 0x4f,
-	0x01, 0xe6, 0xe9, 0x01, 0x53, 0x9c, 0xe9, 0xfc, 0x89, 0x4d, 0xf2, 0xa7, 0xff, 0x9f, 0xdc, 0x7f,
-	0x55, 0x99, 0xec, 0xaf, 0x91, 0x9a, 0x25, 0x7e, 0x0f, 0x40, 0x65, 0x34, 0x4d, 0x98, 0xca, 0x98,
-	0xb2, 0xdd, 0x3d, 0xb9, 0x41, 0x82, 0xe7, 0x32, 0x7a, 0x9b, 0x7b, 0xec, 0xaf, 0x11, 0x97, 0x96,
-	0x97, 0xde, 0x47, 0x04, 0xb0, 0xcc, 0x8d, 0x77, 0x8b, 0x76, 0x0a, 0xd3, 0xab, 0x2f, 0x5e, 0x0b,
-	0xe2, 0x87, 0xb0, 0x51, 0x0e, 0xb2, 0xf1, 0x37, 0xaf, 0x8c, 0xe0, 0x01, 0xb8, 0x66, 0x48, 0x89,
-	0xa4, 0x21, 0x2b, 0xe6, 0x5d, 0xa7, 0x2d, 0x63, 0xbd, 0x5d, 0x70, 0xab, 0x0a, 0xf1, 0x7d, 0x70,
-	0x52, 0x15, 0xdb, 0xf4, 0xc5, 0x58, 0x94, 0xf3, 0x09, 0x21, 0x62, 0xe0, 0x71, 0x07, 0x9a, 0xfa,
-	0x4c, 0x32, 0xbc, 0xfe, 0xed, 0xf2, 0xdc, 0x41, 0xde, 0x0f, 0x04, 0x1b, 0x76, 0x77, 0x56, 0xad,
-	0x8a, 0x0f, 0x9d, 0x3f, 0xfe, 0xc4, 0xd5, 0xc2, 0x37, 0xeb, 0x4b, 0x8f, 0x5f, 0x42, 0x6b, 0xc6,
-	0x0e, 0x69, 0x1a, 0xeb, 0x24, 0x2f, 0xbe, 0x3d, 0x7a, 0xb4, 0x7a, 0xe7, 0xfd, 0x17, 0x56, 0x42,
-	0x2a, 0x71, 0xaf, 0x0f, 0xad, 0x12, 0xc5, 0x18, 0x9a, 0x27, 0x2c, 0x39, 0x2e, 0x6a, 0x24, 0xf9,
-	0x79, 0x7c, 0xf7, 0x62, 0xd1, 0x47, 0x3f, 0x17, 0x7d, 0xf4, 0x6b, 0xd1, 0x47, 0xef, 0x5a, 0xa5,
-	0xe5, 0xc1, 0xad, 0xfc, 0x77, 0x3f, 0xfe, 0x1d, 0x00, 0x00, 0xff, 0xff, 0xd6, 0x41, 0xf9, 0x48,
-	0x43, 0x04, 0x00, 0x00,
+	// 419 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xb1, 0x8e, 0xd3, 0x30,
+	0x1c, 0xc6, 0xe5, 0x4b, 0x81, 0xe4, 0x9f, 0xeb, 0x81, 0x3c, 0x70, 0xa1, 0x82, 0xe8, 0x94, 0xe5,
+	0x8a, 0x90, 0x1c, 0x5d, 0x58, 0x11, 0x12, 0x2d, 0x12, 0x1b, 0x42, 0x61, 0x63, 0x29, 0x26, 0xf5,
+	0xf5, 0xa2, 0xcb, 0xd9, 0x96, 0xe3, 0x44, 0xe5, 0x0d, 0x10, 0x0b, 0x4f, 0xc2, 0x0b, 0x30, 0xc1,
+	0xd6, 0x91, 0x47, 0x40, 0xdd, 0x78, 0x0b, 0x14, 0xc7, 0x09, 0xe9, 0x50, 0x15, 0x36, 0xe7, 0xcb,
+	0xf7, 0xfb, 0xf2, 0xe5, 0xef, 0x3f, 0x10, 0x79, 0xbd, 0x8a, 0x33, 0xc1, 0x2f, 0xf3, 0x55, 0x4c,
+	0xa5, 0x8c, 0xaf, 0x05, 0xaf, 0xc5, 0xc7, 0x4c, 0x17, 0x71, 0x7d, 0x41, 0x0b, 0x79, 0x45, 0x2f,
+	0xec, 0x5b, 0x22, 0x95, 0xd0, 0x02, 0x3f, 0xe8, 0x0d, 0xc4, 0xea, 0x9d, 0x6f, 0x72, 0x5a, 0xd3,
+	0x22, 0x5f, 0x52, 0xcd, 0xe2, 0xee, 0xd0, 0x32, 0xd1, 0x06, 0xc1, 0x78, 0x6e, 0xcc, 0x95, 0xa2,
+	0x3a, 0x17, 0x1c, 0xbf, 0x86, 0x93, 0x4c, 0x70, 0xad, 0x44, 0xb1, 0x90, 0x05, 0xe5, 0xac, 0x0c,
+	0xd0, 0x99, 0x33, 0xf5, 0x93, 0x73, 0xb2, 0x37, 0x9e, 0xcc, 0x5b, 0xe0, 0x4d, 0xe3, 0x4f, 0xc7,
+	0xd9, 0xe0, 0xa9, 0xc4, 0xcf, 0xc1, 0x6d, 0x04, 0xb6, 0xd6, 0x65, 0x70, 0x64, 0x92, 0xa2, 0x03,
+	0x49, 0x6c, 0xad, 0xd3, 0x9e, 0xc1, 0xe7, 0x70, 0x37, 0xab, 0x94, 0x62, 0x5c, 0x2f, 0xac, 0x16,
+	0x38, 0x67, 0x68, 0xea, 0xa5, 0x27, 0x56, 0xb6, 0x48, 0xf4, 0x05, 0xc1, 0xf1, 0xb0, 0x08, 0x7e,
+	0x04, 0x23, 0x4e, 0x6f, 0x58, 0x80, 0x1a, 0xfb, 0xcc, 0xfb, 0xf6, 0xfb, 0xbb, 0x33, 0x52, 0x47,
+	0xf7, 0x50, 0x6a, 0x64, 0xfc, 0x1e, 0xfc, 0x4c, 0x08, 0xb5, 0xcc, 0x39, 0xd5, 0xac, 0xe9, 0x86,
+	0xa6, 0x7e, 0x92, 0xfc, 0xe3, 0x5f, 0xce, 0xff, 0x92, 0x33, 0x68, 0x92, 0x6f, 0x7d, 0x46, 0x4d,
+	0xf4, 0x30, 0x32, 0xfa, 0x8a, 0xe0, 0x74, 0x0f, 0x84, 0x57, 0x00, 0x54, 0xe6, 0x8b, 0x92, 0xa9,
+	0x9a, 0x29, 0x53, 0xd1, 0x4f, 0x9e, 0xfd, 0xff, 0xc7, 0xc9, 0x0b, 0x99, 0xbf, 0x35, 0x19, 0x3b,
+	0x35, 0x3c, 0xda, 0xc9, 0x93, 0xc7, 0xe0, 0xf5, 0x1e, 0xfc, 0x10, 0x9c, 0x4a, 0x15, 0x76, 0x22,
+	0x2d, 0xa0, 0x9c, 0x4f, 0x08, 0xa5, 0x8d, 0x1c, 0xfd, 0x40, 0x70, 0xc7, 0x4e, 0xf3, 0xd0, 0xf0,
+	0x08, 0x8c, 0x77, 0xb6, 0xc4, 0x8c, 0x6f, 0xc7, 0x77, 0x3c, 0x5c, 0x03, 0xfc, 0x0a, 0xdc, 0x25,
+	0xbb, 0xa4, 0x55, 0xa1, 0x4b, 0x73, 0x7d, 0x7e, 0xf2, 0xe4, 0xf0, 0x16, 0x90, 0x97, 0x16, 0x49,
+	0x7b, 0x78, 0x12, 0x82, 0xdb, 0xa9, 0x18, 0xc3, 0xe8, 0x86, 0x95, 0x57, 0x6d, 0xc7, 0xd4, 0x9c,
+	0x67, 0xf7, 0x37, 0xdb, 0x10, 0xfd, 0xdc, 0x86, 0xe8, 0xd7, 0x36, 0x44, 0xef, 0xdc, 0x2e, 0xf2,
+	0xc3, 0x6d, 0xb3, 0xef, 0x4f, 0xff, 0x04, 0x00, 0x00, 0xff, 0xff, 0x54, 0xa5, 0x57, 0x37, 0x55,
+	0x03, 0x00, 0x00,
 }
 
 func (m *Configuration) Marshal() (dAtA []byte, err error) {
@@ -693,79 +506,15 @@ func (m *ControlPlaneCoordinates) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Type != nil {
-		nn2, err := m.Type.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += nn2
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *ControlPlaneCoordinates_Kubernetes_) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	if m.Kubernetes != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.Kubernetes.Size()))
-		n3, err := m.Kubernetes.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
-	return i, nil
-}
-func (m *ControlPlaneCoordinates_ApiServer_) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
 	if m.ApiServer != nil {
-		dAtA[i] = 0x12
+		dAtA[i] = 0xa
 		i++
 		i = encodeVarintConfig(dAtA, i, uint64(m.ApiServer.Size()))
-		n4, err := m.ApiServer.MarshalTo(dAtA[i:])
+		n2, err := m.ApiServer.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
-	}
-	return i, nil
-}
-func (m *ControlPlaneCoordinates_Kubernetes) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ControlPlaneCoordinates_Kubernetes) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Kubeconfig) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.Kubeconfig)))
-		i += copy(dAtA[i:], m.Kubeconfig)
-	}
-	if len(m.Context) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.Context)))
-		i += copy(dAtA[i:], m.Context)
-	}
-	if len(m.Namespace) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.Namespace)))
-		i += copy(dAtA[i:], m.Namespace)
+		i += n2
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -831,11 +580,11 @@ func (m *Context) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintConfig(dAtA, i, uint64(m.Defaults.Size()))
-		n5, err := m.Defaults.MarshalTo(dAtA[i:])
+		n3, err := m.Defaults.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n3
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -933,55 +682,8 @@ func (m *ControlPlaneCoordinates) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Type != nil {
-		n += m.Type.Size()
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *ControlPlaneCoordinates_Kubernetes_) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Kubernetes != nil {
-		l = m.Kubernetes.Size()
-		n += 1 + l + sovConfig(uint64(l))
-	}
-	return n
-}
-func (m *ControlPlaneCoordinates_ApiServer_) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
 	if m.ApiServer != nil {
 		l = m.ApiServer.Size()
-		n += 1 + l + sovConfig(uint64(l))
-	}
-	return n
-}
-func (m *ControlPlaneCoordinates_Kubernetes) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Kubeconfig)
-	if l > 0 {
-		n += 1 + l + sovConfig(uint64(l))
-	}
-	l = len(m.Context)
-	if l > 0 {
-		n += 1 + l + sovConfig(uint64(l))
-	}
-	l = len(m.Namespace)
-	if l > 0 {
 		n += 1 + l + sovConfig(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -1366,41 +1068,6 @@ func (m *ControlPlaneCoordinates) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Kubernetes", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfig
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthConfig
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &ControlPlaneCoordinates_Kubernetes{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Type = &ControlPlaneCoordinates_Kubernetes_{v}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ApiServer", wireType)
 			}
 			var msglen int
@@ -1428,161 +1095,12 @@ func (m *ControlPlaneCoordinates) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &ControlPlaneCoordinates_ApiServer{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if m.ApiServer == nil {
+				m.ApiServer = &ControlPlaneCoordinates_ApiServer{}
+			}
+			if err := m.ApiServer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Type = &ControlPlaneCoordinates_ApiServer_{v}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipConfig(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ControlPlaneCoordinates_Kubernetes) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowConfig
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Kubernetes: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Kubernetes: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Kubeconfig", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfig
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthConfig
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Kubeconfig = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Context", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfig
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthConfig
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Context = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfig
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthConfig
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Namespace = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
