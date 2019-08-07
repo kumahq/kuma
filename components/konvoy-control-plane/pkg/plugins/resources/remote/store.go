@@ -58,7 +58,7 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 		Name: opts.Name,
 		Mesh: opts.Mesh,
 	}
-	if err := s.createOrUpdate(ctx, res, meta); err != nil {
+	if err := s.upsert(ctx, res, meta); err != nil {
 		return err
 	}
 	return nil
@@ -70,13 +70,13 @@ func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...stor
 		Name: res.GetMeta().GetName(),
 		Mesh: res.GetMeta().GetMesh(),
 	}
-	if err := s.createOrUpdate(ctx, res, meta); err != nil {
+	if err := s.upsert(ctx, res, meta); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *remoteStore) createOrUpdate(ctx context.Context, res model.Resource, meta rest.ResourceMeta) error {
+func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.ResourceMeta) error {
 	resourceApi, err := s.api.GetResourceApi(res.GetType())
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", res.GetType())

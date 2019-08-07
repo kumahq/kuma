@@ -33,7 +33,10 @@ var _ = Describe("konvoyctl apply", func() {
 
 	It("should apply a Dataplane resource", func() {
 		// given
-		rootCmd.SetArgs([]string{"apply", "-f", filepath.Join("testdata", "apply-dataplane.yaml")})
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-dataplane.yaml")},
+		)
 
 		// when
 		err := rootCmd.Execute()
@@ -56,7 +59,10 @@ var _ = Describe("konvoyctl apply", func() {
 
 	It("should apply a Mesh resource", func() {
 		// given
-		rootCmd.SetArgs([]string{"apply", "-f", filepath.Join("testdata", "apply-mesh.yaml")})
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-mesh.yaml")},
+		)
 
 		// when
 		err := rootCmd.Execute()
