@@ -14,7 +14,7 @@ func newConfigControlPlanesListCmd(pctx *rootContext) *cobra.Command {
 			controlPlanes := pctx.Config().ControlPlanes
 
 			data := printers.Table{
-				Headers: []string{"NAME", "COORDINATES"},
+				Headers: []string{"NAME", "API SERVER"},
 				NextRow: func() func() []string {
 					i := 0
 					return func() []string {
@@ -25,8 +25,8 @@ func newConfigControlPlanesListCmd(pctx *rootContext) *cobra.Command {
 						cp := controlPlanes[i]
 
 						return []string{
-							cp.Name,                                // NAME
-							cp.GetCoordinates().ApiServer.GetUrl(), // URL
+							cp.GetName(), // NAME
+							cp.GetCoordinates().GetApiServer().GetUrl(), // URL
 						}
 					}
 				}(),
