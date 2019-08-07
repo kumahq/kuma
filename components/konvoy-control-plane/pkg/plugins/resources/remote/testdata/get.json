@@ -1,0 +1,6 @@
+{
+  "type": "TrafficRoute",
+  "mesh": "default",
+  "name": "one",
+  "path": "/example"
+}

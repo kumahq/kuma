@@ -36,7 +36,7 @@ func ToJSON(pb proto.Message) ([]byte, error) {
 }
 
 func FromJSON(content []byte, out proto.Message) error {
-	unmarshaler := &jsonpb.Unmarshaler{}
+	unmarshaler := &jsonpb.Unmarshaler{AllowUnknownFields: true}
 	return unmarshaler.Unmarshal(bytes.NewReader(content), out)
 }
 

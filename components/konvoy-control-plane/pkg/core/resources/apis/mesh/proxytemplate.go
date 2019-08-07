@@ -4,6 +4,7 @@ import (
 	"errors"
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/registry"
 )
 
 const (
@@ -65,4 +66,9 @@ func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*ProxyTemplateResource)(nil), r)
 	}
+}
+
+func init() {
+	registry.RegisterType(ProxyTemplateType, &ProxyTemplateResource{})
+	registry.RegistryListType(ProxyTemplateType, &ProxyTemplateResourceList{})
 }

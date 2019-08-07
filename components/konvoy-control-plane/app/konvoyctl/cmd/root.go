@@ -52,6 +52,7 @@ func newRootCmd(root *rootContext) *cobra.Command {
 	// sub-commands
 	cmd.AddCommand(newConfigCmd(root))
 	cmd.AddCommand(newGetCmd(root))
+	cmd.AddCommand(newApplyCmd(root))
 	return cmd
 }
 
