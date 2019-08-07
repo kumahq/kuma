@@ -38,12 +38,10 @@ var _ = Describe("Store", func() {
 
 				// given
 				config := `
+                name: test1
                 coordinates:
-                  kubernetes:
-                    context: minikube
-                    kubeconfig: /root/.kube/config
-                    namespace: konvoy-system
-                name: k8s_minikube
+                  api_server:
+                    url: https://test1.internal:5681
 `
 				// when
 				cp := &config_proto.ControlPlane{}
@@ -85,17 +83,24 @@ var _ = Describe("Store", func() {
 			})
 		})
 
-		Context("should fail gracefully when Control Plane configuration is unknown", func() {
+		Context("should fail gracefully when Control Plane url is unparsable", func() {
 
 			It("should fail otherwise", func() {
 				// given
-				cp := (*config_proto.ControlPlane)(nil)
+				cp := config_proto.ControlPlane{
+					Name: "test1",
+					Coordinates: &config_proto.ControlPlaneCoordinates{
+						ApiServer: &config_proto.ControlPlaneCoordinates_ApiServer{
+							Url: "\r\nbadbadurl",
+						},
+					},
+				}
 				// when
-				store, err := NewResourceStore(cp)
+				store, err := NewResourceStore(&cp)
 				// then
 				Expect(store).To(BeNil())
 				// and
-				Expect(err).To(MatchError("Control Plane has coordinates that are not supported yet: <nil>"))
+				Expect(err.Error()).To(ContainSubstring("Failed to parse API Server URL"))
 			})
 		})
 	})

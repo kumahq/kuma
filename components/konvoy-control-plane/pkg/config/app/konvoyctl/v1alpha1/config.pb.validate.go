@@ -242,48 +242,26 @@ func (m *ControlPlaneCoordinates) Validate() error {
 		return nil
 	}
 
-	switch m.Type.(type) {
-
-	case *ControlPlaneCoordinates_Kubernetes_:
-
-		{
-			tmp := m.GetKubernetes()
-
-			if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-				if err := v.Validate(); err != nil {
-					return ControlPlaneCoordinatesValidationError{
-						field:  "Kubernetes",
-						reason: "embedded message failed validation",
-						cause:  err,
-					}
-				}
-			}
-		}
-
-	case *ControlPlaneCoordinates_ApiServer_:
-
-		{
-			tmp := m.GetApiServer()
-
-			if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-				if err := v.Validate(); err != nil {
-					return ControlPlaneCoordinatesValidationError{
-						field:  "ApiServer",
-						reason: "embedded message failed validation",
-						cause:  err,
-					}
-				}
-			}
-		}
-
-	default:
+	if m.GetApiServer() == nil {
 		return ControlPlaneCoordinatesValidationError{
-			field:  "Type",
+			field:  "ApiServer",
 			reason: "value is required",
 		}
+	}
 
+	{
+		tmp := m.GetApiServer()
+
+		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
+
+			if err := v.Validate(); err != nil {
+				return ControlPlaneCoordinatesValidationError{
+					field:  "ApiServer",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
 	}
 
 	return nil
@@ -437,95 +415,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ContextValidationError{}
-
-// Validate checks the field values on ControlPlaneCoordinates_Kubernetes with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, an error is returned.
-func (m *ControlPlaneCoordinates_Kubernetes) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	if utf8.RuneCountInString(m.GetKubeconfig()) < 1 {
-		return ControlPlaneCoordinates_KubernetesValidationError{
-			field:  "Kubeconfig",
-			reason: "value length must be at least 1 runes",
-		}
-	}
-
-	if utf8.RuneCountInString(m.GetContext()) < 1 {
-		return ControlPlaneCoordinates_KubernetesValidationError{
-			field:  "Context",
-			reason: "value length must be at least 1 runes",
-		}
-	}
-
-	if utf8.RuneCountInString(m.GetNamespace()) < 1 {
-		return ControlPlaneCoordinates_KubernetesValidationError{
-			field:  "Namespace",
-			reason: "value length must be at least 1 runes",
-		}
-	}
-
-	return nil
-}
-
-// ControlPlaneCoordinates_KubernetesValidationError is the validation error
-// returned by ControlPlaneCoordinates_Kubernetes.Validate if the designated
-// constraints aren't met.
-type ControlPlaneCoordinates_KubernetesValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ControlPlaneCoordinates_KubernetesValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ControlPlaneCoordinates_KubernetesValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ControlPlaneCoordinates_KubernetesValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ControlPlaneCoordinates_KubernetesValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ControlPlaneCoordinates_KubernetesValidationError) ErrorName() string {
-	return "ControlPlaneCoordinates_KubernetesValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ControlPlaneCoordinates_KubernetesValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sControlPlaneCoordinates_Kubernetes.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ControlPlaneCoordinates_KubernetesValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ControlPlaneCoordinates_KubernetesValidationError{}
 
 // Validate checks the field values on ControlPlaneCoordinates_ApiServer with
 // the rules defined in the proto definition for this message. If any rules

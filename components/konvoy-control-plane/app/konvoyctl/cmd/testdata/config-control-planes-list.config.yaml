@@ -1,23 +1,21 @@
 control_planes:
-- name: k8s_minikube
-  coordinates:
-    kubernetes:
-      kubeconfig: /root/.kube/config
-      context: minikube
-      namespace: konvoy-system
-- name: vm_test
+- name: test1
   coordinates:
     api_server:
-      url: https://konvoy-control-plane.internal:5681
+      url: https://test1.internal:5681
+- name: test2
+  coordinates:
+    api_server:
+      url: https://test2.internal:5681
 
 contexts:
-- name: k8s_minikube
-  control_plane: k8s_minikube
+- name: test1
+  control_plane: test1
   defaults:
     mesh: pilot
-- name: vm_test
-  control_plane: vm_test
+- name: test2
+  control_plane: test2
   defaults:
     mesh: default
 
-current_context: k8s_minikube
+current_context: test1

@@ -27,10 +27,8 @@ func newConfigControlPlanesAddUniversalCmd(pctx *configControlPlanesAddContext) 
 			cp := &config_proto.ControlPlane{
 				Name: name,
 				Coordinates: &config_proto.ControlPlaneCoordinates{
-					Type: &config_proto.ControlPlaneCoordinates_ApiServer_{
-						ApiServer: &config_proto.ControlPlaneCoordinates_ApiServer{
-							Url: url,
-						},
+					ApiServer: &config_proto.ControlPlaneCoordinates_ApiServer{
+						Url: url,
 					},
 				},
 			}
