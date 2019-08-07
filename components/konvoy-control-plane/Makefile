@@ -470,7 +470,7 @@ verify/example/minikube/outbound:
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
 
 konvoyctl/example/minikube: image/konvoyctl
-	cat examples/minikube/konvoyctl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:/home/$$USER/.minikube -e HOME=/tmp $(KONVOYCTL_DOCKER_IMAGE)
+	cat examples/minikube/konvoyctl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KONVOYCTL_DOCKER_IMAGE)
 
 generate/test/cert/konvoy-injector:  ## Dev: Generate TLS cert for Konvoy Injector (for use in development and unit tests)
 	OUTPUT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata && \
