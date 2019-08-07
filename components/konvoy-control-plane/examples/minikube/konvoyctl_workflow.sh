@@ -13,18 +13,18 @@ function run() {
 }
 
 # Killing the kubectl port-forward at the end of the script -- regardless of exit status
-trap "killall kubectl && rm ./kubectl" EXIT
+trap "killall kubectl && rm $HOME/kubectl" EXIT
 
 run konvoyctl config view
 
 run konvoyctl config control-planes list
 
 # Install kubectl
-run curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/${GOOS:-linux}/${GOARCH:-amd64}/kubectl
-chmod +x ./kubectl
+run curl -L https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/${GOOS:-linux}/${GOARCH:-amd64}/kubectl -o $HOME/kubectl
+chmod +x $HOME/kubectl
 
 # Forward CP API server from k8s onto localhost
-run ./kubectl port-forward -n konvoy-system $(kubectl get pods -n konvoy-system -l app=konvoy-control-plane -o=jsonpath='{.items[0].metadata.name}') 15681:5681 &
+run $HOME/kubectl port-forward -n konvoy-system $(kubectl get pods -n konvoy-system -l app=konvoy-control-plane -o=jsonpath='{.items[0].metadata.name}') 15681:5681 &
 
 # Give port-forward 10 seconds to come alive -- else you won't be able to connect to the control plane
 run curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:15681
