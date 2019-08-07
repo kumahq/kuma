@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -33,8 +32,6 @@ var _ = Describe("konvoy config control-planes list", func() {
 		expected, err := ioutil.ReadFile(filepath.Join("testdata", "config-control-planes-list.golden.txt"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		blah := buf.String()
-		fmt.Println(blah)
 		// and
 		Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(string(expected))))
 	})
