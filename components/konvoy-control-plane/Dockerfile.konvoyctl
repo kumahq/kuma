@@ -20,6 +20,7 @@ RUN make build/konvoyctl
 
 ## runtime image
 FROM alpine:latest
+RUN apk add --no-cache curl
 
 COPY --from=0 /go/src/github.com/Kong/konvoy/components/konvoy-control-plane/build/artifacts/konvoyctl/konvoyctl /usr/local/bin/
 
