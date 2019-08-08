@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _ = Describe("konvoy config control-planes add universal", func() {
+var _ = Describe("konvoy config control-planes add", func() {
 
 	var configFile *os.File
 
@@ -42,7 +42,7 @@ var _ = Describe("konvoy config control-planes add universal", func() {
 		It("should require name", func() {
 			// given
 			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-				"config", "control-planes", "add", "universal"})
+				"config", "control-planes", "add"})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -52,7 +52,7 @@ var _ = Describe("konvoy config control-planes add universal", func() {
 		It("should require API Server URL", func() {
 			// given
 			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-				"config", "control-planes", "add", "universal",
+				"config", "control-planes", "add",
 				"--name", "example"})
 			// when
 			err := rootCmd.Execute()
@@ -62,8 +62,8 @@ var _ = Describe("konvoy config control-planes add universal", func() {
 
 		It("should fail to add a new Control Plane with duplicate name", func() {
 			// given
-			rootCmd.SetArgs([]string{"--config-file", filepath.Join("testdata", "config-ontrol-planes-add-universal.01.golden.yaml"),
-				"config", "control-planes", "add", "universal",
+			rootCmd.SetArgs([]string{"--config-file", filepath.Join("testdata", "config-control-planes-add.01.golden.yaml"),
+				"config", "control-planes", "add",
 				"--name", "example",
 				"--api-server-url", "https://konvoy-control-plane.internal:5681"})
 			// when
@@ -90,7 +90,7 @@ var _ = Describe("konvoy config control-planes add universal", func() {
 
 				// given
 				rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-					"config", "control-planes", "add", "universal",
+					"config", "control-planes", "add",
 					"--name", "example",
 					"--api-server-url", "https://konvoy-control-plane.internal:5681"})
 				// when
@@ -112,12 +112,12 @@ var _ = Describe("konvoy config control-planes add universal", func() {
 				Expect(actual).To(MatchYAML(expected))
 			},
 			Entry("should add a first Control Plane", testCase{
-				configFile: "config-ontrol-planes-add-universal.01.initial.yaml",
-				goldenFile: "config-ontrol-planes-add-universal.01.golden.yaml",
+				configFile: "config-control-planes-add.01.initial.yaml",
+				goldenFile: "config-control-planes-add.01.golden.yaml",
 			}),
 			Entry("should add a second Control Plane", testCase{
-				configFile: "config-ontrol-planes-add-universal.02.initial.yaml",
-				goldenFile: "config-ontrol-planes-add-universal.02.golden.yaml",
+				configFile: "config-control-planes-add.02.initial.yaml",
+				goldenFile: "config-control-planes-add.02.golden.yaml",
 			}),
 		)
 	})

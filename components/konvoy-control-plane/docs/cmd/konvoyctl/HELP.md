@@ -106,55 +106,11 @@ Global Flags:
 Add a Control Plane.
 
 Usage:
-  konvoyctl config control-planes add [command]
-
-Available Commands:
-  universal   Add a Control Plane installed elsewhere
-
-Flags:
-  -h, --help   help for add
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --debug                enable debug-level logging (default true)
-      --mesh string          mesh to use
-
-Use "konvoyctl config control-planes add [command] --help" for more information about a command.
-```
-
-##### konvoyctl config control-planes add k8s
-
-```
-Add a Control Plane.
-
-Usage:
-  konvoyctl config control-planes add [command]
-
-Available Commands:
-  universal   Add a Control Plane installed elsewhere
-
-Flags:
-  -h, --help   help for add
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --debug                enable debug-level logging (default true)
-      --mesh string          mesh to use
-
-Use "konvoyctl config control-planes add [command] --help" for more information about a command.
-```
-
-##### konvoyctl config control-planes add universal
-
-```
-Add a Control Plane installed elsewhere.
-
-Usage:
-  konvoyctl config control-planes add universal [flags]
+  konvoyctl config control-planes add [flags]
 
 Flags:
       --api-server-url string   URL of the Control Plane API Server (required)
-  -h, --help                    help for universal
+  -h, --help                    help for add
       --name string             reference name for the Control Plane (required)
 
 Global Flags:
