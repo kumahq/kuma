@@ -444,9 +444,11 @@ deploy/example/minikube: ## Minikube: deploy demo setup
 	make crd/install -C pkg/plugins/resources/k8s/native
 	kubectl kustomize pkg/plugins/resources/k8s/native/config/rbac | kubectl apply -f -
 	kubectl apply -k examples/minikube/konvoy-control-plane/
-	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pod/$$( kubectl -n konvoy-system get pods -l app=konvoy-injector -o=jsonpath='{.items[0].metadata.name}' )
+	kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
+	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
 	kubectl apply -f examples/minikube/konvoy-demo/
-	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-demo pod/$$( kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}' )
+	kubectl wait --timeout=60s --for=condition=Available -n konvoy-demo deployment/demo-app
+	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-demo pods -l app=demo-app
 
 wait/example/minikube: ## Minikube: Wait for demo setup to get ready
 	kubectl -n default run wait --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- dockerize -wait http://demo-app.konvoy-demo:8000/request -timeout 1m
