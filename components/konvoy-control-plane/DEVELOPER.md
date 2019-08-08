@@ -170,7 +170,7 @@ export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
 ```
 
 5. Forward the `Control Plane` port to `localhost`:
-```
+```bash
 kubectl port-forward -n konvoy-system $(kubectl get pods -n konvoy-system -l app=konvoy-control-plane -o=jsonpath='{.items[0].metadata.name}') 15681:5681
 ```
 
