@@ -25,8 +25,8 @@ func newApplyCmd(pctx *rootContext) *cobra.Command {
 	ctx := &applyContext{rootContext: pctx}
 	cmd := &cobra.Command{
 		Use:   "apply",
-		Short: "Apply Konvoy resources",
-		Long:  `Apply Konvoy resources.`,
+		Short: "Create or modify Konvoy resources",
+		Long:  `Create or modify Konvoy resources.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if ctx.args.file == "" {
 				return errors.New("file should be provided")

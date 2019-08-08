@@ -8,14 +8,14 @@ func Global() TypeRegistry {
 	return global
 }
 
-func RegisterType(resType model.ResourceType, res model.Resource) {
-	if err := global.RegisterType(resType, res); err != nil {
+func RegisterType(res model.Resource) {
+	if err := global.RegisterType(res); err != nil {
 		panic(err)
 	}
 }
 
-func RegistryListType(resType model.ResourceType, resList model.ResourceList) {
-	if err := global.RegisterListType(resType, resList); err != nil {
+func RegistryListType(resList model.ResourceList) {
+	if err := global.RegisterListType(resList); err != nil {
 		panic(err)
 	}
 }

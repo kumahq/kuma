@@ -7,8 +7,8 @@ import (
 )
 
 type TypeRegistry interface {
-	RegisterType(model.ResourceType, model.Resource) error
-	RegisterListType(model.ResourceType, model.ResourceList) error
+	RegisterType(model.Resource) error
+	RegisterListType(model.ResourceList) error
 
 	NewObject(model.ResourceType) (model.Resource, error)
 	NewList(model.ResourceType) (model.ResourceList, error)
@@ -26,21 +26,21 @@ type typeRegistry struct {
 	objectListTypes map[model.ResourceType]reflect.Type
 }
 
-func (t *typeRegistry) RegisterType(resType model.ResourceType, res model.Resource) error {
+func (t *typeRegistry) RegisterType(res model.Resource) error {
 	newType := reflect.TypeOf(res).Elem()
-	if previous, ok := t.objectTypes[resType]; ok {
-		return errors.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", resType, previous.String(), newType.String())
+	if previous, ok := t.objectTypes[res.GetType()]; ok {
+		return errors.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", res.GetType(), previous.String(), newType.String())
 	}
-	t.objectTypes[resType] = newType
+	t.objectTypes[res.GetType()] = newType
 	return nil
 }
 
-func (t *typeRegistry) RegisterListType(resType model.ResourceType, resList model.ResourceList) error {
+func (t *typeRegistry) RegisterListType(resList model.ResourceList) error {
 	newType := reflect.TypeOf(resList).Elem()
-	if previous, ok := t.objectListTypes[resType]; ok {
-		return errors.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", resType, previous.String(), newType.String())
+	if previous, ok := t.objectListTypes[resList.GetItemType()]; ok {
+		return errors.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", resList.GetItemType(), previous.String(), newType.String())
 	}
-	t.objectListTypes[resType] = reflect.TypeOf(resList).Elem()
+	t.objectListTypes[resList.GetItemType()] = reflect.TypeOf(resList).Elem()
 	return nil
 }
 

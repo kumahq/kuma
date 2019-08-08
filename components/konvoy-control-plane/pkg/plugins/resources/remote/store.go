@@ -84,7 +84,7 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 		Meta: meta,
 		Spec: res.GetSpec(),
 	}
-	b, err := restRes.MarshalJSON()
+	b, err := json.Marshal(&restRes)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 	restResource := rest.Resource{
 		Spec: res.GetSpec(),
 	}
-	if err := restResource.UnmarshalJSON(b); err != nil {
+	if err := json.Unmarshal(b, &restResource); err != nil {
 		return err
 	}
 	res.SetMeta(remoteMeta{

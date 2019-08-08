@@ -69,6 +69,6 @@ func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 }
 
 func init() {
-	registry.RegisterType(ProxyTemplateType, &ProxyTemplateResource{})
-	registry.RegistryListType(ProxyTemplateType, &ProxyTemplateResourceList{})
+	registry.RegisterType(&ProxyTemplateResource{})
+	registry.RegistryListType(&ProxyTemplateResourceList{})
 }

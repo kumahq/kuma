@@ -69,6 +69,6 @@ func (l *MeshResourceList) AddItem(r model.Resource) error {
 }
 
 func init() {
-	registry.RegisterType(MeshType, &MeshResource{})
-	registry.RegistryListType(MeshType, &MeshResourceList{})
+	registry.RegisterType(&MeshResource{})
+	registry.RegistryListType(&MeshResourceList{})
 }

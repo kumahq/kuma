@@ -70,6 +70,6 @@ func (l *DataplaneStatusResourceList) AddItem(r model.Resource) error {
 }
 
 func init() {
-	registry.RegisterType(DataplaneStatusType, &DataplaneStatusResource{})
-	registry.RegistryListType(DataplaneStatusType, &DataplaneStatusResourceList{})
+	registry.RegisterType(&DataplaneStatusResource{})
+	registry.RegistryListType(&DataplaneStatusResourceList{})
 }
