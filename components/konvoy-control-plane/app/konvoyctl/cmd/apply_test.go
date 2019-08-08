@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -31,7 +32,7 @@ var _ = Describe("konvoyctl apply", func() {
 		rootCmd = newRootCmd(rootCtx)
 	})
 
-	It("should apply a Dataplane resource", func() {
+	It("should apply a new Dataplane resource", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
@@ -40,6 +41,45 @@ var _ = Describe("konvoyctl apply", func() {
 
 		// when
 		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resource := mesh.DataplaneResource{}
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(resource.Spec.Tags).To(HaveKeyWithValue("service", "web"))
+		Expect(resource.Spec.Tags).To(HaveKeyWithValue("version", "1.0"))
+		Expect(resource.Spec.Tags).To(HaveKeyWithValue("env", "production"))
+		Expect(resource.Meta.GetName()).To(Equal("sample"))
+		Expect(resource.Meta.GetMesh()).To(Equal("default"))
+		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
+	})
+
+	It("should apply an updated Dataplane resource", func() {
+		// setup
+		newResource := mesh.DataplaneResource{
+			Spec: v1alpha1.Dataplane{
+				Tags: map[string]string{
+					"service": "default",
+					"version": "default",
+					"env":     "default",
+				},
+			},
+		}
+		err := store.Create(context.Background(), &newResource, core_store.CreateByKey("default", "sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-dataplane.yaml")},
+		)
+
+		// when
+		err = rootCmd.Execute()
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
