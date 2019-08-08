@@ -169,26 +169,31 @@ make build/konvoyctl
 export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
 ```
 
-4. Add `Control Plane` to your `konvoyctl` config:
-
-```bash
-konvoyctl config control-planes add k8s --name demo
+5. Forward the `Control Plane` port to `localhost`:
+```
+kubectl port-forward -n konvoy-system $(kubectl get pods -n konvoy-system -l app=konvoy-control-plane -o=jsonpath='{.items[0].metadata.name}') 15681:5681
 ```
 
-5. Verify that `Control Plane` has been added:
+6. Add `Control Plane` to your `konvoyctl` config:
+
+```bash
+konvoyctl config control-planes add --name k8s --api-server-url http://localhost:15681
+```
+
+7. Verify that `Control Plane` has been added:
 
 ```bash
 konvoyctl config control-planes list
 
-NAME                      ENVIRONMENT
-kubernetes-admin@konvoy   k8s
+NAME   API SERVER
+k8s    http://localhost:15681
 ```
 
-6. List `Dataplanes` connected to the `Control Plane`:
+8. List `Dataplanes` connected to the `Control Plane`:
 
 ```bash
 konvoyctl get dataplanes
 
-MESH      NAMESPACE   NAME                        SUBSCRIPTIONS   LAST CONNECTED AGO   TOTAL UPDATES   TOTAL ERRORS
-default               demo-app-685444477b-dnx9t   1               21m9s                2               0
+MESH      NAME                        STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
+default   demo-app-7cbbd658d5-thcqm   Online   8m4s                 8m3s               2               0
 ```

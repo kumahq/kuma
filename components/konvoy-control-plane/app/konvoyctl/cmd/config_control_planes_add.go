@@ -11,7 +11,8 @@ type configControlPlanesAddContext struct {
 	*rootContext
 
 	args struct {
-		name string
+		name         string
+		apiServerURL string
 	}
 }
 
@@ -21,15 +22,24 @@ func newConfigControlPlanesAddCmd(pctx *rootContext) *cobra.Command {
 		Use:   "add",
 		Short: "Add a Control Plane",
 		Long:  `Add a Control Plane.`,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cp := &config_proto.ControlPlane{
+				Name: ctx.args.name,
+				Coordinates: &config_proto.ControlPlaneCoordinates{
+					ApiServer: &config_proto.ControlPlaneCoordinates_ApiServer{
+						Url: ctx.args.apiServerURL,
+					},
+				},
+			}
+
+			return ctx.AddControlPlane(cp)
+		},
 	}
-	// flags
-	withCommonFlags := func(cmd *cobra.Command) *cobra.Command {
-		cmd.Flags().StringVar(&ctx.args.name, "name", "", "reference name for the Control Plane (required)")
-		cmd.MarkFlagRequired("name")
-		return cmd
-	}
-	// sub-commands
-	cmd.AddCommand(withCommonFlags(newConfigControlPlanesAddUniversalCmd(ctx)))
+
+	cmd.Flags().StringVar(&ctx.args.name, "name", "", "reference name for the Control Plane (required)")
+	cmd.MarkFlagRequired("name")
+	cmd.Flags().StringVar(&ctx.args.apiServerURL, "api-server-url", "", "URL of the Control Plane API Server (required)")
+	cmd.MarkFlagRequired("api-server-url")
 	return cmd
 }
 
