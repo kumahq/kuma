@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -89,7 +88,7 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("PUT", fmt.Sprintf("/meshes/%s/%s/%s", meta.Mesh, resourceApi.CollectionPath, meta.Name), bytes.NewReader(b))
+	req, err := http.NewRequest("PUT", resourceApi.Item(meta.Mesh, meta.Name), bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
@@ -118,7 +117,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", res.GetType())
 	}
 	opts := store.NewGetOptions(fs...)
-	req, err := http.NewRequest("GET", fmt.Sprintf("/meshes/%s/%s/%s", opts.Mesh, resourceApi.CollectionPath, opts.Name), nil)
+	req, err := http.NewRequest("GET", resourceApi.Item(opts.Mesh, opts.Name), nil)
 	if err != nil {
 		return err
 	}
@@ -154,7 +153,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", rs.GetItemType())
 	}
 	opts := store.NewListOptions(fs...)
-	req, err := http.NewRequest("GET", fmt.Sprintf("/meshes/%s/%s", opts.Mesh, resourceApi.CollectionPath), nil)
+	req, err := http.NewRequest("GET", resourceApi.List(opts.Mesh), nil)
 	if err != nil {
 		return err
 	}

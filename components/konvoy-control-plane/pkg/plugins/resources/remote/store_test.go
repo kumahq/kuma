@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	sample_api "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 	"io/ioutil"
 	"net/http"
@@ -43,7 +45,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.ResourceApi{CollectionPath: "trafficroutes"},
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "trafficroutes"),
+				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -69,6 +72,24 @@ var _ = Describe("RemoteStore", func() {
 			Expect(resource.GetMeta().GetMesh()).To(Equal("default"))
 			Expect(resource.GetMeta().GetNamespace()).To(Equal(""))
 		})
+
+		It("should get mesh resource", func() {
+			meshName := "someMesh"
+			store := setupStore("get-mesh.json", func(req *http.Request) {
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
+			})
+
+			// when
+			resource := mesh.MeshResource{}
+			err := store.Get(context.Background(), &resource, core_store.GetByKey("", meshName, meshName))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(resource.GetMeta().GetName()).To(Equal(meshName))
+			Expect(resource.GetMeta().GetMesh()).To(Equal(meshName))
+			Expect(resource.GetMeta().GetNamespace()).To(Equal(""))
+		})
 	})
 
 	Describe("Create()", func() {
@@ -84,11 +105,31 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := sample_core.TrafficRouteResource{
-				Spec: v1alpha1.TrafficRoute{
+				Spec: sample_api.TrafficRoute{
 					Path: "/some-path",
 				},
 			}
 			err := store.Create(context.Background(), &resource, core_store.CreateByKey("", name, "default"))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should send proper mesh json", func() {
+			// setup
+			meshName := "someMesh"
+			store := setupStore("create_update.json", func(req *http.Request) {
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
+				bytes, err := ioutil.ReadAll(req.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(bytes)).To(Equal(`{"mesh":"someMesh","name":"someMesh","type":"Mesh"}`))
+			})
+
+			// when
+			resource := mesh.MeshResource{
+				Spec: v1alpha1.Mesh{},
+			}
+			err := store.Create(context.Background(), &resource, core_store.CreateByKey("", meshName, meshName))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -108,12 +149,45 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := sample_core.TrafficRouteResource{
-				Spec: v1alpha1.TrafficRoute{
+				Spec: sample_api.TrafficRoute{
 					Path: "/some-path",
 				},
 				Meta: &model.ResourceMeta{
 					Mesh:      "default",
 					Name:      name,
+					Namespace: "",
+				},
+			}
+			err := store.Update(context.Background(), &resource)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should send proper mesh json", func() {
+			// setup
+			meshName := "someMesh"
+			store := setupStore("create_update.json", func(req *http.Request) {
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
+				bytes, err := ioutil.ReadAll(req.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(bytes)).To(Equal(`{"mesh":"someMesh","mtls":{"ca":{"embedded":{}}},"name":"someMesh","type":"Mesh"}`))
+			})
+
+			// when
+			resource := mesh.MeshResource{
+				Spec: v1alpha1.Mesh{
+					Mtls: &v1alpha1.Mesh_Mtls{
+						Ca: &v1alpha1.CertificateAuthority{
+							Type: &v1alpha1.CertificateAuthority_Embedded_{
+								Embedded: &v1alpha1.CertificateAuthority_Embedded{},
+							},
+						},
+					},
+				},
+				Meta: &model.ResourceMeta{
+					Mesh:      meshName,
+					Name:      meshName,
 					Namespace: "",
 				},
 			}
@@ -150,6 +224,29 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[1].Meta.GetMesh()).To(Equal("pilot"))
 			Expect(rs.Items[1].Meta.GetVersion()).To(Equal(""))
 			Expect(rs.Items[1].Spec.Path).To(Equal("/another"))
+		})
+
+		It("should list meshes", func() {
+			// given
+			store := setupStore("list-meshes.json", func(req *http.Request) {
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes")))
+			})
+
+			// when
+			meshes := mesh.MeshResourceList{}
+			err := store.List(context.Background(), &meshes)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(meshes.Items).To(HaveLen(2))
+
+			Expect(meshes.Items[0].Meta.GetNamespace()).To(Equal(""))
+			Expect(meshes.Items[0].Meta.GetName()).To(Equal("mesh-1"))
+			Expect(meshes.Items[0].Meta.GetMesh()).To(Equal("mesh-1"))
+
+			Expect(meshes.Items[1].Meta.GetNamespace()).To(Equal(""))
+			Expect(meshes.Items[1].Meta.GetName()).To(Equal("mesh-2"))
+			Expect(meshes.Items[1].Meta.GetMesh()).To(Equal("mesh-2"))
 		})
 	})
 })

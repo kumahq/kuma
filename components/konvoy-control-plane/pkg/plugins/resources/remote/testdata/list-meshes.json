@@ -1,0 +1,14 @@
+{
+    "items": [
+        {
+            "type": "Meshes",
+            "mesh": "mesh-1",
+            "name": "mesh-1"
+        },
+        {
+            "type": "Meshes",
+            "mesh": "mesh-2",
+            "name": "mesh-2"
+        }
+    ]
+}

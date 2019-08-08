@@ -71,12 +71,12 @@ var _ = Describe("konvoyctl apply", func() {
 
 		// when
 		resource := mesh.MeshResource{}
-		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", "default"))
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
-		Expect(resource.Meta.GetMesh()).To(Equal("default"))
+		Expect(resource.Meta.GetMesh()).To(Equal("sample"))
 		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 	})
 })
