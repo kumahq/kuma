@@ -24,5 +24,6 @@ func newGetCmd(pctx *rootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), UsageOptions("Output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
 	cmd.AddCommand(newGetDataplanesCmd(ctx))
+	cmd.AddCommand(newGetMeshesCmd(ctx))
 	return cmd
 }
