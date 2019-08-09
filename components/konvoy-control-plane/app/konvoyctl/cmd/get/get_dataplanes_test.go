@@ -1,8 +1,10 @@
-package cmd
+package get_test
 
 import (
 	"bytes"
 	"context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/get"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -16,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -126,7 +129,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 			dataplaneInsights.Items = nil
 
 			// when
-			err := printDataplaneInsights(now, dataplaneInsights, buf)
+			err := get.PrintDataplaneInsights(now, dataplaneInsights, buf)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -141,7 +144,7 @@ MESH   NAME   STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   T
 			dataplaneInsights.Items = sampleDataplaneInsights
 
 			// when
-			err := printDataplaneInsights(now, dataplaneInsights, buf)
+			err := get.PrintDataplaneInsights(now, dataplaneInsights, buf)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -157,7 +160,7 @@ pilot     simple       Offline   never                never              0      
 
 	Describe("GetDataplanesCmd", func() {
 
-		var rootCtx *rootContext
+		var rootCtx *konvoyctl_ctx.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
@@ -165,10 +168,10 @@ pilot     simple       Offline   never                never              0      
 		BeforeEach(func() {
 			// setup
 
-			rootCtx = &rootContext{
-				runtime: rootRuntime{
-					now: func() time.Time { return now },
-					newResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
+			rootCtx = &konvoyctl_ctx.RootContext{
+				Runtime: konvoyctl_ctx.RootRuntime{
+					Now: func() time.Time { return now },
+					NewResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
 						return store, nil
 					},
 				},
@@ -186,7 +189,7 @@ pilot     simple       Offline   never                never              0      
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			rootCmd = newRootCmd(rootCtx)
+			rootCmd = cmd.NewRootCmd(rootCtx)
 			buf = &bytes.Buffer{}
 			rootCmd.SetOut(buf)
 		})
@@ -201,7 +204,7 @@ pilot     simple       Offline   never                never              0      
 			func(given testCase) {
 				// given
 				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+					"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
 					"get", "dataplanes"}, given.outputFormat))
 
 				// when

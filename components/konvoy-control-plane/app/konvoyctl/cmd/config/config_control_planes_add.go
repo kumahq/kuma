@@ -1,14 +1,15 @@
-package cmd
+package config
 
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 )
 
 type configControlPlanesAddContext struct {
-	*rootContext
+	*konvoyctl_ctx.RootContext
 
 	args struct {
 		name         string
@@ -16,8 +17,8 @@ type configControlPlanesAddContext struct {
 	}
 }
 
-func newConfigControlPlanesAddCmd(pctx *rootContext) *cobra.Command {
-	ctx := &configControlPlanesAddContext{rootContext: pctx}
+func newConfigControlPlanesAddCmd(pctx *konvoyctl_ctx.RootContext) *cobra.Command {
+	ctx := &configControlPlanesAddContext{RootContext: pctx}
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add a Control Plane",

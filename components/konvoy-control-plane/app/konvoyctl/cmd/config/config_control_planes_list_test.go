@@ -1,7 +1,8 @@
-package cmd
+package config_test
 
 import (
 	"bytes"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -14,7 +15,7 @@ var _ = Describe("konvoy config control-planes list", func() {
 
 	It("should display Control Planes from a given configuration file", func() {
 		// setup
-		rootCmd := defaultRootCmd()
+		rootCmd := cmd.DefaultRootCmd()
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
 

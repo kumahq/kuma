@@ -1,10 +1,11 @@
-package cmd
+package config
 
 import (
+	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
 	"github.com/spf13/cobra"
 )
 
-func newConfigCmd(pctx *rootContext) *cobra.Command {
+func NewConfigCmd(pctx *konvoyctl_ctx.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Manage konvoyctl config",

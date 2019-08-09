@@ -1,11 +1,12 @@
-package cmd
+package config
 
 import (
+	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output/printers"
 	"github.com/spf13/cobra"
 )
 
-func newConfigControlPlanesListCmd(pctx *rootContext) *cobra.Command {
+func newConfigControlPlanesListCmd(pctx *konvoyctl_ctx.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List known Control Planes",
