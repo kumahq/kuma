@@ -1,13 +1,9 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: konvoy-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: konvoy-control-plane
-  namespace: konvoy-system
+  namespace: {{ .Namespace }}
 spec:
   ports:
   - port: 5678
@@ -19,11 +15,17 @@ spec:
   selector:
     app: konvoy-control-plane
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: konvoy-control-plane
+  namespace: {{ .Namespace }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: konvoy-control-plane
-  namespace: konvoy-system
+  namespace: {{ .Namespace }}
   labels:
     app: konvoy-control-plane
 spec:
@@ -39,21 +41,22 @@ spec:
       labels:
         app: konvoy-control-plane
     spec:
+      serviceAccountName: konvoy-control-plane
       containers:
       - name: control-plane
-        image: "konvoy/konvoy-control-plane:latest"
-        imagePullPolicy: IfNotPresent
+        image: {{ .ControlPlaneImage }}:{{ .ControlPlaneVersion }}
+        imagePullPolicy: {{ .ImagePullPolicy }}
         env:
-          - name: KONVOY_ENVIRONMENT
-            value: "kubernetes"
-          - name: KONVOY_STORE_TYPE
-            value: "kubernetes"
-          - name: KONVOY_XDS_SERVER_GRPC_PORT
-            value: "5678"
-          - name: KONVOY_XDS_SERVER_HTTP_PORT
-            value: "5679"
-          - name: KONVOY_API_SERVER_PORT
-            value: "5681"
+        - name: KONVOY_ENVIRONMENT
+          value: "kubernetes"
+        - name: KONVOY_STORE_TYPE
+          value: "kubernetes"
+        - name: KONVOY_XDS_SERVER_GRPC_PORT
+          value: "5678"
+        - name: KONVOY_XDS_SERVER_HTTP_PORT
+          value: "5679"
+        - name: KONVOY_API_SERVER_PORT
+          value: "5681"
         args:
         - run
         ports:
