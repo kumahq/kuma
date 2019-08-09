@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"errors"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/registry"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -66,4 +67,9 @@ func (l *DataplaneResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*DataplaneResource)(nil), r)
 	}
+}
+
+func init() {
+	registry.RegisterType(&DataplaneResource{})
+	registry.RegistryListType(&DataplaneResourceList{})
 }

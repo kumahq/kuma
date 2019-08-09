@@ -201,7 +201,7 @@ pilot     simple       Offline   never                never              0      
 			func(given testCase) {
 				// given
 				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("testdata", "get-dataplanes.config.yaml"),
+					"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
 					"get", "dataplanes"}, given.outputFormat))
 
 				// when

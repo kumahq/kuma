@@ -1,0 +1,6 @@
+name: sample
+mesh: sample
+type: Mesh
+mtls:
+  ca:
+    embedded:

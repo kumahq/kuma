@@ -53,6 +53,7 @@ func newRootCmd(root *rootContext) *cobra.Command {
 	cmd.AddCommand(newInstallCmd(root))
 	cmd.AddCommand(newConfigCmd(root))
 	cmd.AddCommand(newGetCmd(root))
+	cmd.AddCommand(newApplyCmd(root))
 	return cmd
 }
 

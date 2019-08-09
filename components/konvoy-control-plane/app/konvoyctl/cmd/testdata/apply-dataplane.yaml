@@ -1,0 +1,7 @@
+name: sample
+mesh: default
+type: Dataplane
+tags:
+  service: web
+  version: "1.0"
+  env: production

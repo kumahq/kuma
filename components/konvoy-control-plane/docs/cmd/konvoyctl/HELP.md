@@ -7,6 +7,7 @@ Usage:
   konvoyctl [command]
 
 Available Commands:
+  apply       Create or modify Konvoy resources
   config      Manage konvoyctl config
   get         Show Konvoy resources
   help        Help about any command
