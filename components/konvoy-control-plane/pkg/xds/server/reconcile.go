@@ -3,6 +3,8 @@ package server
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -51,6 +53,13 @@ func (r *reconciler) OnServiceUpdate(_ *core_discovery.ServiceInfo) error {
 	return nil
 }
 func (r *reconciler) OnServiceDelete(_ core.NamespacedName) error {
+	return nil
+}
+
+func (r *reconciler) OnDataplaneUpdate(_ *mesh_core.DataplaneResource) error {
+	return nil
+}
+func (r *reconciler) OnDataplaneDelete(_ core_model.ResourceKey) error {
 	return nil
 }
 
