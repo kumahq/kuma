@@ -3,6 +3,7 @@ package http
 import (
 	nethttp "net/http"
 	"net/url"
+	"path"
 )
 
 type Client interface {
@@ -20,6 +21,7 @@ func ClientWithBaseURL(delegate Client, baseURL *url.URL) Client {
 		if req.URL != nil {
 			req.URL.Scheme = baseURL.Scheme
 			req.URL.Host = baseURL.Host
+			req.URL.Path = path.Join(baseURL.Path, req.URL.Path)
 		}
 		return delegate.Do(req)
 	})
