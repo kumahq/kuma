@@ -14,8 +14,8 @@ import (
 func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "meshes",
-		Short: "Show running Meshes",
-		Long:  `Show running Meshes.`,
+		Short: "Show Meshes",
+		Long:  `Show Meshes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			controlPlane, err := pctx.CurrentControlPlane()
 			if err != nil {

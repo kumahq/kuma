@@ -153,7 +153,7 @@ Usage:
 
 Available Commands:
   dataplanes  Show running Dataplanes
-  meshes      Show running Meshes
+  meshes      Show Meshes
 
 Flags:
   -h, --help            help for get
