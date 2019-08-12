@@ -24,7 +24,7 @@ items:
       total:
         responsesRejected: "2"
         responsesSent: "20"
-  type: DataplaneStatus
+  type: DataplaneInsight
 - mesh: default
   name: example
   subscriptions:
@@ -52,4 +52,4 @@ items:
       lds: {}
       rds: {}
       total: {}
-  type: DataplaneStatus
+  type: DataplaneInsight

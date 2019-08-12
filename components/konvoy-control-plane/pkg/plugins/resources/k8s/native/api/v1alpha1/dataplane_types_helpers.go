@@ -24,11 +24,11 @@ func (pt *Dataplane) SetMesh(mesh string) {
 }
 
 func (pt *Dataplane) GetSpec() map[string]interface{} {
-	return pt.Status
+	return pt.Spec
 }
 
 func (pt *Dataplane) SetSpec(spec map[string]interface{}) {
-	pt.Status = spec
+	pt.Spec = spec
 }
 
 func (l *DataplaneList) GetItems() []model.KubernetesObject {
@@ -40,6 +40,6 @@ func (l *DataplaneList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.DataplaneStatus{}, &Dataplane{})
-	registry.RegisterListType(&proto.DataplaneStatus{}, &DataplaneList{})
+	registry.RegisterObjectType(&proto.Dataplane{}, &Dataplane{})
+	registry.RegisterListType(&proto.Dataplane{}, &DataplaneList{})
 }

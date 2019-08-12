@@ -3,6 +3,8 @@ package api_server
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/definitions"
 	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
@@ -10,7 +12,6 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
-	"net/http"
 )
 
 var (
@@ -93,10 +94,6 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 }
 
 func SetupServer(rt runtime.Runtime) error {
-	apiServer := NewApiServer(rt.ResourceStore(), []definitions.ResourceWsDefinition{
-		definitions.MeshWsDefinition,
-		definitions.DataplaneWsDefinition,
-		definitions.DataplaneStatusWsDefinition,
-	}, *rt.Config().ApiServer)
+	apiServer := NewApiServer(rt.ResourceStore(), definitions.All, *rt.Config().ApiServer)
 	return rt.Add(apiServer)
 }

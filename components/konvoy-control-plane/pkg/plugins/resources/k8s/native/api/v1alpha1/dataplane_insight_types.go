@@ -20,25 +20,25 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// DataplaneSpec defines the desired state of Dataplane
-type DataplaneSpec = map[string]interface{}
+// DataplaneInsightStatus defines the observed state of Dataplane
+type DataplaneInsightStatus = map[string]interface{}
 
-// Dataplane is the Schema for the Dataplane API
-type Dataplane struct {
+// DataplaneInsight is the Schema for the Dataplane Insights API
+type DataplaneInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string        `json:"mesh,omitempty"`
-	Spec DataplaneSpec `json:"spec,omitempty"`
+	Mesh   string                 `json:"mesh,omitempty"`
+	Status DataplaneInsightStatus `json:"status,omitempty"`
 }
 
-// DataplaneList contains a list of Dataplane
-type DataplaneList struct {
+// DataplaneInsightList contains a list of Dataplane
+type DataplaneInsightList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Dataplane `json:"items"`
+	Items           []DataplaneInsight `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Dataplane{}, &DataplaneList{})
+	SchemeBuilder.Register(&DataplaneInsight{}, &DataplaneInsightList{})
 }

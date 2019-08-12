@@ -29,21 +29,21 @@ import (
 var _ = Describe("konvoy get dataplanes", func() {
 
 	var now, t1, t2 time.Time
-	var sampleDataplaneStatuses []*mesh_core.DataplaneStatusResource
+	var sampleDataplaneInsights []*mesh_core.DataplaneInsightResource
 
 	BeforeEach(func() {
 		now, _ = time.Parse(time.RFC3339, "2019-07-17T18:08:41+00:00")
 		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
 
-		sampleDataplaneStatuses = []*mesh_core.DataplaneStatusResource{
+		sampleDataplaneInsights = []*mesh_core.DataplaneInsightResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh:      "default",
 					Namespace: "trial",
 					Name:      "experiment",
 				},
-				Spec: mesh_proto.DataplaneStatus{
+				Spec: mesh_proto.DataplaneInsight{
 					Subscriptions: []*mesh_proto.DiscoverySubscription{
 						{
 							Id:                     "1",
@@ -76,7 +76,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 					Namespace: "demo",
 					Name:      "example",
 				},
-				Spec: mesh_proto.DataplaneStatus{
+				Spec: mesh_proto.DataplaneInsight{
 					Subscriptions: []*mesh_proto.DiscoverySubscription{
 						{
 							Id:                     "1",
@@ -99,7 +99,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 					Namespace: "default",
 					Name:      "simple",
 				},
-				Spec: mesh_proto.DataplaneStatus{
+				Spec: mesh_proto.DataplaneInsight{
 					Subscriptions: []*mesh_proto.DiscoverySubscription{
 						{
 							Id:                     "1",
@@ -113,20 +113,20 @@ var _ = Describe("konvoy get dataplanes", func() {
 
 	Describe("TablePrinter", func() {
 
-		var dataplaneStatuses *mesh_core.DataplaneStatusResourceList
+		var dataplaneInsights *mesh_core.DataplaneInsightResourceList
 		var buf *bytes.Buffer
 
 		BeforeEach(func() {
-			dataplaneStatuses = &mesh_core.DataplaneStatusResourceList{}
+			dataplaneInsights = &mesh_core.DataplaneInsightResourceList{}
 			buf = &bytes.Buffer{}
 		})
 
 		It("should not fail on empty list", func() {
 			// given
-			dataplaneStatuses.Items = nil
+			dataplaneInsights.Items = nil
 
 			// when
-			err := printDataplaneStatuses(now, dataplaneStatuses, buf)
+			err := printDataplaneInsights(now, dataplaneInsights, buf)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -138,10 +138,10 @@ MESH   NAME   STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   T
 
 		It("should print a list of 2 items", func() {
 			// given
-			dataplaneStatuses.Items = sampleDataplaneStatuses
+			dataplaneInsights.Items = sampleDataplaneInsights
 
 			// when
-			err := printDataplaneStatuses(now, dataplaneStatuses, buf)
+			err := printDataplaneInsights(now, dataplaneInsights, buf)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -176,7 +176,7 @@ pilot     simple       Offline   never                never              0      
 
 			store = memory_resources.NewStore()
 
-			for _, ds := range sampleDataplaneStatuses {
+			for _, ds := range sampleDataplaneInsights {
 				key := core_model.ResourceKey{
 					Mesh:      ds.Meta.GetMesh(),
 					Namespace: ds.Meta.GetNamespace(),

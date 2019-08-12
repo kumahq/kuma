@@ -11,30 +11,30 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-type DataplaneStatusSink interface {
+type DataplaneInsightSink interface {
 	Start(stop <-chan struct{})
 }
 
-type DataplaneStatusStore interface {
+type DataplaneInsightStore interface {
 	Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error
 }
 
-func NewDataplaneStatusSink(
+func NewDataplaneInsightSink(
 	accessor SubscriptionStatusAccessor,
 	newTicker func() *time.Ticker,
-	store DataplaneStatusStore) DataplaneStatusSink {
-	return &dataplaneStatusSink{newTicker, accessor, store}
+	store DataplaneInsightStore) DataplaneInsightSink {
+	return &dataplaneInsightSink{newTicker, accessor, store}
 }
 
-var _ DataplaneStatusSink = &dataplaneStatusSink{}
+var _ DataplaneInsightSink = &dataplaneInsightSink{}
 
-type dataplaneStatusSink struct {
+type dataplaneInsightSink struct {
 	newTicker func() *time.Ticker
 	accessor  SubscriptionStatusAccessor
-	store     DataplaneStatusStore
+	store     DataplaneInsightStore
 }
 
-func (s *dataplaneStatusSink) Start(stop <-chan struct{}) {
+func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	ticker := s.newTicker()
 	defer ticker.Stop()
 
@@ -65,20 +65,20 @@ func (s *dataplaneStatusSink) Start(stop <-chan struct{}) {
 	}
 }
 
-func NewDataplaneStatusStore(rs core_store.ResourceStore) DataplaneStatusStore {
-	return &dataplaneStatusStore{rs}
+func NewDataplaneInsightStore(rs core_store.ResourceStore) DataplaneInsightStore {
+	return &dataplaneInsightStore{rs}
 }
 
-var _ DataplaneStatusStore = &dataplaneStatusStore{}
+var _ DataplaneInsightStore = &dataplaneInsightStore{}
 
-type dataplaneStatusStore struct {
+type dataplaneInsightStore struct {
 	rs core_store.ResourceStore
 }
 
-func (s *dataplaneStatusStore) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
+func (s *dataplaneInsightStore) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
 	create := false
-	dataplaneStatus := &mesh_core.DataplaneStatusResource{}
-	err := s.rs.Get(context.Background(), dataplaneStatus, core_store.GetBy(dataplaneId))
+	dataplaneInsight := &mesh_core.DataplaneInsightResource{}
+	err := s.rs.Get(context.Background(), dataplaneInsight, core_store.GetBy(dataplaneId))
 	if err != nil {
 		if core_store.IsResourceNotFound(err) {
 			create = true
@@ -86,10 +86,10 @@ func (s *dataplaneStatusStore) Upsert(dataplaneId core_model.ResourceKey, subscr
 			return err
 		}
 	}
-	dataplaneStatus.Spec.UpdateSubscription(subscription)
+	dataplaneInsight.Spec.UpdateSubscription(subscription)
 	if create {
-		return s.rs.Create(context.Background(), dataplaneStatus, core_store.CreateBy(dataplaneId))
+		return s.rs.Create(context.Background(), dataplaneInsight, core_store.CreateBy(dataplaneId))
 	} else {
-		return s.rs.Update(context.Background(), dataplaneStatus)
+		return s.rs.Update(context.Background(), dataplaneInsight)
 	}
 }

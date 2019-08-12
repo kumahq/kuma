@@ -25,10 +25,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var _ = Describe("Dataplane", func() {
+var _ = Describe("DataplaneInsight", func() {
 	var (
 		key              types.NamespacedName
-		created, fetched *Dataplane
+		created, fetched *DataplaneInsight
 	)
 
 	BeforeEach(func() {
@@ -51,7 +51,7 @@ var _ = Describe("Dataplane", func() {
 				Name:      "foo",
 				Namespace: "default",
 			}
-			created = &Dataplane{
+			created = &DataplaneInsight{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "default",
@@ -60,7 +60,7 @@ var _ = Describe("Dataplane", func() {
 			By("creating an API obj")
 			Expect(k8sClient.Create(context.TODO(), created)).To(Succeed())
 
-			fetched = &Dataplane{}
+			fetched = &DataplaneInsight{}
 			Expect(k8sClient.Get(context.TODO(), key, fetched)).To(Succeed())
 			Expect(fetched).To(Equal(created))
 

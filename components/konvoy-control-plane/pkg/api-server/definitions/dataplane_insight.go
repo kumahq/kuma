@@ -5,13 +5,13 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
 
-var DataplaneStatusWsDefinition = ResourceWsDefinition{
-	Name: "Dataplane Status",
-	Path: "dataplane-statuses",
+var DataplaneInsightWsDefinition = ResourceWsDefinition{
+	Name: "Dataplane Insight",
+	Path: "dataplane-insights",
 	ResourceFactory: func() model.Resource {
-		return &mesh.DataplaneStatusResource{}
+		return &mesh.DataplaneInsightResource{}
 	},
 	ResourceListFactory: func() model.ResourceList {
-		return &mesh.DataplaneStatusResourceList{}
+		return &mesh.DataplaneInsightResourceList{}
 	},
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func AllApis() core_rest.Api {
-	return Apis(MeshWsDefinition, DataplaneWsDefinition, DataplaneStatusWsDefinition)
+	return Apis(All...)
 }
 
 func Apis(wss ...ResourceWsDefinition) core_rest.Api {

@@ -1,0 +1,7 @@
+package definitions
+
+var All = []ResourceWsDefinition{
+	MeshWsDefinition,
+	DataplaneWsDefinition,
+	DataplaneInsightWsDefinition,
+}

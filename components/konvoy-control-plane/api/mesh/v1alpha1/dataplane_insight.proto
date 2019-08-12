@@ -10,8 +10,8 @@ import "validate/validate.proto";
 
 option (gogoproto.equal_all) = true;
 
-// DataplaneStatus defines the observed state of a Dataplane.
-message DataplaneStatus {
+// DataplaneInsight defines the observed state of a Dataplane.
+message DataplaneInsight {
 
   // List of ADS subscriptions created by a given Dataplane.
   repeated DiscoverySubscription subscriptions = 1;
