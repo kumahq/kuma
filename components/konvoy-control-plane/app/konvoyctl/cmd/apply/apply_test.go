@@ -7,7 +7,7 @@ import (
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
-	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
+	pkg_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,13 +20,13 @@ import (
 
 var _ = Describe("konvoyctl apply", func() {
 
-	var rootCtx *konvoyctl_ctx.RootContext
+	var rootCtx *pkg_cmd.RootContext
 	var rootCmd *cobra.Command
 	var store core_store.ResourceStore
 
 	BeforeEach(func() {
-		rootCtx = &konvoyctl_ctx.RootContext{
-			Runtime: konvoyctl_ctx.RootRuntime{
+		rootCtx = &pkg_cmd.RootContext{
+			Runtime: pkg_cmd.RootRuntime{
 				NewResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
 					return store, nil
 				},

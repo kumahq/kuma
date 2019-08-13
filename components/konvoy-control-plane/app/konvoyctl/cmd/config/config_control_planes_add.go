@@ -4,12 +4,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 )
 
 type configControlPlanesAddContext struct {
-	*konvoyctl_ctx.RootContext
+	*cmd.RootContext
 
 	args struct {
 		name         string
@@ -17,9 +17,9 @@ type configControlPlanesAddContext struct {
 	}
 }
 
-func newConfigControlPlanesAddCmd(pctx *konvoyctl_ctx.RootContext) *cobra.Command {
+func newConfigControlPlanesAddCmd(pctx *cmd.RootContext) *cobra.Command {
 	ctx := &configControlPlanesAddContext{RootContext: pctx}
-	cmd := &cobra.Command{
+	command := &cobra.Command{
 		Use:   "add",
 		Short: "Add a Control Plane",
 		Long:  `Add a Control Plane.`,
@@ -37,11 +37,11 @@ func newConfigControlPlanesAddCmd(pctx *konvoyctl_ctx.RootContext) *cobra.Comman
 		},
 	}
 
-	cmd.Flags().StringVar(&ctx.args.name, "name", "", "reference name for the Control Plane (required)")
-	cmd.MarkFlagRequired("name")
-	cmd.Flags().StringVar(&ctx.args.apiServerURL, "api-server-url", "", "URL of the Control Plane API Server (required)")
-	cmd.MarkFlagRequired("api-server-url")
-	return cmd
+	command.Flags().StringVar(&ctx.args.name, "name", "", "reference name for the Control Plane (required)")
+	command.MarkFlagRequired("name")
+	command.Flags().StringVar(&ctx.args.apiServerURL, "api-server-url", "", "URL of the Control Plane API Server (required)")
+	command.MarkFlagRequired("api-server-url")
+	return command
 }
 
 func (c *configControlPlanesAddContext) AddControlPlane(cp *config_proto.ControlPlane) error {

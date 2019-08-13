@@ -3,9 +3,9 @@ package cmd
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/apply"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/config"
-	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/get"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/install"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/spf13/cobra"
 	"os"
 
@@ -17,8 +17,8 @@ var (
 )
 
 // newRootCmd represents the base command when called without any subcommands.
-func NewRootCmd(root *konvoyctl_ctx.RootContext) *cobra.Command {
-	cmd := &cobra.Command{
+func NewRootCmd(root *cmd.RootContext) *cobra.Command {
+	command := &cobra.Command{
 		Use:   "konvoyctl",
 		Short: "Management tool for Konvoy Service Mesh",
 		Long:  `Management tool for Konvoy Service Mesh.`,
@@ -29,19 +29,19 @@ func NewRootCmd(root *konvoyctl_ctx.RootContext) *cobra.Command {
 		},
 	}
 	// root flags
-	cmd.PersistentFlags().StringVar(&root.Args.ConfigFile, "config-file", "", "path to the configuration file to use")
-	cmd.PersistentFlags().StringVar(&root.Args.Mesh, "mesh", "", "mesh to use")
-	cmd.PersistentFlags().BoolVar(&root.Args.Debug, "debug", true, "enable debug-level logging")
+	command.PersistentFlags().StringVar(&root.Args.ConfigFile, "config-file", "", "path to the configuration file to use")
+	command.PersistentFlags().StringVar(&root.Args.Mesh, "mesh", "", "mesh to use")
+	command.PersistentFlags().BoolVar(&root.Args.Debug, "debug", true, "enable debug-level logging")
 	// sub-commands
-	cmd.AddCommand(install.NewInstallCmd(root))
-	cmd.AddCommand(config.NewConfigCmd(root))
-	cmd.AddCommand(get.NewGetCmd(root))
-	cmd.AddCommand(apply.NewApplyCmd(root))
-	return cmd
+	command.AddCommand(install.NewInstallCmd(root))
+	command.AddCommand(config.NewConfigCmd(root))
+	command.AddCommand(get.NewGetCmd(root))
+	command.AddCommand(apply.NewApplyCmd(root))
+	return command
 }
 
 func DefaultRootCmd() *cobra.Command {
-	return NewRootCmd(konvoyctl_ctx.DefaultRootContext())
+	return NewRootCmd(cmd.DefaultRootContext())
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

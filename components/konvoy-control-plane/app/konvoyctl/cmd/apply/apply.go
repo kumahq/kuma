@@ -2,7 +2,7 @@ package apply
 
 import (
 	"context"
-	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/registry"
@@ -15,16 +15,16 @@ import (
 )
 
 type applyContext struct {
-	*konvoyctl_ctx.RootContext
+	*cmd.RootContext
 
 	args struct {
 		file string
 	}
 }
 
-func NewApplyCmd(pctx *konvoyctl_ctx.RootContext) *cobra.Command {
+func NewApplyCmd(pctx *cmd.RootContext) *cobra.Command {
 	ctx := &applyContext{RootContext: pctx}
-	cmd := &cobra.Command{
+	command := &cobra.Command{
 		Use:   "apply",
 		Short: "Create or modify Konvoy resources",
 		Long:  `Create or modify Konvoy resources.`,
@@ -60,8 +60,8 @@ func NewApplyCmd(pctx *konvoyctl_ctx.RootContext) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.PersistentFlags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file to apply")
-	return cmd
+	command.PersistentFlags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file to apply")
+	return command
 }
 
 func upsert(rs store.ResourceStore, res model.Resource) error {

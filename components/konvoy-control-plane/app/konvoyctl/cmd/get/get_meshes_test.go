@@ -12,7 +12,7 @@ import (
 	memory_resources "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 
-	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
+	pkg_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -63,15 +63,15 @@ var _ = Describe("konvoy get meshes", func() {
 
 	Describe("GetMeshesCmd", func() {
 
-		var rootCtx *konvoyctl_ctx.RootContext
+		var rootCtx *pkg_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 
 		BeforeEach(func() {
 			// setup
-			rootCtx = &konvoyctl_ctx.RootContext{
-				Runtime: konvoyctl_ctx.RootRuntime{
+			rootCtx = &pkg_cmd.RootContext{
+				Runtime: pkg_cmd.RootRuntime{
 					Now: func() time.Time { return time.Now() },
 					NewResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
 						return store, nil

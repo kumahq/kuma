@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
-	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
+	pkg_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -160,7 +160,7 @@ pilot     simple       Offline   never                never              0      
 
 	Describe("GetDataplanesCmd", func() {
 
-		var rootCtx *konvoyctl_ctx.RootContext
+		var rootCtx *pkg_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
@@ -168,8 +168,8 @@ pilot     simple       Offline   never                never              0      
 		BeforeEach(func() {
 			// setup
 
-			rootCtx = &konvoyctl_ctx.RootContext{
-				Runtime: konvoyctl_ctx.RootRuntime{
+			rootCtx = &pkg_cmd.RootContext{
+				Runtime: pkg_cmd.RootRuntime{
 					Now: func() time.Time { return now },
 					NewResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
 						return store, nil

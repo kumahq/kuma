@@ -1,4 +1,4 @@
-package context
+package cmd
 
 import (
 	"time"
@@ -12,7 +12,7 @@ import (
 	konvoyctl_resources "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/resources"
 )
 
-type rootArgs struct {
+type RootArgs struct {
 	ConfigFile string
 	Mesh       string
 	Debug      bool
@@ -25,7 +25,7 @@ type RootRuntime struct {
 }
 
 type RootContext struct {
-	Args    rootArgs
+	Args    RootArgs
 	Runtime RootRuntime
 }
 

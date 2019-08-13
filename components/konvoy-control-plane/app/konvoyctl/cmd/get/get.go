@@ -1,30 +1,30 @@
 package get
 
 import (
-	konvoyctl_ctx "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output"
 	"github.com/spf13/cobra"
 )
 
 type getContext struct {
-	*konvoyctl_ctx.RootContext
+	*cmd.RootContext
 
 	args struct {
 		outputFormat string
 	}
 }
 
-func NewGetCmd(pctx *konvoyctl_ctx.RootContext) *cobra.Command {
+func NewGetCmd(pctx *cmd.RootContext) *cobra.Command {
 	ctx := &getContext{RootContext: pctx}
-	cmd := &cobra.Command{
+	command := &cobra.Command{
 		Use:   "get",
 		Short: "Show Konvoy resources",
 		Long:  `Show Konvoy resources.`,
 	}
 	// flags
-	cmd.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), UsageOptions("Output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
+	command.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), cmd.UsageOptions("Output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
-	cmd.AddCommand(newGetDataplanesCmd(ctx))
-	cmd.AddCommand(newGetMeshesCmd(ctx))
-	return cmd
+	command.AddCommand(newGetDataplanesCmd(ctx))
+	command.AddCommand(newGetMeshesCmd(ctx))
+	return command
 }
