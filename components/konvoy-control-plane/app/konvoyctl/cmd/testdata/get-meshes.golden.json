@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "mesh": "mesh1",
+      "mtls": {
+        "ca": {
+          "embedded": {}
+        }
+      },
+      "name": "mesh1",
+      "type": "Mesh"
+    },
+    {
+      "mesh": "mesh2",
+      "mtls": {
+        "ca": {
+          "embedded": {}
+        }
+      },
+      "name": "mesh2",
+      "type": "Mesh"
+    }
+  ]
+}
