@@ -1,12 +1,12 @@
 package config
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
+	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output/printers"
 	"github.com/spf13/cobra"
 )
 
-func newConfigControlPlanesListCmd(pctx *cmd.RootContext) *cobra.Command {
+func newConfigControlPlanesListCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List known Control Planes",

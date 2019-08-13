@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
+	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/data"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/k8s"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/k8s/control-plane"
@@ -22,7 +22,7 @@ var (
 	NewSelfSignedCert = tls.NewSelfSignedCert
 )
 
-func newInstallControlPlaneCmd(pctx *cmd.RootContext) *cobra.Command {
+func newInstallControlPlaneCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 	args := struct {
 		Namespace             string
 		ImagePullPolicy       string
