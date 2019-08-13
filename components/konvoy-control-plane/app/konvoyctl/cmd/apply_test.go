@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
-	"path/filepath"
 
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -30,6 +32,70 @@ var _ = Describe("konvoyctl apply", func() {
 		}
 		store = memory_resources.NewStore()
 		rootCmd = newRootCmd(rootCtx)
+	})
+
+	It("should read configuration from stdin (no -f arg)", func() {
+		// setup
+		mockStdin, err := os.Open(filepath.Join("testdata", "apply-dataplane.yaml"))
+		Expect(err).ToNot(HaveOccurred())
+
+		rootCmd.SetIn(mockStdin)
+
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"apply",
+		})
+
+		// when
+		err = rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resource := mesh.DataplaneResource{}
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(resource.Spec.Tags).To(HaveKeyWithValue("service", "web"))
+		Expect(resource.Spec.Tags).To(HaveKeyWithValue("version", "1.0"))
+		Expect(resource.Spec.Tags).To(HaveKeyWithValue("env", "production"))
+		Expect(resource.Meta.GetName()).To(Equal("sample"))
+		Expect(resource.Meta.GetMesh()).To(Equal("default"))
+		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
+	})
+
+	It("should read configuration from stdin (-f - arg)", func() {
+		// setup
+		mockStdin, err := os.Open(filepath.Join("testdata", "apply-dataplane.yaml"))
+		Expect(err).ToNot(HaveOccurred())
+
+		rootCmd.SetIn(mockStdin)
+
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"apply", "-f", "-",
+		})
+
+		// when
+		err = rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resource := mesh.DataplaneResource{}
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(resource.Spec.Tags).To(HaveKeyWithValue("service", "web"))
+		Expect(resource.Spec.Tags).To(HaveKeyWithValue("version", "1.0"))
+		Expect(resource.Spec.Tags).To(HaveKeyWithValue("env", "production"))
+		Expect(resource.Meta.GetName()).To(Equal("sample"))
+		Expect(resource.Meta.GetMesh()).To(Equal("default"))
+		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 	})
 
 	It("should apply a new Dataplane resource", func() {

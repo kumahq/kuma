@@ -28,13 +28,18 @@ func newApplyCmd(pctx *rootContext) *cobra.Command {
 		Short: "Create or modify Konvoy resources",
 		Long:  `Create or modify Konvoy resources.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if ctx.args.file == "" {
-				return errors.New("file should be provided")
+			var b []byte
+			var err error
+
+			if ctx.args.file == "" || ctx.args.file == "-" {
+				b, err = ioutil.ReadAll(cmd.InOrStdin())
+			} else {
+				b, err = ioutil.ReadFile(ctx.args.file)
 			}
-			b, err := ioutil.ReadFile(ctx.args.file)
 			if err != nil {
 				return errors.Wrap(err, "error while reading provided file")
 			}
+
 			res, err := parseResource(b)
 			if err != nil {
 				return errors.Wrap(err, "yaml contains invalid resource")
