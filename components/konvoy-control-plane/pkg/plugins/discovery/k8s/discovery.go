@@ -9,12 +9,30 @@ import (
 )
 
 func NewDiscoverySource(mgr kube_ctrl.Manager) (core_discovery.DiscoverySource, error) {
-	source := &controllers.PodReconciler{
-		Client: mgr.GetClient(),
-		Log:    core.Log.WithName("controllers").WithName("Pod"),
-	}
-	if err := source.SetupWithManager(mgr); err != nil {
+	// convert Pods into Dataplanes
+	if err := addPodReconciler(mgr); err != nil {
 		return nil, err
 	}
-	return source, nil
+	// discover Dataplanes
+	return addDataplaneReconciler(mgr)
+}
+
+func addPodReconciler(mgr kube_ctrl.Manager) error {
+	reconciler := &controllers.PodReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		Log:    core.Log.WithName("controllers").WithName("Pod"),
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addDataplaneReconciler(mgr kube_ctrl.Manager) (core_discovery.DiscoverySource, error) {
+	reconciler := &controllers.DataplaneReconciler{
+		Client: mgr.GetClient(),
+		Log:    core.Log.WithName("controllers").WithName("Dataplane"),
+	}
+	if err := reconciler.SetupWithManager(mgr); err != nil {
+		return nil, err
+	}
+	return reconciler, nil
 }
