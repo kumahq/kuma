@@ -32,7 +32,7 @@ run kubectl port-forward -n konvoy-system $(kubectl get pods -n konvoy-system -l
 run curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:15681
 
 # Add the CP to the config
-run konvoyctl config control-planes add universal --name demo-kubectl-port-forward --api-server-url http://localhost:15681
+run konvoyctl config control-planes add --name demo-kubectl-port-forward --api-server-url http://localhost:15681
 
 run konvoyctl config view
 
@@ -58,7 +58,7 @@ run kubectl proxy &
 run curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:8001
 
 # Add the CP to the config
-run konvoyctl config control-planes add universal --name demo-kubectl-proxy --api-server-url http://localhost:8001/api/v1/namespaces/konvoy-system/services/konvoy-control-plane:5681/proxy
+run konvoyctl config control-planes add --name demo-kubectl-proxy --api-server-url http://localhost:8001/api/v1/namespaces/konvoy-system/services/konvoy-control-plane:5681/proxy
 
 run konvoyctl config view
 

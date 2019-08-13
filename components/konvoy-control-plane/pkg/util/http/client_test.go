@@ -58,5 +58,62 @@ var _ = Describe("Http Util", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		})
+
+		It("should handle urls for baseURL", func() {
+			// given
+			baseURL, _ := url.Parse("https://konvoy-control-plane:5681/proxy/foo/bar")
+			// and
+			delegate := util_http.ClientFunc(func(req *http.Request) (*http.Response, error) {
+				Expect(req.URL.String()).To(BeIdenticalTo("https://konvoy-control-plane:5681/proxy/foo/bar/test"))
+				return &http.Response{}, nil
+			})
+
+			// when
+			client := util_http.ClientWithBaseURL(delegate, baseURL)
+			// then
+			Expect(client).ToNot(BeIdenticalTo(delegate))
+
+			// when
+			req := &http.Request{}
+
+			// and
+			var err error
+			req.URL, err = url.Parse("/test")
+			Expect(err).ToNot(HaveOccurred())
+
+			// and
+			_, err = client.Do(req)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should handle double slashes", func() {
+			// given
+			baseURL, _ := url.Parse("https://konvoy-control-plane:5681//proxy/foo/bar")
+			// and
+			delegate := util_http.ClientFunc(func(req *http.Request) (*http.Response, error) {
+				Expect(req.URL.String()).To(BeIdenticalTo(
+					"https://konvoy-control-plane:5681/proxy/foo/bar/test/baz"))
+				return &http.Response{}, nil
+			})
+
+			// when
+			client := util_http.ClientWithBaseURL(delegate, baseURL)
+			// then
+			Expect(client).ToNot(BeIdenticalTo(delegate))
+
+			// when
+			req := &http.Request{}
+
+			// and
+			var err error
+			req.URL, err = url.Parse("/test//baz")
+			Expect(err).ToNot(HaveOccurred())
+
+			// and
+			_, err = client.Do(req)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })
