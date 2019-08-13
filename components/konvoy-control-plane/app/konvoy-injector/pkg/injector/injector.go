@@ -3,6 +3,7 @@ package injector
 import (
 	"fmt"
 
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoy-injector/pkg/injector/metadata"
 	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-injector"
 
 	kube_core "k8s.io/api/core/v1"
@@ -176,6 +177,6 @@ func (i *KonvoyInjector) NewInitContainer() kube_core.Container {
 
 func (i *KonvoyInjector) NewAnnotations() map[string]string {
 	return map[string]string{
-		"getkonvoy.io/sidecar-injected": "true",
+		metadata.KonvoySidecarInjectedAnnotation: metadata.KonvoySidecarInjectedAnnotationValue,
 	}
 }

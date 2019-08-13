@@ -135,9 +135,9 @@ func (m *Dataplane_Networking) GetOutbound() []*Dataplane_Networking_Outbound {
 type Dataplane_Networking_Inbound struct {
 	// Interface describes networking rules for incoming traffic.
 	// The value is a string formatted as
-	// <DATAPLANE_IP_ADDRESS>:<SERVICE_PORT>:<APPLICATION_PORT>, which means
-	// that dataplane must listen on <DATAPLANE_IP_ADDRESS>:<APPLICATION_PORT>
-	// and must dispatch to 127.0.0.1:<APPLICATION_PORT>;
+	// <WORKLOAD_IP_ADDRESS>:<SERVICE_PORT>:<WORKLOAD_PORT>, which means
+	// that dataplane must listen on <WORKLOAD_IP_ADDRESS>:<WORKLOAD_PORT>
+	// and must dispatch to 127.0.0.1:<WORKLOAD_PORT>;
 	// client applications should connect to
 	// <SERVICE_DNS_NAME>:<SERVICE_PORT>.
 	Interface string `protobuf:"bytes,1,opt,name=interface,proto3" json:"interface,omitempty"`

@@ -24,12 +24,8 @@ type KubernetesStore struct {
 
 func NewStore(client kube_client.Client) (store.ResourceStore, error) {
 	return &KubernetesStore{
-		Client: client,
-		Converter: &SimpleConverter{
-			KubeFactory: &SimpleKubeFactory{
-				KubeTypes: k8s_registry.Global(),
-			},
-		},
+		Client:    client,
+		Converter: DefaultConverter(),
 	}, nil
 }
 
@@ -178,6 +174,14 @@ type Converter interface {
 	ToKubernetesList(core_model.ResourceList) (k8s_model.KubernetesList, error)
 	ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error
 	ToCoreList(obj k8s_model.KubernetesList, out core_model.ResourceList, predicate ConverterPredicate) error
+}
+
+func DefaultConverter() Converter {
+	return &SimpleConverter{
+		KubeFactory: &SimpleKubeFactory{
+			KubeTypes: k8s_registry.Global(),
+		},
+	}
 }
 
 var _ Converter = &SimpleConverter{}
