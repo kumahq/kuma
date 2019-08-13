@@ -38,7 +38,8 @@ gogo_mapping := $(subst $(space),$(empty),$(gogo_mapping_with_spaces))
 PROTOC_GO := protoc \
 	--proto_path=. \
 	$(protoc_search_go_paths) \
-	--gogofast_out=plugins=grpc,$(gogo_mapping):.
+	--gogofast_out=plugins=grpc,$(gogo_mapping):. \
+	--validate_out=lang=gogo:.
 
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)
@@ -80,6 +81,7 @@ install/protoc-gen-validate:
 
 clean: ## Remove generated files
 	find . -name '*.pb.go' -delete
+	find . -name '*.pb.validate.go' -delete
 
 generate: clean protoc/discovery/v1alpha1 protoc/mesh/v1alpha1 ## Process .proto definitions
 

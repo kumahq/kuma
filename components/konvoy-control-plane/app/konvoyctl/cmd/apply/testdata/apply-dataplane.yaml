@@ -1,7 +1,14 @@
 name: sample
 mesh: default
 type: Dataplane
-tags:
-  service: web
-  version: "1.0"
-  env: production
+networking:
+  inbound:
+  - interface: 1.1.1.1:80:8080
+    tags:
+      service: web
+      version: "1.0"
+      env: production
+  outbound:
+  - interface: :30000
+    service: postgres
+    servicePort: 5432

@@ -9,7 +9,6 @@ import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
-	_ "github.com/gogo/protobuf/types"
 	io "io"
 	math "math"
 )
@@ -25,13 +24,13 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// Dataplane defines the connected Dataplane to the Control Plane.
+// Dataplane defines configuration of a side-car proxy.
 type Dataplane struct {
-	// Tags of the Dataplane, ex. service: web, version: 1.0
-	Tags                 map[string]string `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	// Networking describes inbound and outbound interfaces of the dataplane.
+	Networking           *Dataplane_Networking `protobuf:"bytes,1,opt,name=networking,proto3" json:"networking,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
 }
 
 func (m *Dataplane) Reset()         { *m = Dataplane{} }
@@ -67,37 +66,244 @@ func (m *Dataplane) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Dataplane proto.InternalMessageInfo
 
-func (m *Dataplane) GetTags() map[string]string {
+func (m *Dataplane) GetNetworking() *Dataplane_Networking {
+	if m != nil {
+		return m.Networking
+	}
+	return nil
+}
+
+// Networking describes inbound and outbound interfaces of a dataplane.
+type Dataplane_Networking struct {
+	// Inbound describes a list of inbound interfaces of the dataplane.
+	Inbound []*Dataplane_Networking_Inbound `protobuf:"bytes,1,rep,name=inbound,proto3" json:"inbound,omitempty"`
+	// Outbound describes a list of outbound interfaces of the dataplane.
+	Outbound             []*Dataplane_Networking_Outbound `protobuf:"bytes,2,rep,name=outbound,proto3" json:"outbound,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                         `json:"-"`
+	XXX_unrecognized     []byte                           `json:"-"`
+	XXX_sizecache        int32                            `json:"-"`
+}
+
+func (m *Dataplane_Networking) Reset()         { *m = Dataplane_Networking{} }
+func (m *Dataplane_Networking) String() string { return proto.CompactTextString(m) }
+func (*Dataplane_Networking) ProtoMessage()    {}
+func (*Dataplane_Networking) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7608682fd5ea84a4, []int{0, 0}
+}
+func (m *Dataplane_Networking) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Dataplane_Networking) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Dataplane_Networking.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Dataplane_Networking) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Dataplane_Networking.Merge(m, src)
+}
+func (m *Dataplane_Networking) XXX_Size() int {
+	return m.Size()
+}
+func (m *Dataplane_Networking) XXX_DiscardUnknown() {
+	xxx_messageInfo_Dataplane_Networking.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Dataplane_Networking proto.InternalMessageInfo
+
+func (m *Dataplane_Networking) GetInbound() []*Dataplane_Networking_Inbound {
+	if m != nil {
+		return m.Inbound
+	}
+	return nil
+}
+
+func (m *Dataplane_Networking) GetOutbound() []*Dataplane_Networking_Outbound {
+	if m != nil {
+		return m.Outbound
+	}
+	return nil
+}
+
+// Inbound describes a service implemented by the dataplane.
+type Dataplane_Networking_Inbound struct {
+	// Interface describes networking rules for incoming traffic.
+	// The value is a string formatted as
+	// <DATAPLANE_IP_ADDRESS>:<SERVICE_PORT>:<APPLICATION_PORT>, which means
+	// that dataplane must listen on <DATAPLANE_IP_ADDRESS>:<APPLICATION_PORT>
+	// and must dispatch to 127.0.0.1:<APPLICATION_PORT>;
+	// client applications should connect to
+	// <SERVICE_DNS_NAME>:<SERVICE_PORT>.
+	Interface string `protobuf:"bytes,1,opt,name=interface,proto3" json:"interface,omitempty"`
+	// Tags associated with an application this dataplane is deployed next to,
+	// e.g. service=web, version=1.0.
+	// `service` tag is mandatory.
+	Tags                 map[string]string `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *Dataplane_Networking_Inbound) Reset()         { *m = Dataplane_Networking_Inbound{} }
+func (m *Dataplane_Networking_Inbound) String() string { return proto.CompactTextString(m) }
+func (*Dataplane_Networking_Inbound) ProtoMessage()    {}
+func (*Dataplane_Networking_Inbound) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7608682fd5ea84a4, []int{0, 0, 0}
+}
+func (m *Dataplane_Networking_Inbound) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Dataplane_Networking_Inbound) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Dataplane_Networking_Inbound.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Dataplane_Networking_Inbound) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Dataplane_Networking_Inbound.Merge(m, src)
+}
+func (m *Dataplane_Networking_Inbound) XXX_Size() int {
+	return m.Size()
+}
+func (m *Dataplane_Networking_Inbound) XXX_DiscardUnknown() {
+	xxx_messageInfo_Dataplane_Networking_Inbound.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Dataplane_Networking_Inbound proto.InternalMessageInfo
+
+func (m *Dataplane_Networking_Inbound) GetInterface() string {
+	if m != nil {
+		return m.Interface
+	}
+	return ""
+}
+
+func (m *Dataplane_Networking_Inbound) GetTags() map[string]string {
 	if m != nil {
 		return m.Tags
 	}
 	return nil
 }
 
+// Outbound describes a service consumed by the dataplane.
+type Dataplane_Networking_Outbound struct {
+	// Interface describes networking rules for outgoing traffic.
+	// The value is a string formatted as <IP_ADDRESS>:<PORT>,
+	// which means that dataplane must listen on <IP_ADDRESS>:<PORT>
+	// and must be dispatch to <SERVICE>:<SERVICE_PORT>.
+	Interface string `protobuf:"bytes,1,opt,name=interface,proto3" json:"interface,omitempty"`
+	// Service name.
+	Service string `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`
+	// Service port.
+	ServicePort          uint32   `protobuf:"varint,3,opt,name=service_port,json=servicePort,proto3" json:"service_port,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Dataplane_Networking_Outbound) Reset()         { *m = Dataplane_Networking_Outbound{} }
+func (m *Dataplane_Networking_Outbound) String() string { return proto.CompactTextString(m) }
+func (*Dataplane_Networking_Outbound) ProtoMessage()    {}
+func (*Dataplane_Networking_Outbound) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7608682fd5ea84a4, []int{0, 0, 1}
+}
+func (m *Dataplane_Networking_Outbound) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Dataplane_Networking_Outbound) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Dataplane_Networking_Outbound.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Dataplane_Networking_Outbound) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Dataplane_Networking_Outbound.Merge(m, src)
+}
+func (m *Dataplane_Networking_Outbound) XXX_Size() int {
+	return m.Size()
+}
+func (m *Dataplane_Networking_Outbound) XXX_DiscardUnknown() {
+	xxx_messageInfo_Dataplane_Networking_Outbound.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Dataplane_Networking_Outbound proto.InternalMessageInfo
+
+func (m *Dataplane_Networking_Outbound) GetInterface() string {
+	if m != nil {
+		return m.Interface
+	}
+	return ""
+}
+
+func (m *Dataplane_Networking_Outbound) GetService() string {
+	if m != nil {
+		return m.Service
+	}
+	return ""
+}
+
+func (m *Dataplane_Networking_Outbound) GetServicePort() uint32 {
+	if m != nil {
+		return m.ServicePort
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*Dataplane)(nil), "konvoy.mesh.v1alpha1.Dataplane")
-	proto.RegisterMapType((map[string]string)(nil), "konvoy.mesh.v1alpha1.Dataplane.TagsEntry")
+	proto.RegisterType((*Dataplane_Networking)(nil), "konvoy.mesh.v1alpha1.Dataplane.Networking")
+	proto.RegisterType((*Dataplane_Networking_Inbound)(nil), "konvoy.mesh.v1alpha1.Dataplane.Networking.Inbound")
+	proto.RegisterMapType((map[string]string)(nil), "konvoy.mesh.v1alpha1.Dataplane.Networking.Inbound.TagsEntry")
+	proto.RegisterType((*Dataplane_Networking_Outbound)(nil), "konvoy.mesh.v1alpha1.Dataplane.Networking.Outbound")
 }
 
 func init() { proto.RegisterFile("mesh/v1alpha1/dataplane.proto", fileDescriptor_7608682fd5ea84a4) }
 
 var fileDescriptor_7608682fd5ea84a4 = []byte{
-	// 233 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0xcd, 0x4d, 0x2d, 0xce,
-	0xd0, 0x2f, 0x33, 0x4c, 0xcc, 0x29, 0xc8, 0x48, 0x34, 0xd4, 0x4f, 0x49, 0x2c, 0x49, 0x2c, 0xc8,
-	0x49, 0xcc, 0x4b, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0xc9, 0xce, 0xcf, 0x2b, 0xcb,
-	0xaf, 0xd4, 0x03, 0xa9, 0xd2, 0x83, 0xa9, 0x92, 0x92, 0x4f, 0xcf, 0xcf, 0x4f, 0xcf, 0x49, 0xd5,
-	0x07, 0xab, 0x49, 0x2a, 0x4d, 0xd3, 0x2f, 0xc9, 0xcc, 0x4d, 0x2d, 0x2e, 0x49, 0xcc, 0x2d, 0x80,
-	0x68, 0x93, 0x12, 0x49, 0xcf, 0x4f, 0xcf, 0x07, 0x33, 0xf5, 0x41, 0x2c, 0xa8, 0xa8, 0x78, 0x59,
-	0x62, 0x4e, 0x66, 0x4a, 0x62, 0x49, 0xaa, 0x3e, 0x8c, 0x01, 0x91, 0x50, 0x6a, 0x66, 0xe4, 0xe2,
-	0x74, 0x81, 0xd9, 0x2c, 0x64, 0xcb, 0xc5, 0x52, 0x92, 0x98, 0x5e, 0x2c, 0xc1, 0xa4, 0xc0, 0xac,
-	0xc1, 0x6d, 0xa4, 0xa9, 0x87, 0xcd, 0x09, 0x7a, 0x70, 0xe5, 0x7a, 0x21, 0x89, 0xe9, 0xc5, 0xae,
-	0x79, 0x25, 0x45, 0x95, 0x41, 0x60, 0x6d, 0x52, 0xe6, 0x5c, 0x9c, 0x70, 0x21, 0x21, 0x01, 0x2e,
-	0xe6, 0xec, 0xd4, 0x4a, 0x09, 0x46, 0x05, 0x46, 0x0d, 0xce, 0x20, 0x10, 0x53, 0x48, 0x84, 0x8b,
-	0xb5, 0x2c, 0x31, 0xa7, 0x34, 0x55, 0x82, 0x09, 0x2c, 0x06, 0xe1, 0x58, 0x31, 0x59, 0x30, 0x3a,
-	0x49, 0xad, 0x78, 0x24, 0xc7, 0x78, 0xe2, 0x91, 0x1c, 0xe3, 0x85, 0x47, 0x72, 0x8c, 0x0f, 0x1e,
-	0xc9, 0x31, 0x46, 0x71, 0xc0, 0xac, 0x4b, 0x62, 0x03, 0x3b, 0xd4, 0x18, 0x10, 0x00, 0x00, 0xff,
-	0xff, 0xc7, 0x66, 0x57, 0xe7, 0x2f, 0x01, 0x00, 0x00,
+	// 399 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xcf, 0xaa, 0xd3, 0x40,
+	0x18, 0xc5, 0x99, 0x24, 0xf7, 0x36, 0xf9, 0xea, 0x85, 0xcb, 0x50, 0x30, 0x04, 0x0c, 0x45, 0x17,
+	0x86, 0x2e, 0x26, 0xb6, 0x5d, 0x28, 0xe2, 0x2a, 0xe8, 0x42, 0x11, 0x2b, 0x83, 0x2b, 0x11, 0x64,
+	0xda, 0x8e, 0x69, 0x68, 0x9c, 0x09, 0x93, 0x69, 0xa4, 0x7b, 0x57, 0x3e, 0x82, 0x4f, 0xe0, 0x33,
+	0xb8, 0x72, 0xa9, 0x3b, 0x9f, 0x40, 0x24, 0x3b, 0x9f, 0xa2, 0x92, 0xbf, 0x75, 0xe1, 0xa2, 0xdd,
+	0x9d, 0xe4, 0x9c, 0xf3, 0xfb, 0xe6, 0x1b, 0x06, 0x6e, 0xbd, 0xe7, 0xf9, 0x26, 0x2c, 0xa6, 0x2c,
+	0xcd, 0x36, 0x6c, 0x1a, 0xae, 0x99, 0x66, 0x59, 0xca, 0x04, 0x27, 0x99, 0x92, 0x5a, 0xe2, 0xd1,
+	0x56, 0x8a, 0x42, 0xee, 0x49, 0x95, 0x22, 0x5d, 0xca, 0x1b, 0xc5, 0x32, 0x96, 0x75, 0x20, 0xac,
+	0x54, 0x93, 0xf5, 0x6e, 0x16, 0x2c, 0x4d, 0xd6, 0x4c, 0xf3, 0xb0, 0x13, 0x8d, 0x71, 0xfb, 0x97,
+	0x05, 0xce, 0xe3, 0x0e, 0x8c, 0x9f, 0x01, 0x08, 0xae, 0x3f, 0x48, 0xb5, 0x4d, 0x44, 0xec, 0xa2,
+	0x31, 0x0a, 0x86, 0xb3, 0x09, 0xf9, 0xdf, 0x1c, 0xd2, 0x97, 0xc8, 0x8b, 0xbe, 0x41, 0xff, 0x69,
+	0x7b, 0x1f, 0x2d, 0x80, 0xa3, 0x85, 0x9f, 0xc3, 0x20, 0x11, 0x4b, 0xb9, 0x13, 0x6b, 0x17, 0x8d,
+	0xcd, 0x60, 0x38, 0x9b, 0x9d, 0xce, 0x25, 0x4f, 0x9b, 0x26, 0xed, 0x10, 0x78, 0x01, 0xb6, 0xdc,
+	0xe9, 0x06, 0x67, 0xd4, 0xb8, 0xf9, 0x19, 0xb8, 0x45, 0x5b, 0xa5, 0x3d, 0xc4, 0xfb, 0x81, 0x60,
+	0xd0, 0x4e, 0xc1, 0x77, 0xc1, 0x49, 0x84, 0xe6, 0xea, 0x1d, 0x5b, 0xf1, 0xfa, 0x12, 0x9c, 0xc8,
+	0xf9, 0xfa, 0xe7, 0x9b, 0x69, 0x29, 0xe3, 0xda, 0xa0, 0x47, 0x0f, 0xbf, 0x01, 0x4b, 0xb3, 0x38,
+	0x6f, 0x4f, 0xf0, 0xe8, 0xfc, 0x85, 0xc8, 0x2b, 0x16, 0xe7, 0x4f, 0x84, 0x56, 0xfb, 0x08, 0xaa,
+	0x09, 0x17, 0x9f, 0x91, 0x61, 0x23, 0x5a, 0x53, 0xbd, 0xfb, 0xe0, 0xf4, 0x36, 0xbe, 0x06, 0x73,
+	0xcb, 0xf7, 0xcd, 0x69, 0x68, 0x25, 0xf1, 0x08, 0x2e, 0x0a, 0x96, 0xee, 0xb8, 0x6b, 0xd4, 0xff,
+	0x9a, 0x8f, 0x87, 0xc6, 0x03, 0xe4, 0x7d, 0x42, 0x60, 0x77, 0x2b, 0x9e, 0xbe, 0xcc, 0x1d, 0x18,
+	0xe4, 0x5c, 0x15, 0xc9, 0xaa, 0x25, 0xf6, 0xb1, 0x0d, 0xa2, 0x9d, 0x83, 0xef, 0xc1, 0x8d, 0x56,
+	0xbe, 0xcd, 0xa4, 0xd2, 0xae, 0x39, 0x46, 0xc1, 0x55, 0x74, 0x55, 0x25, 0xed, 0xc9, 0xa5, 0x7b,
+	0x38, 0x98, 0x01, 0xa2, 0xc3, 0x36, 0xf2, 0x52, 0x2a, 0x1d, 0x79, 0x5f, 0x4a, 0x1f, 0x7d, 0x2f,
+	0x7d, 0xf4, 0xb3, 0xf4, 0xd1, 0xef, 0xd2, 0x47, 0xaf, 0xed, 0xee, 0x6a, 0x96, 0x97, 0xf5, 0x1b,
+	0x9c, 0xff, 0x0d, 0x00, 0x00, 0xff, 0xff, 0x22, 0xf9, 0x10, 0x31, 0xe9, 0x02, 0x00, 0x00,
 }
 
 func (this *Dataplane) Equal(that interface{}) bool {
@@ -119,6 +325,76 @@ func (this *Dataplane) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
+	if !this.Networking.Equal(that1.Networking) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *Dataplane_Networking) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Dataplane_Networking)
+	if !ok {
+		that2, ok := that.(Dataplane_Networking)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Inbound) != len(that1.Inbound) {
+		return false
+	}
+	for i := range this.Inbound {
+		if !this.Inbound[i].Equal(that1.Inbound[i]) {
+			return false
+		}
+	}
+	if len(this.Outbound) != len(that1.Outbound) {
+		return false
+	}
+	for i := range this.Outbound {
+		if !this.Outbound[i].Equal(that1.Outbound[i]) {
+			return false
+		}
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *Dataplane_Networking_Inbound) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Dataplane_Networking_Inbound)
+	if !ok {
+		that2, ok := that.(Dataplane_Networking_Inbound)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Interface != that1.Interface {
+		return false
+	}
 	if len(this.Tags) != len(that1.Tags) {
 		return false
 	}
@@ -126,6 +402,39 @@ func (this *Dataplane) Equal(that interface{}) bool {
 		if this.Tags[i] != that1.Tags[i] {
 			return false
 		}
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *Dataplane_Networking_Outbound) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Dataplane_Networking_Outbound)
+	if !ok {
+		that2, ok := that.(Dataplane_Networking_Outbound)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Interface != that1.Interface {
+		return false
+	}
+	if this.Service != that1.Service {
+		return false
+	}
+	if this.ServicePort != that1.ServicePort {
+		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
 		return false
@@ -147,6 +456,88 @@ func (m *Dataplane) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Networking != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintDataplane(dAtA, i, uint64(m.Networking.Size()))
+		n1, err := m.Networking.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Dataplane_Networking) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Dataplane_Networking) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Inbound) > 0 {
+		for _, msg := range m.Inbound {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintDataplane(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.Outbound) > 0 {
+		for _, msg := range m.Outbound {
+			dAtA[i] = 0x12
+			i++
+			i = encodeVarintDataplane(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Dataplane_Networking_Inbound) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Dataplane_Networking_Inbound) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Interface) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintDataplane(dAtA, i, uint64(len(m.Interface)))
+		i += copy(dAtA[i:], m.Interface)
+	}
 	if len(m.Tags) > 0 {
 		for k, _ := range m.Tags {
 			dAtA[i] = 0x12
@@ -170,6 +561,44 @@ func (m *Dataplane) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Dataplane_Networking_Outbound) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Dataplane_Networking_Outbound) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Interface) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintDataplane(dAtA, i, uint64(len(m.Interface)))
+		i += copy(dAtA[i:], m.Interface)
+	}
+	if len(m.Service) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintDataplane(dAtA, i, uint64(len(m.Service)))
+		i += copy(dAtA[i:], m.Service)
+	}
+	if m.ServicePort != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintDataplane(dAtA, i, uint64(m.ServicePort))
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func encodeVarintDataplane(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -185,6 +614,50 @@ func (m *Dataplane) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Networking != nil {
+		l = m.Networking.Size()
+		n += 1 + l + sovDataplane(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Dataplane_Networking) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Inbound) > 0 {
+		for _, e := range m.Inbound {
+			l = e.Size()
+			n += 1 + l + sovDataplane(uint64(l))
+		}
+	}
+	if len(m.Outbound) > 0 {
+		for _, e := range m.Outbound {
+			l = e.Size()
+			n += 1 + l + sovDataplane(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Dataplane_Networking_Inbound) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Interface)
+	if l > 0 {
+		n += 1 + l + sovDataplane(uint64(l))
+	}
 	if len(m.Tags) > 0 {
 		for k, v := range m.Tags {
 			_ = k
@@ -192,6 +665,29 @@ func (m *Dataplane) Size() (n int) {
 			mapEntrySize := 1 + len(k) + sovDataplane(uint64(len(k))) + 1 + len(v) + sovDataplane(uint64(len(v)))
 			n += mapEntrySize + 1 + sovDataplane(uint64(mapEntrySize))
 		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Dataplane_Networking_Outbound) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Interface)
+	if l > 0 {
+		n += 1 + l + sovDataplane(uint64(l))
+	}
+	l = len(m.Service)
+	if l > 0 {
+		n += 1 + l + sovDataplane(uint64(l))
+	}
+	if m.ServicePort != 0 {
+		n += 1 + sovDataplane(uint64(m.ServicePort))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -241,6 +737,250 @@ func (m *Dataplane) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: Dataplane: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Networking", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Networking == nil {
+				m.Networking = &Dataplane_Networking{}
+			}
+			if err := m.Networking.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDataplane(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Dataplane_Networking) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDataplane
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Networking: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Networking: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Inbound", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Inbound = append(m.Inbound, &Dataplane_Networking_Inbound{})
+			if err := m.Inbound[len(m.Inbound)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Outbound", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Outbound = append(m.Outbound, &Dataplane_Networking_Outbound{})
+			if err := m.Outbound[len(m.Outbound)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDataplane(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Dataplane_Networking_Inbound) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDataplane
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Inbound: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Inbound: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Interface", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Interface = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Tags", wireType)
@@ -368,6 +1108,143 @@ func (m *Dataplane) Unmarshal(dAtA []byte) error {
 			}
 			m.Tags[mapkey] = mapvalue
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDataplane(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Dataplane_Networking_Outbound) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDataplane
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Outbound: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Outbound: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Interface", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Interface = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Service", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthDataplane
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Service = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ServicePort", wireType)
+			}
+			m.ServicePort = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDataplane
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ServicePort |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDataplane(dAtA[iNdEx:])
