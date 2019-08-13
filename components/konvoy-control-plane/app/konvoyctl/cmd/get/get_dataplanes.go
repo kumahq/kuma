@@ -1,4 +1,4 @@
-package cmd
+package get
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printDataplaneInsights(pctx.Now(), dataplaneInsights, cmd.OutOrStdout())
+				return PrintDataplaneInsights(pctx.Now(), dataplaneInsights, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -52,7 +52,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printDataplaneInsights(now time.Time, dataplaneInsights *mesh_core.DataplaneInsightResourceList, out io.Writer) error {
+func PrintDataplaneInsights(now time.Time, dataplaneInsights *mesh_core.DataplaneInsightResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
 		NextRow: func() func() []string {

@@ -1,7 +1,8 @@
-package cmd
+package apply
 
 import (
 	"context"
+	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/registry"
@@ -14,15 +15,15 @@ import (
 )
 
 type applyContext struct {
-	*rootContext
+	*konvoyctl_cmd.RootContext
 
 	args struct {
 		file string
 	}
 }
 
-func newApplyCmd(pctx *rootContext) *cobra.Command {
-	ctx := &applyContext{rootContext: pctx}
+func NewApplyCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
+	ctx := &applyContext{RootContext: pctx}
 	cmd := &cobra.Command{
 		Use:   "apply",
 		Short: "Create or modify Konvoy resources",

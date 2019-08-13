@@ -1,13 +1,14 @@
-package cmd
+package config
 
 import (
+	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-func newConfigViewCmd(pctx *rootContext) *cobra.Command {
-	cmd := &cobra.Command{
+func newConfigViewCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
+	return &cobra.Command{
 		Use:   "view",
 		Short: "Show konvoyctl config",
 		Long:  `Show konvoyctl config.`,
@@ -21,5 +22,4 @@ func newConfigViewCmd(pctx *rootContext) *cobra.Command {
 			return nil
 		},
 	}
-	return cmd
 }

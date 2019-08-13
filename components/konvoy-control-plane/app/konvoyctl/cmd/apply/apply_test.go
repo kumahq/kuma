@@ -1,4 +1,4 @@
-package cmd
+package apply_test
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
+	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,20 +20,20 @@ import (
 
 var _ = Describe("konvoyctl apply", func() {
 
-	var rootCtx *rootContext
+	var rootCtx *konvoyctl_cmd.RootContext
 	var rootCmd *cobra.Command
 	var store core_store.ResourceStore
 
 	BeforeEach(func() {
-		rootCtx = &rootContext{
-			runtime: rootRuntime{
-				newResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
+		rootCtx = &konvoyctl_cmd.RootContext{
+			Runtime: konvoyctl_cmd.RootRuntime{
+				NewResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
 					return store, nil
 				},
 			},
 		}
 		store = memory_resources.NewStore()
-		rootCmd = newRootCmd(rootCtx)
+		rootCmd = cmd.NewRootCmd(rootCtx)
 	})
 
 	It("should read configuration from stdin (no -f arg)", func() {
@@ -43,7 +45,7 @@ var _ = Describe("konvoyctl apply", func() {
 
 		// given
 		rootCmd.SetArgs([]string{
-			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
 			"apply",
 		})
 
@@ -75,7 +77,7 @@ var _ = Describe("konvoyctl apply", func() {
 
 		// given
 		rootCmd.SetArgs([]string{
-			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
 			"apply", "-f", "-",
 		})
 
@@ -101,7 +103,7 @@ var _ = Describe("konvoyctl apply", func() {
 	It("should apply a new Dataplane resource", func() {
 		// given
 		rootCmd.SetArgs([]string{
-			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
 			"apply", "-f", filepath.Join("testdata", "apply-dataplane.yaml")},
 		)
 
@@ -140,7 +142,7 @@ var _ = Describe("konvoyctl apply", func() {
 
 		// given
 		rootCmd.SetArgs([]string{
-			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
 			"apply", "-f", filepath.Join("testdata", "apply-dataplane.yaml")},
 		)
 
@@ -166,7 +168,7 @@ var _ = Describe("konvoyctl apply", func() {
 	It("should apply a Mesh resource", func() {
 		// given
 		rootCmd.SetArgs([]string{
-			"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+			"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
 			"apply", "-f", filepath.Join("testdata", "apply-mesh.yaml")},
 		)
 

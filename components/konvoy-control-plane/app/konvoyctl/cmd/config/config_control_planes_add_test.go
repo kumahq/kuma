@@ -1,7 +1,8 @@
-package cmd
+package config_test
 
 import (
 	"bytes"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,7 +33,7 @@ var _ = Describe("konvoy config control-planes add", func() {
 	var buf *bytes.Buffer
 
 	BeforeEach(func() {
-		rootCmd = defaultRootCmd()
+		rootCmd = cmd.DefaultRootCmd()
 		buf = &bytes.Buffer{}
 		rootCmd.SetOut(buf)
 	})

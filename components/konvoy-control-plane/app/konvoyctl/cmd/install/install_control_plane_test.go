@@ -1,7 +1,9 @@
-package cmd
+package install_test
 
 import (
 	"bytes"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/install"
 	"io/ioutil"
 	"path/filepath"
 
@@ -18,14 +20,14 @@ var _ = Describe("konvoyctl install control-plane", func() {
 	var backupNewSelfSignedCert func(string) (tls.KeyPair, error)
 
 	BeforeEach(func() {
-		backupNewSelfSignedCert = newSelfSignedCert
+		backupNewSelfSignedCert = install.NewSelfSignedCert
 	})
 	AfterEach(func() {
-		newSelfSignedCert = backupNewSelfSignedCert
+		install.NewSelfSignedCert = backupNewSelfSignedCert
 	})
 
 	BeforeEach(func() {
-		newSelfSignedCert = func(string) (tls.KeyPair, error) {
+		install.NewSelfSignedCert = func(string) (tls.KeyPair, error) {
 			return tls.KeyPair{
 				CertPEM: []byte("CERT"),
 				KeyPEM:  []byte("KEY"),
@@ -49,13 +51,13 @@ var _ = Describe("konvoyctl install control-plane", func() {
 	DescribeTable("should generate Kubernetes resources",
 		func(given testCase) {
 			// given
-			cmd := defaultRootCmd()
-			cmd.SetArgs(append([]string{"install", "control-plane"}, given.extraArgs...))
-			cmd.SetOut(stdout)
-			cmd.SetErr(stderr)
+			rootCmd := cmd.DefaultRootCmd()
+			rootCmd.SetArgs(append([]string{"install", "control-plane"}, given.extraArgs...))
+			rootCmd.SetOut(stdout)
+			rootCmd.SetErr(stderr)
 
 			// when
-			err := cmd.Execute()
+			err := rootCmd.Execute()
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

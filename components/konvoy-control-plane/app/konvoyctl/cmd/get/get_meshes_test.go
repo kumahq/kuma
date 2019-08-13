@@ -1,9 +1,10 @@
-package cmd
+package get_test
 
 import (
 	"bytes"
 	"context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -11,6 +12,7 @@ import (
 	memory_resources "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 
+	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -61,17 +63,17 @@ var _ = Describe("konvoy get meshes", func() {
 
 	Describe("GetMeshesCmd", func() {
 
-		var rootCtx *rootContext
+		var rootCtx *konvoyctl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 
 		BeforeEach(func() {
 			// setup
-			rootCtx = &rootContext{
-				runtime: rootRuntime{
-					now: func() time.Time { return time.Now() },
-					newResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
+			rootCtx = &konvoyctl_cmd.RootContext{
+				Runtime: konvoyctl_cmd.RootRuntime{
+					Now: func() time.Time { return time.Now() },
+					NewResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
 						return store, nil
 					},
 				},
@@ -89,7 +91,7 @@ var _ = Describe("konvoy get meshes", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			rootCmd = newRootCmd(rootCtx)
+			rootCmd = cmd.NewRootCmd(rootCtx)
 			buf = &bytes.Buffer{}
 			rootCmd.SetOut(buf)
 		})
@@ -104,7 +106,7 @@ var _ = Describe("konvoy get meshes", func() {
 			func(given testCase) {
 				// given
 				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("testdata", "sample-konvoyctl.config.yaml"),
+					"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
 					"get", "meshes"}, given.outputFormat))
 
 				// when

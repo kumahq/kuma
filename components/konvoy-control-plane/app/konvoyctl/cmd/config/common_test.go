@@ -1,4 +1,4 @@
-package cmd
+package config_test
 
 import (
 	"fmt"

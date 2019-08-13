@@ -1,4 +1,4 @@
-package cmd
+package install
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/data"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/k8s"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/k8s/control-plane"
@@ -18,10 +19,10 @@ import (
 
 var (
 	// overridable by unit tests
-	newSelfSignedCert = tls.NewSelfSignedCert
+	NewSelfSignedCert = tls.NewSelfSignedCert
 )
 
-func newInstallControlPlaneCmd(pctx *rootContext) *cobra.Command {
+func newInstallControlPlaneCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 	args := struct {
 		Namespace             string
 		ImagePullPolicy       string
@@ -56,7 +57,7 @@ func newInstallControlPlaneCmd(pctx *rootContext) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if args.InjectorTlsCert == "" && args.InjectorTlsKey == "" {
 				commonName := fmt.Sprintf("%s.%s.svc", args.InjectorServiceName, args.Namespace)
-				injectorCert, err := newSelfSignedCert(commonName)
+				injectorCert, err := NewSelfSignedCert(commonName)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", commonName)
 				}

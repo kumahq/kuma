@@ -1,12 +1,13 @@
-package cmd
+package config
 
 import (
+	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output/printers"
 	"github.com/spf13/cobra"
 )
 
-func newConfigControlPlanesListCmd(pctx *rootContext) *cobra.Command {
-	cmd := &cobra.Command{
+func newConfigControlPlanesListCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
+	return &cobra.Command{
 		Use:   "list",
 		Short: "List known Control Planes",
 		Long:  `List known Control Planes.`,
@@ -34,5 +35,4 @@ func newConfigControlPlanesListCmd(pctx *rootContext) *cobra.Command {
 			return printers.NewTablePrinter().Print(data, cmd.OutOrStdout())
 		},
 	}
-	return cmd
 }
