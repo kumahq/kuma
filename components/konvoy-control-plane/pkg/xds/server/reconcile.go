@@ -56,7 +56,8 @@ func (r *reconciler) OnServiceDelete(_ core.NamespacedName) error {
 	return nil
 }
 
-func (r *reconciler) OnDataplaneUpdate(_ *mesh_core.DataplaneResource) error {
+func (r *reconciler) OnDataplaneUpdate(dp *mesh_core.DataplaneResource) error {
+	reconcileLog.Info("new dataplane updated", "dataplane", dp.Spec)
 	return nil
 }
 func (r *reconciler) OnDataplaneDelete(_ core_model.ResourceKey) error {

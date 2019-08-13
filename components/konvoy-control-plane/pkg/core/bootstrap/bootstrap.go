@@ -73,16 +73,23 @@ func initializeResourceStore(cfg konvoy_cp.Config, builder *core_runtime.Builder
 }
 
 func initializeDiscovery(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
-	if cfg.Environment == konvoy_cp.KubernetesEnvironment {
-		plugin, err := core_plugins.Plugins().Discovery(core_plugins.Kubernetes)
-		if err != nil {
-			return nil
-		}
-		if source, err := plugin.NewDiscoverySource(builder, nil); err != nil {
-			return nil
-		} else {
-			builder.AddDiscoverySource(source)
-		}
+	var pluginName core_plugins.PluginName
+	switch cfg.Environment {
+	case konvoy_cp.KubernetesEnvironment:
+		pluginName = core_plugins.Kubernetes
+	case konvoy_cp.UniversalEnvironment:
+		pluginName = core_plugins.Universal
+	default:
+		return errors.Errorf("unknown environment type %s", cfg.Environment)
+	}
+	plugin, err := core_plugins.Plugins().Discovery(pluginName)
+	if err != nil {
+		return nil
+	}
+	if source, err := plugin.NewDiscoverySource(builder, nil); err != nil {
+		return nil
+	} else {
+		builder.AddDiscoverySource(source)
 	}
 	return nil
 }
