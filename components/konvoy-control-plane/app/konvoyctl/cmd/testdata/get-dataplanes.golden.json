@@ -35,7 +35,7 @@
           }
         }
       ],
-      "type": "DataplaneStatus"
+      "type": "DataplaneInsight"
     },
     {
       "mesh": "default",
@@ -75,7 +75,7 @@
           }
         }
       ],
-      "type": "DataplaneStatus"
+      "type": "DataplaneInsight"
     }
   ]
 }

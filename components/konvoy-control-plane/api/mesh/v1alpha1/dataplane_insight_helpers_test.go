@@ -13,13 +13,13 @@ import (
 
 var _ = Describe("DataplaneHelpers", func() {
 
-	Describe("DataplaneStatus", func() {
+	Describe("DataplaneInsight", func() {
 
-		var status *DataplaneStatus
+		var status *DataplaneInsight
 		var t1, t2, t3 time.Time
 
 		BeforeEach(func() {
-			status = &DataplaneStatus{}
+			status = &DataplaneInsight{}
 			t1, _ = time.Parse(time.RFC3339, "2017-07-17T17:07:47+00:00")
 			t2, _ = time.Parse(time.RFC3339, "2018-08-18T18:08:48+00:00")
 			t3, _ = time.Parse(time.RFC3339, "2019-09-19T19:09:49+00:00")

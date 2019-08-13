@@ -53,8 +53,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	})
 
 	BeforeEach(func() {
-		tracker = NewDataplaneStatusTracker(runtimeInfo, func(accessor SubscriptionStatusAccessor) DataplaneStatusSink {
-			return DataplaneStatusSinkFunc(func(<-chan struct{}) {})
+		tracker = NewDataplaneStatusTracker(runtimeInfo, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
 		ctx = context.Background()
 	})
@@ -482,8 +482,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	)
 })
 
-type DataplaneStatusSinkFunc func(stop <-chan struct{})
+type DataplaneInsightSinkFunc func(stop <-chan struct{})
 
-func (f DataplaneStatusSinkFunc) Start(stop <-chan struct{}) {
+func (f DataplaneInsightSinkFunc) Start(stop <-chan struct{}) {
 	f(stop)
 }

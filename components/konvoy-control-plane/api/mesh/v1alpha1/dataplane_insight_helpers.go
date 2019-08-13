@@ -7,7 +7,7 @@ import (
 	"github.com/gogo/protobuf/types"
 )
 
-func (ds *DataplaneStatus) IsOnline() bool {
+func (ds *DataplaneInsight) IsOnline() bool {
 	for _, s := range ds.Subscriptions {
 		if s.ConnectTime != nil && s.DisconnectTime == nil {
 			return true
@@ -16,7 +16,7 @@ func (ds *DataplaneStatus) IsOnline() bool {
 	return false
 }
 
-func (ds *DataplaneStatus) GetSubscription(id string) (int, *DiscoverySubscription) {
+func (ds *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
 	for i, s := range ds.Subscriptions {
 		if s.Id == id {
 			return i, s
@@ -25,7 +25,7 @@ func (ds *DataplaneStatus) GetSubscription(id string) (int, *DiscoverySubscripti
 	return -1, nil
 }
 
-func (ds *DataplaneStatus) UpdateSubscription(s *DiscoverySubscription) {
+func (ds *DataplaneInsight) UpdateSubscription(s *DiscoverySubscription) {
 	i, old := ds.GetSubscription(s.Id)
 	if old != nil {
 		ds.Subscriptions[i] = s
@@ -34,7 +34,7 @@ func (ds *DataplaneStatus) UpdateSubscription(s *DiscoverySubscription) {
 	}
 }
 
-func (ds *DataplaneStatus) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
+func (ds *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
 	if len(ds.Subscriptions) == 0 {
 		return nil, nil
 	}
@@ -53,7 +53,7 @@ func (ds *DataplaneStatus) GetLatestSubscription() (*DiscoverySubscription, *tim
 	return ds.Subscriptions[idx], latest
 }
 
-func (ds *DataplaneStatus) Sum(v func(*DiscoverySubscription) uint64) uint64 {
+func (ds *DataplaneInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {
 	var result uint64 = 0
 	for _, s := range ds.Subscriptions {
 		result += v(s)

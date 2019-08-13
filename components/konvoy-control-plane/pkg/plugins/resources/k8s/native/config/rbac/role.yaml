@@ -29,6 +29,18 @@ rules:
 - apiGroups:
   - mesh.getkonvoy.io
   resources:
+  - dataplaneinsights
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - mesh.getkonvoy.io
+  resources:
   - proxytemplates
   verbs:
   - get

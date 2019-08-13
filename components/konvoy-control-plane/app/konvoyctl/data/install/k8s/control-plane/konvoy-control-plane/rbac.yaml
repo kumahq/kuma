@@ -17,6 +17,7 @@ rules:
   - mesh.getkonvoy.io
   resources:
   - dataplanes
+  - dataplaneinsights
   verbs:
   - get
   - list

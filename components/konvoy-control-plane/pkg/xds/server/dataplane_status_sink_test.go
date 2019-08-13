@@ -20,17 +20,17 @@ import (
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 )
 
-var _ = Describe("DataplaneStatusSink", func() {
+var _ = Describe("DataplaneInsightSink", func() {
 
 	t0, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
 
-	Describe("DataplaneStatusSink", func() {
+	Describe("DataplaneInsightSink", func() {
 
-		var recorder *DataplaneStatusStoreRecorder
+		var recorder *DataplaneInsightStoreRecorder
 		var stop chan struct{}
 
 		BeforeEach(func() {
-			recorder = &DataplaneStatusStoreRecorder{Upserts: make(chan DataplaneStatusUpsert)}
+			recorder = &DataplaneInsightStoreRecorder{Upserts: make(chan DataplaneInsightUpsert)}
 			stop = make(chan struct{})
 		})
 
@@ -38,7 +38,7 @@ var _ = Describe("DataplaneStatusSink", func() {
 			close(stop)
 		})
 
-		It("should periodically flush DataplaneStatus into a store", func() {
+		It("should periodically flush DataplaneInsight into a store", func() {
 			// setup
 			key := core_model.ResourceKey{Mesh: "default", Namespace: "demo", Name: "example-001"}
 			subscription := &mesh_proto.DiscoverySubscription{
@@ -51,10 +51,10 @@ var _ = Describe("DataplaneStatusSink", func() {
 			ticker := &time.Ticker{
 				C: ticks,
 			}
-			var latestUpsert *DataplaneStatusUpsert
+			var latestUpsert *DataplaneInsightUpsert
 
 			// given
-			sink := NewDataplaneStatusSink(accessor, func() *time.Ticker { return ticker }, recorder)
+			sink := NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, recorder)
 			go sink.Start(stop)
 
 			// when
@@ -126,7 +126,7 @@ var _ = Describe("DataplaneStatusSink", func() {
 		})
 	})
 
-	Describe("DataplaneStatusStore", func() {
+	Describe("DataplaneInsightStore", func() {
 
 		var store core_store.ResourceStore
 
@@ -134,7 +134,7 @@ var _ = Describe("DataplaneStatusSink", func() {
 			store = memory_resources.NewStore()
 		})
 
-		It("should create/update DataplaneStatus resource", func() {
+		It("should create/update DataplaneInsight resource", func() {
 			// setup
 			key := core_model.ResourceKey{Mesh: "default", Namespace: "demo", Name: "example-001"}
 			subscription := &mesh_proto.DiscoverySubscription{
@@ -142,11 +142,11 @@ var _ = Describe("DataplaneStatusSink", func() {
 				ControlPlaneInstanceId: "control-plane-01",
 				ConnectTime:            util_proto.MustTimestampProto(t0),
 			}
-			dataplaneStatus := &mesh_core.DataplaneStatusResource{}
+			dataplaneInsight := &mesh_core.DataplaneInsightResource{}
 			lastSeenVersion := ""
 
 			// given
-			statusStore := NewDataplaneStatusStore(store)
+			statusStore := NewDataplaneInsightStore(store)
 
 			// when
 			err := statusStore.Upsert(key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))
@@ -154,18 +154,18 @@ var _ = Describe("DataplaneStatusSink", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Eventually(func() bool {
-				err := store.Get(context.Background(), dataplaneStatus, core_store.GetBy(key))
+				err := store.Get(context.Background(), dataplaneInsight, core_store.GetBy(key))
 				if err != nil {
 					return false
 				}
-				if dataplaneStatus.Meta.GetVersion() == lastSeenVersion {
+				if dataplaneInsight.Meta.GetVersion() == lastSeenVersion {
 					return false
 				}
-				lastSeenVersion = dataplaneStatus.Meta.GetVersion()
+				lastSeenVersion = dataplaneInsight.Meta.GetVersion()
 				return true
 			}, "1s", "1ms").Should(BeTrue())
 			// and
-			Expect(util_proto.ToYAML(dataplaneStatus.GetSpec())).To(MatchYAML(`
+			Expect(util_proto.ToYAML(dataplaneInsight.GetSpec())).To(MatchYAML(`
             subscriptions:
             - connectTime: "2019-07-01T00:00:00Z"
               controlPlaneInstanceId: control-plane-01
@@ -188,18 +188,18 @@ var _ = Describe("DataplaneStatusSink", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Eventually(func() bool {
-				err := store.Get(context.Background(), dataplaneStatus, core_store.GetBy(key))
+				err := store.Get(context.Background(), dataplaneInsight, core_store.GetBy(key))
 				if err != nil {
 					return false
 				}
-				if dataplaneStatus.Meta.GetVersion() == lastSeenVersion {
+				if dataplaneInsight.Meta.GetVersion() == lastSeenVersion {
 					return false
 				}
-				lastSeenVersion = dataplaneStatus.Meta.GetVersion()
+				lastSeenVersion = dataplaneInsight.Meta.GetVersion()
 				return true
 			}, "1s", "1ms").Should(BeTrue())
 			// and
-			Expect(util_proto.ToYAML(dataplaneStatus.GetSpec())).To(MatchYAML(`
+			Expect(util_proto.ToYAML(dataplaneInsight.GetSpec())).To(MatchYAML(`
             subscriptions:
             - connectTime: "2019-07-01T00:00:00Z"
               controlPlaneInstanceId: control-plane-01
@@ -229,18 +229,18 @@ func (h *SubscriptionStatusHolder) GetStatus() (core_model.ResourceKey, *mesh_pr
 	return h.ResourceKey, proto.Clone(h.DiscoverySubscription).(*mesh_proto.DiscoverySubscription)
 }
 
-var _ DataplaneStatusStore = &DataplaneStatusStoreRecorder{}
+var _ DataplaneInsightStore = &DataplaneInsightStoreRecorder{}
 
-type DataplaneStatusUpsert struct {
+type DataplaneInsightUpsert struct {
 	core_model.ResourceKey
 	*mesh_proto.DiscoverySubscription
 }
 
-type DataplaneStatusStoreRecorder struct {
-	Upserts chan DataplaneStatusUpsert
+type DataplaneInsightStoreRecorder struct {
+	Upserts chan DataplaneInsightUpsert
 }
 
-func (s *DataplaneStatusStoreRecorder) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
-	s.Upserts <- DataplaneStatusUpsert{dataplaneId, subscription}
+func (s *DataplaneInsightStoreRecorder) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
+	s.Upserts <- DataplaneInsightUpsert{dataplaneId, subscription}
 	return nil
 }

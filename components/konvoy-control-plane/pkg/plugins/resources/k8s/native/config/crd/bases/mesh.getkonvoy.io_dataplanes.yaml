@@ -383,7 +383,7 @@ spec:
                 by the system. Read-only. More info: http://kubernetes.io/docs/user-guide/identifiers#uids"
               type: string
           type: object
-        status:
+        spec:
           type: object
       type: object
   versions:

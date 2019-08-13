@@ -30,13 +30,13 @@ type DataplaneStatusTracker interface {
 }
 
 func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTracker {
-	return NewDataplaneStatusTracker(rt, func(accessor SubscriptionStatusAccessor) DataplaneStatusSink {
-		return NewDataplaneStatusSink(
+	return NewDataplaneStatusTracker(rt, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+		return NewDataplaneInsightSink(
 			accessor,
 			func() *time.Ticker {
 				return time.NewTicker(1 * time.Second)
 			},
-			NewDataplaneStatusStore(rt.ResourceStore()))
+			NewDataplaneInsightStore(rt.ResourceStore()))
 	})
 }
 
@@ -44,10 +44,10 @@ type SubscriptionStatusAccessor interface {
 	GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription)
 }
 
-type DataplaneStatusSinkFactoryFunc = func(SubscriptionStatusAccessor) DataplaneStatusSink
+type DataplaneInsightSinkFactoryFunc = func(SubscriptionStatusAccessor) DataplaneInsightSink
 
 func NewDataplaneStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
-	createStatusSink DataplaneStatusSinkFactoryFunc) DataplaneStatusTracker {
+	createStatusSink DataplaneInsightSinkFactoryFunc) DataplaneStatusTracker {
 	return &dataplaneStatusTracker{
 		runtimeInfo:      runtimeInfo,
 		createStatusSink: createStatusSink,
@@ -59,7 +59,7 @@ var _ DataplaneStatusTracker = &dataplaneStatusTracker{}
 
 type dataplaneStatusTracker struct {
 	runtimeInfo      core_runtime.RuntimeInfo
-	createStatusSink DataplaneStatusSinkFactoryFunc
+	createStatusSink DataplaneInsightSinkFactoryFunc
 	mu               sync.RWMutex // protects access to the fields below
 	streams          map[int64]*streamState
 }
