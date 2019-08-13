@@ -2,6 +2,8 @@ package discovery
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
 
 var _ DiscoverySource = &DiscoverySink{}
@@ -37,6 +39,18 @@ func (s *DiscoverySink) OnWorkloadUpdate(wrk *WorkloadInfo) error {
 func (s *DiscoverySink) OnWorkloadDelete(name core.NamespacedName) error {
 	if s.Consumer != nil {
 		return s.Consumer.OnWorkloadDelete(name)
+	}
+	return nil
+}
+func (s *DiscoverySink) OnDataplaneUpdate(dataplane *mesh_core.DataplaneResource) error {
+	if s.Consumer != nil {
+		return s.Consumer.OnDataplaneUpdate(dataplane)
+	}
+	return nil
+}
+func (s *DiscoverySink) OnDataplaneDelete(key model.ResourceKey) error {
+	if s.Consumer != nil {
+		return s.Consumer.OnDataplaneDelete(key)
 	}
 	return nil
 }
