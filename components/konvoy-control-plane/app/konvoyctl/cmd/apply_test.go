@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
 
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -38,8 +39,6 @@ var _ = Describe("konvoyctl apply", func() {
 		mockStdin, err := os.Open(filepath.Join("testdata", "apply-dataplane.yaml"))
 		Expect(err).ToNot(HaveOccurred())
 
-		oldStdin := os.Stdin
-		defer func() { rootCmd.SetIn(oldStdin) }()
 		rootCmd.SetIn(mockStdin)
 
 		// given
@@ -70,9 +69,8 @@ var _ = Describe("konvoyctl apply", func() {
 	It("should read configuration from stdin (-f - arg)", func() {
 		// setup
 		mockStdin, err := os.Open(filepath.Join("testdata", "apply-dataplane.yaml"))
+		Expect(err).ToNot(HaveOccurred())
 
-		oldStdin := os.Stdin
-		defer func() { rootCmd.SetIn(oldStdin) }()
 		rootCmd.SetIn(mockStdin)
 
 		// given
