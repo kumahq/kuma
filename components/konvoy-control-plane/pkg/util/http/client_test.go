@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	util_http "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/http"
@@ -12,35 +13,79 @@ import (
 
 var _ = Describe("Http Util", func() {
 	Describe("ClientWithBaseURL(..)", func() {
-		It("should rewrite request URL", func() {
-			// given
-			baseURL, _ := url.Parse("https://konvoy-control-plane:5681")
-			// and
-			delegate := util_http.ClientFunc(func(req *http.Request) (*http.Response, error) {
-				Expect(req.URL.Scheme).To(Equal("https"))
-				Expect(req.URL.Host).To(Equal("konvoy-control-plane:5681"))
-				return &http.Response{}, nil
-			})
+		type testCase struct {
+			baseURL     string
+			requestURL  string
+			expectedURL string
+		}
 
-			// when
-			client := util_http.ClientWithBaseURL(delegate, baseURL)
-			// then
-			Expect(client).ToNot(BeIdenticalTo(delegate))
+		DescribeTable("should rewrite request URL by combining `baseURL` and `requestURL`",
+			func(given testCase) {
+				// setup
+				baseURL, err := url.Parse(given.baseURL)
+				Expect(err).ToNot(HaveOccurred())
 
-			// when
-			req, _ := http.NewRequest("GET", "/meshes/default/dataplanes", nil)
-			// and
-			_, err := client.Do(req)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-		})
+				// and
+				var actualURL *url.URL
+				delegate := util_http.ClientFunc(func(req *http.Request) (*http.Response, error) {
+					actualURL = req.URL
+					return &http.Response{}, nil
+				})
+
+				// when
+				client := util_http.ClientWithBaseURL(delegate, baseURL)
+				// then
+				Expect(client).ToNot(BeIdenticalTo(delegate))
+
+				// when
+				req, err := http.NewRequest("GET", given.requestURL, nil)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				_, err = client.Do(req)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// and
+				Expect(actualURL.String()).To(Equal(given.expectedURL))
+			},
+			Entry("baseURL without path", testCase{
+				baseURL:     "https://konvoy-control-plane:5681",
+				requestURL:  "/meshes/default/dataplanes",
+				expectedURL: "https://konvoy-control-plane:5681/meshes/default/dataplanes",
+			}),
+			Entry("baseURL without path and request with a relative path", testCase{
+				baseURL:     "https://konvoy-control-plane:5681",
+				requestURL:  "meshes/default/dataplanes",
+				expectedURL: "https://konvoy-control-plane:5681/meshes/default/dataplanes",
+			}),
+			Entry("baseURL with path", testCase{
+				baseURL:     "https://konvoy-control-plane:5681/proxy/foo/bar",
+				requestURL:  "/test",
+				expectedURL: "https://konvoy-control-plane:5681/proxy/foo/bar/test",
+			}),
+			Entry("baseURL that ends with /", testCase{
+				baseURL:     "https://konvoy-control-plane:5681/",
+				requestURL:  "/meshes/default/dataplanes",
+				expectedURL: "https://konvoy-control-plane:5681/meshes/default/dataplanes",
+			}),
+			Entry("baseURL and/or requestURL with double slashes", testCase{
+				baseURL:     "https://konvoy-control-plane:5681//proxy/foo/bar",
+				requestURL:  "/test//baz",
+				expectedURL: "https://konvoy-control-plane:5681/proxy/foo/bar/test/baz",
+			}),
+		)
 
 		It("should tolerate nil URL", func() {
-			// given
-			baseURL, _ := url.Parse("https://konvoy-control-plane:5681")
+			// setup
+			baseURL, err := url.Parse("https://konvoy-control-plane:5681")
+			Expect(err).ToNot(HaveOccurred())
+
 			// and
+			var actualURL *url.URL
 			delegate := util_http.ClientFunc(func(req *http.Request) (*http.Response, error) {
-				Expect(req.URL).To(BeNil())
+				actualURL = req.URL
 				return &http.Response{}, nil
 			})
 
@@ -50,13 +95,16 @@ var _ = Describe("Http Util", func() {
 			Expect(client).ToNot(BeIdenticalTo(delegate))
 
 			// when
-			req := &http.Request{}
+			req := &http.Request{
+				URL: nil,
+			}
 			// and
-			req.URL = nil
-			// and
-			_, err := client.Do(req)
+			_, err = client.Do(req)
 			// then
 			Expect(err).ToNot(HaveOccurred())
+
+			// and
+			Expect(actualURL).To(BeNil())
 		})
 	})
 })
