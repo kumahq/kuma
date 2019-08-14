@@ -72,3 +72,18 @@ func ParseIP(text string) (string, error) {
 	}
 	return text, nil
 }
+
+func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error) {
+	if n == nil {
+		return nil, nil
+	}
+	ifaces := make([]InboundInterface, len(n.Inbound))
+	for i, inbound := range n.Inbound {
+		iface, err := ParseInboundInterface(inbound.Interface)
+		if err != nil {
+			return nil, err
+		}
+		ifaces[i] = iface
+	}
+	return ifaces, nil
+}

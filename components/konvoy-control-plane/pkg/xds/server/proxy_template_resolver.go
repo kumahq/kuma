@@ -7,7 +7,6 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
-	mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 )
 
@@ -25,24 +24,13 @@ type simpleProxyTemplateResolver struct {
 }
 
 func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
-	if proxy.Workload.Meta.Labels != nil {
-		if templateName := proxy.Workload.Meta.Labels[mesh_k8s.ProxyTemplateAnnotation]; templateName != "" {
-			template := &mesh_core.ProxyTemplateResource{}
-			if err := r.ResourceStore.Get(context.Background(), template,
-				store.GetByName(proxy.Workload.Meta.Namespace, templateName)); err != nil { // todo(jakubdyszkiewicz) GetByKey with mesh from Dataplane which will replace Proxy
-				templateResolverLog.Error(err, "failed to resolve ProxyTemplate",
-					"workloadNamespace", proxy.Workload.Meta.Namespace,
-					"workloadName", proxy.Workload.Meta.Name,
-					"templateName", templateName)
-			} else {
-				templateResolverLog.V(1).Info("resolved ProxyTemplate",
-					"workloadNamespace", proxy.Workload.Meta.Namespace,
-					"workloadName", proxy.Workload.Meta.Name,
-					"templateName", templateName,
-				)
-				return &template.Spec
-			}
-		}
+	ctx := context.Background()
+	templateList := &mesh_core.ProxyTemplateResourceList{}
+	if err := r.ResourceStore.List(ctx, templateList); err != nil {
+		templateResolverLog.Error(err, "failed to resolve ProxyTemplate")
+	} else if 0 < len(templateList.Items) {
+		// TODO(yskopets): Use ProxyTemplate's selector to pick a proper one
+		return &templateList.Items[0].Spec
 	}
 	return r.DefaultProxyTemplate
 }

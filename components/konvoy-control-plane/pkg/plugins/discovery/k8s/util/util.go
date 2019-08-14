@@ -33,19 +33,33 @@ func FindServices(svcs *kube_core.ServiceList, predicate ServicePredicate) []*ku
 // string up in all named ports in all containers in the target pod.  If no
 // match is found, fail.
 func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, error) {
+	givenOrDefault := func(value kube_core.Protocol) kube_core.Protocol {
+		if value != "" {
+			return value
+		}
+		return kube_core.ProtocolTCP
+	}
+
 	portName := svcPort.TargetPort
 	switch portName.Type {
 	case kube_intstr.String:
 		name := portName.StrVal
 		for _, container := range pod.Spec.Containers {
 			for _, port := range container.Ports {
-				if port.Name == name && port.Protocol == svcPort.Protocol {
+				if port.Name == name && givenOrDefault(port.Protocol) == givenOrDefault(svcPort.Protocol) {
 					return int(port.ContainerPort), nil
 				}
 			}
 		}
 	case kube_intstr.Int:
-		return portName.IntValue(), nil
+		value := portName.IntVal
+		for _, container := range pod.Spec.Containers {
+			for _, port := range container.Ports {
+				if port.ContainerPort == value && givenOrDefault(port.Protocol) == givenOrDefault(svcPort.Protocol) {
+					return int(port.ContainerPort), nil
+				}
+			}
+		}
 	}
 
 	return 0, fmt.Errorf("no suitable port for manifest: %s", pod.UID)

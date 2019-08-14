@@ -102,3 +102,74 @@ var _ = Describe("ParseInboundInterface(..)", func() {
 		)
 	})
 })
+
+var _ = Describe("Dataplane_Networking", func() {
+
+	Describe("GetInboundInterfaces()", func() {
+
+		Context("valid input values", func() {
+			type testCase struct {
+				input    *Dataplane_Networking
+				expected []InboundInterface
+			}
+
+			DescribeTable("should parse valid input values",
+				func(given testCase) {
+					// when
+					ifaces, err := given.input.GetInboundInterfaces()
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					// and
+					Expect(ifaces).To(ConsistOf(given.expected))
+				},
+				Entry("nil", testCase{
+					input:    nil,
+					expected: nil,
+				}),
+				Entry("empty", testCase{
+					input:    &Dataplane_Networking{},
+					expected: []InboundInterface{},
+				}),
+				Entry("2 inbound interfaces", testCase{
+					input: &Dataplane_Networking{
+						Inbound: []*Dataplane_Networking_Inbound{
+							{Interface: "192.168.0.1:80:8080"},
+							{Interface: "192.168.0.1:443:8443"},
+						},
+					},
+					expected: []InboundInterface{
+						{WorkloadAddress: "192.168.0.1", ServicePort: 80, WorkloadPort: 8080},
+						{WorkloadAddress: "192.168.0.1", ServicePort: 443, WorkloadPort: 8443},
+					},
+				}),
+			)
+		})
+
+		Context("invalid input values", func() {
+			type testCase struct {
+				input       *Dataplane_Networking
+				expectedErr string
+			}
+
+			DescribeTable("should fail on invalid input values",
+				func(given testCase) {
+					// when
+					ifaces, err := given.input.GetInboundInterfaces()
+					// then
+					Expect(ifaces).To(BeNil())
+					// and
+					Expect(err).To(MatchError(given.expectedErr))
+				},
+				Entry("dataplane IP address is missing", testCase{
+					input: &Dataplane_Networking{
+						Inbound: []*Dataplane_Networking_Inbound{
+							{Interface: "192.168.0.1:80:8080"},
+							{Interface: ":443:8443"},
+						},
+					},
+					expectedErr: `invalid format: expected ^(?P<workload_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)):(?P<service_port>[0-9]{1,5}):(?P<workload_port>[0-9]{1,5})$, got ":443:8443"`,
+				}),
+			)
+		})
+	})
+})

@@ -5,8 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
-	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
@@ -53,8 +52,8 @@ var _ = Describe("Generator", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "v1",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 						},
 					},
 				},
@@ -101,9 +100,9 @@ var _ = Describe("Generator", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "v1",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
-							{Address: "192.168.0.1", Port: 8443},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
 						},
 					},
 				},
@@ -184,11 +183,11 @@ var _ = Describe("Generator", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "v1",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
-							{Address: "192.168.0.2", Port: 8080},
-							{Address: "192.168.0.1", Port: 8443},
-							{Address: "192.168.0.2", Port: 8443},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8080},
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
+							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8443},
 						},
 					},
 				},
@@ -369,8 +368,8 @@ var _ = Describe("Generator", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "v1",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 						},
 					},
 				},
@@ -408,11 +407,11 @@ var _ = Describe("Generator", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "v1",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
-							{Address: "192.168.0.1", Port: 8443},
-							{Address: "192.168.0.2", Port: 8080},
-							{Address: "192.168.0.2", Port: 8443},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
+							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8080},
+							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8443},
 						},
 					},
 				},
@@ -452,7 +451,7 @@ var _ = Describe("Generator", func() {
 
 		type testCase struct {
 			proxy    *model.Proxy
-			profile  *konvoy_mesh.ProxyTemplateProfileSource
+			profile  *mesh_proto.ProxyTemplateProfileSource
 			expected string
 		}
 
@@ -481,12 +480,12 @@ var _ = Describe("Generator", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "v1",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 						},
 					},
 				},
-				profile: &konvoy_mesh.ProxyTemplateProfileSource{
+				profile: &mesh_proto.ProxyTemplateProfileSource{
 					Name: template.ProfileTransparentInboundProxy,
 				},
 				expected: `
@@ -532,12 +531,12 @@ var _ = Describe("Generator", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "v1",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 						},
 					},
 				},
-				profile: &konvoy_mesh.ProxyTemplateProfileSource{
+				profile: &mesh_proto.ProxyTemplateProfileSource{
 					Name: "transparent-outbound-proxy",
 				},
 				expected: `
@@ -578,7 +577,7 @@ var _ = Describe("Generator", func() {
 
 			type testCase struct {
 				proxy *model.Proxy
-				raw   *konvoy_mesh.ProxyTemplateRawSource
+				raw   *mesh_proto.ProxyTemplateRawSource
 				err   interface{}
 			}
 
@@ -602,13 +601,13 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+					raw: &mesh_proto.ProxyTemplateRawSource{
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -622,13 +621,13 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+					raw: &mesh_proto.ProxyTemplateRawSource{
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:     "raw-name",
 							Version:  "raw-version",
 							Resource: `{`,
@@ -641,13 +640,13 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+					raw: &mesh_proto.ProxyTemplateRawSource{
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -662,13 +661,13 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+					raw: &mesh_proto.ProxyTemplateRawSource{
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -694,13 +693,13 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+					raw: &mesh_proto.ProxyTemplateRawSource{
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -728,7 +727,7 @@ var _ = Describe("Generator", func() {
 
 			type testCase struct {
 				proxy    *model.Proxy
-				raw      *konvoy_mesh.ProxyTemplateRawSource
+				raw      *mesh_proto.ProxyTemplateRawSource
 				expected string
 			}
 
@@ -756,12 +755,12 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					raw: &konvoy_mesh.ProxyTemplateRawSource{
+					raw: &mesh_proto.ProxyTemplateRawSource{
 						Resources: nil,
 					},
 					expected: `{}`,
@@ -771,13 +770,13 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+					raw: &mesh_proto.ProxyTemplateRawSource{
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -824,13 +823,13 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+					raw: &mesh_proto.ProxyTemplateRawSource{
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -875,13 +874,13 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					raw: &konvoy_mesh.ProxyTemplateRawSource{
-						Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+					raw: &mesh_proto.ProxyTemplateRawSource{
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:    "raw-name",
 							Version: "raw-version",
 							Resource: `
@@ -941,7 +940,7 @@ var _ = Describe("Generator", func() {
 		Context("Error case", func() {
 			type testCase struct {
 				proxy    *model.Proxy
-				template *konvoy_mesh.ProxyTemplate
+				template *mesh_proto.ProxyTemplate
 				err      interface{}
 			}
 
@@ -965,24 +964,24 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					template: &konvoy_mesh.ProxyTemplate{
-						Sources: []*konvoy_mesh.ProxyTemplateSource{
+					template: &mesh_proto.ProxyTemplate{
+						Sources: []*mesh_proto.ProxyTemplateSource{
 							{
-								Type: &konvoy_mesh.ProxyTemplateSource_Profile{
-									Profile: &konvoy_mesh.ProxyTemplateProfileSource{
+								Type: &mesh_proto.ProxyTemplateSource_Profile{
+									Profile: &mesh_proto.ProxyTemplateProfileSource{
 										Name: template.ProfileTransparentOutboundProxy,
 									},
 								},
 							},
 							{
-								Type: &konvoy_mesh.ProxyTemplateSource_Raw{
-									Raw: &konvoy_mesh.ProxyTemplateRawSource{
-										Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+								Type: &mesh_proto.ProxyTemplateSource_Raw{
+									Raw: &mesh_proto.ProxyTemplateRawSource{
+										Resources: []*mesh_proto.ProxyTemplateRawResource{{
 											Name:     "raw-name",
 											Version:  "raw-version",
 											Resource: `{`,
@@ -1001,7 +1000,7 @@ var _ = Describe("Generator", func() {
 
 			type testCase struct {
 				proxy    *model.Proxy
-				template *konvoy_mesh.ProxyTemplate
+				template *mesh_proto.ProxyTemplate
 				expected string
 			}
 
@@ -1030,24 +1029,24 @@ var _ = Describe("Generator", func() {
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Workload: model.Workload{
 							Version: "v1",
-							Endpoints: []core_discovery.WorkloadEndpoint{
-								{Address: "192.168.0.1", Port: 8080},
+							Endpoints: []mesh_proto.InboundInterface{
+								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 							},
 						},
 					},
-					template: &konvoy_mesh.ProxyTemplate{
-						Sources: []*konvoy_mesh.ProxyTemplateSource{
+					template: &mesh_proto.ProxyTemplate{
+						Sources: []*mesh_proto.ProxyTemplateSource{
 							{
-								Type: &konvoy_mesh.ProxyTemplateSource_Profile{
-									Profile: &konvoy_mesh.ProxyTemplateProfileSource{
+								Type: &mesh_proto.ProxyTemplateSource_Profile{
+									Profile: &mesh_proto.ProxyTemplateProfileSource{
 										Name: template.ProfileTransparentOutboundProxy,
 									},
 								},
 							},
 							{
-								Type: &konvoy_mesh.ProxyTemplateSource_Raw{
-									Raw: &konvoy_mesh.ProxyTemplateRawSource{
-										Resources: []*konvoy_mesh.ProxyTemplateRawResource{{
+								Type: &mesh_proto.ProxyTemplateSource_Raw{
+									Raw: &mesh_proto.ProxyTemplateRawSource{
+										Resources: []*mesh_proto.ProxyTemplateRawResource{{
 											Name:    "raw-name",
 											Version: "raw-version",
 											Resource: `

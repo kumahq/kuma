@@ -13,15 +13,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+	k8s_resources "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 // DataplaneReconciler reconciles a Dataplane object
 type DataplaneReconciler struct {
 	client.Client
-	Log logr.Logger
+	Converter k8s_resources.Converter
 	core_discovery.DiscoverySink
+	Log logr.Logger
 }
 
 func (r *DataplaneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -29,8 +32,8 @@ func (r *DataplaneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("dataplane", req.NamespacedName)
 
 	// Fetch the Dataplane instance
-	dataplane := &mesh_k8s.Dataplane{}
-	if err := r.Get(ctx, req.NamespacedName, dataplane); err != nil {
+	crd := &mesh_k8s.Dataplane{}
+	if err := r.Get(ctx, req.NamespacedName, crd); err != nil {
 		if apierrs.IsNotFound(err) {
 			return ctrl.Result{}, r.DiscoverySink.OnWorkloadDelete(core_model.ResourceKey{
 				Namespace: req.NamespacedName.Namespace,
@@ -41,10 +44,11 @@ func (r *DataplaneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	if wrk, err := DataplaneToWorkload(dataplane); err != nil {
+	dataplane := &mesh_core.DataplaneResource{}
+	if err := r.Converter.ToCoreResource(crd, dataplane); err != nil {
 		return ctrl.Result{}, err
 	} else {
-		return ctrl.Result{}, r.DiscoverySink.OnWorkloadUpdate(wrk)
+		return ctrl.Result{}, r.DiscoverySink.OnDataplaneUpdate(dataplane)
 	}
 }
 

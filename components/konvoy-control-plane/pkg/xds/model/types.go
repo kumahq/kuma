@@ -2,7 +2,8 @@ package model
 
 import (
 	"fmt"
-	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+
+	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 )
 
 type ProxyId struct {
@@ -19,14 +20,7 @@ type Proxy struct {
 	Workload Workload
 }
 
-type WorkloadMeta struct {
-	Name      string
-	Namespace string
-	Labels    map[string]string
-}
-
 type Workload struct {
-	Meta      WorkloadMeta
 	Version   string
-	Endpoints []core_discovery.WorkloadEndpoint
+	Endpoints []mesh_proto.InboundInterface
 }

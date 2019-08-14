@@ -3,9 +3,11 @@ package server
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
+
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -22,26 +24,25 @@ type reconciler struct {
 }
 
 // Make sure that reconciler implements all relevant interfaces
-var _ core_discovery.WorkloadDiscoveryConsumer = &reconciler{}
+var _ core_discovery.DataplaneDiscoveryConsumer = &reconciler{}
 
-func (r *reconciler) OnWorkloadUpdate(info *core_discovery.WorkloadInfo) error {
-	proxyId := model.ProxyId{Name: info.Workload.Id.Name, Namespace: info.Workload.Id.Namespace}
+func (r *reconciler) OnDataplaneUpdate(dataplane *mesh_core.DataplaneResource) error {
+	endpoints, err := dataplane.Spec.Networking.GetInboundInterfaces()
+	if err != nil {
+		return err
+	}
+	proxyId := model.ProxyId{Name: dataplane.Meta.GetName(), Namespace: dataplane.Meta.GetNamespace()}
 	return r.reconcile(
 		&envoy_core.Node{Id: proxyId.String()},
 		&model.Proxy{
 			Id: proxyId,
 			Workload: model.Workload{
-				Meta: model.WorkloadMeta{
-					Namespace: info.Workload.Id.Namespace,
-					Name:      info.Workload.Id.Name,
-					Labels:    info.Workload.Meta.Labels,
-				},
-				Version:   info.Desc.Version,
-				Endpoints: info.Desc.Endpoints,
+				Version:   dataplane.Meta.GetVersion(),
+				Endpoints: endpoints,
 			},
 		})
 }
-func (r *reconciler) OnWorkloadDelete(key core_model.ResourceKey) error {
+func (r *reconciler) OnDataplaneDelete(key core_model.ResourceKey) error {
 	proxyId := model.ProxyId{Name: key.Name, Namespace: key.Namespace}
 	r.cacher.Clear(&envoy_core.Node{Id: proxyId.String()})
 	return nil
