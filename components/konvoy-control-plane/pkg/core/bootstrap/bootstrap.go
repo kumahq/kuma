@@ -84,10 +84,10 @@ func initializeDiscovery(cfg konvoy_cp.Config, builder *core_runtime.Builder) er
 	}
 	plugin, err := core_plugins.Plugins().Discovery(pluginName)
 	if err != nil {
-		return nil
+		return err
 	}
 	if source, err := plugin.NewDiscoverySource(builder, nil); err != nil {
-		return nil
+		return err
 	} else {
 		builder.AddDiscoverySource(source)
 	}

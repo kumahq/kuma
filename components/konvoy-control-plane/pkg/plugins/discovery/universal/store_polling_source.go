@@ -9,11 +9,12 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 	"time"
 )
 
 var (
-	log = core.Log.WithName("store-polling-source")
+	log = core.Log.WithName("discovery").WithName("universal")
 )
 
 type dataplanesByKey = map[model.ResourceKey]*core_resource.DataplaneResource
@@ -59,16 +60,23 @@ func (s *storePollingSource) detectChanges() error {
 		return errors.Wrap(err, "could not fetch dataplanes")
 	}
 
+	var multiErr error
 	for _, dataplane := range newOrChangedDataplanes(s.currentDataplanes, dataplanes) {
 		if err := s.OnDataplaneUpdate(dataplane); err != nil {
-			return errors.Wrap(err, "OnDataplaneUpdate callback returned an error")
+			multiErr = multierr.Combine(multiErr, errors.Wrap(err, "OnDataplaneUpdate callback returned an error"))
 		}
+	}
+	if multiErr != nil {
+		return multiErr
 	}
 
 	for _, key := range deletedDataplanes(s.currentDataplanes, dataplanes) {
 		if err := s.OnDataplaneDelete(key); err != nil {
-			return errors.Wrap(err, "OnDataplaneDelete callback returned an error")
+			multiErr = multierr.Combine(multiErr, errors.Wrap(err, "OnDataplaneDelete callback returned an error"))
 		}
+	}
+	if multiErr != nil {
+		return multiErr
 	}
 
 	s.currentDataplanes = dataplanes
