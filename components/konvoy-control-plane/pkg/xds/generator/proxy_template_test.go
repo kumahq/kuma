@@ -6,10 +6,13 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
+
+	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 )
 
 var _ = Describe("Generator", func() {
@@ -41,8 +44,10 @@ var _ = Describe("Generator", func() {
 			Entry("should support Nodes without IP addresses and Ports", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
 					},
 				},
 				expected: `{}`,
@@ -50,10 +55,16 @@ var _ = Describe("Generator", func() {
 			Entry("should support Nodes with 1 IP address and 1 Port", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+								},
+							},
 						},
 					},
 				},
@@ -98,11 +109,17 @@ var _ = Describe("Generator", func() {
 			Entry("should support Nodes with 1 IP address and 2 Ports", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+									{Interface: "192.168.0.1:443:8443"},
+								},
+							},
 						},
 					},
 				},
@@ -181,13 +198,19 @@ var _ = Describe("Generator", func() {
 			Entry("should support Nodes with 2 IP addresses and 2 Ports", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
-							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8443},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+									{Interface: "192.168.0.2:80:8080"},
+									{Interface: "192.168.0.1:443:8443"},
+									{Interface: "192.168.0.2:443:8443"},
+								},
+							},
 						},
 					},
 				},
@@ -330,8 +353,10 @@ var _ = Describe("Generator", func() {
 			Entry("should support Nodes without IP addresses and ports", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
 					},
 				},
 				expected: `
@@ -366,10 +391,16 @@ var _ = Describe("Generator", func() {
 			Entry("should support Nodes with 1 IP address and 1 Port", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+								},
+							},
 						},
 					},
 				},
@@ -405,13 +436,19 @@ var _ = Describe("Generator", func() {
 			Entry("should support Nodes with 2 IP addresses and 2 Ports", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
-							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8443},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+									{Interface: "192.168.0.1:443:8443"},
+									{Interface: "192.168.0.2:80:8080"},
+									{Interface: "192.168.0.2:443:8443"},
+								},
+							},
 						},
 					},
 				},
@@ -478,10 +515,16 @@ var _ = Describe("Generator", func() {
 			Entry("should support pre-defined `transparent-inbound-proxy` profile", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+								},
+							},
 						},
 					},
 				},
@@ -529,10 +572,16 @@ var _ = Describe("Generator", func() {
 			Entry("should support pre-defined `transparent-outbound-proxy` profile", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+								},
+							},
 						},
 					},
 				},
@@ -599,10 +648,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field is empty", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -619,10 +674,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field is neither a YAML nor a JSON", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -638,10 +699,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field has unknown @type", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -659,10 +726,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field is a YAML without '@type' field", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -691,10 +764,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field is an invalid xDS resource", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -753,10 +832,16 @@ var _ = Describe("Generator", func() {
 				Entry("should support empty resource list", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -768,10 +853,16 @@ var _ = Describe("Generator", func() {
 				Entry("should support Listener resource as YAML", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -821,10 +912,16 @@ var _ = Describe("Generator", func() {
 				Entry("should support Cluster resource as YAML", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -872,10 +969,16 @@ var _ = Describe("Generator", func() {
 				Entry("should support Cluster resource as JSON", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -962,10 +1065,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when raw xDS resource is not valid", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -1027,10 +1136,16 @@ var _ = Describe("Generator", func() {
 				Entry("should support a combination of pre-defined profiles and raw xDS resources", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
