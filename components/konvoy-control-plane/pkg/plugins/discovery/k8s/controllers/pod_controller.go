@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 
 	mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	kube_core "k8s.io/api/core/v1"
@@ -52,7 +53,10 @@ func (r *PodReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.Get(ctx, req.NamespacedName, pod); err != nil {
 		log.Error(err, "unable to fetch Pod")
 		if apierrs.IsNotFound(err) {
-			return ctrl.Result{}, r.DiscoverySink.OnWorkloadDelete(req.NamespacedName)
+			return ctrl.Result{}, r.DiscoverySink.OnWorkloadDelete(core_model.ResourceKey{
+				Namespace: req.NamespacedName.Namespace,
+				Name:      req.NamespacedName.Name,
+			})
 		}
 		return ctrl.Result{}, err
 	}
