@@ -11,12 +11,14 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"sync"
 	"time"
 )
 
 var _ discovery.DiscoveryConsumer = &testDiscoveryConsumer{}
 
 type testDiscoveryConsumer struct {
+	mut      sync.RWMutex
 	updates  []*mesh.DataplaneResource
 	removals []model.ResourceKey
 }
@@ -38,13 +40,29 @@ func (l *testDiscoveryConsumer) OnWorkloadDelete(core.NamespacedName) error {
 }
 
 func (l *testDiscoveryConsumer) OnDataplaneUpdate(resource *mesh.DataplaneResource) error {
+	l.mut.Lock()
+	defer l.mut.Unlock()
 	l.updates = append(l.updates, resource)
 	return nil
 }
 
 func (l *testDiscoveryConsumer) OnDataplaneDelete(key model.ResourceKey) error {
+	l.mut.Lock()
+	defer l.mut.Unlock()
 	l.removals = append(l.removals, key)
 	return nil
+}
+
+func (l *testDiscoveryConsumer) Updates() []*mesh.DataplaneResource {
+	l.mut.RLock()
+	defer l.mut.RUnlock()
+	return l.updates
+}
+
+func (l *testDiscoveryConsumer) Removals() []model.ResourceKey {
+	l.mut.RLock()
+	defer l.mut.RUnlock()
+	return l.removals
 }
 
 var _ = Describe("Store Polling Source", func() {
@@ -83,16 +101,16 @@ var _ = Describe("Store Polling Source", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(consumer.removals).To(HaveLen(0))
-		Expect(consumer.updates).To(HaveLen(1))
-		Expect(consumer.updates[0]).To(Equal(resource))
+		Expect(consumer.Removals()).To(HaveLen(0))
+		Expect(consumer.Updates()).To(HaveLen(1))
+		Expect(consumer.Updates()[0]).To(Equal(resource))
 	})
 
 	It("should notify about deleted dataplanes", func() {
 		// given detected created dataplane
 		err := source.detectChanges()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(consumer.updates).To(HaveLen(1))
+		Expect(consumer.Updates()).To(HaveLen(1))
 
 		// when
 		err = memoryStore.Delete(context.Background(), resource, store.DeleteByKey("sample-ns", "sample-mesh", "sample-name"))
@@ -102,16 +120,16 @@ var _ = Describe("Store Polling Source", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(consumer.updates).To(HaveLen(1)) // should stay the same
-		Expect(consumer.removals).To(HaveLen(1))
-		Expect(consumer.removals[0]).To(Equal(model.MetaToResourceKey(resource.Meta)))
+		Expect(consumer.Updates()).To(HaveLen(1)) // should stay the same
+		Expect(consumer.Removals()).To(HaveLen(1))
+		Expect(consumer.Removals()[0]).To(Equal(model.MetaToResourceKey(resource.Meta)))
 	})
 
 	It("should notify about modified dataplanes", func() {
 		// given detected created dataplane
 		err := source.detectChanges()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(consumer.updates).To(HaveLen(1))
+		Expect(consumer.Updates()).To(HaveLen(1))
 
 		// when detect modified version
 		resource.Spec.Tags["some"] = "updated"
@@ -123,9 +141,9 @@ var _ = Describe("Store Polling Source", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(consumer.updates).To(HaveLen(2))
-		Expect(consumer.removals).To(HaveLen(0))
-		Expect(consumer.updates[1].Spec.Tags["some"]).To(Equal("updated"))
+		Expect(consumer.Updates()).To(HaveLen(2))
+		Expect(consumer.Removals()).To(HaveLen(0))
+		Expect(consumer.Updates()[1].Spec.Tags["some"]).To(Equal("updated"))
 	})
 
 	It("should periodically detect changes", func() {
@@ -136,10 +154,10 @@ var _ = Describe("Store Polling Source", func() {
 
 		// then
 		Eventually(func() *mesh.DataplaneResource {
-			if len(consumer.updates) == 0 {
+			if len(consumer.Updates()) == 0 {
 				return nil
 			}
-			return consumer.updates[0]
+			return consumer.Updates()[0]
 		}, "1s", "10ms").Should(Equal(resource))
 	})
 })
