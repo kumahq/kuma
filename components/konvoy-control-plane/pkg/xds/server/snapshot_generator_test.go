@@ -5,12 +5,15 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	util_cache "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/cache"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
+
+	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 )
 
 var _ = Describe("Reconcile", func() {
@@ -46,8 +49,10 @@ var _ = Describe("Reconcile", func() {
 			Entry("should support Nodes without metadata", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "1",
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "1",
+						},
 					},
 				},
 				expected: `
@@ -82,10 +87,16 @@ var _ = Describe("Reconcile", func() {
 			Entry("should support Nodes with 1 IP and 1 Port", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "3",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "3",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+								},
+							},
 						},
 					},
 				},
@@ -155,11 +166,17 @@ var _ = Describe("Reconcile", func() {
 			Entry("should support Nodes with 1 IP and N Port(s)", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "4",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
-							{Address: "192.168.0.1", Port: 8443},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "4",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+									{Interface: "192.168.0.1:443:8443"},
+								},
+							},
 						},
 					},
 				},
@@ -263,13 +280,19 @@ var _ = Describe("Reconcile", func() {
 			Entry("should support Nodes with M IP(s) and N Port(s)", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "5",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
-							{Address: "192.168.0.1", Port: 8443},
-							{Address: "192.168.0.2", Port: 8080},
-							{Address: "192.168.0.2", Port: 8443},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "5",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+									{Interface: "192.168.0.1:443:8443"},
+									{Interface: "192.168.0.2:80:8080"},
+									{Interface: "192.168.0.2:443:8443"},
+								},
+							},
 						},
 					},
 				},

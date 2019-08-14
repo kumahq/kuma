@@ -4,12 +4,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
+	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
-
-	discovery_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/discovery/v1alpha1"
 )
 
 var _ = Describe("Reconcile", func() {
@@ -31,28 +31,26 @@ var _ = Describe("Reconcile", func() {
 			}, &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()}}
 
 			// given
-			info := &core_discovery.WorkloadInfo{
-				Workload: &discovery_proto.Workload{
-					Id: &discovery_proto.Id{
-						Namespace: "example",
-						Name:      "demo",
-					},
-					Meta: &discovery_proto.Meta{
-						Labels: map[string]string{
-							"app": "demo",
-						},
-					},
+			dataplane := &mesh_core.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:      "default",
+					Namespace: "example",
+					Name:      "demo",
+					Version:   "v1",
 				},
-				Desc: &core_discovery.WorkloadDescription{
-					Version: "v1",
-					Endpoints: []core_discovery.WorkloadEndpoint{
-						{Address: "192.168.0.1", Port: 8080},
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Interface: "192.168.0.1:8080:8080",
+							},
+						},
 					},
 				},
 			}
 
 			// when
-			err := r.OnWorkloadUpdate(info)
+			err := r.OnDataplaneUpdate(dataplane)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then

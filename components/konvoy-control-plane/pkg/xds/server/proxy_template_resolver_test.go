@@ -9,7 +9,6 @@ import (
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
-	konvoy_mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 )
@@ -19,12 +18,7 @@ var _ = Describe("Reconcile", func() {
 		It("should fallback to the default ProxyTemplate when a Pod has no `mesh.getkonvoy.io/proxy-template` annotation", func() {
 			// given
 			proxy := &model.Proxy{
-				Workload: model.Workload{
-					Meta: model.WorkloadMeta{
-						Name:      "app",
-						Namespace: "example",
-					},
-				},
+				Dataplane: &mesh_core.DataplaneResource{},
 			}
 
 			// setup
@@ -44,15 +38,7 @@ var _ = Describe("Reconcile", func() {
 		XIt("should use Client to resolve ProxyTemplate according to the annotation on a Pod", func() {
 			// given
 			proxy := &model.Proxy{
-				Workload: model.Workload{
-					Meta: model.WorkloadMeta{
-						Name:      "app",
-						Namespace: "example",
-						Labels: map[string]string{
-							konvoy_mesh_k8s.ProxyTemplateAnnotation: "custom-proxy-template",
-						},
-					},
-				},
+				Dataplane: &mesh_core.DataplaneResource{},
 			}
 
 			expected := &mesh_core.ProxyTemplateResource{
@@ -83,15 +69,7 @@ var _ = Describe("Reconcile", func() {
 		It("should fallback to the default ProxyTemplate when a Pod refers to a ProxyTemplate that doesn't exist", func() {
 			// given
 			proxy := &model.Proxy{
-				Workload: model.Workload{
-					Meta: model.WorkloadMeta{
-						Name:      "app",
-						Namespace: "example",
-						Labels: map[string]string{
-							konvoy_mesh_k8s.ProxyTemplateAnnotation: "non-existing",
-						},
-					},
-				},
+				Dataplane: &mesh_core.DataplaneResource{},
 			}
 
 			// setup
