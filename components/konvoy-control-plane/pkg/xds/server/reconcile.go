@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
-	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
@@ -23,9 +22,7 @@ type reconciler struct {
 }
 
 // Make sure that reconciler implements all relevant interfaces
-var (
-	_ core_discovery.DiscoveryConsumer = &reconciler{}
-)
+var _ core_discovery.WorkloadDiscoveryConsumer = &reconciler{}
 
 func (r *reconciler) OnWorkloadUpdate(info *core_discovery.WorkloadInfo) error {
 	proxyId := model.ProxyId{Name: info.Workload.Id.Name, Namespace: info.Workload.Id.Namespace}
@@ -44,23 +41,9 @@ func (r *reconciler) OnWorkloadUpdate(info *core_discovery.WorkloadInfo) error {
 			},
 		})
 }
-func (r *reconciler) OnWorkloadDelete(name core.NamespacedName) error {
-	proxyId := model.ProxyId{Name: name.Name, Namespace: name.Namespace}
+func (r *reconciler) OnWorkloadDelete(key core_model.ResourceKey) error {
+	proxyId := model.ProxyId{Name: key.Name, Namespace: key.Namespace}
 	r.cacher.Clear(&envoy_core.Node{Id: proxyId.String()})
-	return nil
-}
-func (r *reconciler) OnServiceUpdate(_ *core_discovery.ServiceInfo) error {
-	return nil
-}
-func (r *reconciler) OnServiceDelete(_ core.NamespacedName) error {
-	return nil
-}
-
-func (r *reconciler) OnDataplaneUpdate(dp *mesh_core.DataplaneResource) error {
-	reconcileLog.Info("new dataplane updated", "dataplane", dp.Spec)
-	return nil
-}
-func (r *reconciler) OnDataplaneDelete(_ core_model.ResourceKey) error {
 	return nil
 }
 

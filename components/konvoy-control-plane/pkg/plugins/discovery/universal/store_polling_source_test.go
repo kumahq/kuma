@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -16,28 +15,12 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ discovery.DiscoveryConsumer = &testDiscoveryConsumer{}
+var _ discovery.DataplaneDiscoveryConsumer = &testDiscoveryConsumer{}
 
 type testDiscoveryConsumer struct {
 	mut      sync.RWMutex
 	updates  []*mesh.DataplaneResource
 	removals []model.ResourceKey
-}
-
-func (l *testDiscoveryConsumer) OnServiceUpdate(*discovery.ServiceInfo) error {
-	return nil
-}
-
-func (l *testDiscoveryConsumer) OnServiceDelete(core.NamespacedName) error {
-	return nil
-}
-
-func (l *testDiscoveryConsumer) OnWorkloadUpdate(*discovery.WorkloadInfo) error {
-	return nil
-}
-
-func (l *testDiscoveryConsumer) OnWorkloadDelete(core.NamespacedName) error {
-	return nil
 }
 
 func (l *testDiscoveryConsumer) OnDataplaneUpdate(resource *mesh.DataplaneResource) error {
@@ -79,7 +62,7 @@ var _ = Describe("Store Polling Source", func() {
 			10*time.Millisecond,
 		)
 		consumer = &testDiscoveryConsumer{}
-		source.AddConsumer(consumer)
+		source.AddConsumer(&discovery.DiscoverySink{DataplaneConsumer: consumer})
 	})
 
 	var resource *mesh.DataplaneResource
