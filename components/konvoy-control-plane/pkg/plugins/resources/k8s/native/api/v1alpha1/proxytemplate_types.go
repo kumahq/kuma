@@ -21,10 +21,10 @@ import (
 )
 
 const (
-	// ProxyTemplateAnnotation defines an annotation that can be put on Pods
-	// in order to associate them with a particular ProxyTemplate.
-	// Annotation value must be a name of a ProxyTemplate resource in the same Namespace as Pod.
-	ProxyTemplateAnnotation = "mesh.getkonvoy.io/proxy-template"
+	// MeshLabel defines a label that can be put on Pods
+	// in order to associate them with a particular Mesh.
+	// Label value must be a name of a Mesh resource.
+	MeshLabel = "getkonvoy.io/mesh"
 )
 
 // Important: Run "make" to regenerate code after modifying this file

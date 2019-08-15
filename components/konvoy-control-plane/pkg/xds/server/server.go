@@ -32,10 +32,15 @@ func SetupServer(rt core_runtime.Runtime) error {
 }
 
 func newReconciler(xds core_xds.XdsContext, rs core_store.ResourceStore) core_discovery.DiscoveryConsumer {
-	return &reconciler{&templateSnapshotGenerator{
-		ProxyTemplateResolver: &simpleProxyTemplateResolver{
-			ResourceStore:        rs,
-			DefaultProxyTemplate: template.TransparentProxyTemplate,
+	return &core_discovery.DiscoverySink{
+		DataplaneConsumer: &reconciler{
+			&templateSnapshotGenerator{
+				ProxyTemplateResolver: &simpleProxyTemplateResolver{
+					ResourceStore:        rs,
+					DefaultProxyTemplate: template.TransparentProxyTemplate,
+				},
+			},
+			&simpleSnapshotCacher{xds.Hasher(), xds.Cache()},
 		},
-	}, &simpleSnapshotCacher{xds.Hasher(), xds.Cache()}}
+	}
 }

@@ -1623,6 +1623,7 @@ rules:
   - ""
   resources:
   - pods
+  - services
   verbs:
   - get
   - list

@@ -1,106 +1,322 @@
 package controllers_test
 
 import (
+	"context"
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	. "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/discovery/k8s/controllers"
-	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+
+	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_ctrl "sigs.k8s.io/controller-runtime"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+
+	mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-var _ = Describe("PodController", func() {
-	Describe("ProxyTemplateToPodsMapper", func() {
-		It("should use Client to list Pods in the same namespace", func() {
-			// given
-			template := &konvoy_mesh.ProxyTemplate{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "custom-proxy-template",
-					Namespace: "example",
-				},
-			}
+var _ = Describe("PodReconciler", func() {
 
-			pod1 := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "app1",
-					Namespace: "example",
-					Annotations: map[string]string{
-						konvoy_mesh.ProxyTemplateAnnotation: "custom-proxy-template",
-					},
-				},
-			}
+	var kubeClient kube_client.Client
+	var reconciler kube_reconcile.Reconciler
 
-			pod2 := &kube_core.Pod{
+	BeforeEach(func() {
+		kubeClient = kube_client_fake.NewFakeClientWithScheme(
+			k8sClientScheme,
+			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "app2",
-					Namespace: "example",
-				},
-			}
-
-			pod3 := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "app3",
-					Namespace: "example",
-					Annotations: map[string]string{
-						konvoy_mesh.ProxyTemplateAnnotation: "another-template",
-					},
-				},
-			}
-
-			pod4 := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "app4",
 					Namespace: "demo",
+					Name:      "pod-without-konvoy-sidecar",
+				},
+			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "pod-with-konvoy-sidecar-but-no-ip",
 					Annotations: map[string]string{
-						konvoy_mesh.ProxyTemplateAnnotation: "custom-proxy-template",
+						"getkonvoy.io/sidecar-injected": "true",
 					},
 				},
-			}
-
-			expected := []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Namespace: "example", Name: "app1"}},
-			}
-
-			// setup
-			scheme := runtime.NewScheme()
-			kube_core.AddToScheme(scheme)
-			mapper := &ProxyTemplateToPodsMapper{
-				Client: client_fake.NewFakeClientWithScheme(scheme, pod1, pod2, pod3, pod4),
-			}
-
-			// when
-			actual := mapper.Map(handler.MapObject{Meta: template})
-
-			// then
-			Expect(actual).To(ConsistOf(expected))
-		})
-
-		It("should handle Client errors gracefully", func() {
-			// given
-			template := &konvoy_mesh.ProxyTemplate{
+			},
+			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "custom-proxy-template",
-					Namespace: "example",
+					Namespace: "demo",
+					Name:      "pod-with-konvoy-sidecar-and-ip",
+					Labels: map[string]string{
+						"getkonvoy.io/mesh": "pilot",
+					},
+					Annotations: map[string]string{
+						"getkonvoy.io/sidecar-injected": "true",
+					},
 				},
-			}
+				Spec: kube_core.PodSpec{
+					Containers: []kube_core.Container{
+						{
+							Ports: []kube_core.ContainerPort{
+								{ContainerPort: 8080},
+							},
+						},
+						{
+							Ports: []kube_core.ContainerPort{
+								{ContainerPort: 6060, Name: "metrics"},
+							},
+						},
+					},
+				},
+				Status: kube_core.PodStatus{
+					PodIP: "192.168.0.1",
+				},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example",
+				},
+				Spec: kube_core.ServiceSpec{
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 80,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+						},
+						{
+							Protocol: "TCP",
+							Port:     6061,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.String,
+								StrVal: "metrics",
+							},
+						},
+					},
+				},
+			})
 
-			// setup
-			mapper := &ProxyTemplateToPodsMapper{
-				// List operation will fail since Pod type hasn't been registered with the scheme
-				Client: client_fake.NewFakeClientWithScheme(runtime.NewScheme()),
-			}
+		reconciler = &PodReconciler{
+			Client: kubeClient,
+			Scheme: k8sClientScheme,
+			Log:    core.Log.WithName("test"),
+		}
+	})
 
-			// when
-			actual := mapper.Map(handler.MapObject{Meta: template})
+	It("should ignore deleted Pods", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "non-existing-key"},
+		}
 
-			// then
-			Expect(actual).To(BeNil())
+		// when
+		result, err := reconciler.Reconcile(req)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+
+		// when
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(0))
+	})
+
+	It("should ignore Pods without Konvoy sidecar", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-without-konvoy-sidecar"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+
+		// when
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(0))
+	})
+
+	It("should ignore Pods without Konvoy sidecar", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-without-konvoy-sidecar"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+
+		// when
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(0))
+	})
+
+	It("should ignore Pods without IP address", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-konvoy-sidecar-but-no-ip"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+
+		// when
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(0))
+	})
+
+	It("should generate Dataplane resource for every Pod that has Konvoy sidecar injected", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-konvoy-sidecar-and-ip"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+
+		// when
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(1))
+
+		// when
+		actual, err := json.Marshal(dataplanes.Items[0])
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(actual).To(MatchYAML(`
+        mesh: pilot
+        metadata:
+          creationTimestamp: null
+          name: pod-with-konvoy-sidecar-and-ip
+          namespace: demo
+          ownerReferences:
+          - apiVersion: v1
+            blockOwnerDeletion: true
+            controller: true
+            kind: Pod
+            name: pod-with-konvoy-sidecar-and-ip
+            uid: ""
+        spec:
+          networking:
+            inbound:
+            - interface: 192.168.0.1:80:8080
+              tags:
+                getkonvoy.io/mesh: pilot
+                service: example.demo.svc
+            - interface: 192.168.0.1:6061:6060
+              tags:
+                getkonvoy.io/mesh: pilot
+                service: example.demo.svc
+`))
+	})
+
+	It("should update Dataplane resource, e.g. when new Services get registered", func() {
+		// setup
+		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "pod-with-konvoy-sidecar-and-ip",
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{},
+			},
 		})
+		Expect(err).NotTo(HaveOccurred())
+
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-konvoy-sidecar-and-ip"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+
+		// when
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(1))
+
+		// when
+		actual, err := json.Marshal(dataplanes.Items[0])
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(actual).To(MatchYAML(`
+        mesh: pilot
+        metadata:
+          creationTimestamp: null
+          name: pod-with-konvoy-sidecar-and-ip
+          namespace: demo
+          ownerReferences:
+          - apiVersion: v1
+            blockOwnerDeletion: true
+            controller: true
+            kind: Pod
+            name: pod-with-konvoy-sidecar-and-ip
+            uid: ""
+        spec:
+          networking:
+            inbound:
+            - interface: 192.168.0.1:80:8080
+              tags:
+                getkonvoy.io/mesh: pilot
+                service: example.demo.svc
+            - interface: 192.168.0.1:6061:6060
+              tags:
+                getkonvoy.io/mesh: pilot
+                service: example.demo.svc
+`))
 	})
 })

@@ -2,7 +2,6 @@ package discovery
 
 import (
 	discovery_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/discovery/v1alpha1"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
@@ -36,12 +35,10 @@ type WorkloadEndpoint struct {
 
 // DiscoveryConsumer is a consumer of discovery information, i.e. Services and Workloads.
 type DiscoveryConsumer interface {
-	OnServiceUpdate(*ServiceInfo) error
-	OnServiceDelete(core.NamespacedName) error
+	DataplaneDiscoveryConsumer
+}
 
-	OnWorkloadUpdate(*WorkloadInfo) error
-	OnWorkloadDelete(core.NamespacedName) error
-
-	OnDataplaneUpdate(resource *mesh_core.DataplaneResource) error
+type DataplaneDiscoveryConsumer interface {
+	OnDataplaneUpdate(*mesh_core.DataplaneResource) error
 	OnDataplaneDelete(model.ResourceKey) error
 }

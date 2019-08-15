@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	util_cache "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/cache"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
@@ -84,8 +84,8 @@ var _ = Describe("Reconcile", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "3",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
 						},
 					},
 				},
@@ -157,9 +157,9 @@ var _ = Describe("Reconcile", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "4",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
-							{Address: "192.168.0.1", Port: 8443},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
 						},
 					},
 				},
@@ -265,11 +265,11 @@ var _ = Describe("Reconcile", func() {
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Workload: model.Workload{
 						Version: "5",
-						Endpoints: []core_discovery.WorkloadEndpoint{
-							{Address: "192.168.0.1", Port: 8080},
-							{Address: "192.168.0.1", Port: 8443},
-							{Address: "192.168.0.2", Port: 8080},
-							{Address: "192.168.0.2", Port: 8443},
+						Endpoints: []mesh_proto.InboundInterface{
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
+							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8080},
+							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8443},
 						},
 					},
 				},
