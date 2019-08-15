@@ -3,6 +3,7 @@ package konvoy_cp
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/discovery"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
 	"github.com/pkg/errors"
@@ -22,6 +23,8 @@ type Config struct {
 	Environment EnvironmentType `yaml:"environment" envconfig:"konvoy_environment"`
 	// Resource Store configuration
 	Store *store.StoreConfig `yaml:"store"`
+	// Discovery configuration
+	Discovery *discovery.DiscoveryConfig `yaml:"discovery"`
 	// Envoy XDS server configuration
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
 	// API Server configuration
@@ -34,6 +37,7 @@ func DefaultConfig() Config {
 		XdsServer:   xds.DefaultXdsServerConfig(),
 		ApiServer:   api_server.DefaultApiServerConfig(),
 		Store:       store.DefaultStoreConfig(),
+		Discovery:   discovery.DefaultDiscoveryConfig(),
 	}
 }
 
@@ -49,6 +53,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.ApiServer.Validate(); err != nil {
 		return errors.Wrap(err, "ApiServer validation failed")
+	}
+	if err := c.Discovery.Validate(); err != nil {
+		return errors.Wrap(err, "Discovery validation failed")
 	}
 	return nil
 }

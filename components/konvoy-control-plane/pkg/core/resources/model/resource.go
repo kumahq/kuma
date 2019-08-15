@@ -35,6 +35,14 @@ type ResourceMeta interface {
 	GetMesh() string
 }
 
+func MetaToResourceKey(meta ResourceMeta) ResourceKey {
+	return ResourceKey{
+		Mesh:      meta.GetMesh(),
+		Namespace: meta.GetNamespace(),
+		Name:      meta.GetName(),
+	}
+}
+
 type ResourceSpec interface {
 	// all resources must be defined via Protobuf
 	proto.Message
