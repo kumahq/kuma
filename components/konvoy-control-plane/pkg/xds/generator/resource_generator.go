@@ -3,8 +3,8 @@ package generator
 import (
 	"github.com/gogo/protobuf/types"
 
+	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	util_error "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/error"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 )

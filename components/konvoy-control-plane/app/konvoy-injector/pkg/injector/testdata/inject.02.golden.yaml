@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     docs: Documentation
+    getkonvoy.io/mesh: default
     getkonvoy.io/sidecar-injected: "true"
     getkonvoy.io/transparent-proxying: enabled
     getkonvoy.io/transparent-proxying-port: "15001"
@@ -39,10 +40,12 @@ spec:
       value: konvoy-control-plane.konvoy-system
     - name: KONVOY_CONTROL_PLANE_XDS_SERVER_PORT
       value: "5678"
+    - name: KONVOY_MESH
+      value: default
     - name: KONVOY_DATAPLANE_ID
-      value: $(POD_NAME).$(POD_NAMESPACE)
+      value: $(POD_NAME).$(POD_NAMESPACE).$(KONVOY_MESH)
     - name: KONVOY_DATAPLANE_SERVICE
-      value: $(POD_NAME).$(POD_NAMESPACE)
+      value: $(POD_NAME).$(POD_NAMESPACE).$(KONVOY_MESH)
     image: konvoy/konvoy-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:

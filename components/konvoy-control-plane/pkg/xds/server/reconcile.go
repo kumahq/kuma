@@ -5,8 +5,8 @@ import (
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
@@ -27,7 +27,7 @@ type reconciler struct {
 var _ core_discovery.DataplaneDiscoveryConsumer = &reconciler{}
 
 func (r *reconciler) OnDataplaneUpdate(dataplane *mesh_core.DataplaneResource) error {
-	proxyId := model.ProxyId{Name: dataplane.Meta.GetName(), Namespace: dataplane.Meta.GetNamespace()}
+	proxyId := model.ProxyId{Name: dataplane.Meta.GetName(), Namespace: dataplane.Meta.GetNamespace(), Mesh: dataplane.Meta.GetMesh()}
 	return r.reconcile(
 		&envoy_core.Node{Id: proxyId.String()},
 		&model.Proxy{
@@ -36,7 +36,7 @@ func (r *reconciler) OnDataplaneUpdate(dataplane *mesh_core.DataplaneResource) e
 		})
 }
 func (r *reconciler) OnDataplaneDelete(key core_model.ResourceKey) error {
-	proxyId := model.ProxyId{Name: key.Name, Namespace: key.Namespace}
+	proxyId := model.ProxyId{Name: key.Name, Namespace: key.Namespace, Mesh: key.Mesh}
 	r.cacher.Clear(&envoy_core.Node{Id: proxyId.String()})
 	return nil
 }

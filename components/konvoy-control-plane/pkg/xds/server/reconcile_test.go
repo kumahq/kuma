@@ -33,7 +33,7 @@ var _ = Describe("Reconcile", func() {
 			// given
 			dataplane := &mesh_core.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "default",
+					Mesh:      "pilot",
 					Namespace: "example",
 					Name:      "demo",
 					Version:   "v1",
@@ -55,7 +55,7 @@ var _ = Describe("Reconcile", func() {
 
 			// then
 			Eventually(func() bool {
-				_, err := xdsContext.Cache().GetSnapshot("demo.example")
+				_, err := xdsContext.Cache().GetSnapshot("demo.example.pilot")
 				return err == nil
 			}, "1s", "1ms").Should(BeTrue())
 		})

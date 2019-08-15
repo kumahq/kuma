@@ -129,8 +129,8 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 
 	// infer Dataplane id
 	if state.dataplaneId == (core_model.ResourceKey{}) {
-		if id, err := core_xds.ParseDataplaneId(req.Node); err == nil {
-			state.dataplaneId = *id
+		if id, err := core_xds.ParseProxyId(req.Node); err == nil {
+			state.dataplaneId = core_model.ResourceKey{Mesh: id.Mesh, Namespace: id.Namespace, Name: id.Name}
 			// kick off async Dataplane status flusher
 			go c.createStatusSink(state).Start(state.stop)
 		} else {

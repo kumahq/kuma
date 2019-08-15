@@ -9,8 +9,8 @@ import (
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 )
 
 var _ = Describe("Reconcile", func() {

@@ -51,10 +51,8 @@ var _ = Describe("PodReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
 					Name:      "pod-with-konvoy-sidecar-and-ip",
-					Labels: map[string]string{
-						"getkonvoy.io/mesh": "pilot",
-					},
 					Annotations: map[string]string{
+						"getkonvoy.io/mesh":             "pilot",
 						"getkonvoy.io/sidecar-injected": "true",
 					},
 				},
@@ -245,11 +243,9 @@ var _ = Describe("PodReconciler", func() {
             inbound:
             - interface: 192.168.0.1:8080:8080
               tags:
-                getkonvoy.io/mesh: pilot
                 service: example.demo.svc:80
             - interface: 192.168.0.1:6060:6060
               tags:
-                getkonvoy.io/mesh: pilot
                 service: example.demo.svc:6061
 `))
 	})
@@ -311,11 +307,9 @@ var _ = Describe("PodReconciler", func() {
             inbound:
             - interface: 192.168.0.1:8080:8080
               tags:
-                getkonvoy.io/mesh: pilot
                 service: example.demo.svc:80
             - interface: 192.168.0.1:6060:6060
               tags:
-                getkonvoy.io/mesh: pilot
                 service: example.demo.svc:6061
 `))
 	})

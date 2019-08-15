@@ -7,7 +7,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
+	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 )
 
 var (

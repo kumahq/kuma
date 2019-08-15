@@ -7,9 +7,9 @@ import (
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"

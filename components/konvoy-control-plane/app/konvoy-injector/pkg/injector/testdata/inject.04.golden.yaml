@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    getkonvoy.io/mesh: default
+    getkonvoy.io/mesh: pilot
     getkonvoy.io/sidecar-injected: "true"
     getkonvoy.io/transparent-proxying: enabled
     getkonvoy.io/transparent-proxying-port: "15001"
@@ -40,7 +40,7 @@ spec:
     - name: KONVOY_CONTROL_PLANE_XDS_SERVER_PORT
       value: "5678"
     - name: KONVOY_MESH
-      value: default
+      value: pilot
     - name: KONVOY_DATAPLANE_ID
       value: $(POD_NAME).$(POD_NAMESPACE).$(KONVOY_MESH)
     - name: KONVOY_DATAPLANE_SERVICE

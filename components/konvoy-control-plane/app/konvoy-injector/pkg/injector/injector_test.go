@@ -79,5 +79,8 @@ var _ = Describe("Injector", func() {
 		Entry("03. Pod without Namespace and Name", testCase{
 			num: "03",
 		}),
+		Entry("04. Pod with explicitly selected Mesh", testCase{
+			num: "04",
+		}),
 	)
 })
