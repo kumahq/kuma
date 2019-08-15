@@ -177,6 +177,8 @@ func (i *KonvoyInjector) NewInitContainer() kube_core.Container {
 
 func (i *KonvoyInjector) NewAnnotations() map[string]string {
 	return map[string]string{
-		metadata.KonvoySidecarInjectedAnnotation: metadata.KonvoySidecarInjectedAnnotationValue,
+		metadata.KonvoySidecarInjectedAnnotation:         metadata.KonvoySidecarInjected,
+		metadata.KonvoyTransparentProxyingAnnotation:     metadata.KonvoyTransparentProxyingEnabled,
+		metadata.KonvoyTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
 	}
 }

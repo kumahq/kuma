@@ -50,11 +50,21 @@ message Dataplane {
           [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
     }
 
+    // TransparentProxying describes configuration for transparent proxying.
+    message TransparentProxying {
+
+      // Port on which all traffic is being transparently redirected.
+      uint32 redirect_port = 1 [ (validate.rules).uint32 = {lte : 65535} ];
+    }
+
     // Inbound describes a list of inbound interfaces of the dataplane.
     repeated Inbound inbound = 1;
 
     // Outbound describes a list of outbound interfaces of the dataplane.
     repeated Outbound outbound = 2;
+
+    // TransparentProxying describes configuration for transparent proxying.
+    TransparentProxying transparent_proxying = 3;
   }
 
   // Networking describes inbound and outbound interfaces of the dataplane.

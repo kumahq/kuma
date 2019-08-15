@@ -5,8 +5,7 @@ import (
 )
 
 const (
-	ProfileTransparentInboundProxy  = "transparent-inbound-proxy"
-	ProfileTransparentOutboundProxy = "transparent-outbound-proxy"
+	ProfileDefaultProxy = "default-proxy"
 )
 
 var (
@@ -15,14 +14,7 @@ var (
 			&konvoy_mesh.ProxyTemplateSource{
 				Type: &konvoy_mesh.ProxyTemplateSource_Profile{
 					Profile: &konvoy_mesh.ProxyTemplateProfileSource{
-						Name: ProfileTransparentInboundProxy,
-					},
-				},
-			},
-			&konvoy_mesh.ProxyTemplateSource{
-				Type: &konvoy_mesh.ProxyTemplateSource_Profile{
-					Profile: &konvoy_mesh.ProxyTemplateProfileSource{
-						Name: ProfileTransparentOutboundProxy,
+						Name: ProfileDefaultProxy,
 					},
 				},
 			},

@@ -6,14 +6,17 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
+
+	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 )
 
 var _ = Describe("Generator", func() {
-	Describe("TransparentInboundProxyProfile", func() {
+	Describe("InboundProxyGenerator", func() {
 
 		type testCase struct {
 			proxy    *model.Proxy
@@ -23,7 +26,7 @@ var _ = Describe("Generator", func() {
 		DescribeTable("Generate Envoy xDS resources",
 			func(given testCase) {
 				// setup
-				gen := &generator.TransparentInboundProxyProfile{}
+				gen := &generator.InboundProxyGenerator{}
 
 				// when
 				rs, err := gen.Generate(given.proxy)
@@ -38,22 +41,103 @@ var _ = Describe("Generator", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("should support Nodes without IP addresses and Ports", testCase{
+			Entry("transparent_proxying=false, ip_addresses=0, ports=0", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
 					},
 				},
 				expected: `{}`,
 			}),
-			Entry("should support Nodes with 1 IP address and 1 Port", testCase{
+			Entry("transparent_proxying=true, ip_addresses=0, ports=0", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+									RedirectPort: 15001,
+								},
+							},
+						},
+					},
+				},
+				expected: `{}`,
+			}),
+			Entry("transparent_proxying=false, ip_addresses=1, ports=1", testCase{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+								},
+							},
+						},
+					},
+				},
+				expected: `
+        resources:
+        - name: localhost:8080
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            connectTimeout: 5s
+            loadAssignment:
+              clusterName: localhost:8080
+              endpoints:
+              - lbEndpoints:
+                - endpoint:
+                    address:
+                      socketAddress:
+                        address: 127.0.0.1
+                        portValue: 8080
+            name: localhost:8080
+            type: STATIC
+          version: v1
+        - name: inbound:192.168.0.1:8080
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost:8080
+            name: inbound:192.168.0.1:8080
+          version: v1
+`,
+			}),
+			Entry("transparent_proxying=true, ip_addresses=1, ports=1", testCase{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+								},
+								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+									RedirectPort: 15001,
+								},
+							},
 						},
 					},
 				},
@@ -95,14 +179,108 @@ var _ = Describe("Generator", func() {
           version: v1
 `,
 			}),
-			Entry("should support Nodes with 1 IP address and 2 Ports", testCase{
+			Entry("transparent_proxying=false, ip_addresses=1, ports=2", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+									{Interface: "192.168.0.1:443:8443"},
+								},
+							},
+						},
+					},
+				},
+				expected: `
+        resources:
+          - name: localhost:8080
+            resource:
+              '@type': type.googleapis.com/envoy.api.v2.Cluster
+              connectTimeout: 5s
+              loadAssignment:
+                clusterName: localhost:8080
+                endpoints:
+                - lbEndpoints:
+                  - endpoint:
+                      address:
+                        socketAddress:
+                          address: 127.0.0.1
+                          portValue: 8080
+              name: localhost:8080
+              type: STATIC
+            version: v1
+          - name: inbound:192.168.0.1:8080
+            resource:
+              '@type': type.googleapis.com/envoy.api.v2.Listener
+              address:
+                socketAddress:
+                  address: 192.168.0.1
+                  portValue: 8080
+              filterChains:
+              - filters:
+                - name: envoy.tcp_proxy
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                    cluster: localhost:8080
+                    statPrefix: localhost:8080
+              name: inbound:192.168.0.1:8080
+            version: v1
+          - name: localhost:8443
+            resource:
+              '@type': type.googleapis.com/envoy.api.v2.Cluster
+              connectTimeout: 5s
+              loadAssignment:
+                clusterName: localhost:8443
+                endpoints:
+                - lbEndpoints:
+                  - endpoint:
+                      address:
+                        socketAddress:
+                          address: 127.0.0.1
+                          portValue: 8443
+              name: localhost:8443
+              type: STATIC
+            version: v1
+          - name: inbound:192.168.0.1:8443
+            resource:
+              '@type': type.googleapis.com/envoy.api.v2.Listener
+              address:
+                socketAddress:
+                  address: 192.168.0.1
+                  portValue: 8443
+              filterChains:
+              - filters:
+                - name: envoy.tcp_proxy
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                    cluster: localhost:8443
+                    statPrefix: localhost:8443
+              name: inbound:192.168.0.1:8443
+            version: v1
+`,
+			}),
+			Entry("transparent_proxying=true, ip_addresses=1, ports=2", testCase{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+									{Interface: "192.168.0.1:443:8443"},
+								},
+								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+									RedirectPort: 15001,
+								},
+							},
 						},
 					},
 				},
@@ -178,16 +356,144 @@ var _ = Describe("Generator", func() {
             version: v1
 `,
 			}),
-			Entry("should support Nodes with 2 IP addresses and 2 Ports", testCase{
+			Entry("transparent_proxying=false, ip_addresses=2, ports=2", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
-							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8443},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+									{Interface: "192.168.0.2:80:8080"},
+									{Interface: "192.168.0.1:443:8443"},
+									{Interface: "192.168.0.2:443:8443"},
+								},
+							},
+						},
+					},
+				},
+				expected: `
+        resources:
+        - name: localhost:8080
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            connectTimeout: 5s
+            loadAssignment:
+              clusterName: localhost:8080
+              endpoints:
+              - lbEndpoints:
+                - endpoint:
+                    address:
+                      socketAddress:
+                        address: 127.0.0.1
+                        portValue: 8080
+            name: localhost:8080
+            type: STATIC
+          version: v1
+        - name: inbound:192.168.0.1:8080
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost:8080
+            name: inbound:192.168.0.1:8080
+          version: v1
+        - name: inbound:192.168.0.2:8080
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.2
+                portValue: 8080
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost:8080
+            name: inbound:192.168.0.2:8080
+          version: v1
+        - name: localhost:8443
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            connectTimeout: 5s
+            loadAssignment:
+              clusterName: localhost:8443
+              endpoints:
+              - lbEndpoints:
+                - endpoint:
+                    address:
+                      socketAddress:
+                        address: 127.0.0.1
+                        portValue: 8443
+            name: localhost:8443
+            type: STATIC
+          version: v1
+        - name: inbound:192.168.0.1:8443
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8443
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8443
+                  statPrefix: localhost:8443
+            name: inbound:192.168.0.1:8443
+          version: v1
+        - name: inbound:192.168.0.2:8443
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.2
+                portValue: 8443
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8443
+                  statPrefix: localhost:8443
+            name: inbound:192.168.0.2:8443
+          version: v1
+`,
+			}),
+			Entry("transparent_proxying=true, ip_addresses=2, ports=2", testCase{
+				proxy: &model.Proxy{
+					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+									{Interface: "192.168.0.2:80:8080"},
+									{Interface: "192.168.0.1:443:8443"},
+									{Interface: "192.168.0.2:443:8443"},
+								},
+								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+									RedirectPort: 15001,
+								},
+							},
 						},
 					},
 				},
@@ -302,7 +608,7 @@ var _ = Describe("Generator", func() {
 		)
 	})
 
-	Describe("TransparentOutboundProxyProfile", func() {
+	Describe("TransparentProxyGenerator", func() {
 
 		type testCase struct {
 			proxy    *model.Proxy
@@ -312,7 +618,7 @@ var _ = Describe("Generator", func() {
 		DescribeTable("Generate Envoy xDS resources",
 			func(given testCase) {
 				// setup
-				gen := &generator.TransparentOutboundProxyProfile{}
+				gen := &generator.TransparentProxyGenerator{}
 
 				// when
 				rs, err := gen.Generate(given.proxy)
@@ -327,91 +633,32 @@ var _ = Describe("Generator", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("should support Nodes without IP addresses and ports", testCase{
+			Entry("transparent_proxying=false", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-					},
-				},
-				expected: `
-        resources:
-        - name: catch_all
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Listener
-            address:
-              socketAddress:
-                address: 0.0.0.0
-                portValue: 15001
-            filterChains:
-            - filters:
-              - name: envoy.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: pass_through
-                  statPrefix: pass_through
-            name: catch_all
-            useOriginalDst: true
-          version: v1
-        - name: pass_through
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Cluster
-            connectTimeout: 5s
-            lbPolicy: ORIGINAL_DST_LB
-            name: pass_through
-            type: ORIGINAL_DST
-          version: v1
-`,
-			}),
-			Entry("should support Nodes with 1 IP address and 1 Port", testCase{
-				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
 						},
 					},
 				},
 				expected: `
-        resources:
-        - name: catch_all
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Listener
-            address:
-              socketAddress:
-                address: 0.0.0.0
-                portValue: 15001
-            filterChains:
-            - filters:
-              - name: envoy.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: pass_through
-                  statPrefix: pass_through
-            name: catch_all
-            useOriginalDst: true
-          version: v1
-        - name: pass_through
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Cluster
-            connectTimeout: 5s
-            lbPolicy: ORIGINAL_DST_LB
-            name: pass_through
-            type: ORIGINAL_DST
-          version: v1
+        {}
 `,
 			}),
-			Entry("should support Nodes with 2 IP addresses and 2 Ports", testCase{
+			Entry("transparent_proxying=true", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8443},
-							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8080},
-							{WorkloadAddress: "192.168.0.2", WorkloadPort: 8443},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+									RedirectPort: 15001,
+								},
+							},
 						},
 					},
 				},
@@ -475,97 +722,144 @@ var _ = Describe("Generator", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("should support pre-defined `transparent-inbound-proxy` profile", testCase{
+			Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+								},
+							},
 						},
 					},
 				},
 				profile: &mesh_proto.ProxyTemplateProfileSource{
-					Name: template.ProfileTransparentInboundProxy,
+					Name: template.ProfileDefaultProxy,
 				},
 				expected: `
         resources:
-          - name: localhost:8080
-            resource:
-              '@type': type.googleapis.com/envoy.api.v2.Cluster
-              connectTimeout: 5s
-              loadAssignment:
-                clusterName: localhost:8080
-                endpoints:
-                - lbEndpoints:
-                  - endpoint:
-                      address:
-                        socketAddress:
-                          address: 127.0.0.1
-                          portValue: 8080
-              name: localhost:8080
-              type: STATIC
-            version: v1
-          - name: inbound:192.168.0.1:8080
-            resource:
-              '@type': type.googleapis.com/envoy.api.v2.Listener
-              address:
-                socketAddress:
-                  address: 192.168.0.1
-                  portValue: 8080
-              deprecatedV1:
-                bindToPort: false
-              filterChains:
-              - filters:
-                - name: envoy.tcp_proxy
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                    cluster: localhost:8080
-                    statPrefix: localhost:8080
-              name: inbound:192.168.0.1:8080
-            version: v1
+        - name: localhost:8080
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            connectTimeout: 5s
+            loadAssignment:
+              clusterName: localhost:8080
+              endpoints:
+              - lbEndpoints:
+                - endpoint:
+                    address:
+                      socketAddress:
+                        address: 127.0.0.1
+                        portValue: 8080
+            name: localhost:8080
+            type: STATIC
+          version: v1
+        - name: inbound:192.168.0.1:8080
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost:8080
+            name: inbound:192.168.0.1:8080
+          version: v1
 `,
 			}),
-			Entry("should support pre-defined `transparent-outbound-proxy` profile", testCase{
+			Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCase{
 				proxy: &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Workload: model.Workload{
-						Version: "v1",
-						Endpoints: []mesh_proto.InboundInterface{
-							{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Version: "v1",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{Interface: "192.168.0.1:80:8080"},
+								},
+								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+									RedirectPort: 15001,
+								},
+							},
 						},
 					},
 				},
 				profile: &mesh_proto.ProxyTemplateProfileSource{
-					Name: "transparent-outbound-proxy",
+					Name: template.ProfileDefaultProxy,
 				},
 				expected: `
         resources:
-          - name: catch_all
-            resource:
-              '@type': type.googleapis.com/envoy.api.v2.Listener
-              address:
-                socketAddress:
-                  address: 0.0.0.0
-                  portValue: 15001
-              filterChains:
-              - filters:
-                - name: envoy.tcp_proxy
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                    cluster: pass_through
-                    statPrefix: pass_through
-              name: catch_all
-              useOriginalDst: true
-            version: v1
-          - name: pass_through
-            resource:
-              '@type': type.googleapis.com/envoy.api.v2.Cluster
-              connectTimeout: 5s
-              lbPolicy: ORIGINAL_DST_LB
-              name: pass_through
-              type: ORIGINAL_DST
-            version: v1
+        - name: catch_all
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 0.0.0.0
+                portValue: 15001
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: pass_through
+                  statPrefix: pass_through
+            name: catch_all
+            useOriginalDst: true
+          version: v1
+        - name: pass_through
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            connectTimeout: 5s
+            lbPolicy: ORIGINAL_DST_LB
+            name: pass_through
+            type: ORIGINAL_DST
+          version: v1
+        - name: localhost:8080
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            connectTimeout: 5s
+            loadAssignment:
+              clusterName: localhost:8080
+              endpoints:
+              - lbEndpoints:
+                - endpoint:
+                    address:
+                      socketAddress:
+                        address: 127.0.0.1
+                        portValue: 8080
+            name: localhost:8080
+            type: STATIC
+          version: v1
+        - name: inbound:192.168.0.1:8080
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+            deprecatedV1:
+              bindToPort: false
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost:8080
+            name: inbound:192.168.0.1:8080
+          version: v1
 `,
 			}),
 		)
@@ -599,10 +893,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field is empty", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -619,10 +919,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field is neither a YAML nor a JSON", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -638,10 +944,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field has unknown @type", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -659,10 +971,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field is a YAML without '@type' field", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -691,10 +1009,16 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when `resource` field is an invalid xDS resource", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -753,10 +1077,16 @@ var _ = Describe("Generator", func() {
 				Entry("should support empty resource list", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -768,10 +1098,16 @@ var _ = Describe("Generator", func() {
 				Entry("should support Listener resource as YAML", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -821,10 +1157,16 @@ var _ = Describe("Generator", func() {
 				Entry("should support Cluster resource as YAML", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -872,10 +1214,16 @@ var _ = Describe("Generator", func() {
 				Entry("should support Cluster resource as JSON", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+								},
 							},
 						},
 					},
@@ -962,10 +1310,19 @@ var _ = Describe("Generator", func() {
 				Entry("should fail when raw xDS resource is not valid", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+									TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+										RedirectPort: 15001,
+									},
+								},
 							},
 						},
 					},
@@ -974,7 +1331,7 @@ var _ = Describe("Generator", func() {
 							{
 								Type: &mesh_proto.ProxyTemplateSource_Profile{
 									Profile: &mesh_proto.ProxyTemplateProfileSource{
-										Name: template.ProfileTransparentOutboundProxy,
+										Name: template.ProfileDefaultProxy,
 									},
 								},
 							},
@@ -1027,10 +1384,19 @@ var _ = Describe("Generator", func() {
 				Entry("should support a combination of pre-defined profiles and raw xDS resources", testCase{
 					proxy: &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-						Workload: model.Workload{
-							Version: "v1",
-							Endpoints: []mesh_proto.InboundInterface{
-								{WorkloadAddress: "192.168.0.1", WorkloadPort: 8080},
+						Dataplane: &mesh_core.DataplaneResource{
+							Meta: &test_model.ResourceMeta{
+								Version: "v1",
+							},
+							Spec: mesh_proto.Dataplane{
+								Networking: &mesh_proto.Dataplane_Networking{
+									Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+										{Interface: "192.168.0.1:80:8080"},
+									},
+									TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+										RedirectPort: 15001,
+									},
+								},
 							},
 						},
 					},
@@ -1039,7 +1405,7 @@ var _ = Describe("Generator", func() {
 							{
 								Type: &mesh_proto.ProxyTemplateSource_Profile{
 									Profile: &mesh_proto.ProxyTemplateProfileSource{
-										Name: template.ProfileTransparentOutboundProxy,
+										Name: template.ProfileDefaultProxy,
 									},
 								},
 							},
@@ -1072,47 +1438,81 @@ var _ = Describe("Generator", func() {
 					},
 					expected: `
           resources:
-            - name: catch_all
-              resource:
-                '@type': type.googleapis.com/envoy.api.v2.Listener
-                address:
-                  socketAddress:
-                    address: 0.0.0.0
-                    portValue: 15001
-                filterChains:
-                - filters:
-                  - name: envoy.tcp_proxy
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                      cluster: pass_through
-                      statPrefix: pass_through
-                name: catch_all
-                useOriginalDst: true
-              version: v1
-            - name: pass_through
-              resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
-                connectTimeout: 5s
-                lbPolicy: ORIGINAL_DST_LB
-                name: pass_through
-                type: ORIGINAL_DST
-              version: v1
-            - name: raw-name
-              resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
-                connectTimeout: 5s
-                loadAssignment:
-                  clusterName: localhost:8443
-                  endpoints:
-                  - lbEndpoints:
-                    - endpoint:
-                        address:
-                          socketAddress:
-                            address: 127.0.0.1
-                            portValue: 8443
-                name: localhost:8443
-                type: STATIC
-              version: raw-version
+          - name: catch_all
+            resource:
+              '@type': type.googleapis.com/envoy.api.v2.Listener
+              address:
+                socketAddress:
+                  address: 0.0.0.0
+                  portValue: 15001
+              filterChains:
+              - filters:
+                - name: envoy.tcp_proxy
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                    cluster: pass_through
+                    statPrefix: pass_through
+              name: catch_all
+              useOriginalDst: true
+            version: v1
+          - name: pass_through
+            resource:
+              '@type': type.googleapis.com/envoy.api.v2.Cluster
+              connectTimeout: 5s
+              lbPolicy: ORIGINAL_DST_LB
+              name: pass_through
+              type: ORIGINAL_DST
+            version: v1
+          - name: localhost:8080
+            resource:
+              '@type': type.googleapis.com/envoy.api.v2.Cluster
+              connectTimeout: 5s
+              loadAssignment:
+                clusterName: localhost:8080
+                endpoints:
+                - lbEndpoints:
+                  - endpoint:
+                      address:
+                        socketAddress:
+                          address: 127.0.0.1
+                          portValue: 8080
+              name: localhost:8080
+              type: STATIC
+            version: v1
+          - name: inbound:192.168.0.1:8080
+            resource:
+              '@type': type.googleapis.com/envoy.api.v2.Listener
+              address:
+                socketAddress:
+                  address: 192.168.0.1
+                  portValue: 8080
+              deprecatedV1:
+                bindToPort: false
+              filterChains:
+              - filters:
+                - name: envoy.tcp_proxy
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                    cluster: localhost:8080
+                    statPrefix: localhost:8080
+              name: inbound:192.168.0.1:8080
+            version: v1
+          - name: raw-name
+            resource:
+              '@type': type.googleapis.com/envoy.api.v2.Cluster
+              connectTimeout: 5s
+              loadAssignment:
+                clusterName: localhost:8443
+                endpoints:
+                - lbEndpoints:
+                  - endpoint:
+                      address:
+                        socketAddress:
+                          address: 127.0.0.1
+                          portValue: 8443
+              name: localhost:8443
+              type: STATIC
+            version: raw-version
 `,
 				}),
 			)

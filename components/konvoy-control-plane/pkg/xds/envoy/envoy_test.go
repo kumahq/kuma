@@ -76,7 +76,33 @@ var _ = Describe("Envoy", func() {
 		Expect(actual).To(MatchYAML(expected))
 	})
 
-	It("should generate 'inbound' Listener", func() {
+	It("should generate 'inbound' Listener without transparent proxying", func() {
+		// given
+		expected := `
+        name: inbound:192.168.0.1:8080
+        address:
+          socketAddress:
+            address: 192.168.0.1
+            portValue: 8080
+        filterChains:
+        - filters:
+          - name: envoy.tcp_proxy
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+              cluster: localhost:8080
+              statPrefix: localhost:8080
+`
+		// when
+		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", false)
+
+		// then
+		actual, err := util_proto.ToYAML(resource)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actual).To(MatchYAML(expected))
+	})
+
+	It("should generate 'inbound' Listener with transparent proxying", func() {
 		// given
 		expected := `
         name: inbound:192.168.0.1:8080
@@ -95,7 +121,7 @@ var _ = Describe("Envoy", func() {
           bindToPort: false
 `
 		// when
-		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080")
+		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", true)
 
 		// then
 		actual, err := util_proto.ToYAML(resource)

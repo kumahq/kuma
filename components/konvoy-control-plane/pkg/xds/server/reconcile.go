@@ -27,19 +27,12 @@ type reconciler struct {
 var _ core_discovery.DataplaneDiscoveryConsumer = &reconciler{}
 
 func (r *reconciler) OnDataplaneUpdate(dataplane *mesh_core.DataplaneResource) error {
-	endpoints, err := dataplane.Spec.Networking.GetInboundInterfaces()
-	if err != nil {
-		return err
-	}
 	proxyId := model.ProxyId{Name: dataplane.Meta.GetName(), Namespace: dataplane.Meta.GetNamespace()}
 	return r.reconcile(
 		&envoy_core.Node{Id: proxyId.String()},
 		&model.Proxy{
-			Id: proxyId,
-			Workload: model.Workload{
-				Version:   dataplane.Meta.GetVersion(),
-				Endpoints: endpoints,
-			},
+			Id:        proxyId,
+			Dataplane: dataplane,
 		})
 }
 func (r *reconciler) OnDataplaneDelete(key core_model.ResourceKey) error {
@@ -104,7 +97,7 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (envoy_
 		}
 	}
 
-	version := proxy.Workload.Version
+	version := proxy.Dataplane.Meta.GetVersion()
 	out := envoy_cache.Snapshot{
 		Endpoints: envoy_cache.NewResources(version, endpoints),
 		Clusters:  envoy_cache.NewResources(version, clusters),

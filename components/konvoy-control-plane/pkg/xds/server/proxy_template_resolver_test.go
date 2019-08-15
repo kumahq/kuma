@@ -18,7 +18,7 @@ var _ = Describe("Reconcile", func() {
 		It("should fallback to the default ProxyTemplate when a Pod has no `mesh.getkonvoy.io/proxy-template` annotation", func() {
 			// given
 			proxy := &model.Proxy{
-				Workload: model.Workload{},
+				Dataplane: &mesh_core.DataplaneResource{},
 			}
 
 			// setup
@@ -38,7 +38,7 @@ var _ = Describe("Reconcile", func() {
 		XIt("should use Client to resolve ProxyTemplate according to the annotation on a Pod", func() {
 			// given
 			proxy := &model.Proxy{
-				Workload: model.Workload{},
+				Dataplane: &mesh_core.DataplaneResource{},
 			}
 
 			expected := &mesh_core.ProxyTemplateResource{
@@ -69,7 +69,7 @@ var _ = Describe("Reconcile", func() {
 		It("should fallback to the default ProxyTemplate when a Pod refers to a ProxyTemplate that doesn't exist", func() {
 			// given
 			proxy := &model.Proxy{
-				Workload: model.Workload{},
+				Dataplane: &mesh_core.DataplaneResource{},
 			}
 
 			// setup

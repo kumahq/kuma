@@ -160,6 +160,21 @@ func (m *Dataplane_Networking) Validate() error {
 
 	}
 
+	{
+		tmp := m.GetTransparentProxying()
+
+		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
+
+			if err := v.Validate(); err != nil {
+				return Dataplane_NetworkingValidationError{
+					field:  "TransparentProxying",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -420,3 +435,78 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Dataplane_Networking_OutboundValidationError{}
+
+// Validate checks the field values on Dataplane_Networking_TransparentProxying
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, an error is returned.
+func (m *Dataplane_Networking_TransparentProxying) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if m.GetRedirectPort() > 65535 {
+		return Dataplane_Networking_TransparentProxyingValidationError{
+			field:  "RedirectPort",
+			reason: "value must be less than or equal to 65535",
+		}
+	}
+
+	return nil
+}
+
+// Dataplane_Networking_TransparentProxyingValidationError is the validation
+// error returned by Dataplane_Networking_TransparentProxying.Validate if the
+// designated constraints aren't met.
+type Dataplane_Networking_TransparentProxyingValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Dataplane_Networking_TransparentProxyingValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Dataplane_Networking_TransparentProxyingValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Dataplane_Networking_TransparentProxyingValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Dataplane_Networking_TransparentProxyingValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Dataplane_Networking_TransparentProxyingValidationError) ErrorName() string {
+	return "Dataplane_Networking_TransparentProxyingValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Dataplane_Networking_TransparentProxyingValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDataplane_Networking_TransparentProxying.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Dataplane_Networking_TransparentProxyingValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Dataplane_Networking_TransparentProxyingValidationError{}

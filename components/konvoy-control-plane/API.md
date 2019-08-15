@@ -90,9 +90,7 @@ metadata:
 spec:
   sources:
   - profile:
-      name: transparent-inbound-proxy
-  - profile:
-      name: transparent-outbound-proxy
+      name: default-proxy
 ```
 
 ##### Raw Envoy xDS resources
@@ -218,18 +216,15 @@ spec:
 
 #### Predefined profiles
 
-NOTE: Prefix `transparent-` in a profile name indicates dependency on IPTables-based redirection
-
 |   | Profile                      | Description | Generated Envoy xDS resources  |
 | - | ---------------------------- | - | ----------------------------- |
-| 1 | `transparent-inbound-proxy`  | Forward *inbound* requests to local `Clusters` | 1. `Listener` per each (`IP`, `PORT`) pair of the target workload <br> 2. Local `Cluster` per each `PORT` of the target workload |
-| 2 | `transparent-outbound-proxy` | Forward *outbound* requests to original destinations | 1. `Listener` on port 15001 (with `UseOriginalDst: true`) <br> 2. "Pass-through" `Cluster` with `LbPolicy: ORIGINAL_DST_LB` |
+| 1 | `default-proxy`  | Setup proxying according to `Dataplane` descriptor: <br><br> 1. Setup transparent proxying <br> 2. Forward *inbound* requests to local `Clusters` <br> 3. (transparent proxying) Forward *outbound* requests to original destinations | 1. `Listener` on port 15001 (with `UseOriginalDst: true`) <br> 2. "Pass-through" `Cluster` with `LbPolicy: ORIGINAL_DST_LB` <br> 3. `Listener` per each `Inbound` interfaces of the `Dataplane` <br> 4. Local `Cluster` per each unique `WORKLOAD_PORT` in `Inbound` interfaces of the `Dataplane` |
 
 #### Known limitations
 
 1. "Default" `ProxyTemplate` is hardcoded inside `Konvoy Control Plane`
 2. `mesh.getkonvoy.io/proxy-template` annotation must be attached directly to a `Pod` or `PodTemplateSpec` (see examples above)
-3. Only 2 predefined profiles
+3. Only 1 predefined profile
 4. If multiple configuration sources produce an xDS resource with the same name, the latest definition wins
 
 Such constraints greatly simplify the initial implementation.

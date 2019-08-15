@@ -5,9 +5,7 @@ metadata:
 spec:
   sources:
   - profile:
-      name: transparent-inbound-proxy
-  - profile:
-      name: transparent-outbound-proxy
+      name: default-proxy
 ---
 apiVersion: mesh.getkonvoy.io/v1alpha1
 kind: ProxyTemplate
@@ -16,9 +14,7 @@ metadata:
 spec:
   sources:
   - profile:
-      name: transparent-inbound-proxy
-  - profile:
-      name: transparent-outbound-proxy
+      name: default-proxy
   - raw:
       resources:
       - name: localhost:8080
@@ -61,9 +57,7 @@ metadata:
 spec:
   sources:
   - profile:
-      name: transparent-inbound-proxy
-  - profile:
-      name: transparent-outbound-proxy
+      name: default-proxy
   - generator:
       jsonnet:
         script: |

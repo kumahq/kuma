@@ -21,6 +21,20 @@ type ResourceGenerator interface {
 	Generate(*model.Proxy) ([]*Resource, error)
 }
 
+type CompositeResourceGenerator []ResourceGenerator
+
+func (c CompositeResourceGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+	resources := make([]*Resource, 0)
+	for _, gen := range c {
+		rs, err := gen.Generate(proxy)
+		if err != nil {
+			return nil, err
+		}
+		resources = append(resources, rs...)
+	}
+	return resources, nil
+}
+
 type ResourceList []*Resource
 
 func (rs ResourceList) ToDeltaDiscoveryResponse() *envoy.DeltaDiscoveryResponse {

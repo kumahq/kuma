@@ -79,9 +79,12 @@ func (s *ProxyTemplateRawSource) Generate(proxy *model.Proxy) ([]*Resource, erro
 
 var predefinedProfiles = make(map[string]ResourceGenerator)
 
+func NewDefaultProxyProfile() ResourceGenerator {
+	return CompositeResourceGenerator{TransparentProxyGenerator{}, InboundProxyGenerator{}}
+}
+
 func init() {
-	predefinedProfiles[template.ProfileTransparentInboundProxy] = &TransparentInboundProxyProfile{}
-	predefinedProfiles[template.ProfileTransparentOutboundProxy] = &TransparentOutboundProxyProfile{}
+	predefinedProfiles[template.ProfileDefaultProxy] = NewDefaultProxyProfile()
 }
 
 type ProxyTemplateProfileSource struct {
@@ -96,21 +99,26 @@ func (s *ProxyTemplateProfileSource) Generate(proxy *model.Proxy) ([]*Resource, 
 	return g.Generate(proxy)
 }
 
-type TransparentInboundProxyProfile struct {
+type InboundProxyGenerator struct {
 }
 
-func (p *TransparentInboundProxyProfile) Generate(proxy *model.Proxy) ([]*Resource, error) {
-	if len(proxy.Workload.Endpoints) == 0 {
+func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+	endpoints, err := proxy.Dataplane.Spec.Networking.GetInboundInterfaces()
+	if err != nil {
+		return nil, err
+	}
+	if len(endpoints) == 0 {
 		return nil, nil
 	}
-	resources := make([]*Resource, 0, len(proxy.Workload.Endpoints))
+	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
+	resources := make([]*Resource, 0, len(endpoints))
 	names := make(map[string]bool)
-	for _, endpoint := range proxy.Workload.Endpoints {
+	for _, endpoint := range endpoints {
 		localClusterName := fmt.Sprintf("localhost:%d", endpoint.WorkloadPort)
 		if used := names[localClusterName]; !used {
 			resources = append(resources, &Resource{
 				Name:     localClusterName,
-				Version:  proxy.Workload.Version,
+				Version:  proxy.Dataplane.Meta.GetVersion(),
 				Resource: envoy.CreateLocalCluster(localClusterName, "127.0.0.1", endpoint.WorkloadPort),
 			})
 			names[localClusterName] = true
@@ -120,8 +128,8 @@ func (p *TransparentInboundProxyProfile) Generate(proxy *model.Proxy) ([]*Resour
 		if used := names[inboundListenerName]; !used {
 			resources = append(resources, &Resource{
 				Name:     inboundListenerName,
-				Version:  proxy.Workload.Version,
-				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.WorkloadAddress, endpoint.WorkloadPort, localClusterName),
+				Version:  proxy.Dataplane.Meta.GetVersion(),
+				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.WorkloadAddress, endpoint.WorkloadPort, localClusterName, virtual),
 			})
 			names[inboundListenerName] = true
 		}
@@ -129,19 +137,23 @@ func (p *TransparentInboundProxyProfile) Generate(proxy *model.Proxy) ([]*Resour
 	return resources, nil
 }
 
-type TransparentOutboundProxyProfile struct {
+type TransparentProxyGenerator struct {
 }
 
-func (p *TransparentOutboundProxyProfile) Generate(proxy *model.Proxy) ([]*Resource, error) {
+func (_ TransparentProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+	redirectPort := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort()
+	if redirectPort == 0 {
+		return nil, nil
+	}
 	return []*Resource{
 		&Resource{
 			Name:     "catch_all",
-			Version:  proxy.Workload.Version,
-			Resource: envoy.CreateCatchAllListener("catch_all", "0.0.0.0", 15001, "pass_through"),
+			Version:  proxy.Dataplane.Meta.GetVersion(),
+			Resource: envoy.CreateCatchAllListener("catch_all", "0.0.0.0", redirectPort, "pass_through"),
 		},
 		&Resource{
 			Name:     "pass_through",
-			Version:  proxy.Workload.Version,
+			Version:  proxy.Dataplane.Meta.GetVersion(),
 			Resource: envoy.CreatePassThroughCluster("pass_through"),
 		},
 	}, nil
