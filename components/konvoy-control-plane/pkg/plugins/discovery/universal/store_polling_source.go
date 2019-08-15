@@ -66,21 +66,14 @@ func (s *storePollingSource) detectChanges() error {
 			multiErr = multierr.Combine(multiErr, errors.Wrap(err, "OnDataplaneUpdate callback returned an error"))
 		}
 	}
-	if multiErr != nil {
-		return multiErr
-	}
 
 	for _, key := range deletedDataplanes(s.currentDataplanes, dataplanes) {
 		if err := s.OnDataplaneDelete(key); err != nil {
 			multiErr = multierr.Combine(multiErr, errors.Wrap(err, "OnDataplaneDelete callback returned an error"))
 		}
 	}
-	if multiErr != nil {
-		return multiErr
-	}
-
 	s.currentDataplanes = dataplanes
-	return nil
+	return multiErr
 }
 
 func (s *storePollingSource) fetchDataplanes() (dataplanesByKey, error) {

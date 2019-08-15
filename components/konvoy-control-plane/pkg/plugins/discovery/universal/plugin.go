@@ -1,10 +1,10 @@
 package universal
 
 import (
+	universal_config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/plugins/discovery/universal"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
 	"github.com/pkg/errors"
-	"time"
 )
 
 var _ core_plugins.DiscoveryPlugin = &plugin{}
@@ -15,8 +15,12 @@ func init() {
 	core_plugins.Register(core_plugins.Universal, &plugin{})
 }
 
-func (p *plugin) NewDiscoverySource(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_discovery.DiscoverySource, error) {
-	source := newStorePollingSource(pc.ResourceStore(), time.Second) // todo(jakubdyszkiewicz) parametrize interval
+func (p *plugin) NewDiscoverySource(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_discovery.DiscoverySource, error) {
+	cfg, ok := config.(*universal_config.UniversalDiscoveryConfig)
+	if !ok {
+		return nil, errors.Errorf("wrong type of configuration. Expected: *universal_config.UniversalDiscoveryConfig, got: %T", config)
+	}
+	source := newStorePollingSource(pc.ResourceStore(), cfg.PollingInterval)
 	if err := pc.ComponentManager().Add(source); err != nil {
 		return nil, errors.Errorf("could not add store polling source component to the component manager")
 	}
