@@ -136,13 +136,13 @@ var _ = Describe("Reconcile", func() {
             name: localhost:8080
             type: STATIC
           version: "3"
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
+                portValue: 80
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -150,7 +150,7 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
+            name: inbound:192.168.0.1:80
           version: "3"
 `,
 			}),
@@ -216,13 +216,13 @@ var _ = Describe("Reconcile", func() {
             name: catch_all
             useOriginalDst: true
           version: "3"
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
+                portValue: 80
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -232,7 +232,7 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
+            name: inbound:192.168.0.1:80
           version: "3"
 `,
 			}),
@@ -287,29 +287,13 @@ var _ = Describe("Reconcile", func() {
             name: localhost:8443
             type: STATIC
           version: "4"
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
-            filterChains:
-            - filters:
-              - name: envoy.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: localhost:8080
-                  statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
-          version: "4"
-        - name: inbound:192.168.0.1:8443
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Listener
-            address:
-              socketAddress:
-                address: 192.168.0.1
-                portValue: 8443
+                portValue: 443
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -317,7 +301,23 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.1:8443
+            name: inbound:192.168.0.1:443
+          version: "4"
+        - name: inbound:192.168.0.1:80
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 80
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost:8080
+            name: inbound:192.168.0.1:80
           version: "4"
 `,
 			}),
@@ -400,31 +400,13 @@ var _ = Describe("Reconcile", func() {
             name: catch_all
             useOriginalDst: true
           version: "4"
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
-            deprecatedV1:
-              bindToPort: false
-            filterChains:
-            - filters:
-              - name: envoy.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: localhost:8080
-                  statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
-          version: "4"
-        - name: inbound:192.168.0.1:8443
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Listener
-            address:
-              socketAddress:
-                address: 192.168.0.1
-                portValue: 8443
+                portValue: 443
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -434,7 +416,25 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.1:8443
+            name: inbound:192.168.0.1:443
+          version: "4"
+        - name: inbound:192.168.0.1:80
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 80
+            deprecatedV1:
+              bindToPort: false
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost:8080
+            name: inbound:192.168.0.1:80
           version: "4"
 `,
 			}),
@@ -491,29 +491,13 @@ var _ = Describe("Reconcile", func() {
             name: localhost:8443
             type: STATIC
           version: "5"
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
-            filterChains:
-            - filters:
-              - name: envoy.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: localhost:8080
-                  statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
-          version: "5"
-        - name: inbound:192.168.0.1:8443
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Listener
-            address:
-              socketAddress:
-                address: 192.168.0.1
-                portValue: 8443
+                portValue: 443
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -521,15 +505,15 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.1:8443
+            name: inbound:192.168.0.1:443
           version: "5"
-        - name: inbound:192.168.0.2:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
-                address: 192.168.0.2
-                portValue: 8080
+                address: 192.168.0.1
+                portValue: 80
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -537,15 +521,15 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.2:8080
+            name: inbound:192.168.0.1:80
           version: "5"
-        - name: inbound:192.168.0.2:8443
+        - name: inbound:192.168.0.2:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.2
-                portValue: 8443
+                portValue: 443
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -553,7 +537,23 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.2:8443
+            name: inbound:192.168.0.2:443
+          version: "5"
+        - name: inbound:192.168.0.2:80
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.2
+                portValue: 80
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost:8080
+            name: inbound:192.168.0.2:80
           version: "5"
 `,
 			}),
@@ -638,31 +638,13 @@ var _ = Describe("Reconcile", func() {
             name: catch_all
             useOriginalDst: true
           version: "5"
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
-            deprecatedV1:
-              bindToPort: false
-            filterChains:
-            - filters:
-              - name: envoy.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: localhost:8080
-                  statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
-          version: "5"
-        - name: inbound:192.168.0.1:8443
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Listener
-            address:
-              socketAddress:
-                address: 192.168.0.1
-                portValue: 8443
+                portValue: 443
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -672,15 +654,15 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.1:8443
+            name: inbound:192.168.0.1:443
           version: "5"
-        - name: inbound:192.168.0.2:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
-                address: 192.168.0.2
-                portValue: 8080
+                address: 192.168.0.1
+                portValue: 80
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -690,15 +672,15 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.2:8080
+            name: inbound:192.168.0.1:80
           version: "5"
-        - name: inbound:192.168.0.2:8443
+        - name: inbound:192.168.0.2:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.2
-                portValue: 8443
+                portValue: 443
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -708,7 +690,25 @@ var _ = Describe("Reconcile", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.2:8443
+            name: inbound:192.168.0.2:443
+          version: "5"
+        - name: inbound:192.168.0.2:80
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 192.168.0.2
+                portValue: 80
+            deprecatedV1:
+              bindToPort: false
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost:8080
+            name: inbound:192.168.0.2:80
           version: "5"
 `,
 			}),

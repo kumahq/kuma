@@ -14,20 +14,20 @@ const (
 )
 
 type InboundInterface struct {
-	WorkloadAddress string
-	WorkloadPort    uint32
-	ServicePort     uint32
+	DataplaneIP   string
+	DataplanePort uint32
+	WorkloadPort  uint32
 }
 
 func (i InboundInterface) String() string {
 	return strings.Join([]string{
-		i.WorkloadAddress,
-		strconv.FormatUint(uint64(i.ServicePort), 10),
+		i.DataplaneIP,
+		strconv.FormatUint(uint64(i.DataplanePort), 10),
 		strconv.FormatUint(uint64(i.WorkloadPort), 10),
 	}, ":")
 }
 
-const inboundInterfacePattern = `^(?P<workload_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)):(?P<service_port>[0-9]{1,5}):(?P<workload_port>[0-9]{1,5})$`
+const inboundInterfacePattern = `^(?P<dataplane_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)):(?P<dataplane_port>[0-9]{1,5}):(?P<workload_port>[0-9]{1,5})$`
 
 var inboundInterfaceRegexp = regexp.MustCompile(inboundInterfacePattern)
 
@@ -36,22 +36,22 @@ func ParseInboundInterface(text string) (InboundInterface, error) {
 	if groups == nil {
 		return InboundInterface{}, errors.Errorf("invalid format: expected %s, got %q", inboundInterfacePattern, text)
 	}
-	workloadAddress, err := ParseIP(groups[1])
+	dataplaneIP, err := ParseIP(groups[1])
 	if err != nil {
-		return InboundInterface{}, errors.Wrapf(err, "invalid <WORKLOAD_IP> in %q", text)
+		return InboundInterface{}, errors.Wrapf(err, "invalid <DATAPLANE_IP> in %q", text)
 	}
-	servicePort, err := ParsePort(groups[2])
+	dataplanePort, err := ParsePort(groups[2])
 	if err != nil {
-		return InboundInterface{}, errors.Wrapf(err, "invalid <SERVICE_PORT> in %q", text)
+		return InboundInterface{}, errors.Wrapf(err, "invalid <DATAPLANE_PORT> in %q", text)
 	}
 	workloadPort, err := ParsePort(groups[3])
 	if err != nil {
 		return InboundInterface{}, errors.Wrapf(err, "invalid <WORKLOAD_PORT> in %q", text)
 	}
 	return InboundInterface{
-		WorkloadAddress: workloadAddress,
-		WorkloadPort:    workloadPort,
-		ServicePort:     servicePort,
+		DataplaneIP:   dataplaneIP,
+		DataplanePort: dataplanePort,
+		WorkloadPort:  workloadPort,
 	}, nil
 }
 

@@ -60,11 +60,11 @@ func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_prot
 			}
 
 			iface := mesh_proto.InboundInterface{
-				WorkloadAddress: pod.Status.PodIP,
-				WorkloadPort:    uint32(containerPort),
-				ServicePort:     uint32(svcPort.Port),
+				DataplaneIP:   pod.Status.PodIP,
+				DataplanePort: uint32(containerPort),
+				WorkloadPort:  uint32(containerPort),
 			}
-			tags := InboundTagsFor(pod, svc)
+			tags := InboundTagsFor(pod, svc, &svcPort)
 
 			dataplane.Networking.Inbound = append(dataplane.Networking.Inbound, &mesh_proto.Dataplane_Networking_Inbound{
 				Interface: iface.String(),
@@ -75,15 +75,15 @@ func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_prot
 	return dataplane, nil
 }
 
-func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service) map[string]string {
+func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	if tags == nil {
 		tags = make(map[string]string)
 	}
-	tags[mesh_proto.ServiceTag] = ServiceTagFor(svc)
+	tags[mesh_proto.ServiceTag] = ServiceTagFor(svc, svcPort)
 	return tags
 }
 
-func ServiceTagFor(svc *kube_core.Service) string {
-	return fmt.Sprintf("%s.%s.svc", svc.Name, svc.Namespace)
+func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
+	return fmt.Sprintf("%s.%s.svc:%d", svc.Name, svc.Namespace, svcPort.Port)
 }

@@ -243,14 +243,14 @@ var _ = Describe("PodReconciler", func() {
         spec:
           networking:
             inbound:
-            - interface: 192.168.0.1:80:8080
+            - interface: 192.168.0.1:8080:8080
               tags:
                 getkonvoy.io/mesh: pilot
-                service: example.demo.svc
-            - interface: 192.168.0.1:6061:6060
+                service: example.demo.svc:80
+            - interface: 192.168.0.1:6060:6060
               tags:
                 getkonvoy.io/mesh: pilot
-                service: example.demo.svc
+                service: example.demo.svc:6061
 `))
 	})
 
@@ -309,14 +309,14 @@ var _ = Describe("PodReconciler", func() {
         spec:
           networking:
             inbound:
-            - interface: 192.168.0.1:80:8080
+            - interface: 192.168.0.1:8080:8080
               tags:
                 getkonvoy.io/mesh: pilot
-                service: example.demo.svc
-            - interface: 192.168.0.1:6061:6060
+                service: example.demo.svc:80
+            - interface: 192.168.0.1:6060:6060
               tags:
                 getkonvoy.io/mesh: pilot
-                service: example.demo.svc
+                service: example.demo.svc:6061
 `))
 	})
 })

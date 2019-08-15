@@ -124,12 +124,12 @@ func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error)
 			names[localClusterName] = true
 		}
 
-		inboundListenerName := fmt.Sprintf("inbound:%s:%d", endpoint.WorkloadAddress, endpoint.WorkloadPort)
+		inboundListenerName := fmt.Sprintf("inbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
 		if used := names[inboundListenerName]; !used {
 			resources = append(resources, &Resource{
 				Name:     inboundListenerName,
 				Version:  proxy.Dataplane.Meta.GetVersion(),
-				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.WorkloadAddress, endpoint.WorkloadPort, localClusterName, virtual),
+				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual),
 			})
 			names[inboundListenerName] = true
 		}

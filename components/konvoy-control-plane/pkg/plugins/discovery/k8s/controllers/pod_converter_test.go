@@ -195,25 +195,25 @@ var _ = Describe("PodToDataplane(..)", func() {
             spec:
               networking:
                 inbound:
-                - interface: 192.168.0.1:80:8080
+                - interface: 192.168.0.1:8080:8080
                   tags:
                     app: example
-                    service: example.demo.svc
+                    service: example.demo.svc:80
                     version: "0.1"
-                - interface: 192.168.0.1:443:8443
+                - interface: 192.168.0.1:8443:8443
                   tags:
                     app: example
-                    service: example.demo.svc
+                    service: example.demo.svc:443
                     version: "0.1"
-                - interface: 192.168.0.1:7071:7070
+                - interface: 192.168.0.1:7070:7070
                   tags:
                     app: example
-                    service: sample.playground.svc
+                    service: sample.playground.svc:7071
                     version: "0.1"
-                - interface: 192.168.0.1:6061:6060
+                - interface: 192.168.0.1:6060:6060
                   tags:
                     app: example
-                    service: sample.playground.svc
+                    service: sample.playground.svc:6061
                     version: "0.1"
 `,
 		}),
@@ -265,7 +265,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 		expected  map[string]string
 	}
 
-	DescribeTable("should combine Pod's labels with Service's FQDN",
+	DescribeTable("should combine Pod's labels with Service's FQDN and port",
 		func(given testCase) {
 			// given
 			pod := &kube_core.Pod{
@@ -282,15 +282,27 @@ var _ = Describe("InboundTagsFor(..)", func() {
 						"more": "labels",
 					},
 				},
+				Spec: kube_core.ServiceSpec{
+					Ports: []kube_core.ServicePort{
+						{
+							Name: "http",
+							Port: 80,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+						},
+					},
+				},
 			}
 
 			// then
-			Expect(InboundTagsFor(pod, svc)).To(Equal(given.expected))
+			Expect(InboundTagsFor(pod, svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
 		},
 		Entry("Pod without labels", testCase{
 			podLabels: nil,
 			expected: map[string]string{
-				"service": "example.demo.svc",
+				"service": "example.demo.svc:80",
 			},
 		}),
 		Entry("Pod with labels", testCase{
@@ -301,7 +313,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":     "example",
 				"version": "0.1",
-				"service": "example.demo.svc",
+				"service": "example.demo.svc:80",
 			},
 		}),
 		Entry("Pod with `service` label", testCase{
@@ -313,7 +325,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":     "example",
 				"version": "0.1",
-				"service": "example.demo.svc",
+				"service": "example.demo.svc:80",
 			},
 		}),
 	)
@@ -327,9 +339,21 @@ var _ = Describe("ServiceTagFor(..)", func() {
 				Namespace: "demo",
 				Name:      "example",
 			},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{
+					{
+						Name: "http",
+						Port: 80,
+						TargetPort: kube_intstr.IntOrString{
+							Type:   kube_intstr.Int,
+							IntVal: 8080,
+						},
+					},
+				},
+			},
 		}
 
 		// then
-		Expect(ServiceTagFor(svc)).To(Equal("example.demo.svc"))
+		Expect(ServiceTagFor(svc, &svc.Spec.Ports[0])).To(Equal("example.demo.svc:80"))
 	})
 })

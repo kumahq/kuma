@@ -23,9 +23,9 @@ var _ = Describe("InboundInterface", func() {
 			},
 			Entry("all fields set", testCase{
 				iface: InboundInterface{
-					WorkloadAddress: "1.2.3.4",
-					WorkloadPort:    8080,
-					ServicePort:     80,
+					DataplaneIP:   "1.2.3.4",
+					DataplanePort: 80,
+					WorkloadPort:  8080,
 				},
 				expected: "1.2.3.4:80:8080",
 			}),
@@ -53,9 +53,9 @@ var _ = Describe("ParseInboundInterface(..)", func() {
 			Entry("all fields set", testCase{
 				input: "1.2.3.4:80:8080",
 				expected: InboundInterface{
-					WorkloadAddress: "1.2.3.4",
-					WorkloadPort:    8080,
-					ServicePort:     80,
+					DataplaneIP:   "1.2.3.4",
+					DataplanePort: 80,
+					WorkloadPort:  8080,
 				},
 			}),
 		)
@@ -90,7 +90,7 @@ var _ = Describe("ParseInboundInterface(..)", func() {
 			}),
 			Entry("service port is out of range", testCase{
 				input:       "1.2.3.4:0:8080",
-				expectedErr: Equal(`invalid <SERVICE_PORT> in "1.2.3.4:0:8080": port number must be in the range [1, 65535] but got 0`),
+				expectedErr: Equal(`invalid <DATAPLANE_PORT> in "1.2.3.4:0:8080": port number must be in the range [1, 65535] but got 0`),
 			}),
 			Entry("application port is missing", testCase{
 				input:       "1.2.3.4:80:",
@@ -139,8 +139,8 @@ var _ = Describe("Dataplane_Networking", func() {
 						},
 					},
 					expected: []InboundInterface{
-						{WorkloadAddress: "192.168.0.1", ServicePort: 80, WorkloadPort: 8080},
-						{WorkloadAddress: "192.168.0.1", ServicePort: 443, WorkloadPort: 8443},
+						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadPort: 8080},
+						{DataplaneIP: "192.168.0.1", DataplanePort: 443, WorkloadPort: 8443},
 					},
 				}),
 			)
@@ -149,7 +149,7 @@ var _ = Describe("Dataplane_Networking", func() {
 		Context("invalid input values", func() {
 			type testCase struct {
 				input       *Dataplane_Networking
-				expectedErr string
+				expectedErr gomega_types.GomegaMatcher
 			}
 
 			DescribeTable("should fail on invalid input values",
@@ -159,7 +159,7 @@ var _ = Describe("Dataplane_Networking", func() {
 					// then
 					Expect(ifaces).To(BeNil())
 					// and
-					Expect(err).To(MatchError(given.expectedErr))
+					Expect(err.Error()).To(given.expectedErr)
 				},
 				Entry("dataplane IP address is missing", testCase{
 					input: &Dataplane_Networking{
@@ -168,7 +168,7 @@ var _ = Describe("Dataplane_Networking", func() {
 							{Interface: ":443:8443"},
 						},
 					},
-					expectedErr: `invalid format: expected ^(?P<workload_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)):(?P<service_port>[0-9]{1,5}):(?P<workload_port>[0-9]{1,5})$, got ":443:8443"`,
+					expectedErr: MatchRegexp(`invalid format: expected .*, got ":443:8443"`),
 				}),
 			)
 		})
