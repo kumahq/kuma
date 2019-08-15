@@ -9,7 +9,7 @@ import (
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
+	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 )
 
 var (

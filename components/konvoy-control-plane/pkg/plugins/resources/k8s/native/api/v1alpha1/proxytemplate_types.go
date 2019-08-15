@@ -20,13 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	// MeshLabel defines a label that can be put on Pods
-	// in order to associate them with a particular Mesh.
-	// Label value must be a name of a Mesh resource.
-	MeshLabel = "getkonvoy.io/mesh"
-)
-
 // Important: Run "make" to regenerate code after modifying this file
 
 // ProxyTemplateSpec defines the desired state of ProxyTemplate

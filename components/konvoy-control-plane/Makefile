@@ -55,7 +55,7 @@ EXAMPLE_NAMESPACE ?= konvoy-demo
 KIND_KUBECONFIG = $(shell kind get kubeconfig-path --name=konvoy)
 
 define KIND_EXAMPLE_ENVOY_ID
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}').$(EXAMPLE_NAMESPACE)
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar printenv KONVOY_DATAPLANE_ID)
 endef
 
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
