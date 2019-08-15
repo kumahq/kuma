@@ -12,7 +12,7 @@ type ServicePredicate func(*kube_core.Service) bool
 
 func MatchServiceThatSelectsPod(pod *kube_core.Pod) ServicePredicate {
 	return func(svc *kube_core.Service) bool {
-		selector := kube_labels.SelectorFromSet(kube_labels.Set(svc.Spec.Selector))
+		selector := kube_labels.SelectorFromSet(svc.Spec.Selector)
 		return selector.Matches(kube_labels.Set(pod.Labels))
 	}
 }

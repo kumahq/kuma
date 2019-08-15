@@ -35,19 +35,7 @@ type WorkloadEndpoint struct {
 
 // DiscoveryConsumer is a consumer of discovery information, i.e. Services and Workloads.
 type DiscoveryConsumer interface {
-	ServiceDiscoveryConsumer
-	WorkloadDiscoveryConsumer
 	DataplaneDiscoveryConsumer
-}
-
-type ServiceDiscoveryConsumer interface {
-	OnServiceUpdate(*ServiceInfo) error
-	OnServiceDelete(model.ResourceKey) error
-}
-
-type WorkloadDiscoveryConsumer interface {
-	OnWorkloadUpdate(*WorkloadInfo) error
-	OnWorkloadDelete(model.ResourceKey) error
 }
 
 type DataplaneDiscoveryConsumer interface {

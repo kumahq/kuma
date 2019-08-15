@@ -35,7 +35,7 @@ func (r *DataplaneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	crd := &mesh_k8s.Dataplane{}
 	if err := r.Get(ctx, req.NamespacedName, crd); err != nil {
 		if apierrs.IsNotFound(err) {
-			return ctrl.Result{}, r.DiscoverySink.OnWorkloadDelete(core_model.ResourceKey{
+			return ctrl.Result{}, r.DiscoverySink.OnDataplaneDelete(core_model.ResourceKey{
 				Namespace: req.NamespacedName.Namespace,
 				Name:      req.NamespacedName.Name,
 			})
