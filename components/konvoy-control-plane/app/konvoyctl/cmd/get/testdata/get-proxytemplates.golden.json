@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "mesh": "default",
+      "name": "custom-template",
+      "type": "ProxyTemplate"
+    },
+    {
+      "mesh": "default",
+      "name": "another-template",
+      "type": "ProxyTemplate"
+    }
+  ]
+}

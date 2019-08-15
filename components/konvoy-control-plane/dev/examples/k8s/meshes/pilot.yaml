@@ -1,0 +1,12 @@
+apiVersion: mesh.getkonvoy.io/v1alpha1
+kind: Mesh
+metadata:
+  namespace: konvoy-system
+  name: pilot
+spec:
+  mtls:
+    ca:
+      embedded: {}
+  tracing:
+    zipkin:
+      address: zipkin:9411

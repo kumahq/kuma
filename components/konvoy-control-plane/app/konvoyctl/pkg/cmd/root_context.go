@@ -84,6 +84,18 @@ func (rc *RootContext) Now() time.Time {
 	return rc.Runtime.Now()
 }
 
+func (rc *RootContext) CurrentResourceStore() (core_store.ResourceStore, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return nil, err
+	}
+	rs, err := rc.NewResourceStore(controlPlane)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create a client for a given Control Plane: %s", controlPlane)
+	}
+	return rs, nil
+}
+
 func (rc *RootContext) NewResourceStore(cp *config_proto.ControlPlane) (core_store.ResourceStore, error) {
 	return rc.Runtime.NewResourceStore(cp)
 }
