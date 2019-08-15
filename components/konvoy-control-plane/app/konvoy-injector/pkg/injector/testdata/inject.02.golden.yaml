@@ -4,6 +4,8 @@ metadata:
   annotations:
     docs: Documentation
     getkonvoy.io/sidecar-injected: "true"
+    getkonvoy.io/transparent-proxying: enabled
+    getkonvoy.io/transparent-proxying-port: "15001"
   creationTimestamp: null
   labels:
     run: busybox

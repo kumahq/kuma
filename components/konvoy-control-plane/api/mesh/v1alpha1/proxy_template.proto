@@ -20,7 +20,7 @@ message ProxyTemplateSource {
 
   oneof type {
 
-    // Profile, e.g. `transparent-outbound-proxy`.
+    // Profile, e.g. `default-proxy`.
     // +optional
     ProxyTemplateProfileSource profile = 2;
 

@@ -57,7 +57,7 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateInboundListener(listenerName string, address string, port uint32, clusterName string) *v2.Listener {
+func CreateInboundListener(listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
@@ -66,7 +66,7 @@ func CreateInboundListener(listenerName string, address string, port uint32, clu
 	}
 	pbst, err := types.MarshalAny(config)
 	util_error.MustNot(err)
-	return &v2.Listener{
+	listener := &v2.Listener{
 		Name: listenerName,
 		Address: core.Address{
 			Address: &core.Address_SocketAddress{
@@ -87,11 +87,14 @@ func CreateInboundListener(listenerName string, address string, port uint32, clu
 				},
 			}},
 		}},
-		// TODO(yskopets): What is the up-to-date alternative ?
-		DeprecatedV1: &v2.Listener_DeprecatedV1{
-			BindToPort: &types.BoolValue{Value: false},
-		},
 	}
+	if virtual {
+		// TODO(yskopets): What is the up-to-date alternative ?
+		listener.DeprecatedV1 = &v2.Listener_DeprecatedV1{
+			BindToPort: &types.BoolValue{Value: false},
+		}
+	}
+	return listener
 }
 
 func CreateCatchAllListener(listenerName string, address string, port uint32, clusterName string) *v2.Listener {
