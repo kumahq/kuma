@@ -4,4 +4,5 @@ var All = []ResourceWsDefinition{
 	MeshWsDefinition,
 	DataplaneWsDefinition,
 	DataplaneInsightWsDefinition,
+	ProxyTemplateWsDefinition,
 }

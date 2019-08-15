@@ -1,0 +1,6 @@
+apiVersion: mesh.getkonvoy.io/v1alpha1
+kind: ProxyTemplate
+metadata:
+  namespace: konvoy-system
+  name: empty
+mesh: default

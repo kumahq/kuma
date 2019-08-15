@@ -152,8 +152,9 @@ Usage:
   konvoyctl get [command]
 
 Available Commands:
-  dataplanes  Show running Dataplanes
-  meshes      Show Meshes
+  dataplanes     Show Dataplanes
+  meshes         Show Meshes
+  proxytemplates Show ProxyTemplates
 
 Flags:
   -h, --help            help for get
@@ -167,10 +168,46 @@ Global Flags:
 Use "konvoyctl get [command] --help" for more information about a command.
 ```
 
+### konvoyctl get meshes
+
+```
+Show Meshes.
+
+Usage:
+  konvoyctl get meshes [flags]
+
+Flags:
+  -h, --help   help for meshes
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
+  -o, --output string        Output format: one of table|yaml|json (default "table")
+```
+
+### konvoyctl get proxytemplates
+
+```
+Show ProxyTemplates.
+
+Usage:
+  konvoyctl get proxytemplates [flags]
+
+Flags:
+  -h, --help   help for proxytemplates
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
+  -o, --output string        Output format: one of table|yaml|json (default "table")
+```
+
 ### konvoyctl get dataplanes
 
 ```
-Show running Dataplanes.
+Show Dataplanes.
 
 Usage:
   konvoyctl get dataplanes [flags]

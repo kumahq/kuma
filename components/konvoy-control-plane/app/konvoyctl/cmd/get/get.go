@@ -24,7 +24,8 @@ func NewGetCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 	// flags
 	cmd.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), konvoyctl_cmd.UsageOptions("Output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
-	cmd.AddCommand(newGetDataplanesCmd(ctx))
 	cmd.AddCommand(newGetMeshesCmd(ctx))
+	cmd.AddCommand(newGetProxyTemplatesCmd(ctx))
+	cmd.AddCommand(newGetDataplanesCmd(ctx))
 	return cmd
 }
