@@ -2,7 +2,8 @@ type: ProxyTemplate
 mesh: default
 name: custom-backend-profile
 selectors:
-- match: {}
+- match:
+    service: backend
 conf:
 - profile:
     name: default-proxy
