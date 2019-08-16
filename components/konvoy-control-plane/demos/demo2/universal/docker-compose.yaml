@@ -30,18 +30,23 @@ services:
     build:
       context: ../../..
       dockerfile: Dockerfile.konvoy-dp
+    volumes:
+      - ./run_konvoy_dp_with_echo.sh:/run_konvoy_dp_with_echo.sh
     environment:
     - KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=konvoy-control-plane
     - KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=5678
     - KONVOY_DATAPLANE_ID=backend-01
     - KONVOY_DATAPLANE_SERVICE=backend
     - KONVOY_DATAPLANE_ADMIN_PORT=9901
-    command:
-    - run
+    entrypoint:
+    - /run_konvoy_dp_with_echo.sh
+    - "Hi there! I'm backend-01"
+    - "127.0.0.1:8081"
     expose:
       - "9901"
     ports:
       - "19901:9901"
+      - "18080:8080"
     networks:
       demo2-universal:
         ipv4_address: 172.28.1.10
@@ -55,18 +60,23 @@ services:
     build:
       context: ../../..
       dockerfile: Dockerfile.konvoy-dp
+    volumes:
+      - ./run_konvoy_dp_with_echo.sh:/run_konvoy_dp_with_echo.sh
     environment:
     - KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=konvoy-control-plane
     - KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=5678
     - KONVOY_DATAPLANE_ID=backend-02
     - KONVOY_DATAPLANE_SERVICE=backend
     - KONVOY_DATAPLANE_ADMIN_PORT=9901
-    command:
-    - run
+    entrypoint:
+      - /run_konvoy_dp_with_echo.sh
+      - "Hi there! I'm backend-02"
+      - "127.0.0.1:8082"
     expose:
       - "9901"
     ports:
       - "29901:9901"
+      - "28080:8080"
     networks:
       demo2-universal:
         ipv4_address: 172.28.1.11
@@ -80,18 +90,23 @@ services:
     build:
       context: ../../..
       dockerfile: Dockerfile.konvoy-dp
+    volumes:
+      - ./run_konvoy_dp_with_echo.sh:/run_konvoy_dp_with_echo.sh
     environment:
     - KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=konvoy-control-plane
     - KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=5678
     - KONVOY_DATAPLANE_ID=web-01
     - KONVOY_DATAPLANE_SERVICE=web
     - KONVOY_DATAPLANE_ADMIN_PORT=9901
-    command:
-    - run
+    entrypoint:
+      - /run_konvoy_dp_with_echo.sh
+      - "Hi there! I'm web-01"
+      - "127.0.0.1:8082"
     expose:
       - "9901"
     ports:
       - "39901:9901"
+      - "38080:8080"
     networks:
       demo2-universal:
         ipv4_address: 172.28.1.20
@@ -105,18 +120,23 @@ services:
     build:
       context: ../../..
       dockerfile: Dockerfile.konvoy-dp
+    volumes:
+      - ./run_konvoy_dp_with_echo.sh:/run_konvoy_dp_with_echo.sh
     environment:
     - KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=konvoy-control-plane
     - KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=5678
     - KONVOY_DATAPLANE_ID=mobile-01.default.pilot
     - KONVOY_DATAPLANE_SERVICE=mobile
     - KONVOY_DATAPLANE_ADMIN_PORT=9901
-    command:
-    - run
+    entrypoint:
+      - /run_konvoy_dp_with_echo.sh
+      - "Hi there! I'm mobile-01"
+      - "127.0.0.1:8083"
     expose:
       - "9901"
     ports:
       - "49901:9901"
+      - "48080:8080"
     networks:
       demo2-universal:
         ipv4_address: 172.28.1.30
