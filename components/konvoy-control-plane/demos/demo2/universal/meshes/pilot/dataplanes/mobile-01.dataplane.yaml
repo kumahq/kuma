@@ -1,0 +1,13 @@
+name: mobile-01
+mesh: pilot
+type: Dataplane
+networking:
+  inbound:
+  - interface: 172.28.1.30:8080:8083
+    tags:
+      service: mobile
+      version: "3.0"
+      env: production
+  outbound:
+  - interface: :40000
+    service: backend

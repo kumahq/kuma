@@ -1,0 +1,9 @@
+environment: universal
+store:
+  type: memory
+xdsServer:
+  grpcPort: 5678
+  httpPort: 5679
+  diagnosticsPort: 5680
+apiServer:
+  port: 5681
