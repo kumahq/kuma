@@ -1,0 +1,14 @@
+name: backend-01
+mesh: default
+type: Dataplane
+networking:
+  inbound:
+  - interface: 172.28.1.10:8080:8081
+    tags:
+      service: backend
+      version: "1.0"
+      env: production
+  outbound:
+  - interface: :30000
+    service: postgres
+    servicePort: 5432

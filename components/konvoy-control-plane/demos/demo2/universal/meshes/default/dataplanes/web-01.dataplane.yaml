@@ -1,0 +1,13 @@
+name: web-01
+mesh: default
+type: Dataplane
+networking:
+  inbound:
+  - interface: 172.28.1.20:8080:8082
+    tags:
+      service: web
+      version: "2.0"
+      env: production
+  outbound:
+  - interface: :30000
+    service: backend
