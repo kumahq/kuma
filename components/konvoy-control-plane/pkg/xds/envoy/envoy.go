@@ -39,12 +39,33 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.C
 	}
 }
 
+func CreateEdsEndpoint(clusterName string) *v2.ClusterLoadAssignment {
+	return &v2.ClusterLoadAssignment{
+		ClusterName: clusterName,
+	}
+}
+
 func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Cluster {
 	return &v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       5 * time.Second,
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_STATIC},
 		LoadAssignment:       CreateStaticEndpoint(clusterName, address, port),
+	}
+}
+
+func CreateEdsCluster(clusterName string) *v2.Cluster {
+	return &v2.Cluster{
+		Name:                 clusterName,
+		ConnectTimeout:       5 * time.Second,
+		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_EDS},
+		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
+			EdsConfig: &core.ConfigSource{
+				ConfigSourceSpecifier: &core.ConfigSource_Ads{
+					Ads: &core.AggregatedConfigSource{},
+				},
+			},
+		},
 	}
 }
 
@@ -55,6 +76,10 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_ORIGINAL_DST},
 		LbPolicy:             v2.Cluster_ORIGINAL_DST_LB,
 	}
+}
+
+func CreateOutboundListener(listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
+	return CreateInboundListener(listenerName, address, port, clusterName, virtual)
 }
 
 func CreateInboundListener(listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {

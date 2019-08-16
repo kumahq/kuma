@@ -80,7 +80,7 @@ func (s *ProxyTemplateRawSource) Generate(proxy *model.Proxy) ([]*Resource, erro
 var predefinedProfiles = make(map[string]ResourceGenerator)
 
 func NewDefaultProxyProfile() ResourceGenerator {
-	return CompositeResourceGenerator{TransparentProxyGenerator{}, InboundProxyGenerator{}}
+	return CompositeResourceGenerator{TransparentProxyGenerator{}, InboundProxyGenerator{}, OutboundProxyGenerator{}}
 }
 
 func init() {
@@ -132,6 +132,49 @@ func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error)
 				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual),
 			})
 			names[inboundListenerName] = true
+		}
+	}
+	return resources, nil
+}
+
+type OutboundProxyGenerator struct {
+}
+
+func (_ OutboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+	endpoints, err := proxy.Dataplane.Spec.Networking.GetOutboundInterfaces()
+	if err != nil {
+		return nil, err
+	}
+	if len(endpoints) == 0 {
+		return nil, nil
+	}
+	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
+	resources := make([]*Resource, 0, len(endpoints))
+	names := make(map[string]bool)
+	for _, endpoint := range endpoints {
+		edsClusterName := fmt.Sprintf("%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
+		if used := names[edsClusterName]; !used {
+			resources = append(resources, &Resource{
+				Name:     edsClusterName,
+				Version:  proxy.Dataplane.Meta.GetVersion(),
+				Resource: envoy.CreateEdsCluster(edsClusterName),
+			})
+			resources = append(resources, &Resource{
+				Name:     edsClusterName,
+				Version:  proxy.Dataplane.Meta.GetVersion(),
+				Resource: envoy.CreateEdsEndpoint(edsClusterName),
+			})
+			names[edsClusterName] = true
+		}
+
+		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
+		if used := names[outboundListenerName]; !used {
+			resources = append(resources, &Resource{
+				Name:     outboundListenerName,
+				Version:  proxy.Dataplane.Meta.GetVersion(),
+				Resource: envoy.CreateOutboundListener(outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, edsClusterName, virtual),
+			})
+			names[outboundListenerName] = true
 		}
 	}
 	return resources, nil
