@@ -135,6 +135,18 @@ docker-compose -f demos/demo2/universal/docker-compose.yaml exec backend-01 wget
 docker-compose -f demos/demo2/universal/docker-compose.yaml exec mobile-01 wget -qO- localhost:9901/config_dump | jq -c . | jq .
 ```
 
+Check Envoy proxying:
+```
+# Check proxy of the backend-01 to a local echo service
+curl localhost:18080
+# Check proxy of the backend-02 to a local echo service
+curl localhost:28080
+# Check proxy of the web-01 to a local echo service
+curl localhost:38080
+# Check proxy of the mobile-01 to a local echo service
+curl localhost:48080
+```
+
 ### Showcase ProxyTemplate
 
 List `ProxyTemaplate`s
