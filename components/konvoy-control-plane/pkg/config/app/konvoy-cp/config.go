@@ -1,11 +1,13 @@
 package konvoy_cp
 
 import (
+	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 	api_server "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/discovery"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
+
 	"github.com/pkg/errors"
 )
 
@@ -18,6 +20,11 @@ const (
 	UniversalEnvironment  EnvironmentType = "universal"
 )
 
+// Konvoy default entities
+type Defaults struct {
+	Mesh v1alpha1.Mesh `yaml:"mesh"`
+}
+
 type Config struct {
 	// Environment Type, can be either "kubernetes" or "universal"
 	Environment EnvironmentType `yaml:"environment" envconfig:"konvoy_environment"`
@@ -29,15 +36,29 @@ type Config struct {
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
+	Defaults  *Defaults                   `yaml:"defaults"`
 }
 
 func DefaultConfig() Config {
+	defaultMesh := v1alpha1.Mesh{
+		Mtls: &v1alpha1.Mesh_Mtls{
+			Ca: &v1alpha1.CertificateAuthority{
+				Type: &v1alpha1.CertificateAuthority_Embedded_{
+					Embedded: &v1alpha1.CertificateAuthority_Embedded{},
+				},
+			},
+		},
+	}
+
 	return Config{
 		Environment: UniversalEnvironment,
+		Store:       store.DefaultStoreConfig(),
 		XdsServer:   xds.DefaultXdsServerConfig(),
 		ApiServer:   api_server.DefaultApiServerConfig(),
-		Store:       store.DefaultStoreConfig(),
 		Discovery:   discovery.DefaultDiscoveryConfig(),
+		Defaults: &Defaults{
+			Mesh: defaultMesh,
+		},
 	}
 }
 

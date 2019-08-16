@@ -1633,6 +1633,7 @@ rules:
   resources:
   - dataplanes
   - dataplaneinsights
+  - meshes
   verbs:
   - get
   - list
