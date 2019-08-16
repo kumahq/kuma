@@ -151,25 +151,23 @@ konvoyctl get proxytemplates --mesh=pilot
 konvoyctl get proxytemplates --mesh=pilot -oyaml
 
 konvoyctl get dataplanes --mesh pilot
-curl -XDELETE http://localhost:15681/meshes/pilot/dataplanes/mobile-01
-
-konvoyctl get dataplanes --mesh pilot
-curl http://localhost:15681/meshes/pilot/dataplanes/
 
 docker-compose -f demos/demo2/universal/docker-compose.yaml exec mobile-01 wget -qO- localhost:9901/config_dump | jq -c . | jq .
 
-konvoyctl get dataplanes --mesh pilot
-konvoyctl apply -f demos/demo2/universal/meshes/pilot/dataplanes/mobile-01.dataplane.yaml
-konvoyctl get dataplanes --mesh pilot
+konvoyctl get dataplanes
+```
 
+Go back to the default `ProxyTemplate`
+```
+curl -XDELETE http://localhost:15681/meshes/pilot/proxytemplates/empty
+konvoyctl get dataplanes
 docker-compose -f demos/demo2/universal/docker-compose.yaml exec mobile-01 wget -qO- localhost:9901/config_dump | jq -c . | jq .
-
-curl -XDELETE http://localhost:15681/meshes/default/proxytemplates/empty
 ```
 
-Trigger regeneration of Envoy config:
+Apply custom `ProxyTemplate` to a subset of pods:
 ```
 
+konvoyctl apply -f demos/demo2/universal/meshes/default/proxytemplates/custom-backend-profile.yaml
 ```
 
 ### Missing
