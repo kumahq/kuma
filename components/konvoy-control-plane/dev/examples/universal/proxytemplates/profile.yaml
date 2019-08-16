@@ -1,0 +1,9 @@
+type: ProxyTemplate
+mesh: default
+name: profile
+selectors:
+- match:
+    app: backend
+conf:
+- profile:
+    name: default-proxy

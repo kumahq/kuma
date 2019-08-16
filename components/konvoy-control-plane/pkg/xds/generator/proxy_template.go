@@ -18,8 +18,8 @@ type TemplateProxyGenerator struct {
 }
 
 func (g *TemplateProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
-	resources := make([]*Resource, 0, len(g.ProxyTemplate.Sources))
-	for i, source := range g.ProxyTemplate.Sources {
+	resources := make([]*Resource, 0, len(g.ProxyTemplate.Conf))
+	for i, source := range g.ProxyTemplate.Conf {
 		var generator ResourceGenerator
 		switch s := source.Type.(type) {
 		case *konvoy_mesh.ProxyTemplateSource_Profile:

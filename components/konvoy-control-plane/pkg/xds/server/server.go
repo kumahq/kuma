@@ -37,7 +37,7 @@ func newReconciler(xds core_xds.XdsContext, rs core_store.ResourceStore) core_di
 			&templateSnapshotGenerator{
 				ProxyTemplateResolver: &simpleProxyTemplateResolver{
 					ResourceStore:        rs,
-					DefaultProxyTemplate: template.TransparentProxyTemplate,
+					DefaultProxyTemplate: template.DefaultProxyTemplate,
 				},
 			},
 			&simpleSnapshotCacher{xds.Hasher(), xds.Cache()},
