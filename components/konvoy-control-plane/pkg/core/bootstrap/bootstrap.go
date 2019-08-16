@@ -1,15 +1,19 @@
 package bootstrap
 
 import (
+	"context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/pkg/errors"
 )
 
-func Bootstrap(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
+func buildRuntime(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 	builder := core_runtime.BuilderFor(cfg)
 	if err := initializeBootstrap(cfg, builder); err != nil {
 		return nil, err
@@ -20,8 +24,54 @@ func Bootstrap(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
+
 	initializeXds(builder)
+
 	return builder.Build()
+}
+
+func createDefaultMesh(runtime core_runtime.Runtime) error {
+	rs := runtime.ResourceStore()
+	defaultMesh := mesh.MeshResource{}
+	cfg := runtime.Config()
+
+	getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh,
+		core_model.DefaultMesh)
+
+	if err := rs.Get(context.Background(), &defaultMesh, getOpts); err != nil {
+		if core_store.IsResourceNotFound(err) {
+			defaultMesh.Spec = cfg.Defaults.Mesh
+			createOpts := core_store.CreateByKey(core_model.DefaultNamespace,
+				core_model.DefaultMesh, core_model.DefaultMesh)
+
+			if err := rs.Create(context.Background(), &defaultMesh, createOpts); err != nil {
+				return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")
+			}
+		}
+	}
+
+	return nil
+}
+
+func onStartup(runtime core_runtime.Runtime) error {
+	if err := createDefaultMesh(runtime); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Bootstrap(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
+	runtime, err := buildRuntime(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = onStartup(runtime); err != nil {
+		return nil, err
+	}
+
+	return runtime, nil
 }
 
 func initializeBootstrap(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
