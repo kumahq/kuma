@@ -29,17 +29,6 @@ type DataplaneStatusTracker interface {
 	GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool)
 }
 
-func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTracker {
-	return NewDataplaneStatusTracker(rt, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
-		return NewDataplaneInsightSink(
-			accessor,
-			func() *time.Ticker {
-				return time.NewTicker(1 * time.Second)
-			},
-			NewDataplaneInsightStore(rt.ResourceStore()))
-	})
-}
-
 type SubscriptionStatusAccessor interface {
 	GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription)
 }
