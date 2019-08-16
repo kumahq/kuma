@@ -82,7 +82,6 @@ var _ = Describe("Reconcile", func() {
             lbPolicy: ORIGINAL_DST_LB
             name: pass_through
             type: ORIGINAL_DST
-          version: "1"
         - name: catch_all
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -99,7 +98,6 @@ var _ = Describe("Reconcile", func() {
                   statPrefix: pass_through
             name: catch_all
             useOriginalDst: true
-          version: "1"
 `,
 			}),
 			Entry("transparent_proxying=false, ip_addresses=1, ports=1", testCase{
@@ -135,7 +133,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8080
             name: localhost:8080
             type: STATIC
-          version: "3"
         - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -151,7 +148,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8080
                   statPrefix: localhost:8080
             name: inbound:192.168.0.1:80
-          version: "3"
 `,
 			}),
 			Entry("transparent_proxying=true, ip_addresses=1, ports=1", testCase{
@@ -190,7 +186,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8080
             name: localhost:8080
             type: STATIC
-          version: "3"
         - name: pass_through
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -198,7 +193,6 @@ var _ = Describe("Reconcile", func() {
             lbPolicy: ORIGINAL_DST_LB
             name: pass_through
             type: ORIGINAL_DST
-          version: "3"
         - name: catch_all
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -215,7 +209,6 @@ var _ = Describe("Reconcile", func() {
                   statPrefix: pass_through
             name: catch_all
             useOriginalDst: true
-          version: "3"
         - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -233,7 +226,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8080
                   statPrefix: localhost:8080
             name: inbound:192.168.0.1:80
-          version: "3"
 `,
 			}),
 			Entry("transparent_proxying=false, ip_addresses=1, ports=2", testCase{
@@ -270,7 +262,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8080
             name: localhost:8080
             type: STATIC
-          version: "4"
         - name: localhost:8443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -286,7 +277,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8443
             name: localhost:8443
             type: STATIC
-          version: "4"
         - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -302,7 +292,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8443
                   statPrefix: localhost:8443
             name: inbound:192.168.0.1:443
-          version: "4"
         - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -318,7 +307,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8080
                   statPrefix: localhost:8080
             name: inbound:192.168.0.1:80
-          version: "4"
 `,
 			}),
 			Entry("transparent_proxying=true, ip_addresses=1, ports=2", testCase{
@@ -358,7 +346,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8080
             name: localhost:8080
             type: STATIC
-          version: "4"
         - name: localhost:8443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -374,7 +361,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8443
             name: localhost:8443
             type: STATIC
-          version: "4"
         - name: pass_through
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -382,7 +368,6 @@ var _ = Describe("Reconcile", func() {
             lbPolicy: ORIGINAL_DST_LB
             name: pass_through
             type: ORIGINAL_DST
-          version: "4"
         - name: catch_all
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -399,7 +384,6 @@ var _ = Describe("Reconcile", func() {
                   statPrefix: pass_through
             name: catch_all
             useOriginalDst: true
-          version: "4"
         - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -417,7 +401,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8443
                   statPrefix: localhost:8443
             name: inbound:192.168.0.1:443
-          version: "4"
         - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -435,7 +418,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8080
                   statPrefix: localhost:8080
             name: inbound:192.168.0.1:80
-          version: "4"
 `,
 			}),
 			Entry("transparent_proxying=false, ip_addresses=2, ports=2", testCase{
@@ -474,7 +456,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8080
             name: localhost:8080
             type: STATIC
-          version: "5"
         - name: localhost:8443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -490,7 +471,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8443
             name: localhost:8443
             type: STATIC
-          version: "5"
         - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -506,7 +486,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8443
                   statPrefix: localhost:8443
             name: inbound:192.168.0.1:443
-          version: "5"
         - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -522,7 +501,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8080
                   statPrefix: localhost:8080
             name: inbound:192.168.0.1:80
-          version: "5"
         - name: inbound:192.168.0.2:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -538,7 +516,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8443
                   statPrefix: localhost:8443
             name: inbound:192.168.0.2:443
-          version: "5"
         - name: inbound:192.168.0.2:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -554,7 +531,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8080
                   statPrefix: localhost:8080
             name: inbound:192.168.0.2:80
-          version: "5"
 `,
 			}),
 			Entry("transparent_proxying=true, ip_addresses=2, ports=2", testCase{
@@ -596,7 +572,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8080
             name: localhost:8080
             type: STATIC
-          version: "5"
         - name: localhost:8443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -612,7 +587,6 @@ var _ = Describe("Reconcile", func() {
                         portValue: 8443
             name: localhost:8443
             type: STATIC
-          version: "5"
         - name: pass_through
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -620,7 +594,6 @@ var _ = Describe("Reconcile", func() {
             lbPolicy: ORIGINAL_DST_LB
             name: pass_through
             type: ORIGINAL_DST
-          version: "5"
         - name: catch_all
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -637,7 +610,6 @@ var _ = Describe("Reconcile", func() {
                   statPrefix: pass_through
             name: catch_all
             useOriginalDst: true
-          version: "5"
         - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -655,7 +627,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8443
                   statPrefix: localhost:8443
             name: inbound:192.168.0.1:443
-          version: "5"
         - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -673,7 +644,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8080
                   statPrefix: localhost:8080
             name: inbound:192.168.0.1:80
-          version: "5"
         - name: inbound:192.168.0.2:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -691,7 +661,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8443
                   statPrefix: localhost:8443
             name: inbound:192.168.0.2:443
-          version: "5"
         - name: inbound:192.168.0.2:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -709,7 +678,6 @@ var _ = Describe("Reconcile", func() {
                   cluster: localhost:8080
                   statPrefix: localhost:8080
             name: inbound:192.168.0.2:80
-          version: "5"
 `,
 			}),
 		)
