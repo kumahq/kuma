@@ -70,7 +70,8 @@ kubectl get dataplanes -n demo2-meshes-mobile
 
 Start Control Plane (in-memory) and bring up Dataplanes (Envoys):
 ```
-docker-compose  -f demos/demo2/universal/docker-compose.yaml up
+docker-compose -f demos/demo2/universal/docker-compose.yaml up
+docker-compose -f demos/demo2/universal/docker-compose.yaml ps
 ```
 
 Showcase that there are no `Mesh` definitions yet:
@@ -90,14 +91,14 @@ curl -s localhost:15681/meshes/default/dataplane-insights | jq
 curl -s localhost:15681/meshes/pilot/dataplane-insights | jq
 ```
 
-Prelpare `konvoyctl`
+Prepare `konvoyctl`
 ```
 make build/konvoyctl
 export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
 
 rm $HOME/.konvoyctl/config
-konvoyctl config control-planes add --name demo2-universal-meshes --api-server-url http://localhost:15681
-konvoyctl config view
+konvoyctl config control-planes add --name demo2-universal --api-server-url http://localhost:15681
+konvoyctl config control-planes list
 ```
 
 Showcase creation of `Meshes`: `default` and `pilot`
@@ -113,6 +114,7 @@ Deploy `Dataplane` definitions:
 ```
 # Notice 'LAST UPDATED AGO' is 'never'
 konvoyctl get dataplanes --mesh default
+konvoyctl get dataplanes --mesh pilot
 
 konvoyctl apply -f demos/demo2/universal/meshes/default/dataplanes/backend-01.dataplane.yaml
 curl -s localhost:15681/meshes/default/dataplanes | jq
@@ -147,6 +149,10 @@ curl localhost:38080
 curl localhost:48080
 ```
 
+```
+docker-compose -f demos/demo2/universal/docker-compose.yaml exec backend-01 wget -qO- localhost:9901/stats/prometheus
+```
+
 ### Showcase ProxyTemplate
 
 List `ProxyTemaplate`s
@@ -162,7 +168,7 @@ konvoyctl apply -f demos/demo2/universal/meshes/pilot/proxytemplates/empty.yaml
 konvoyctl get proxytemplates --mesh=pilot
 konvoyctl get proxytemplates --mesh=pilot -oyaml
 
-konvoyctl get dataplanes --mesh pilot
+konvoyctl get dataplanes --mesh=pilot
 
 docker-compose -f demos/demo2/universal/docker-compose.yaml exec mobile-01 wget -qO- localhost:9901/config_dump | jq -c . | jq .
 
@@ -172,7 +178,7 @@ konvoyctl get dataplanes
 Go back to the default `ProxyTemplate`
 ```
 curl -XDELETE http://localhost:15681/meshes/pilot/proxytemplates/empty
-konvoyctl get dataplanes
+konvoyctl get dataplanes --mesh=pilot
 docker-compose -f demos/demo2/universal/docker-compose.yaml exec mobile-01 wget -qO- localhost:9901/config_dump | jq -c . | jq .
 ```
 
