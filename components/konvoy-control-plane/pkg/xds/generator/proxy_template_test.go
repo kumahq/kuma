@@ -104,13 +104,13 @@ var _ = Describe("Generator", func() {
             name: localhost:8080
             type: STATIC
           version: v1
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
+                portValue: 80
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -118,7 +118,7 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
+            name: inbound:192.168.0.1:80
           version: v1
 `,
 			}),
@@ -159,13 +159,13 @@ var _ = Describe("Generator", func() {
             name: localhost:8080
             type: STATIC
           version: v1
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
+                portValue: 80
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -175,7 +175,7 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
+            name: inbound:192.168.0.1:80
           version: v1
 `,
 			}),
@@ -214,13 +214,13 @@ var _ = Describe("Generator", func() {
               name: localhost:8080
               type: STATIC
             version: v1
-          - name: inbound:192.168.0.1:8080
+          - name: inbound:192.168.0.1:80
             resource:
               '@type': type.googleapis.com/envoy.api.v2.Listener
               address:
                 socketAddress:
                   address: 192.168.0.1
-                  portValue: 8080
+                  portValue: 80
               filterChains:
               - filters:
                 - name: envoy.tcp_proxy
@@ -228,7 +228,7 @@ var _ = Describe("Generator", func() {
                     '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                     cluster: localhost:8080
                     statPrefix: localhost:8080
-              name: inbound:192.168.0.1:8080
+              name: inbound:192.168.0.1:80
             version: v1
           - name: localhost:8443
             resource:
@@ -246,13 +246,13 @@ var _ = Describe("Generator", func() {
               name: localhost:8443
               type: STATIC
             version: v1
-          - name: inbound:192.168.0.1:8443
+          - name: inbound:192.168.0.1:443
             resource:
               '@type': type.googleapis.com/envoy.api.v2.Listener
               address:
                 socketAddress:
                   address: 192.168.0.1
-                  portValue: 8443
+                  portValue: 443
               filterChains:
               - filters:
                 - name: envoy.tcp_proxy
@@ -260,7 +260,7 @@ var _ = Describe("Generator", func() {
                     '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                     cluster: localhost:8443
                     statPrefix: localhost:8443
-              name: inbound:192.168.0.1:8443
+              name: inbound:192.168.0.1:443
             version: v1
 `,
 			}),
@@ -302,13 +302,13 @@ var _ = Describe("Generator", func() {
               name: localhost:8080
               type: STATIC
             version: v1
-          - name: inbound:192.168.0.1:8080
+          - name: inbound:192.168.0.1:80
             resource:
               '@type': type.googleapis.com/envoy.api.v2.Listener
               address:
                 socketAddress:
                   address: 192.168.0.1
-                  portValue: 8080
+                  portValue: 80
               deprecatedV1:
                 bindToPort: false
               filterChains:
@@ -318,7 +318,7 @@ var _ = Describe("Generator", func() {
                     '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                     cluster: localhost:8080
                     statPrefix: localhost:8080
-              name: inbound:192.168.0.1:8080
+              name: inbound:192.168.0.1:80
             version: v1
           - name: localhost:8443
             resource:
@@ -336,13 +336,13 @@ var _ = Describe("Generator", func() {
               name: localhost:8443
               type: STATIC
             version: v1
-          - name: inbound:192.168.0.1:8443
+          - name: inbound:192.168.0.1:443
             resource:
               '@type': type.googleapis.com/envoy.api.v2.Listener
               address:
                 socketAddress:
                   address: 192.168.0.1
-                  portValue: 8443
+                  portValue: 443
               deprecatedV1:
                 bindToPort: false
               filterChains:
@@ -352,7 +352,7 @@ var _ = Describe("Generator", func() {
                     '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                     cluster: localhost:8443
                     statPrefix: localhost:8443
-              name: inbound:192.168.0.1:8443
+              name: inbound:192.168.0.1:443
             version: v1
 `,
 			}),
@@ -393,13 +393,13 @@ var _ = Describe("Generator", func() {
             name: localhost:8080
             type: STATIC
           version: v1
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
+                portValue: 80
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -407,15 +407,15 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
+            name: inbound:192.168.0.1:80
           version: v1
-        - name: inbound:192.168.0.2:8080
+        - name: inbound:192.168.0.2:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.2
-                portValue: 8080
+                portValue: 80
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -423,7 +423,7 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.2:8080
+            name: inbound:192.168.0.2:80
           version: v1
         - name: localhost:8443
           resource:
@@ -441,13 +441,13 @@ var _ = Describe("Generator", func() {
             name: localhost:8443
             type: STATIC
           version: v1
-        - name: inbound:192.168.0.1:8443
+        - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8443
+                portValue: 443
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -455,15 +455,15 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.1:8443
+            name: inbound:192.168.0.1:443
           version: v1
-        - name: inbound:192.168.0.2:8443
+        - name: inbound:192.168.0.2:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.2
-                portValue: 8443
+                portValue: 443
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -471,7 +471,7 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.2:8443
+            name: inbound:192.168.0.2:443
           version: v1
 `,
 			}),
@@ -515,13 +515,13 @@ var _ = Describe("Generator", func() {
             name: localhost:8080
             type: STATIC
           version: v1
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
+                portValue: 80
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -531,15 +531,15 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
+            name: inbound:192.168.0.1:80
           version: v1
-        - name: inbound:192.168.0.2:8080
+        - name: inbound:192.168.0.2:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.2
-                portValue: 8080
+                portValue: 80
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -549,7 +549,7 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.2:8080
+            name: inbound:192.168.0.2:80
           version: v1
         - name: localhost:8443
           resource:
@@ -567,13 +567,13 @@ var _ = Describe("Generator", func() {
             name: localhost:8443
             type: STATIC
           version: v1
-        - name: inbound:192.168.0.1:8443
+        - name: inbound:192.168.0.1:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8443
+                portValue: 443
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -583,15 +583,15 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.1:8443
+            name: inbound:192.168.0.1:443
           version: v1
-        - name: inbound:192.168.0.2:8443
+        - name: inbound:192.168.0.2:443
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.2
-                portValue: 8443
+                portValue: 443
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -601,7 +601,7 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8443
                   statPrefix: localhost:8443
-            name: inbound:192.168.0.2:8443
+            name: inbound:192.168.0.2:443
           version: v1
 `,
 			}),
@@ -759,13 +759,13 @@ var _ = Describe("Generator", func() {
             name: localhost:8080
             type: STATIC
           version: v1
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
+                portValue: 80
             filterChains:
             - filters:
               - name: envoy.tcp_proxy
@@ -773,7 +773,7 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
+            name: inbound:192.168.0.1:80
           version: v1
 `,
 			}),
@@ -842,13 +842,13 @@ var _ = Describe("Generator", func() {
             name: localhost:8080
             type: STATIC
           version: v1
-        - name: inbound:192.168.0.1:8080
+        - name: inbound:192.168.0.1:80
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
               socketAddress:
                 address: 192.168.0.1
-                portValue: 8080
+                portValue: 80
             deprecatedV1:
               bindToPort: false
             filterChains:
@@ -858,7 +858,7 @@ var _ = Describe("Generator", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost:8080
-            name: inbound:192.168.0.1:8080
+            name: inbound:192.168.0.1:80
           version: v1
 `,
 			}),
@@ -1479,13 +1479,13 @@ var _ = Describe("Generator", func() {
               name: localhost:8080
               type: STATIC
             version: v1
-          - name: inbound:192.168.0.1:8080
+          - name: inbound:192.168.0.1:80
             resource:
               '@type': type.googleapis.com/envoy.api.v2.Listener
               address:
                 socketAddress:
                   address: 192.168.0.1
-                  portValue: 8080
+                  portValue: 80
               deprecatedV1:
                 bindToPort: false
               filterChains:
@@ -1495,7 +1495,7 @@ var _ = Describe("Generator", func() {
                     '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                     cluster: localhost:8080
                     statPrefix: localhost:8080
-              name: inbound:192.168.0.1:8080
+              name: inbound:192.168.0.1:80
             version: v1
           - name: raw-name
             resource:
