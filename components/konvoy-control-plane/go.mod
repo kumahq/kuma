@@ -20,6 +20,7 @@ require (
 	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1 // indirect
+	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.1.1

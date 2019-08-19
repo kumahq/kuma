@@ -9,6 +9,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/ghodss/yaml"
+	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"io/ioutil"
@@ -19,6 +20,7 @@ type applyContext struct {
 
 	args struct {
 		file string
+		arg  map[string]string
 	}
 }
 
@@ -41,7 +43,12 @@ func NewApplyCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 				return errors.Wrap(err, "error while reading provided file")
 			}
 
-			res, err := parseResource(b)
+			configBytes, err := processConfigTemplate(string(b), ctx.args.arg)
+			if err != nil {
+				return errors.Wrap(err, "error compiling config from template")
+			}
+
+			res, err := parseResource(configBytes)
 			if err != nil {
 				return errors.Wrap(err, "yaml contains invalid resource")
 			}
@@ -61,7 +68,15 @@ func NewApplyCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file to apply")
+	cmd.PersistentFlags().StringToStringVarP(&ctx.args.arg, "arg", "a", map[string]string{}, "Variable to replace in configuration")
 	return cmd
+}
+
+func processConfigTemplate(config string, values map[string]string) ([]byte, error) {
+	// TODO error checking -- match number of placeholders with number of
+	// passed values
+	data := mustache.Render(config, values)
+	return []byte(data), nil
 }
 
 func upsert(rs store.ResourceStore, res model.Resource) error {
