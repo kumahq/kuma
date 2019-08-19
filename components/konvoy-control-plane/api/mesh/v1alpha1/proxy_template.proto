@@ -7,9 +7,21 @@ option go_package = "v1alpha1";
 // ProxyTemplate defines the desired state of ProxyTemplate
 message ProxyTemplate {
 
+  // Selector defines a tag-based selector of Dataplanes.
+  message Selector {
+
+    // Match Dataplanes with the following key-value pairs.
+    // +optional
+    map<string, string> match = 1;
+  }
+
+  // List of Dataplane selectors.
+  // +optional
+  repeated Selector selectors = 1;
+
   // List of configuration sources.
   // +optional
-  repeated ProxyTemplateSource sources = 1;
+  repeated ProxyTemplateSource conf = 2;
 }
 
 message ProxyTemplateSource {

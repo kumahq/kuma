@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"sort"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
@@ -11,14 +13,20 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
+
+	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 )
 
 var _ = Describe("Reconcile", func() {
 	Describe("simpleProxyTemplateResolver", func() {
-		It("should fallback to the default ProxyTemplate when a Pod has no `mesh.getkonvoy.io/proxy-template` annotation", func() {
+		It("should fallback to the default ProxyTemplate when there are no other candidates", func() {
 			// given
 			proxy := &model.Proxy{
-				Dataplane: &mesh_core.DataplaneResource{},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Mesh: "pilot",
+					},
+				},
 			}
 
 			// setup
@@ -34,26 +42,62 @@ var _ = Describe("Reconcile", func() {
 			Expect(actual).To(BeIdenticalTo(resolver.DefaultProxyTemplate))
 		})
 
-		// todo(jakubdyszkiewicz) restore when Proxy is changed to dataplane in simpleProxyTemplateResolver
-		XIt("should use Client to resolve ProxyTemplate according to the annotation on a Pod", func() {
+		It("should use Client to list ProxyTemplates in the same Mesh as Dataplane", func() {
 			// given
 			proxy := &model.Proxy{
-				Dataplane: &mesh_core.DataplaneResource{},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Mesh: "pilot",
+					},
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Tags: map[string]string{
+										"app": "example",
+									},
+								},
+							},
+						},
+					},
+				},
 			}
 
 			expected := &mesh_core.ProxyTemplateResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:      "pilot",
+					Namespace: "default",
+					Name:      "expected",
+				},
 				Spec: mesh_proto.ProxyTemplate{
-					Sources: []*mesh_proto.ProxyTemplateSource{},
+					Conf: []*mesh_proto.ProxyTemplateSource{
+						{Name: "custom-template"},
+					},
+				},
+			}
+
+			other := &mesh_core.ProxyTemplateResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:      "default",
+					Namespace: "default",
+					Name:      "other",
+				},
+				Spec: mesh_proto.ProxyTemplate{
+					Conf: []*mesh_proto.ProxyTemplateSource{
+						{Name: "irrelevant-template"},
+					},
 				},
 			}
 
 			// setup
-			ms := memory.NewStore()
-			err := ms.Create(context.Background(), expected, store.CreateByKey("example", "custom-proxy-template", "example"))
-			Expect(err).ToNot(HaveOccurred())
+			memStore := memory.NewStore()
+			for _, template := range []*mesh_core.ProxyTemplateResource{expected, other} {
+				err := memStore.Create(context.Background(), template, store.CreateByKey(template.Meta.GetNamespace(), template.Meta.GetName(), template.Meta.GetMesh()))
+				Expect(err).ToNot(HaveOccurred())
+			}
 
 			resolver := &simpleProxyTemplateResolver{
-				ResourceStore:        ms,
+				ResourceStore:        memStore,
 				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 
@@ -62,14 +106,20 @@ var _ = Describe("Reconcile", func() {
 
 			// then
 			Expect(actual).To(Equal(&mesh_proto.ProxyTemplate{
-				Sources: []*mesh_proto.ProxyTemplateSource{},
+				Conf: []*mesh_proto.ProxyTemplateSource{
+					{Name: "custom-template"},
+				},
 			}))
 		})
 
-		It("should fallback to the default ProxyTemplate when a Pod refers to a ProxyTemplate that doesn't exist", func() {
+		It("should fallback to the default ProxyTemplate if there are no custom templates in a given Mesh", func() {
 			// given
 			proxy := &model.Proxy{
-				Dataplane: &mesh_core.DataplaneResource{},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Mesh: "pilot",
+					},
+				},
 			}
 
 			// setup
@@ -84,5 +134,373 @@ var _ = Describe("Reconcile", func() {
 			// then
 			Expect(actual).To(BeIdenticalTo(resolver.DefaultProxyTemplate))
 		})
+
+	})
+
+	Describe("ProxyTemplatesByNamespacedName", func() {
+
+		type testCase struct {
+			input    []*mesh_core.ProxyTemplateResource
+			expected []*mesh_core.ProxyTemplateResource
+		}
+
+		DescribeTable("should sort ProxyTemplates by Namespace and Name",
+			func(given testCase) {
+				// when
+				sort.Stable(ProxyTemplatesByNamespacedName(given.input))
+				// then
+				Expect(given.input).To(ConsistOf(given.expected))
+			},
+			Entry("ProxyTemplates in the same Namespace", testCase{
+				input: []*mesh_core.ProxyTemplateResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "last",
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "first",
+						},
+					},
+				},
+				expected: []*mesh_core.ProxyTemplateResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "first",
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "last",
+						},
+					},
+				},
+			}),
+			Entry("ProxyTemplates in different Namespaces", testCase{
+				input: []*mesh_core.ProxyTemplateResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "pilot",
+							Name:      "a",
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "b",
+						},
+					},
+				},
+				expected: []*mesh_core.ProxyTemplateResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "b",
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "pilot",
+							Name:      "a",
+						},
+					},
+				},
+			}),
+		)
+	})
+
+	Describe("ScoreMatch()", func() {
+
+		type testCase struct {
+			selector      map[string]string
+			target        map[string]string
+			expectedMatch bool
+			expectedScore int
+		}
+
+		DescribeTable("should match and score properly",
+			func(given testCase) {
+				// when
+				match, score := ScoreMatch(given.selector, given.target)
+				// then
+				Expect(match).To(Equal(given.expectedMatch))
+				Expect(score).To(Equal(given.expectedScore))
+			},
+			Entry("both selector and target are nil", testCase{
+				selector:      nil,
+				target:        nil,
+				expectedMatch: true,
+				expectedScore: 0,
+			}),
+			Entry("both selector and target are empty", testCase{
+				selector:      map[string]string{},
+				target:        map[string]string{},
+				expectedMatch: true,
+				expectedScore: 0,
+			}),
+			Entry("empty selector and non-empty target", testCase{
+				selector: nil,
+				target: map[string]string{
+					"app": "example",
+				},
+				expectedMatch: true,
+				expectedScore: 0,
+			}),
+			Entry("non-empty selector and empty target", testCase{
+				selector: map[string]string{
+					"app": "example",
+				},
+				target:        nil,
+				expectedMatch: false,
+				expectedScore: 0,
+			}),
+			Entry("selector with more tags than target", testCase{
+				selector: map[string]string{
+					"app":     "example",
+					"version": "0.1",
+				},
+				target: map[string]string{
+					"app": "example",
+				},
+				expectedMatch: false,
+				expectedScore: 0,
+			}),
+			Entry("selector with the same tags as target", testCase{
+				selector: map[string]string{
+					"app": "example",
+				},
+				target: map[string]string{
+					"app": "example",
+				},
+				expectedMatch: true,
+				expectedScore: 1,
+			}),
+			Entry("selector with the same 2 tags as target", testCase{
+				selector: map[string]string{
+					"app":     "example",
+					"version": "0.1",
+				},
+				target: map[string]string{
+					"app":     "example",
+					"version": "0.1",
+				},
+				expectedMatch: true,
+				expectedScore: 2,
+			}),
+		)
+	})
+
+	Describe("FindBestMatch()", func() {
+
+		type testCase struct {
+			proxy     *model.Proxy
+			templates []*mesh_core.ProxyTemplateResource
+			expected  *mesh_core.ProxyTemplateResource
+		}
+
+		DescribeTable("should find the best match (the one with the highest number of matching key-value pairs)",
+			func(given testCase) {
+				// when
+				actual := FindBestMatch(given.proxy, given.templates)
+				// then
+				Expect(actual).To(Equal(given.expected))
+			},
+			Entry("there are no templates", testCase{
+				proxy:     &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
+				templates: nil,
+				expected:  nil,
+			}),
+			Entry("templates have no selectors (the first one should become the best match)", testCase{
+				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
+				templates: []*mesh_core.ProxyTemplateResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "last",
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "first",
+						},
+					},
+				},
+				expected: &mesh_core.ProxyTemplateResource{
+					Meta: &test_model.ResourceMeta{
+						Mesh:      "pilot",
+						Namespace: "default",
+						Name:      "first",
+					},
+				},
+			}),
+			Entry("templates have empty selectors (the first one should become the best match)", testCase{
+				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
+				templates: []*mesh_core.ProxyTemplateResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "last",
+						},
+						Spec: mesh_proto.ProxyTemplate{
+							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+								{},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "first",
+						},
+						Spec: mesh_proto.ProxyTemplate{
+							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+								{},
+							},
+						},
+					},
+				},
+				expected: &mesh_core.ProxyTemplateResource{
+					Meta: &test_model.ResourceMeta{
+						Mesh:      "pilot",
+						Namespace: "default",
+						Name:      "first",
+					},
+					Spec: mesh_proto.ProxyTemplate{
+						Selectors: []*mesh_proto.ProxyTemplate_Selector{
+							{},
+						},
+					},
+				},
+			}),
+			Entry("templates have non-empty selectors (the one with the highest number of matching key-value pairs should become the best match)", testCase{
+				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{},
+								{
+									Tags: map[string]string{
+										"app": "example",
+									},
+								},
+								{},
+								{
+									Tags: map[string]string{
+										"app":     "example",
+										"version": "1.0",
+										"env":     "prod",
+									},
+								},
+							},
+						},
+					},
+				}},
+				templates: []*mesh_core.ProxyTemplateResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "last",
+						},
+						Spec: mesh_proto.ProxyTemplate{
+							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+								{
+									Match: map[string]string{
+										"app":     "example",
+										"version": "1.0",
+									},
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "first",
+						},
+						Spec: mesh_proto.ProxyTemplate{
+							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+								{
+									Match: map[string]string{
+										"app": "example",
+									},
+								},
+								{
+									Match: map[string]string{
+										"app":     "example",
+										"version": "1.0",
+										"env":     "prod",
+									},
+								},
+							},
+						},
+					},
+				},
+				expected: &mesh_core.ProxyTemplateResource{
+					Meta: &test_model.ResourceMeta{
+						Mesh:      "pilot",
+						Namespace: "default",
+						Name:      "first",
+					},
+					Spec: mesh_proto.ProxyTemplate{
+						Selectors: []*mesh_proto.ProxyTemplate_Selector{
+							{
+								Match: map[string]string{
+									"app": "example",
+								},
+							},
+							{
+								Match: map[string]string{
+									"app":     "example",
+									"version": "1.0",
+									"env":     "prod",
+								},
+							},
+						},
+					},
+				},
+			}),
+			Entry("none of templates have matching selectors", testCase{
+				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
+				templates: []*mesh_core.ProxyTemplateResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:      "pilot",
+							Namespace: "default",
+							Name:      "last",
+						},
+						Spec: mesh_proto.ProxyTemplate{
+							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+								{
+									Match: map[string]string{
+										"app": "example",
+									},
+								},
+							},
+						},
+					},
+				},
+				expected: nil,
+			}),
+		)
 	})
 })

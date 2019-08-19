@@ -26,7 +26,7 @@ var _ = Describe("Reconcile", func() {
 			r := &reconciler{&templateSnapshotGenerator{
 				ProxyTemplateResolver: &simpleProxyTemplateResolver{
 					ResourceStore:        memory.NewStore(),
-					DefaultProxyTemplate: template.TransparentProxyTemplate,
+					DefaultProxyTemplate: template.DefaultProxyTemplate,
 				},
 			}, &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()}}
 

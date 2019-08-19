@@ -36,6 +36,9 @@ type ResourceMeta interface {
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {
+	if meta == nil {
+		return ResourceKey{}
+	}
 	return ResourceKey{
 		Mesh:      meta.GetMesh(),
 		Namespace: meta.GetNamespace(),

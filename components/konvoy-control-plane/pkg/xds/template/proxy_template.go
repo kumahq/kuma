@@ -9,8 +9,8 @@ const (
 )
 
 var (
-	TransparentProxyTemplate = &konvoy_mesh.ProxyTemplate{
-		Sources: []*konvoy_mesh.ProxyTemplateSource{
+	DefaultProxyTemplate = &konvoy_mesh.ProxyTemplate{
+		Conf: []*konvoy_mesh.ProxyTemplateSource{
 			&konvoy_mesh.ProxyTemplateSource{
 				Type: &konvoy_mesh.ProxyTemplateSource_Profile{
 					Profile: &konvoy_mesh.ProxyTemplateProfileSource{

@@ -22,7 +22,7 @@ var _ = Describe("Reconcile", func() {
 		gen := templateSnapshotGenerator{
 			ProxyTemplateResolver: &simpleProxyTemplateResolver{
 				ResourceStore:        memory.NewStore(),
-				DefaultProxyTemplate: template.TransparentProxyTemplate,
+				DefaultProxyTemplate: template.DefaultProxyTemplate,
 			},
 		}
 

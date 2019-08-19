@@ -1327,7 +1327,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					template: &mesh_proto.ProxyTemplate{
-						Sources: []*mesh_proto.ProxyTemplateSource{
+						Conf: []*mesh_proto.ProxyTemplateSource{
 							{
 								Type: &mesh_proto.ProxyTemplateSource_Profile{
 									Profile: &mesh_proto.ProxyTemplateProfileSource{
@@ -1401,7 +1401,7 @@ var _ = Describe("Generator", func() {
 						},
 					},
 					template: &mesh_proto.ProxyTemplate{
-						Sources: []*mesh_proto.ProxyTemplateSource{
+						Conf: []*mesh_proto.ProxyTemplateSource{
 							{
 								Type: &mesh_proto.ProxyTemplateSource_Profile{
 									Profile: &mesh_proto.ProxyTemplateProfileSource{
