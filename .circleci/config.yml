@@ -129,7 +129,7 @@ jobs:
     <<: *go-defaults
     environment:
       GO111MODULE: "on"
-      CLANG_FORMAT_PATH: clang-format-9
+      CLANG_FORMAT_PATH: clang-format-10
     steps:
     - checkout
     - restore_cache:
@@ -170,7 +170,7 @@ jobs:
 
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
-          apt update && apt install -y clang-format-9
+          apt update && apt install -y clang-format-10
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check -C components/konvoy-control-plane
