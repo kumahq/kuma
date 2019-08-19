@@ -37,9 +37,9 @@ func (r *reconciler) OnDataplaneUpdate(dataplane *mesh_core.DataplaneResource) e
 }
 func (r *reconciler) OnDataplaneDelete(key core_model.ResourceKey) error {
 	proxyId := model.ProxyId{Name: key.Name, Namespace: key.Namespace, Mesh: key.Mesh}
-	// clearing cache does not push a new (empty) configuration to Envoy
-	// that's why instead of clearing we explicitly set new configuration to empty value
-	// cache will be actually cleared on Envoy disconnect
+	// cache.Clear() operation does not push a new (empty) configuration to Envoy.
+	// That is why instead of calling cache.Clear() we set configuration to an empty Snapshot.
+	// This fake value will be removed from cache on Envoy disconnect.
 	return r.cacher.Cache(&envoy_core.Node{Id: proxyId.String()}, envoy_cache.Snapshot{})
 }
 
@@ -53,7 +53,7 @@ func (r *reconciler) reconcile(node *envoy_core.Node, proxy *model.Proxy) error 
 		reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
 	}
 	// to avoid assigning a new version every time,
-	// compare with the previous snaphsot and reuse its version whenever possible,
+	// compare with the previous snapshot and reuse its version whenever possible,
 	// fallback to UUID otherwise
 	previous, err := r.cacher.Get(node)
 	if err != nil {
@@ -67,40 +67,23 @@ func (r *reconciler) reconcile(node *envoy_core.Node, proxy *model.Proxy) error 
 }
 
 func (r *reconciler) autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snapshot) envoy_cache.Snapshot {
-	if new.Listeners.Version == "" {
-		new.Listeners.Version = old.Listeners.Version
-		if !EqualSnapshots(old.Listeners.Items, new.Listeners.Items) {
-			new.Listeners.Version = core.NewUUID()
-		}
-	}
-	if new.Routes.Version == "" {
-		new.Routes.Version = old.Routes.Version
-		if !EqualSnapshots(old.Routes.Items, new.Routes.Items) {
-			new.Routes.Version = core.NewUUID()
-		}
-	}
-	if new.Clusters.Version == "" {
-		new.Clusters.Version = old.Clusters.Version
-		if !EqualSnapshots(old.Clusters.Items, new.Clusters.Items) {
-			new.Clusters.Version = core.NewUUID()
-		}
-	}
-	if new.Endpoints.Version == "" {
-		new.Endpoints.Version = old.Endpoints.Version
-		if !EqualSnapshots(old.Endpoints.Items, new.Endpoints.Items) {
-			new.Endpoints.Version = core.NewUUID()
-		}
-	}
-	if new.Secrets.Version == "" {
-		new.Secrets.Version = old.Secrets.Version
-		if !EqualSnapshots(old.Secrets.Items, new.Secrets.Items) {
-			new.Secrets.Version = core.NewUUID()
-		}
+	new.Listeners = reuseVersion(old.Listeners, new.Listeners)
+	new.Routes = reuseVersion(old.Routes, new.Routes)
+	new.Clusters = reuseVersion(old.Clusters, new.Clusters)
+	new.Endpoints = reuseVersion(old.Endpoints, new.Endpoints)
+	new.Secrets = reuseVersion(old.Secrets, new.Secrets)
+	return new
+}
+
+func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
+	new.Version = old.Version
+	if !equalSnapshots(old.Items, new.Items) {
+		new.Version = core.NewUUID()
 	}
 	return new
 }
 
-func EqualSnapshots(old, new map[string]envoy_cache.Resource) bool {
+func equalSnapshots(old, new map[string]envoy_cache.Resource) bool {
 	if len(new) != len(old) {
 		return false
 	}
