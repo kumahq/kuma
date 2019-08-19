@@ -30,7 +30,7 @@ func (i *KonvoyInjector) InjectKonvoy(pod *kube_core.Pod) error {
 	if pod.Spec.Containers == nil {
 		pod.Spec.Containers = []kube_core.Container{}
 	}
-	pod.Spec.Containers = append(pod.Spec.Containers, i.NewSidecarContainer())
+	pod.Spec.Containers = append(pod.Spec.Containers, i.NewSidecarContainer(pod))
 
 	// init container
 	if pod.Spec.InitContainers == nil {
@@ -42,13 +42,14 @@ func (i *KonvoyInjector) InjectKonvoy(pod *kube_core.Pod) error {
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
-	for key, value := range i.NewAnnotations() {
+	for key, value := range i.NewAnnotations(pod) {
 		pod.Annotations[key] = value
 	}
 	return nil
 }
 
-func (i *KonvoyInjector) NewSidecarContainer() kube_core.Container {
+func (i *KonvoyInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Container {
+	mesh := metadata.GetMesh(pod) // either user-defined value or default
 	return kube_core.Container{
 		Name:            KonvoySidecarContainerName,
 		Image:           i.cfg.SidecarContainer.Image,
@@ -90,15 +91,19 @@ func (i *KonvoyInjector) NewSidecarContainer() kube_core.Container {
 				Value: fmt.Sprintf("%d", i.cfg.ControlPlane.XdsServer.Port),
 			},
 			{
+				Name:  "KONVOY_MESH", // need to refer to this variable while evaluating KONVOY_DATAPLANE_ID
+				Value: mesh,
+			},
+			{
 				Name: "KONVOY_DATAPLANE_ID",
 				// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
 				// that is why we have to use a runtime reference to POD_NAME instead
-				Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
+				Value: "$(POD_NAME).$(POD_NAMESPACE).$(KONVOY_MESH)", // variable references get expanded by Kubernetes
 			},
 			{
 				Name: "KONVOY_DATAPLANE_SERVICE",
 				// for now, just pick any reasonable name
-				Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
+				Value: "$(POD_NAME).$(POD_NAMESPACE).$(KONVOY_MESH)", // variable references get expanded by Kubernetes
 			},
 		},
 		SecurityContext: &kube_core.SecurityContext{
@@ -175,8 +180,9 @@ func (i *KonvoyInjector) NewInitContainer() kube_core.Container {
 	}
 }
 
-func (i *KonvoyInjector) NewAnnotations() map[string]string {
+func (i *KonvoyInjector) NewAnnotations(pod *kube_core.Pod) map[string]string {
 	return map[string]string{
+		metadata.KonvoyMeshAnnotation:                    metadata.GetMesh(pod), // either user-defined value or default
 		metadata.KonvoySidecarInjectedAnnotation:         metadata.KonvoySidecarInjected,
 		metadata.KonvoyTransparentProxyingAnnotation:     metadata.KonvoyTransparentProxyingEnabled,
 		metadata.KonvoyTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),

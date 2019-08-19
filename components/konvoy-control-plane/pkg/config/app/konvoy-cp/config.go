@@ -2,7 +2,7 @@ package konvoy_cp
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
+	api_server "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/discovery"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"

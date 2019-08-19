@@ -223,34 +223,34 @@ var _ = Describe("PodToDataplane(..)", func() {
 var _ = Describe("MeshFor(..)", func() {
 
 	type testCase struct {
-		podLabels map[string]string
-		expected  string
+		podAnnotations map[string]string
+		expected       string
 	}
 
-	DescribeTable("should use value of `getkonvoy.io/mesh` label on a Pod or fallback to the `default` Mesh",
+	DescribeTable("should use value of `getkonvoy.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
 		func(given testCase) {
 			// given
 			pod := &kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Labels: given.podLabels,
+					Annotations: given.podAnnotations,
 				},
 			}
 
 			// then
 			Expect(MeshFor(pod)).To(Equal(given.expected))
 		},
-		Entry("Pod without labels", testCase{
-			podLabels: nil,
-			expected:  "default",
+		Entry("Pod without annotations", testCase{
+			podAnnotations: nil,
+			expected:       "default",
 		}),
-		Entry("Pod with empty `getkonvoy.io/mesh` label", testCase{
-			podLabels: map[string]string{
+		Entry("Pod with empty `getkonvoy.io/mesh` annotation", testCase{
+			podAnnotations: map[string]string{
 				"getkonvoy.io/mesh": "",
 			},
 			expected: "default",
 		}),
-		Entry("Pod with non-empty `getkonvoy.io/mesh` label", testCase{
-			podLabels: map[string]string{
+		Entry("Pod with non-empty `getkonvoy.io/mesh` annotation", testCase{
+			podAnnotations: map[string]string{
 				"getkonvoy.io/mesh": "pilot",
 			},
 			expected: "pilot",

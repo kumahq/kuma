@@ -3,8 +3,6 @@ package controllers
 import (
 	"fmt"
 
-	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
-
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	injector_metadata "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoy-injector/pkg/injector/metadata"
 	util_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/discovery/k8s/util"
@@ -32,10 +30,7 @@ func PodToDataplane(pod *kube_core.Pod, services []*kube_core.Service, dataplane
 }
 
 func MeshFor(pod *kube_core.Pod) string {
-	if mesh := pod.Labels[mesh_k8s.MeshLabel]; mesh != "" {
-		return mesh
-	}
-	return core_model.DefaultMesh
+	return injector_metadata.GetMesh(pod)
 }
 
 func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane, error) {

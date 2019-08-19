@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/jsonpb"
