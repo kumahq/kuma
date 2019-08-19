@@ -32,7 +32,15 @@ func CreateByKey(ns, name, mesh string) CreateOptionsFunc {
 	}
 }
 
+// todo(jakubdyszkiewicz) implement in other stores than in-memory
 type UpdateOptions struct {
+	Mesh string
+}
+
+func UpdateMesh(mesh string) UpdateOptionsFunc {
+	return func(opts *UpdateOptions) {
+		opts.Mesh = mesh
+	}
 }
 
 type UpdateOptionsFunc func(*UpdateOptions)
@@ -94,14 +102,6 @@ func GetByKey(ns, name, mesh string) GetOptionsFunc {
 		opts.Namespace = ns
 		opts.Name = name
 		opts.Mesh = mesh
-	}
-}
-
-// todo(jakubdyszkiewicz) delete eventually once k8s store tests are not ignored
-func GetByName(ns, name string) GetOptionsFunc {
-	return func(opts *GetOptions) {
-		opts.Namespace = ns
-		opts.Name = name
 	}
 }
 

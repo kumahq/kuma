@@ -4,6 +4,7 @@ import (
 	"context"
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	core_resources "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -12,7 +13,7 @@ import (
 )
 
 type overviewWs struct {
-	resourceStore store.ResourceStore
+	resources core_resources.Resources
 }
 
 func (r *overviewWs) AddToWs(ws *restful.WebService) {
@@ -53,12 +54,12 @@ func (r *overviewWs) inspectDataplane(request *restful.Request, response *restfu
 
 func (r *overviewWs) fetchOverview(ctx context.Context, name string, meshName string) (*mesh.DataplaneOverviewResource, error) {
 	dataplane := mesh.DataplaneResource{}
-	if err := r.resourceStore.Get(ctx, &dataplane, store.GetByKey(namespace, name, meshName)); err != nil {
+	if err := r.resources.Get(ctx, &dataplane, store.GetByKey(namespace, name, meshName)); err != nil {
 		return nil, err
 	}
 
 	insight := mesh.DataplaneInsightResource{}
-	err := r.resourceStore.Get(ctx, &insight, store.GetByKey(namespace, name, meshName))
+	err := r.resources.Get(ctx, &insight, store.GetByKey(namespace, name, meshName))
 	if err != nil && !store.IsResourceNotFound(err) { // It's fine to have dataplane without insight
 		return nil, err
 	}
@@ -93,12 +94,12 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 
 func (r *overviewWs) fetchOverviews(ctx context.Context, meshName string) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := r.resourceStore.List(ctx, &dataplanes, store.ListByMesh(meshName)); err != nil {
+	if err := r.resources.List(ctx, &dataplanes, store.ListByMesh(meshName)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
 	insights := mesh.DataplaneInsightResourceList{}
-	if err := r.resourceStore.List(ctx, &insights, store.ListByMesh(meshName)); err != nil {
+	if err := r.resources.List(ctx, &insights, store.ListByMesh(meshName)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
