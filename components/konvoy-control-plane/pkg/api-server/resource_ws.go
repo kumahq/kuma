@@ -83,23 +83,11 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 			writeError(response, 500, "Could not retrieve a resource")
 		}
 	} else {
-		res := &rest.Resource{
-			Meta: rest.ResourceMeta{
-				Mesh: meshName,
-				Type: string(resource.GetType()),
-				Name: name,
-			},
-			Spec: resource.GetSpec(),
-		}
-		err = response.WriteAsJson(res)
-		if err != nil {
+		res := rest.From.Resource(resource)
+		if err := response.WriteAsJson(res); err != nil {
 			core.Log.Error(err, "Could not write the response")
 		}
 	}
-}
-
-type resourceSpecList struct {
-	Items []*rest.Resource `json:"items"`
 }
 
 func (r *resourceWs) listResources(request *restful.Request, response *restful.Response) {
@@ -110,19 +98,8 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 		core.Log.Error(err, "Could not retrieve resources")
 		writeError(response, 500, "Could not list a resource")
 	} else {
-		items := []*rest.Resource{}
-		for _, item := range list.GetItems() {
-			items = append(items, &rest.Resource{
-				Meta: rest.ResourceMeta{
-					Mesh: item.GetMeta().GetMesh(),
-					Type: string(item.GetType()),
-					Name: item.GetMeta().GetName(),
-				},
-				Spec: item.GetSpec(),
-			})
-		}
-		specList := resourceSpecList{Items: items}
-		if err := response.WriteAsJson(specList); err != nil {
+		restList := rest.From.ResourceList(list)
+		if err := response.WriteAsJson(restList); err != nil {
 			core.Log.Error(err, "Could not write as JSON", "type", string(list.GetItemType()))
 			writeError(response, 500, "Could not list a resource")
 		}
@@ -210,6 +187,6 @@ func (r *resourceWs) deleteResource(request *restful.Request, response *restful.
 
 func writeError(response *restful.Response, httpStatus int, msg string) {
 	if err := response.WriteErrorString(httpStatus, msg); err != nil {
-		core.Log.Error(err, "Cloud not write the response")
+		core.Log.Error(err, "Could not write the response")
 	}
 }

@@ -152,7 +152,7 @@ Usage:
   konvoyctl get [command]
 
 Available Commands:
-  dataplanes     Show Dataplanes
+  dataplanes     Show running Dataplanes
   meshes         Show Meshes
   proxytemplates Show ProxyTemplates
 
@@ -207,13 +207,14 @@ Global Flags:
 ### konvoyctl get dataplanes
 
 ```
-Show Dataplanes.
+Show running Dataplanes.
 
 Usage:
   konvoyctl get dataplanes [flags]
 
 Flags:
-  -h, --help   help for dataplanes
+  -h, --help          help for dataplanes
+      --tag strings   filter by tag in format of key=value. You can provide many tags
 
 Global Flags:
       --config-file string   path to the configuration file to use

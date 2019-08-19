@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/get"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/resources"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -19,54 +19,85 @@ import (
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
-	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
-	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
-	memory_resources "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
-
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 )
 
+type testDataplaneInspectionClient struct {
+	receivedTags map[string]string
+	inspections  []*mesh_core.DataplaneInspectionResource
+}
+
+func (c *testDataplaneInspectionClient) List(_ context.Context, _ string, tags map[string]string) (*mesh_core.DataplaneInspectionResourceList, error) {
+	c.receivedTags = tags
+	return &mesh_core.DataplaneInspectionResourceList{
+		Items: c.inspections,
+	}, nil
+}
+
+var _ resources.DataplaneInspectionClient = &testDataplaneInspectionClient{}
+
 var _ = Describe("konvoy get dataplanes", func() {
 
 	var now, t1, t2 time.Time
-	var sampleDataplaneInsights []*mesh_core.DataplaneInsightResource
+	var sampleDataplaneInspection []*mesh_core.DataplaneInspectionResource
 
 	BeforeEach(func() {
 		now, _ = time.Parse(time.RFC3339, "2019-07-17T18:08:41+00:00")
 		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
 
-		sampleDataplaneInsights = []*mesh_core.DataplaneInsightResource{
+		sampleDataplaneInspection = []*mesh_core.DataplaneInspectionResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh:      "default",
 					Namespace: "trial",
 					Name:      "experiment",
 				},
-				Spec: mesh_proto.DataplaneInsight{
-					Subscriptions: []*mesh_proto.DiscoverySubscription{
-						{
-							Id:                     "1",
-							ControlPlaneInstanceId: "node-001",
-							ConnectTime:            util_proto.MustTimestampProto(t1),
-							Status: mesh_proto.DiscoverySubscriptionStatus{
-								Total: mesh_proto.DiscoveryServiceStats{
-									ResponsesSent:     10,
-									ResponsesRejected: 1,
+				Spec: mesh_proto.DataplaneInspection{
+					Dataplane: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Interface: "127.0.0.1:8080:80",
+									Tags: map[string]string{
+										"service": "mobile",
+										"version": "v1",
+									},
+								},
+								{
+									Interface: "127.0.0.1:8090:90",
+									Tags: map[string]string{
+										"service": "metrics",
+										"version": "v1",
+									},
 								},
 							},
 						},
-						{
-							Id:                     "2",
-							ControlPlaneInstanceId: "node-002",
-							ConnectTime:            util_proto.MustTimestampProto(t2),
-							Status: mesh_proto.DiscoverySubscriptionStatus{
-								Total: mesh_proto.DiscoveryServiceStats{
-									ResponsesSent:     20,
-									ResponsesRejected: 2,
+					},
+					DataplaneInsight: mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								Id:                     "1",
+								ControlPlaneInstanceId: "node-001",
+								ConnectTime:            util_proto.MustTimestampProto(t1),
+								Status: mesh_proto.DiscoverySubscriptionStatus{
+									Total: mesh_proto.DiscoveryServiceStats{
+										ResponsesSent:     10,
+										ResponsesRejected: 1,
+									},
+								},
+							},
+							{
+								Id:                     "2",
+								ControlPlaneInstanceId: "node-002",
+								ConnectTime:            util_proto.MustTimestampProto(t2),
+								Status: mesh_proto.DiscoverySubscriptionStatus{
+									Total: mesh_proto.DiscoveryServiceStats{
+										ResponsesSent:     20,
+										ResponsesRejected: 2,
+									},
 								},
 							},
 						},
@@ -79,34 +110,33 @@ var _ = Describe("konvoy get dataplanes", func() {
 					Namespace: "demo",
 					Name:      "example",
 				},
-				Spec: mesh_proto.DataplaneInsight{
-					Subscriptions: []*mesh_proto.DiscoverySubscription{
-						{
-							Id:                     "1",
-							ControlPlaneInstanceId: "node-001",
-						},
-						{
-							Id:                     "2",
-							ControlPlaneInstanceId: "node-002",
-						},
-						{
-							Id:                     "3",
-							ControlPlaneInstanceId: "node-003",
+				Spec: mesh_proto.DataplaneInspection{
+					Dataplane: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Interface: "127.0.0.1:8080:80",
+									Tags: map[string]string{
+										"service": "example",
+									},
+								},
+							},
 						},
 					},
-				},
-			},
-			{
-				Meta: &test_model.ResourceMeta{
-					Mesh:      "pilot",
-					Namespace: "default",
-					Name:      "simple",
-				},
-				Spec: mesh_proto.DataplaneInsight{
-					Subscriptions: []*mesh_proto.DiscoverySubscription{
-						{
-							Id:                     "1",
-							ControlPlaneInstanceId: "node-001",
+					DataplaneInsight: mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								Id:                     "1",
+								ControlPlaneInstanceId: "node-001",
+							},
+							{
+								Id:                     "2",
+								ControlPlaneInstanceId: "node-002",
+							},
+							{
+								Id:                     "3",
+								ControlPlaneInstanceId: "node-003",
+							},
 						},
 					},
 				},
@@ -114,79 +144,27 @@ var _ = Describe("konvoy get dataplanes", func() {
 		}
 	})
 
-	Describe("TablePrinter", func() {
-
-		var dataplaneInsights *mesh_core.DataplaneInsightResourceList
-		var buf *bytes.Buffer
-
-		BeforeEach(func() {
-			dataplaneInsights = &mesh_core.DataplaneInsightResourceList{}
-			buf = &bytes.Buffer{}
-		})
-
-		It("should not fail on empty list", func() {
-			// given
-			dataplaneInsights.Items = nil
-
-			// when
-			err := get.PrintDataplaneInsights(now, dataplaneInsights, buf)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(`
-MESH   NAME   STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
-`)))
-		})
-
-		It("should print a list of 2 items", func() {
-			// given
-			dataplaneInsights.Items = sampleDataplaneInsights
-
-			// when
-			err := get.PrintDataplaneInsights(now, dataplaneInsights, buf)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(`
-MESH      NAME         STATUS    LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
-default   experiment   Online    2h3m4s               never              30              3
-default   example      Offline   never                never              0               0
-pilot     simple       Offline   never                never              0               0
-`)))
-		})
-	})
-
 	Describe("GetDataplanesCmd", func() {
 
 		var rootCtx *konvoyctl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
-		var store core_store.ResourceStore
+
+		var testClient *testDataplaneInspectionClient
 
 		BeforeEach(func() {
 			// setup
+			testClient = &testDataplaneInspectionClient{
+				inspections: sampleDataplaneInspection,
+			}
 
 			rootCtx = &konvoyctl_cmd.RootContext{
 				Runtime: konvoyctl_cmd.RootRuntime{
 					Now: func() time.Time { return now },
-					NewResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
-						return store, nil
+					NewDataplaneInspectionClient: func(apiServerUrl string) (client resources.DataplaneInspectionClient, e error) {
+						return testClient, nil
 					},
 				},
-			}
-
-			store = memory_resources.NewStore()
-
-			for _, ds := range sampleDataplaneInsights {
-				key := core_model.ResourceKey{
-					Mesh:      ds.Meta.GetMesh(),
-					Namespace: ds.Meta.GetNamespace(),
-					Name:      ds.Meta.GetName(),
-				}
-				err := store.Create(context.Background(), ds, core_store.CreateBy(key))
-				Expect(err).ToNot(HaveOccurred())
 			}
 
 			rootCmd = cmd.NewRootCmd(rootCtx)
@@ -205,7 +183,7 @@ pilot     simple       Offline   never                never              0      
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
-					"get", "dataplanes"}, given.outputFormat))
+					"get", "dataplanes", "--tag", "service=mobile", "--tag", "version=v1"}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()
@@ -244,5 +222,22 @@ pilot     simple       Offline   never                never              0      
 				matcher:      MatchYAML,
 			}),
 		)
+
+		Describe("konvoyctl get dataplanes --tag", func() {
+			It("tags should be passed to the client", func() {
+				// given
+				rootCmd.SetArgs([]string{
+					"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
+					"get", "dataplanes", "--tag", "service=mobile", "--tag", "version=v1"})
+
+				// when
+				err := rootCmd.Execute()
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// and
+				Expect(testClient.receivedTags).To(HaveKeyWithValue("service", "mobile"))
+				Expect(testClient.receivedTags).To(HaveKeyWithValue("version", "v1"))
+			})
+		})
 	})
 })

@@ -87,3 +87,25 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 	}
 	return ifaces, nil
 }
+
+func (d *Dataplane) MatchTags(tags map[string]string) bool {
+	if d.Networking == nil {
+		return false
+	}
+	for _, inbound := range d.Networking.Inbound {
+		if inboundMatchTags(inbound, tags) {
+			return true
+		}
+	}
+	return false
+}
+
+func inboundMatchTags(inbound *Dataplane_Networking_Inbound, tags map[string]string) bool {
+	for tag, value := range tags {
+		inboundVal, exist := inbound.Tags[tag]
+		if !exist || value != inboundVal {
+			return false
+		}
+	}
+	return true
+}

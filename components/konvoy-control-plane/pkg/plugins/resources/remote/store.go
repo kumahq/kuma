@@ -14,28 +14,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var _ model.ResourceMeta = &remoteMeta{}
-
-type remoteMeta struct {
-	Namespace string
-	Name      string
-	Mesh      string
-	Version   string
-}
-
-func (m remoteMeta) GetName() string {
-	return m.Name
-}
-func (m remoteMeta) GetNamespace() string {
-	return m.Namespace
-}
-func (m remoteMeta) GetMesh() string {
-	return m.Mesh
-}
-func (m remoteMeta) GetVersion() string {
-	return m.Version
-}
-
 func NewStore(client util_http.Client, api rest.Api) store.ResourceStore {
 	return &remoteStore{
 		client: client,
@@ -100,7 +78,7 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 	if err != nil {
 		return err
 	}
-	res.SetMeta(remoteMeta{
+	res.SetMeta(rest.RemoteMeta{
 		Namespace: "",
 		Name:      meta.Name,
 		Mesh:      meta.Mesh,
@@ -131,20 +109,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 	if statusCode != 200 {
 		return errors.Errorf("unexpected status code: %d", statusCode)
 	}
-
-	restResource := rest.Resource{
-		Spec: res.GetSpec(),
-	}
-	if err := json.Unmarshal(b, &restResource); err != nil {
-		return err
-	}
-	res.SetMeta(remoteMeta{
-		Namespace: opts.Namespace,
-		Name:      opts.Name,
-		Mesh:      opts.Mesh,
-		Version:   "",
-	})
-	return nil
+	return rest.Unmarshal(b, res)
 }
 
 func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
@@ -164,26 +129,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 	if statusCode != http.StatusOK {
 		return errors.Errorf("unexpected status code: %d", statusCode)
 	}
-	rsr := &rest.ResourceListReceiver{
-		NewResource: func() model.Resource {
-			return rs.NewItem()
-		},
-	}
-	if err := json.Unmarshal(b, rsr); err != nil {
-		return err
-	}
-	for _, ri := range rsr.ResourceList.Items {
-		r := rs.NewItem()
-		r.SetSpec(ri.Spec)
-		r.SetMeta(&remoteMeta{
-			Namespace: "",
-			Name:      ri.Meta.Name,
-			Mesh:      ri.Meta.Mesh,
-			Version:   "",
-		})
-		_ = rs.AddItem(r)
-	}
-	return nil
+	return rest.UnmarshalList(b, rs)
 }
 
 // execute a request. Returns status code, body, error
