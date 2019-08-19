@@ -246,8 +246,8 @@ var _ = Describe("Reconcile", func() {
 				expectedScore: 0,
 			}),
 			Entry("both selector and target are empty", testCase{
-				selector:      nil,
-				target:        nil,
+				selector:      map[string]string{},
+				target:        map[string]string{},
 				expectedMatch: true,
 				expectedScore: 0,
 			}),

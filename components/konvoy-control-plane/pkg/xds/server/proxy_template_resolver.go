@@ -40,6 +40,13 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 	return r.DefaultProxyTemplate
 }
 
+// FindBestMatch given a Dataplane definition and a list of ProxyTemplates returns the "best matching" ProxyTemplate.
+// A ProxyTemplate is considered a match if one of the inbound interfaces of a Dataplane has all tags of ProxyTemplate's selector.
+// Every matching ProxyTemplate gets a rank (score) defined as a maximum number of tags in a matching selector.
+// ProxyTemplate with an empty list of selectors is considered a match with a rank (score) of 0.
+// ProxyTemplate with an empty selector (one that has no tags) is considered a match with a rank (score) of 0.
+// In case if there are multiple ProxyTemplates with the same rank (score), templates are sorted alphabetically by Namespace and Name
+// and the first one is considered the "best match".
 func FindBestMatch(proxy *model.Proxy, templates []*mesh_core.ProxyTemplateResource) *mesh_core.ProxyTemplateResource {
 	sort.Stable(ProxyTemplatesByNamespacedName(templates)) // sort to avoid flakiness
 
