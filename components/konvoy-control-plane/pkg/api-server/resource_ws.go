@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/definitions"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	core_resources "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
@@ -16,7 +17,7 @@ import (
 const namespace = "default"
 
 type resourceWs struct {
-	resourceStore   store.ResourceStore
+	resources       core_resources.Resources
 	readOnly        bool
 	nameFromRequest func(*restful.Request) string
 	meshFromRequest func(*restful.Request) string
@@ -74,7 +75,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 	meshName := r.meshFromRequest(request)
 
 	resource := r.ResourceFactory()
-	err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName))
+	err := r.resources.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName))
 	if err != nil {
 		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name, meshName).Error() {
 			writeError(response, 404, "")
@@ -94,7 +95,7 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 	meshName := r.meshFromRequest(request)
 
 	list := r.ResourceListFactory()
-	if err := r.resourceStore.List(request.Request.Context(), list, store.ListByMesh(meshName)); err != nil {
+	if err := r.resources.List(request.Request.Context(), list, store.ListByMesh(meshName)); err != nil {
 		core.Log.Error(err, "Could not retrieve resources")
 		writeError(response, 500, "Could not list a resource")
 	} else {
@@ -124,15 +125,15 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 		writeError(response, 400, err.Error())
 	} else {
 		resource := r.ResourceFactory()
-		if err := r.resourceStore.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName)); err != nil {
-			if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name, meshName).Error() {
+		if err := r.resources.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName)); err != nil {
+			if store.IsResourceNotFound(err) {
 				r.createResource(request.Request.Context(), name, meshName, resourceRes.Spec, response)
 			} else {
 				core.Log.Error(err, "Could get a resource from the store", "namespace", namespace, "name", name, "type", string(resource.GetType()))
 				writeError(response, 500, "Could not create a resource")
 			}
 		} else {
-			r.updateResource(request.Request.Context(), resource, resourceRes.Spec, response)
+			r.updateResource(request.Request.Context(), resource, resourceRes, response)
 		}
 	}
 }
@@ -155,19 +156,27 @@ func (r *resourceWs) validateResourceRequest(request *restful.Request, resource 
 func (r *resourceWs) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
 	res := r.ResourceFactory()
 	_ = res.SetSpec(spec)
-	if err := r.resourceStore.Create(ctx, res, store.CreateByKey(namespace, name, meshName)); err != nil {
-		core.Log.Error(err, "Could not create a resource")
-		writeError(response, 500, "Could not create a resource")
+	if err := r.resources.Create(ctx, res, store.CreateByKey(namespace, name, meshName)); err != nil {
+		if core_resources.IsMeshNotFound(err) {
+			writeError(response, 400, fmt.Sprintf("Mesh of name %v is not found", meshName))
+		} else {
+			core.Log.Error(err, "Could not create a resource")
+			writeError(response, 500, "Could not create a resource")
+		}
 	} else {
 		response.WriteHeader(201)
 	}
 }
 
-func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, spec model.ResourceSpec, response *restful.Response) {
-	_ = res.SetSpec(spec)
-	if err := r.resourceStore.Update(ctx, res); err != nil {
-		core.Log.Error(err, "Could not update a resource")
-		writeError(response, 500, "Could not update a resource")
+func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, restRes rest.Resource, response *restful.Response) {
+	_ = res.SetSpec(restRes.Spec)
+	if err := r.resources.Update(ctx, res, store.UpdateMesh(restRes.Meta.Mesh)); err != nil {
+		if core_resources.IsMeshNotFound(err) {
+			writeError(response, 400, fmt.Sprintf("Mesh of name %v is not found", restRes.Meta.Mesh))
+		} else {
+			core.Log.Error(err, "Could not update a resource")
+			writeError(response, 500, "Could not update a resource")
+		}
 	} else {
 		response.WriteHeader(200)
 	}
@@ -178,7 +187,7 @@ func (r *resourceWs) deleteResource(request *restful.Request, response *restful.
 	meshName := r.meshFromRequest(request)
 
 	resource := r.ResourceFactory()
-	err := r.resourceStore.Delete(request.Request.Context(), resource, store.DeleteByKey(namespace, name, meshName))
+	err := r.resources.Delete(request.Request.Context(), resource, store.DeleteByKey(namespace, name, meshName))
 	if err != nil {
 		writeError(response, 500, "Could not delete a resource")
 		core.Log.Error(err, "Could not delete a resource", "namespace", namespace, "name", name, "type", string(resource.GetType()))

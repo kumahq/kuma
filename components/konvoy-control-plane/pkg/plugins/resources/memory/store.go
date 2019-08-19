@@ -106,7 +106,7 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	_ = store.NewUpdateOptions(fs...)
+	opts := store.NewUpdateOptions(fs...)
 
 	meta, ok := (r.GetMeta()).(memoryMeta)
 	if !ok {
@@ -120,6 +120,9 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 		return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
 	}
 	meta.Version = meta.Version.Next()
+	if opts.Mesh != "" {
+		meta.Mesh = opts.Mesh
+	}
 
 	record, err := c.marshalRecord(
 		string(r.GetType()),
