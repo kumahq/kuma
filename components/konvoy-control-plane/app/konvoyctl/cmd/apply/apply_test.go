@@ -176,4 +176,52 @@ var _ = Describe("konvoyctl apply", func() {
 		Expect(resource.Meta.GetMesh()).To(Equal("sample"))
 		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 	})
+
+	It("should fill in template (single variable)", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-mesh-template-repeated-placeholder.yaml"),
+			"-a", "name=meshinit"},
+		)
+
+		// when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resource := mesh.MeshResource{}
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "meshinit", "meshinit"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(resource.Meta.GetName()).To(Equal("meshinit"))
+		Expect(resource.Meta.GetMesh()).To(Equal("meshinit"))
+		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
+	})
+
+	It("should fill in template (multiple variables)", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-mesh-template.yaml"),
+			"-a", "name=meshinit", "-a", "mesh=meshinit", "-a", "type=Mesh"},
+		)
+
+		// when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resource := mesh.MeshResource{}
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "meshinit", "meshinit"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(resource.Meta.GetName()).To(Equal("meshinit"))
+		Expect(resource.Meta.GetMesh()).To(Equal("meshinit"))
+		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
+	})
 })

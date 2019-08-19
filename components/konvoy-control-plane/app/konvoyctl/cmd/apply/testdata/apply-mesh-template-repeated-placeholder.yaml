@@ -1,0 +1,6 @@
+name: {{name}}
+mesh: {{name}}
+type: Mesh
+mtls:
+  ca:
+    embedded:
