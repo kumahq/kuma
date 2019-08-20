@@ -20,16 +20,12 @@ import (
 func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dataplanes",
-		Short: "Show running Dataplanes",
-		Long:  `Show running Dataplanes.`,
+		Short: "Show Dataplanes",
+		Long:  `Show Dataplanes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			controlPlane, err := pctx.CurrentControlPlane()
+			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
-			}
-			rs, err := pctx.NewResourceStore(controlPlane)
-			if err != nil {
-				return errors.Wrapf(err, "Failed to create a client for a given Control Plane: %s", controlPlane)
 			}
 
 			dataplaneInsights := &mesh_core.DataplaneInsightResourceList{}
