@@ -47,6 +47,8 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 			if err := rs.Create(context.Background(), &defaultMesh, createOpts); err != nil {
 				return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")
 			}
+		} else {
+			return err
 		}
 	}
 
