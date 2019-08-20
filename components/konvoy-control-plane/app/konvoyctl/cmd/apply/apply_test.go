@@ -182,7 +182,7 @@ var _ = Describe("konvoyctl apply", func() {
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
 			"apply", "-f", filepath.Join("testdata", "apply-mesh-template-repeated-placeholder.yaml"),
-			"-a", "name=meshinit"},
+			"-v", "name=meshinit"},
 		)
 
 		// when
@@ -206,7 +206,7 @@ var _ = Describe("konvoyctl apply", func() {
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
 			"apply", "-f", filepath.Join("testdata", "apply-mesh-template.yaml"),
-			"-a", "name=meshinit", "-a", "mesh=meshinit", "-a", "type=Mesh"},
+			"-v", "name=meshinit", "-v", "mesh=meshinit", "-v", "type=Mesh"},
 		)
 
 		// when
