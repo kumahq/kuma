@@ -20,7 +20,7 @@ type applyContext struct {
 
 	args struct {
 		file string
-		arg  map[string]string
+		vars map[string]string
 	}
 }
 
@@ -43,7 +43,7 @@ func NewApplyCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 				return errors.Wrap(err, "error while reading provided file")
 			}
 
-			configBytes, err := processConfigTemplate(string(b), ctx.args.arg)
+			configBytes, err := processConfigTemplate(string(b), ctx.args.vars)
 			if err != nil {
 				return errors.Wrap(err, "error compiling config from template")
 			}
@@ -68,7 +68,7 @@ func NewApplyCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file to apply")
-	cmd.PersistentFlags().StringToStringVarP(&ctx.args.arg, "arg", "a", map[string]string{}, "Variable to replace in configuration")
+	cmd.PersistentFlags().StringToStringVarP(&ctx.args.vars, "var", "v", map[string]string{}, "Variable to replace in configuration")
 	return cmd
 }
 
