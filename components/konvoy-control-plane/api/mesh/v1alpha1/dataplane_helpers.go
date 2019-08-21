@@ -90,14 +90,8 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 }
 
 func (d *Dataplane) MatchTags(tags map[string]string) bool {
-	if len(tags) == 0 {
-		return true
-	}
-	if d.Networking == nil {
-		return false
-	}
-	for _, inbound := range d.Networking.Inbound {
-		if TagSelector(inbound.Tags).Matches(tags) {
+	for _, inbound := range d.GetNetworking().GetInbound() {
+		if TagSelector(tags).Matches(inbound.Tags) {
 			return true
 		}
 	}
@@ -107,8 +101,11 @@ func (d *Dataplane) MatchTags(tags map[string]string) bool {
 type TagSelector map[string]string
 
 func (s TagSelector) Matches(tags map[string]string) bool {
-	for tag, value := range tags {
-		inboundVal, exist := s[tag]
+	if len(tags) == 0 {
+		return true
+	}
+	for tag, value := range s {
+		inboundVal, exist := tags[tag]
 		if !exist || value != inboundVal {
 			return false
 		}
@@ -118,7 +115,7 @@ func (s TagSelector) Matches(tags map[string]string) bool {
 
 func (d *Dataplane) Tags() map[string][]string {
 	tags := map[string][]string{}
-	for _, inbound := range d.Networking.Inbound {
+	for _, inbound := range d.GetNetworking().GetInbound() {
 		for tag, value := range inbound.Tags {
 			exists := false
 			for _, val := range tags[tag] {

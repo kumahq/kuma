@@ -208,4 +208,46 @@ var _ = Describe("Dataplane", func() {
 			Expect(tags).To(HaveKeyWithValue("role", []string{"metrics"}))
 		})
 	})
+
+	Describe("TagSelector()", func() {
+		type testCase struct {
+			tags map[string]string
+			match bool
+		}
+		DescribeTable("should Match tags", func(given testCase) {
+			// given
+			dpTags := map[string]string{
+				"service": "mobile",
+				"version": "v1",
+			}
+
+			// when
+			match := TagSelector(given.tags).Matches(dpTags)
+
+			//then
+			Expect(match).To(Equal(given.match))
+		},
+		Entry("should match 0 tags", testCase{
+			tags:     map[string]string{},
+			match: true,
+		}),
+		Entry("should match 1 tag", testCase{
+			tags:     map[string]string{"service": "mobile"},
+			match: true,
+		}),
+		Entry("should match all tags", testCase{
+			tags:     map[string]string{
+				"service": "mobile",
+				"version": "v1",
+			},
+			match: true,
+		}),
+		Entry("should not match on one mismatch", testCase{
+			tags:     map[string]string{
+				"service": "backend",
+				"version": "v1",
+			},
+			match: false,
+		}))
+	})
 })
