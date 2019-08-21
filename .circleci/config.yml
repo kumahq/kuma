@@ -329,29 +329,60 @@ jobs:
     - run:
         name: Verify konvoyctl workflow
         command: make konvoyctl/example/minikube -C components/konvoy-control-plane
+  kcp/images/push:
+    <<: *vm-executor-defaults
+    steps:
+    - checkout
+    - run:
+        name: Push Docker images
+        command: make images/push BINTRAY_USERNAME=$BINTRAY_USERNAME BINTRAY_API_KEY=$BINTRAY_API_KEY KONVOY_VERSION=$CIRCLE_TAG -C components/konvoy-control-plane
 
+#
+# Below, the tag filter needs to be in all jobs
+# transitively required by the push job; otherwise,
+# the build isn't triggered.
+# TODO investigate whether it's possible to DRY it,
+# perhaps by creating a separate workflow for deploy,
+# which depends on the first workflow (check/test/build)
+#
 workflows:
   version: 2
   konvoy-control-plane:
     jobs:
-    - kcp-api/check
+    - kcp-api/check:
+        filters:
+          tags:
+            only: /.*/
     - kcp/dev/golang
     - kcp/dev/mac
     - kcp/dev/ubuntu
-    - kcp/check
+    - kcp/check:
+        filters:
+          tags:
+            only: /.*/
     - kcp/test:
         requires:
         - kcp/check
         - kcp-api/check
+        filters:
+          tags:
+            only:
+              /.*/
     - kcp/integration:
         requires:
         - kcp/check
     - kcp/build:
         requires:
         - kcp/test
+        filters:
+          tags:
+            only: /.*/
     - kcp/images:
         requires:
         - kcp/build
+        filters:
+          tags:
+            only: /.*/
 #    TODO(yskopets): Bring back support for Docker Compose
 #    - kcp/example/docker-compose:
 #        requires:
@@ -359,3 +390,11 @@ workflows:
     - kcp/example/minikube:
         requires:
         - kcp/build
+    - kcp/images/push:
+        requires:
+        - kcp/images
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /.*/
