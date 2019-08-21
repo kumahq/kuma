@@ -404,7 +404,7 @@ image/konvoyctl: ## Dev: Build `konvoyctl` Docker image
 image/konvoy-injector: ## Dev: Build `konvoy-injector` Docker image
 	docker build -t $(KONVOY_INJECTOR_DOCKER_IMAGE) -f Dockerfile.konvoy-injector .
 
-image/konvoy-cp/push: image/konvoy-cp\
+image/konvoy-cp/push: image/konvoy-cp
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
 	docker tag $(KONVOY_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
 	docker push $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
