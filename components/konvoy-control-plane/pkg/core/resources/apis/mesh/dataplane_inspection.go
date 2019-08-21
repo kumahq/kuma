@@ -80,6 +80,11 @@ func init() {
 }
 
 func NewDataplaneInspections(dataplanes DataplaneResourceList, insights DataplaneInsightResourceList) DataplaneInspectionResourceList {
+	insightsByKey := map[model.ResourceKey]*DataplaneInsightResource{}
+	for _, insight := range insights.Items {
+		insightsByKey[model.MetaToResourceKey(insight.Meta)] = insight
+	}
+
 	var items []*DataplaneInspectionResource
 	for _, dataplane := range dataplanes.Items {
 		inspection := DataplaneInspectionResource{
@@ -89,11 +94,9 @@ func NewDataplaneInspections(dataplanes DataplaneResourceList, insights Dataplan
 				DataplaneInsight: mesh_proto.DataplaneInsight{},
 			},
 		}
-		// map instead of O(n^2)
-		for _, insight := range insights.Items {
-			if dataplane.Meta.GetName() == insight.Meta.GetName() && dataplane.Meta.GetMesh() == insight.Meta.GetMesh() {
-				inspection.Spec.DataplaneInsight = insight.Spec
-			}
+		insight, exists := insightsByKey[model.MetaToResourceKey(inspection.Meta)]
+		if exists {
+			inspection.Spec.DataplaneInsight = insight.Spec
 		}
 		items = append(items, &inspection)
 	}

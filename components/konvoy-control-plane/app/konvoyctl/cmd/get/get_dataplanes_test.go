@@ -183,7 +183,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-konvoyctl.config.yaml"),
-					"get", "dataplanes", "--tag", "service=mobile", "--tag", "version=v1"}, given.outputFormat))
+					"get", "dataplanes"}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()

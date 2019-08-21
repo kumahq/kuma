@@ -25,6 +25,8 @@ func (r *inspectionWs) AddToWs(ws *restful.WebService) {
 
 	ws.Route(ws.GET("/{mesh}/dataplane-inspections").To(r.inspectDataplanes).
 		Doc("Inspect all dataplanes").
+		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
+		Param(ws.QueryParameter("tag", "Tag to filter in key:value format").DataType("string")).
 		Returns(200, "OK", nil))
 }
 

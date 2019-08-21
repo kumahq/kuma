@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"net"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -89,23 +90,49 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 }
 
 func (d *Dataplane) MatchTags(tags map[string]string) bool {
+	if len(tags) == 0 {
+		return true
+	}
 	if d.Networking == nil {
 		return false
 	}
 	for _, inbound := range d.Networking.Inbound {
-		if inboundMatchTags(inbound, tags) {
+		if TagSelector(inbound.Tags).Matches(tags) {
 			return true
 		}
 	}
 	return false
 }
 
-func inboundMatchTags(inbound *Dataplane_Networking_Inbound, tags map[string]string) bool {
+type TagSelector map[string]string
+
+func (s TagSelector) Matches(tags map[string]string) bool {
 	for tag, value := range tags {
-		inboundVal, exist := inbound.Tags[tag]
+		inboundVal, exist := s[tag]
 		if !exist || value != inboundVal {
 			return false
 		}
 	}
 	return true
+}
+
+func (d *Dataplane) Tags() map[string][]string {
+	tags := map[string][]string{}
+	for _, inbound := range d.Networking.Inbound {
+		for tag, value := range inbound.Tags {
+			exists := false
+			for _, val := range tags[tag] {
+				if val == value {
+					exists = true
+				}
+			}
+			if !exists {
+				tags[tag] = append(tags[tag], value)
+			}
+		}
+	}
+	for _, values := range tags {
+		sort.Strings(values)
+	}
+	return tags
 }

@@ -75,7 +75,7 @@ var _ = Describe("DataplaneInspection", func() {
 			inspections.RetainMatchingTags(given.tags)
 
 			// then
-			Expect(inspections).To(Equal(inspections))
+			Expect(inspections).To(Equal(given.expected))
 		},
 			Entry("should retain all with empty map", testCase{
 				tags:     map[string]string{},
@@ -88,6 +88,10 @@ var _ = Describe("DataplaneInspection", func() {
 			Entry("should retain with matching all tags", testCase{
 				tags:     map[string]string{"service": "mobile", "version": "v1"},
 				expected: inspections,
+			}),
+			Entry("should retain none with mismatching tag", testCase{
+				tags:     map[string]string{"service": "mobile", "version": "v2"},
+				expected: DataplaneInspectionResourceList{Items: []*DataplaneInspectionResource{}},
 			}))
 	})
 })

@@ -174,3 +174,38 @@ var _ = Describe("Dataplane_Networking", func() {
 		})
 	})
 })
+
+var _ = Describe("Dataplane", func() {
+	Describe("Tags()", func() {
+		It("should provide combined tags", func() {
+			// given
+			d := Dataplane{
+				Networking: &Dataplane_Networking{
+					Inbound: []*Dataplane_Networking_Inbound{
+						{
+							Tags: map[string]string{
+								"service": "backend",
+								"version": "v1",
+							},
+						},
+						{
+							Tags: map[string]string{
+								"service": "backend-metrics",
+								"version": "v1",
+								"role": "metrics",
+							},
+						},
+					},
+				},
+			}
+
+			// when
+			tags := d.Tags()
+
+			// then
+			Expect(tags).To(HaveKeyWithValue("service", []string{"backend", "backend-metrics"}))
+			Expect(tags).To(HaveKeyWithValue("version", []string{"v1"}))
+			Expect(tags).To(HaveKeyWithValue("role", []string{"metrics"}))
+		})
+	})
+})

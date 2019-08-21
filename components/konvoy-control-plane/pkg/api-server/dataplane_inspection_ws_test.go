@@ -6,7 +6,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
 	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
-	mesh2 "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
@@ -28,7 +28,7 @@ var _ = Describe("Dataplane Inspection WS", func() {
 		apiServer = createTestApiServer(resourceStore, *config.DefaultApiServerConfig())
 		client := resourceApiClient{
 			address: apiServer.Address(),
-			path:    "/meshes/default/traffic-routes",
+			path:    "/meshes",
 		}
 		stop = make(chan struct{})
 		go func() {
@@ -45,7 +45,7 @@ var _ = Describe("Dataplane Inspection WS", func() {
 
 	BeforeEach(func() {
 		// given
-		dpResource := mesh2.DataplaneResource{
+		dpResource := mesh_core.DataplaneResource{
 			Spec: v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{
 					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
@@ -64,7 +64,7 @@ var _ = Describe("Dataplane Inspection WS", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
-		insightResource := mesh2.DataplaneInsightResource{
+		insightResource := mesh_core.DataplaneInsightResource{
 			Spec: v1alpha1.DataplaneInsight{
 				Subscriptions: []*v1alpha1.DiscoverySubscription{
 					{

@@ -23,20 +23,8 @@ type getDataplanesContext struct {
 	*getContext
 
 	tagsArgs struct {
-		tags []string
+		tags map[string]string
 	}
-}
-
-func (g *getDataplanesContext) tags() (map[string]string, error) {
-	tags := map[string]string{}
-	for _, tag := range g.tagsArgs.tags {
-		split := strings.Split(tag, "=")
-		if len(split) != 2 {
-			return nil, errors.Errorf("invalid format of tag %s, it should be key=value", tag)
-		}
-		tags[split[0]] = split[1]
-	}
-	return tags, nil
 }
 
 func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
@@ -52,11 +40,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "failed to create a dataplane client")
 			}
-			tags, err := ctx.tags()
-			if err != nil {
-				return err
-			}
-			inspections, err := client.List(context.Background(), pctx.CurrentMesh(), tags)
+			inspections, err := client.List(context.Background(), pctx.CurrentMesh(), ctx.tagsArgs.tags)
 			if err != nil {
 				return err
 			}
@@ -73,7 +57,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 			}
 		},
 	}
-	cmd.PersistentFlags().StringSliceVarP(&ctx.tagsArgs.tags, "tag", "", []string{}, "filter by tag in format of key=value. You can provide many tags")
+	cmd.PersistentFlags().StringToStringVarP(&ctx.tagsArgs.tags, "tag", "", map[string]string{}, "filter by tag in format of key=value. You can provide many tags")
 	return cmd
 }
 
@@ -104,21 +88,16 @@ func printDataplaneInspections(now time.Time, dataplaneInsights *mesh_core.Datap
 				}
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().LastUpdateTime)
 
-				tags := map[string]string{}
-				for _, inbound := range dataplane.Networking.Inbound {
-					for tag, value := range inbound.Tags {
-						tags[tag] = value
-					}
-				}
+				tags := dataplane.Tags()
 				var tagsString []string
-				for tag, value := range tags {
-					tagsString = append(tagsString, fmt.Sprintf("%s=%s", tag, value))
+				for tag, values := range tags {
+					tagsString = append(tagsString, fmt.Sprintf("%s=%s", tag, strings.Join(values, ",")))
 				}
 				sort.Strings(tagsString)
 				return []string{
 					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
-					strings.Join(tagsString, ", "),       // TAGS
+					strings.Join(tagsString, " "),       // TAGS
 					onlineStatus,                         // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO
