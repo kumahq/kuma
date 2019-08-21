@@ -19,6 +19,7 @@ import (
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
+	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
@@ -161,7 +162,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 			rootCtx = &konvoyctl_cmd.RootContext{
 				Runtime: konvoyctl_cmd.RootRuntime{
 					Now: func() time.Time { return now },
-					NewDataplaneOverviewClient: func(apiServerUrl string) (client resources.DataplaneOverviewClient, e error) {
+					NewDataplaneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (client resources.DataplaneOverviewClient, e error) {
 						return testClient, nil
 					},
 				},

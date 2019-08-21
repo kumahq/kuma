@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/remote"
 	konvoy_http "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/http"
@@ -16,8 +17,8 @@ type DataplaneOverviewClient interface {
 	List(ctx context.Context, meshName string, tags map[string]string) (*mesh.DataplaneOverviewResourceList, error)
 }
 
-func NewDataplaneOverviewClient(apiServerUrl string) (DataplaneOverviewClient, error) {
-	client, err := apiServerClient(apiServerUrl)
+func NewDataplaneOverviewClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (DataplaneOverviewClient, error) {
+	client, err := apiServerClient(coordinates.Url)
 	if err != nil {
 		return nil, err
 	}

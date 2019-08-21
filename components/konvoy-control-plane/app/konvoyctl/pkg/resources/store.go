@@ -7,8 +7,8 @@ import (
 	remote_resources "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/remote"
 )
 
-func NewResourceStore(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
-	client, err := apiServerClient(controlPlane.GetCoordinates().ApiServer.Url)
+func NewResourceStore(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
+	client, err := apiServerClient(coordinates.Url)
 	if err != nil {
 		return nil, err
 	}
