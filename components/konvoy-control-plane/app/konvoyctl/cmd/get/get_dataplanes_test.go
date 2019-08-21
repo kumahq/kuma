@@ -162,7 +162,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 			rootCtx = &konvoyctl_cmd.RootContext{
 				Runtime: konvoyctl_cmd.RootRuntime{
 					Now: func() time.Time { return now },
-					NewDataplaneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (client resources.DataplaneOverviewClient, e error) {
+					NewDataplaneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.DataplaneOverviewClient, error) {
 						return testClient, nil
 					},
 				},

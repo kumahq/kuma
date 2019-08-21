@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"net"
 	"regexp"
 	"sort"
@@ -113,23 +114,36 @@ func (s TagSelector) Matches(tags map[string]string) bool {
 	return true
 }
 
-func (d *Dataplane) Tags() map[string][]string {
-	tags := map[string][]string{}
+type Tags map[string]map[string]bool
+
+func (t Tags) Values(key string) []string {
+	var result []string
+	for value, _ := range t[key] {
+		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func (d *Dataplane) Tags() Tags {
+	tags := Tags{}
 	for _, inbound := range d.GetNetworking().GetInbound() {
 		for tag, value := range inbound.Tags {
-			exists := false
-			for _, val := range tags[tag] {
-				if val == value {
-					exists = true
-				}
-			}
+			_, exists := tags[tag]
 			if !exists {
-				tags[tag] = append(tags[tag], value)
+				tags[tag] = map[string]bool{}
 			}
+			tags[tag][value] = true
 		}
 	}
-	for _, values := range tags {
-		sort.Strings(values)
-	}
 	return tags
+}
+
+func (t Tags) String() string {
+	var tags []string
+	for tag, _ := range t {
+		tags = append(tags, fmt.Sprintf("%s=%s", tag, strings.Join(t.Values(tag), ",")))
+	}
+	sort.Strings(tags)
+	return strings.Join(tags, " ")
 }

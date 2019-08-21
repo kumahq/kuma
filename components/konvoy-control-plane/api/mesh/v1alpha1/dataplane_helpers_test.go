@@ -203,51 +203,72 @@ var _ = Describe("Dataplane", func() {
 			tags := d.Tags()
 
 			// then
-			Expect(tags).To(HaveKeyWithValue("service", []string{"backend", "backend-metrics"}))
-			Expect(tags).To(HaveKeyWithValue("version", []string{"v1"}))
-			Expect(tags).To(HaveKeyWithValue("role", []string{"metrics"}))
+			Expect(tags.Values("service")).To(Equal([]string{"backend", "backend-metrics"}))
+			Expect(tags.Values("version")).To(Equal([]string{"v1"}))
+			Expect(tags.Values("role")).To(Equal([]string{"metrics"}))
 		})
 	})
+})
 
-	Describe("TagSelector()", func() {
-		type testCase struct {
-			tags map[string]string
-			match bool
+var _ = Describe("TagSelector()", func() {
+	type testCase struct {
+		tags map[string]string
+		match bool
+	}
+	DescribeTable("should Match tags", func(given testCase) {
+		// given
+		dpTags := map[string]string{
+			"service": "mobile",
+			"version": "v1",
 		}
-		DescribeTable("should Match tags", func(given testCase) {
-			// given
-			dpTags := map[string]string{
-				"service": "mobile",
-				"version": "v1",
-			}
 
-			// when
-			match := TagSelector(given.tags).Matches(dpTags)
+		// when
+		match := TagSelector(given.tags).Matches(dpTags)
 
-			//then
-			Expect(match).To(Equal(given.match))
+		//then
+		Expect(match).To(Equal(given.match))
+	},
+	Entry("should match 0 tags", testCase{
+		tags:     map[string]string{},
+		match: true,
+	}),
+	Entry("should match 1 tag", testCase{
+		tags:     map[string]string{"service": "mobile"},
+		match: true,
+	}),
+	Entry("should match all tags", testCase{
+		tags:     map[string]string{
+			"service": "mobile",
+			"version": "v1",
 		},
-		Entry("should match 0 tags", testCase{
-			tags:     map[string]string{},
-			match: true,
-		}),
-		Entry("should match 1 tag", testCase{
-			tags:     map[string]string{"service": "mobile"},
-			match: true,
-		}),
-		Entry("should match all tags", testCase{
-			tags:     map[string]string{
-				"service": "mobile",
-				"version": "v1",
+		match: true,
+	}),
+	Entry("should not match on one mismatch", testCase{
+		tags:     map[string]string{
+			"service": "backend",
+			"version": "v1",
+		},
+		match: false,
+	}))
+})
+
+var _ = Describe("Tags", func() {
+	It("should print tags", func() {
+		// given
+		tags := map[string]map[string]bool{
+			"service": map[string]bool{
+				"backend-api": true,
+				"backend-admin": true,
 			},
-			match: true,
-		}),
-		Entry("should not match on one mismatch", testCase{
-			tags:     map[string]string{
-				"service": "backend",
-				"version": "v1",
+			"version": {
+				"v1": true,
 			},
-			match: false,
-		}))
+		}
+
+		// when
+		result := Tags(tags).String()
+
+		// then
+		Expect(result).To(Equal("service=backend-admin,backend-api version=v1"))
 	})
 })

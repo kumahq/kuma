@@ -2,10 +2,7 @@ package get
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"sort"
-	"strings"
 	"time"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
@@ -88,16 +85,10 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 				}
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().LastUpdateTime)
 
-				tags := dataplane.Tags()
-				var tagsString []string
-				for tag, values := range tags {
-					tagsString = append(tagsString, fmt.Sprintf("%s=%s", tag, strings.Join(values, ",")))
-				}
-				sort.Strings(tagsString)
 				return []string{
 					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
-					strings.Join(tagsString, " "),        // TAGS
+					dataplane.Tags().String(),            // TAGS
 					onlineStatus,                         // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO
