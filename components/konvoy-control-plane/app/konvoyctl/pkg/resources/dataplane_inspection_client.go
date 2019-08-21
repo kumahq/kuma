@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/remote"
 	konvoy_http "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/http"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -47,7 +47,7 @@ func (d *httpDataplaneInspectionClient) List(ctx context.Context, meshName strin
 		return nil, errors.Errorf("unexpected status code: %d", statusCode)
 	}
 	inspections := mesh.DataplaneInspectionResourceList{}
-	if err := rest.UnmarshalList(b, &inspections); err != nil {
+	if err := remote.UnmarshalList(b, &inspections); err != nil {
 		return nil, err
 	}
 	return &inspections, nil

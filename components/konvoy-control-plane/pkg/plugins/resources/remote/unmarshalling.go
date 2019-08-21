@@ -1,38 +1,39 @@
-package rest
+package remote
 
 import (
 	"encoding/json"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 )
 
-type RemoteMeta struct {
+type remoteMeta struct {
 	Namespace string
 	Name      string
 	Mesh      string
 	Version   string
 }
 
-func (m RemoteMeta) GetName() string {
+func (m remoteMeta) GetName() string {
 	return m.Name
 }
-func (m RemoteMeta) GetNamespace() string {
+func (m remoteMeta) GetNamespace() string {
 	return m.Namespace
 }
-func (m RemoteMeta) GetMesh() string {
+func (m remoteMeta) GetMesh() string {
 	return m.Mesh
 }
-func (m RemoteMeta) GetVersion() string {
+func (m remoteMeta) GetVersion() string {
 	return m.Version
 }
 
 func Unmarshal(b []byte, res model.Resource) error {
-	restResource := Resource{
+	restResource := rest.Resource{
 		Spec: res.GetSpec(),
 	}
 	if err := json.Unmarshal(b, &restResource); err != nil {
 		return err
 	}
-	res.SetMeta(RemoteMeta{
+	res.SetMeta(remoteMeta{
 		Namespace: "",
 		Name:      restResource.Meta.Name,
 		Mesh:      restResource.Meta.Mesh,
@@ -42,7 +43,7 @@ func Unmarshal(b []byte, res model.Resource) error {
 }
 
 func UnmarshalList(b []byte, rs model.ResourceList) error {
-	rsr := &ResourceListReceiver{
+	rsr := &rest.ResourceListReceiver{
 		NewResource: func() model.Resource {
 			return rs.NewItem()
 		},
@@ -53,7 +54,7 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 	for _, ri := range rsr.ResourceList.Items {
 		r := rs.NewItem()
 		r.SetSpec(ri.Spec)
-		r.SetMeta(&RemoteMeta{
+		r.SetMeta(&remoteMeta{
 			Namespace: "",
 			Name:      ri.Meta.Name,
 			Mesh:      ri.Meta.Mesh,

@@ -97,7 +97,7 @@ func printDataplaneInspections(now time.Time, dataplaneInsights *mesh_core.Datap
 				return []string{
 					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
-					strings.Join(tagsString, " "),       // TAGS
+					strings.Join(tagsString, " "),        // TAGS
 					onlineStatus,                         // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO

@@ -78,7 +78,7 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 	if err != nil {
 		return err
 	}
-	res.SetMeta(rest.RemoteMeta{
+	res.SetMeta(remoteMeta{
 		Namespace: "",
 		Name:      meta.Name,
 		Mesh:      meta.Mesh,
@@ -109,7 +109,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 	if statusCode != 200 {
 		return errors.Errorf("unexpected status code: %d", statusCode)
 	}
-	return rest.Unmarshal(b, res)
+	return Unmarshal(b, res)
 }
 
 func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
@@ -129,7 +129,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 	if statusCode != http.StatusOK {
 		return errors.Errorf("unexpected status code: %d", statusCode)
 	}
-	return rest.UnmarshalList(b, rs)
+	return UnmarshalList(b, rs)
 }
 
 // execute a request. Returns status code, body, error
