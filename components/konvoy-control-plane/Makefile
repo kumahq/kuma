@@ -60,6 +60,12 @@ endef
 
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
 
+KONVOY_VERSION ?= master
+
+BINTRAY_REGISTRY ?= kong-docker-konvoy-docker.bintray.io
+BINTRAY_USERNAME ?=
+BINTRAY_API_KEY ?=
+
 KONVOY_CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 KONVOY_DP_DOCKER_IMAGE ?= konvoy/konvoy-dataplane:latest
 KONVOYCTL_DOCKER_IMAGE ?= konvoy/konvoyctl:latest
@@ -397,6 +403,26 @@ image/konvoyctl: ## Dev: Build `konvoyctl` Docker image
 
 image/konvoy-injector: ## Dev: Build `konvoy-injector` Docker image
 	docker build -t $(KONVOY_INJECTOR_DOCKER_IMAGE) -f Dockerfile.konvoy-injector .
+
+image/konvoy-cp/push: image/konvoy-cp\
+	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
+	docker tag $(KONVOY_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
+	docker push $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
+	docker logout $(BINTRAY_REGISTRY)
+
+image/konvoy-dp/push: image/konvoy-dp
+	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
+	docker tag $(KONVOY_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoy-dp:$(KONVOY_VERSION)
+	docker push $(BINTRAY_REGISTRY)/konvoy-dp:$(KONVOY_VERSION)
+	docker logout $(BINTRAY_REGISTRY)
+
+image/konvoyctl/push: image/konvoyctl
+	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
+	docker tag $(KONVOY_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoyctl:$(KONVOY_VERSION)
+	docker push $(BINTRAY_REGISTRY)/konvoyctl:$(KONVOY_VERSION)
+	docker logout $(BINTRAY_REGISTRY)
+
+images/push: image/konvoy-cp/push image/konvoy-dp/push image/konvoyctl/push
 
 docs: docs/konvoyctl ## Dev: Generate all docs
 
