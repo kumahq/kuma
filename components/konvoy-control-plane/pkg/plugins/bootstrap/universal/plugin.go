@@ -14,6 +14,6 @@ func init() {
 }
 
 func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
-	b.WithComponentManager(&componentManager{})
+	b.WithComponentManager(NewComponentManager())
 	return nil
 }

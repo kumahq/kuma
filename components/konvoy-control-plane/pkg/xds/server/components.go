@@ -36,7 +36,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, ds *core_discovery.Dis
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
-				return time.NewTicker(1 * time.Second)
+				return time.NewTicker(rt.Config().XdsServer.DataplaneConfigurationRefreshInterval)
 			},
 			OnTick: func() error {
 				ctx := context.Background()
@@ -61,7 +61,7 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTrack
 		return NewDataplaneInsightSink(
 			accessor,
 			func() *time.Ticker {
-				return time.NewTicker(1 * time.Second)
+				return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
 			},
 			NewDataplaneInsightStore(rt.ResourceStore()))
 	})
