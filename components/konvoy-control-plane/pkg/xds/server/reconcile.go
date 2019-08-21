@@ -78,7 +78,7 @@ func (r *reconciler) autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snaps
 func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
 	new.Version = old.Version
 	if !equalSnapshots(old.Items, new.Items) {
-		new.Version = core.NewUUID()
+		new.Version = newUUID()
 	}
 	return new
 }

@@ -1,19 +1,42 @@
 package server
 
 import (
+	"fmt"
+	"sync/atomic"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
+	xds_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
+
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 )
 
 var _ = Describe("Reconcile", func() {
 	Describe("reconciler", func() {
+
+		var backupNewUUID func() string
+
+		BeforeEach(func() {
+			backupNewUUID = newUUID
+		})
+		AfterEach(func() {
+			newUUID = backupNewUUID
+		})
+
+		var serial uint64
+
+		BeforeEach(func() {
+			newUUID = func() string {
+				uuid := atomic.AddUint64(&serial, 1)
+				return fmt.Sprintf("v%d", uuid)
+			}
+		})
 
 		var xdsContext core_xds.XdsContext
 
@@ -21,14 +44,47 @@ var _ = Describe("Reconcile", func() {
 			xdsContext = core_xds.NewXdsContext()
 		})
 
-		It("should generate a Snaphot per Envoy Node", func() {
-			// setup
-			r := &reconciler{&templateSnapshotGenerator{
-				ProxyTemplateResolver: &simpleProxyTemplateResolver{
-					ResourceStore:        memory.NewStore(),
-					DefaultProxyTemplate: template.DefaultProxyTemplate,
+		snapshot := envoy_cache.Snapshot{
+			Listeners: envoy_cache.Resources{
+				Items: map[string]envoy_cache.Resource{
+					"listener": &envoy.Listener{},
 				},
-			}, &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()}}
+			},
+			Routes: envoy_cache.Resources{
+				Items: map[string]envoy_cache.Resource{
+					"route": &envoy.RouteConfiguration{},
+				},
+			},
+			Clusters: envoy_cache.Resources{
+				Items: map[string]envoy_cache.Resource{
+					"cluster": &envoy.Cluster{},
+				},
+			},
+			Endpoints: envoy_cache.Resources{
+				Items: map[string]envoy_cache.Resource{
+					"endpoint": &envoy.ClusterLoadAssignment{},
+				},
+			},
+			Secrets: envoy_cache.Resources{
+				Items: map[string]envoy_cache.Resource{
+					"secret": &envoy_auth.Secret{},
+				},
+			},
+		}
+
+		It("should generate a Snaphot per Envoy Node", func() {
+			// given
+			snapshots := make(chan envoy_cache.Snapshot, 3)
+			snapshots <- snapshot               // initial Dataplane configuration
+			snapshots <- snapshot               // same Dataplane configuration
+			snapshots <- envoy_cache.Snapshot{} // new Dataplane configuration
+
+			// setup
+			r := &reconciler{
+				snapshotGeneratorFunc(func(proxy *xds_model.Proxy) (envoy_cache.Snapshot, error) {
+					return <-snapshots, nil
+				}),
+				&simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()}}
 
 			// given
 			dataplane := &mesh_core.DataplaneResource{
@@ -36,28 +92,69 @@ var _ = Describe("Reconcile", func() {
 					Mesh:      "pilot",
 					Namespace: "example",
 					Name:      "demo",
-					Version:   "v1",
-				},
-				Spec: mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
-						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{
-								Interface: "192.168.0.1:8080:8080",
-							},
-						},
-					},
+					Version:   "abcdefg",
 				},
 			}
 
+			By("simulating discovery event")
 			// when
 			err := r.OnDataplaneUpdate(dataplane)
+			// then
 			Expect(err).ToNot(HaveOccurred())
 
+			By("verifying that snapshot versions were auto-generated")
+			// when
+			snapshot, err := xdsContext.Cache().GetSnapshot("demo.example.pilot")
 			// then
-			Eventually(func() bool {
-				_, err := xdsContext.Cache().GetSnapshot("demo.example.pilot")
-				return err == nil
-			}, "1s", "1ms").Should(BeTrue())
+			Expect(snapshot).ToNot(BeZero())
+			// and
+			Expect(snapshot.Listeners.Version).To(Equal("v1"))
+			Expect(snapshot.Routes.Version).To(Equal("v2"))
+			Expect(snapshot.Clusters.Version).To(Equal("v3"))
+			Expect(snapshot.Endpoints.Version).To(Equal("v4"))
+			Expect(snapshot.Secrets.Version).To(Equal("v5"))
+
+			By("simulating discovery event (Dataplane watchdog triggers refresh)")
+			// when
+			err = r.OnDataplaneUpdate(dataplane)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying that snapshot versions remain the same")
+			// when
+			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example.pilot")
+			// then
+			Expect(snapshot).ToNot(BeZero())
+			// and
+			Expect(snapshot.Listeners.Version).To(Equal("v1"))
+			Expect(snapshot.Routes.Version).To(Equal("v2"))
+			Expect(snapshot.Clusters.Version).To(Equal("v3"))
+			Expect(snapshot.Endpoints.Version).To(Equal("v4"))
+			Expect(snapshot.Secrets.Version).To(Equal("v5"))
+
+			By("simulating discovery event (Dataplane gets changed)")
+			// when
+			err = r.OnDataplaneUpdate(dataplane)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying that snapshot versions are new")
+			// when
+			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example.pilot")
+			// then
+			Expect(snapshot).ToNot(BeZero())
+			// and
+			Expect(snapshot.Listeners.Version).To(Equal("v6"))
+			Expect(snapshot.Routes.Version).To(Equal("v7"))
+			Expect(snapshot.Clusters.Version).To(Equal("v8"))
+			Expect(snapshot.Endpoints.Version).To(Equal("v9"))
+			Expect(snapshot.Secrets.Version).To(Equal("v10"))
 		})
 	})
 })
+
+type snapshotGeneratorFunc func(proxy *xds_model.Proxy) (envoy_cache.Snapshot, error)
+
+func (f snapshotGeneratorFunc) GenerateSnapshot(proxy *xds_model.Proxy) (envoy_cache.Snapshot, error) {
+	return f(proxy)
+}
