@@ -36,24 +36,24 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 		Short: "Show running Dataplanes",
 		Long:  `Show running Dataplanes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			client, err := pctx.NewDataplaneInspectionClient()
+			client, err := pctx.NewDataplaneOverviewClient()
 			if err != nil {
 				return errors.Wrap(err, "failed to create a dataplane client")
 			}
-			inspections, err := client.List(context.Background(), pctx.CurrentMesh(), ctx.tagsArgs.tags)
+			overviews, err := client.List(context.Background(), pctx.CurrentMesh(), ctx.tagsArgs.tags)
 			if err != nil {
 				return err
 			}
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printDataplaneInspections(pctx.Now(), inspections, cmd.OutOrStdout())
+				return printDataplaneOverviews(pctx.Now(), overviews, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
 					return err
 				}
-				return printer.Print(rest_types.From.ResourceList(inspections), cmd.OutOrStdout())
+				return printer.Print(rest_types.From.ResourceList(overviews), cmd.OutOrStdout())
 			}
 		},
 	}
@@ -61,7 +61,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printDataplaneInspections(now time.Time, dataplaneInsights *mesh_core.DataplaneInspectionResourceList, out io.Writer) error {
+func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
 		NextRow: func() func() []string {

@@ -1,7 +1,7 @@
 {
     "items": [
         {
-            "type": "DataplaneInspection",
+            "type": "DataplaneOverview",
             "mesh": "default",
             "name": "one",
             "dataplane": {

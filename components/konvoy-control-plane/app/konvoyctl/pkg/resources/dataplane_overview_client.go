@@ -12,25 +12,25 @@ import (
 	"net/url"
 )
 
-type DataplaneInspectionClient interface {
-	List(ctx context.Context, meshName string, tags map[string]string) (*mesh.DataplaneInspectionResourceList, error)
+type DataplaneOverviewClient interface {
+	List(ctx context.Context, meshName string, tags map[string]string) (*mesh.DataplaneOverviewResourceList, error)
 }
 
-func NewDataplaneInspectionClient(apiServerUrl string) (DataplaneInspectionClient, error) {
+func NewDataplaneOverviewClient(apiServerUrl string) (DataplaneOverviewClient, error) {
 	client, err := apiServerClient(apiServerUrl)
 	if err != nil {
 		return nil, err
 	}
-	return &httpDataplaneInspectionClient{
+	return &httpDataplaneOverviewClient{
 		Client: client,
 	}, nil
 }
 
-type httpDataplaneInspectionClient struct {
+type httpDataplaneOverviewClient struct {
 	Client konvoy_http.Client
 }
 
-func (d *httpDataplaneInspectionClient) List(ctx context.Context, meshName string, tags map[string]string) (*mesh.DataplaneInspectionResourceList, error) {
+func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string, tags map[string]string) (*mesh.DataplaneOverviewResourceList, error) {
 	resUrl, err := constructUrl(meshName, tags)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not construct the url")
@@ -46,15 +46,15 @@ func (d *httpDataplaneInspectionClient) List(ctx context.Context, meshName strin
 	if statusCode != http.StatusOK {
 		return nil, errors.Errorf("unexpected status code: %d", statusCode)
 	}
-	inspections := mesh.DataplaneInspectionResourceList{}
-	if err := remote.UnmarshalList(b, &inspections); err != nil {
+	overviews := mesh.DataplaneOverviewResourceList{}
+	if err := remote.UnmarshalList(b, &overviews); err != nil {
 		return nil, err
 	}
-	return &inspections, nil
+	return &overviews, nil
 }
 
 func constructUrl(meshName string, tags map[string]string) (*url.URL, error) {
-	result, err := url.Parse(fmt.Sprintf("/meshes/%s/dataplane-inspections", meshName))
+	result, err := url.Parse(fmt.Sprintf("/meshes/%s/dataplane-overviews", meshName))
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func constructUrl(meshName string, tags map[string]string) (*url.URL, error) {
 	return result, err
 }
 
-func (d *httpDataplaneInspectionClient) doRequest(ctx context.Context, req *http.Request) (int, []byte, error) {
+func (d *httpDataplaneOverviewClient) doRequest(ctx context.Context, req *http.Request) (int, []byte, error) {
 	resp, err := d.Client.Do(req.WithContext(ctx))
 	if err != nil {
 		return 0, nil, err

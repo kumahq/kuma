@@ -36,7 +36,7 @@ items:
               responsesSent: "20"
     mesh: default
     name: experiment
-    type: DataplaneInspection
+    type: DataplaneOverview
   - dataplane:
       networking:
         inbound:
@@ -71,4 +71,4 @@ items:
             total: {}
     mesh: default
     name: example
-    type: DataplaneInspection
+    type: DataplaneOverview

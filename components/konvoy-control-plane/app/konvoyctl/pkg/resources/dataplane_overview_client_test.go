@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 )
 
-var _ = Describe("httpDataplaneInspectionClient", func() {
+var _ = Describe("httpDataplaneOverviewClient", func() {
 	Describe("List()", func() {
 		It("should create url with tags and parse response", func() {
 			meshName := "default"
@@ -20,12 +20,12 @@ var _ = Describe("httpDataplaneInspectionClient", func() {
 				"version": "v1",
 			}
 
-			client := httpDataplaneInspectionClient{
+			client := httpDataplaneOverviewClient{
 				Client: &http.Client{
 					Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
-						Expect(req.URL.String()).To(Equal("/meshes/default/dataplane-inspections?tag=service%3Amobile&tag=version%3Av1"))
+						Expect(req.URL.String()).To(Equal("/meshes/default/dataplane-overviews?tag=service%3Amobile&tag=version%3Av1"))
 
-						file, err := os.Open(filepath.Join("testdata", "list-dataplane-inspections.json"))
+						file, err := os.Open(filepath.Join("testdata", "list-dataplane-overviews.json"))
 						if err != nil {
 							return nil, err
 						}

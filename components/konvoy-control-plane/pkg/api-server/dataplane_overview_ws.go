@@ -11,47 +11,47 @@ import (
 	"strings"
 )
 
-type inspectionWs struct {
+type overviewWs struct {
 	resourceStore store.ResourceStore
 }
 
-func (r *inspectionWs) AddToWs(ws *restful.WebService) {
-	ws.Route(ws.GET("/{mesh}/dataplane-inspections/{name}").To(r.inspectDataplane).
+func (r *overviewWs) AddToWs(ws *restful.WebService) {
+	ws.Route(ws.GET("/{mesh}/dataplane-overviews/{name}").To(r.inspectDataplane).
 		Doc("Inspect a dataplane").
 		Param(ws.PathParameter("name", "Name of a dataplane").DataType("string")).
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(404, "Not found", nil))
 
-	ws.Route(ws.GET("/{mesh}/dataplane-inspections").To(r.inspectDataplanes).
+	ws.Route(ws.GET("/{mesh}/dataplane-overviews").To(r.inspectDataplanes).
 		Doc("Inspect all dataplanes").
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Param(ws.QueryParameter("tag", "Tag to filter in key:value format").DataType("string")).
 		Returns(200, "OK", nil))
 }
 
-func (r *inspectionWs) inspectDataplane(request *restful.Request, response *restful.Response) {
+func (r *overviewWs) inspectDataplane(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	meshName := request.PathParameter("mesh")
 
-	inspection, err := r.fetchInspection(request.Request.Context(), name, meshName)
+	overview, err := r.fetchOverview(request.Request.Context(), name, meshName)
 	if err != nil {
 		if store.IsResourceNotFound(err) {
 			writeError(response, 404, "")
 		} else {
-			core.Log.Error(err, "Could not retrieve a dataplane inspection", "name", name)
-			writeError(response, 500, "Could not retrieve a dataplane inspection")
+			core.Log.Error(err, "Could not retrieve a dataplane overview", "name", name)
+			writeError(response, 500, "Could not retrieve a dataplane overview")
 		}
 	}
 
-	res := rest.From.Resource(inspection)
+	res := rest.From.Resource(overview)
 	if err := response.WriteAsJson(res); err != nil {
 		core.Log.Error(err, "Could not write the response")
 		writeError(response, 500, "Could not write the response")
 	}
 }
 
-func (r *inspectionWs) fetchInspection(ctx context.Context, name string, meshName string) (*mesh.DataplaneInspectionResource, error) {
+func (r *overviewWs) fetchOverview(ctx context.Context, name string, meshName string) (*mesh.DataplaneOverviewResource, error) {
 	dataplane := mesh.DataplaneResource{}
 	if err := r.resourceStore.Get(ctx, &dataplane, store.GetByKey(namespace, name, meshName)); err != nil {
 		return nil, err
@@ -63,46 +63,46 @@ func (r *inspectionWs) fetchInspection(ctx context.Context, name string, meshNam
 		return nil, err
 	}
 
-	return &mesh.DataplaneInspectionResource{
+	return &mesh.DataplaneOverviewResource{
 		Meta: dataplane.Meta,
-		Spec: mesh_proto.DataplaneInspection{
+		Spec: mesh_proto.DataplaneOverview{
 			Dataplane:        dataplane.Spec,
 			DataplaneInsight: insight.Spec,
 		},
 	}, nil
 }
 
-func (r *inspectionWs) inspectDataplanes(request *restful.Request, response *restful.Response) {
+func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restful.Response) {
 	meshName := request.PathParameter("mesh")
-	inspections, err := r.fetchInspections(request.Request.Context(), meshName)
+	overviews, err := r.fetchOverviews(request.Request.Context(), meshName)
 	if err != nil {
-		core.Log.Error(err, "Could not retrieve dataplane inspections")
-		writeError(response, 500, "Could not list dataplane inspections")
+		core.Log.Error(err, "Could not retrieve dataplane overviews")
+		writeError(response, 500, "Could not list dataplane overviews")
 		return
 	}
 
 	tags := parseTags(request.QueryParameters("tag"))
-	inspections.RetainMatchingTags(tags)
+	overviews.RetainMatchingTags(tags)
 
-	restList := rest.From.ResourceList(&inspections)
+	restList := rest.From.ResourceList(&overviews)
 	if err := response.WriteAsJson(restList); err != nil {
-		core.Log.Error(err, "Could not write DataplaneInspection as JSON")
-		writeError(response, 500, "Could not list dataplane inspections")
+		core.Log.Error(err, "Could not write DataplaneOverview as JSON")
+		writeError(response, 500, "Could not list dataplane overviews")
 	}
 }
 
-func (r *inspectionWs) fetchInspections(ctx context.Context, meshName string) (mesh.DataplaneInspectionResourceList, error) {
+func (r *overviewWs) fetchOverviews(ctx context.Context, meshName string) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
 	if err := r.resourceStore.List(ctx, &dataplanes, store.ListByMesh(meshName)); err != nil {
-		return mesh.DataplaneInspectionResourceList{}, err
+		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
 	insights := mesh.DataplaneInsightResourceList{}
 	if err := r.resourceStore.List(ctx, &insights, store.ListByMesh(meshName)); err != nil {
-		return mesh.DataplaneInspectionResourceList{}, err
+		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
-	return mesh.NewDataplaneInspections(dataplanes, insights), nil
+	return mesh.NewDataplaneOverviews(dataplanes, insights), nil
 }
 
 // Tags should be passed in form of ?tag=service:mobile&tag=version:v1

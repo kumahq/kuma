@@ -8,8 +8,8 @@ import "mesh/v1alpha1/dataplane.proto";
 import "mesh/v1alpha1/dataplane_insight.proto";
 import "gogoproto/gogo.proto";
 
-// DataplaneInspection defines the projected state of a Dataplane.
-message DataplaneInspection {
+// DataplaneOverview defines the projected state of a Dataplane.
+message DataplaneOverview {
 
   Dataplane dataplane = 1 [ (gogoproto.nullable) = false ];
 

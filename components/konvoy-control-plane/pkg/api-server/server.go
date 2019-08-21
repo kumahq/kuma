@@ -49,10 +49,10 @@ func NewApiServer(resourceStore store.ResourceStore, defs []definitions.Resource
 }
 
 func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resourceStore store.ResourceStore, config config.ApiServerConfig) {
-	inspectionWs := inspectionWs{
+	overviewWs := overviewWs{
 		resourceStore: resourceStore,
 	}
-	inspectionWs.AddToWs(ws)
+	overviewWs.AddToWs(ws)
 
 	for _, definition := range defs {
 		resourceWs := resourceWs{

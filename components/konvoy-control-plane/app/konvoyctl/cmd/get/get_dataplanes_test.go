@@ -24,38 +24,38 @@ import (
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 )
 
-type testDataplaneInspectionClient struct {
+type testDataplaneOverviewClient struct {
 	receivedTags map[string]string
-	inspections  []*mesh_core.DataplaneInspectionResource
+	overviews    []*mesh_core.DataplaneOverviewResource
 }
 
-func (c *testDataplaneInspectionClient) List(_ context.Context, _ string, tags map[string]string) (*mesh_core.DataplaneInspectionResourceList, error) {
+func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string) (*mesh_core.DataplaneOverviewResourceList, error) {
 	c.receivedTags = tags
-	return &mesh_core.DataplaneInspectionResourceList{
-		Items: c.inspections,
+	return &mesh_core.DataplaneOverviewResourceList{
+		Items: c.overviews,
 	}, nil
 }
 
-var _ resources.DataplaneInspectionClient = &testDataplaneInspectionClient{}
+var _ resources.DataplaneOverviewClient = &testDataplaneOverviewClient{}
 
 var _ = Describe("konvoy get dataplanes", func() {
 
 	var now, t1, t2 time.Time
-	var sampleDataplaneInspection []*mesh_core.DataplaneInspectionResource
+	var sampleDataplaneOverview []*mesh_core.DataplaneOverviewResource
 
 	BeforeEach(func() {
 		now, _ = time.Parse(time.RFC3339, "2019-07-17T18:08:41+00:00")
 		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
 
-		sampleDataplaneInspection = []*mesh_core.DataplaneInspectionResource{
+		sampleDataplaneOverview = []*mesh_core.DataplaneOverviewResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh:      "default",
 					Namespace: "trial",
 					Name:      "experiment",
 				},
-				Spec: mesh_proto.DataplaneInspection{
+				Spec: mesh_proto.DataplaneOverview{
 					Dataplane: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -110,7 +110,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 					Namespace: "demo",
 					Name:      "example",
 				},
-				Spec: mesh_proto.DataplaneInspection{
+				Spec: mesh_proto.DataplaneOverview{
 					Dataplane: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -150,18 +150,18 @@ var _ = Describe("konvoy get dataplanes", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 
-		var testClient *testDataplaneInspectionClient
+		var testClient *testDataplaneOverviewClient
 
 		BeforeEach(func() {
 			// setup
-			testClient = &testDataplaneInspectionClient{
-				inspections: sampleDataplaneInspection,
+			testClient = &testDataplaneOverviewClient{
+				overviews: sampleDataplaneOverview,
 			}
 
 			rootCtx = &konvoyctl_cmd.RootContext{
 				Runtime: konvoyctl_cmd.RootRuntime{
 					Now: func() time.Time { return now },
-					NewDataplaneInspectionClient: func(apiServerUrl string) (client resources.DataplaneInspectionClient, e error) {
+					NewDataplaneOverviewClient: func(apiServerUrl string) (client resources.DataplaneOverviewClient, e error) {
 						return testClient, nil
 					},
 				},

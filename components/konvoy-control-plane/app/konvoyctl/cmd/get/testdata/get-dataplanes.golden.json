@@ -57,7 +57,7 @@
       },
       "mesh": "default",
       "name": "experiment",
-      "type": "DataplaneInspection"
+      "type": "DataplaneOverview"
     },
     {
       "dataplane": {
@@ -111,7 +111,7 @@
       },
       "mesh": "default",
       "name": "example",
-      "type": "DataplaneInspection"
+      "type": "DataplaneOverview"
     }
   ]
 }

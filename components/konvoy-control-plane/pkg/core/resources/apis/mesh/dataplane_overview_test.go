@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("DataplaneInspection", func() {
+var _ = Describe("DataplaneOverview", func() {
 
-	Describe("NewDataplaneInspections", func() {
-		It("should create inspections from dataplanes and insights", func() {
+	Describe("NewDataplaneOverviews", func() {
+		It("should create overviews from dataplanes and insights", func() {
 			dataplanes := DataplaneResourceList{Items: []*DataplaneResource{
 				{
 					Meta: &model.ResourceMeta{
@@ -36,20 +36,20 @@ var _ = Describe("DataplaneInspection", func() {
 				},
 			}}
 
-			inspections := NewDataplaneInspections(dataplanes, insights)
-			Expect(inspections.Items).To(HaveLen(2))
-			Expect(inspections.Items[0].Spec.Dataplane).To(Equal(dataplanes.Items[0].Spec))
-			Expect(inspections.Items[0].Spec.DataplaneInsight).To(Equal(insights.Items[0].Spec))
-			Expect(inspections.Items[1].Spec.Dataplane).To(Equal(dataplanes.Items[1].Spec))
-			Expect(inspections.Items[1].Spec.DataplaneInsight).To(Equal(v1alpha1.DataplaneInsight{}))
+			overviews := NewDataplaneOverviews(dataplanes, insights)
+			Expect(overviews.Items).To(HaveLen(2))
+			Expect(overviews.Items[0].Spec.Dataplane).To(Equal(dataplanes.Items[0].Spec))
+			Expect(overviews.Items[0].Spec.DataplaneInsight).To(Equal(insights.Items[0].Spec))
+			Expect(overviews.Items[1].Spec.Dataplane).To(Equal(dataplanes.Items[1].Spec))
+			Expect(overviews.Items[1].Spec.DataplaneInsight).To(Equal(v1alpha1.DataplaneInsight{}))
 		})
 	})
 
 	Describe("RetainMatchingTags", func() {
-		inspections := DataplaneInspectionResourceList{
-			Items: []*DataplaneInspectionResource{
+		overviews := DataplaneOverviewResourceList{
+			Items: []*DataplaneOverviewResource{
 				{
-					Spec: v1alpha1.DataplaneInspection{
+					Spec: v1alpha1.DataplaneOverview{
 						Dataplane: v1alpha1.Dataplane{
 							Networking: &v1alpha1.Dataplane_Networking{
 								Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
@@ -68,30 +68,30 @@ var _ = Describe("DataplaneInspection", func() {
 		}
 		type testCase struct {
 			tags     map[string]string
-			expected DataplaneInspectionResourceList
+			expected DataplaneOverviewResourceList
 		}
-		DescribeTable("should retain inspections", func(given testCase) {
+		DescribeTable("should retain overviews", func(given testCase) {
 			// when
-			inspections.RetainMatchingTags(given.tags)
+			overviews.RetainMatchingTags(given.tags)
 
 			// then
-			Expect(inspections).To(Equal(given.expected))
+			Expect(overviews).To(Equal(given.expected))
 		},
 			Entry("should retain all with empty map", testCase{
 				tags:     map[string]string{},
-				expected: inspections,
+				expected: overviews,
 			}),
 			Entry("should retain with one matching tag", testCase{
 				tags:     map[string]string{"service": "mobile"},
-				expected: inspections,
+				expected: overviews,
 			}),
 			Entry("should retain with matching all tags", testCase{
 				tags:     map[string]string{"service": "mobile", "version": "v1"},
-				expected: inspections,
+				expected: overviews,
 			}),
 			Entry("should retain none with mismatching tag", testCase{
 				tags:     map[string]string{"service": "mobile", "version": "v2"},
-				expected: DataplaneInspectionResourceList{Items: []*DataplaneInspectionResource{}},
+				expected: DataplaneOverviewResourceList{Items: []*DataplaneOverviewResource{}},
 			}))
 	})
 })
