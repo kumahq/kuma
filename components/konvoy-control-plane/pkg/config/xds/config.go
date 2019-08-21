@@ -1,7 +1,10 @@
 package xds
 
 import (
-	"errors"
+	"time"
+
+	"github.com/pkg/errors"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 )
 
@@ -15,6 +18,11 @@ type XdsServerConfig struct {
 	HttpPort int `yaml:"httpPort" envconfig:"konvoy_xds_server_http_port"`
 	// Port of Diagnostic Server for checking health and readiness of the Control Plane
 	DiagnosticsPort int `yaml:"diagnosticsPort" envconfig:"konvoy_xds_server_diagnostics_port"`
+
+	// Interval for re-genarting configuration for Dataplanes connected to the Control Plane
+	DataplaneConfigurationRefreshInterval time.Duration `yaml:"dataplaneConfigurationRefreshInterval" envconfig:"konvoy_xds_server_dataplane_configuration_refresh_interval"`
+	// Interval for flushing status of Dataplanes connected to the Control Plane
+	DataplaneStatusFlushInterval time.Duration `yaml:"dataplaneStatusFlushInterval" envconfig:"konvoy_xds_server_dataplane_status_flush_interval"`
 }
 
 func (x *XdsServerConfig) Validate() error {
@@ -27,6 +35,12 @@ func (x *XdsServerConfig) Validate() error {
 	if x.DiagnosticsPort < 0 {
 		return errors.New("DiagnosticPort cannot be negative")
 	}
+	if x.DataplaneConfigurationRefreshInterval <= 0 {
+		return errors.New("DataplaneConfigurationRefreshInterval must be positive")
+	}
+	if x.DataplaneStatusFlushInterval <= 0 {
+		return errors.New("DataplaneStatusFlushInterval must be positive")
+	}
 	return nil
 }
 
@@ -35,5 +49,8 @@ func DefaultXdsServerConfig() *XdsServerConfig {
 		GrpcPort:        5678,
 		HttpPort:        5679,
 		DiagnosticsPort: 5680,
+
+		DataplaneConfigurationRefreshInterval: 1 * time.Second,
+		DataplaneStatusFlushInterval:          1 * time.Second,
 	}
 }
