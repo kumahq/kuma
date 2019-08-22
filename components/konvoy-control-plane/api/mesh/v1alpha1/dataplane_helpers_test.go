@@ -176,29 +176,28 @@ var _ = Describe("Dataplane_Networking", func() {
 })
 
 var _ = Describe("Dataplane", func() {
-	Describe("Tags()", func() {
-		It("should provide combined tags", func() {
-			// given
-			d := Dataplane{
-				Networking: &Dataplane_Networking{
-					Inbound: []*Dataplane_Networking_Inbound{
-						{
-							Tags: map[string]string{
-								"service": "backend",
-								"version": "v1",
-							},
-						},
-						{
-							Tags: map[string]string{
-								"service": "backend-metrics",
-								"version": "v1",
-								"role": "metrics",
-							},
-						},
+	d := Dataplane{
+		Networking: &Dataplane_Networking{
+			Inbound: []*Dataplane_Networking_Inbound{
+				{
+					Tags: map[string]string{
+						"service": "backend",
+						"version": "v1",
 					},
 				},
-			}
+				{
+					Tags: map[string]string{
+						"service": "backend-metrics",
+						"version": "v1",
+						"role": "metrics",
+					},
+				},
+			},
+		},
+	}
 
+	Describe("Tags()", func() {
+		It("should provide combined tags", func() {
 			// when
 			tags := d.Tags()
 
@@ -206,6 +205,29 @@ var _ = Describe("Dataplane", func() {
 			Expect(tags.Values("service")).To(Equal([]string{"backend", "backend-metrics"}))
 			Expect(tags.Values("version")).To(Equal([]string{"v1"}))
 			Expect(tags.Values("role")).To(Equal([]string{"metrics"}))
+		})
+	})
+
+	Describe("MatchTags()", func() {
+		It("should match any inbound", func() {
+			// when
+			selector := TagSelector {
+				"service": "backend",
+				"version": "v1",
+			}
+
+			// then
+			Expect(d.MatchTags(selector)).To(BeTrue())
+		})
+
+		It("should not match if all inbounds did not match", func() {
+			// when
+			selector := TagSelector {
+				"service": "unknown",
+			}
+
+			// then
+			Expect(d.MatchTags(selector)).To(BeFalse())
 		})
 	})
 })

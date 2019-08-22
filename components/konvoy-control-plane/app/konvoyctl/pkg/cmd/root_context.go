@@ -98,7 +98,7 @@ func (rc *RootContext) CurrentResourceStore() (core_store.ResourceStore, error) 
 	return rs, nil
 }
 
-func (rc *RootContext) NewDataplaneOverviewClient() (konvoyctl_resources.DataplaneOverviewClient, error) {
+func (rc *RootContext) CurrentDataplaneOverviewClient() (konvoyctl_resources.DataplaneOverviewClient, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {
 		return nil, err

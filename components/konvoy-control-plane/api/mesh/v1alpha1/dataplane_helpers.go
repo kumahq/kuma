@@ -102,7 +102,7 @@ func (d *Dataplane) MatchTags(selector TagSelector) bool {
 type TagSelector map[string]string
 
 func (s TagSelector) Matches(tags map[string]string) bool {
-	if len(tags) == 0 {
+	if len(s) == 0 {
 		return true
 	}
 	for tag, value := range s {
@@ -141,7 +141,7 @@ func (d *Dataplane) Tags() Tags {
 
 func (t Tags) String() string {
 	var tags []string
-	for tag, _ := range t {
+	for tag := range t {
 		tags = append(tags, fmt.Sprintf("%s=%s", tag, strings.Join(t.Values(tag), ",")))
 	}
 	sort.Strings(tags)

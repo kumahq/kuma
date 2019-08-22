@@ -213,7 +213,7 @@ Usage:
   konvoyctl inspect [command]
 
 Available Commands:
-  dataplanes  Show running Dataplanes
+  dataplanes  Inspect Dataplanes
 
 Flags:
   -h, --help            help for inspect
@@ -230,7 +230,7 @@ Use "konvoyctl inspect [command] --help" for more information about a command.
 ### konvoyctl inspect dataplanes
 
 ```
-Show running Dataplanes.
+Inspect Dataplanes.
 
 Usage:
   konvoyctl inspect dataplanes [flags]

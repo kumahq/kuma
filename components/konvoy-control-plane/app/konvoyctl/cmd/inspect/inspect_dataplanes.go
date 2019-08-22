@@ -30,10 +30,10 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:   "dataplanes",
-		Short: "Show running Dataplanes",
-		Long:  `Show running Dataplanes.`,
+		Short: "Inspect Dataplanes",
+		Long:  `Inspect Dataplanes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			client, err := pctx.NewDataplaneOverviewClient()
+			client, err := pctx.CurrentDataplaneOverviewClient()
 			if err != nil {
 				return errors.Wrap(err, "failed to create a dataplane client")
 			}
