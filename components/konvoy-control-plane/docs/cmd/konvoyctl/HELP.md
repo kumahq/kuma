@@ -153,8 +153,9 @@ Usage:
   konvoyctl get [command]
 
 Available Commands:
-  meshes         Show Meshes
-  proxytemplates Show ProxyTemplates
+  meshes              Show Meshes
+  proxytemplates      Show ProxyTemplates
+  traffic-permissions Show TrafficPermissions
 
 Flags:
   -h, --help            help for get

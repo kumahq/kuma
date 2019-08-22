@@ -9,6 +9,7 @@ require (
 	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/kisielk/errcheck v1.2.0 // indirect
+	github.com/pkg/errors v0.8.1
 	golang.org/x/crypto v0.0.0-20190621222207-cc06ce4a13d4 // indirect
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
 	golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0 // indirect
