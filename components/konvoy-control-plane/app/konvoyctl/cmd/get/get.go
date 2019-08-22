@@ -26,5 +26,6 @@ func NewGetCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 	// sub-commands
 	cmd.AddCommand(newGetMeshesCmd(ctx))
 	cmd.AddCommand(newGetProxyTemplatesCmd(ctx))
+	cmd.AddCommand(newGetTrafficPermissionsCmd(ctx))
 	return cmd
 }

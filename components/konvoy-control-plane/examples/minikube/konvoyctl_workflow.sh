@@ -72,6 +72,8 @@ run konvoyctl inspect dataplanes -oyaml
 
 run konvoyctl inspect dataplanes -ojson
 
+run konvoyctl get traffic-permissions
+
 run test $(run konvoyctl inspect dataplanes | tail +4 | grep -v '<<<<<' | grep -v -e '^$' | wc -l) -eq 2
 
 # Kill the proxy
