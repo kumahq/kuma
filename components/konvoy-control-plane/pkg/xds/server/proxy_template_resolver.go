@@ -33,10 +33,10 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 		templateResolverLog.Error(err, "failed to list ProxyTemplates")
 	}
 	if bestMatchTemplate := FindBestMatch(proxy, templateList.Items); bestMatchTemplate != nil {
-		log.V(1).Info("found the best matching ProxyTemplate", "proxytemplate", core_model.MetaToResourceKey(bestMatchTemplate.Meta))
+		log.V(2).Info("found the best matching ProxyTemplate", "proxytemplate", core_model.MetaToResourceKey(bestMatchTemplate.Meta))
 		return &bestMatchTemplate.Spec
 	}
-	log.V(1).Info("falling back to the default ProxyTemplate since there is no best match", "templates", templateList.Items)
+	log.V(2).Info("falling back to the default ProxyTemplate since there is no best match", "templates", templateList.Items)
 	return r.DefaultProxyTemplate
 }
 
