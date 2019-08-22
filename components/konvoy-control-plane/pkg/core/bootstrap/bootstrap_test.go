@@ -21,11 +21,11 @@ var _ = Describe("Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		rs := rt.ResourceStore()
+		resManager := rt.ResourceManager()
 		getOpts := core_store.GetByKey(core_model.DefaultNamespace,
 			core_model.DefaultMesh, core_model.DefaultMesh)
 		defaultMesh := mesh.MeshResource{}
-		err = rs.Get(context.Background(), &defaultMesh, getOpts)
+		err = resManager.Get(context.Background(), &defaultMesh, getOpts)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

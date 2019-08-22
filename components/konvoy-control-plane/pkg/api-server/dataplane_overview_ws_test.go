@@ -44,11 +44,7 @@ var _ = Describe("Dataplane Overview WS", func() {
 	})
 
 	BeforeEach(func() {
-		// create default mesh
-		meshRes := mesh_core.MeshResource{
-			Spec: v1alpha1.Mesh{},
-		}
-		err := resourceStore.Create(context.Background(), &meshRes, store.CreateByKey("default", "mesh1", "mesh1"))
+		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "mesh1", "mesh1"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

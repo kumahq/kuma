@@ -3,7 +3,7 @@ package api_server
 import (
 	"context"
 	"fmt"
-	core_resources "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	"net/http"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/definitions"
@@ -26,7 +26,7 @@ func (a *ApiServer) Address() string {
 	return a.server.Addr
 }
 
-func NewApiServer(resources core_resources.Resources, defs []definitions.ResourceWsDefinition, config config.ApiServerConfig) *ApiServer {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, config config.ApiServerConfig) *ApiServer {
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Port),
@@ -39,7 +39,7 @@ func NewApiServer(resources core_resources.Resources, defs []definitions.Resourc
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addToWs(ws, defs, resources, config)
+	addToWs(ws, defs, resManager, config)
 	container.Add(ws)
 	configureOpenApi(config, container, ws)
 
@@ -48,15 +48,15 @@ func NewApiServer(resources core_resources.Resources, defs []definitions.Resourc
 	}
 }
 
-func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resources core_resources.Resources, config config.ApiServerConfig) {
+func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config config.ApiServerConfig) {
 	overviewWs := overviewWs{
-		resources: resources,
+		resManager: resManager,
 	}
 	overviewWs.AddToWs(ws)
 
 	for _, definition := range defs {
 		resourceWs := resourceWs{
-			resources:            resources,
+			resManager:           resManager,
 			readOnly:             config.ReadOnly,
 			ResourceWsDefinition: definition,
 		}
@@ -99,6 +99,6 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 }
 
 func SetupServer(rt runtime.Runtime) error {
-	apiServer := NewApiServer(rt.Resources(), definitions.All, *rt.Config().ApiServer)
+	apiServer := NewApiServer(rt.ResourceManager(), definitions.All, *rt.Config().ApiServer)
 	return rt.Add(apiServer)
 }

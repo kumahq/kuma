@@ -32,6 +32,11 @@ var _ = Describe("Components", func() {
 			runtime, err := test_runtime.BuilderFor(cfg).Build()
 			Expect(err).ToNot(HaveOccurred())
 
+			// and example mesh
+			opts := core_store.CreateByKey(core_model.DefaultNamespace, core_model.DefaultMesh, core_model.DefaultMesh)
+			err = runtime.ResourceManager().Create(context.Background(), &mesh_core.MeshResource{}, opts)
+			Expect(err).ToNot(HaveOccurred())
+
 			// setup
 			type event struct {
 				Update *mesh_core.DataplaneResource
@@ -59,7 +64,7 @@ var _ = Describe("Components", func() {
 			typ := ""
 			req := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
-					Id: "example.demo.pilot",
+					Id: "example.default.default",
 				},
 			}
 
@@ -79,11 +84,11 @@ var _ = Describe("Components", func() {
 			// when
 			nextEvent := <-events
 			// then
-			Expect(nextEvent.Delete).To(Equal(core_model.ResourceKey{Mesh: "pilot", Namespace: "demo", Name: "example"}))
+			Expect(nextEvent.Delete).To(Equal(core_model.ResourceKey{Mesh: "default", Namespace: "default", Name: "example"}))
 
 			By("creating Dataplane defintion")
 			// when
-			err = runtime.ResourceStore().Create(ctx, &mesh_core.DataplaneResource{}, core_store.CreateBy(core_model.ResourceKey{Mesh: "pilot", Namespace: "demo", Name: "example"}))
+			err = runtime.ResourceManager().Create(ctx, &mesh_core.DataplaneResource{}, core_store.CreateBy(core_model.ResourceKey{Mesh: "default", Namespace: "default", Name: "example"}))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

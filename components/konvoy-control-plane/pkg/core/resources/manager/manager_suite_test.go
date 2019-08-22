@@ -1,4 +1,4 @@
-package resources_test
+package manager_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestResources(t *testing.T) {
+func TestManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Resources")
+	RunSpecs(t, "Resources Manager")
 }

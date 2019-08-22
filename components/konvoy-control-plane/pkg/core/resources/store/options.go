@@ -32,15 +32,7 @@ func CreateByKey(ns, name, mesh string) CreateOptionsFunc {
 	}
 }
 
-// todo(jakubdyszkiewicz) implement in other stores than in-memory
 type UpdateOptions struct {
-	Mesh string
-}
-
-func UpdateMesh(mesh string) UpdateOptionsFunc {
-	return func(opts *UpdateOptions) {
-		opts.Mesh = mesh
-	}
 }
 
 type UpdateOptionsFunc func(*UpdateOptions)

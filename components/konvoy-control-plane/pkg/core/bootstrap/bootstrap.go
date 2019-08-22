@@ -31,20 +31,20 @@ func buildRuntime(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 }
 
 func createDefaultMesh(runtime core_runtime.Runtime) error {
-	rs := runtime.ResourceStore()
+	resManager := runtime.ResourceManager()
 	defaultMesh := mesh.MeshResource{}
 	cfg := runtime.Config()
 
 	getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh,
 		core_model.DefaultMesh)
 
-	if err := rs.Get(context.Background(), &defaultMesh, getOpts); err != nil {
+	if err := resManager.Get(context.Background(), &defaultMesh, getOpts); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			defaultMesh.Spec = cfg.Defaults.Mesh
 			createOpts := core_store.CreateByKey(core_model.DefaultNamespace,
 				core_model.DefaultMesh, core_model.DefaultMesh)
 
-			if err := rs.Create(context.Background(), &defaultMesh, createOpts); err != nil {
+			if err := resManager.Create(context.Background(), &defaultMesh, createOpts); err != nil {
 				return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")
 			}
 		} else {

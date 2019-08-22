@@ -22,7 +22,7 @@ func DefaultReconciler(rt core_runtime.Runtime) *core_discovery.DiscoverySink {
 		DataplaneConsumer: &reconciler{
 			&templateSnapshotGenerator{
 				ProxyTemplateResolver: &simpleProxyTemplateResolver{
-					ResourceStore:        rt.ResourceStore(),
+					ResourceManager:      rt.ResourceManager(),
 					DefaultProxyTemplate: xds_template.DefaultProxyTemplate,
 				},
 			},
@@ -41,7 +41,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, ds *core_discovery.Dis
 			OnTick: func() error {
 				ctx := context.Background()
 				dataplane := &mesh_core.DataplaneResource{}
-				if err := rt.ResourceStore().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
+				if err := rt.ResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
 					if core_store.IsResourceNotFound(err) {
 						return ds.OnDataplaneDelete(key)
 					}
@@ -63,6 +63,6 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTrack
 			func() *time.Ticker {
 				return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
 			},
-			NewDataplaneInsightStore(rt.ResourceStore()))
+			NewDataplaneInsightStore(rt.ResourceManager()))
 	})
 }

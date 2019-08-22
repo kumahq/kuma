@@ -3,7 +3,6 @@ package api_server_test
 import (
 	"context"
 	"fmt"
-	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
 	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	mesh_res "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
@@ -48,10 +47,7 @@ var _ = Describe("Resource WS", func() {
 
 	BeforeEach(func() {
 		// create default mesh
-		meshRes := mesh_res.MeshResource{
-			Spec: mesh_proto.Mesh{},
-		}
-		err := resourceStore.Create(context.Background(), &meshRes, store.CreateByKey(namespace, mesh, mesh))
+		err := resourceStore.Create(context.Background(), &mesh_res.MeshResource{}, store.CreateByKey(namespace, mesh, mesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

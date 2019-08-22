@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	"sort"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
@@ -21,7 +22,7 @@ type proxyTemplateResolver interface {
 }
 
 type simpleProxyTemplateResolver struct {
-	core_store.ResourceStore
+	manager.ResourceManager
 	DefaultProxyTemplate *mesh_proto.ProxyTemplate
 }
 
@@ -29,7 +30,7 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 	log := templateResolverLog.WithValues("dataplane", core_model.MetaToResourceKey(proxy.Dataplane.Meta))
 	ctx := context.Background()
 	templateList := &mesh_core.ProxyTemplateResourceList{}
-	if err := r.ResourceStore.List(ctx, templateList, core_store.ListByMesh(proxy.Dataplane.Meta.GetMesh())); err != nil {
+	if err := r.ResourceManager.List(ctx, templateList, core_store.ListByMesh(proxy.Dataplane.Meta.GetMesh())); err != nil {
 		templateResolverLog.Error(err, "failed to list ProxyTemplates")
 	}
 	if bestMatchTemplate := FindBestMatch(proxy, templateList.Items); bestMatchTemplate != nil {

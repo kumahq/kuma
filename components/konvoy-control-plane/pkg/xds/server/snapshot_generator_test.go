@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -21,7 +22,7 @@ var _ = Describe("Reconcile", func() {
 
 		gen := templateSnapshotGenerator{
 			ProxyTemplateResolver: &simpleProxyTemplateResolver{
-				ResourceStore:        memory.NewStore(),
+				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate: template.DefaultProxyTemplate,
 			},
 		}
