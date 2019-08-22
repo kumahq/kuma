@@ -34,4 +34,5 @@ gen_help konvoyctl install
 gen_help konvoyctl get
 gen_help konvoyctl get meshes
 gen_help konvoyctl get proxytemplates
-gen_help konvoyctl get dataplanes
+gen_help konvoyctl inspect
+gen_help konvoyctl inspect dataplanes

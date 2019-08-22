@@ -38,15 +38,15 @@ run konvoyctl config view
 
 run konvoyctl config control-planes list
 
-run konvoyctl get dataplanes
+run konvoyctl inspect dataplanes
 
-run konvoyctl get dataplanes -otable
+run konvoyctl inspect dataplanes -otable
 
-run konvoyctl get dataplanes -oyaml
+run konvoyctl inspect dataplanes -oyaml
 
-run konvoyctl get dataplanes -ojson
+run konvoyctl inspect dataplanes -ojson
 
-run test $(run konvoyctl get dataplanes | tail +4 | grep -v '<<<<<' | grep -v -e '^$' | wc -l) -eq 2
+run test $(run konvoyctl inspect dataplanes | tail +4 | grep -v '<<<<<' | grep -v -e '^$' | wc -l) -eq 2
 
 # Kill the port-forward
 run killall kubectl
@@ -64,15 +64,15 @@ run konvoyctl config view
 
 run konvoyctl config control-planes list
 
-run konvoyctl get dataplanes
+run konvoyctl inspect dataplanes
 
-run konvoyctl get dataplanes -otable
+run konvoyctl inspect dataplanes -otable
 
-run konvoyctl get dataplanes -oyaml
+run konvoyctl inspect dataplanes -oyaml
 
-run konvoyctl get dataplanes -ojson
+run konvoyctl inspect dataplanes -ojson
 
-run test $(run konvoyctl get dataplanes | tail +4 | grep -v '<<<<<' | grep -v -e '^$' | wc -l) -eq 2
+run test $(run konvoyctl inspect dataplanes | tail +4 | grep -v '<<<<<' | grep -v -e '^$' | wc -l) -eq 2
 
 # Kill the proxy
 run killall kubectl

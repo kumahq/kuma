@@ -1,4 +1,4 @@
-package get_test
+package inspect_test
 
 import (
 	"bytes"
@@ -39,7 +39,7 @@ func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map
 
 var _ resources.DataplaneOverviewClient = &testDataplaneOverviewClient{}
 
-var _ = Describe("konvoy get dataplanes", func() {
+var _ = Describe("konvoy inspect dataplanes", func() {
 
 	var now, t1, t2 time.Time
 	var sampleDataplaneOverview []*mesh_core.DataplaneOverviewResource
@@ -179,7 +179,7 @@ var _ = Describe("konvoy get dataplanes", func() {
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
-		DescribeTable("konvoyctl get dataplanes -o table|json|yaml",
+		DescribeTable("konvoyctl inspect dataplanes -o table|json|yaml",
 			func(given testCase) {
 				// given
 				rootCmd.SetArgs(append([]string{
@@ -200,31 +200,31 @@ var _ = Describe("konvoy get dataplanes", func() {
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
-				goldenFile:   "get-dataplanes.golden.txt",
+				goldenFile:   "inspect-dataplanes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "get-dataplanes.golden.txt",
+				goldenFile:   "inspect-dataplanes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
-				goldenFile:   "get-dataplanes.golden.json",
+				goldenFile:   "inspect-dataplanes.golden.json",
 				matcher:      MatchJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
-				goldenFile:   "get-dataplanes.golden.yaml",
+				goldenFile:   "inspect-dataplanes.golden.yaml",
 				matcher:      MatchYAML,
 			}),
 		)
 
-		Describe("konvoyctl get dataplanes --tag", func() {
+		Describe("konvoyctl inspect dataplanes --tag", func() {
 			It("tags should be passed to the client", func() {
 				// given
 				rootCmd.SetArgs([]string{

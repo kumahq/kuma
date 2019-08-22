@@ -1,4 +1,4 @@
-package get
+package inspect
 
 import (
 	"context"
@@ -16,17 +16,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type getDataplanesContext struct {
-	*getContext
+type inspectDataplanesContext struct {
+	*inspectContext
 
 	tagsArgs struct {
 		tags map[string]string
 	}
 }
 
-func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
-	ctx := getDataplanesContext{
-		getContext: pctx,
+func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
+	ctx := inspectDataplanesContext{
+		inspectContext: pctx,
 	}
 	cmd := &cobra.Command{
 		Use:   "dataplanes",

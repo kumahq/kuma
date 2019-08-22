@@ -11,6 +11,7 @@ Available Commands:
   config      Manage konvoyctl config
   get         Show Konvoy resources
   help        Help about any command
+  inspect     Inspect Konvoy resources
   install     Install Konvoy on Kubernetes
 
 Flags:
@@ -152,7 +153,6 @@ Usage:
   konvoyctl get [command]
 
 Available Commands:
-  dataplanes     Show running Dataplanes
   meshes         Show Meshes
   proxytemplates Show ProxyTemplates
 
@@ -204,13 +204,36 @@ Global Flags:
   -o, --output string        Output format: one of table|yaml|json (default "table")
 ```
 
-### konvoyctl get dataplanes
+## konvoyctl inspect
+
+```
+Inspect Konvoy resources.
+
+Usage:
+  konvoyctl inspect [command]
+
+Available Commands:
+  dataplanes  Show running Dataplanes
+
+Flags:
+  -h, --help            help for inspect
+  -o, --output string   Output format: one of table|yaml|json (default "table")
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --debug                enable debug-level logging (default true)
+      --mesh string          mesh to use
+
+Use "konvoyctl inspect [command] --help" for more information about a command.
+```
+
+### konvoyctl inspect dataplanes
 
 ```
 Show running Dataplanes.
 
 Usage:
-  konvoyctl get dataplanes [flags]
+  konvoyctl inspect dataplanes [flags]
 
 Flags:
   -h, --help                 help for dataplanes

@@ -1,4 +1,4 @@
-package get
+package inspect
 
 import (
 	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type getContext struct {
+type inspectContext struct {
 	*konvoyctl_cmd.RootContext
 
 	args struct {
@@ -14,17 +14,16 @@ type getContext struct {
 	}
 }
 
-func NewGetCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
-	ctx := &getContext{RootContext: pctx}
+func NewInspectCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
+	ctx := &inspectContext{RootContext: pctx}
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Show Konvoy resources",
-		Long:  `Show Konvoy resources.`,
+		Use:   "inspect",
+		Short: "Inspect Konvoy resources",
+		Long:  `Inspect Konvoy resources.`,
 	}
 	// flags
 	cmd.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), konvoyctl_cmd.UsageOptions("Output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
-	cmd.AddCommand(newGetMeshesCmd(ctx))
-	cmd.AddCommand(newGetProxyTemplatesCmd(ctx))
+	cmd.AddCommand(newInspectDataplanesCmd(ctx))
 	return cmd
 }
