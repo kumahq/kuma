@@ -1,3 +1,0 @@
-MESH      NAME         STATUS    LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
-default   experiment   Online    2h3m4s               never              30              3
-default   example      Offline   never                never              0               0

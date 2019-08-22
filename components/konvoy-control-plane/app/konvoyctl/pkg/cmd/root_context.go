@@ -19,9 +19,10 @@ type RootArgs struct {
 }
 
 type RootRuntime struct {
-	Config           config_proto.Configuration
-	Now              func() time.Time
-	NewResourceStore func(*config_proto.ControlPlane) (core_store.ResourceStore, error)
+	Config                     config_proto.Configuration
+	Now                        func() time.Time
+	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
+	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (konvoyctl_resources.DataplaneOverviewClient, error)
 }
 
 type RootContext struct {
@@ -32,8 +33,9 @@ type RootContext struct {
 func DefaultRootContext() *RootContext {
 	return &RootContext{
 		Runtime: RootRuntime{
-			Now:              time.Now,
-			NewResourceStore: konvoyctl_resources.NewResourceStore,
+			Now:                        time.Now,
+			NewResourceStore:           konvoyctl_resources.NewResourceStore,
+			NewDataplaneOverviewClient: konvoyctl_resources.NewDataplaneOverviewClient,
 		},
 	}
 }
@@ -89,13 +91,17 @@ func (rc *RootContext) CurrentResourceStore() (core_store.ResourceStore, error) 
 	if err != nil {
 		return nil, err
 	}
-	rs, err := rc.NewResourceStore(controlPlane)
+	rs, err := rc.Runtime.NewResourceStore(controlPlane.Coordinates.ApiServer)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create a client for a given Control Plane: %s", controlPlane)
 	}
 	return rs, nil
 }
 
-func (rc *RootContext) NewResourceStore(cp *config_proto.ControlPlane) (core_store.ResourceStore, error) {
-	return rc.Runtime.NewResourceStore(cp)
+func (rc *RootContext) CurrentDataplaneOverviewClient() (konvoyctl_resources.DataplaneOverviewClient, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewDataplaneOverviewClient(controlPlane.Coordinates.ApiServer)
 }

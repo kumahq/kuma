@@ -1,4 +1,4 @@
-package get
+package inspect
 
 import (
 	"context"
@@ -11,46 +11,56 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/output/table"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
-	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
+type inspectDataplanesContext struct {
+	*inspectContext
+
+	tagsArgs struct {
+		tags map[string]string
+	}
+}
+
+func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
+	ctx := inspectDataplanesContext{
+		inspectContext: pctx,
+	}
 	cmd := &cobra.Command{
 		Use:   "dataplanes",
-		Short: "Show Dataplanes",
-		Long:  `Show Dataplanes.`,
+		Short: "Inspect Dataplanes",
+		Long:  `Inspect Dataplanes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			rs, err := pctx.CurrentResourceStore()
+			client, err := pctx.CurrentDataplaneOverviewClient()
+			if err != nil {
+				return errors.Wrap(err, "failed to create a dataplane client")
+			}
+			overviews, err := client.List(context.Background(), pctx.CurrentMesh(), ctx.tagsArgs.tags)
 			if err != nil {
 				return err
 			}
 
-			dataplaneInsights := &mesh_core.DataplaneInsightResourceList{}
-			if err := rs.List(context.Background(), dataplaneInsights, core_store.ListByMesh(pctx.CurrentMesh())); err != nil {
-				return errors.Wrapf(err, "Failed to list Dataplanes")
-			}
-
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return PrintDataplaneInsights(pctx.Now(), dataplaneInsights, cmd.OutOrStdout())
+				return printDataplaneOverviews(pctx.Now(), overviews, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
 					return err
 				}
-				return printer.Print(rest_types.From.ResourceList(dataplaneInsights), cmd.OutOrStdout())
+				return printer.Print(rest_types.From.ResourceList(overviews), cmd.OutOrStdout())
 			}
 		},
 	}
+	cmd.PersistentFlags().StringToStringVarP(&ctx.tagsArgs.tags, "tag", "", map[string]string{}, "filter by tag in format of key=value. You can provide many tags")
 	return cmd
 }
 
-func PrintDataplaneInsights(now time.Time, dataplaneInsights *mesh_core.DataplaneInsightResourceList, out io.Writer) error {
+func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
+		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -58,23 +68,27 @@ func PrintDataplaneInsights(now time.Time, dataplaneInsights *mesh_core.Dataplan
 				if len(dataplaneInsights.Items) <= i {
 					return nil
 				}
-				dataplaneInsight := dataplaneInsights.Items[i]
+				meta := dataplaneInsights.Items[i].Meta
+				dataplane := dataplaneInsights.Items[i].Spec.Dataplane
+				dataplaneInsight := dataplaneInsights.Items[i].Spec.DataplaneInsight
 
-				lastSubscription, lastConnected := dataplaneInsight.Spec.GetLatestSubscription()
-				totalResponsesSent := dataplaneInsight.Spec.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
+				lastSubscription, lastConnected := dataplaneInsight.GetLatestSubscription()
+				totalResponsesSent := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 					return s.Status.Total.ResponsesSent
 				})
-				totalResponsesRejected := dataplaneInsight.Spec.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
+				totalResponsesRejected := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 					return s.Status.Total.ResponsesRejected
 				})
 				onlineStatus := "Offline"
-				if dataplaneInsight.Spec.IsOnline() {
+				if dataplaneInsight.IsOnline() {
 					onlineStatus = "Online"
 				}
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().LastUpdateTime)
+
 				return []string{
-					dataplaneInsight.Meta.GetMesh(),      // MESH
-					dataplaneInsight.Meta.GetName(),      // NAME
+					meta.GetMesh(),                       // MESH
+					meta.GetName(),                       // NAME,
+					dataplane.Tags().String(),            // TAGS
 					onlineStatus,                         // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO

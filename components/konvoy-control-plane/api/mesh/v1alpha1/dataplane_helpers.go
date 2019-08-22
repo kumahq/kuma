@@ -1,8 +1,10 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"net"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -86,4 +88,62 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 		ifaces[i] = iface
 	}
 	return ifaces, nil
+}
+
+func (d *Dataplane) MatchTags(selector TagSelector) bool {
+	for _, inbound := range d.GetNetworking().GetInbound() {
+		if selector.Matches(inbound.Tags) {
+			return true
+		}
+	}
+	return false
+}
+
+type TagSelector map[string]string
+
+func (s TagSelector) Matches(tags map[string]string) bool {
+	if len(s) == 0 {
+		return true
+	}
+	for tag, value := range s {
+		inboundVal, exist := tags[tag]
+		if !exist || value != inboundVal {
+			return false
+		}
+	}
+	return true
+}
+
+type Tags map[string]map[string]bool
+
+func (t Tags) Values(key string) []string {
+	var result []string
+	for value := range t[key] {
+		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func (d *Dataplane) Tags() Tags {
+	tags := Tags{}
+	for _, inbound := range d.GetNetworking().GetInbound() {
+		for tag, value := range inbound.Tags {
+			_, exists := tags[tag]
+			if !exists {
+				tags[tag] = map[string]bool{}
+			}
+			tags[tag][value] = true
+		}
+	}
+	return tags
+}
+
+func (t Tags) String() string {
+	var tags []string
+	for tag := range t {
+		tags = append(tags, fmt.Sprintf("%s=%s", tag, strings.Join(t.Values(tag), ",")))
+	}
+	sort.Strings(tags)
+	return strings.Join(tags, " ")
 }

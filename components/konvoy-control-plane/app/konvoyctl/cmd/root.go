@@ -4,6 +4,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/apply"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/config"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/get"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/inspect"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/install"
 	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/spf13/cobra"
@@ -36,6 +37,7 @@ func NewRootCmd(root *konvoyctl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(install.NewInstallCmd(root))
 	cmd.AddCommand(config.NewConfigCmd(root))
 	cmd.AddCommand(get.NewGetCmd(root))
+	cmd.AddCommand(inspect.NewInspectCmd(root))
 	cmd.AddCommand(apply.NewApplyCmd(root))
 	return cmd
 }

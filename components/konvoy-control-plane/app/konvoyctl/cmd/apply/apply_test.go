@@ -27,7 +27,7 @@ var _ = Describe("konvoyctl apply", func() {
 	BeforeEach(func() {
 		rootCtx = &konvoyctl_cmd.RootContext{
 			Runtime: konvoyctl_cmd.RootRuntime{
-				NewResourceStore: func(controlPlane *config_proto.ControlPlane) (core_store.ResourceStore, error) {
+				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
 				},
 			},

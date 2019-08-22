@@ -52,11 +52,7 @@ func NewApplyCmd(pctx *konvoyctl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "yaml contains invalid resource")
 			}
-			cp, err := pctx.CurrentControlPlane()
-			if err != nil {
-				return err
-			}
-			rs, err := pctx.NewResourceStore(cp)
+			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
 			}
