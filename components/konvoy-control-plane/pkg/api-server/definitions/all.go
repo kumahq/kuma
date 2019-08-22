@@ -5,4 +5,5 @@ var All = []ResourceWsDefinition{
 	DataplaneWsDefinition,
 	DataplaneInsightWsDefinition,
 	ProxyTemplateWsDefinition,
+	TrafficPermissionWsDefinition,
 }
