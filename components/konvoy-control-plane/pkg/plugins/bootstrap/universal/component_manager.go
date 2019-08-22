@@ -6,6 +6,10 @@ import (
 
 var _ runtime.ComponentManager = &componentManager{}
 
+func NewComponentManager() runtime.ComponentManager {
+	return &componentManager{}
+}
+
 type componentManager struct {
 	components []runtime.Component
 }
