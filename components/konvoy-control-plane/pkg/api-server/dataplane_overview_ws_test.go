@@ -120,7 +120,7 @@ var _ = Describe("Dataplane Overview WS", func() {
 	Describe("On GET", func() {
 		It("should return an existing resource", func() {
 			// when
-			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplane-overviews/dp1")
+			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights/dp1")
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -149,19 +149,19 @@ var _ = Describe("Dataplane Overview WS", func() {
 				Expect(string(body)).To(MatchJSON(tc.expectedJson))
 			},
 			Entry("should list all when no tag is provided", testCase{
-				url:          "/meshes/mesh1/dataplane-overviews",
+				url:          "/meshes/mesh1/dataplanes+insights",
 				expectedJson: fmt.Sprintf(`{"items": [%s]}`, sampleJson),
 			}),
 			Entry("should list with only one matching tag", testCase{
-				url:          "/meshes/mesh1/dataplane-overviews?tag=service:sample",
+				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample",
 				expectedJson: fmt.Sprintf(`{"items": [%s]}`, sampleJson),
 			}),
 			Entry("should list all with all matching tags", testCase{
-				url:          "/meshes/mesh1/dataplane-overviews?tag=service:sample&tag=version:v1",
+				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample&tag=version:v1",
 				expectedJson: fmt.Sprintf(`{"items": [%s]}`, sampleJson),
 			}),
 			Entry("should not list when any tag is not matching", testCase{
-				url:          "/meshes/mesh1/dataplane-overviews?tag=service:sample&tag=version:v2",
+				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample&tag=version:v2",
 				expectedJson: `{"items": []}`,
 			}),
 		)

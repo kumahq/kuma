@@ -90,9 +90,9 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 	return ifaces, nil
 }
 
-func (d *Dataplane) MatchTags(tags map[string]string) bool {
+func (d *Dataplane) MatchTags(selector TagSelector) bool {
 	for _, inbound := range d.GetNetworking().GetInbound() {
-		if TagSelector(tags).Matches(inbound.Tags) {
+		if selector.Matches(inbound.Tags) {
 			return true
 		}
 	}
@@ -118,7 +118,7 @@ type Tags map[string]map[string]bool
 
 func (t Tags) Values(key string) []string {
 	var result []string
-	for value, _ := range t[key] {
+	for value := range t[key] {
 		result = append(result, value)
 	}
 	sort.Strings(result)
