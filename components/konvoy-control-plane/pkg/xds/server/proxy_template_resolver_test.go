@@ -125,7 +125,7 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			resolver := &simpleProxyTemplateResolver{
-				ResourceManager:      memory.NewStore(),
+				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 
