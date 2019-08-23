@@ -3,12 +3,12 @@ package api_server
 import (
 	"context"
 	"fmt"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	"net/http"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/definitions"
 	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
@@ -26,7 +26,7 @@ func (a *ApiServer) Address() string {
 	return a.server.Addr
 }
 
-func NewApiServer(resourceStore store.ResourceStore, defs []definitions.ResourceWsDefinition, config config.ApiServerConfig) *ApiServer {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, config config.ApiServerConfig) *ApiServer {
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Port),
@@ -39,7 +39,7 @@ func NewApiServer(resourceStore store.ResourceStore, defs []definitions.Resource
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addToWs(ws, defs, resourceStore, config)
+	addToWs(ws, defs, resManager, config)
 	container.Add(ws)
 	configureOpenApi(config, container, ws)
 
@@ -48,15 +48,15 @@ func NewApiServer(resourceStore store.ResourceStore, defs []definitions.Resource
 	}
 }
 
-func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resourceStore store.ResourceStore, config config.ApiServerConfig) {
+func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config config.ApiServerConfig) {
 	overviewWs := overviewWs{
-		resourceStore: resourceStore,
+		resManager: resManager,
 	}
 	overviewWs.AddToWs(ws)
 
 	for _, definition := range defs {
 		resourceWs := resourceWs{
-			resourceStore:        resourceStore,
+			resManager:           resManager,
 			readOnly:             config.ReadOnly,
 			ResourceWsDefinition: definition,
 		}
@@ -99,6 +99,6 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 }
 
 func SetupServer(rt runtime.Runtime) error {
-	apiServer := NewApiServer(rt.ResourceStore(), definitions.All, *rt.Config().ApiServer)
+	apiServer := NewApiServer(rt.ResourceManager(), definitions.All, *rt.Config().ApiServer)
 	return rt.Add(apiServer)
 }

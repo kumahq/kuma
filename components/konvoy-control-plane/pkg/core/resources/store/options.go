@@ -97,14 +97,6 @@ func GetByKey(ns, name, mesh string) GetOptionsFunc {
 	}
 }
 
-// todo(jakubdyszkiewicz) delete eventually once k8s store tests are not ignored
-func GetByName(ns, name string) GetOptionsFunc {
-	return func(opts *GetOptions) {
-		opts.Namespace = ns
-		opts.Name = name
-	}
-}
-
 type ListOptions struct {
 	Namespace string
 	Mesh      string

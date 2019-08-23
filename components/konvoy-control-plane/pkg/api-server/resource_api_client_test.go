@@ -6,6 +6,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server/definitions"
 	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	sample_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/apis/sample"
@@ -100,7 +101,8 @@ func createTestApiServer(store store.ResourceStore, config config.ApiServerConfi
 		TrafficRouteWsDefinition,
 		definitions.MeshWsDefinition,
 	}
-	return api_server.NewApiServer(store, defs, config)
+	resources := manager.NewResourceManager(store)
+	return api_server.NewApiServer(resources, defs, config)
 }
 
 func getFreePort() (int, error) {

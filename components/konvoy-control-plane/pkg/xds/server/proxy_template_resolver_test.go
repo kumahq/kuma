@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	"sort"
 
 	. "github.com/onsi/ginkgo"
@@ -31,7 +32,7 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			resolver := &simpleProxyTemplateResolver{
-				ResourceStore:        memory.NewStore(),
+				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 
@@ -97,7 +98,7 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			resolver := &simpleProxyTemplateResolver{
-				ResourceStore:        memStore,
+				ResourceManager:      manager.NewResourceManager(memStore),
 				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 
@@ -124,7 +125,7 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			resolver := &simpleProxyTemplateResolver{
-				ResourceStore:        memory.NewStore(),
+				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 

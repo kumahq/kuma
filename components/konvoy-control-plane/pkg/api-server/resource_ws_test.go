@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
 	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
+	mesh_res "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
@@ -42,6 +43,12 @@ var _ = Describe("Resource WS", func() {
 
 	AfterEach(func() {
 		close(stop)
+	})
+
+	BeforeEach(func() {
+		// create default mesh
+		err := resourceStore.Create(context.Background(), &mesh_res.MeshResource{}, store.CreateByKey(namespace, mesh, mesh))
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("On GET", func() {

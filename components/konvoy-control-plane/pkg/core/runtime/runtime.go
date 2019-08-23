@@ -3,6 +3,7 @@ package runtime
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 )
@@ -20,9 +21,9 @@ type RuntimeInfo interface {
 
 type RuntimeContext interface {
 	Config() konvoy_cp.Config
-	ResourceStore() core_store.ResourceStore
 	DiscoverySources() []core_discovery.DiscoverySource
 	XDS() core_xds.XdsContext
+	ResourceManager() manager.ResourceManager
 }
 
 var _ Runtime = &runtime{}
@@ -55,12 +56,12 @@ type runtimeContext struct {
 func (rc *runtimeContext) Config() konvoy_cp.Config {
 	return rc.cfg
 }
-func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
-	return rc.rs
-}
 func (rc *runtimeContext) DiscoverySources() []core_discovery.DiscoverySource {
 	return rc.dss
 }
 func (rc *runtimeContext) XDS() core_xds.XdsContext {
 	return rc.xds
+}
+func (rc *runtimeContext) ResourceManager() manager.ResourceManager {
+	return manager.NewResourceManager(rc.rs)
 }

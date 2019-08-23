@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	"time"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
@@ -65,20 +66,20 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	}
 }
 
-func NewDataplaneInsightStore(rs core_store.ResourceStore) DataplaneInsightStore {
-	return &dataplaneInsightStore{rs}
+func NewDataplaneInsightStore(resManager manager.ResourceManager) DataplaneInsightStore {
+	return &dataplaneInsightStore{resManager}
 }
 
 var _ DataplaneInsightStore = &dataplaneInsightStore{}
 
 type dataplaneInsightStore struct {
-	rs core_store.ResourceStore
+	resManager manager.ResourceManager
 }
 
 func (s *dataplaneInsightStore) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
 	create := false
 	dataplaneInsight := &mesh_core.DataplaneInsightResource{}
-	err := s.rs.Get(context.Background(), dataplaneInsight, core_store.GetBy(dataplaneId))
+	err := s.resManager.Get(context.Background(), dataplaneInsight, core_store.GetBy(dataplaneId))
 	if err != nil {
 		if core_store.IsResourceNotFound(err) {
 			create = true
@@ -88,8 +89,8 @@ func (s *dataplaneInsightStore) Upsert(dataplaneId core_model.ResourceKey, subsc
 	}
 	dataplaneInsight.Spec.UpdateSubscription(subscription)
 	if create {
-		return s.rs.Create(context.Background(), dataplaneInsight, core_store.CreateBy(dataplaneId))
+		return s.resManager.Create(context.Background(), dataplaneInsight, core_store.CreateBy(dataplaneId))
 	} else {
-		return s.rs.Update(context.Background(), dataplaneInsight)
+		return s.resManager.Update(context.Background(), dataplaneInsight)
 	}
 }
