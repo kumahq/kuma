@@ -31,8 +31,15 @@ func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
 	if node == nil {
 		return nil, errors.Errorf("Envoy node must not be nil")
 	}
-	parts := strings.Split(node.Id, ".")
+	return ParseProxyIdFromString(node.Id)
+}
+
+func ParseProxyIdFromString(id string) (*ProxyId, error) {
+	parts := strings.Split(id, ".")
 	name := parts[0]
+	if id == "" {
+		return nil, errors.New("name must not be empty")
+	}
 	ns := core_model.DefaultNamespace
 	if 1 < len(parts) {
 		ns = parts[1]
@@ -46,4 +53,12 @@ func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
 		Namespace: ns,
 		Name:      name,
 	}, nil
+}
+
+func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
+	return core_model.ResourceKey{
+		Name:      id.Name,
+		Namespace: id.Namespace,
+		Mesh:      id.Mesh,
+	}
 }

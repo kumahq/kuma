@@ -29,12 +29,6 @@ var _ = Describe("xDS", func() {
 					// and
 					Expect(*proxyId).To(Equal(given.expected))
 				},
-				Entry("no name and namespace", testCase{
-					node: &envoy_core.Node{},
-					expected: core_xds.ProxyId{
-						Mesh: "default", Namespace: "default", Name: "",
-					},
-				}),
 				Entry("name without namespace", testCase{
 					node: &envoy_core.Node{
 						Id: "example",
@@ -82,7 +76,30 @@ var _ = Describe("xDS", func() {
 					node:        nil,
 					expectedErr: "Envoy node must not be nil",
 				}),
+				Entry("empty", testCase{
+					node:        &envoy_core.Node{},
+					expectedErr: "name must not be empty",
+				}),
 			)
+		})
+	})
+
+	Describe("ProxyId(...).ToResourceKey()", func() {
+		It("should convert proxy ID to resource key", func() {
+			// given
+			id := core_xds.ProxyId{
+				Mesh:      "default",
+				Namespace: "pilot",
+				Name:      "demo",
+			}
+
+			// when
+			key := id.ToResourceKey()
+
+			// then
+			Expect(key.Namespace).To(Equal("pilot"))
+			Expect(key.Mesh).To(Equal("default"))
+			Expect(key.Name).To(Equal("demo"))
 		})
 	})
 })

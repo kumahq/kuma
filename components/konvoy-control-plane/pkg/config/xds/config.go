@@ -23,6 +23,8 @@ type XdsServerConfig struct {
 	DataplaneConfigurationRefreshInterval time.Duration `yaml:"dataplaneConfigurationRefreshInterval" envconfig:"konvoy_xds_server_dataplane_configuration_refresh_interval"`
 	// Interval for flushing status of Dataplanes connected to the Control Plane
 	DataplaneStatusFlushInterval time.Duration `yaml:"dataplaneStatusFlushInterval" envconfig:"konvoy_xds_server_dataplane_status_flush_interval"`
+	// Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
+	Bootstrap *XdsBootstrapServerConfig `yaml:"bootstrap"`
 }
 
 func (x *XdsServerConfig) Validate() error {
@@ -41,16 +43,73 @@ func (x *XdsServerConfig) Validate() error {
 	if x.DataplaneStatusFlushInterval <= 0 {
 		return errors.New("DataplaneStatusFlushInterval must be positive")
 	}
+	if err := x.Bootstrap.Validate(); err != nil {
+		return errors.Wrap(err, "Bootstrap validation failed")
+	}
 	return nil
 }
 
 func DefaultXdsServerConfig() *XdsServerConfig {
 	return &XdsServerConfig{
-		GrpcPort:        5678,
-		HttpPort:        5679,
-		DiagnosticsPort: 5680,
-
+		GrpcPort:                              5678,
+		HttpPort:                              5679,
+		DiagnosticsPort:                       5680,
 		DataplaneConfigurationRefreshInterval: 1 * time.Second,
 		DataplaneStatusFlushInterval:          1 * time.Second,
+		Bootstrap:                             DefaultXdsBootstrapServerConfig(),
+	}
+}
+
+type XdsBootstrapServerConfig struct {
+	// Port of Server that provides bootstrap configuration for dataplanes
+	Port int `yaml:"port" envconfig:"konvoy_xds_server_bootstrap_port"`
+	// Parameters of bootstrap configuration
+	Params *XdsBootstrapParamsConfig `yaml:"params"`
+}
+
+func (x *XdsBootstrapServerConfig) Validate() error {
+	if x.Port < 0 {
+		return errors.New("Port cannot be negative")
+	}
+	if err := x.Params.Validate(); err != nil {
+		return errors.Wrap(err, "Params validation failed")
+	}
+	return nil
+}
+
+func DefaultXdsBootstrapServerConfig() *XdsBootstrapServerConfig {
+	return &XdsBootstrapServerConfig{
+		Port:   5682,
+		Params: DefaultXdsBootstrapParamsConfig(),
+	}
+}
+
+type XdsBootstrapParamsConfig struct {
+	// Port for Envoy Admin
+	AdminPort int `yaml:"adminPort" envconfig:"konvoy_xds_server_bootstrap_params_admin_port"`
+	// Host of XDS Server
+	XdsHost string `yaml:"xdsHost" envconfig:"konvoy_xds_server_bootstrap_params_xds_host"`
+	// Port of XDS Server
+	XdsPort int `yaml:"xdsPort" envconfig:"konvoy_xds_server_bootstrap_params_xds_port"`
+}
+
+func (x *XdsBootstrapParamsConfig) Validate() error {
+	if x.AdminPort < 0 {
+		return errors.New("Port cannot be negative")
+	}
+	if x.XdsHost == "" {
+		return errors.New("Host cannot be empty")
+	}
+	if x.XdsPort < 0 {
+		return errors.New("Port cannot be negative")
+	}
+	return nil
+}
+
+func DefaultXdsBootstrapParamsConfig() *XdsBootstrapParamsConfig {
+	return &XdsBootstrapParamsConfig{
+		AdminPort: 9901,
+		XdsHost:   "localhost",
+		XdsPort:   5678,
 	}
 }
