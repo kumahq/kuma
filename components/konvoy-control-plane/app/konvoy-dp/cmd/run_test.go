@@ -4,6 +4,11 @@ package cmd
 
 import (
 	"bytes"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoy-dp/pkg/dataplane/envoy"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
+	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
+	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
+	"github.com/gogo/protobuf/proto"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -20,12 +25,23 @@ import (
 var _ = Describe("run", func() {
 
 	var backupSetupSignalHandler func() <-chan struct{}
+	var backupBootstrapGenerator envoy.BootstrapConfigFactoryFunc
 
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
+		backupBootstrapGenerator = bootstrapGenerator
+		bootstrapGenerator = func(cfg konvoydp.Config) (proto.Message, error) {
+			bootstrap := envoy_bootstrap.Bootstrap{}
+			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
+			Expect(err).ToNot(HaveOccurred())
+			err = util_proto.FromYAML(respBytes, &bootstrap)
+			Expect(err).ToNot(HaveOccurred())
+			return &bootstrap, nil
+		}
 	})
 	AfterEach(func() {
 		core.SetupSignalHandler = backupSetupSignalHandler
+		bootstrapGenerator = backupBootstrapGenerator
 	})
 
 	var stopCh chan struct{}
@@ -73,14 +89,13 @@ var _ = Describe("run", func() {
 
 		// and
 		env := map[string]string{
-			"KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS": "konvoy-control-plane.internal",
-			"KONVOY_CONTROL_PLANE_XDS_SERVER_PORT":    "1234",
-			"KONVOY_DATAPLANE_ID":                     "example",
-			"KONVOY_DATAPLANE_SERVICE":                "demo",
-			"KONVOY_DATAPLANE_ADMIN_PORT":             "2345",
-			"KONVOY_DATAPLANE_RUNTIME_BINARY_PATH":    filepath.Join("testdata", "envoy-mock.sleep.sh"),
-			"KONVOY_DATAPLANE_RUNTIME_CONFIG_DIR":     configDir,
-			"ENVOY_MOCK_PID_FILE":                     pidFile,
+			"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_ADDRESS": "localhost",
+			"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_PORT":    "1234",
+			"KONVOY_DATAPLANE_ID":                           "example",
+			"KONVOY_DATAPLANE_ADMIN_PORT":                   "2345",
+			"KONVOY_DATAPLANE_RUNTIME_BINARY_PATH":          filepath.Join("testdata", "envoy-mock.sleep.sh"),
+			"KONVOY_DATAPLANE_RUNTIME_CONFIG_DIR":           configDir,
+			"ENVOY_MOCK_PID_FILE":                           pidFile,
 		}
 		for key, value := range env {
 			os.Setenv(key, value)
