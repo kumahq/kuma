@@ -80,11 +80,11 @@ func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 
 type BootstrapParamsConfig struct {
 	// Port for Envoy Admin
-	AdminPort int `yaml:"adminPort" envconfig:"konvoy_bootstrap_server_params_admin_port"`
+	AdminPort uint32 `yaml:"adminPort" envconfig:"konvoy_bootstrap_server_params_admin_port"`
 	// Host of XDS Server
 	XdsHost string `yaml:"xdsHost" envconfig:"konvoy_bootstrap_server_params_xds_host"`
 	// Port of XDS Server
-	XdsPort int `yaml:"xdsPort" envconfig:"konvoy_bootstrap_server_params_xds_port"`
+	XdsPort uint32 `yaml:"xdsPort" envconfig:"konvoy_bootstrap_server_params_xds_port"`
 }
 
 func (b *BootstrapParamsConfig) Validate() error {

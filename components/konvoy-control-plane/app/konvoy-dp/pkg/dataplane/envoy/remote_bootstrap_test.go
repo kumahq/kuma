@@ -19,11 +19,13 @@ var _ = Describe("Remote Bootstrap", func() {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
 		mux.HandleFunc("/bootstrap", func(writer http.ResponseWriter, req *http.Request) {
+			defer GinkgoRecover()
 			body, err := ioutil.ReadAll(req.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(`
 			{
-				"nodeId": "demo.sample"
+				"nodeId": "demo.sample",
+				"adminPort": 4321
 			}
 			`))
 
@@ -40,6 +42,7 @@ var _ = Describe("Remote Bootstrap", func() {
 
 		cfg := konvoy_dp.DefaultConfig()
 		cfg.Dataplane.Id = "demo.sample"
+		cfg.Dataplane.AdminPort = 4321
 		cfg.ControlPlane.BootstrapServer.Address = "localhost"
 		cfg.ControlPlane.BootstrapServer.Port = uint32(port)
 

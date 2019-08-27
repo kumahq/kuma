@@ -18,7 +18,7 @@ import (
 
 type BootstrapRequest struct {
 	NodeId    string `json:"nodeId"`
-	AdminPort int    `json:"adminPort,omitempty"`
+	AdminPort uint32 `json:"adminPort,omitempty"`
 }
 
 type BootstrapGenerator interface {

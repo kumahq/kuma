@@ -26,7 +26,10 @@ func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc
 func (b *remoteBootstrap) Generate(cfg konvoy_dp.Config) (proto.Message, error) {
 	url := fmt.Sprintf("http://%s:%d/bootstrap", cfg.ControlPlane.BootstrapServer.Address, cfg.ControlPlane.BootstrapServer.Port)
 	request := xds_bootstrap.BootstrapRequest{
-		NodeId: cfg.Dataplane.Id,
+		NodeId:    cfg.Dataplane.Id,
+		// if not set in config, the 0 will be sent which will result in providing default admin port
+		// that is set in the control plane bootstrap params
+		AdminPort: cfg.Dataplane.AdminPort,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {
@@ -36,6 +39,7 @@ func (b *remoteBootstrap) Generate(cfg konvoy_dp.Config) (proto.Message, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "request to bootstrap server failed")
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 404 {
 			return nil, errors.New("status: 404. Did you first applied Dataplane resource?")
