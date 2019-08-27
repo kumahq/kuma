@@ -17,7 +17,8 @@ import (
 )
 
 type BootstrapRequest struct {
-	NodeId string `json:"nodeId"`
+	NodeId    string `json:"nodeId"`
+	AdminPort int    `json:"adminPort,omitempty"`
 }
 
 type BootstrapGenerator interface {
@@ -50,13 +51,19 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request BootstrapRequ
 	if len(services) > 0 {
 		service = services[0]
 	}
+
+	adminPort := b.config.AdminPort
+	if request.AdminPort != 0 {
+		adminPort = request.AdminPort
+	}
 	params := configParameters{
 		Id:        request.NodeId,
 		Service:   service,
-		AdminPort: b.config.AdminPort,
+		AdminPort: adminPort,
 		XdsHost:   b.config.XdsHost,
 		XdsPort:   b.config.XdsPort,
 	}
+	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.ConfigForParameters(params)
 }
 

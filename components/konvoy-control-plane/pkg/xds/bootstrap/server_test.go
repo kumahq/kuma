@@ -10,6 +10,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"net/http"
@@ -61,45 +62,53 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should return configuration", func() {
-		// given
-		res := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-						{
-							Interface: "8.8.8.8:443:8443",
-							Tags: map[string]string{
-								"service": "backend",
+	type testCase struct {
+		body               string
+		expectedConfigFile string
+	}
+	DescribeTable("should return configuration",
+		func(given testCase) {
+			// given
+			res := mesh.DataplaneResource{
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Interface: "8.8.8.8:443:8443",
+								Tags: map[string]string{
+									"service": "backend",
+								},
 							},
 						},
 					},
 				},
-			},
-		}
-		err := resManager.Create(context.Background(), &res, store.CreateByKey("default", "dp-1", "default"))
-		Expect(err).ToNot(HaveOccurred())
+			}
+			err := resManager.Create(context.Background(), &res, store.CreateByKey("default", "dp-1", "default"))
+			Expect(err).ToNot(HaveOccurred())
 
-		// when
-		json := `
-		{
-			"nodeId": "dp-1.default.default"
-		}
-		`
+			// when
+			resp, err := http.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(given.body))
 
-		resp, err := http.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(json))
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			received, err := ioutil.ReadAll(resp.Body)
+			Expect(resp.Body.Close()).To(Succeed())
+			Expect(err).ToNot(HaveOccurred())
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		received, err := ioutil.ReadAll(resp.Body)
-		Expect(resp.Body.Close()).To(Succeed())
-		Expect(err).ToNot(HaveOccurred())
+			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.expectedConfigFile))
+			Expect(err).ToNot(HaveOccurred())
 
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap.golden.yaml"))
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(received).To(MatchYAML(expected))
-	})
+			Expect(received).To(MatchYAML(expected))
+		},
+		Entry("minimal data provided", testCase{
+			body:               `{ "nodeId": "dp-1.default.default" }`,
+			expectedConfigFile: "bootstrap.golden.yaml",
+		}),
+		Entry("overridden admin port", testCase{
+			body:               `{ "nodeId": "dp-1.default.default", "adminPort": 1234 }`,
+			expectedConfigFile: "bootstrap.overridden.golden.yaml",
+		}),
+	)
 
 	It("should return 404 for unknown dataplane", func() {
 		// when
