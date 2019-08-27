@@ -1,19 +1,11 @@
-// +build dev
-
 package controlplane
 
+//go:generate go run github.com/shurcooL/vfsgen/cmd/vfsgendev -source="github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/k8s/control-plane".Templates
+
 import (
-	"net/http"
 	"path/filepath"
-	"runtime"
 )
 
-var Templates http.FileSystem = http.Dir(filepath.Join(konvoyctlDir(), "data", "install", "k8s"))
-
-func konvoyctlDir() string {
-	_, thisFile, _, _ := runtime.Caller(1)
-
-	thisDir := filepath.Dir(thisFile)
-
-	return filepath.Join(thisDir, "..", "..", "..", "..")
+func TemplatesDir(konvoyctlSrcDir string) string {
+	return filepath.Join(konvoyctlSrcDir, "data", "install", "k8s")
 }
