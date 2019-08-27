@@ -83,12 +83,8 @@ func (i *KonvoyInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Conta
 				},
 			},
 			{
-				Name:  "KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS",
-				Value: i.cfg.ControlPlane.XdsServer.Address,
-			},
-			{
-				Name:  "KONVOY_CONTROL_PLANE_XDS_SERVER_PORT",
-				Value: fmt.Sprintf("%d", i.cfg.ControlPlane.XdsServer.Port),
+				Name:  "KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL",
+				Value: i.cfg.ControlPlane.BootstrapServer.URL,
 			},
 			{
 				Name:  "KONVOY_MESH", // need to refer to this variable while evaluating KONVOY_DATAPLANE_ID
@@ -98,11 +94,6 @@ func (i *KonvoyInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Conta
 				Name: "KONVOY_DATAPLANE_ID",
 				// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
 				// that is why we have to use a runtime reference to POD_NAME instead
-				Value: "$(POD_NAME).$(POD_NAMESPACE).$(KONVOY_MESH)", // variable references get expanded by Kubernetes
-			},
-			{
-				Name: "KONVOY_DATAPLANE_SERVICE",
-				// for now, just pick any reasonable name
 				Value: "$(POD_NAME).$(POD_NAMESPACE).$(KONVOY_MESH)", // variable references get expanded by Kubernetes
 			},
 		},

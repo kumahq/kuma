@@ -89,13 +89,12 @@ var _ = Describe("run", func() {
 
 		// and
 		env := map[string]string{
-			"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_ADDRESS": "localhost",
-			"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_PORT":    "1234",
-			"KONVOY_DATAPLANE_ID":                           "example",
-			"KONVOY_DATAPLANE_ADMIN_PORT":                   "2345",
-			"KONVOY_DATAPLANE_RUNTIME_BINARY_PATH":          filepath.Join("testdata", "envoy-mock.sleep.sh"),
-			"KONVOY_DATAPLANE_RUNTIME_CONFIG_DIR":           configDir,
-			"ENVOY_MOCK_PID_FILE":                           pidFile,
+			"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "http://localhost:1234",
+			"KONVOY_DATAPLANE_ID":                       "example",
+			"KONVOY_DATAPLANE_ADMIN_PORT":               "2345",
+			"KONVOY_DATAPLANE_RUNTIME_BINARY_PATH":      filepath.Join("testdata", "envoy-mock.sleep.sh"),
+			"KONVOY_DATAPLANE_RUNTIME_CONFIG_DIR":       configDir,
+			"ENVOY_MOCK_PID_FILE":                       pidFile,
 		}
 		for key, value := range env {
 			os.Setenv(key, value)

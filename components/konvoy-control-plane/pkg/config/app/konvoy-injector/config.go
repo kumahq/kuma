@@ -22,12 +22,11 @@ func DefaultConfig() Config {
 		},
 		Injector: Injector{
 			ControlPlane: ControlPlane{
-				XdsServer: XdsServer{
-					Address: "konvoy-control-plane.konvoy-system",
-					Port:    5678,
-				},
 				ApiServer: ApiServer{
 					URL: "https://konvoy-control-plane.konvoy-system:5681",
+				},
+				BootstrapServer: BootstrapServer{
+					URL: "http://konvoy-control-plane.konvoy-system:5682",
 				},
 			},
 			SidecarContainer: SidecarContainer{
@@ -76,18 +75,15 @@ type Injector struct {
 
 // ControlPlane defines coordinates of the Control Plane.
 type ControlPlane struct {
-	// XdsServer defines coordinates of the Control Plane xDS Server.
-	XdsServer XdsServer `yaml:"xdsServer,omitempty"`
 	// ApiServer defines coordinates of the Control Plane API Server.
 	ApiServer ApiServer `yaml:"apiServer,omitempty"`
+	// XdsServer defines coordinates of the Control Plane Bootstrap Server.
+	BootstrapServer BootstrapServer `yaml:"bootstrapServer,omitempty"`
 }
 
-// XdsServer defines coordinates of the Control Plane xDS Server.
-type XdsServer struct {
-	// Address defines the address of xDS server.
-	Address string `yaml:"address,omitempty" envconfig:"konvoy_injector_control_plane_xds_server_address"`
-	// Port defines the port of xDS server.
-	Port uint32 `yaml:"port,omitempty" envconfig:"konvoy_injector_control_plane_xds_server_port"`
+type BootstrapServer struct {
+	// URL defines URL of the Control Plane API Server.
+	URL string `yaml:"url,omitempty" envconfig:"konvoy_injector_control_plane_bootstrap_server_url"`
 }
 
 // ApiServer defines coordinates of the Control Plane API Server.
@@ -161,8 +157,8 @@ func (i *Injector) Validate() (errs error) {
 var _ config.Config = &ControlPlane{}
 
 func (c *ControlPlane) Validate() (errs error) {
-	if err := c.XdsServer.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".XdsServer is not valid"))
+	if err := c.BootstrapServer.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".BootstrapServer is not valid"))
 	}
 	if err := c.ApiServer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ApiServer is not valid"))
@@ -170,21 +166,23 @@ func (c *ControlPlane) Validate() (errs error) {
 	return
 }
 
-var _ config.Config = &XdsServer{}
+var _ config.Config = &ApiServer{}
 
-func (s *XdsServer) Validate() (errs error) {
-	if s.Address == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Address must be non-empty"))
+func (s *ApiServer) Validate() (errs error) {
+	if s.URL == "" {
+		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
 	}
-	if 65535 < s.Port {
-		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
+	if url, err := url.Parse(s.URL); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".URL must be a valid absolute URI"))
+	} else if !url.IsAbs() {
+		errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
 	}
 	return
 }
 
-var _ config.Config = &ApiServer{}
+var _ config.Config = &BootstrapServer{}
 
-func (s *ApiServer) Validate() (errs error) {
+func (s *BootstrapServer) Validate() (errs error) {
 	if s.URL == "" {
 		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
 	}

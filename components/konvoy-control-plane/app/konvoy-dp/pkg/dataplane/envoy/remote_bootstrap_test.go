@@ -1,6 +1,7 @@
 package envoy
 
 import (
+	"fmt"
 	konvoy_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -43,8 +44,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		cfg := konvoy_dp.DefaultConfig()
 		cfg.Dataplane.Id = "demo.sample"
 		cfg.Dataplane.AdminPort = 4321
-		cfg.ControlPlane.BootstrapServer.Address = "localhost"
-		cfg.ControlPlane.BootstrapServer.Port = uint32(port)
+		cfg.ControlPlane.BootstrapServer.URL = fmt.Sprintf("http://localhost:%d", port)
 
 		// when
 		config, err := generator(cfg)

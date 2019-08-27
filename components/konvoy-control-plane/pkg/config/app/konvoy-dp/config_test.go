@@ -25,8 +25,7 @@ var _ = Describe("Config", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.ControlPlane.BootstrapServer.Address).To(Equal("konvoy-control-plane.internal"))
-		Expect(cfg.ControlPlane.BootstrapServer.Port).To(Equal(uint32(1234)))
+		Expect(cfg.ControlPlane.BootstrapServer.URL).To(Equal("https://konvoy-control-plane.internal:5682"))
 		Expect(cfg.Dataplane.AdminPort).To(Equal(uint32(2345)))
 	})
 
@@ -49,12 +48,11 @@ var _ = Describe("Config", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_ADDRESS": "konvoy-control-plane.internal",
-				"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_PORT":    "1234",
-				"KONVOY_DATAPLANE_ID":                           "example",
-				"KONVOY_DATAPLANE_ADMIN_PORT":                   "2345",
-				"KONVOY_DATAPLANE_RUNTIME_BINARY_PATH":          "envoy.sh",
-				"KONVOY_DATAPLANE_RUNTIME_CONFIG_DIR":           "/var/run/envoy",
+				"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "https://konvoy-control-plane.internal:5682",
+				"KONVOY_DATAPLANE_ID":                       "example",
+				"KONVOY_DATAPLANE_ADMIN_PORT":               "2345",
+				"KONVOY_DATAPLANE_RUNTIME_BINARY_PATH":      "envoy.sh",
+				"KONVOY_DATAPLANE_RUNTIME_CONFIG_DIR":       "/var/run/envoy",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -70,8 +68,7 @@ var _ = Describe("Config", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.ControlPlane.BootstrapServer.Address).To(Equal("konvoy-control-plane.internal"))
-			Expect(cfg.ControlPlane.BootstrapServer.Port).To(Equal(uint32(1234)))
+			Expect(cfg.ControlPlane.BootstrapServer.URL).To(Equal("https://konvoy-control-plane.internal:5682"))
 			Expect(cfg.Dataplane.Id).To(Equal("example"))
 			Expect(cfg.Dataplane.AdminPort).To(Equal(uint32(2345)))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
@@ -104,6 +101,6 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err).To(MatchError(`Invalid configuration: .ControlPlane is not valid: .BootstrapServer is not valid: .Address must be non-empty; .Port must be in the range [0, 65535]; .Dataplane is not valid: .Id must be non-empty; .AdminPort must be in the range [0, 65535]; .DataplaneRuntime is not valid: .BinaryPath must be non-empty; .ConfigDir must be non-empty`))
+		Expect(err).To(MatchError(`Invalid configuration: .ControlPlane is not valid: .BootstrapServer is not valid: .URL must be a valid absolute URI; .Dataplane is not valid: .Id must be non-empty; .AdminPort must be in the range [0, 65535]; .DataplaneRuntime is not valid: .BinaryPath must be non-empty; .ConfigDir must be non-empty`))
 	})
 })

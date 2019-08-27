@@ -3,7 +3,6 @@ package envoy
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	konvoy_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	xds_bootstrap "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/bootstrap"
@@ -24,9 +23,9 @@ func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc
 }
 
 func (b *remoteBootstrap) Generate(cfg konvoy_dp.Config) (proto.Message, error) {
-	url := fmt.Sprintf("http://%s:%d/bootstrap", cfg.ControlPlane.BootstrapServer.Address, cfg.ControlPlane.BootstrapServer.Port)
+	url := cfg.ControlPlane.BootstrapServer.URL + "/bootstrap"
 	request := xds_bootstrap.BootstrapRequest{
-		NodeId:    cfg.Dataplane.Id,
+		NodeId: cfg.Dataplane.Id,
 		// if not set in config, the 0 will be sent which will result in providing default admin port
 		// that is set in the control plane bootstrap params
 		AdminPort: cfg.Dataplane.AdminPort,

@@ -4,11 +4,10 @@ webHookServer:
   certDir:
 injector:
   controlPlane:
-    xdsServer:
-      address:
-      port: 223456
     apiServer:
       url: api-server
+    bootstrapServer:
+      url: bootstrap-server
   sidecarContainer:
     image:
     redirectPort: 423456

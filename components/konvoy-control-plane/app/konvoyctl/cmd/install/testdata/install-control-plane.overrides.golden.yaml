@@ -2099,6 +2099,8 @@ spec:
     name: http-xds
   - port: 5681
     name: http-api-server
+  - port: 5682
+    name: http-bootstrap-server
   selector:
     app: konvoy-control-plane
 ---
@@ -2131,8 +2133,8 @@ spec:
           value: "8443"
         - name: KONVOY_INJECTOR_WEBHOOK_SERVER_CERT_DIR
           value: /var/run/secrets/getkonvoy.io/konvoy-injector/tls-cert
-        - name: KONVOY_INJECTOR_CONTROL_PLANE_XDS_SERVER_ADDRESS
-          value: konvoy-control-plane.konvoy
+        - name: KONVOY_INJECTOR_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
+          value: http://konvoy-control-plane.konvoy:5682
         - name: KONVOY_INJECTOR_CONTROL_PLANE_API_SERVER_URL
           value: http://konvoy-control-plane.konvoy:5681
         - name: KONVOY_INJECTOR_SIDECAR_CONTAINER_IMAGE
@@ -2202,12 +2204,19 @@ spec:
           value: "5679"
         - name: KONVOY_API_SERVER_PORT
           value: "5681"
+        - name: KONVOY_BOOTSTRAP_SERVER_PORT
+          value: "5682"
+        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+          value: "konvoy-control-plane.konvoy"
+        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
+          value: "5678"
         args:
         - run
         ports:
         - containerPort: 5678
         - containerPort: 5679
         - containerPort: 5681
+        - containerPort: 5682
         livenessProbe:
           httpGet:
             path: /healthy

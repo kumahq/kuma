@@ -1,7 +1,6 @@
 controlPlane:
   bootstrapServer:
-    address:
-    port: 91234
+    url: invalid-url
 dataplane:
   id:
   adminPort: 82345

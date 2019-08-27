@@ -1,9 +1,8 @@
 controlPlane:
-  xdsServer:
-    address: konvoy-control-plane.konvoy-system
-    port: 5678
   apiServer:
     url: https://konvoy-control-plane.konvoy-system:5681
+  bootstrapServer:
+    url: http://konvoy-control-plane.konvoy-system:5682
 sidecarContainer:
   image: konvoy/konvoy-sidecar:latest
   redirectPort: 15001

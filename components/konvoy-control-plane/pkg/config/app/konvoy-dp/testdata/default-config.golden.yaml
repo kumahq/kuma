@@ -1,6 +1,3 @@
-controlPlane:
-  bootstrapServer:
-    port: 5682
 dataplane:
   adminPort: 9901
 dataplaneRuntime:

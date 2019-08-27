@@ -1,7 +1,6 @@
 controlPlane:
   bootstrapServer:
-    address: konvoy-control-plane.internal
-    port: 1234
+    url: https://konvoy-control-plane.internal:5682
 dataplane:
   id: example
   adminPort: 2345

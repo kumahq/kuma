@@ -2,6 +2,7 @@ package konvoydp
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	"net/url"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -11,8 +12,7 @@ func DefaultConfig() Config {
 	return Config{
 		ControlPlane: ControlPlane{
 			BootstrapServer: BootstrapServer{
-				Address: "", // Address of the Bootstrap Server must be set explicitly
-				Port:    5682,
+				URL: "", // Address of the Bootstrap Server must be set explicitly
 			},
 		},
 		Dataplane: Dataplane{
@@ -44,9 +44,7 @@ type ControlPlane struct {
 
 type BootstrapServer struct {
 	// Address defines the address of Bootstrap configuration server.
-	Address string `yaml:"address,omitempty" envconfig:"konvoy_control_plane_bootstrap_server_address"`
-	// Port defines the port of the Bootstrap configuration server.
-	Port uint32 `yaml:"port,omitempty" envconfig:"konvoy_control_plane_bootstrap_server_port"`
+	URL string `yaml:"url,omitempty" envconfig:"konvoy_control_plane_bootstrap_server_url"`
 }
 
 // Dataplane defines bootstrap configuration of the dataplane (Envoy).
@@ -114,11 +112,13 @@ func (d *DataplaneRuntime) Validate() (errs error) {
 }
 
 func (d *BootstrapServer) Validate() (errs error) {
-	if d.Address == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Address must be non-empty"))
+	if d.URL == "" {
+		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
 	}
-	if d.Port > 65535 {
-		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
+	if url, err := url.Parse(d.URL); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".URL must be a valid absolute URI"))
+	} else if !url.IsAbs() {
+		errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
 	}
 	return
 }
