@@ -1,9 +1,3 @@
-bootstrap:
-  params:
-    adminPort: 9901
-    xdsHost: localhost
-    xdsPort: 5678
-  port: 5682
 grpcPort: 5678
 httpPort: 5679
 diagnosticsPort: 5680

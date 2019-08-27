@@ -43,13 +43,12 @@ xdsServer:
   grpcPort: 5000
   httpPort: 5001
   diagnosticsPort: 5003
-  bootstrap:
-  bootstrap:
-    port: 5004
-    params:
-      adminPort: 1234
-      xdsHost: konvoy-control-plane
-      xdsPort: 4321
+bootstrapServer:
+  port: 5004
+  params:
+    adminPort: 1234
+    xdsHost: konvoy-control-plane
+    xdsPort: 4321
 apiServer:
   port: 9090
   readOnly: true
@@ -73,10 +72,10 @@ apiServer:
 		Expect(cfg.XdsServer.HttpPort).To(Equal(5001))
 		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
-		Expect(cfg.XdsServer.Bootstrap.Port).To(Equal(5004))
-		Expect(cfg.XdsServer.Bootstrap.Params.AdminPort).To(Equal(1234))
-		Expect(cfg.XdsServer.Bootstrap.Params.XdsHost).To(Equal("konvoy-control-plane"))
-		Expect(cfg.XdsServer.Bootstrap.Params.XdsPort).To(Equal(4321))
+		Expect(cfg.BootstrapServer.Port).To(Equal(5004))
+		Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(1234))
+		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("konvoy-control-plane"))
+		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(4321))
 
 		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironment))
 
@@ -104,10 +103,10 @@ apiServer:
 		setEnv("KONVOY_XDS_SERVER_GRPC_PORT", "5000")
 		setEnv("KONVOY_XDS_SERVER_HTTP_PORT", "5001")
 		setEnv("KONVOY_XDS_SERVER_DIAGNOSTICS_PORT", "5003")
-		setEnv("KONVOY_XDS_SERVER_BOOTSTRAP_PORT", "5004")
-		setEnv("KONVOY_XDS_SERVER_BOOTSTRAP_PARAMS_ADMIN_PORT", "1234")
-		setEnv("KONVOY_XDS_SERVER_BOOTSTRAP_PARAMS_XDS_HOST", "konvoy-control-plane")
-		setEnv("KONVOY_XDS_SERVER_BOOTSTRAP_PARAMS_XDS_PORT", "4321")
+		setEnv("KONVOY_BOOTSTRAP_SERVER_PORT", "5004")
+		setEnv("KONVOY_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT", "1234")
+		setEnv("KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_HOST", "konvoy-control-plane")
+		setEnv("KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT", "4321")
 		setEnv("KONVOY_ENVIRONMENT", "kubernetes")
 		setEnv("KONVOY_STORE_TYPE", "postgres")
 		setEnv("KONVOY_STORE_POSTGRES_HOST", "postgres.host")
@@ -130,10 +129,10 @@ apiServer:
 		Expect(cfg.XdsServer.HttpPort).To(Equal(5001))
 		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
-		Expect(cfg.XdsServer.Bootstrap.Port).To(Equal(5004))
-		Expect(cfg.XdsServer.Bootstrap.Params.AdminPort).To(Equal(1234))
-		Expect(cfg.XdsServer.Bootstrap.Params.XdsHost).To(Equal("konvoy-control-plane"))
-		Expect(cfg.XdsServer.Bootstrap.Params.XdsPort).To(Equal(4321))
+		Expect(cfg.BootstrapServer.Port).To(Equal(5004))
+		Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(1234))
+		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("konvoy-control-plane"))
+		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(4321))
 
 		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironment))
 

@@ -23,7 +23,7 @@ var _ core_runtime.Component = &BootstrapServer{}
 
 func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/bootstrap", b.handleBootstrapRequest())
+	mux.HandleFunc("/bootstrap", b.handleBootstrapRequest)
 
 	bootstrapServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", b.Port),
@@ -54,44 +54,43 @@ func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (b *BootstrapServer) handleBootstrapRequest() func(resp http.ResponseWriter, req *http.Request) {
-	return func(resp http.ResponseWriter, req *http.Request) {
-		bytes, err := ioutil.ReadAll(req.Body)
-		if err != nil {
-			log.Error(err, "Could not read a request")
-			resp.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		reqParams := BootstrapRequest{}
-		if err := json.Unmarshal(bytes, &reqParams); err != nil {
-			log.Error(err, "Could not parse a request")
-			resp.WriteHeader(http.StatusBadRequest)
-			return
-		}
+func (b *BootstrapServer) handleBootstrapRequest(resp http.ResponseWriter, req *http.Request) {
+	bytes, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Error(err, "Could not read a request")
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	reqParams := BootstrapRequest{}
+	if err := json.Unmarshal(bytes, &reqParams); err != nil {
+		log.Error(err, "Could not parse a request")
+		resp.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-		config, err := b.Generator.Generate(req.Context(), reqParams)
-		if err != nil {
-			if store.IsResourceNotFound(err) {
-				resp.WriteHeader(http.StatusNotFound)
-				return
-			}
-			log.Error(err, "Could not generate a bootstrap configuration")
-			resp.WriteHeader(http.StatusInternalServerError)
+	config, err := b.Generator.Generate(req.Context(), reqParams)
+	if err != nil {
+		if store.IsResourceNotFound(err) {
+			resp.WriteHeader(http.StatusNotFound)
 			return
 		}
+		log.WithValues("params", reqParams).Error(err, "Could not generate a bootstrap configuration")
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-		bytes, err = proto.ToYAML(config)
-		if err != nil {
-			log.Error(err, "Could not convert to json")
-			resp.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+	bytes, err = proto.ToYAML(config)
+	if err != nil {
+		log.WithValues("params", reqParams).Error(err, "Could not convert to json")
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-		resp.WriteHeader(http.StatusOK)
-		_, err = resp.Write(bytes)
-		if err != nil {
-			log.Error(err, "Error while writing the response")
-			return
-		}
+	resp.WriteHeader(http.StatusOK)
+	resp.Header().Set("content-type", "text/x-yaml")
+	_, err = resp.Write(bytes)
+	if err != nil {
+		log.WithValues("params", reqParams).Error(err, "Error while writing the response")
+		return
 	}
 }

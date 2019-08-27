@@ -26,7 +26,7 @@ type BootstrapGenerator interface {
 
 func NewDefaultBootstrapGenerator(
 	resManager manager.ResourceManager,
-	config *xds_config.XdsBootstrapParamsConfig) BootstrapGenerator {
+	config *xds_config.BootstrapParamsConfig) BootstrapGenerator {
 	return &bootstrapGenerator{
 		resManager: resManager,
 		config:     config,
@@ -35,7 +35,7 @@ func NewDefaultBootstrapGenerator(
 
 type bootstrapGenerator struct {
 	resManager manager.ResourceManager
-	config     *xds_config.XdsBootstrapParamsConfig
+	config     *xds_config.BootstrapParamsConfig
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request BootstrapRequest) (proto.Message, error) {
@@ -67,7 +67,7 @@ func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, nodeId string) 
 	}
 	res := mesh.DataplaneResource{}
 	if err := b.resManager.Get(ctx, &res, store.GetBy(id.ToResourceKey())); err != nil {
-		return &res, err
+		return nil, err
 	}
 	return &res, nil
 }

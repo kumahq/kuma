@@ -22,12 +22,12 @@ var _ = Describe("Bootstrap Server", func() {
 
 	var stop chan struct{}
 	var resManager manager.ResourceManager
-	var config *xds_config.XdsBootstrapParamsConfig
+	var config *xds_config.BootstrapParamsConfig
 	var baseUrl string
 
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
-		config = xds_config.DefaultXdsBootstrapParamsConfig()
+		config = xds_config.DefaultBootstrapParamsConfig()
 
 		port, err := test.GetFreePort()
 		baseUrl = "http://localhost:" + strconv.Itoa(port)
@@ -43,8 +43,12 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}()
 		Eventually(func() bool {
-			_, err := http.Get(baseUrl)
-			return err == nil
+			resp, err := http.Get(baseUrl)
+			if err != nil {
+				return false
+			}
+			Expect(resp.Body.Close()).To(Succeed())
+			return true
 		}).Should(BeTrue())
 	}, 5)
 
@@ -88,6 +92,7 @@ var _ = Describe("Bootstrap Server", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		received, err := ioutil.ReadAll(resp.Body)
+		Expect(resp.Body.Close()).To(Succeed())
 		Expect(err).ToNot(HaveOccurred())
 
 		expected, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap.golden.yaml"))
@@ -107,6 +112,7 @@ var _ = Describe("Bootstrap Server", func() {
 		resp, err := http.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(json))
 		// then
 		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.Body.Close()).To(Succeed())
 		Expect(resp.StatusCode).To(Equal(404))
 	})
 })

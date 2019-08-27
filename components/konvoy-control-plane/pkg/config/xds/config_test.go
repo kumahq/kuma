@@ -54,10 +54,6 @@ var _ = Describe("XdsServerConfig", func() {
 			env := map[string]string{
 				"KONVOY_XDS_SERVER_GRPC_PORT":                                "1234",
 				"KONVOY_XDS_SERVER_HTTP_PORT":                                "2345",
-				"KONVOY_XDS_SERVER_BOOTSTRAP_PORT":                           "2346",
-				"KONVOY_XDS_SERVER_BOOTSTRAP_PARAMS_XDS_HOST":                "konvoy.internal",
-				"KONVOY_XDS_SERVER_BOOTSTRAP_PARAMS_XDS_PORT":                "2347",
-				"KONVOY_XDS_SERVER_BOOTSTRAP_PARAMS_ADMIN_PORT":              "2348",
 				"KONVOY_XDS_SERVER_DIAGNOSTICS_PORT":                         "3456",
 				"KONVOY_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
 				"KONVOY_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
@@ -81,10 +77,6 @@ var _ = Describe("XdsServerConfig", func() {
 			Expect(cfg.DiagnosticsPort).To(Equal(3456))
 			Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
 			Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
-			Expect(cfg.Bootstrap.Port).To(Equal(2346))
-			Expect(cfg.Bootstrap.Params.XdsHost).To(Equal("konvoy.internal"))
-			Expect(cfg.Bootstrap.Params.XdsPort).To(Equal(2347))
-			Expect(cfg.Bootstrap.Params.AdminPort).To(Equal(2348))
 		})
 	})
 

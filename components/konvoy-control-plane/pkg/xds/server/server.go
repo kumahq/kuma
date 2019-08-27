@@ -34,8 +34,8 @@ func SetupServer(rt core_runtime.Runtime) error {
 		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort},
 		// bootstrap server
 		&bootstrap.BootstrapServer{
-			Port:      rt.Config().XdsServer.Bootstrap.Port,
-			Generator: bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().XdsServer.Bootstrap.Params),
+			Port:      rt.Config().BootstrapServer.Port,
+			Generator: bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params),
 		},
 	)
 }
