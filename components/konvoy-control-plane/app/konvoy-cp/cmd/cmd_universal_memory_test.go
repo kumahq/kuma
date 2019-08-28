@@ -10,6 +10,8 @@ xdsServer:
   grpcPort: 0
   httpPort: 0
   diagnosticsPort: %d
+bootstrapServer:
+  port: 0
 apiServer:
   port: 0
 environment: universal

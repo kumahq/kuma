@@ -34,6 +34,8 @@ type Config struct {
 	Discovery *discovery.DiscoveryConfig `yaml:"discovery"`
 	// Envoy XDS server configuration
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
+	// Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
+	BootstrapServer *xds.BootstrapServerConfig `yaml:"bootstrapServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
 	Defaults  *Defaults                   `yaml:"defaults"`
@@ -51,11 +53,12 @@ func DefaultConfig() Config {
 	}
 
 	return Config{
-		Environment: UniversalEnvironment,
-		Store:       store.DefaultStoreConfig(),
-		XdsServer:   xds.DefaultXdsServerConfig(),
-		ApiServer:   api_server.DefaultApiServerConfig(),
-		Discovery:   discovery.DefaultDiscoveryConfig(),
+		Environment:     UniversalEnvironment,
+		Store:           store.DefaultStoreConfig(),
+		XdsServer:       xds.DefaultXdsServerConfig(),
+		ApiServer:       api_server.DefaultApiServerConfig(),
+		BootstrapServer: xds.DefaultBootstrapServerConfig(),
+		Discovery:       discovery.DefaultDiscoveryConfig(),
 		Defaults: &Defaults{
 			Mesh: defaultMesh,
 		},
@@ -65,6 +68,9 @@ func DefaultConfig() Config {
 func (c *Config) Validate() error {
 	if err := c.XdsServer.Validate(); err != nil {
 		return errors.Wrap(err, "Xds Server validation failed")
+	}
+	if err := c.BootstrapServer.Validate(); err != nil {
+		return errors.Wrap(err, "Bootstrap validation failed")
 	}
 	if c.Environment != KubernetesEnvironment && c.Environment != UniversalEnvironment {
 		return errors.Errorf("Environment should be either %s or %s", KubernetesEnvironment, UniversalEnvironment)

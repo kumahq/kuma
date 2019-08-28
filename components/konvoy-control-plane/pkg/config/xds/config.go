@@ -46,11 +46,64 @@ func (x *XdsServerConfig) Validate() error {
 
 func DefaultXdsServerConfig() *XdsServerConfig {
 	return &XdsServerConfig{
-		GrpcPort:        5678,
-		HttpPort:        5679,
-		DiagnosticsPort: 5680,
-
+		GrpcPort:                              5678,
+		HttpPort:                              5679,
+		DiagnosticsPort:                       5680,
 		DataplaneConfigurationRefreshInterval: 1 * time.Second,
 		DataplaneStatusFlushInterval:          1 * time.Second,
+	}
+}
+
+type BootstrapServerConfig struct {
+	// Port of Server that provides bootstrap configuration for dataplanes
+	Port int `yaml:"port" envconfig:"konvoy_bootstrap_server_port"`
+	// Parameters of bootstrap configuration
+	Params *BootstrapParamsConfig `yaml:"params"`
+}
+
+func (b *BootstrapServerConfig) Validate() error {
+	if b.Port < 0 {
+		return errors.New("Port cannot be negative")
+	}
+	if err := b.Params.Validate(); err != nil {
+		return errors.Wrap(err, "Params validation failed")
+	}
+	return nil
+}
+
+func DefaultBootstrapServerConfig() *BootstrapServerConfig {
+	return &BootstrapServerConfig{
+		Port:   5682,
+		Params: DefaultBootstrapParamsConfig(),
+	}
+}
+
+type BootstrapParamsConfig struct {
+	// Port for Envoy Admin
+	AdminPort int `yaml:"adminPort" envconfig:"konvoy_bootstrap_server_params_admin_port"`
+	// Host of XDS Server
+	XdsHost string `yaml:"xdsHost" envconfig:"konvoy_bootstrap_server_params_xds_host"`
+	// Port of XDS Server
+	XdsPort int `yaml:"xdsPort" envconfig:"konvoy_bootstrap_server_params_xds_port"`
+}
+
+func (b *BootstrapParamsConfig) Validate() error {
+	if b.AdminPort < 0 {
+		return errors.New("Port cannot be negative")
+	}
+	if b.XdsHost == "" {
+		return errors.New("Host cannot be empty")
+	}
+	if b.XdsPort < 0 {
+		return errors.New("Port cannot be negative")
+	}
+	return nil
+}
+
+func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
+	return &BootstrapParamsConfig{
+		AdminPort: 9901,
+		XdsHost:   "localhost",
+		XdsPort:   5678,
 	}
 }

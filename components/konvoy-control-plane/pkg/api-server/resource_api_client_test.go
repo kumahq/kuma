@@ -8,11 +8,11 @@ import (
 	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test"
 	sample_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/apis/sample"
 
 	. "github.com/onsi/gomega"
-	"net"
 	"net/http"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
@@ -94,7 +94,7 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 func createTestApiServer(store store.ResourceStore, config config.ApiServerConfig) *api_server.ApiServer {
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
-	port, err := getFreePort()
+	port, err := test.GetFreePort()
 	Expect(err).NotTo(HaveOccurred())
 	config.Port = port
 	defs := []definitions.ResourceWsDefinition{
@@ -103,15 +103,4 @@ func createTestApiServer(store store.ResourceStore, config config.ApiServerConfi
 	}
 	resources := manager.NewResourceManager(store)
 	return api_server.NewApiServer(resources, defs, config)
-}
-
-func getFreePort() (int, error) {
-	ln, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	if err := ln.Close(); err != nil {
-		return 0, err
-	}
-	return ln.Addr().(*net.TCPAddr).Port, nil
 }

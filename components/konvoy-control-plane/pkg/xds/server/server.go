@@ -4,6 +4,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 	util_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/xds"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/bootstrap"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
@@ -30,5 +31,11 @@ func SetupServer(rt core_runtime.Runtime) error {
 		// xDS HTTP API
 		&httpGateway{srv, rt.Config().XdsServer.HttpPort},
 		// diagnostics server
-		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort})
+		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort},
+		// bootstrap server
+		&bootstrap.BootstrapServer{
+			Port:      rt.Config().BootstrapServer.Port,
+			Generator: bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params),
+		},
+	)
 }
