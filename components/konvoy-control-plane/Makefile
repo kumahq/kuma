@@ -380,7 +380,7 @@ curl/clusters: ## Dev: Make Discovery request to CDS
 
 run/example/envoy: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
 run/example/envoy: build/konvoy-dp ## Dev: Run Envoy configured against local Control Plane
-	KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_ADDRESS=localhost \
+	KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KONVOY_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
 	KONVOY_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	${BUILD_ARTIFACTS_DIR}/konvoy-dataplane/konvoy-dataplane run

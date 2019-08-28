@@ -89,13 +89,13 @@ type BootstrapParamsConfig struct {
 
 func (b *BootstrapParamsConfig) Validate() error {
 	if b.AdminPort < 0 {
-		return errors.New("Port cannot be negative")
+		return errors.New("AdminPort cannot be negative")
 	}
 	if b.XdsHost == "" {
-		return errors.New("Host cannot be empty")
+		return errors.New("XdsHost cannot be empty")
 	}
 	if b.XdsPort < 0 {
-		return errors.New("Port cannot be negative")
+		return errors.New("XdsPort cannot be negative")
 	}
 	return nil
 }

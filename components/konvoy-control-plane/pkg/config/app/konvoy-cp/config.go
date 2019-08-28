@@ -70,7 +70,7 @@ func (c *Config) Validate() error {
 		return errors.Wrap(err, "Xds Server validation failed")
 	}
 	if err := c.BootstrapServer.Validate(); err != nil {
-		return errors.Wrap(err, "Bootstrap validation failed")
+		return errors.Wrap(err, "Bootstrap Server validation failed")
 	}
 	if c.Environment != KubernetesEnvironment && c.Environment != UniversalEnvironment {
 		return errors.Errorf("Environment should be either %s or %s", KubernetesEnvironment, UniversalEnvironment)
