@@ -6,6 +6,7 @@ import (
 	api_server "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/discovery"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/sds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
 
 	"github.com/pkg/errors"
@@ -32,10 +33,12 @@ type Config struct {
 	Store *store.StoreConfig `yaml:"store"`
 	// Discovery configuration
 	Discovery *discovery.DiscoveryConfig `yaml:"discovery"`
-	// Envoy XDS server configuration
-	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
 	// Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 	BootstrapServer *xds.BootstrapServerConfig `yaml:"bootstrapServer"`
+	// Envoy XDS server configuration
+	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
+	// Envoy SDS server configuration
+	SdsServer *sds.SdsServerConfig `yaml:"sdsServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
 	Defaults  *Defaults                   `yaml:"defaults"`
@@ -56,6 +59,7 @@ func DefaultConfig() Config {
 		Environment:     UniversalEnvironment,
 		Store:           store.DefaultStoreConfig(),
 		XdsServer:       xds.DefaultXdsServerConfig(),
+		SdsServer:       sds.DefaultSdsServerConfig(),
 		ApiServer:       api_server.DefaultApiServerConfig(),
 		BootstrapServer: xds.DefaultBootstrapServerConfig(),
 		Discovery:       discovery.DefaultDiscoveryConfig(),
@@ -71,6 +75,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.BootstrapServer.Validate(); err != nil {
 		return errors.Wrap(err, "Bootstrap Server validation failed")
+	}
+	if err := c.SdsServer.Validate(); err != nil {
+		return errors.Wrap(err, "SDS Server validation failed")
 	}
 	if c.Environment != KubernetesEnvironment && c.Environment != UniversalEnvironment {
 		return errors.Errorf("Environment should be either %s or %s", KubernetesEnvironment, UniversalEnvironment)

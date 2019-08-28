@@ -10,19 +10,20 @@ import (
 	"github.com/go-logr/logr"
 )
 
-var (
-	log = core.Log.WithName("xds-server")
-)
-
 type XdsContext interface {
 	Hasher() envoy_cache.NodeHash
 	Cache() envoy_cache.SnapshotCache
 }
 
 func NewXdsContext() XdsContext {
-	hasher := hasher{}
-	logger := logger{log: log}
-	cache := envoy_cache.NewSnapshotCache(true, hasher, logger)
+	return newXdsContext("xds-server", true)
+}
+
+func newXdsContext(name string, ads bool) XdsContext {
+	log := core.Log.WithName(name)
+	hasher := hasher{log}
+	logger := logger{log}
+	cache := envoy_cache.NewSnapshotCache(ads, hasher, logger)
 	return &xdsContext{
 		NodeHash:      hasher,
 		Logger:        logger,
@@ -49,6 +50,7 @@ func (c *xdsContext) Cache() envoy_cache.SnapshotCache {
 var _ envoy_cache.NodeHash = &hasher{}
 
 type hasher struct {
+	log logr.Logger
 }
 
 func (h hasher) ID(node *envoy_core.Node) string {
@@ -57,7 +59,7 @@ func (h hasher) ID(node *envoy_core.Node) string {
 	}
 	proxyId, err := ParseProxyId(node)
 	if err != nil {
-		log.Error(err, "failed to parse Proxy ID", "node", node)
+		h.log.Error(err, "failed to parse Proxy ID", "node", node)
 		return "unknown"
 	}
 	return proxyId.String()
