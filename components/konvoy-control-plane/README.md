@@ -2,7 +2,7 @@
 
 Universal Control Plane for Envoy-based Service Mesh.
 
-[![CircleCI](https://circleci.com/gh/Kong/konvoy.svg?style=svg&circle-token=096403452b9bf2c2030f3ce1e7b0338fb6b7b448)](https://circleci.com/gh/Kong/konvoy)
+[![CircleCI](https://circleci.com/gh/Kong/kuma.svg?style=svg&circle-token=e3f6c5429ee47ca0eb4bd2542e4b8801a7856373)](https://circleci.com/gh/Kong/kuma)
 
 ## Running demo setup inside Docker Compose
 
