@@ -13,11 +13,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 )
 
-const (
-	localhost = "127.0.0.1"
-)
-
-func CreateEndpoint(clusterName string, port uint32) *v2.ClusterLoadAssignment {
+func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.ClusterLoadAssignment {
 	return &v2.ClusterLoadAssignment{
 		ClusterName: clusterName,
 		Endpoints: []endpoint.LocalityLbEndpoints{{
@@ -28,7 +24,7 @@ func CreateEndpoint(clusterName string, port uint32) *v2.ClusterLoadAssignment {
 							Address: &core.Address_SocketAddress{
 								SocketAddress: &core.SocketAddress{
 									Protocol: core.TCP,
-									Address:  localhost,
+									Address:  address,
 									PortSpecifier: &core.SocketAddress_PortValue{
 										PortValue: port,
 									},
@@ -42,25 +38,27 @@ func CreateEndpoint(clusterName string, port uint32) *v2.ClusterLoadAssignment {
 	}
 }
 
-func CreateCluster(clusterName string) *v2.Cluster {
+func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Cluster {
 	return &v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       5 * time.Second,
-		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_EDS},
-		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
-			EdsConfig: &core.ConfigSource{
-				ConfigSourceSpecifier: &core.ConfigSource_Ads{
-					Ads: &core.AggregatedConfigSource{},
-				},
-			},
-		},
+		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_STATIC},
+		LoadAssignment:       CreateStaticEndpoint(clusterName, address, port),
 	}
 }
 
-func CreateInboundListener(listenerName string, port uint32, clusterName string) *v2.Listener {
-	// TCP filter configuration
+func CreatePassThroughCluster(clusterName string) *v2.Cluster {
+	return &v2.Cluster{
+		Name:                 clusterName,
+		ConnectTimeout:       5 * time.Second,
+		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_ORIGINAL_DST},
+		LbPolicy: 	      v2.Cluster_ORIGINAL_DST_LB,
+	}
+}
+
+func CreateInboundListener(listenerName string, address string, port uint32, clusterName string) *v2.Listener {
 	config := &tcp.TcpProxy{
-		StatPrefix: "tcp",
+		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
@@ -75,7 +73,7 @@ func CreateInboundListener(listenerName string, port uint32, clusterName string)
 			Address: &core.Address_SocketAddress{
 				SocketAddress: &core.SocketAddress{
 					Protocol: core.TCP,
-					Address:  localhost,
+					Address:  address,
 					PortSpecifier: &core.SocketAddress_PortValue{
 						PortValue: port,
 					},
@@ -90,5 +88,50 @@ func CreateInboundListener(listenerName string, port uint32, clusterName string)
 				},
 			}},
 		}},
+		// TODO(yskopets): What is the up-to-date alternative ?
+		DeprecatedV1: &v2.Listener_DeprecatedV1{
+			BindToPort: &types.BoolValue{Value: false},
+		},
+	}
+}
+
+func CreateCatchAllListener(listenerName string, address string, port uint32, clusterName string) *v2.Listener {
+	config := &tcp.TcpProxy{
+		StatPrefix: clusterName,
+		ClusterSpecifier: &tcp.TcpProxy_Cluster{
+			Cluster: clusterName,
+		},
+	}
+	pbst, err := types.MarshalAny(config)
+	if err != nil {
+		panic(err)
+	}
+	return &v2.Listener{
+		Name: listenerName,
+		Address: core.Address{
+			Address: &core.Address_SocketAddress{
+				SocketAddress: &core.SocketAddress{
+					Protocol: core.TCP,
+					Address:  address,
+					PortSpecifier: &core.SocketAddress_PortValue{
+						PortValue: port,
+					},
+				},
+			},
+		},
+		FilterChains: []listener.FilterChain{{
+			Filters: []listener.Filter{{
+				Name: util.TCPProxy,
+				ConfigType: &listener.Filter_TypedConfig{
+					TypedConfig: pbst,
+				},
+			}},
+		}},
+		// TODO(yskopets): What is the up-to-date alternative ?
+		UseOriginalDst: &types.BoolValue{Value: true},
+		// TODO(yskopets): Apparently, `envoy.listener.original_dst` has different effect than `UseOriginalDst`
+		//ListenerFilters: []listener.ListenerFilter{{
+		//	Name: util.OriginalDestination,
+		//}},
 	}
 }

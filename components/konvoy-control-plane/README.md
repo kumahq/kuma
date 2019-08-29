@@ -49,3 +49,35 @@ Dump effective Envoy config:
 ```bash
 make config_dump/example/envoy
 ```
+
+## Running example setup inside Docker Compose
+
+Start example setup (`Control Plane` + `Envoy` + app):
+
+```bash
+make run/example/docker-compose
+```
+
+Make test requests (`Envoy` must intercept both `inbound` and `outbound` connections):
+
+```bash
+make curl/example/docker-compose
+```
+
+Observe `Envoy` stats:
+
+```bash
+make stats/example/docker-compose
+```
+
+E.g.,
+```
+cluster.ads_cluster.upstream_rq_total: 1
+cluster.localhost_8080.upstream_rq_total: 7
+cluster.pass_through.upstream_rq_total: 7
+```
+
+where
+
+* `cluster.localhost_8080.upstream_rq_total` is a number of `inbound` requests
+* `cluster.pass_through.upstream_rq_total` is a number of `outbound` requests
