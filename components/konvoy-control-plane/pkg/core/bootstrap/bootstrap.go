@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -40,6 +41,7 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 
 	if err := resManager.Get(context.Background(), &defaultMesh, getOpts); err != nil {
 		if core_store.IsResourceNotFound(err) {
+			core.Log.Info("Creating default mesh from the settings", "mesh", cfg.Defaults.Mesh)
 			defaultMesh.Spec = cfg.Defaults.Mesh
 			createOpts := core_store.CreateByKey(core_model.DefaultNamespace,
 				core_model.DefaultMesh, core_model.DefaultMesh)
@@ -50,14 +52,6 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 		} else {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func onStartup(runtime core_runtime.Runtime) error {
-	if err := createDefaultMesh(runtime); err != nil {
-		return err
 	}
 
 	return nil
@@ -74,6 +68,16 @@ func Bootstrap(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 	}
 
 	return runtime, nil
+}
+
+func onStartup(runtime core_runtime.Runtime) error {
+	return runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
+		if err := createDefaultMesh(runtime); err != nil {
+			return err
+		}
+		<-stop // it has to block, otherwise the k8s component manager stops all other components
+		return nil
+	}))
 }
 
 func initializeBootstrap(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {

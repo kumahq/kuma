@@ -24,6 +24,8 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.
 	if !ok {
 		return nil, errors.Errorf("Component Manager has a wrong type: expected=%q got=%q", reflect.TypeOf(kube_ctrl.Manager(nil)), reflect.TypeOf(pc.ComponentManager()))
 	}
-	mesh_k8s.AddToScheme(mgr.GetScheme())
+	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
+		return nil, errors.Wrap(err, "could not add to scheme")
+	}
 	return NewStore(mgr.GetClient())
 }
