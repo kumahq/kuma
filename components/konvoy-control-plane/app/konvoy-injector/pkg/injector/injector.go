@@ -94,7 +94,7 @@ func (i *KonvoyInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Conta
 				Name: "KONVOY_DATAPLANE_ID",
 				// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
 				// that is why we have to use a runtime reference to POD_NAME instead
-				Value: "$(POD_NAME).$(POD_NAMESPACE).$(KONVOY_MESH)", // variable references get expanded by Kubernetes
+				Value: "$(KONVOY_MESH).$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
 			},
 		},
 		SecurityContext: &kube_core.SecurityContext{

@@ -56,7 +56,7 @@ make build
 
 ## Integration tests
 
- Integration tests will run all dependencies (ex. Postgres). Run:
+Integration tests will run all dependencies (ex. Postgres). Run:
 
  ```bash
 make integration
@@ -64,7 +64,11 @@ make integration
 
 ## Running Control Plane on local machine
 
-### Universal without any external dependency
+### Universal
+
+Universal setup does not require Kubernetes to be present. It can be run in two modes.
+
+#### Universal without any external dependency (in-memory storage)
 
 1. Run `Control Plane` on local machine:
 
@@ -72,7 +76,7 @@ make integration
 make run/universal/memory
 ```
 
-### Standalone with Postgres as a storage
+#### Universal with Postgres as a storage
 
 1. Run Postgres with initial schema using docker-compose.
 It will run on port 15432 with username: `konvoy`, password: `konvoy` and db name: `konvoy`.
@@ -87,7 +91,46 @@ make start/postgres
 make run/universal/postgres
 ```
 
-This will also start
+#### Running a Dataplane (Envoy)
+
+1. Build a `konvoyctl`
+```bash
+make build/konvoyctl
+export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
+```
+
+2. Configure a `konvoyctl` with running Control Plane
+
+```bash
+konvoyctl config control-planes add --name universal --api-server-url http://localhost:5681
+```
+
+3. Apply a Dataplane descriptor
+
+```bash
+konvoyctl apply -f dev/examples/universal/dataplanes/example.yaml
+```
+
+4. Run a Dataplane (requires `envoy` binary to be on your `PATH`)
+```bash
+make run/example/envoy/universal
+```
+
+5. List `Dataplanes` connected to the `Control Plane`:
+
+```bash
+konvoyctl inspect dataplanes
+
+MESH      NAME      TAGS                                     STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
+default   example   env=production service=web version=2.0   Online   32s                  32s                2               0
+```
+
+6. Dump effective `Envoy` config:
+
+```bash
+make config_dump/example/envoy
+```
+
 
 ### Kubernetes
 
@@ -106,30 +149,15 @@ export KUBECONFIG="$(kind get kubeconfig-path --name=konvoy)"
 make run/k8s
 ```
 
-### Check the setup
+#### Running Dataplane (Envoy)
 
-Note: for the moment. Only K8S setup passes checks.
-
-1. Make a test `Discovery` request to `LDS`:
-
-```bash
-make curl/listeners
-```
-
-2. Make a test `Discovery` request to `CDS`:
-
-```bash
-make curl/clusters
-```
-
-## Pointing Envoy at Control Plane
-
-1. Start the Control Plane in your preferable choice described above 
+1. Run the instructions at "Pointing Envoy at Control Plane" section, so the `konvoy-injector` is present in the KIND
+cluster and Dataplane descriptor is available in the Control Plane.
 
 2. Start `Envoy` on local machine (requires `envoy` binary to be on your `PATH`):
 
 ```bash
-make run/example/envoy
+make run/example/envoy/k8s
 ```
 
 3. Dump effective `Envoy` config:
@@ -145,7 +173,7 @@ make config_dump/example/envoy
 ```bash
 make start/k8s
 
-# set KUBECONFIG for use by `konvoyctl` and `kubectl`
+# set KUBECONFIG for use by `kubectl`
 export KUBECONFIG="$(kind get kubeconfig-path --name=konvoy)"
 ```
 
@@ -192,8 +220,8 @@ k8s    http://localhost:15681
 8. List `Dataplanes` connected to the `Control Plane`:
 
 ```bash
-konvoyctl get dataplanes
+konvoyctl inspect dataplanes
 
-MESH      NAME                        STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
-default   demo-app-7cbbd658d5-thcqm   Online   8m4s                 8m3s               2               0
+MESH      NAME                        TAGS                                                                            STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
+default   demo-app-7cbbd658d5-dj9l6   app=demo-app pod-template-hash=7cbbd658d5 service=demo-app.konvoy-demo.svc:80   Online   42m28s               42m28s             8               0
 ```

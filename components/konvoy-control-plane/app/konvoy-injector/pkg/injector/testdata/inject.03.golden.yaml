@@ -100,7 +100,7 @@ spec:
     - name: KONVOY_MESH
       value: default
     - name: KONVOY_DATAPLANE_ID
-      value: $(POD_NAME).$(POD_NAMESPACE).$(KONVOY_MESH)
+      value: $(KONVOY_MESH).$(POD_NAME).$(POD_NAMESPACE)
     image: konvoy/konvoy-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:

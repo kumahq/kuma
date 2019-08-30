@@ -19,7 +19,7 @@ type ProxyId struct {
 }
 
 func (id *ProxyId) String() string {
-	return fmt.Sprintf("%s.%s.%s", id.Name, id.Namespace, id.Mesh)
+	return fmt.Sprintf("%s.%s.%s", id.Mesh, id.Name, id.Namespace)
 }
 
 type Proxy struct {
@@ -36,17 +36,20 @@ func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	parts := strings.Split(id, ".")
-	name := parts[0]
+	mesh := parts[0]
+	if mesh == "" {
+		return nil, errors.New("mesh must not be empty")
+	}
+	if len(parts) < 2 {
+		return nil, errors.New("the name should be provided after the dot")
+	}
+	name := parts[1]
 	if id == "" {
 		return nil, errors.New("name must not be empty")
 	}
 	ns := core_model.DefaultNamespace
-	if 1 < len(parts) {
-		ns = parts[1]
-	}
-	mesh := core_model.DefaultMesh
-	if 2 < len(parts) {
-		mesh = parts[2]
+	if len(parts) == 3 {
+		ns = parts[2]
 	}
 	return &ProxyId{
 		Mesh:      mesh,

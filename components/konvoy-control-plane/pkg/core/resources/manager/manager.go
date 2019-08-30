@@ -48,11 +48,12 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 }
 
 func (r *resourcesManager) ensureMeshExists(ctx context.Context, meshName string, namespace string) error {
-	if err := r.Store.Get(ctx, &mesh.MeshResource{}, store.GetByKey(namespace, meshName, meshName)); err != nil { // todo namespace
-		if store.IsResourceNotFound(err) {
-			return MeshNotFound(meshName)
-		}
+	list := mesh.MeshResourceList{}
+	if err := r.Store.List(ctx, &list, store.ListByMesh(meshName)); err != nil {
 		return err
+	}
+	if len(list.Items) != 1 {
+		return MeshNotFound(meshName)
 	}
 	return nil
 }

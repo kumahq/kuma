@@ -44,7 +44,7 @@ CP_HTTP_PORT ?= 5679
 LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
 
 ENVOY_BINARY ?= envoy
-EXAMPLE_ENVOY_ID ?= example
+EXAMPLE_ENVOY_ID ?= default.example
 EXAMPLE_ENVOY_CLUSTER ?= demo
 EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
 EXAMPLE_ENVOY_PORT ?= 8080
@@ -270,7 +270,7 @@ kind/load/konvoy-injector: image/konvoy-injector
 	kind load docker-image $(KONVOY_INJECTOR_DOCKER_IMAGE) --name=konvoy
 
 deploy/control-plane/k8s: build/konvoyctl
-	KUBECONFIG=$(KIND_KUBECONFIG) konvoyctl install control-plane | kubectl apply -f -
+	konvoyctl install control-plane | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n konvoy-system pod -l app=konvoy-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
@@ -378,7 +378,11 @@ curl/clusters: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
 curl/clusters: ## Dev: Make Discovery request to CDS
 	curl -s $(CP_BIND_HOST):$(CP_HTTP_PORT)/v2/discovery:clusters --data-binary $(SIMPLE_DISCOVERY_REQUEST)
 
-run/example/envoy: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
+run/example/envoy/k8s: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
+run/example/envoy/k8s: run/example/envoy
+
+run/example/envoy/universal: run/example/envoy
+
 run/example/envoy: build/konvoy-dp ## Dev: Run Envoy configured against local Control Plane
 	KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KONVOY_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \

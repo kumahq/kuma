@@ -84,7 +84,7 @@ var _ = Describe("Sync", func() {
 			typ := ""
 			req := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
-					Id: "example.demo.pilot",
+					Id: "pilot.example.demo",
 				},
 			}
 

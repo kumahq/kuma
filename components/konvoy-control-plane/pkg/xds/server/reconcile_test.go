@@ -104,7 +104,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("verifying that snapshot versions were auto-generated")
 			// when
-			snapshot, err := xdsContext.Cache().GetSnapshot("demo.example.pilot")
+			snapshot, err := xdsContext.Cache().GetSnapshot("pilot.demo.example")
 			// then
 			Expect(snapshot).ToNot(BeZero())
 			// and
@@ -122,7 +122,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("verifying that snapshot versions remain the same")
 			// when
-			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example.pilot")
+			snapshot, err = xdsContext.Cache().GetSnapshot("pilot.demo.example")
 			// then
 			Expect(snapshot).ToNot(BeZero())
 			// and
@@ -140,7 +140,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("verifying that snapshot versions are new")
 			// when
-			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example.pilot")
+			snapshot, err = xdsContext.Cache().GetSnapshot("pilot.demo.example")
 			// then
 			Expect(snapshot).ToNot(BeZero())
 			// and
