@@ -12,6 +12,8 @@ spec:
     name: http-xds
   - port: 5681
     name: http-api-server
+  - port: 5682
+    name: http-bootstrap-server
   selector:
     app: konvoy-control-plane
 ---
@@ -57,12 +59,19 @@ spec:
           value: "5679"
         - name: KONVOY_API_SERVER_PORT
           value: "5681"
+        - name: KONVOY_BOOTSTRAP_SERVER_PORT
+          value: "5682"
+        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+          value: konvoy-control-plane.{{ .Namespace }}
+        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
+          value: "5678"
         args:
         - run
         ports:
         - containerPort: 5678
         - containerPort: 5679
         - containerPort: 5681
+        - containerPort: 5682
         livenessProbe:
           httpGet:
             path: /healthy

@@ -1,10 +1,8 @@
 controlPlane:
-  xdsServer:
-    address:
-    port: 91234
+  bootstrapServer:
+    url: invalid-url
 dataplane:
   id:
-  service:
   adminPort: 82345
 dataplaneRuntime:
   binaryPath:

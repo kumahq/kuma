@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"net/http"
+	"time"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoy-dp/pkg/dataplane/envoy"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
@@ -11,6 +13,8 @@ import (
 
 var (
 	runLog = dataplaneLog.WithName("run")
+	// overridable by tests
+	bootstrapGenerator = envoy.NewRemoteBootstrapGenerator(&http.Client{Timeout: 10 * time.Second})
 )
 
 func newRunCmd() *cobra.Command {
@@ -36,7 +40,7 @@ func newRunCmd() *cobra.Command {
 
 			dataplane := envoy.New(envoy.Opts{
 				Config:    cfg,
-				Generator: envoy.MinimalBootstrapConfig,
+				Generator: bootstrapGenerator,
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 			})

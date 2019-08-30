@@ -28,9 +28,9 @@ var _ = Describe("Config", func() {
 		Expect(cfg.WebHookServer.Port).To(Equal(uint32(8442)))
 		Expect(cfg.WebHookServer.CertDir).To(Equal("/var/secret/konvoy-injector"))
 		// and
-		Expect(cfg.Injector.ControlPlane.XdsServer.Address).To(Equal("xds-server"))
-		Expect(cfg.Injector.ControlPlane.XdsServer.Port).To(Equal(uint32(9876)))
 		Expect(cfg.Injector.ControlPlane.ApiServer.URL).To(Equal("https://api-server:8765"))
+		// and
+		Expect(cfg.Injector.ControlPlane.BootstrapServer.URL).To(Equal("https://bootstrap-server:8765"))
 		// and
 		Expect(cfg.Injector.SidecarContainer.Image).To(Equal("konvoy-sidecar:latest"))
 		Expect(cfg.Injector.SidecarContainer.RedirectPort).To(Equal(uint32(1234)))
@@ -66,6 +66,6 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err).To(MatchError(`Invalid configuration: .WebHookServer is not valid: .Address must be either empty or a valid IPv4/IPv6 address; .Port must be in the range [0, 65535]; .CertDir must be non-empty; .Injector is not valid: .ControlPlane is not valid: .XdsServer is not valid: .Address must be non-empty; .Port must be in the range [0, 65535]; .ApiServer is not valid: .URL must be a valid absolute URI; .SidecarContainer is not valid: .Image must be non-empty; .RedirectPort must be in the range [0, 65535]; .AdminPort must be in the range [0, 65535]; .InitContainer is not valid: .Image must be non-empty`))
+		Expect(err).To(MatchError(`Invalid configuration: .WebHookServer is not valid: .Address must be either empty or a valid IPv4/IPv6 address; .Port must be in the range [0, 65535]; .CertDir must be non-empty; .Injector is not valid: .ControlPlane is not valid: .BootstrapServer is not valid: .URL must be a valid absolute URI; .ApiServer is not valid: .URL must be a valid absolute URI; .SidecarContainer is not valid: .Image must be non-empty; .RedirectPort must be in the range [0, 65535]; .AdminPort must be in the range [0, 65535]; .InitContainer is not valid: .Image must be non-empty`))
 	})
 })

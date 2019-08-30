@@ -3,9 +3,9 @@ package bootstrap
 type configParameters struct {
 	Id        string
 	Service   string
-	AdminPort int
+	AdminPort uint32
 	XdsHost   string
-	XdsPort   int
+	XdsPort   uint32
 }
 
 const configTemplate string = `

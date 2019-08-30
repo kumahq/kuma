@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-var log = core.Log.WithName("xds-server").WithName("bootstrap")
+var log = core.Log.WithName("bootstrap-server")
 
 type BootstrapServer struct {
 	Port      int

@@ -4,11 +4,10 @@ webHookServer:
   certDir: /var/secret/konvoy-injector
 injector:
   controlPlane:
-    xdsServer:
-      address: xds-server
-      port: 9876
     apiServer:
       url: https://api-server:8765
+    bootstrapServer:
+      url: https://bootstrap-server:8765
   sidecarContainer:
     image: konvoy-sidecar:latest
     redirectPort: 1234

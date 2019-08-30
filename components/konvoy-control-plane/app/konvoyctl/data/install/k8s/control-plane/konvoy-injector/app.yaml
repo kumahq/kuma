@@ -52,8 +52,8 @@ spec:
           value: "8443"
         - name: KONVOY_INJECTOR_WEBHOOK_SERVER_CERT_DIR
           value: /var/run/secrets/getkonvoy.io/konvoy-injector/tls-cert
-        - name: KONVOY_INJECTOR_CONTROL_PLANE_XDS_SERVER_ADDRESS
-          value: konvoy-control-plane.{{ .Namespace }}
+        - name: KONVOY_INJECTOR_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
+          value: http://konvoy-control-plane.{{ .Namespace }}:5682
         - name: KONVOY_INJECTOR_CONTROL_PLANE_API_SERVER_URL
           value: http://konvoy-control-plane.{{ .Namespace }}:5681
         - name: KONVOY_INJECTOR_SIDECAR_CONTAINER_IMAGE
