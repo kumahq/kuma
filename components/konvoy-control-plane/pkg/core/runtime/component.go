@@ -7,6 +7,14 @@ import (
 // Component of the Control Plane, i.e. gRPC Server, HTTP server, reconciliation loop.
 type Component = manager.Runnable
 
+var _ Component = ComponentFunc(nil)
+
+type ComponentFunc func(<-chan struct{}) error
+
+func (f ComponentFunc) Start(stop <-chan struct{}) error {
+	return f(stop)
+}
+
 type ComponentManager interface {
 
 	// Add registers a component, i.e. gRPC Server, HTTP server, reconciliation loop.
