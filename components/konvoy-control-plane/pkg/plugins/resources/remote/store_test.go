@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
-	sample_api "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	sample_api "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/apis/sample/v1alpha1"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -171,7 +172,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(bytes)).To(Equal(`{"mesh":"someMesh","mtls":{"ca":{"embedded":{}}},"name":"someMesh","type":"Mesh"}`))
+				Expect(string(bytes)).To(Equal(`{"mesh":"someMesh","mtls":{"ca":{"builtin":{}}},"name":"someMesh","type":"Mesh"}`))
 			})
 
 			// when
@@ -179,8 +180,8 @@ var _ = Describe("RemoteStore", func() {
 				Spec: v1alpha1.Mesh{
 					Mtls: &v1alpha1.Mesh_Mtls{
 						Ca: &v1alpha1.CertificateAuthority{
-							Type: &v1alpha1.CertificateAuthority_Embedded_{
-								Embedded: &v1alpha1.CertificateAuthority_Embedded{},
+							Type: &v1alpha1.CertificateAuthority_Builtin_{
+								Builtin: &v1alpha1.CertificateAuthority_Builtin{},
 							},
 						},
 					},
