@@ -29,25 +29,17 @@ var _ = Describe("xDS", func() {
 					// and
 					Expect(*proxyId).To(Equal(given.expected))
 				},
-				Entry("name without namespace", testCase{
+				Entry("mesh and name without namespace", testCase{
 					node: &envoy_core.Node{
-						Id: "example",
+						Id: "pilot.example",
 					},
 					expected: core_xds.ProxyId{
-						Mesh: "default", Namespace: "default", Name: "example",
-					},
-				}),
-				Entry("name with namespace", testCase{
-					node: &envoy_core.Node{
-						Id: "example.demo",
-					},
-					expected: core_xds.ProxyId{
-						Mesh: "default", Namespace: "demo", Name: "example",
+						Mesh: "pilot", Namespace: "default", Name: "example",
 					},
 				}),
 				Entry("name with namespace and mesh", testCase{
 					node: &envoy_core.Node{
-						Id: "example.demo.pilot",
+						Id: "pilot.example.demo",
 					},
 					expected: core_xds.ProxyId{
 						Mesh: "pilot", Namespace: "demo", Name: "example",
@@ -78,7 +70,25 @@ var _ = Describe("xDS", func() {
 				}),
 				Entry("empty", testCase{
 					node:        &envoy_core.Node{},
+					expectedErr: "mesh must not be empty",
+				}),
+				Entry("mesh without name and namespace", testCase{
+					node: &envoy_core.Node{
+						Id: "pilot",
+					},
+					expectedErr: "the name should be provided after the dot",
+				}),
+				Entry("mesh with empty name", testCase{
+					node: &envoy_core.Node{
+						Id: "pilot.",
+					},
 					expectedErr: "name must not be empty",
+				}),
+				Entry("mesh with empty namespace", testCase{
+					node: &envoy_core.Node{
+						Id: "pilot.default.",
+					},
+					expectedErr: "namespace must not be empty",
 				}),
 			)
 		})

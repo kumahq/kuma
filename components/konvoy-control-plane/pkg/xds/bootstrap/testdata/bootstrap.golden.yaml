@@ -16,7 +16,7 @@ dynamicResources:
     ads: {}
 node:
   cluster: backend
-  id: dp-1.default.default
+  id: default.dp-1.default
 staticResources:
   clusters:
     - connectTimeout: 0.250s
