@@ -3,11 +3,11 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"strconv"
@@ -52,7 +52,7 @@ func connectToDb(config config.PostgresStoreConfig) (*sql.DB, error) {
 func (r *postgresResourceStore) Create(_ context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 
-	bytes, err := json.Marshal(resource.GetSpec())
+	bytes, err := proto.ToJSON(resource.GetSpec())
 	if err != nil {
 		return errors.Wrap(err, "failed to convert spec to json")
 	}
@@ -77,7 +77,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 }
 
 func (r *postgresResourceStore) Update(_ context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
-	bytes, err := json.Marshal(resource.GetSpec())
+	bytes, err := proto.ToJSON(resource.GetSpec())
 	if err != nil {
 		return err
 	}
@@ -143,8 +143,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 
-	err = json.Unmarshal([]byte(spec), resource.GetSpec())
-	if err != nil {
+	if err := proto.FromJSON([]byte(spec), resource.GetSpec()); err != nil {
 		return errors.Wrap(err, "failed to convert json to spec")
 	}
 
@@ -196,14 +195,12 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, error) {
 	var name, namespace, mesh, spec string
 	var version int
-	err := rows.Scan(&name, &namespace, &mesh, &spec, &version)
-	if err != nil {
+	if err := rows.Scan(&name, &namespace, &mesh, &spec, &version); err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve elements from query")
 	}
 
 	item := resources.NewItem()
-	err = json.Unmarshal([]byte(spec), item.GetSpec())
-	if err != nil {
+	if err := proto.FromJSON([]byte(spec), item.GetSpec()); err != nil {
 		return nil, errors.Wrap(err, "failed to convert json to spec")
 	}
 
