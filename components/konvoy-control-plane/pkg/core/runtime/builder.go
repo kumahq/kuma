@@ -6,7 +6,9 @@ import (
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
+	core_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	secret_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/pkg/errors"
 )
@@ -27,6 +29,7 @@ type Builder struct {
 	cfg konvoy_cp.Config
 	cm  ComponentManager
 	rs  core_store.ResourceStore
+	sm  secret_manager.SecretManager
 	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
 	ext context.Context
@@ -43,6 +46,11 @@ func (b *Builder) WithComponentManager(cm ComponentManager) *Builder {
 
 func (b *Builder) WithResourceStore(rs core_store.ResourceStore) *Builder {
 	b.rs = rs
+	return b
+}
+
+func (b *Builder) WithSecretManager(sm secret_manager.SecretManager) *Builder {
+	b.sm = sm
 	return b
 }
 
@@ -68,6 +76,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.rs == nil {
 		return nil, errors.Errorf("ResourceStore has not been configured")
 	}
+	if b.sm == nil {
+		return nil, errors.Errorf("SecretManager has not been configured")
+	}
 	// todo(jakubdyszkiewicz) restore when we've got store based discovery source
 	//if len(b.dss) == 0 {
 	//	return nil, errors.Errorf("DiscoverySources have not been configured")
@@ -84,7 +95,8 @@ func (b *Builder) Build() (Runtime, error) {
 		},
 		RuntimeContext: &runtimeContext{
 			cfg: b.cfg,
-			rs:  b.rs,
+			rm:  core_manager.NewResourceManager(b.rs),
+			sm:  b.sm,
 			dss: b.dss,
 			xds: b.xds,
 			ext: b.ext,

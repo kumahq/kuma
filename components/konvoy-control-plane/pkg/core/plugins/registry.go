@@ -9,6 +9,7 @@ type pluginType string
 const (
 	bootstrapPlugin     pluginType = "bootstrap"
 	resourceStorePlugin pluginType = "resource-store"
+	secretStorePlugin   pluginType = "secret-store"
 	discoveryPlugin     pluginType = "discovery"
 )
 
@@ -24,6 +25,7 @@ const (
 type Registry interface {
 	Bootstrap(PluginName) (BootstrapPlugin, error)
 	ResourceStore(name PluginName) (ResourceStorePlugin, error)
+	SecretStore(name PluginName) (SecretStorePlugin, error)
 	Discovery(name PluginName) (DiscoveryPlugin, error)
 }
 
@@ -40,6 +42,7 @@ func NewRegistry() MutableRegistry {
 	return &registry{
 		bootstrap:     make(map[PluginName]BootstrapPlugin),
 		resourceStore: make(map[PluginName]ResourceStorePlugin),
+		secretStore:   make(map[PluginName]SecretStorePlugin),
 		discovery:     make(map[PluginName]DiscoveryPlugin),
 	}
 }
@@ -49,6 +52,7 @@ var _ MutableRegistry = &registry{}
 type registry struct {
 	bootstrap     map[PluginName]BootstrapPlugin
 	resourceStore map[PluginName]ResourceStorePlugin
+	secretStore   map[PluginName]SecretStorePlugin
 	discovery     map[PluginName]DiscoveryPlugin
 }
 
@@ -65,6 +69,14 @@ func (r *registry) ResourceStore(name PluginName) (ResourceStorePlugin, error) {
 		return p, nil
 	} else {
 		return nil, noSuchPluginError(resourceStorePlugin, name)
+	}
+}
+
+func (r *registry) SecretStore(name PluginName) (SecretStorePlugin, error) {
+	if p, ok := r.secretStore[name]; ok {
+		return p, nil
+	} else {
+		return nil, noSuchPluginError(secretStorePlugin, name)
 	}
 }
 
@@ -88,6 +100,12 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 			return pluginAlreadyRegisteredError(resourceStorePlugin, name, old, rsp)
 		}
 		r.resourceStore[name] = rsp
+	}
+	if ssp, ok := plugin.(SecretStorePlugin); ok {
+		if old, exists := r.secretStore[name]; exists {
+			return pluginAlreadyRegisteredError(secretStorePlugin, name, old, ssp)
+		}
+		r.secretStore[name] = ssp
 	}
 	if dp, ok := plugin.(DiscoveryPlugin); ok {
 		if old, exists := r.discovery[name]; exists {

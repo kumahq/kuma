@@ -2,6 +2,9 @@ package runtime
 
 import (
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
+	secret_cryptor "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/cryptor"
+	secret_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/manager"
+	secret_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/store"
 
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
@@ -20,8 +23,18 @@ func (i TestRuntimeInfo) GetInstanceId() string {
 }
 
 func BuilderFor(cfg konvoy_cp.Config) *core_runtime.Builder {
-	return core_runtime.BuilderFor(cfg).
+	builder := core_runtime.BuilderFor(cfg).
 		WithComponentManager(bootstrap_universal.NewComponentManager()).
 		WithResourceStore(resources_memory.NewStore()).
 		WithXdsContext(core_xds.NewXdsContext())
+
+	builder.WithSecretManager(newSecretManager(builder))
+
+	return builder
+}
+
+func newSecretManager(builder *core_runtime.Builder) secret_manager.SecretManager {
+	secretStore := secret_store.NewSecretStore(builder.ResourceStore())
+	secretManager := secret_manager.NewSecretManager(secretStore, secret_cryptor.None())
+	return secretManager
 }
