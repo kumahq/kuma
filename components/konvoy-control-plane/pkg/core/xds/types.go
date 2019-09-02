@@ -44,12 +44,15 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 		return nil, errors.New("the name should be provided after the dot")
 	}
 	name := parts[1]
-	if id == "" {
+	if name == "" {
 		return nil, errors.New("name must not be empty")
 	}
 	ns := core_model.DefaultNamespace
 	if len(parts) == 3 {
 		ns = parts[2]
+	}
+	if ns == "" {
+		return nil, errors.New("namespace must not be empty")
 	}
 	return &ProxyId{
 		Mesh:      mesh,

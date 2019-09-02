@@ -72,6 +72,24 @@ var _ = Describe("xDS", func() {
 					node:        &envoy_core.Node{},
 					expectedErr: "mesh must not be empty",
 				}),
+				Entry("mesh without name and namespace", testCase{
+					node: &envoy_core.Node{
+						Id: "pilot",
+					},
+					expectedErr: "the name should be provided after the dot",
+				}),
+				Entry("mesh with empty name", testCase{
+					node: &envoy_core.Node{
+						Id: "pilot.",
+					},
+					expectedErr: "name must not be empty",
+				}),
+				Entry("mesh with empty namespace", testCase{
+					node: &envoy_core.Node{
+						Id: "pilot.default.",
+					},
+					expectedErr: "namespace must not be empty",
+				}),
 			)
 		})
 	})
