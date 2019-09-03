@@ -8,7 +8,6 @@ import (
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -50,14 +49,8 @@ var _ = Describe("Sds", func() {
 
 	It("should support valid SDS requests", func(done Done) {
 		// given
-		handler := SecretDiscoveryHandlerFunc(func(ctx context.Context, req envoy.DiscoveryRequest) (envoy_cache.Response, error) {
-			return envoy_cache.Response{
-				Request: req,
-				Version: "v0",
-				Resources: []envoy_cache.Resource{
-					&envoy_auth.Secret{},
-				},
-			}, nil
+		handler := SecretDiscoveryHandlerFunc(func(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error) {
+			return &envoy_auth.Secret{}, nil
 		})
 		sds := NewServer(handler, nil, test_logr.NewTestLogger(GinkgoT()))
 
