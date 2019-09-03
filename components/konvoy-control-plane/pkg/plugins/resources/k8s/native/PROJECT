@@ -1,5 +1,5 @@
 version: "2"
-domain: getkonvoy.io
+domain: kuma.io
 repo: github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native
 resources:
 - group: mesh

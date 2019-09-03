@@ -3,10 +3,10 @@ kind: Pod
 metadata:
   annotations:
     docs: Documentation
-    getkonvoy.io/mesh: default
-    getkonvoy.io/sidecar-injected: "true"
-    getkonvoy.io/transparent-proxying: enabled
-    getkonvoy.io/transparent-proxying-port: "15001"
+    kuma.io/mesh: default
+    kuma.io/sidecar-injected: "true"
+    kuma.io/transparent-proxying: enabled
+    kuma.io/transparent-proxying-port: "15001"
   creationTimestamp: null
   labels:
     run: busybox

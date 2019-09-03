@@ -5,7 +5,7 @@ metadata:
   labels:
     run: busybox
   annotations:
-    getkonvoy.io/mesh: pilot
+    kuma.io/mesh: pilot
 spec:
   volumes:
   - name: default-token-w7dxf

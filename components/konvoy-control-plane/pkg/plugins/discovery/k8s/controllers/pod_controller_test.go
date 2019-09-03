@@ -43,7 +43,7 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "pod-with-konvoy-sidecar-but-no-ip",
 					Annotations: map[string]string{
-						"getkonvoy.io/sidecar-injected": "true",
+						"kuma.io/sidecar-injected": "true",
 					},
 				},
 			},
@@ -52,8 +52,8 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "pod-with-konvoy-sidecar-and-ip",
 					Annotations: map[string]string{
-						"getkonvoy.io/mesh":             "pilot",
-						"getkonvoy.io/sidecar-injected": "true",
+						"kuma.io/mesh":             "pilot",
+						"kuma.io/sidecar-injected": "true",
 					},
 				},
 				Spec: kube_core.PodSpec{

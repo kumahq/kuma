@@ -24,9 +24,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: dataplaneinsights.mesh.getkonvoy.io
+  name: dataplaneinsights.mesh.kuma.io
 spec:
-  group: mesh.getkonvoy.io
+  group: mesh.kuma.io
   names:
     kind: DataplaneInsight
     plural: dataplaneinsights
@@ -421,9 +421,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: dataplanes.mesh.getkonvoy.io
+  name: dataplanes.mesh.kuma.io
 spec:
-  group: mesh.getkonvoy.io
+  group: mesh.kuma.io
   names:
     kind: Dataplane
     plural: dataplanes
@@ -818,9 +818,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: meshes.mesh.getkonvoy.io
+  name: meshes.mesh.kuma.io
 spec:
-  group: mesh.getkonvoy.io
+  group: mesh.kuma.io
   names:
     kind: Mesh
     plural: meshes
@@ -1217,9 +1217,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: proxytemplates.mesh.getkonvoy.io
+  name: proxytemplates.mesh.kuma.io
 spec:
-  group: mesh.getkonvoy.io
+  group: mesh.kuma.io
   names:
     kind: ProxyTemplate
     plural: proxytemplates
@@ -1618,9 +1618,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: trafficpermissions.mesh.getkonvoy.io
+  name: trafficpermissions.mesh.kuma.io
 spec:
-  group: mesh.getkonvoy.io
+  group: mesh.kuma.io
   names:
     kind: TrafficPermission
     plural: trafficpermissions
@@ -2018,7 +2018,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - mesh.getkonvoy.io
+  - mesh.kuma.io
   resources:
   - dataplanes
   - dataplaneinsights
@@ -2032,7 +2032,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - mesh.getkonvoy.io
+  - mesh.kuma.io
   resources:
   - proxytemplates
   verbs:
@@ -2044,7 +2044,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - mesh.getkonvoy.io
+  - mesh.kuma.io
   resources:
   - proxytemplates/status
   verbs:
@@ -2052,7 +2052,7 @@ rules:
   - update
   - patch
 - apiGroups:
-  - mesh.getkonvoy.io
+  - mesh.kuma.io
   resources:
   - trafficpermissions
   verbs:
@@ -2132,7 +2132,7 @@ spec:
         - name: KONVOY_INJECTOR_WEBHOOK_SERVER_PORT
           value: "8443"
         - name: KONVOY_INJECTOR_WEBHOOK_SERVER_CERT_DIR
-          value: /var/run/secrets/getkonvoy.io/konvoy-injector/tls-cert
+          value: /var/run/secrets/kuma.io/konvoy-injector/tls-cert
         - name: KONVOY_INJECTOR_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
           value: http://konvoy-control-plane.konvoy:5682
         - name: KONVOY_INJECTOR_CONTROL_PLANE_API_SERVER_URL
@@ -2161,7 +2161,7 @@ spec:
             memory: 64Mi
         volumeMounts:
         - name: konvoy-injector-tls-cert
-          mountPath: /var/run/secrets/getkonvoy.io/konvoy-injector/tls-cert
+          mountPath: /var/run/secrets/kuma.io/konvoy-injector/tls-cert
           readOnly: true
       volumes:
       - name: konvoy-injector-tls-cert
@@ -2235,10 +2235,10 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: konvoy-injector-webhook-configuration
 webhooks:
-- name: konvoy-injector.getkonvoy.io
+- name: konvoy-injector.kuma.io
   namespaceSelector:
     matchLabels:
-      getkonvoy.io/sidecar-injection: enabled
+      kuma.io/sidecar-injection: enabled
   failurePolicy: Crash
   clientConfig:
     caBundle: QW5vdGhlckNlcnQ=

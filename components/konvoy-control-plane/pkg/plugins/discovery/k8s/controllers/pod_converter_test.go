@@ -227,7 +227,7 @@ var _ = Describe("MeshFor(..)", func() {
 		expected       string
 	}
 
-	DescribeTable("should use value of `getkonvoy.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
+	DescribeTable("should use value of `kuma.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
 		func(given testCase) {
 			// given
 			pod := &kube_core.Pod{
@@ -243,15 +243,15 @@ var _ = Describe("MeshFor(..)", func() {
 			podAnnotations: nil,
 			expected:       "default",
 		}),
-		Entry("Pod with empty `getkonvoy.io/mesh` annotation", testCase{
+		Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
 			podAnnotations: map[string]string{
-				"getkonvoy.io/mesh": "",
+				"kuma.io/mesh": "",
 			},
 			expected: "default",
 		}),
-		Entry("Pod with non-empty `getkonvoy.io/mesh` annotation", testCase{
+		Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
 			podAnnotations: map[string]string{
-				"getkonvoy.io/mesh": "pilot",
+				"kuma.io/mesh": "pilot",
 			},
 			expected: "pilot",
 		}),
