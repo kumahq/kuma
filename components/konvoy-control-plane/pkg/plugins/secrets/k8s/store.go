@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	secret_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/system"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
-	secret_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/model"
 	secret_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/store"
 
 	kube_core "k8s.io/api/core/v1"
@@ -35,7 +35,7 @@ func NewStore(client kube_client.Client) (secret_store.SecretStore, error) {
 	}, nil
 }
 
-func (s *KubernetesStore) Create(ctx context.Context, r *secret_model.Secret, fs ...core_store.CreateOptionsFunc) error {
+func (s *KubernetesStore) Create(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.CreateOptionsFunc) error {
 	opts := core_store.NewCreateOptions(fs...)
 	secret, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
@@ -56,7 +56,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r *secret_model.Secret, fs
 	}
 	return nil
 }
-func (s *KubernetesStore) Update(ctx context.Context, r *secret_model.Secret, fs ...core_store.UpdateOptionsFunc) error {
+func (s *KubernetesStore) Update(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.UpdateOptionsFunc) error {
 	secret, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
@@ -73,7 +73,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r *secret_model.Secret, fs
 	}
 	return nil
 }
-func (s *KubernetesStore) Delete(ctx context.Context, r *secret_model.Secret, fs ...core_store.DeleteOptionsFunc) error {
+func (s *KubernetesStore) Delete(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.DeleteOptionsFunc) error {
 	opts := core_store.NewDeleteOptions(fs...)
 	secret, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
@@ -90,7 +90,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r *secret_model.Secret, fs
 	}
 	return nil
 }
-func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.Secret, fs ...core_store.GetOptionsFunc) error {
+func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.GetOptionsFunc) error {
 	opts := core_store.NewGetOptions(fs...)
 	secret := &kube_core.Secret{}
 	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: opts.Namespace, Name: opts.Name}, secret); err != nil {
@@ -104,7 +104,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.Secret, fs ..
 	}
 	return nil
 }
-func (s *KubernetesStore) List(ctx context.Context, rs *secret_model.SecretList, fs ...core_store.ListOptionsFunc) error {
+func (s *KubernetesStore) List(ctx context.Context, rs *secret_model.SecretResourceList, fs ...core_store.ListOptionsFunc) error {
 	opts := core_store.NewListOptions(fs...)
 	secrets := &kube_core.SecretList{}
 	if err := s.Client.List(ctx, secrets, kube_client.InNamespace(opts.Namespace)); err != nil {
@@ -131,9 +131,9 @@ func (m *KubernetesMetaAdapter) GetMesh() string {
 }
 
 type Converter interface {
-	ToKubernetesObject(*secret_model.Secret) (*kube_core.Secret, error)
-	ToCoreResource(secret *kube_core.Secret, out *secret_model.Secret) error
-	ToCoreList(list *kube_core.SecretList, out *secret_model.SecretList) error
+	ToKubernetesObject(*secret_model.SecretResource) (*kube_core.Secret, error)
+	ToCoreResource(secret *kube_core.Secret, out *secret_model.SecretResource) error
+	ToCoreList(list *kube_core.SecretList, out *secret_model.SecretResourceList) error
 }
 
 func DefaultConverter() Converter {
@@ -145,7 +145,7 @@ var _ Converter = &SimpleConverter{}
 type SimpleConverter struct {
 }
 
-func (c *SimpleConverter) ToKubernetesObject(r *secret_model.Secret) (*kube_core.Secret, error) {
+func (c *SimpleConverter) ToKubernetesObject(r *secret_model.SecretResource) (*kube_core.Secret, error) {
 	secret := &kube_core.Secret{}
 	secret.Type = "system.getkonvoy.io/secret"
 	secret.Data = map[string][]byte{
@@ -161,7 +161,7 @@ func (c *SimpleConverter) ToKubernetesObject(r *secret_model.Secret) (*kube_core
 	return secret, nil
 }
 
-func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out *secret_model.Secret) error {
+func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out *secret_model.SecretResource) error {
 	out.SetMeta(&KubernetesMetaAdapter{secret.ObjectMeta})
 	if secret.Data != nil {
 		out.Spec.Value = secret.Data["value"]
@@ -169,10 +169,10 @@ func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out *secret_m
 	return nil
 }
 
-func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out *secret_model.SecretList) error {
-	out.Items = make([]*secret_model.Secret, len(in.Items))
+func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out *secret_model.SecretResourceList) error {
+	out.Items = make([]*secret_model.SecretResource, len(in.Items))
 	for i, secret := range in.Items {
-		r := &secret_model.Secret{}
+		r := &secret_model.SecretResource{}
 		if err := c.ToCoreResource(&secret, r); err != nil {
 			return err
 		}

@@ -1,10 +1,10 @@
-package cryptor
+package cipher
 
-func None() Cryptor {
+func None() Cipher {
 	return &none{}
 }
 
-var _ Cryptor = &none{}
+var _ Cipher = &none{}
 
 type none struct{}
 

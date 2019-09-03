@@ -1,6 +1,6 @@
-package cryptor
+package cipher
 
-type Cryptor interface {
+type Cipher interface {
 	Encryptor
 	Decryptor
 }

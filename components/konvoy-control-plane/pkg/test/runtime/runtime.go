@@ -2,7 +2,7 @@ package runtime
 
 import (
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
-	secret_cryptor "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/cryptor"
+	secret_cipher "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/manager"
 	secret_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/store"
 
@@ -35,6 +35,6 @@ func BuilderFor(cfg konvoy_cp.Config) *core_runtime.Builder {
 
 func newSecretManager(builder *core_runtime.Builder) secret_manager.SecretManager {
 	secretStore := secret_store.NewSecretStore(builder.ResourceStore())
-	secretManager := secret_manager.NewSecretManager(secretStore, secret_cryptor.None())
+	secretManager := secret_manager.NewSecretManager(secretStore, secret_cipher.None())
 	return secretManager
 }
