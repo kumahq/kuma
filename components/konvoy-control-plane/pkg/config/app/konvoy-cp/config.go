@@ -45,8 +45,8 @@ func DefaultConfig() Config {
 	defaultMesh := v1alpha1.Mesh{
 		Mtls: &v1alpha1.Mesh_Mtls{
 			Ca: &v1alpha1.CertificateAuthority{
-				Type: &v1alpha1.CertificateAuthority_Embedded_{
-					Embedded: &v1alpha1.CertificateAuthority_Embedded{},
+				Type: &v1alpha1.CertificateAuthority_Builtin_{
+					Builtin: &v1alpha1.CertificateAuthority_Builtin{},
 				},
 			},
 		},

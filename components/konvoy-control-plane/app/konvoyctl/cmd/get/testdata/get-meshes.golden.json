@@ -4,7 +4,7 @@
       "mesh": "mesh1",
       "mtls": {
         "ca": {
-          "embedded": {}
+          "builtin": {}
         }
       },
       "name": "mesh1",
@@ -14,7 +14,7 @@
       "mesh": "mesh2",
       "mtls": {
         "ca": {
-          "embedded": {}
+          "builtin": {}
         }
       },
       "name": "mesh2",

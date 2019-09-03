@@ -3,6 +3,11 @@ package get_test
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
 	config_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoyctl/v1alpha1"
@@ -18,10 +23,6 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 var _ = Describe("konvoy get meshes", func() {
@@ -31,8 +32,8 @@ var _ = Describe("konvoy get meshes", func() {
 			Spec: v1alpha1.Mesh{
 				Mtls: &v1alpha1.Mesh_Mtls{
 					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Embedded_{
-							Embedded: &v1alpha1.CertificateAuthority_Embedded{},
+						Type: &v1alpha1.CertificateAuthority_Builtin_{
+							Builtin: &v1alpha1.CertificateAuthority_Builtin{},
 						},
 					},
 				},
@@ -47,8 +48,8 @@ var _ = Describe("konvoy get meshes", func() {
 			Spec: v1alpha1.Mesh{
 				Mtls: &v1alpha1.Mesh_Mtls{
 					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Embedded_{
-							Embedded: &v1alpha1.CertificateAuthority_Embedded{},
+						Type: &v1alpha1.CertificateAuthority_Builtin_{
+							Builtin: &v1alpha1.CertificateAuthority_Builtin{},
 						},
 					},
 				},

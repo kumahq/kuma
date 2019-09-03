@@ -27,13 +27,13 @@ message Mesh {
 // CertificateAuthority defines configuration of a CA.
 message CertificateAuthority {
 
-  // Embedded defines configuration of the embedded CA.
-  message Embedded {}
+  // Builtin defines configuration of the builtin CA.
+  message Builtin {}
 
   oneof type {
 
-    // Use embedded CA.
-    Embedded embedded = 1;
+    // Use builtin CA.
+    Builtin builtin = 1;
   }
 }
 
