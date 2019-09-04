@@ -16,6 +16,9 @@ import (
 )
 
 func buildRuntime(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
+	if err := autoconfigure(&cfg); err != nil {
+		return nil, err
+	}
 	builder := core_runtime.BuilderFor(cfg)
 	if err := initializeBootstrap(cfg, builder); err != nil {
 		return nil, err
