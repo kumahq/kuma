@@ -39,7 +39,7 @@ type Config struct {
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
 	// Defaults that are applied on first run of the Control Plane
-	Defaults  *Defaults                   `yaml:"defaults"`
+	Defaults *Defaults `yaml:"defaults"`
 	// Snapshot configuration
 	Snapshot *xds.SnapshotConfig
 }

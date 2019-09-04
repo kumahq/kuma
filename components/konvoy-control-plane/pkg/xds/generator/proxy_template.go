@@ -13,7 +13,7 @@ import (
 )
 
 type TemplateProxyGenerator struct {
-	Profiles Profiles
+	Profiles      Profiles
 	ProxyTemplate *konvoy_mesh.ProxyTemplate
 }
 

@@ -2,6 +2,7 @@ package envoy
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"time"
 
 	"github.com/gogo/protobuf/types"
@@ -85,6 +86,16 @@ func (e *EnvoyResourcesFactory) CreateInboundListener(listenerName string, addre
 			},
 		},
 		FilterChains: []listener.FilterChain{{
+			TlsContext: &auth.DownstreamTlsContext{
+				CommonTlsContext: &auth.CommonTlsContext{
+					ValidationContextType: &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
+						ValidationContextSdsSecretConfig: e.sdsSecretConfig("todo"), // todo(jakubdyszkiewicz) mesh cert name?
+					},
+					TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
+						e.sdsSecretConfig("todo"), // todo(jakubdyszkiewicz) cluster cert name?
+					},
+				},
+			},
 			Filters: []listener.Filter{{
 				Name: util.TCPProxy,
 				ConfigType: &listener.Filter_TypedConfig{
@@ -100,6 +111,40 @@ func (e *EnvoyResourcesFactory) CreateInboundListener(listenerName string, addre
 		}
 	}
 	return listener
+}
+
+func (e *EnvoyResourcesFactory) sdsSecretConfig(name string) *auth.SdsSecretConfig {
+	return &auth.SdsSecretConfig{
+		Name: name,
+		SdsConfig: &core.ConfigSource{
+			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
+				ApiConfigSource: &core.ApiConfigSource{
+					ApiType: core.ApiConfigSource_GRPC,
+					GrpcServices: []*core.GrpcService{
+						{
+							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
+								GoogleGrpc: &core.GrpcService_GoogleGrpc{
+									TargetUri:  e.Config.SdsLocation,
+									StatPrefix: "sds_" + name,
+									ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
+										CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
+											SslCredentials: &core.GrpcService_GoogleGrpc_SslCredentials{
+												RootCerts: &core.DataSource{
+													Specifier: &core.DataSource_InlineBytes{
+														InlineBytes: []byte{}, // todo(jakubdyszkiewicz) inline bytes of the sds server
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func (e *EnvoyResourcesFactory) CreateCatchAllListener(listenerName string, address string, port uint32, clusterName string) *v2.Listener {

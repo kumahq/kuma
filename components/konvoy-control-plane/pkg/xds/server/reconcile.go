@@ -100,7 +100,7 @@ type snapshotGenerator interface {
 }
 
 type templateSnapshotGenerator struct {
-	Profiles generator.Profiles
+	Profiles              generator.Profiles
 	ProxyTemplateResolver proxyTemplateResolver
 }
 
@@ -108,7 +108,7 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (envoy_
 	template := s.ProxyTemplateResolver.GetTemplate(proxy)
 
 	gen := generator.TemplateProxyGenerator{
-		Profiles: s.Profiles,
+		Profiles:      s.Profiles,
 		ProxyTemplate: template,
 	}
 
