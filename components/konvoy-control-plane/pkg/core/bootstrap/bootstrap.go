@@ -2,7 +2,8 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+
+	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"

@@ -40,6 +40,7 @@ COVERAGE_INTEGRATION_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage-integration.h
 CP_BIND_HOST ?= localhost
 CP_GRPC_PORT ?= 5678
 CP_HTTP_PORT ?= 5679
+SDS_GRPC_PORT ?= 5677
 
 LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
 
@@ -339,6 +340,7 @@ build/konvoy-injector: ## Dev: Build `konvoy-injector` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-injector/konvoy-injector ./app/konvoy-injector
 
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
+	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
@@ -348,6 +350,7 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	go run ./app/konvoy-cp/main.go run
 
 run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
+	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
 	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
 	KONVOY_ENVIRONMENT=universal \
@@ -359,6 +362,7 @@ start/postgres: ## Boostrap: start Postgres for Control Plane with initial schem
 	tools/postgres/wait-for-postgres.sh 15432
 
 run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
+	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
 	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
 	KONVOY_ENVIRONMENT=universal \
