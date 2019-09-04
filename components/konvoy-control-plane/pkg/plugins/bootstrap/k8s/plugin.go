@@ -3,6 +3,7 @@ package k8s
 import (
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
+	k8s_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/runtime/k8s"
 
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -26,5 +27,6 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 		return err
 	}
 	b.WithComponentManager(mgr)
+	b.WithExtensions(k8s_runtime.NewManagerContext(b.Extensions(), mgr))
 	return nil
 }

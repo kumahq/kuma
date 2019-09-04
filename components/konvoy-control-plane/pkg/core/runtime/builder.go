@@ -1,7 +1,9 @@
 package runtime
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	"context"
+
+	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -15,6 +17,7 @@ type BuilderContext interface {
 	ResourceStore() core_store.ResourceStore
 	XdsContext() core_xds.XdsContext
 	Config() konvoy_cp.Config
+	Extensions() context.Context
 }
 
 var _ BuilderContext = &Builder{}
@@ -26,10 +29,11 @@ type Builder struct {
 	rs  core_store.ResourceStore
 	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
+	ext context.Context
 }
 
 func BuilderFor(cfg konvoy_cp.Config) *Builder {
-	return &Builder{cfg: cfg}
+	return &Builder{cfg: cfg, ext: context.Background()}
 }
 
 func (b *Builder) WithComponentManager(cm ComponentManager) *Builder {
@@ -52,6 +56,11 @@ func (b *Builder) WithXdsContext(xds core_xds.XdsContext) *Builder {
 	return b
 }
 
+func (b *Builder) WithExtensions(ext context.Context) *Builder {
+	b.ext = ext
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -66,6 +75,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.xds == nil {
 		return nil, errors.Errorf("xDS Context has not been configured")
 	}
+	if b.ext == nil {
+		return nil, errors.Errorf("Extensions have been misconfigured")
+	}
 	return &runtime{
 		RuntimeInfo: &runtimeInfo{
 			instanceId: core.NewUUID(),
@@ -75,6 +87,7 @@ func (b *Builder) Build() (Runtime, error) {
 			rs:  b.rs,
 			dss: b.dss,
 			xds: b.xds,
+			ext: b.ext,
 		},
 		ComponentManager: b.cm,
 	}, nil
@@ -92,4 +105,7 @@ func (b *Builder) XdsContext() core_xds.XdsContext {
 }
 func (b *Builder) Config() konvoy_cp.Config {
 	return b.cfg
+}
+func (b *Builder) Extensions() context.Context {
+	return b.ext
 }
