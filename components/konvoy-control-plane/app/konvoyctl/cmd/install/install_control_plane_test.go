@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/data"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/tls"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/tls"
 )
 
 var _ = Describe("konvoyctl install control-plane", func() {

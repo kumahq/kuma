@@ -15,5 +15,5 @@ func SetupServer(rt core_runtime.Runtime) error {
 		util_xds.LoggingCallbacks{Log: sdsServerLog},
 	}
 	srv := NewServer(DefaultSecretDiscoveryHandler(), callbacks, sdsServerLog)
-	return core_runtime.Add(rt, &grpcServer{srv, rt.Config().SdsServer.GrpcPort})
+	return core_runtime.Add(rt, &grpcServer{srv, *rt.Config().SdsServer})
 }

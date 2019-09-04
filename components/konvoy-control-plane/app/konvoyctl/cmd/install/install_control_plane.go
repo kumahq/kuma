@@ -13,8 +13,8 @@ import (
 	konvoyctl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/data"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/k8s"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/k8s/control-plane"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/tls"
+	controlplane "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/k8s/control-plane"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/tls"
 )
 
 var (

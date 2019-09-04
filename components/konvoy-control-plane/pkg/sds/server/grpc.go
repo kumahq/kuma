@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"net"
 
-	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
+	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+
+	sds_config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/sds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 )
@@ -19,7 +23,7 @@ var (
 
 type grpcServer struct {
 	server Server
-	port   int
+	config sds_config.SdsServerConfig
 }
 
 // Make sure that grpcServer implements all relevant interfaces
@@ -30,9 +34,17 @@ var (
 func (s *grpcServer) Start(stop <-chan struct{}) error {
 	var grpcOptions []grpc.ServerOption
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
+	useTLS := s.config.TlsCertFile != ""
+	if useTLS {
+		creds, err := credentials.NewServerTLSFromFile(s.config.TlsCertFile, s.config.TlsKeyFile)
+		if err != nil {
+			return errors.Wrap(err, "failed to load TLS certificate")
+		}
+		grpcOptions = append(grpcOptions, grpc.Creds(creds))
+	}
 	grpcServer := grpc.NewServer(grpcOptions...)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
 	if err != nil {
 		return err
 	}
@@ -50,7 +62,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 			grpcServerLog.Info("terminated normally")
 		}
 	}()
-	grpcServerLog.Info("starting", "port", s.port)
+	grpcServerLog.Info("starting", "port", s.config.GrpcPort, "tls", useTLS)
 
 	select {
 	case <-stop:
