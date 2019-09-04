@@ -11,8 +11,18 @@ metadata:
   name: konvoy-injector-tls-cert
   namespace: konvoy
 data:
-  tls.crt: QW5vdGhlckNlcnQ=
-  tls.key: QW5vdGhlcktleQ==
+  tls.crt: SW5qZWN0b3JDZXJ0
+  tls.key: SW5qZWN0b3JLZXk=
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: konvoy-sds-tls-cert
+  namespace: konvoy
+data:
+  tls.crt: U2RzQ2VydA==
+  tls.key: U2RzS2V5
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -2089,10 +2099,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: konvoy-control-plane
+  name: konvoy-ctrl-plane
   namespace: konvoy
 spec:
   ports:
+  - port: 5677
+    name: grpc-sds
   - port: 5678
     name: grpc-xds
   - port: 5679
@@ -2198,6 +2210,8 @@ spec:
           value: "kubernetes"
         - name: KONVOY_STORE_TYPE
           value: "kubernetes"
+        - name: KONVOY_SDS_SERVER_GRPC_PORT
+          value: "5677"
         - name: KONVOY_XDS_SERVER_GRPC_PORT
           value: "5678"
         - name: KONVOY_XDS_SERVER_HTTP_PORT
@@ -2207,12 +2221,17 @@ spec:
         - name: KONVOY_BOOTSTRAP_SERVER_PORT
           value: "5682"
         - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
-          value: "konvoy-control-plane.konvoy"
+          value: "konvoy-ctrl-plane.konvoy"
         - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
           value: "5678"
+        - name: KONVOY_SDS_SERVER_TLS_CERT_FILE
+          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.crt
+        - name: KONVOY_SDS_SERVER_TLS_KEY_FILE
+          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.key
         args:
         - run
         ports:
+        - containerPort: 5677
         - containerPort: 5678
         - containerPort: 5679
         - containerPort: 5681
@@ -2229,6 +2248,15 @@ spec:
           requests:
             cpu: 100m
             memory: 256Mi
+        volumeMounts:
+        - mountPath: /var/run/secrets/kuma.io/konvoy-sds/tls-cert
+          name: konvoy-sds-tls-cert
+          readOnly: true
+      serviceAccountName: konvoy-control-plane
+      volumes:
+      - name: konvoy-sds-tls-cert
+        secret:
+          secretName: konvoy-sds-tls-cert
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
@@ -2241,7 +2269,7 @@ webhooks:
       kuma.io/sidecar-injection: enabled
   failurePolicy: Crash
   clientConfig:
-    caBundle: QW5vdGhlckNlcnQ=
+    caBundle: SW5qZWN0b3JDZXJ0
     service:
       namespace: konvoy
       name: konvoy-injector

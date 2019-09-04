@@ -2,10 +2,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: konvoy-control-plane
+  name: {{ .ControlPlaneServiceName }}
   namespace: {{ .Namespace }}
 spec:
   ports:
+  - port: 5677
+    name: grpc-sds
   - port: 5678
     name: grpc-xds
   - port: 5679
@@ -22,6 +24,16 @@ kind: ServiceAccount
 metadata:
   name: konvoy-control-plane
   namespace: {{ .Namespace }}
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: konvoy-sds-tls-cert
+  namespace: {{ .Namespace }}
+data:
+  tls.crt: {{ .SdsTlsCert | b64enc }}
+  tls.key: {{ .SdsTlsKey | b64enc }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -53,6 +65,8 @@ spec:
           value: "kubernetes"
         - name: KONVOY_STORE_TYPE
           value: "kubernetes"
+        - name: KONVOY_SDS_SERVER_GRPC_PORT
+          value: "5677"
         - name: KONVOY_XDS_SERVER_GRPC_PORT
           value: "5678"
         - name: KONVOY_XDS_SERVER_HTTP_PORT
@@ -62,12 +76,17 @@ spec:
         - name: KONVOY_BOOTSTRAP_SERVER_PORT
           value: "5682"
         - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
-          value: konvoy-control-plane.{{ .Namespace }}
+          value: {{ .ControlPlaneServiceName }}.{{ .Namespace }}
         - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
           value: "5678"
+        - name: KONVOY_SDS_SERVER_TLS_CERT_FILE
+          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.crt
+        - name: KONVOY_SDS_SERVER_TLS_KEY_FILE
+          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.key
         args:
         - run
         ports:
+        - containerPort: 5677
         - containerPort: 5678
         - containerPort: 5679
         - containerPort: 5681
@@ -84,3 +103,12 @@ spec:
           requests:
             cpu: 100m
             memory: 256Mi
+        volumeMounts:
+        - name: konvoy-sds-tls-cert
+          mountPath: /var/run/secrets/kuma.io/konvoy-sds/tls-cert
+          readOnly: true
+      volumes:
+      - name: konvoy-sds-tls-cert
+        secret:
+          secretName: konvoy-sds-tls-cert
+

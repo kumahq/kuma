@@ -15,6 +15,16 @@ data:
   tls.key: S0VZ
 ---
 apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: konvoy-sds-tls-cert
+  namespace: konvoy-system
+data:
+  tls.crt: Q0VSVA==
+  tls.key: S0VZ
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: konvoy-control-plane
@@ -2093,6 +2103,8 @@ metadata:
   namespace: konvoy-system
 spec:
   ports:
+  - port: 5677
+    name: grpc-sds
   - port: 5678
     name: grpc-xds
   - port: 5679
@@ -2198,6 +2210,8 @@ spec:
           value: "kubernetes"
         - name: KONVOY_STORE_TYPE
           value: "kubernetes"
+        - name: KONVOY_SDS_SERVER_GRPC_PORT
+          value: "5677"
         - name: KONVOY_XDS_SERVER_GRPC_PORT
           value: "5678"
         - name: KONVOY_XDS_SERVER_HTTP_PORT
@@ -2210,9 +2224,14 @@ spec:
           value: "konvoy-control-plane.konvoy-system"
         - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
           value: "5678"
+        - name: KONVOY_SDS_SERVER_TLS_CERT_FILE
+          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.crt
+        - name: KONVOY_SDS_SERVER_TLS_KEY_FILE
+          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.key
         args:
         - run
         ports:
+        - containerPort: 5677
         - containerPort: 5678
         - containerPort: 5679
         - containerPort: 5681
@@ -2229,6 +2248,14 @@ spec:
           requests:
             cpu: 100m
             memory: 256Mi
+        volumeMounts:
+        - mountPath: /var/run/secrets/kuma.io/konvoy-sds/tls-cert
+          name: konvoy-sds-tls-cert
+          readOnly: true
+      volumes:
+      - name: konvoy-sds-tls-cert
+        secret:
+          secretName: konvoy-sds-tls-cert
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
