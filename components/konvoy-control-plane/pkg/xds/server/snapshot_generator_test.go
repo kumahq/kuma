@@ -1,7 +1,10 @@
 package server
 
 import (
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -21,6 +24,11 @@ var _ = Describe("Reconcile", func() {
 	Describe("templateSnapshotGenerator", func() {
 
 		gen := templateSnapshotGenerator{
+			Profiles: generator.PredefinedProfiles(envoy.EnvoyResourcesFactory{
+				Config: &xds.SnapshotConfig{
+					SdsLocation: "localhost:1234",
+				},
+			}),
 			ProxyTemplateResolver: &simpleProxyTemplateResolver{
 				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate: template.DefaultProxyTemplate,

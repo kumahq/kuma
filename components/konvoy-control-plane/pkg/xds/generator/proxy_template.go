@@ -7,13 +7,13 @@ import (
 	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
 )
 
 type TemplateProxyGenerator struct {
+	Profiles Profiles
 	ProxyTemplate *konvoy_mesh.ProxyTemplate
 }
 
@@ -23,7 +23,11 @@ func (g *TemplateProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, erro
 		var generator ResourceGenerator
 		switch s := source.Type.(type) {
 		case *konvoy_mesh.ProxyTemplateSource_Profile:
-			generator = &ProxyTemplateProfileSource{Profile: s.Profile}
+			gen, err := g.Profiles.GetProfile(s.Profile)
+			if err != nil {
+				return nil, err
+			}
+			generator = gen
 		case *konvoy_mesh.ProxyTemplateSource_Raw:
 			generator = &ProxyTemplateRawSource{Raw: s.Raw}
 		default:
@@ -77,32 +81,11 @@ func (s *ProxyTemplateRawSource) Generate(proxy *model.Proxy) ([]*Resource, erro
 	return resources, nil
 }
 
-var predefinedProfiles = make(map[string]ResourceGenerator)
-
-func NewDefaultProxyProfile() ResourceGenerator {
-	return CompositeResourceGenerator{TransparentProxyGenerator{}, InboundProxyGenerator{}}
-}
-
-func init() {
-	predefinedProfiles[template.ProfileDefaultProxy] = NewDefaultProxyProfile()
-}
-
-type ProxyTemplateProfileSource struct {
-	Profile *konvoy_mesh.ProxyTemplateProfileSource
-}
-
-func (s *ProxyTemplateProfileSource) Generate(proxy *model.Proxy) ([]*Resource, error) {
-	g, ok := predefinedProfiles[s.Profile.Name]
-	if !ok {
-		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.Profile.Name)
-	}
-	return g.Generate(proxy)
-}
-
 type InboundProxyGenerator struct {
+	ResourcesFactory envoy.EnvoyResourcesFactory
 }
 
-func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+func (i *InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	endpoints, err := proxy.Dataplane.Spec.Networking.GetInboundInterfaces()
 	if err != nil {
 		return nil, err
@@ -119,7 +102,7 @@ func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error)
 			resources = append(resources, &Resource{
 				Name:     localClusterName,
 				Version:  proxy.Dataplane.Meta.GetVersion(),
-				Resource: envoy.CreateLocalCluster(localClusterName, "127.0.0.1", endpoint.WorkloadPort),
+				Resource: i.ResourcesFactory.CreateLocalCluster(localClusterName, "127.0.0.1", endpoint.WorkloadPort),
 			})
 			names[localClusterName] = true
 		}
@@ -129,7 +112,7 @@ func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error)
 			resources = append(resources, &Resource{
 				Name:     inboundListenerName,
 				Version:  proxy.Dataplane.Meta.GetVersion(),
-				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual),
+				Resource: i.ResourcesFactory.CreateInboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual),
 			})
 			names[inboundListenerName] = true
 		}
@@ -138,23 +121,24 @@ func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error)
 }
 
 type TransparentProxyGenerator struct {
+	ResourcesFactory envoy.EnvoyResourcesFactory
 }
 
-func (_ TransparentProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+func (t TransparentProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
 	redirectPort := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort()
 	if redirectPort == 0 {
 		return nil, nil
 	}
 	return []*Resource{
-		&Resource{
+		{
 			Name:     "catch_all",
 			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: envoy.CreateCatchAllListener("catch_all", "0.0.0.0", redirectPort, "pass_through"),
+			Resource: t.ResourcesFactory.CreateCatchAllListener("catch_all", "0.0.0.0", redirectPort, "pass_through"),
 		},
-		&Resource{
+		{
 			Name:     "pass_through",
 			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: envoy.CreatePassThroughCluster("pass_through"),
+			Resource: t.ResourcesFactory.CreatePassThroughCluster("pass_through"),
 		},
 	}, nil
 }

@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"time"
 
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
@@ -21,6 +23,9 @@ func DefaultReconciler(rt core_runtime.Runtime) *core_discovery.DiscoverySink {
 	return &core_discovery.DiscoverySink{
 		DataplaneConsumer: &reconciler{
 			&templateSnapshotGenerator{
+				Profiles: generator.PredefinedProfiles(envoy.EnvoyResourcesFactory{
+					Config: rt.Config().Snapshot,
+				}),
 				ProxyTemplateResolver: &simpleProxyTemplateResolver{
 					ResourceManager:      rt.ResourceManager(),
 					DefaultProxyTemplate: xds_template.DefaultProxyTemplate,

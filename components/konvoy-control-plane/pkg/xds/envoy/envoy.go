@@ -1,6 +1,7 @@
 package envoy
 
 import (
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
 	"time"
 
 	"github.com/gogo/protobuf/types"
@@ -14,7 +15,11 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 )
 
-func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.ClusterLoadAssignment {
+type EnvoyResourcesFactory struct {
+	Config *xds.SnapshotConfig
+}
+
+func (e *EnvoyResourcesFactory) CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.ClusterLoadAssignment {
 	return &v2.ClusterLoadAssignment{
 		ClusterName: clusterName,
 		Endpoints: []endpoint.LocalityLbEndpoints{{
@@ -39,16 +44,16 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.C
 	}
 }
 
-func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Cluster {
+func (e *EnvoyResourcesFactory) CreateLocalCluster(clusterName string, address string, port uint32) *v2.Cluster {
 	return &v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       5 * time.Second,
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_STATIC},
-		LoadAssignment:       CreateStaticEndpoint(clusterName, address, port),
+		LoadAssignment:       e.CreateStaticEndpoint(clusterName, address, port),
 	}
 }
 
-func CreatePassThroughCluster(clusterName string) *v2.Cluster {
+func (e *EnvoyResourcesFactory) CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	return &v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       5 * time.Second,
@@ -57,7 +62,7 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateInboundListener(listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
+func (e *EnvoyResourcesFactory) CreateInboundListener(listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
@@ -97,7 +102,7 @@ func CreateInboundListener(listenerName string, address string, port uint32, clu
 	return listener
 }
 
-func CreateCatchAllListener(listenerName string, address string, port uint32, clusterName string) *v2.Listener {
+func (e *EnvoyResourcesFactory) CreateCatchAllListener(listenerName string, address string, port uint32, clusterName string) *v2.Listener {
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{

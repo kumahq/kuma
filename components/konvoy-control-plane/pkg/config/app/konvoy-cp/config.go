@@ -38,7 +38,10 @@ type Config struct {
 	BootstrapServer *xds.BootstrapServerConfig `yaml:"bootstrapServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
+	// Defaults that are applied on first run of the Control Plane
 	Defaults  *Defaults                   `yaml:"defaults"`
+	// Snapshot configuration
+	Snapshot *xds.SnapshotConfig
 }
 
 func DefaultConfig() Config {
@@ -62,6 +65,7 @@ func DefaultConfig() Config {
 		Defaults: &Defaults{
 			Mesh: defaultMesh,
 		},
+		Snapshot: xds.DefaultSnapshotConfig(),
 	}
 }
 
@@ -83,6 +87,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Discovery.Validate(); err != nil {
 		return errors.Wrap(err, "Discovery validation failed")
+	}
+	if err := c.Snapshot.Validate(); err != nil {
+		return errors.Wrap(err, "Snapshot validation failed")
 	}
 	return nil
 }

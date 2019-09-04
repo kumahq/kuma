@@ -1,6 +1,8 @@
 package generator_test
 
 import (
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -26,7 +28,11 @@ var _ = Describe("Generator", func() {
 		DescribeTable("Generate Envoy xDS resources",
 			func(given testCase) {
 				// setup
-				gen := &generator.InboundProxyGenerator{}
+				gen := &generator.InboundProxyGenerator{
+					ResourcesFactory: envoy.EnvoyResourcesFactory{
+						Config: &xds.SnapshotConfig{},
+					},
+				}
 
 				// when
 				rs, err := gen.Generate(given.proxy)
@@ -694,177 +700,6 @@ var _ = Describe("Generator", func() {
 		)
 	})
 
-	Describe("ProxyTemplateProfileSource", func() {
-
-		type testCase struct {
-			proxy    *model.Proxy
-			profile  *mesh_proto.ProxyTemplateProfileSource
-			expected string
-		}
-
-		DescribeTable("Generate Envoy xDS resources",
-			func(given testCase) {
-				// setup
-				gen := &generator.ProxyTemplateProfileSource{
-					Profile: given.profile,
-				}
-
-				// when
-				rs, err := gen.Generate(given.proxy)
-
-				// then
-				Expect(err).ToNot(HaveOccurred())
-
-				// then
-				resp := generator.ResourceList(rs).ToDeltaDiscoveryResponse()
-				actual, err := util_proto.ToYAML(resp)
-
-				Expect(err).ToNot(HaveOccurred())
-				Expect(actual).To(MatchYAML(given.expected))
-			},
-			Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCase{
-				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Dataplane: &mesh_core.DataplaneResource{
-						Meta: &test_model.ResourceMeta{
-							Version: "v1",
-						},
-						Spec: mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:80:8080"},
-								},
-							},
-						},
-					},
-				},
-				profile: &mesh_proto.ProxyTemplateProfileSource{
-					Name: template.ProfileDefaultProxy,
-				},
-				expected: `
-        resources:
-        - name: localhost:8080
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Cluster
-            connectTimeout: 5s
-            loadAssignment:
-              clusterName: localhost:8080
-              endpoints:
-              - lbEndpoints:
-                - endpoint:
-                    address:
-                      socketAddress:
-                        address: 127.0.0.1
-                        portValue: 8080
-            name: localhost:8080
-            type: STATIC
-          version: v1
-        - name: inbound:192.168.0.1:80
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Listener
-            address:
-              socketAddress:
-                address: 192.168.0.1
-                portValue: 80
-            filterChains:
-            - filters:
-              - name: envoy.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: localhost:8080
-                  statPrefix: localhost:8080
-            name: inbound:192.168.0.1:80
-          version: v1
-`,
-			}),
-			Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCase{
-				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
-					Dataplane: &mesh_core.DataplaneResource{
-						Meta: &test_model.ResourceMeta{
-							Version: "v1",
-						},
-						Spec: mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:80:8080"},
-								},
-								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-									RedirectPort: 15001,
-								},
-							},
-						},
-					},
-				},
-				profile: &mesh_proto.ProxyTemplateProfileSource{
-					Name: template.ProfileDefaultProxy,
-				},
-				expected: `
-        resources:
-        - name: catch_all
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Listener
-            address:
-              socketAddress:
-                address: 0.0.0.0
-                portValue: 15001
-            filterChains:
-            - filters:
-              - name: envoy.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: pass_through
-                  statPrefix: pass_through
-            name: catch_all
-            useOriginalDst: true
-          version: v1
-        - name: pass_through
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Cluster
-            connectTimeout: 5s
-            lbPolicy: ORIGINAL_DST_LB
-            name: pass_through
-            type: ORIGINAL_DST
-          version: v1
-        - name: localhost:8080
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Cluster
-            connectTimeout: 5s
-            loadAssignment:
-              clusterName: localhost:8080
-              endpoints:
-              - lbEndpoints:
-                - endpoint:
-                    address:
-                      socketAddress:
-                        address: 127.0.0.1
-                        portValue: 8080
-            name: localhost:8080
-            type: STATIC
-          version: v1
-        - name: inbound:192.168.0.1:80
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Listener
-            address:
-              socketAddress:
-                address: 192.168.0.1
-                portValue: 80
-            deprecatedV1:
-              bindToPort: false
-            filterChains:
-            - filters:
-              - name: envoy.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: localhost:8080
-                  statPrefix: localhost:8080
-            name: inbound:192.168.0.1:80
-          version: v1
-`,
-			}),
-		)
-	})
-
 	Describe("ProxyTemplateRawSource", func() {
 
 		Context("Manually-defined xDS resources are not valid", func() {
@@ -1287,7 +1122,6 @@ var _ = Describe("Generator", func() {
 	Describe("TemplateProxyGenerator", func() {
 		Context("Error case", func() {
 			type testCase struct {
-				proxy    *model.Proxy
 				template *mesh_proto.ProxyTemplate
 				err      interface{}
 			}
@@ -1296,19 +1130,14 @@ var _ = Describe("Generator", func() {
 				func(given testCase) {
 					// setup
 					gen := &generator.TemplateProxyGenerator{
+						Profiles: generator.PredefinedProfiles(envoy.EnvoyResourcesFactory{
+							Config: &xds.SnapshotConfig{},
+						}),
 						ProxyTemplate: given.template,
 					}
 
 					// when
-					rs, err := gen.Generate(given.proxy)
-
-					// then
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError(given.err))
-					Expect(rs).To(BeNil())
-				},
-				Entry("should fail when raw xDS resource is not valid", testCase{
-					proxy: &model.Proxy{
+					proxy := &model.Proxy{
 						Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 						Dataplane: &mesh_core.DataplaneResource{
 							Meta: &test_model.ResourceMeta{
@@ -1325,7 +1154,15 @@ var _ = Describe("Generator", func() {
 								},
 							},
 						},
-					},
+					}
+					rs, err := gen.Generate(proxy)
+
+					// then
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(given.err))
+					Expect(rs).To(BeNil())
+				},
+				Entry("should fail when raw xDS resource is not valid", testCase{
 					template: &mesh_proto.ProxyTemplate{
 						Conf: []*mesh_proto.ProxyTemplateSource{
 							{
@@ -1350,6 +1187,20 @@ var _ = Describe("Generator", func() {
 					},
 					err: "sources[1]{name=\"\"}: raw.resources[0]{name=\"raw-name\"}.resource: unexpected EOF",
 				}),
+				Entry("should fail when given non existing profile", testCase{
+					template: &mesh_proto.ProxyTemplate{
+						Conf: []*mesh_proto.ProxyTemplateSource{
+							{
+								Type: &mesh_proto.ProxyTemplateSource_Profile{
+									Profile: &mesh_proto.ProxyTemplateProfileSource{
+										Name: "non-existing-profile",
+									},
+								},
+							},
+						},
+					},
+					err: "profile{name=\"non-existing-profile\"}: unknown profile",
+				}),
 			)
 		})
 
@@ -1365,6 +1216,9 @@ var _ = Describe("Generator", func() {
 				func(given testCase) {
 					// setup
 					gen := &generator.TemplateProxyGenerator{
+						Profiles: generator.PredefinedProfiles(envoy.EnvoyResourcesFactory{
+							Config: &xds.SnapshotConfig{},
+						}),
 						ProxyTemplate: given.template,
 					}
 

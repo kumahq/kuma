@@ -107,3 +107,20 @@ func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 		XdsPort:   5678,
 	}
 }
+
+type SnapshotConfig struct {
+	SdsLocation string `yaml:"sdsLocation"`
+}
+
+func (s *SnapshotConfig) Validate() error {
+	if s.SdsLocation == "" {
+		return errors.New("SdsLocation cannot be empty")
+	}
+	return nil
+}
+
+func DefaultSnapshotConfig() *SnapshotConfig {
+	return &SnapshotConfig{
+		SdsLocation: "localhost:5677",
+	}
+}

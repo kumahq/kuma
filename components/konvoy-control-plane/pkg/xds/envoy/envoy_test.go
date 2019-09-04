@@ -1,6 +1,7 @@
 package envoy_test
 
 import (
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -9,6 +10,12 @@ import (
 )
 
 var _ = Describe("Envoy", func() {
+
+	factory := envoy.EnvoyResourcesFactory{
+		Config: &xds.SnapshotConfig{
+			SdsLocation: "localhost:1234",
+		},
+	}
 
 	It("should generate 'static' Endpoints", func() {
 		// given
@@ -23,7 +30,7 @@ var _ = Describe("Envoy", func() {
                   portValue: 8080
 `
 		// when
-		resource := envoy.CreateStaticEndpoint("localhost:8080", "127.0.0.1", 8080)
+		resource := factory.CreateStaticEndpoint("localhost:8080", "127.0.0.1", 8080)
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
@@ -49,7 +56,7 @@ var _ = Describe("Envoy", func() {
                     portValue: 8080
 `
 		// when
-		resource := envoy.CreateLocalCluster("localhost:8080", "127.0.0.1", 8080)
+		resource := factory.CreateLocalCluster("localhost:8080", "127.0.0.1", 8080)
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
@@ -67,7 +74,7 @@ var _ = Describe("Envoy", func() {
         connectTimeout: 5s
 `
 		// when
-		resource := envoy.CreatePassThroughCluster("pass_through")
+		resource := factory.CreatePassThroughCluster("pass_through")
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
@@ -93,7 +100,7 @@ var _ = Describe("Envoy", func() {
               statPrefix: localhost:8080
 `
 		// when
-		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", false)
+		resource := factory.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", false)
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
@@ -121,7 +128,7 @@ var _ = Describe("Envoy", func() {
           bindToPort: false
 `
 		// when
-		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", true)
+		resource := factory.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", true)
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
@@ -148,7 +155,7 @@ var _ = Describe("Envoy", func() {
         useOriginalDst: true
 `
 		// when
-		resource := envoy.CreateCatchAllListener("catch_all", "0.0.0.0", 15001, "pass_through")
+		resource := factory.CreateCatchAllListener("catch_all", "0.0.0.0", 15001, "pass_through")
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
