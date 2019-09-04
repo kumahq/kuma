@@ -98,7 +98,15 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event")
 			// when
-			err := r.OnDataplaneUpdate(dataplane)
+			proxy := xds_model.Proxy{
+				Id: xds_model.ProxyId{
+					Mesh:      "pilot",
+					Name:      "demo",
+					Namespace: "example",
+				},
+				Dataplane: dataplane,
+			}
+			err := r.Reconcile(&proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -116,7 +124,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event (Dataplane watchdog triggers refresh)")
 			// when
-			err = r.OnDataplaneUpdate(dataplane)
+			err = r.Reconcile(&proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -134,7 +142,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event (Dataplane gets changed)")
 			// when
-			err = r.OnDataplaneUpdate(dataplane)
+			err = r.Reconcile(&proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
