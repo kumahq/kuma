@@ -2,17 +2,18 @@ package install_test
 
 import (
 	"bytes"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/install"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/cmd/install"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/data"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoyctl/pkg/install/tls"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/tls"
 )
 
 var _ = Describe("konvoyctl install control-plane", func() {
@@ -94,14 +95,17 @@ var _ = Describe("konvoyctl install control-plane", func() {
 				"--image-pull-policy", "Never",
 				"--control-plane-version", "greatest",
 				"--control-plane-image", "konvoy-ci/konvoy-control-plane",
+				"--control-plane-service-name", "konvoy-ctrl-plane",
 				"--injector-image", "konvoy-ci/konvoy-injector",
 				"--injector-failure-policy", "Crash",
 				"--injector-service-name", "injector",
-				"--injector-tls-cert", "AnotherCert",
-				"--injector-tls-key", "AnotherKey",
+				"--injector-tls-cert", "InjectorCert",
+				"--injector-tls-key", "InjectorKey",
 				"--dataplane-image", "konvoy-ci/konvoy-dataplane",
 				"--dataplane-init-image", "konvoy-ci/konvoy-init",
 				"--dataplane-init-version", "dev",
+				"--sds-tls-cert", "SdsCert",
+				"--sds-tls-key", "SdsKey",
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
 		}),
