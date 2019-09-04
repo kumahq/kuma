@@ -4,16 +4,16 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: dataplaneinsights.mesh.getkonvoy.io
+  name: dataplanes.mesh.kuma.io
 spec:
-  group: mesh.getkonvoy.io
+  group: mesh.kuma.io
   names:
-    kind: DataplaneInsight
-    plural: dataplaneinsights
+    kind: Dataplane
+    plural: dataplanes
   scope: ""
   validation:
     openAPIV3Schema:
-      description: DataplaneInsight is the Schema for the dataplane insights API
+      description: Dataplane is the Schema for the dataplanes API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -383,7 +383,7 @@ spec:
                 by the system. Read-only. More info: http://kubernetes.io/docs/user-guide/identifiers#uids"
               type: string
           type: object
-        status:
+        spec:
           type: object
       type: object
   versions:

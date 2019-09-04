@@ -5,4 +5,4 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     certmanager.k8s.io/inject-ca-from: $(NAMESPACE)/$(CERTIFICATENAME)
-  name: meshes.mesh.getkonvoy.io
+  name: meshes.mesh.kuma.io

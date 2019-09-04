@@ -21,7 +21,7 @@ func DefaultConfig() Config {
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
-			ConfigDir:  "/tmp/getkonvoy.io/envoy",
+			ConfigDir:  "/tmp/kuma.io/envoy",
 		},
 	}
 }

@@ -1,4 +1,4 @@
-apiVersion: mesh.getkonvoy.io/v1alpha1
+apiVersion: mesh.kuma.io/v1alpha1
 kind: Dataplane
 metadata:
   name: side-car

@@ -15,7 +15,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - mesh.getkonvoy.io
+  - mesh.kuma.io
   resources:
   - dataplanes
   - dataplaneinsights
@@ -29,7 +29,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - mesh.getkonvoy.io
+  - mesh.kuma.io
   resources:
   - proxytemplates
   verbs:
@@ -41,7 +41,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - mesh.getkonvoy.io
+  - mesh.kuma.io
   resources:
   - proxytemplates/status
   verbs:
@@ -49,7 +49,7 @@ rules:
   - update
   - patch
 - apiGroups:
-  - mesh.getkonvoy.io
+  - mesh.kuma.io
   resources:
   - trafficpermissions
   verbs:

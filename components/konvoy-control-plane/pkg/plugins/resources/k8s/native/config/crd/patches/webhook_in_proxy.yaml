@@ -4,7 +4,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     certmanager.k8s.io/inject-ca-from: $(NAMESPACE)/$(CERTIFICATENAME)
-  name: proxies.mesh.getkonvoy.io
+  name: proxies.mesh.kuma.io
 spec:
   conversion:
     strategy: Webhook

@@ -4,16 +4,16 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: dataplanes.mesh.getkonvoy.io
+  name: trafficpermissions.mesh.kuma.io
 spec:
-  group: mesh.getkonvoy.io
+  group: mesh.kuma.io
   names:
-    kind: Dataplane
-    plural: dataplanes
+    kind: TrafficPermission
+    plural: trafficpermissions
   scope: ""
   validation:
     openAPIV3Schema:
-      description: Dataplane is the Schema for the dataplanes API
+      description: TrafficPermission is the Schema for the trafficpermissions API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -257,10 +257,6 @@ spec:
                         no information available. A Reason clarifies an HTTP status
                         code but does not override it.
                       type: string
-                    status:
-                      description: 'Status of the operation. One of: "Success" or
-                        "Failure". More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status'
-                      type: string
                   type: object
               required:
               - pending
@@ -383,6 +379,8 @@ spec:
                 by the system. Read-only. More info: http://kubernetes.io/docs/user-guide/identifiers#uids"
               type: string
           type: object
+        mesh:
+          type: string
         spec:
           type: object
       type: object
@@ -390,9 +388,3 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

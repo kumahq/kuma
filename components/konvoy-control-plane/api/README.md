@@ -34,8 +34,8 @@ items:
           labels:
             app: example
             version: 0.0.1
-            getkonvoy.io/region: us-east-1
-            getkonvoy.io/zone: us-east-1b
+            kuma.io/region: us-east-1
+            kuma.io/zone: us-east-1b
 - workload:
     id:
       name: daily-report-f5seg
@@ -43,8 +43,8 @@ items:
     meta:
       labels:
         job: daily-report
-        getkonvoy.io/region: us-west-2
-        getkonvoy.io/zone: us-west-2c
+        kuma.io/region: us-west-2
+        kuma.io/zone: us-west-2c
 ```
 
 Golang
@@ -75,8 +75,8 @@ inventory := discovery.Inventory{
                     Labels: map[string]string{
                       "app":                 "example",
                       "version":             "0.0.1",
-                      "getkonvoy.io/region": "us-east-1",
-                      "getkonvoy.io/zone":   "us-east-1b",
+                      "kuma.io/region": "us-east-1",
+                      "kuma.io/zone":   "us-east-1b",
                     },
                   },
                 },
@@ -95,8 +95,8 @@ inventory := discovery.Inventory{
             Meta: &discovery.Meta{
               Labels: map[string]string{
                 "job":                 "daily-report",
-                "getkonvoy.io/region": "us-east-1",
-                "getkonvoy.io/zone":   "us-east-1b",
+                "kuma.io/region": "us-east-1",
+                "kuma.io/zone":   "us-east-1b",
               },
             },
           },

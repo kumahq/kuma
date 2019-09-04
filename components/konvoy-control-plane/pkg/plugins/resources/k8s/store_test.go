@@ -96,7 +96,7 @@ var _ = Describe("KubernetesStore", func() {
 				},
 			}
 			expected := backend.ParseYAML(`
-            apiVersion: sample.test.getkonvoy.io/v1alpha1
+            apiVersion: sample.test.kuma.io/v1alpha1
             kind: TrafficRoute
             mesh: default
             spec:
@@ -146,7 +146,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should update an existing resource", func() {
 			// setup
 			initial := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.getkonvoy.io/v1alpha1
+            apiVersion: sample.test.kuma.io/v1alpha1
             kind: TrafficRoute
             mesh: default
             metadata:
@@ -158,7 +158,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 			// and
 			expected := backend.ParseYAML(`
-            apiVersion: sample.test.getkonvoy.io/v1alpha1
+            apiVersion: sample.test.kuma.io/v1alpha1
             kind: TrafficRoute
             mesh: default
             spec:
@@ -197,7 +197,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should return an error if resource is not found", func() {
 			// setup
 			initial := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.getkonvoy.io/v1alpha1
+            apiVersion: sample.test.kuma.io/v1alpha1
             kind: TrafficRoute
             mesh: default
             metadata:
@@ -226,7 +226,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should return an error if resource has changed", func() {
 			// setup
 			initial := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.getkonvoy.io/v1alpha1
+            apiVersion: sample.test.kuma.io/v1alpha1
             kind: TrafficRoute
             mesh: default
             metadata:
@@ -280,7 +280,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should return an existing resource", func() {
 			// setup
 			expected := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.getkonvoy.io/v1alpha1
+            apiVersion: sample.test.kuma.io/v1alpha1
             kind: TrafficRoute
             mesh: default
             metadata:
@@ -322,7 +322,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should delete an existing resource", func() {
 			// setup
 			initial := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.getkonvoy.io/v1alpha1
+            apiVersion: sample.test.kuma.io/v1alpha1
             kind: TrafficRoute
             mesh: default
             metadata:
@@ -358,7 +358,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should return a list of matching resource", func() {
 			// setup
 			one := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.getkonvoy.io/v1alpha1
+            apiVersion: sample.test.kuma.io/v1alpha1
             kind: TrafficRoute
             mesh: default
             metadata:
@@ -370,7 +370,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(one)
 			// and
 			two := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.getkonvoy.io/v1alpha1
+            apiVersion: sample.test.kuma.io/v1alpha1
             kind: TrafficRoute
             mesh: default
             metadata:

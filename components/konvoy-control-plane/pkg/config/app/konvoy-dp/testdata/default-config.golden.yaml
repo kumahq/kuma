@@ -2,4 +2,4 @@ dataplane:
   adminPort: 9901
 dataplaneRuntime:
   binaryPath: envoy
-  configDir: /tmp/getkonvoy.io/envoy
+  configDir: /tmp/kuma.io/envoy

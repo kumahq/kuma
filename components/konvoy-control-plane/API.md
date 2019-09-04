@@ -27,26 +27,26 @@ that contribute to the overall `Envoy` config.
 #### Usage
 
 `Konvoy Control Plane` generates configuration for a given `Envoy` sidecar using the following algorithm:
-* `Konvoy Control Plane` checks whether a `Pod` defintion contains `mesh.getkonvoy.io/proxy-template` annotation
-* If `mesh.getkonvoy.io/proxy-template` annotation is present on a `Pod`, its value must be a name of a `ProxyTemplate` resource in the same namespace
+* `Konvoy Control Plane` checks whether a `Pod` defintion contains `mesh.kuma.io/proxy-template` annotation
+* If `mesh.kuma.io/proxy-template` annotation is present on a `Pod`, its value must be a name of a `ProxyTemplate` resource in the same namespace
 * If `ProxyTemplate` resource with that name actually exists, `Konvoy Control Plane` will use it to generate `Envoy` configuration
 * In all other cases `Konvoy Control Plane` will fall back to a "default" `ProxyTemplate`
 
 E.g.,
 
-`mesh.getkonvoy.io/proxy-template` inside `Pod` definition:
+`mesh.kuma.io/proxy-template` inside `Pod` definition:
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    mesh.getkonvoy.io/proxy-template: custom-template
+    mesh.kuma.io/proxy-template: custom-template
   ...
 spec:
   ...
 ```
 
-`mesh.getkonvoy.io/proxy-template` inside `Deployment` definition:
+`mesh.kuma.io/proxy-template` inside `Deployment` definition:
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -58,11 +58,11 @@ spec:
   template: # PodTemplateSpec
     metadata:
       annotations:
-        mesh.getkonvoy.io/proxy-template: custom-template
+        mesh.kuma.io/proxy-template: custom-template
   ...
 ```
 
-`mesh.getkonvoy.io/proxy-template` inside `Job` definition:
+`mesh.kuma.io/proxy-template` inside `Job` definition:
 ```yaml
 apiVersion: batch/v1
 kind: Job
@@ -74,7 +74,7 @@ spec:
   template: # PodTemplateSpec
     metadata:
       annotations:
-        mesh.getkonvoy.io/proxy-template: custom-template
+        mesh.kuma.io/proxy-template: custom-template
   ...
 ```
 
@@ -83,7 +83,7 @@ spec:
 ##### Predefined profiles
 
 ```yaml
-apiVersion: mesh.getkonvoy.io/v1alpha1
+apiVersion: mesh.kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
   name: uses-predefined-profiles
@@ -97,7 +97,7 @@ spec:
 
 `Envoy` resource as YAML string:
 ```yaml
-apiVersion: mesh.getkonvoy.io/v1alpha1
+apiVersion: mesh.kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
   name: raw-envoy-xds-resources
@@ -125,7 +125,7 @@ spec:
 
 `Envoy` resource as JSON string:
 ```yaml
-apiVersion: mesh.getkonvoy.io/v1alpha1
+apiVersion: mesh.kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
   name: raw-envoy-xds-resources
@@ -168,7 +168,7 @@ spec:
 WARNING: This feature hasn't been implemented yet
 
 ```yaml
-apiVersion: mesh.getkonvoy.io/v1alpha1
+apiVersion: mesh.kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
   name: raw-envoy-xds-resources-generated-by-jsonnet-script
@@ -188,7 +188,7 @@ spec:
 WARNING: This feature hasn't been implemented yet
 
 ```yaml
-apiVersion: mesh.getkonvoy.io/v1alpha1
+apiVersion: mesh.kuma.io/v1alpha1
 kind: Profile
 metadata:
   name: custom-profile
@@ -201,7 +201,7 @@ spec:
       script: |
         ...
 ---
-apiVersion: mesh.getkonvoy.io/v1alpha1
+apiVersion: mesh.kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
   name: uses-custom-profile
@@ -223,7 +223,7 @@ spec:
 #### Known limitations
 
 1. "Default" `ProxyTemplate` is hardcoded inside `Konvoy Control Plane`
-2. `mesh.getkonvoy.io/proxy-template` annotation must be attached directly to a `Pod` or `PodTemplateSpec` (see examples above)
+2. `mesh.kuma.io/proxy-template` annotation must be attached directly to a `Pod` or `PodTemplateSpec` (see examples above)
 3. Only 1 predefined profile
 4. If multiple configuration sources produce an xDS resource with the same name, the latest definition wins
 
