@@ -5,8 +5,8 @@ import (
 
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
-	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+	core_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
+	secret_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 )
 
@@ -25,7 +25,8 @@ type RuntimeContext interface {
 	Config() konvoy_cp.Config
 	DiscoverySources() []core_discovery.DiscoverySource
 	XDS() core_xds.XdsContext
-	ResourceManager() manager.ResourceManager
+	ResourceManager() core_manager.ResourceManager
+	SecretManager() secret_manager.SecretManager
 	Extensions() context.Context
 }
 
@@ -51,7 +52,8 @@ var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
 	cfg konvoy_cp.Config
-	rs  core_store.ResourceStore
+	rm  core_manager.ResourceManager
+	sm  secret_manager.SecretManager
 	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
 	ext context.Context
@@ -66,8 +68,11 @@ func (rc *runtimeContext) DiscoverySources() []core_discovery.DiscoverySource {
 func (rc *runtimeContext) XDS() core_xds.XdsContext {
 	return rc.xds
 }
-func (rc *runtimeContext) ResourceManager() manager.ResourceManager {
-	return manager.NewResourceManager(rc.rs)
+func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
+	return rc.rm
+}
+func (rc *runtimeContext) SecretManager() secret_manager.SecretManager {
+	return rc.sm
 }
 func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext

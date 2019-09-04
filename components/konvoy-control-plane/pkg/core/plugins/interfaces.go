@@ -4,6 +4,7 @@ import (
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
+	secret_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/store"
 )
 
 type Plugin interface{}
@@ -26,6 +27,12 @@ type BootstrapPlugin interface {
 type ResourceStorePlugin interface {
 	Plugin
 	NewResourceStore(PluginContext, PluginConfig) (core_store.ResourceStore, error)
+}
+
+// SecretStorePlugin is responsible for instantiating a particular SecretStore.
+type SecretStorePlugin interface {
+	Plugin
+	NewSecretStore(PluginContext, PluginConfig) (secret_store.SecretStore, error)
 }
 
 // DiscoveryPlugin is responsible for instantiating a particular DiscoverySource.

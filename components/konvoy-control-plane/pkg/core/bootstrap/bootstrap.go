@@ -11,6 +11,8 @@ import (
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
+	secret_cipher "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/cipher"
+	secret_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/pkg/errors"
 )
@@ -24,6 +26,9 @@ func buildRuntime(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeResourceStore(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeSecretManager(cfg, builder); err != nil {
 		return nil, err
 	}
 	if err := initializeDiscovery(cfg, builder); err != nil {
@@ -128,6 +133,32 @@ func initializeResourceStore(cfg konvoy_cp.Config, builder *core_runtime.Builder
 		return err
 	} else {
 		builder.WithResourceStore(rs)
+		return nil
+	}
+}
+
+func initializeSecretManager(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
+	var pluginName core_plugins.PluginName
+	var pluginConfig core_plugins.PluginConfig
+	var cipher secret_cipher.Cipher
+	switch cfg.Store.Type {
+	case store.KubernetesStore:
+		pluginName = core_plugins.Kubernetes
+		cipher = secret_cipher.None() // deliberately turn encryption off on Kubernetes
+	case store.MemoryStore, store.PostgresStore:
+		pluginName = core_plugins.Universal
+		cipher = secret_cipher.TODO() // get back to encryption in universal case
+	default:
+		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+	}
+	plugin, err := core_plugins.Plugins().SecretStore(pluginName)
+	if err != nil {
+		return errors.Wrapf(err, "could not retrieve secret store %s plugin", pluginName)
+	}
+	if secretStore, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
+		return err
+	} else {
+		builder.WithSecretManager(secret_manager.NewSecretManager(secretStore, cipher))
 		return nil
 	}
 }
