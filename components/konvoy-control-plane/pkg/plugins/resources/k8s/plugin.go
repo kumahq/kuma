@@ -2,13 +2,11 @@ package k8s
 
 import (
 	"github.com/pkg/errors"
-	"reflect"
 
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
-
-	kube_ctrl "sigs.k8s.io/controller-runtime"
+	k8s_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/runtime/k8s"
 )
 
 var _ core_plugins.ResourceStorePlugin = &plugin{}
@@ -20,9 +18,9 @@ func init() {
 }
 
 func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, error) {
-	mgr, ok := pc.ComponentManager().(kube_ctrl.Manager)
+	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
 	if !ok {
-		return nil, errors.Errorf("Component Manager has a wrong type: expected=%q got=%q", reflect.TypeOf(kube_ctrl.Manager(nil)), reflect.TypeOf(pc.ComponentManager()))
+		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
 	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, errors.Wrap(err, "could not add to scheme")
