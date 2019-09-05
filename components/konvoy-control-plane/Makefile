@@ -519,10 +519,8 @@ test/konvoy-injector: PKG_LIST=./app/konvoy-injector/... ./pkg/config/app/konvoy
 test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
 
 run/konvoy-dp: ## Dev: Run `konvoy-dataplane` locally
-	KONVOY_CONTROL_PLANE_XDS_SERVER_ADDRESS=localhost \
-	KONVOY_CONTROL_PLANE_XDS_SERVER_PORT=$(CP_GRPC_PORT) \
+	KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KONVOY_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
-	KONVOY_DATAPLANE_SERVICE=$(EXAMPLE_ENVOY_CLUSTER) \
 	KONVOY_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	go run ./app/konvoy-dp/main.go run
 
