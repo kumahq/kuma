@@ -6,8 +6,10 @@ import (
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	mesh_managers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	core_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
@@ -34,6 +36,8 @@ func buildRuntime(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
+
+	initializeResourceManager(builder)
 
 	initializeXds(builder)
 
@@ -190,4 +194,14 @@ func initializeDiscovery(cfg konvoy_cp.Config, builder *core_runtime.Builder) er
 
 func initializeXds(builder *core_runtime.Builder) {
 	builder.WithXdsContext(core_xds.NewXdsContext())
+}
+
+func initializeResourceManager(builder *core_runtime.Builder) {
+	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore())
+	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{
+		mesh.MeshType: meshManager,
+	}
+	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
+	builder.WithResourceManager(customizableManager)
 }
