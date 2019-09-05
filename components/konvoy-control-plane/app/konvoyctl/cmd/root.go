@@ -21,8 +21,8 @@ var (
 func NewRootCmd(root *konvoyctl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "konvoyctl",
-		Short: "Management tool for Konvoy Service Mesh",
-		Long:  `Management tool for Konvoy Service Mesh.`,
+		Short: "Management tool for Konvoy",
+		Long:  `Management tool for Konvoy.`,
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 			core.SetLogger(core.NewLogger(root.Args.Debug))
 
