@@ -66,22 +66,26 @@ func DefaultDataplaneResolver(resourceManager core_manager.ResourceManager) func
 	}
 }
 
-func DefaultMeshCaProvider() sds_provider.SecretProvider {
-	return ca_sds_provider.New()
+func DefaultMeshCaProvider(rt core_runtime.Runtime) sds_provider.SecretProvider {
+	return ca_sds_provider.New(rt.ResourceManager(), rt.BuiltinCaManager())
 }
 
 func DefaultIdentityCertProvider() sds_provider.SecretProvider {
 	return identity_sds_provider.New()
 }
 
-func GetSecretProvider(resource string) (sds_provider.SecretProvider, error) {
-	switch resource {
-	case MeshCaResource:
-		return DefaultMeshCaProvider(), nil
-	case IdentityCertResource:
-		return DefaultIdentityCertProvider(), nil
-	default:
-		return nil, errors.Errorf("SDS request for %q resource is not supported", resource)
+func DefaultSecretProviderSelector(rt core_runtime.Runtime) func(string) (sds_provider.SecretProvider, error) {
+	meshCaProvider := DefaultMeshCaProvider(rt)
+	identityCertProvider := DefaultIdentityCertProvider()
+	return func(resource string) (sds_provider.SecretProvider, error) {
+		switch resource {
+		case MeshCaResource:
+			return meshCaProvider, nil
+		case IdentityCertResource:
+			return identityCertProvider, nil
+		default:
+			return nil, errors.Errorf("SDS request for %q resource is not supported", resource)
+		}
 	}
 }
 
@@ -90,9 +94,10 @@ func DefaultSecretDiscoveryHandler(rt core_runtime.Runtime) (SecretDiscoveryHand
 	if err != nil {
 		return nil, err
 	}
+	secretProviderSelector := DefaultSecretProviderSelector(rt)
 	return SecretDiscoveryHandlerFunc(func(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error) {
 		resource := req.ResourceNames[0]
-		provider, err := GetSecretProvider(resource)
+		provider, err := secretProviderSelector(resource)
 		if err != nil {
 			return nil, err
 		}
