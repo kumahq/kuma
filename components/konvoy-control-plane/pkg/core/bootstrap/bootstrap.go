@@ -6,6 +6,7 @@ import (
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	builtin_ca "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin"
 	mesh_managers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
@@ -36,6 +37,8 @@ func buildRuntime(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
+
+	initializeBuiltinCaManager(builder)
 
 	initializeResourceManager(builder)
 
@@ -196,9 +199,13 @@ func initializeXds(builder *core_runtime.Builder) {
 	builder.WithXdsContext(core_xds.NewXdsContext())
 }
 
+func initializeBuiltinCaManager(builder *core_runtime.Builder) {
+	builder.WithBuiltinCaManager(builtin_ca.NewBuiltinCaManager(builder.SecretManager()))
+}
+
 func initializeResourceManager(builder *core_runtime.Builder) {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore())
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{
 		mesh.MeshType: meshManager,
 	}

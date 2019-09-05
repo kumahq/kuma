@@ -4,6 +4,7 @@ import (
 	"context"
 
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	builtin_ca "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	secret_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/manager"
@@ -27,6 +28,7 @@ type RuntimeContext interface {
 	XDS() core_xds.XdsContext
 	ResourceManager() core_manager.ResourceManager
 	SecretManager() secret_manager.SecretManager
+	BuiltinCaManager() builtin_ca.BuiltinCaManager
 	Extensions() context.Context
 }
 
@@ -54,6 +56,7 @@ type runtimeContext struct {
 	cfg konvoy_cp.Config
 	rm  core_manager.ResourceManager
 	sm  secret_manager.SecretManager
+	bcm builtin_ca.BuiltinCaManager
 	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
 	ext context.Context
@@ -73,6 +76,9 @@ func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 }
 func (rc *runtimeContext) SecretManager() secret_manager.SecretManager {
 	return rc.sm
+}
+func (rc *runtimeContext) BuiltinCaManager() builtin_ca.BuiltinCaManager {
+	return rc.bcm
 }
 func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext

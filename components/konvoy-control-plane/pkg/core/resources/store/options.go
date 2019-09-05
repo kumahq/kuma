@@ -61,6 +61,10 @@ func NewDeleteOptions(fs ...DeleteOptionsFunc) *DeleteOptions {
 	return opts
 }
 
+func DeleteBy(key model.ResourceKey) DeleteOptionsFunc {
+	return DeleteByKey(key.Namespace, key.Name, key.Mesh)
+}
+
 func DeleteByKey(ns, name, mesh string) DeleteOptionsFunc {
 	return func(opts *DeleteOptions) {
 		opts.Namespace = ns
