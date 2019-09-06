@@ -69,7 +69,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 		}),
 		Entry("transparent_proxying=true, ip_addresses=0, ports=0", testCase{
 			dataplaneFile:   "2-dataplane.input.yaml",
-			envoyConfigFile: "1-envoy-config.golden.yaml",
+			envoyConfigFile: "2-envoy-config.golden.yaml",
 		}),
 		Entry("transparent_proxying=false, ip_addresses=1, ports=1", testCase{
 			dataplaneFile:   "3-dataplane.input.yaml",
