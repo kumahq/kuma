@@ -68,8 +68,8 @@ BINTRAY_USERNAME ?=
 BINTRAY_API_KEY ?=
 
 KONVOY_CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
-KUMA_DP_DOCKER_IMAGE ?= konvoy/kuma-dataplane:latest
-KUMACTL_DOCKER_IMAGE ?= konvoy/kumactl:latest
+KUMA_DP_DOCKER_IMAGE ?= kuma/kuma-dataplane:latest
+KUMACTL_DOCKER_IMAGE ?= kuma/kumactl:latest
 KONVOY_INJECTOR_DOCKER_IMAGE ?= konvoy/konvoy-injector:latest
 
 PROTOC_VERSION := 3.6.1
@@ -470,7 +470,7 @@ build/example/minikube: ## Minikube: build demo setup
 	eval $$(minikube docker-env) && $(MAKE) images
 
 deploy/example/minikube: image/kumactl ## Minikube: deploy demo setup
-	docker run --rm konvoy/kumactl kumactl install control-plane | kubectl apply -f -
+	docker run --rm kuma/kumactl kumactl install control-plane | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
 	kubectl apply -f examples/minikube/konvoy-demo/
