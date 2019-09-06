@@ -34,8 +34,6 @@ func autoconfigureSds(cfg *konvoy_cp.Config) error {
 			cfg.SdsServer.TlsKeyFile = keyFile
 
 			autoconfigureLog.Info("auto-generated TLS certificate for SDS server", "crtFile", crtFile, "keyFile", keyFile)
-			cfg.SdsServer.TlsCertFile = crtFile
-			cfg.SdsServer.TlsKeyFile = keyFile
 		}
 	}
 	return nil
