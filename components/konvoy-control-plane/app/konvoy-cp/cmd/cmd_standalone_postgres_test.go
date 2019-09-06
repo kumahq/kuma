@@ -17,6 +17,8 @@ bootstrapServer:
   port: 0
 apiServer:
   port: 0
+sdsServer:
+  grpcPort: 0
 environment: universal
 store:
   type: postgres

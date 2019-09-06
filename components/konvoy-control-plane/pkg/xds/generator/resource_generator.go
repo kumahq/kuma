@@ -1,6 +1,7 @@
 package generator
 
 import (
+	xds_envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 	"github.com/gogo/protobuf/types"
 
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
@@ -18,15 +19,15 @@ type Resource struct {
 }
 
 type ResourceGenerator interface {
-	Generate(*model.Proxy) ([]*Resource, error)
+	Generate(xds_envoy.Context, *model.Proxy) ([]*Resource, error)
 }
 
 type CompositeResourceGenerator []ResourceGenerator
 
-func (c CompositeResourceGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+func (c CompositeResourceGenerator) Generate(ctx xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0)
 	for _, gen := range c {
-		rs, err := gen.Generate(proxy)
+		rs, err := gen.Generate(ctx, proxy)
 		if err != nil {
 			return nil, err
 		}

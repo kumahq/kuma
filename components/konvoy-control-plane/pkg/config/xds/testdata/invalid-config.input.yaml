@@ -3,3 +3,5 @@ httpPort: 2345
 diagnosticsPort: 3456
 dataplaneConfigurationRefreshInterval: 0
 dataplaneStatusFlushInterval: 0
+snapshot:
+  sdsLocation: ""

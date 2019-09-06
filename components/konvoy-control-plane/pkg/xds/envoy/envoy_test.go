@@ -92,8 +92,10 @@ var _ = Describe("Envoy", func() {
               cluster: localhost:8080
               statPrefix: localhost:8080
 `
+		ctx := envoy.Context{}
+
 		// when
-		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", false)
+		resource := envoy.CreateInboundListener(ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", false)
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
@@ -120,8 +122,10 @@ var _ = Describe("Envoy", func() {
         deprecatedV1:
           bindToPort: false
 `
+		ctx := envoy.Context{}
+
 		// when
-		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", true)
+		resource := envoy.CreateInboundListener(ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", true)
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
@@ -147,8 +151,10 @@ var _ = Describe("Envoy", func() {
               statPrefix: pass_through
         useOriginalDst: true
 `
+		ctx := envoy.Context{}
+
 		// when
-		resource := envoy.CreateCatchAllListener("catch_all", "0.0.0.0", 15001, "pass_through")
+		resource := envoy.CreateCatchAllListener(ctx, "catch_all", "0.0.0.0", 15001, "pass_through")
 
 		// then
 		actual, err := util_proto.ToYAML(resource)

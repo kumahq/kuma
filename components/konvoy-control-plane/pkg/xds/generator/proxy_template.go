@@ -7,6 +7,7 @@ import (
 	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
+	xds_envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/jsonpb"
@@ -17,7 +18,7 @@ type TemplateProxyGenerator struct {
 	ProxyTemplate *konvoy_mesh.ProxyTemplate
 }
 
-func (g *TemplateProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+func (g *TemplateProxyGenerator) Generate(ctx xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(g.ProxyTemplate.Conf))
 	for i, source := range g.ProxyTemplate.Conf {
 		var generator ResourceGenerator
@@ -29,7 +30,7 @@ func (g *TemplateProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, erro
 		default:
 			return nil, fmt.Errorf("sources[%d]{name=%q}: unknown source type", i, source.Name)
 		}
-		if rs, err := generator.Generate(proxy); err != nil {
+		if rs, err := generator.Generate(ctx, proxy); err != nil {
 			return nil, fmt.Errorf("sources[%d]{name=%q}: %s", i, source.Name, err)
 		} else {
 			resources = append(resources, rs...)
@@ -42,7 +43,7 @@ type ProxyTemplateRawSource struct {
 	Raw *konvoy_mesh.ProxyTemplateRawSource
 }
 
-func (s *ProxyTemplateRawSource) Generate(proxy *model.Proxy) ([]*Resource, error) {
+func (s *ProxyTemplateRawSource) Generate(_ xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(s.Raw.Resources))
 	for i, r := range s.Raw.Resources {
 		json, err := yaml.YAMLToJSON([]byte(r.Resource))
@@ -91,18 +92,18 @@ type ProxyTemplateProfileSource struct {
 	Profile *konvoy_mesh.ProxyTemplateProfileSource
 }
 
-func (s *ProxyTemplateProfileSource) Generate(proxy *model.Proxy) ([]*Resource, error) {
+func (s *ProxyTemplateProfileSource) Generate(ctx xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
 	g, ok := predefinedProfiles[s.Profile.Name]
 	if !ok {
 		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.Profile.Name)
 	}
-	return g.Generate(proxy)
+	return g.Generate(ctx, proxy)
 }
 
 type InboundProxyGenerator struct {
 }
 
-func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+func (_ InboundProxyGenerator) Generate(ctx xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
 	endpoints, err := proxy.Dataplane.Spec.Networking.GetInboundInterfaces()
 	if err != nil {
 		return nil, err
@@ -118,7 +119,7 @@ func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error)
 		if used := names[localClusterName]; !used {
 			resources = append(resources, &Resource{
 				Name:     localClusterName,
-				Version:  proxy.Dataplane.Meta.GetVersion(),
+				Version:  "",
 				Resource: envoy.CreateLocalCluster(localClusterName, "127.0.0.1", endpoint.WorkloadPort),
 			})
 			names[localClusterName] = true
@@ -128,8 +129,8 @@ func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error)
 		if used := names[inboundListenerName]; !used {
 			resources = append(resources, &Resource{
 				Name:     inboundListenerName,
-				Version:  proxy.Dataplane.Meta.GetVersion(),
-				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual),
+				Version:  "",
+				Resource: envoy.CreateInboundListener(ctx, inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual),
 			})
 			names[inboundListenerName] = true
 		}
@@ -140,7 +141,7 @@ func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error)
 type TransparentProxyGenerator struct {
 }
 
-func (_ TransparentProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error) {
+func (_ TransparentProxyGenerator) Generate(ctx xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
 	redirectPort := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort()
 	if redirectPort == 0 {
 		return nil, nil
@@ -149,7 +150,7 @@ func (_ TransparentProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, er
 		&Resource{
 			Name:     "catch_all",
 			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: envoy.CreateCatchAllListener("catch_all", "0.0.0.0", redirectPort, "pass_through"),
+			Resource: envoy.CreateCatchAllListener(ctx, "catch_all", "0.0.0.0", redirectPort, "pass_through"),
 		},
 		&Resource{
 			Name:     "pass_through",

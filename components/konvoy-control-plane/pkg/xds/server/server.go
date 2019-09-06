@@ -13,7 +13,10 @@ var (
 )
 
 func SetupServer(rt core_runtime.Runtime) error {
-	reconciler := DefaultReconciler(rt)
+	reconciler, err := DefaultReconciler(rt)
+	if err != nil {
+		return err
+	}
 	for _, ds := range rt.DiscoverySources() {
 		ds.AddConsumer(reconciler)
 	}

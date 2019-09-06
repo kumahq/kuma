@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	"io/ioutil"
 	"time"
 
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
@@ -9,6 +11,7 @@ import (
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 	util_watchdog "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/watchdog"
+	xds_envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 	xds_sync "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/sync"
 	xds_template "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 
@@ -17,7 +20,11 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
-func DefaultReconciler(rt core_runtime.Runtime) *core_discovery.DiscoverySink {
+func DefaultReconciler(rt core_runtime.Runtime) (*core_discovery.DiscoverySink, error) {
+	envoyCpCtx, err := buildEnvoyControlPlaneContext(rt.Config())
+	if err != nil {
+		return nil, err
+	}
 	return &core_discovery.DiscoverySink{
 		DataplaneConsumer: &reconciler{
 			&templateSnapshotGenerator{
@@ -27,8 +34,24 @@ func DefaultReconciler(rt core_runtime.Runtime) *core_discovery.DiscoverySink {
 				},
 			},
 			&simpleSnapshotCacher{rt.XDS().Hasher(), rt.XDS().Cache()},
+			envoyCpCtx,
 		},
+	}, nil
+}
+
+func buildEnvoyControlPlaneContext(config konvoy_cp.Config) (*xds_envoy.ControlPlaneContext, error) {
+	var cert []byte
+	if config.SdsServer.TlsCertFile != "" {
+		c, err := ioutil.ReadFile(config.SdsServer.TlsCertFile)
+		if err != nil {
+			return nil, err
+		}
+		cert = c
 	}
+	return &xds_envoy.ControlPlaneContext{
+		Config:     *config.XdsServer.Snapshot,
+		SdsTlsCert: cert,
+	}, nil
 }
 
 func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, ds *core_discovery.DiscoverySink) envoy_xds.Callbacks {

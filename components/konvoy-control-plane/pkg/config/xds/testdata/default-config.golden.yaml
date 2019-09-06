@@ -3,3 +3,5 @@ httpPort: 5679
 diagnosticsPort: 5680
 dataplaneConfigurationRefreshInterval: 1s
 dataplaneStatusFlushInterval: 1s
+snapshot:
+  sdsLocation: "localhost:5677"
