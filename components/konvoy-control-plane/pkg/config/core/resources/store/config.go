@@ -1,9 +1,11 @@
 package store
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/plugins/resources/postgres"
 	"github.com/pkg/errors"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/plugins/resources/k8s"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/plugins/resources/postgres"
 )
 
 var _ config.Config = &StoreConfig{}
@@ -22,12 +24,15 @@ type StoreConfig struct {
 	Type StoreType `yaml:"type" envconfig:"konvoy_store_type"`
 	// Postgres Store configuration
 	Postgres *postgres.PostgresStoreConfig `yaml:"postgres"`
+	// Kubernetes Store configuration
+	Kubernetes *k8s.KubernetesStoreConfig `yaml:"kubernetes"`
 }
 
 func DefaultStoreConfig() *StoreConfig {
 	return &StoreConfig{
-		Type:     MemoryStore,
-		Postgres: postgres.DefaultPostgresStoreConfig(),
+		Type:       MemoryStore,
+		Postgres:   postgres.DefaultPostgresStoreConfig(),
+		Kubernetes: k8s.DefaultKubernetesStoreConfig(),
 	}
 }
 
@@ -38,6 +43,9 @@ func (s *StoreConfig) Validate() error {
 			return errors.Wrap(err, "Postgres validation failed")
 		}
 	case KubernetesStore:
+		if err := s.Kubernetes.Validate(); err != nil {
+			return errors.Wrap(err, "Kubernetes validation failed")
+		}
 		return nil
 	case MemoryStore:
 		return nil

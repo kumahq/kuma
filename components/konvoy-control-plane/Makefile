@@ -340,9 +340,9 @@ build/konvoy-injector: ## Dev: Build `konvoy-injector` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-injector/konvoy-injector ./app/konvoy-injector
 
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
-	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \
+	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
     KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
     KONVOY_ENVIRONMENT=kubernetes \

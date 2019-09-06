@@ -1,15 +1,13 @@
 package k8s
 
 import (
-	"reflect"
-
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
 	secret_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/store"
+	k8s_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/runtime/k8s"
 
 	kube_core "k8s.io/api/core/v1"
-	kube_ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var _ core_plugins.SecretStorePlugin = &plugin{}
@@ -21,12 +19,12 @@ func init() {
 }
 
 func (p *plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (secret_store.SecretStore, error) {
-	mgr, ok := pc.ComponentManager().(kube_ctrl.Manager)
+	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
 	if !ok {
-		return nil, errors.Errorf("Component Manager has a wrong type: expected=%q got=%q", reflect.TypeOf(kube_ctrl.Manager(nil)), reflect.TypeOf(pc.ComponentManager()))
+		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
 	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
 	}
-	return NewStore(mgr.GetClient())
+	return NewStore(mgr.GetClient(), pc.Config().Store.Kubernetes.SystemNamespace)
 }

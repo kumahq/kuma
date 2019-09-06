@@ -2083,6 +2083,39 @@ subjects:
   name: konvoy-control-plane
   namespace: konvoy-system
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: konvoy:control-plane
+  namespace: konvoy-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: konvoy:control-plane
+  namespace: konvoy-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: konvoy:control-plane
+subjects:
+- kind: ServiceAccount
+  name: konvoy-control-plane
+  namespace: konvoy-system
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -2210,6 +2243,8 @@ spec:
           value: "kubernetes"
         - name: KONVOY_STORE_TYPE
           value: "kubernetes"
+        - name: KONVOY_STORE_KUBERNETES_SYSTEM_NAMESPACE
+          value: konvoy-system
         - name: KONVOY_SDS_SERVER_GRPC_PORT
           value: "5677"
         - name: KONVOY_XDS_SERVER_GRPC_PORT

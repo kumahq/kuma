@@ -52,17 +52,19 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 	defaultMesh := mesh.MeshResource{}
 	cfg := runtime.Config()
 
-	getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh,
-		core_model.DefaultMesh)
+	namespace := core_model.DefaultNamespace
+	if runtime.Config().Environment == konvoy_cp.KubernetesEnvironment {
+		namespace = runtime.Config().Store.Kubernetes.SystemNamespace
+	}
 
-	if err := resManager.Get(context.Background(), &defaultMesh, getOpts); err != nil {
+	key := core_model.ResourceKey{Namespace: namespace, Mesh: core_model.DefaultMesh, Name: core_model.DefaultMesh}
+
+	if err := resManager.Get(context.Background(), &defaultMesh, core_store.GetBy(key)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			core.Log.Info("Creating default mesh from the settings", "mesh", cfg.Defaults.Mesh)
 			defaultMesh.Spec = cfg.Defaults.Mesh
-			createOpts := core_store.CreateByKey(core_model.DefaultNamespace,
-				core_model.DefaultMesh, core_model.DefaultMesh)
 
-			if err := resManager.Create(context.Background(), &defaultMesh, createOpts); err != nil {
+			if err := resManager.Create(context.Background(), &defaultMesh, core_store.CreateBy(key)); err != nil {
 				return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")
 			}
 		} else {

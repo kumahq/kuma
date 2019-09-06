@@ -65,6 +65,8 @@ spec:
           value: "kubernetes"
         - name: KONVOY_STORE_TYPE
           value: "kubernetes"
+        - name: KONVOY_STORE_KUBERNETES_SYSTEM_NAMESPACE
+          value: {{ .Namespace }}
         - name: KONVOY_SDS_SERVER_GRPC_PORT
           value: "5677"
         - name: KONVOY_XDS_SERVER_GRPC_PORT
