@@ -8,12 +8,12 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 
-	konvoy_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
+	kuma_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 )
 
 var (
-	runLog = core.Log.WithName("konvoy-dataplane").WithName("run").WithName("envoy")
+	runLog = core.Log.WithName("kuma-dataplane").WithName("run").WithName("envoy")
 )
 
 var (
@@ -21,10 +21,10 @@ var (
 	newConfigFile = GenerateBootstrapFile
 )
 
-type BootstrapConfigFactoryFunc func(cfg konvoy_dp.Config) (proto.Message, error)
+type BootstrapConfigFactoryFunc func(cfg kuma_dp.Config) (proto.Message, error)
 
 type Opts struct {
-	Config    konvoy_dp.Config
+	Config    kuma_dp.Config
 	Generator BootstrapConfigFactoryFunc
 	Stdout    io.Writer
 	Stderr    io.Writer

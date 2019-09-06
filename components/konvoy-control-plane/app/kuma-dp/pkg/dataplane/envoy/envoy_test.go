@@ -19,7 +19,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	konvoy_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
+	kuma_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
 )
 
 var _ = Describe("Envoy", func() {
@@ -62,13 +62,13 @@ var _ = Describe("Envoy", func() {
 	Describe("Run(..)", func() {
 		It("should generate bootstrap config file and start Envoy", func(done Done) {
 			// given
-			cfg := konvoy_dp.Config{
-				DataplaneRuntime: konvoy_dp.DataplaneRuntime{
+			cfg := kuma_dp.Config{
+				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath: filepath.Join("testdata", "envoy-mock.exit-0.sh"),
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(konvoy_dp.Config) (proto.Message, error) {
+			sampleConfig := func(kuma_dp.Config) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{
 					Node: &envoy_core.Node{
 						Id: "example",
@@ -133,13 +133,13 @@ var _ = Describe("Envoy", func() {
 
 		It("should return an error if Envoy crashes", func(done Done) {
 			// given
-			cfg := konvoy_dp.Config{
-				DataplaneRuntime: konvoy_dp.DataplaneRuntime{
+			cfg := kuma_dp.Config{
+				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath: filepath.Join("testdata", "envoy-mock.exit-1.sh"),
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(konvoy_dp.Config) (proto.Message, error) {
+			sampleConfig := func(kuma_dp.Config) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{}, nil
 			}
 

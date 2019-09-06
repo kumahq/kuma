@@ -1,4 +1,4 @@
-package konvoydp_test
+package kumadp_test
 
 import (
 	"io/ioutil"
@@ -10,13 +10,13 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
-	konvoy_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
+	kuma_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
 )
 
 var _ = Describe("Config", func() {
 	It("should be loadable from configuration file", func() {
 		// given
-		cfg := konvoy_dp.Config{}
+		cfg := kuma_dp.Config{}
 
 		// when
 		err := config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)
@@ -25,7 +25,7 @@ var _ = Describe("Config", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.ControlPlane.BootstrapServer.URL).To(Equal("https://konvoy-control-plane.internal:5682"))
+		Expect(cfg.ControlPlane.BootstrapServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
 		Expect(cfg.Dataplane.AdminPort).To(Equal(uint32(2345)))
 	})
 
@@ -48,18 +48,18 @@ var _ = Describe("Config", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "https://konvoy-control-plane.internal:5682",
-				"KONVOY_DATAPLANE_ID":                       "example",
-				"KONVOY_DATAPLANE_ADMIN_PORT":               "2345",
-				"KONVOY_DATAPLANE_RUNTIME_BINARY_PATH":      "envoy.sh",
-				"KONVOY_DATAPLANE_RUNTIME_CONFIG_DIR":       "/var/run/envoy",
+				"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "https://kuma-control-plane.internal:5682",
+				"KUMA_DATAPLANE_ID":                       "example",
+				"KUMA_DATAPLANE_ADMIN_PORT":               "2345",
+				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":      "envoy.sh",
+				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":       "/var/run/envoy",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
 			}
 
 			// given
-			cfg := konvoy_dp.Config{}
+			cfg := kuma_dp.Config{}
 
 			// when
 			err := config.Load("", &cfg)
@@ -68,7 +68,7 @@ var _ = Describe("Config", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.ControlPlane.BootstrapServer.URL).To(Equal("https://konvoy-control-plane.internal:5682"))
+			Expect(cfg.ControlPlane.BootstrapServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
 			Expect(cfg.Dataplane.Id).To(Equal("example"))
 			Expect(cfg.Dataplane.AdminPort).To(Equal(uint32(2345)))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
@@ -78,7 +78,7 @@ var _ = Describe("Config", func() {
 
 	It("should have consistent defaults", func() {
 		// given
-		cfg := konvoy_dp.DefaultConfig()
+		cfg := kuma_dp.DefaultConfig()
 
 		// when
 		actual, err := config.ToYAML(&cfg)
@@ -95,7 +95,7 @@ var _ = Describe("Config", func() {
 
 	It("should have validators", func() {
 		// given
-		cfg := konvoy_dp.Config{}
+		cfg := kuma_dp.Config{}
 
 		// when
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)

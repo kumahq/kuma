@@ -2183,7 +2183,7 @@ spec:
         - name: KONVOY_INJECTOR_CONTROL_PLANE_API_SERVER_URL
           value: http://konvoy-control-plane.konvoy-system:5681
         - name: KONVOY_INJECTOR_SIDECAR_CONTAINER_IMAGE
-          value: konvoy/konvoy-dataplane:latest
+          value: konvoy/kuma-dataplane:latest
         - name: KONVOY_INJECTOR_INIT_CONTAINER_IMAGE
           value: docker.io/istio/proxy_init:1.1.2
         args:

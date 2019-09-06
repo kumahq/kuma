@@ -2,7 +2,7 @@ package envoy
 
 import (
 	"fmt"
-	konvoy_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
+	kuma_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"io/ioutil"
@@ -41,7 +41,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		// and
 		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
 
-		cfg := konvoy_dp.DefaultConfig()
+		cfg := kuma_dp.DefaultConfig()
 		cfg.Dataplane.Id = "demo.sample"
 		cfg.Dataplane.AdminPort = 4321
 		cfg.ControlPlane.BootstrapServer.URL = fmt.Sprintf("http://localhost:%d", port)

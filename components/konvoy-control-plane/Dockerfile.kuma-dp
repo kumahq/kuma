@@ -16,18 +16,18 @@ RUN go mod download
 
 COPY . .
 
-RUN make build/konvoy-dp
+RUN make build/kuma-dp
 
 ## runtime image
 FROM envoyproxy/envoy-alpine:latest
 
-ENV PATH=$PATH:/konvoy-dataplane
-COPY --from=0 /go/src/github.com/Kong/konvoy/components/konvoy-control-plane/build/artifacts/konvoy-dataplane/konvoy-dataplane /konvoy-dataplane/konvoy-dataplane
+ENV PATH=$PATH:/kuma-dataplane
+COPY --from=0 /go/src/github.com/Kong/konvoy/components/konvoy-control-plane/build/artifacts/kuma-dataplane/kuma-dataplane /kuma-dataplane/kuma-dataplane
 
-RUN addgroup -S -g 5678 konvoy-dataplane \
- && adduser -S -D -G konvoy-dataplane -u 5678 konvoy-dataplane
+RUN addgroup -S -g 5678 kuma-dataplane \
+ && adduser -S -D -G kuma-dataplane -u 5678 kuma-dataplane
 
-USER konvoy-dataplane
+USER kuma-dataplane
 
-ENTRYPOINT ["konvoy-dataplane"]
+ENTRYPOINT ["kuma-dataplane"]
 CMD ["run"]

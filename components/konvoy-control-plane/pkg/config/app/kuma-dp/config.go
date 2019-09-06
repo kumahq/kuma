@@ -1,4 +1,4 @@
-package konvoydp
+package kumadp
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
@@ -26,9 +26,9 @@ func DefaultConfig() Config {
 	}
 }
 
-// Config defines configuration of the Konvoy Dataplane Manager.
+// Config defines configuration of the Kuma Dataplane Manager.
 type Config struct {
-	// ControlPlane defines coordinates of the Konvoy Control Plane.
+	// ControlPlane defines coordinates of the Kuma Control Plane.
 	ControlPlane ControlPlane `yaml:"controlPlane,omitempty"`
 	// Dataplane defines bootstrap configuration of the dataplane (Envoy).
 	Dataplane Dataplane `yaml:"dataplane,omitempty"`
@@ -44,23 +44,23 @@ type ControlPlane struct {
 
 type BootstrapServer struct {
 	// Address defines the address of Bootstrap configuration server.
-	URL string `yaml:"url,omitempty" envconfig:"konvoy_control_plane_bootstrap_server_url"`
+	URL string `yaml:"url,omitempty" envconfig:"kuma_control_plane_bootstrap_server_url"`
 }
 
 // Dataplane defines bootstrap configuration of the dataplane (Envoy).
 type Dataplane struct {
 	// Envoy node Id.
-	Id string `yaml:"id,omitempty" envconfig:"konvoy_dataplane_id"`
+	Id string `yaml:"id,omitempty" envconfig:"kuma_dataplane_id"`
 	// Envoy Admin port.
-	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"konvoy_dataplane_admin_port"`
+	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
 }
 
 // DataplaneRuntime defines the context in which dataplane (Envoy) runs.
 type DataplaneRuntime struct {
 	// Path to Envoy binary.
-	BinaryPath string `yaml:"binaryPath,omitempty" envconfig:"konvoy_dataplane_runtime_binary_path"`
+	BinaryPath string `yaml:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
 	// Dir to store auto-generated Envoy bootstrap config in.
-	ConfigDir string `yaml:"configDir,omitempty" envconfig:"konvoy_dataplane_runtime_config_dir"`
+	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
 }
 
 var _ config.Config = &Config{}

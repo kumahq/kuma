@@ -6,11 +6,11 @@
 		dev/install/kubectl dev/install/kind dev/install/minikube \
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
-		kind/load/control-plane kind/load/konvoy-dp kind/load/konvoy-injector \
+		kind/load/control-plane kind/load/kuma-dp kind/load/konvoy-injector \
 		generate protoc/pkg/config/app/kumactl/v1alpha1 generate/kumactl/install/control-plane \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
-		images image/konvoy-cp image/konvoy-dp image/kumactl image/konvoy-injector \
-		build/konvoy-cp build/konvoy-dp build/kumactl build/konvoy-injector \
+		images image/konvoy-cp image/kuma-dp image/kumactl image/konvoy-injector \
+		build/konvoy-cp build/kuma-dp build/kumactl build/konvoy-injector \
 		docs docs/kumactl \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
@@ -20,7 +20,7 @@
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		print/kubebuilder/test_assets \
 		generate/test/cert/konvoy-injector run/konvoy-injector \
-		run/konvoy-dp
+		run/kuma-dp
 
 PKG_LIST := ./... ./api/... ./pkg/plugins/resources/k8s/native/...
 
@@ -56,7 +56,7 @@ EXAMPLE_NAMESPACE ?= konvoy-demo
 KIND_KUBECONFIG = $(shell kind get kubeconfig-path --name=konvoy)
 
 define KIND_EXAMPLE_ENVOY_ID
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar printenv KONVOY_DATAPLANE_ID)
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar printenv KUMA_DATAPLANE_ID)
 endef
 
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
@@ -68,7 +68,7 @@ BINTRAY_USERNAME ?=
 BINTRAY_API_KEY ?=
 
 KONVOY_CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
-KONVOY_DP_DOCKER_IMAGE ?= konvoy/konvoy-dataplane:latest
+KUMA_DP_DOCKER_IMAGE ?= konvoy/kuma-dataplane:latest
 KUMACTL_DOCKER_IMAGE ?= konvoy/kumactl:latest
 KONVOY_INJECTOR_DOCKER_IMAGE ?= konvoy/konvoy-injector:latest
 
@@ -264,8 +264,8 @@ deploy/example-app/k8s:
 kind/load/control-plane: image/konvoy-cp
 	kind load docker-image $(KONVOY_CP_DOCKER_IMAGE) --name=konvoy
 
-kind/load/konvoy-dp: image/konvoy-dp
-	kind load docker-image $(KONVOY_DP_DOCKER_IMAGE) --name=konvoy
+kind/load/kuma-dp: image/kuma-dp
+	kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=konvoy
 
 kind/load/konvoy-injector: image/konvoy-injector
 	kind load docker-image $(KONVOY_INJECTOR_DOCKER_IMAGE) --name=konvoy
@@ -276,7 +276,7 @@ deploy/control-plane/k8s: build/kumactl
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
 
-start/control-plane/k8s: kind/load/control-plane kind/load/konvoy-dp kind/load/konvoy-injector deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
+start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/konvoy-injector deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
 clean: clean/build ## Dev: Clean
 
@@ -325,13 +325,13 @@ integration: ## Dev: Run integration tests
 	tools/test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
-build: build/konvoy-cp build/konvoy-dp build/kumactl build/konvoy-injector ## Dev: Build all binaries
+build: build/konvoy-cp build/kuma-dp build/kumactl build/konvoy-injector ## Dev: Build all binaries
 
 build/konvoy-cp: ## Dev: Build `Control Plane` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
 
-build/konvoy-dp: ## Dev: Build `konvoy-dataplane` binary
-	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-dataplane/konvoy-dataplane ./app/konvoy-dp
+build/kuma-dp: ## Dev: Build `kuma-dataplane` binary
+	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/kuma-dataplane/kuma-dataplane ./app/kuma-dp
 
 build/kumactl: ## Dev: Build `kumactl` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o $(BUILD_KUMACTL_DIR)/kumactl ./app/kumactl
@@ -387,22 +387,22 @@ run/example/envoy/k8s: run/example/envoy
 
 run/example/envoy/universal: run/example/envoy
 
-run/example/envoy: build/konvoy-dp ## Dev: Run Envoy configured against local Control Plane
-	KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
-	KONVOY_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
-	KONVOY_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
-	${BUILD_ARTIFACTS_DIR}/konvoy-dataplane/konvoy-dataplane run
+run/example/envoy: build/kuma-dp ## Dev: Run Envoy configured against local Control Plane
+	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
+	KUMA_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
+	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
+	${BUILD_ARTIFACTS_DIR}/kuma-dataplane/kuma-dataplane run
 
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-images: image/konvoy-cp image/konvoy-dp image/kumactl image/konvoy-injector ## Dev: Build all Docker images
+images: image/konvoy-cp image/kuma-dp image/kumactl image/konvoy-injector ## Dev: Build all Docker images
 
 image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
 	docker build -t $(KONVOY_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
 
-image/konvoy-dp: ## Dev: Build `konvoy-dataplane` Docker image
-	docker build -t $(KONVOY_DP_DOCKER_IMAGE) -f Dockerfile.konvoy-dp .
+image/kuma-dp: ## Dev: Build `kuma-dataplane` Docker image
+	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f Dockerfile.kuma-dp .
 
 image/kumactl: ## Dev: Build `kumactl` Docker image
 	docker build -t $(KUMACTL_DOCKER_IMAGE) -f Dockerfile.kumactl .
@@ -416,19 +416,19 @@ image/konvoy-cp/push: image/konvoy-cp
 	docker push $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
-image/konvoy-dp/push: image/konvoy-dp
+image/kuma-dp/push: image/kuma-dp
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KONVOY_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoy-dp:$(KONVOY_VERSION)
-	docker push $(BINTRAY_REGISTRY)/konvoy-dp:$(KONVOY_VERSION)
+	docker tag $(KUMA_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-dp:$(KONVOY_VERSION)
+	docker push $(BINTRAY_REGISTRY)/kuma-dp:$(KONVOY_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
 image/kumactl/push: image/kumactl
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KONVOY_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kumactl:$(KONVOY_VERSION)
+	docker tag $(KUMA_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kumactl:$(KONVOY_VERSION)
 	docker push $(BINTRAY_REGISTRY)/kumactl:$(KONVOY_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
-images/push: image/konvoy-cp/push image/konvoy-dp/push image/kumactl/push
+images/push: image/konvoy-cp/push image/kuma-dp/push image/kumactl/push
 
 docs: docs/kumactl ## Dev: Generate all docs
 
@@ -518,11 +518,11 @@ run/konvoy-injector: ## Dev: Run Konvoy Injector locally
 test/konvoy-injector: PKG_LIST=./app/konvoy-injector/... ./pkg/config/app/konvoy-injector/...
 test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
 
-run/konvoy-dp: ## Dev: Run `konvoy-dataplane` locally
-	KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
-	KONVOY_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
-	KONVOY_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
-	go run ./app/konvoy-dp/main.go run
+run/kuma-dp: ## Dev: Run `kuma-dataplane` locally
+	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
+	KUMA_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
+	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
+	go run ./app/kuma-dp/main.go run
 
-test/konvoy-dp: PKG_LIST=./app/konvoy-dp/... ./pkg/config/app/konvoy-dp/...
-test/konvoy-dp: test ## Dev: Run `konvoy-dataplane` tests only
+test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
+test/kuma-dp: test ## Dev: Run `kuma-dataplane` tests only

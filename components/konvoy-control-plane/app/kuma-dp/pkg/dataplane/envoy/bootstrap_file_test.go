@@ -11,7 +11,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 
-	konvoy_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
+	kuma_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
 )
 
 var _ = Describe("Bootstrap File", func() {
@@ -41,7 +41,7 @@ var _ = Describe("Bootstrap File", func() {
 				},
 			}
 			// and
-			runtime := konvoy_dp.DataplaneRuntime{
+			runtime := kuma_dp.DataplaneRuntime{
 				ConfigDir: configDir,
 			}
 

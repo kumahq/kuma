@@ -50,7 +50,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		InjectorServiceName:     "konvoy-injector",
 		InjectorTlsCert:         "",
 		InjectorTlsKey:          "",
-		DataplaneImage:          "konvoy/konvoy-dataplane",
+		DataplaneImage:          "konvoy/kuma-dataplane",
 		DataplaneInitImage:      "docker.io/istio/proxy_init",
 		DataplaneInitVersion:    "1.1.2",
 		SdsTlsCert:              "",
