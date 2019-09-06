@@ -31,8 +31,8 @@ require (
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749
 	github.com/shurcooL/vfsgen v0.0.0-20181202132449-6a9ea43bcacd // indirect
 	github.com/spf13/cobra v0.0.5
-	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc // indirect
-	github.com/spiffe/spire v0.0.0-20190905203639-e85640baca1d // indirect
+	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
+	github.com/spiffe/spire v0.0.0-20190905203639-e85640baca1d
 	go.uber.org/multierr v1.1.0
 	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586 // indirect
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
