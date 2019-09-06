@@ -74,12 +74,6 @@ func (m *builtinCaManager) Create(ctx context.Context, mesh string) error {
 func (m *builtinCaManager) Delete(ctx context.Context, mesh string) error {
 	secretKey := builtinCaSecretKey(mesh)
 	builtinCaSecret := &core_system.SecretResource{}
-	if err := m.secretManager.Get(ctx, builtinCaSecret, core_store.GetBy(secretKey)); err != nil {
-		if core_store.IsResourceNotFound(err) {
-			return nil
-		}
-		return errors.Wrapf(err, "failed to delete Builtin CA for a given mesh")
-	}
 	if err := m.secretManager.Delete(ctx, builtinCaSecret, core_store.DeleteBy(secretKey)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			return nil

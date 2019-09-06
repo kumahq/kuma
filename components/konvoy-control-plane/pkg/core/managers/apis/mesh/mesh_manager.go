@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	builtin_ca "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin"
@@ -41,7 +42,7 @@ func (m *meshManager) List(ctx context.Context, list core_model.ResourceList, fs
 	return m.store.List(ctx, meshes, fs...)
 }
 
-func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
+func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) (errs error) {
 	mesh, err := m.mesh(resource)
 	if err != nil {
 		return err
@@ -58,16 +59,27 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 			Builtin: &mesh_proto.CertificateAuthority_Builtin{},
 		}
 	}
-	// persist
-	if err := m.store.Create(ctx, mesh, fs...); err != nil {
-		return err
-	}
-	// create CA
+	// keep creation of Mesh and Built-in CA in sync
+	var rollback func() error
+	defer func() {
+		if errs != nil && rollback != nil {
+			errs = multierr.Append(errs, rollback())
+		}
+	}()
+	// create Built-in CA
 	switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
 	case *mesh_proto.CertificateAuthority_Builtin_:
-		if err := m.builtinCaManager.Create(ctx, mesh.Meta.GetName()); err != nil {
+		opts := core_store.NewCreateOptions(fs...)
+		if err := m.builtinCaManager.Create(ctx, opts.Name); err != nil {
 			return errors.Wrapf(err, "failed to create Builtin CA for a given mesh")
 		}
+		rollback = func() error {
+			return m.builtinCaManager.Delete(ctx, opts.Name)
+		}
+	}
+	// persist Mesh
+	if err := m.store.Create(ctx, mesh, fs...); err != nil {
+		return err
 	}
 	return nil
 }
@@ -77,6 +89,8 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	if err != nil {
 		return err
 	}
+	// delete Mesh first to avoid a state where a Mesh could exist without a Built-in CA.
+	// even if removal of Built-in CA fails later on, delete opration can be safely tried again.
 	if err := m.store.Delete(ctx, mesh, fs...); err != nil {
 		return err
 	}
