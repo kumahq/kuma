@@ -29,6 +29,7 @@ type Builder struct {
 	cfg konvoy_cp.Config
 	cm  ComponentManager
 	rs  core_store.ResourceStore
+	rm  core_manager.ResourceManager
 	sm  secret_manager.SecretManager
 	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
@@ -46,6 +47,11 @@ func (b *Builder) WithComponentManager(cm ComponentManager) *Builder {
 
 func (b *Builder) WithResourceStore(rs core_store.ResourceStore) *Builder {
 	b.rs = rs
+	return b
+}
+
+func (b *Builder) WithResourceManager(rm core_manager.ResourceManager) *Builder {
+	b.rm = rm
 	return b
 }
 
@@ -76,6 +82,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.rs == nil {
 		return nil, errors.Errorf("ResourceStore has not been configured")
 	}
+	if b.rm == nil {
+		return nil, errors.Errorf("ResourceManager has not been configured")
+	}
 	if b.sm == nil {
 		return nil, errors.Errorf("SecretManager has not been configured")
 	}
@@ -95,7 +104,7 @@ func (b *Builder) Build() (Runtime, error) {
 		},
 		RuntimeContext: &runtimeContext{
 			cfg: b.cfg,
-			rm:  core_manager.NewResourceManager(b.rs),
+			rm:  b.rm,
 			sm:  b.sm,
 			dss: b.dss,
 			xds: b.xds,
@@ -108,7 +117,6 @@ func (b *Builder) Build() (Runtime, error) {
 func (b *Builder) ComponentManager() ComponentManager {
 	return b.cm
 }
-
 func (b *Builder) ResourceStore() core_store.ResourceStore {
 	return b.rs
 }

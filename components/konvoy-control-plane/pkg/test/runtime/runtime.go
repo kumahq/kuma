@@ -1,6 +1,10 @@
 package runtime
 
 import (
+	mesh_managers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/managers/apis/mesh"
+	core_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	core_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
+	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	core_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/runtime"
 	secret_cipher "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/manager"
@@ -29,6 +33,7 @@ func BuilderFor(cfg konvoy_cp.Config) *core_runtime.Builder {
 		WithXdsContext(core_xds.NewXdsContext())
 
 	builder.WithSecretManager(newSecretManager(builder))
+	builder.WithResourceManager(newResourceManager(builder))
 
 	return builder
 }
@@ -37,4 +42,14 @@ func newSecretManager(builder *core_runtime.Builder) secret_manager.SecretManage
 	secretStore := secret_store.NewSecretStore(builder.ResourceStore())
 	secretManager := secret_manager.NewSecretManager(secretStore, secret_cipher.None())
 	return secretManager
+}
+
+func newResourceManager(builder *core_runtime.Builder) core_manager.ResourceManager {
+	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore())
+	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{
+		core_mesh.MeshType: meshManager,
+	}
+	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
+	return customizableManager
 }
