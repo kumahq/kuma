@@ -6,8 +6,8 @@ import (
 
 	konvoy_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
-	xds_envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/jsonpb"
@@ -18,7 +18,7 @@ type TemplateProxyGenerator struct {
 	ProxyTemplate *konvoy_mesh.ProxyTemplate
 }
 
-func (g *TemplateProxyGenerator) Generate(ctx xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
+func (g *TemplateProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(g.ProxyTemplate.Conf))
 	for i, source := range g.ProxyTemplate.Conf {
 		var generator ResourceGenerator
@@ -43,7 +43,7 @@ type ProxyTemplateRawSource struct {
 	Raw *konvoy_mesh.ProxyTemplateRawSource
 }
 
-func (s *ProxyTemplateRawSource) Generate(_ xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
+func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(s.Raw.Resources))
 	for i, r := range s.Raw.Resources {
 		json, err := yaml.YAMLToJSON([]byte(r.Resource))
@@ -92,7 +92,7 @@ type ProxyTemplateProfileSource struct {
 	Profile *konvoy_mesh.ProxyTemplateProfileSource
 }
 
-func (s *ProxyTemplateProfileSource) Generate(ctx xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
+func (s *ProxyTemplateProfileSource) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
 	g, ok := predefinedProfiles[s.Profile.Name]
 	if !ok {
 		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.Profile.Name)
@@ -103,7 +103,7 @@ func (s *ProxyTemplateProfileSource) Generate(ctx xds_envoy.Context, proxy *mode
 type InboundProxyGenerator struct {
 }
 
-func (_ InboundProxyGenerator) Generate(ctx xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
+func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
 	endpoints, err := proxy.Dataplane.Spec.Networking.GetInboundInterfaces()
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (_ InboundProxyGenerator) Generate(ctx xds_envoy.Context, proxy *model.Prox
 type TransparentProxyGenerator struct {
 }
 
-func (_ TransparentProxyGenerator) Generate(ctx xds_envoy.Context, proxy *model.Proxy) ([]*Resource, error) {
+func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
 	redirectPort := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort()
 	if redirectPort == 0 {
 		return nil, nil

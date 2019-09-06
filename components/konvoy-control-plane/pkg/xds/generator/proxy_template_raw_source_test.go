@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -9,7 +10,6 @@ import (
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
-	xds_envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
@@ -31,7 +31,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 				gen := &generator.ProxyTemplateRawSource{
 					Raw: given.raw,
 				}
-				ctx := xds_envoy.Context{}
+				ctx := xds_context.Context{}
 
 				// when
 				rs, err := gen.Generate(ctx, given.proxy)
@@ -211,7 +211,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			gen := &generator.ProxyTemplateRawSource{
 				Raw: given.raw,
 			}
-			ctx := xds_envoy.Context{}
+			ctx := xds_context.Context{}
 
 			// when
 			rs, err := gen.Generate(ctx, given.proxy)

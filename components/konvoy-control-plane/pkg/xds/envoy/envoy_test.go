@@ -5,7 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
-	envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
 )
 
 var _ = Describe("Envoy", func() {
@@ -92,7 +93,7 @@ var _ = Describe("Envoy", func() {
               cluster: localhost:8080
               statPrefix: localhost:8080
 `
-		ctx := envoy.Context{}
+		ctx := xds_context.Context{}
 
 		// when
 		resource := envoy.CreateInboundListener(ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", false)
@@ -122,7 +123,7 @@ var _ = Describe("Envoy", func() {
         deprecatedV1:
           bindToPort: false
 `
-		ctx := envoy.Context{}
+		ctx := xds_context.Context{}
 
 		// when
 		resource := envoy.CreateInboundListener(ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", true)
@@ -151,7 +152,7 @@ var _ = Describe("Envoy", func() {
               statPrefix: pass_through
         useOriginalDst: true
 `
-		ctx := envoy.Context{}
+		ctx := xds_context.Context{}
 
 		// when
 		resource := envoy.CreateCatchAllListener(ctx, "catch_all", "0.0.0.0", 15001, "pass_through")

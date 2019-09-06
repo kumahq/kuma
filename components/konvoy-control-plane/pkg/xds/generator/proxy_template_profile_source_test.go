@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -12,7 +11,7 @@ import (
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
-	xds_envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 
@@ -35,12 +34,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 
 			// given
-			ctx := xds_envoy.Context{
-				ControlPlane: &xds_envoy.ControlPlaneContext{
-					Config: xds.SnapshotConfig{
-						SdsLocation: "konvoy-system:5677",
-					},
-					SdsTlsCert: []byte("12345"),
+			ctx := xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					SdsLocation: "konvoy-system:5677",
+					SdsTlsCert:  []byte("12345"),
 				},
 			}
 
@@ -73,18 +70,18 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			Expect(actual).To(MatchYAML(expected))
 		},
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCaseFile{
-			dataplaneFile: "1-dataplane.yaml",
+			dataplaneFile: "1-dataplane.input.yaml",
 			profile: &mesh_proto.ProxyTemplateProfileSource{
 				Name: template.ProfileDefaultProxy,
 			},
-			envoyConfigFile: "1-envoy-config.yaml",
+			envoyConfigFile: "1-envoy-config.golden.yaml",
 		}),
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCaseFile{
-			dataplaneFile: "2-dataplane.yaml",
+			dataplaneFile: "2-dataplane.input.yaml",
 			profile: &mesh_proto.ProxyTemplateProfileSource{
 				Name: template.ProfileDefaultProxy,
 			},
-			envoyConfigFile: "2-envoy-config.yaml",
+			envoyConfigFile: "2-envoy-config.golden.yaml",
 		}),
 	)
 })

@@ -11,8 +11,7 @@ import (
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	xds_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
-	xds_envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
-
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
@@ -82,11 +81,11 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			r := &reconciler{
-				snapshotGeneratorFunc(func(ctx xds_envoy.Context, proxy *xds_model.Proxy) (envoy_cache.Snapshot, error) {
+				snapshotGeneratorFunc(func(ctx xds_context.Context, proxy *xds_model.Proxy) (envoy_cache.Snapshot, error) {
 					return <-snapshots, nil
 				}),
 				&simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
-				&xds_envoy.ControlPlaneContext{},
+				&xds_context.ControlPlaneContext{},
 			}
 
 			// given
@@ -156,8 +155,8 @@ var _ = Describe("Reconcile", func() {
 	})
 })
 
-type snapshotGeneratorFunc func(ctx xds_envoy.Context, proxy *xds_model.Proxy) (envoy_cache.Snapshot, error)
+type snapshotGeneratorFunc func(ctx xds_context.Context, proxy *xds_model.Proxy) (envoy_cache.Snapshot, error)
 
-func (f snapshotGeneratorFunc) GenerateSnapshot(ctx xds_envoy.Context, proxy *xds_model.Proxy) (envoy_cache.Snapshot, error) {
+func (f snapshotGeneratorFunc) GenerateSnapshot(ctx xds_context.Context, proxy *xds_model.Proxy) (envoy_cache.Snapshot, error) {
 	return f(ctx, proxy)
 }

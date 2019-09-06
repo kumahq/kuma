@@ -1,8 +1,8 @@
 package envoy
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/sds/server"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"time"
 
@@ -16,15 +16,6 @@ import (
 	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 )
-
-type Context struct {
-	ControlPlane *ControlPlaneContext
-}
-
-type ControlPlaneContext struct {
-	Config     xds.SnapshotConfig
-	SdsTlsCert []byte
-}
 
 func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.ClusterLoadAssignment {
 	return &v2.ClusterLoadAssignment{
@@ -69,7 +60,7 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateInboundListener(ctx Context, listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
+func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
@@ -119,7 +110,7 @@ func CreateInboundListener(ctx Context, listenerName string, address string, por
 	return listener
 }
 
-func sdsSecretConfig(context Context, name string) *auth.SdsSecretConfig {
+func sdsSecretConfig(context xds_context.Context, name string) *auth.SdsSecretConfig {
 	return &auth.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &core.ConfigSource{
@@ -130,7 +121,7 @@ func sdsSecretConfig(context Context, name string) *auth.SdsSecretConfig {
 						{
 							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
 								GoogleGrpc: &core.GrpcService_GoogleGrpc{
-									TargetUri:  context.ControlPlane.Config.SdsLocation,
+									TargetUri:  context.ControlPlane.SdsLocation,
 									StatPrefix: "sds_" + name,
 									ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
 										CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
@@ -153,7 +144,7 @@ func sdsSecretConfig(context Context, name string) *auth.SdsSecretConfig {
 	}
 }
 
-func CreateCatchAllListener(ctx Context, listenerName string, address string, port uint32, clusterName string) *v2.Listener {
+func CreateCatchAllListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string) *v2.Listener {
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{

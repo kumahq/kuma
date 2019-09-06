@@ -9,7 +9,7 @@ import (
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
-	xds_envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
@@ -26,7 +26,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		func(given testCase) {
 			// setup
 			gen := &generator.TransparentProxyGenerator{}
-			ctx := xds_envoy.Context{}
+			ctx := xds_context.Context{}
 
 			// when
 			rs, err := gen.Generate(ctx, given.proxy)

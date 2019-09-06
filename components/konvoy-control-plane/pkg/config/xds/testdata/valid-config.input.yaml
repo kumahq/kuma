@@ -3,5 +3,3 @@ httpPort: 2345
 diagnosticsPort: 3456
 dataplaneConfigurationRefreshInterval: 3s
 dataplaneStatusFlushInterval: 5s
-snapshot:
-  sdsLocation: "konvoy-control-plane:1234"

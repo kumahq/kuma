@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -12,7 +11,7 @@ import (
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
-	xds_envoy "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/envoy"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/template"
 
@@ -33,12 +32,10 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				gen := &generator.TemplateProxyGenerator{
 					ProxyTemplate: given.template,
 				}
-				ctx := xds_envoy.Context{
-					ControlPlane: &xds_envoy.ControlPlaneContext{
-						Config: xds.SnapshotConfig{
-							SdsLocation: "konvoy-system:5677",
-						},
-						SdsTlsCert: []byte("12345"),
+				ctx := xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{
+						SdsLocation: "konvoy-system:5677",
+						SdsTlsCert:  []byte("12345"),
 					},
 				}
 
@@ -116,12 +113,10 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				}
 
 				// given
-				ctx := xds_envoy.Context{
-					ControlPlane: &xds_envoy.ControlPlaneContext{
-						Config: xds.SnapshotConfig{
-							SdsLocation: "konvoy-system:5677",
-						},
-						SdsTlsCert: []byte("12345"),
+				ctx := xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{
+						SdsLocation: "konvoy-system:5677",
+						SdsTlsCert:  []byte("12345"),
 					},
 				}
 
@@ -154,9 +149,9 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				Expect(actual).To(MatchYAML(expected))
 			},
 			Entry("should support a combination of pre-defined profiles and raw xDS resources", testCase{
-				dataplaneFile:     "1-dataplane.yaml",
-				proxyTemplateFile: "1-proxy-template.yaml",
-				envoyConfigFile:   "1-envoy-config.yaml",
+				dataplaneFile:     "1-dataplane.input.yaml",
+				proxyTemplateFile: "1-proxy-template.input.yaml",
+				envoyConfigFile:   "1-envoy-config.golden.yaml",
 			}),
 		)
 
