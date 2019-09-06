@@ -7,11 +7,11 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/konvoy-dp kind/load/konvoy-injector \
-		generate protoc/pkg/config/app/konvoyctl/v1alpha1 generate/konvoyctl/install/control-plane \
+		generate protoc/pkg/config/app/kumactl/v1alpha1 generate/kumactl/install/control-plane \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
-		images image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector \
-		build/konvoy-cp build/konvoy-dp build/konvoyctl build/konvoy-injector \
-		docs docs/konvoyctl \
+		images image/konvoy-cp image/konvoy-dp image/kumactl image/konvoy-injector \
+		build/konvoy-cp build/konvoy-dp build/kumactl build/konvoy-injector \
+		docs docs/kumactl \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
         run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
@@ -69,7 +69,7 @@ BINTRAY_API_KEY ?=
 
 KONVOY_CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
 KONVOY_DP_DOCKER_IMAGE ?= konvoy/konvoy-dataplane:latest
-KONVOYCTL_DOCKER_IMAGE ?= konvoy/konvoyctl:latest
+KUMACTL_DOCKER_IMAGE ?= konvoy/kumactl:latest
 KONVOY_INJECTOR_DOCKER_IMAGE ?= konvoy/konvoy-injector:latest
 
 PROTOC_VERSION := 3.6.1
@@ -85,8 +85,8 @@ CI_TOOLS_IMAGE ?= circleci/golang:1.12
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
-BUILD_KONVOYCTL_DIR := ${BUILD_ARTIFACTS_DIR}/konvoyctl
-export PATH := $(BUILD_KONVOYCTL_DIR):$(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
+BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
+export PATH := $(BUILD_KUMACTL_DIR):$(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
 
 PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
@@ -270,8 +270,8 @@ kind/load/konvoy-dp: image/konvoy-dp
 kind/load/konvoy-injector: image/konvoy-injector
 	kind load docker-image $(KONVOY_INJECTOR_DOCKER_IMAGE) --name=konvoy
 
-deploy/control-plane/k8s: build/konvoyctl
-	konvoyctl install control-plane | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+deploy/control-plane/k8s: build/kumactl
+	kumactl install control-plane | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n konvoy-system pod -l app=konvoy-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
@@ -287,14 +287,14 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIR) -name '*.pb.go' -delete
 	find $(PROTO_DIR) -name '*.pb.validate.go' -delete
 
-generate: clean/proto protoc/pkg/config/app/konvoyctl/v1alpha1 ## Dev: Run code generators
+generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 ## Dev: Run code generators
 
-protoc/pkg/config/app/konvoyctl/v1alpha1:
-	$(PROTOC_GO) pkg/config/app/konvoyctl/v1alpha1/*.proto
+protoc/pkg/config/app/kumactl/v1alpha1:
+	$(PROTOC_GO) pkg/config/app/kumactl/v1alpha1/*.proto
 
 # Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
-generate/konvoyctl/install/control-plane:
-	go generate ./app/konvoyctl/pkg/install/k8s/control-plane/...
+generate/kumactl/install/control-plane:
+	go generate ./app/kumactl/pkg/install/k8s/control-plane/...
 
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
@@ -325,7 +325,7 @@ integration: ## Dev: Run integration tests
 	tools/test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
-build: build/konvoy-cp build/konvoy-dp build/konvoyctl build/konvoy-injector ## Dev: Build all binaries
+build: build/konvoy-cp build/konvoy-dp build/kumactl build/konvoy-injector ## Dev: Build all binaries
 
 build/konvoy-cp: ## Dev: Build `Control Plane` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
@@ -333,8 +333,8 @@ build/konvoy-cp: ## Dev: Build `Control Plane` binary
 build/konvoy-dp: ## Dev: Build `konvoy-dataplane` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-dataplane/konvoy-dataplane ./app/konvoy-dp
 
-build/konvoyctl: ## Dev: Build `konvoyctl` binary
-	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o $(BUILD_KONVOYCTL_DIR)/konvoyctl ./app/konvoyctl
+build/kumactl: ## Dev: Build `kumactl` binary
+	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o $(BUILD_KUMACTL_DIR)/kumactl ./app/kumactl
 
 build/konvoy-injector: ## Dev: Build `konvoy-injector` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-injector/konvoy-injector ./app/konvoy-injector
@@ -396,7 +396,7 @@ run/example/envoy: build/konvoy-dp ## Dev: Run Envoy configured against local Co
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-images: image/konvoy-cp image/konvoy-dp image/konvoyctl image/konvoy-injector ## Dev: Build all Docker images
+images: image/konvoy-cp image/konvoy-dp image/kumactl image/konvoy-injector ## Dev: Build all Docker images
 
 image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
 	docker build -t $(KONVOY_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
@@ -404,8 +404,8 @@ image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
 image/konvoy-dp: ## Dev: Build `konvoy-dataplane` Docker image
 	docker build -t $(KONVOY_DP_DOCKER_IMAGE) -f Dockerfile.konvoy-dp .
 
-image/konvoyctl: ## Dev: Build `konvoyctl` Docker image
-	docker build -t $(KONVOYCTL_DOCKER_IMAGE) -f Dockerfile.konvoyctl .
+image/kumactl: ## Dev: Build `kumactl` Docker image
+	docker build -t $(KUMACTL_DOCKER_IMAGE) -f Dockerfile.kumactl .
 
 image/konvoy-injector: ## Dev: Build `konvoy-injector` Docker image
 	docker build -t $(KONVOY_INJECTOR_DOCKER_IMAGE) -f Dockerfile.konvoy-injector .
@@ -422,18 +422,18 @@ image/konvoy-dp/push: image/konvoy-dp
 	docker push $(BINTRAY_REGISTRY)/konvoy-dp:$(KONVOY_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
-image/konvoyctl/push: image/konvoyctl
+image/kumactl/push: image/kumactl
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KONVOY_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoyctl:$(KONVOY_VERSION)
-	docker push $(BINTRAY_REGISTRY)/konvoyctl:$(KONVOY_VERSION)
+	docker tag $(KONVOY_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kumactl:$(KONVOY_VERSION)
+	docker push $(BINTRAY_REGISTRY)/kumactl:$(KONVOY_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
-images/push: image/konvoy-cp/push image/konvoy-dp/push image/konvoyctl/push
+images/push: image/konvoy-cp/push image/konvoy-dp/push image/kumactl/push
 
-docs: docs/konvoyctl ## Dev: Generate all docs
+docs: docs/kumactl ## Dev: Generate all docs
 
-docs/konvoyctl: build/konvoyctl ## Dev: Generate `konvoyctl` docs
-	tools/docs/konvoyctl/gen_help.sh ${BUILD_KONVOYCTL_DIR}/konvoyctl >docs/cmd/konvoyctl/HELP.md
+docs/kumactl: build/kumactl ## Dev: Generate `kumactl` docs
+	tools/docs/kumactl/gen_help.sh ${BUILD_KUMACTL_DIR}/kumactl >docs/cmd/kumactl/HELP.md
 
 print/kubebuilder/test_assets: ## Dev: Print Kubebuilder Environment variables
 	@echo export TEST_ASSET_KUBE_APISERVER=$(TEST_ASSET_KUBE_APISERVER)
@@ -469,8 +469,8 @@ verify/example/docker-compose: verify/example/docker-compose/inbound verify/exam
 build/example/minikube: ## Minikube: build demo setup
 	eval $$(minikube docker-env) && $(MAKE) images
 
-deploy/example/minikube: image/konvoyctl ## Minikube: deploy demo setup
-	docker run --rm konvoy/konvoyctl konvoyctl install control-plane | kubectl apply -f -
+deploy/example/minikube: image/kumactl ## Minikube: deploy demo setup
+	docker run --rm konvoy/kumactl kumactl install control-plane | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
 	kubectl apply -f examples/minikube/konvoy-demo/
@@ -498,8 +498,8 @@ verify/example/minikube/outbound:
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
 
-konvoyctl/example/minikube: image/konvoyctl
-	cat examples/minikube/konvoyctl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KONVOYCTL_DOCKER_IMAGE)
+kumactl/example/minikube: image/kumactl
+	cat examples/minikube/kumactl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KUMACTL_DOCKER_IMAGE)
 
 generate/test/cert/konvoy-injector:  ## Dev: Generate TLS cert for Konvoy Injector (for use in development and unit tests)
 	OUTPUT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata && \

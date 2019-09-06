@@ -93,22 +93,22 @@ make run/universal/postgres
 
 #### Running a Dataplane (Envoy)
 
-1. Build a `konvoyctl`
+1. Build a `kumactl`
 ```bash
-make build/konvoyctl
-export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
+make build/kumactl
+export PATH=`pwd`/build/artifacts/kumactl:$PATH
 ```
 
-2. Configure a `konvoyctl` with running Control Plane
+2. Configure a `kumactl` with running Control Plane
 
 ```bash
-konvoyctl config control-planes add --name universal --api-server-url http://localhost:5681
+kumactl config control-planes add --name universal --api-server-url http://localhost:5681
 ```
 
 3. Apply a Dataplane descriptor
 
 ```bash
-konvoyctl apply -f dev/examples/universal/dataplanes/example.yaml
+kumactl apply -f dev/examples/universal/dataplanes/example.yaml
 ```
 
 4. Run a Dataplane (requires `envoy` binary to be on your `PATH`)
@@ -119,7 +119,7 @@ make run/example/envoy/universal
 5. List `Dataplanes` connected to the `Control Plane`:
 
 ```bash
-konvoyctl inspect dataplanes
+kumactl inspect dataplanes
 
 MESH      NAME      TAGS                                     STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
 default   example   env=production service=web version=2.0   Online   32s                  32s                2               0
@@ -139,7 +139,7 @@ make config_dump/example/envoy
 ```bash
 make start/k8s
 
-# set KUBECONFIG for use by `konvoyctl` and `kubectl`
+# set KUBECONFIG for use by `kumactl` and `kubectl`
 export KUBECONFIG="$(kind get kubeconfig-path --name=konvoy)"
 ```
 
@@ -189,12 +189,12 @@ make start/control-plane/k8s
 kubectl delete -n konvoy-demo pod -l app=demo-app
 ```
 
-4. Build `konvoyctl`
+4. Build `kumactl`
 
 ```bash
-make build/konvoyctl
+make build/kumactl
 
-export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
+export PATH=`pwd`/build/artifacts/kumactl:$PATH
 ```
 
 5. Forward the `Control Plane` port to `localhost`:
@@ -202,16 +202,16 @@ export PATH=`pwd`/build/artifacts/konvoyctl:$PATH
 kubectl port-forward -n konvoy-system $(kubectl get pods -n konvoy-system -l app=konvoy-control-plane -o=jsonpath='{.items[0].metadata.name}') 15681:5681
 ```
 
-6. Add `Control Plane` to your `konvoyctl` config:
+6. Add `Control Plane` to your `kumactl` config:
 
 ```bash
-konvoyctl config control-planes add --name k8s --api-server-url http://localhost:15681
+kumactl config control-planes add --name k8s --api-server-url http://localhost:15681
 ```
 
 7. Verify that `Control Plane` has been added:
 
 ```bash
-konvoyctl config control-planes list
+kumactl config control-planes list
 
 NAME   API SERVER
 k8s    http://localhost:15681
@@ -220,7 +220,7 @@ k8s    http://localhost:15681
 8. List `Dataplanes` connected to the `Control Plane`:
 
 ```bash
-konvoyctl inspect dataplanes
+kumactl inspect dataplanes
 
 MESH      NAME                        TAGS                                                                            STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
 default   demo-app-7cbbd658d5-dj9l6   app=demo-app pod-template-hash=7cbbd658d5 service=demo-app.konvoy-demo.svc:80   Online   42m28s               42m28s             8               0

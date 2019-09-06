@@ -327,8 +327,8 @@ jobs:
         name: Verify Envoy stats
         command: make verify/example/minikube -C components/konvoy-control-plane
     - run:
-        name: Verify konvoyctl workflow
-        command: make konvoyctl/example/minikube -C components/konvoy-control-plane
+        name: Verify kumactl workflow
+        command: make kumactl/example/minikube -C components/konvoy-control-plane
   kcp/images/push:
     <<: *vm-executor-defaults
     steps:
