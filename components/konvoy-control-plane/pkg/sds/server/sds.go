@@ -29,15 +29,18 @@ import (
 	"google.golang.org/grpc/status"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 )
 
 type SecretDiscoveryHandler interface {
-	Handle(ctx context.Context, req envoy.DiscoveryRequest) (envoy_cache.Response, error)
+	Handle(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error)
 }
 
 type Server interface {
@@ -190,18 +193,32 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest, de
 				continue // ACK
 			}
 
-			secrets, err := s.source.Handle(stream.Context(), *req)
+			secret, err := s.source.Handle(stream.Context(), *req)
 			if err != nil {
 				return err
 			}
 
-			nonce, err = send(secrets, envoy_cache.SecretType)
+			resp := s.toResponse(req, secret)
+
+			nonce, err = send(resp, envoy_cache.SecretType)
 			if err != nil {
 				return err
 			}
 			state.secretNonce = nonce
 		}
 	}
+}
+
+func (s *server) toResponse(req *envoy.DiscoveryRequest, secret *envoy_auth.Secret) envoy_cache.Response {
+	return envoy_cache.Response{
+		Request:   *req,
+		Version:   s.version(secret),
+		Resources: []envoy_cache.Resource{secret},
+	}
+}
+
+func (s *server) version(msg proto.Message) string {
+	return core.NewUUID()
 }
 
 func (s *server) validateSdsRequest(state *state, req *envoy.DiscoveryRequest) error {
