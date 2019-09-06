@@ -2,13 +2,13 @@ package envoy
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/sds/server"
-	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"time"
 
 	"github.com/gogo/protobuf/types"
 
 	util_error "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/error"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"

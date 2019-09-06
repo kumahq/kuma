@@ -2,10 +2,7 @@ package server
 
 import (
 	"context"
-	"fmt"
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
-	"io/ioutil"
 	"time"
 
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
@@ -22,7 +19,7 @@ import (
 )
 
 func DefaultReconciler(rt core_runtime.Runtime) (*core_discovery.DiscoverySink, error) {
-	envoyCpCtx, err := buildEnvoyControlPlaneContext(rt.Config())
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
 	if err != nil {
 		return nil, err
 	}
@@ -37,22 +34,6 @@ func DefaultReconciler(rt core_runtime.Runtime) (*core_discovery.DiscoverySink, 
 			&simpleSnapshotCacher{rt.XDS().Hasher(), rt.XDS().Cache()},
 			envoyCpCtx,
 		},
-	}, nil
-}
-
-func buildEnvoyControlPlaneContext(config konvoy_cp.Config) (*xds_context.ControlPlaneContext, error) {
-	var cert []byte
-	if config.SdsServer.TlsCertFile != "" {
-		c, err := ioutil.ReadFile(config.SdsServer.TlsCertFile)
-		if err != nil {
-			return nil, err
-		}
-		cert = c
-	}
-	sdsLocation := fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.SdsServer.GrpcPort)
-	return &xds_context.ControlPlaneContext{
-		SdsLocation: sdsLocation,
-		SdsTlsCert:  cert,
 	}, nil
 }
 
