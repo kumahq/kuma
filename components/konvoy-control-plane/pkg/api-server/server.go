@@ -41,6 +41,7 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 
 	addToWs(ws, defs, resManager, config)
 	container.Add(ws)
+	container.Add(indexWs())
 	configureOpenApi(config, container, ws)
 
 	return &ApiServer{
@@ -89,6 +90,7 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 			}
 		}
 	}()
+	log.Info("starting", "port", a.Address())
 	select {
 	case <-stop:
 		log.Info("Stopping down API Server")
