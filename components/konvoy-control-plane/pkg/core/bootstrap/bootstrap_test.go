@@ -35,7 +35,7 @@ var _ = Describe("Bootstrap", func() {
 		Eventually(func() error {
 			getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh, core_model.DefaultMesh)
 			return resManager.Get(context.Background(), &mesh.MeshResource{}, getOpts)
-		}).Should(Succeed())
+		}, "5s").Should(Succeed())
 
 		// when
 		getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh, core_model.DefaultMesh)
