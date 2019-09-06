@@ -70,13 +70,13 @@ func DefaultMeshCaProvider(rt core_runtime.Runtime) sds_provider.SecretProvider 
 	return ca_sds_provider.New(rt.ResourceManager(), rt.BuiltinCaManager())
 }
 
-func DefaultIdentityCertProvider() sds_provider.SecretProvider {
-	return identity_sds_provider.New()
+func DefaultIdentityCertProvider(rt core_runtime.Runtime) sds_provider.SecretProvider {
+	return identity_sds_provider.New(rt.ResourceManager(), rt.BuiltinCaManager())
 }
 
 func DefaultSecretProviderSelector(rt core_runtime.Runtime) func(string) (sds_provider.SecretProvider, error) {
 	meshCaProvider := DefaultMeshCaProvider(rt)
-	identityCertProvider := DefaultIdentityCertProvider()
+	identityCertProvider := DefaultIdentityCertProvider(rt)
 	return func(resource string) (sds_provider.SecretProvider, error) {
 		switch resource {
 		case MeshCaResource:

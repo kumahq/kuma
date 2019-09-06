@@ -3,15 +3,28 @@ package identity
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
+	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
+	builtin_ca "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin"
+	core_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
+	core_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
+	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
+
 	sds_auth "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/sds/auth"
 	sds_provider "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/sds/provider"
 )
 
-func New() sds_provider.SecretProvider {
-	return &identityCertProvider{}
+func New(resourceManager core_manager.ResourceManager, builtinCaManager builtin_ca.BuiltinCaManager) sds_provider.SecretProvider {
+	return &identityCertProvider{
+		resourceManager:  resourceManager,
+		builtinCaManager: builtinCaManager,
+	}
 }
 
 type identityCertProvider struct {
+	resourceManager  core_manager.ResourceManager
+	builtinCaManager builtin_ca.BuiltinCaManager
 }
 
 func (s *identityCertProvider) RequiresIdentity() bool {
@@ -19,57 +32,30 @@ func (s *identityCertProvider) RequiresIdentity() bool {
 }
 
 func (s *identityCertProvider) Get(ctx context.Context, name string, requestor sds_auth.Identity) (sds_provider.Secret, error) {
-	return &IdentityCertSecret{
-		PemCerts: [][]byte{[]byte(`
------BEGIN CERTIFICATE-----
-MIIC/TCCAeWgAwIBAgIRAKgVvRCrr87LMCVhIoU2k2gwDQYJKoZIhvcNAQELBQAw
-EjEQMA4GA1UEChMHQWNtZSBDbzAeFw0xOTA4MzAxMzQ4NDlaFw0yOTA4MzAwMTQ4
-NDlaMBIxEDAOBgNVBAoTB0FjbWUgQ28wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
-ggEKAoIBAQDTzb7dLh/7o/5eNatxF4RGRaXKJw85OjwmJKNESJ/4+ykFHOTh2Cg3
-BK5E9BXTWlEWMXlDTeMT3sqsJLyKCcQ38G64ue/gxvmqu2fMIXL/kABkta1gOXJF
-/QNCf/bjln7gxeTQzwfHHFuMCxq7qq0pdXkvp/gxXDKpJiwCYwOpZ5eT0lWbfUk6
-s/pOFniUSlLNg8gi3nNNUSZDVTN9HpivXWVO3IAWkupxYV/8rwwyzb5Z4jheFDVj
-G+It6BmItQK7snmoB4f1S8ELUT62nBu/pyyc6Y5AIN2wbzccdhhBBbTUHkZb7RoV
-l2fbgnoKFLNNXvYxKAeqq65EhnYXR1fXAgMBAAGjTjBMMA4GA1UdDwEB/wQEAwIC
-pDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MBQGA1UdEQQN
-MAuCCWxvY2FsaG9zdDANBgkqhkiG9w0BAQsFAAOCAQEAXpxcNfSfEUIwOgfPtDYV
-ZzzLxx9m27m9cYyjaXWDFdXVDO/MTPjr/bf/7QVhf3ofoF9l/ojwkl+MwmhkV0Jx
-W2kfIyVQpsRh2KvYVv74Zn610zbvMLSTyEHuG2UWO0UeZfOsHmTEJsuJH54GEYJh
-DYHKHl31pG9OF1CwAZNyhmOz3nFrzRJr695rR0ZKwYvAfaTA/VUEymmPX3RiHf6W
-i18K5lY9hrNfNgI4gMVyNaWbAtJASzNdH1TIlvHv+P5pXqE2okfVFG/Gaw7tBfCJ
-EpmbGZ7aOrJIX9zqzgYKMg0ALF0jzKwAcxkyyQpcvGQbN1qMMbNYwrJPdQ6eK6AQ
-5w==
------END CERTIFICATE-----
-`),
-		},
-		PemKey: []byte(`
------BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEA082+3S4f+6P+XjWrcReERkWlyicPOTo8JiSjREif+PspBRzk
-4dgoNwSuRPQV01pRFjF5Q03jE97KrCS8ignEN/BuuLnv4Mb5qrtnzCFy/5AAZLWt
-YDlyRf0DQn/245Z+4MXk0M8HxxxbjAsau6qtKXV5L6f4MVwyqSYsAmMDqWeXk9JV
-m31JOrP6ThZ4lEpSzYPIIt5zTVEmQ1UzfR6Yr11lTtyAFpLqcWFf/K8MMs2+WeI4
-XhQ1YxviLegZiLUCu7J5qAeH9UvBC1E+tpwbv6csnOmOQCDdsG83HHYYQQW01B5G
-W+0aFZdn24J6ChSzTV72MSgHqquuRIZ2F0dX1wIDAQABAoIBAAH2MuFbjwJGp5F5
-z8exXxFDjeCMchCmoG3+AuEcBxdIRD3+4YPR+7Vevrp2xEj72ippdOURsJu7gYcM
-pA5nPsEB4hSl7DnZvfA94h065hTF4asNH7j3bz6EtGYGR2QePbiZPKBOepT2h0aJ
-x8qbLxVmOCQf2yWh4/o7F0dCYYNNJP4RQrFSPHH27egmHGh7ts02HUf9tL5p5XGL
-SUIAqat0vWZsawIxuPhZCLPid8Z7V1Qc0YZNb3y7MbvH5NoJFntgONazTah8Qcgp
-yilFYNeg/FB+l5L447Ln18BhNWZ/BwTiwu67FD8DpvXTQUEovYT4sEE8vnuVakZT
-w5D0KoECgYEA//c1ovpJ7HqySxJSJNIAdZIibTV5Hdhk6uGD+t9Hn00JFpxoug6P
-Wbg76oJi9FSAv/I1UApjz+PQIgjAX0KjeeDiquIwqfuBsPsHpvoJ0YPoYYBLhBTv
-Y8gynvhFKmjPxaWudgxeZq8IAC0JTmN2HToy63oY4fniSKBzX2sAYhcCgYEA09UE
-+GTrw5JMz0DSAoh1LxUJbJihVWgAHUCdAhbqF0cqMYcWzqE4otQi6DoesCPW/Brb
-B+gpGscgiVQgSopqugDkzfZHvm8SEZLJqrCI9rl/ji2G0JK/Ull1QL79JaO71RHZ
-v6eyjxdQk1eAunK/Mj4aO6tAMBiUURWCDYN7EEECgYEAj+l+154fV/z4J2sqkhcc
-OP4rqvkompYiz0hx+uf0jeUzGepgm1M6V7hUv5oFZtfn94OHY/QjgCvWxnvjJOwD
-m6/L4UYBFGEa3tWUzNXCFXEzgzYtvxpCKfjSNTzjLl/1iWuItkhn/xWjyu2HUPJs
-4yvomypvuQXUqv7DPz+a3IsCgYAslsNUEdI6uXnnikpqdBTOk0wHit0y4BBeF/K0
-tOQTgExWXowjdHY6eBLc9RbulqyzJmgCcxDr7QxhO88MQbSTcIq4++VAJZsVDePb
-RQufe45o/BZLowgYqnHu7gTVPnDUOcyu9fq0+gBg82NKW8r5JW9aLgL13MajhrZ4
-Z7uowQKBgQC++fEHyMUYDrTV+BdrVIgBSJTzz6decstMggrpDN8FEkjQdwFy00H+
-dRdy6yz9/TedG26tXZKxvZAX8YwjW/6hngvhljuhYUArqlbuF0/voKyQiEyKXbeb
-O3MYg+8MQDedqzs8MFRAvXrJy+C3zwMz8g6cMcWCzkzV0uOhzCm6mQ==
------END RSA PRIVATE KEY-----
-`),
-	}, nil
+	meshName := requestor.Mesh
+	list := &core_mesh.MeshResourceList{}
+	if err := s.resourceManager.List(ctx, list, core_store.ListByMesh(meshName)); err != nil {
+		return nil, errors.Wrapf(err, "failed to find a Mesh %q", meshName)
+	}
+	if len(list.Items) == 0 {
+		return nil, errors.Errorf("there is no Mesh %q", meshName)
+	}
+	if len(list.Items) != 1 {
+		return nil, errors.Errorf("there are multiple Meshes named %q", meshName)
+	}
+	mesh := list.Items[0]
+
+	switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
+	case *mesh_proto.CertificateAuthority_Builtin_:
+		workloadCert, err := s.builtinCaManager.GenerateWorkloadCert(ctx, mesh.Meta.GetName(), requestor.Service)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate a Workload Identity Certificate for %+v", requestor)
+		}
+		return &IdentityCertSecret{
+			PemCerts: [][]byte{workloadCert.CertPEM},
+			PemKey:   []byte(workloadCert.KeyPEM),
+		}, nil
+	default:
+		return nil, errors.Errorf("Mesh %q has unsupported CA type", meshName)
+	}
 }

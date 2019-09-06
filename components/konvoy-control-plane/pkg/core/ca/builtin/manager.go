@@ -8,6 +8,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 
+	builtin_issuer "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin/issuer"
 	core_system "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/system"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -30,6 +31,7 @@ type BuiltinCaManager interface {
 	Create(ctx context.Context, mesh string) error
 	Delete(ctx context.Context, mesh string) error
 	GetRootCerts(ctx context.Context, mesh string) ([]CaRootCert, error)
+	GenerateWorkloadCert(ctx context.Context, mesh string, workload string) (*tls.KeyPair, error)
 }
 
 func NewBuiltinCaManager(secretManager secret_manager.SecretManager) BuiltinCaManager {
@@ -43,9 +45,9 @@ type builtinCaManager struct {
 }
 
 func (m *builtinCaManager) Create(ctx context.Context, mesh string) error {
-	keyPair, err := tls.NewSelfSignedCert(mesh)
+	keyPair, err := builtin_issuer.NewRootCA(mesh)
 	if err != nil {
-		return errors.Wrap(err, "failed to generate a Root CA cert for a given mesh")
+		return errors.Wrapf(err, "failed to generate a Root CA cert for Mesh %q", mesh)
 	}
 	builtinCa := BuiltinCa{
 		Roots: []CaRoot{
@@ -57,7 +59,7 @@ func (m *builtinCaManager) Create(ctx context.Context, mesh string) error {
 	}
 	data, err := json.Marshal(builtinCa)
 	if err != nil {
-		return errors.Wrap(err, "failed to serialize a Root CA cert for a given mesh")
+		return errors.Wrapf(err, "failed to serialize a Root CA cert for Mesh %q", mesh)
 	}
 	builtinCaSecret := &core_system.SecretResource{
 		Spec: types.BytesValue{
@@ -66,7 +68,7 @@ func (m *builtinCaManager) Create(ctx context.Context, mesh string) error {
 	}
 	secretKey := builtinCaSecretKey(mesh)
 	if err := m.secretManager.Create(ctx, builtinCaSecret, core_store.CreateBy(secretKey)); err != nil {
-		return errors.Wrapf(err, "failed to create Builtin CA for a given mesh")
+		return errors.Wrapf(err, "failed to create Builtin CA for Mesh %q", mesh)
 	}
 	return nil
 }
@@ -78,12 +80,41 @@ func (m *builtinCaManager) Delete(ctx context.Context, mesh string) error {
 		if core_store.IsResourceNotFound(err) {
 			return nil
 		}
-		return errors.Wrapf(err, "failed to delete Builtin CA for a given mesh")
+		return errors.Wrapf(err, "failed to delete Builtin CA for Mesh %q", mesh)
 	}
 	return nil
 }
 
 func (m *builtinCaManager) GetRootCerts(ctx context.Context, mesh string) ([]CaRootCert, error) {
+	meshCa, err := m.getMeshCa(ctx, mesh)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
+	}
+	caRootCerts := make([]CaRootCert, len(meshCa.Roots))
+	for i, root := range meshCa.Roots {
+		caRootCerts[i] = root.Cert
+	}
+	return caRootCerts, nil
+}
+
+func (m *builtinCaManager) GenerateWorkloadCert(ctx context.Context, mesh string, workload string) (*tls.KeyPair, error) {
+	meshCa, err := m.getMeshCa(ctx, mesh)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
+	}
+	if len(meshCa.Roots) < 1 {
+		return nil, errors.Wrapf(err, "CA for Mesh %q has no key pair", mesh)
+	}
+	active := meshCa.Roots[0]
+	signer := tls.KeyPair{CertPEM: active.Cert, KeyPEM: active.Key}
+	keyPair, err := builtin_issuer.NewWorkloadCert(signer, mesh, workload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to generate a Workload Identity cert for workload %q in Mesh %q", workload, mesh)
+	}
+	return keyPair, nil
+}
+
+func (m *builtinCaManager) getMeshCa(ctx context.Context, mesh string) (*BuiltinCa, error) {
 	secretKey := builtinCaSecretKey(mesh)
 	builtinCaSecret := &core_system.SecretResource{}
 	if err := m.secretManager.Get(ctx, builtinCaSecret, core_store.GetBy(secretKey)); err != nil {
@@ -91,13 +122,9 @@ func (m *builtinCaManager) GetRootCerts(ctx context.Context, mesh string) ([]CaR
 	}
 	builtinCa := BuiltinCa{}
 	if err := json.Unmarshal(builtinCaSecret.Spec.Value, &builtinCa); err != nil {
-		return nil, errors.Wrap(err, "failed to deserialize a Root CA cert for a given mesh")
+		return nil, errors.Wrapf(err, "failed to deserialize a Root CA cert for Mesh %q", mesh)
 	}
-	caRootCerts := make([]CaRootCert, len(builtinCa.Roots))
-	for i, root := range builtinCa.Roots {
-		caRootCerts[i] = root.Cert
-	}
-	return caRootCerts, nil
+	return &builtinCa, nil
 }
 
 func builtinCaSecretKey(mesh string) core_model.ResourceKey {

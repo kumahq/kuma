@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -19,6 +20,9 @@ var _ = Describe("Bootstrap", func() {
 		// when control plane is started
 		rt, err := Bootstrap(cfg)
 		ch := make(chan struct{})
+		defer func() {
+			close(ch)
+		}()
 		go func() {
 			defer GinkgoRecover()
 			err := rt.Start(ch)
