@@ -13,16 +13,14 @@ var (
 )
 
 func SetupServer(rt core_runtime.Runtime) error {
-	reconciler, err := DefaultReconciler(rt)
+	reconciler := DefaultReconciler(rt)
+
+	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler)
 	if err != nil {
 		return err
 	}
-	for _, ds := range rt.DiscoverySources() {
-		ds.AddConsumer(reconciler)
-	}
-
 	callbacks := util_xds.CallbacksChain{
-		DefaultDataplaneSyncTracker(rt, reconciler),
+		tracker,
 		DefaultDataplaneStatusTracker(rt),
 	}
 

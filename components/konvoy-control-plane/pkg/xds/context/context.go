@@ -8,11 +8,16 @@ import (
 
 type Context struct {
 	ControlPlane *ControlPlaneContext
+	Mesh         MeshContext
 }
 
 type ControlPlaneContext struct {
 	SdsLocation string
 	SdsTlsCert  []byte
+}
+
+type MeshContext struct {
+	TlsEnabled bool
 }
 
 func BuildControlPlaneContext(config konvoy_cp.Config) (*ControlPlaneContext, error) {

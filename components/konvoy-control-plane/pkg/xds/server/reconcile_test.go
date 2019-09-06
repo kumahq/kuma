@@ -85,7 +85,6 @@ var _ = Describe("Reconcile", func() {
 					return <-snapshots, nil
 				}),
 				&simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
-				&xds_context.ControlPlaneContext{},
 			}
 
 			// given
@@ -100,7 +99,15 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event")
 			// when
-			err := r.OnDataplaneUpdate(dataplane)
+			proxy := &xds_model.Proxy{
+				Id: xds_model.ProxyId{
+					Mesh:      "pilot",
+					Namespace: "example",
+					Name:      "demo",
+				},
+				Dataplane: dataplane,
+			}
+			err := r.Reconcile(xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -118,7 +125,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event (Dataplane watchdog triggers refresh)")
 			// when
-			err = r.OnDataplaneUpdate(dataplane)
+			err = r.Reconcile(xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -136,7 +143,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event (Dataplane gets changed)")
 			// when
-			err = r.OnDataplaneUpdate(dataplane)
+			err = r.Reconcile(xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

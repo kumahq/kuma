@@ -2,6 +2,8 @@ package server_test
 
 import (
 	"context"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
+	context2 "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -21,6 +23,27 @@ import (
 	test_runtime "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/runtime"
 )
 
+type event struct {
+	Update *mesh_core.DataplaneResource
+	Delete core_model.ResourceKey
+}
+
+type eventSnapshotReconciler struct {
+	events chan event
+}
+
+func (e *eventSnapshotReconciler) Reconcile(ctx context2.Context, proxy *xds.Proxy) error {
+	e.events <- event{Update: proxy.Dataplane}
+	return nil
+}
+
+func (e *eventSnapshotReconciler) Clear(proxyId *xds.ProxyId) error {
+	e.events <- event{Delete: proxyId.ToResourceKey()}
+	return nil
+}
+
+var _ SnapshotReconciler = &eventSnapshotReconciler{}
+
 var _ = Describe("Components", func() {
 	Describe("DefaultDataplaneSyncTracker", func() {
 		It("", func(done Done) {
@@ -38,25 +61,11 @@ var _ = Describe("Components", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// setup
-			type event struct {
-				Update *mesh_core.DataplaneResource
-				Delete core_model.ResourceKey
-			}
-			events := make(chan event)
-			sink := &core_discovery.DiscoverySink{
-				DataplaneConsumer: DataplaneDiscoveryConsumerFuncs{
-					OnDataplaneUpdateFunc: func(dataplane *mesh_core.DataplaneResource) error {
-						events <- event{Update: dataplane}
-						return nil
-					},
-					OnDataplaneDeleteFunc: func(key core_model.ResourceKey) error {
-						events <- event{Delete: key}
-						return nil
-					},
-				},
-			}
+			reconciler := eventSnapshotReconciler{}
+			reconciler.events = make(chan event)
 			// and
-			tracker := DefaultDataplaneSyncTracker(runtime, sink)
+			tracker, err := DefaultDataplaneSyncTracker(runtime, &reconciler)
+			Expect(err).ToNot(HaveOccurred())
 
 			// given
 			ctx := context.Background()
@@ -82,7 +91,7 @@ var _ = Describe("Components", func() {
 
 			By("waiting for Watchdog to trigger Dataplane configuration refresh (delete)")
 			// when
-			nextEvent := <-events
+			nextEvent := <-reconciler.events
 			// then
 			Expect(nextEvent.Delete).To(Equal(core_model.ResourceKey{Mesh: "pilot", Namespace: "demo", Name: "example"}))
 
@@ -95,7 +104,7 @@ var _ = Describe("Components", func() {
 			By("waiting for Watchdog to trigger Dataplane configuration refresh (update)")
 			// expect
 			Eventually(func() bool {
-				nextEvent := <-events
+				nextEvent := <-reconciler.events
 				return nextEvent.Update != nil
 			}, "1s", "1ms").Should(BeTrue())
 

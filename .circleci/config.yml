@@ -317,18 +317,18 @@ jobs:
     - run:
         name: Deploy Konvoy demo
         command: make deploy/example/minikube -C components/konvoy-control-plane
-    # - run:
-    #     name: Wait until Envoy listener gets configured
-    #     command: make wait/example/minikube -C components/konvoy-control-plane
-    # - run:
-    #     name: Make test requests via Envoy
-    #     command: make curl/example/minikube -C components/konvoy-control-plane
-    # - run:
-    #     name: Verify Envoy stats
-    #     command: make verify/example/minikube -C components/konvoy-control-plane
-    # - run:
-    #     name: Verify konvoyctl workflow
-    #     command: make konvoyctl/example/minikube -C components/konvoy-control-plane
+    - run:
+        name: Wait until Envoy listener gets configured
+        command: make wait/example/minikube -C components/konvoy-control-plane
+    - run:
+        name: Make test requests via Envoy
+        command: make curl/example/minikube -C components/konvoy-control-plane
+    - run:
+        name: Verify Envoy stats
+        command: make verify/example/minikube -C components/konvoy-control-plane
+    - run:
+        name: Verify konvoyctl workflow
+        command: make konvoyctl/example/minikube -C components/konvoy-control-plane
   kcp/images/push:
     <<: *vm-executor-defaults
     steps:

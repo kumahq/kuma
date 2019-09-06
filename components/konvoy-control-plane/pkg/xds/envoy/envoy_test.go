@@ -93,7 +93,11 @@ var _ = Describe("Envoy", func() {
               cluster: localhost:8080
               statPrefix: localhost:8080
 `
-		ctx := xds_context.Context{}
+		ctx := xds_context.Context{
+			Mesh: xds_context.MeshContext{
+				TlsEnabled: false,
+			},
+		}
 
 		// when
 		resource := envoy.CreateInboundListener(ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", false)
@@ -123,7 +127,11 @@ var _ = Describe("Envoy", func() {
         deprecatedV1:
           bindToPort: false
 `
-		ctx := xds_context.Context{}
+		ctx := xds_context.Context{
+			Mesh: xds_context.MeshContext{
+				TlsEnabled: false,
+			},
+		}
 
 		// when
 		resource := envoy.CreateInboundListener(ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", true)
