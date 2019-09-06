@@ -5,6 +5,7 @@ import (
 
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	builtin_ca "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -31,6 +32,7 @@ type Builder struct {
 	rs  core_store.ResourceStore
 	rm  core_manager.ResourceManager
 	sm  secret_manager.SecretManager
+	bcm builtin_ca.BuiltinCaManager
 	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
 	ext context.Context
@@ -57,6 +59,11 @@ func (b *Builder) WithResourceManager(rm core_manager.ResourceManager) *Builder 
 
 func (b *Builder) WithSecretManager(sm secret_manager.SecretManager) *Builder {
 	b.sm = sm
+	return b
+}
+
+func (b *Builder) WithBuiltinCaManager(bcm builtin_ca.BuiltinCaManager) *Builder {
+	b.bcm = bcm
 	return b
 }
 
@@ -88,6 +95,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.sm == nil {
 		return nil, errors.Errorf("SecretManager has not been configured")
 	}
+	if b.bcm == nil {
+		return nil, errors.Errorf("BuiltinCaManager has not been configured")
+	}
 	// todo(jakubdyszkiewicz) restore when we've got store based discovery source
 	//if len(b.dss) == 0 {
 	//	return nil, errors.Errorf("DiscoverySources have not been configured")
@@ -106,6 +116,7 @@ func (b *Builder) Build() (Runtime, error) {
 			cfg: b.cfg,
 			rm:  b.rm,
 			sm:  b.sm,
+			bcm: b.bcm,
 			dss: b.dss,
 			xds: b.xds,
 			ext: b.ext,
@@ -119,6 +130,12 @@ func (b *Builder) ComponentManager() ComponentManager {
 }
 func (b *Builder) ResourceStore() core_store.ResourceStore {
 	return b.rs
+}
+func (b *Builder) SecretManager() secret_manager.SecretManager {
+	return b.sm
+}
+func (b *Builder) BuiltinCaManager() builtin_ca.BuiltinCaManager {
+	return b.bcm
 }
 func (b *Builder) XdsContext() core_xds.XdsContext {
 	return b.xds

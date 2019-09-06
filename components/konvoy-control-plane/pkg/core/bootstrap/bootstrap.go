@@ -6,6 +6,7 @@ import (
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	builtin_ca "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin"
 	mesh_managers "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/plugins"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
@@ -37,6 +38,8 @@ func buildRuntime(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
+	initializeBuiltinCaManager(builder)
+
 	initializeResourceManager(builder)
 
 	initializeXds(builder)
@@ -49,17 +52,19 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 	defaultMesh := mesh.MeshResource{}
 	cfg := runtime.Config()
 
-	getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh,
-		core_model.DefaultMesh)
+	namespace := core_model.DefaultNamespace
+	if runtime.Config().Environment == konvoy_cp.KubernetesEnvironment {
+		namespace = runtime.Config().Store.Kubernetes.SystemNamespace
+	}
 
-	if err := resManager.Get(context.Background(), &defaultMesh, getOpts); err != nil {
+	key := core_model.ResourceKey{Namespace: namespace, Mesh: core_model.DefaultMesh, Name: core_model.DefaultMesh}
+
+	if err := resManager.Get(context.Background(), &defaultMesh, core_store.GetBy(key)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			core.Log.Info("Creating default mesh from the settings", "mesh", cfg.Defaults.Mesh)
 			defaultMesh.Spec = cfg.Defaults.Mesh
-			createOpts := core_store.CreateByKey(core_model.DefaultNamespace,
-				core_model.DefaultMesh, core_model.DefaultMesh)
 
-			if err := resManager.Create(context.Background(), &defaultMesh, createOpts); err != nil {
+			if err := resManager.Create(context.Background(), &defaultMesh, core_store.CreateBy(key)); err != nil {
 				return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")
 			}
 		} else {
@@ -196,9 +201,13 @@ func initializeXds(builder *core_runtime.Builder) {
 	builder.WithXdsContext(core_xds.NewXdsContext())
 }
 
+func initializeBuiltinCaManager(builder *core_runtime.Builder) {
+	builder.WithBuiltinCaManager(builtin_ca.NewBuiltinCaManager(builder.SecretManager()))
+}
+
 func initializeResourceManager(builder *core_runtime.Builder) {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore())
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{
 		mesh.MeshType: meshManager,
 	}
