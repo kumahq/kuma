@@ -24,6 +24,23 @@
 
 PKG_LIST := ./... ./api/... ./pkg/plugins/resources/k8s/native/...
 
+BUILD_INFO_GIT_TAG ?= $(shell git describe --tags 2>/dev/null || echo unknown)
+BUILD_INFO_GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
+BUILD_INFO_BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" || echo unknown)
+BUILD_INFO_VERSION ?= $(shell prefix=$$(echo $(BUILD_INFO_GIT_TAG) | cut -c 1); if [ "$${prefix}" = "v" ]; then echo $(BUILD_INFO_GIT_TAG) | cut -c 2- ; else echo $(BUILD_INFO_GIT_TAG) ; fi)
+
+build_info_fields := \
+	version=$(BUILD_INFO_VERSION) \
+	gitTag=$(BUILD_INFO_GIT_TAG) \
+	gitCommit=$(BUILD_INFO_GIT_COMMIT) \
+	buildDate=$(BUILD_INFO_BUILD_DATE)
+build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/Kong/konvoy/components/konvoy-control-plane/pkg/version.$(entry))
+
+LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags)"
+GO_BUILD := CGO_ENABLED=0 go build -v $(LD_FLAGS)
+GO_RUN := CGO_ENABLED=0 go run $(LD_FLAGS)
+GO_TEST := go test $(LD_FLAGS)
+
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts
 
@@ -317,27 +334,27 @@ check: generate fmt vet docs ## Dev: Run code checks (go fmt, go vet, ...)
 
 test: ## Dev: Run tests
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
-	go test $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
+	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 integration: ## Dev: Run integration tests
 	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
-	tools/test/run-integration-tests.sh "go test -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)"
+	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
 build: build/konvoy-cp build/kuma-dp build/kumactl build/konvoy-injector ## Dev: Build all binaries
 
 build/konvoy-cp: ## Dev: Build `Control Plane` binary
-	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
+	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
 
 build/kuma-dp: ## Dev: Build `kuma-dp` binary
-	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ./app/kuma-dp
+	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ./app/kuma-dp
 
 build/kumactl: ## Dev: Build `kumactl` binary
-	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o $(BUILD_KUMACTL_DIR)/kumactl ./app/kumactl
+	$(GO_BUILD) -o $(BUILD_KUMACTL_DIR)/kumactl ./app/kumactl
 
 build/konvoy-injector: ## Dev: Build `konvoy-injector` binary
-	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-injector/konvoy-injector ./app/konvoy-injector
+	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/konvoy-injector/konvoy-injector ./app/konvoy-injector
 
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
@@ -347,7 +364,7 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
     KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
     KONVOY_ENVIRONMENT=kubernetes \
     KONVOY_STORE_TYPE=kubernetes \
-	go run ./app/konvoy-cp/main.go run
+	$(GO_RUN) ./app/konvoy-cp/main.go run
 
 run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
@@ -355,7 +372,7 @@ run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mod
 	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
 	KONVOY_ENVIRONMENT=universal \
 	KONVOY_STORE_TYPE=memory \
-	go run ./app/konvoy-cp/main.go run
+	$(GO_RUN) ./app/konvoy-cp/main.go run
 
 start/postgres: ## Boostrap: start Postgres for Control Plane with initial schema
 	docker-compose -f tools/postgres/docker-compose.yaml up $(DOCKER_COMPOSE_OPTIONS) -d
@@ -372,7 +389,7 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KONVOY_STORE_POSTGRES_USER=konvoy \
 	KONVOY_STORE_POSTGRES_PASSWORD=konvoy \
 	KONVOY_STORE_POSTGRES_DB_NAME=konvoy \
-	go run ./app/konvoy-cp/main.go run
+	$(GO_RUN) ./app/konvoy-cp/main.go run
 
 curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
 curl/listeners: ## Dev: Make Discovery request to LDS
@@ -513,7 +530,7 @@ generate/test/cert/konvoy-injector:  ## Dev: Generate TLS cert for Konvoy Inject
 run/konvoy-injector: ## Dev: Run Konvoy Injector locally
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KONVOY_INJECTOR_WEBHOOK_SERVER_CERT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata \
-	go run ./app/konvoy-injector/main.go run
+	$(GO_RUN) ./app/konvoy-injector/main.go run
 
 test/konvoy-injector: PKG_LIST=./app/konvoy-injector/... ./pkg/config/app/konvoy-injector/...
 test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
@@ -522,7 +539,7 @@ run/kuma-dp: ## Dev: Run `kuma-dp` locally
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KUMA_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
-	go run ./app/kuma-dp/main.go run
+	$(GO_RUN) ./app/kuma-dp/main.go run
 
 test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
 test/kuma-dp: test ## Dev: Run `kuma-dp` tests only

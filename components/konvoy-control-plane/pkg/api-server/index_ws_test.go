@@ -7,10 +7,29 @@ import (
 	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"net/http"
+
+	konvoy_version "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/version"
 )
 
 var _ = Describe("Index WS", func() {
+
+	var backupBuildInfo konvoy_version.BuildInfo
+	BeforeEach(func() {
+		backupBuildInfo = konvoy_version.Build
+	})
+	AfterEach(func() {
+		konvoy_version.Build = backupBuildInfo
+	})
+
 	It("should return the version of Kuma Control Plane", func(done Done) {
+		// given
+		konvoy_version.Build = konvoy_version.BuildInfo{
+			Version:   "1.2.3",
+			GitTag:    "v1.2.3",
+			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+			BuildDate: "2019-08-07T11:26:06Z",
+		}
+
 		// setup
 		resourceStore := memory.NewStore()
 		apiServer := createTestApiServer(resourceStore, *api_server.DefaultApiServerConfig())
@@ -39,7 +58,7 @@ var _ = Describe("Index WS", func() {
 		expected := `
 		{
 			"tagline": "Kuma",
-			"version": "0.1.0"
+			"version": "1.2.3"
 		}
 `
 		Expect(body).To(MatchJSON(expected))
