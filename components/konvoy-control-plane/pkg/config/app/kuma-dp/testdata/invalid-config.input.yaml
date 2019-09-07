@@ -2,7 +2,8 @@ controlPlane:
   bootstrapServer:
     url: invalid-url
 dataplane:
-  id:
+  mesh:
+  name:
   adminPort: 82345
 dataplaneRuntime:
   binaryPath:

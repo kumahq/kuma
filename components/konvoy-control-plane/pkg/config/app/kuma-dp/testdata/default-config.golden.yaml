@@ -1,4 +1,5 @@
 dataplane:
+  mesh: default
   adminPort: 9901
 dataplaneRuntime:
   binaryPath: envoy

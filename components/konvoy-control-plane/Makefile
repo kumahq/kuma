@@ -62,8 +62,9 @@ SDS_GRPC_PORT ?= 5677
 LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
 
 ENVOY_BINARY ?= envoy
-EXAMPLE_ENVOY_ID ?= default.example
-EXAMPLE_ENVOY_CLUSTER ?= demo
+EXAMPLE_DATAPLANE_MESH ?= default
+EXAMPLE_DATAPLANE_NAME ?= example
+EXAMPLE_ENVOY_ID ?= $(EXAMPLE_DATAPLANE_MESH).$(EXAMPLE_DATAPLANE_NAME)
 EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
 EXAMPLE_ENVOY_PORT ?= 8080
 ENVOY_ADMIN_PORT ?= 9901
@@ -72,8 +73,11 @@ EXAMPLE_NAMESPACE ?= konvoy-demo
 
 KIND_KUBECONFIG = $(shell kind get kubeconfig-path --name=konvoy)
 
-define KIND_EXAMPLE_ENVOY_ID
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar printenv KUMA_DATAPLANE_ID)
+define KIND_EXAMPLE_DATAPLANE_MESH
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar printenv KUMA_DATAPLANE_MESH)
+endef
+define KIND_EXAMPLE_DATAPLANE_NAME
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
@@ -391,22 +395,24 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KONVOY_STORE_POSTGRES_DB_NAME=konvoy \
 	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
 
-curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
+curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_DATAPLANE_MESH).$(KIND_EXAMPLE_DATAPLANE_NAME)
 curl/listeners: ## Dev: Make Discovery request to LDS
 	curl -s $(CP_BIND_HOST):$(CP_HTTP_PORT)/v2/discovery:listeners --data-binary $(SIMPLE_DISCOVERY_REQUEST)
 
-curl/clusters: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
+curl/clusters: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_DATAPLANE_MESH).$(KIND_EXAMPLE_DATAPLANE_NAME)
 curl/clusters: ## Dev: Make Discovery request to CDS
 	curl -s $(CP_BIND_HOST):$(CP_HTTP_PORT)/v2/discovery:clusters --data-binary $(SIMPLE_DISCOVERY_REQUEST)
 
-run/example/envoy/k8s: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
+run/example/envoy/k8s: EXAMPLE_DATAPLANE_MESH=$(KIND_EXAMPLE_DATAPLANE_MESH)
+run/example/envoy/k8s: EXAMPLE_DATAPLANE_NAME=$(KIND_EXAMPLE_DATAPLANE_NAME)
 run/example/envoy/k8s: run/example/envoy
 
 run/example/envoy/universal: run/example/envoy
 
 run/example/envoy: build/kuma-dp ## Dev: Run Envoy configured against local Control Plane
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
-	KUMA_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
+	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
+	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp run --log-level=debug
 
@@ -537,7 +543,8 @@ test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
 
 run/kuma-dp: ## Dev: Run `kuma-dp` locally
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
-	KUMA_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
+	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
+	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
 

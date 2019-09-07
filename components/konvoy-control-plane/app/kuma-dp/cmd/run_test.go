@@ -4,17 +4,18 @@ package cmd
 
 import (
 	"bytes"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
-	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	"github.com/gogo/protobuf/proto"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kuma-dp/pkg/dataplane/envoy"
+	kumadp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
+	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
+	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
+	"github.com/gogo/protobuf/proto"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -90,7 +91,7 @@ var _ = Describe("run", func() {
 		// and
 		env := map[string]string{
 			"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "http://localhost:1234",
-			"KUMA_DATAPLANE_ID":                       "example",
+			"KUMA_DATAPLANE_NAME":                     "example",
 			"KUMA_DATAPLANE_ADMIN_PORT":               "2345",
 			"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":      filepath.Join("testdata", "envoy-mock.sleep.sh"),
 			"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":       configDir,

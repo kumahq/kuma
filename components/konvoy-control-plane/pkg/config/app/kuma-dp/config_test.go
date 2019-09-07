@@ -49,7 +49,8 @@ var _ = Describe("Config", func() {
 			// setup
 			env := map[string]string{
 				"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "https://kuma-control-plane.internal:5682",
-				"KUMA_DATAPLANE_ID":                       "example",
+				"KUMA_DATAPLANE_MESH":                     "pilot",
+				"KUMA_DATAPLANE_NAME":                     "example",
 				"KUMA_DATAPLANE_ADMIN_PORT":               "2345",
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":      "envoy.sh",
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":       "/var/run/envoy",
@@ -69,7 +70,8 @@ var _ = Describe("Config", func() {
 
 			// and
 			Expect(cfg.ControlPlane.BootstrapServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
-			Expect(cfg.Dataplane.Id).To(Equal("example"))
+			Expect(cfg.Dataplane.Mesh).To(Equal("pilot"))
+			Expect(cfg.Dataplane.Name).To(Equal("example"))
 			Expect(cfg.Dataplane.AdminPort).To(Equal(uint32(2345)))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
@@ -101,6 +103,6 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err).To(MatchError(`Invalid configuration: .ControlPlane is not valid: .BootstrapServer is not valid: .URL must be a valid absolute URI; .Dataplane is not valid: .Id must be non-empty; .AdminPort must be in the range [0, 65535]; .DataplaneRuntime is not valid: .BinaryPath must be non-empty; .ConfigDir must be non-empty`))
+		Expect(err).To(MatchError(`Invalid configuration: .ControlPlane is not valid: .BootstrapServer is not valid: .URL must be a valid absolute URI; .Dataplane is not valid: .Mesh must be non-empty; .Name must be non-empty; .AdminPort must be in the range [0, 65535]; .DataplaneRuntime is not valid: .BinaryPath must be non-empty; .ConfigDir must be non-empty`))
 	})
 })

@@ -1,8 +1,9 @@
 package kumadp
 
 import (
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 	"net/url"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -16,7 +17,8 @@ func DefaultConfig() Config {
 			},
 		},
 		Dataplane: Dataplane{
-			Id:        "", // Envoy Id must must be set explicitly
+			Mesh:      "default",
+			Name:      "", // Dataplane name must be set explicitly
 			AdminPort: 9901,
 		},
 		DataplaneRuntime: DataplaneRuntime{
@@ -49,8 +51,10 @@ type BootstrapServer struct {
 
 // Dataplane defines bootstrap configuration of the dataplane (Envoy).
 type Dataplane struct {
-	// Envoy node Id.
-	Id string `yaml:"id,omitempty" envconfig:"kuma_dataplane_id"`
+	// Mesh name.
+	Mesh string `yaml:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
+	// Dataplane name.
+	Name string `yaml:"name,omitempty" envconfig:"kuma_dataplane_name"`
 	// Envoy Admin port.
 	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
 }
@@ -90,8 +94,11 @@ func (c *ControlPlane) Validate() (errs error) {
 var _ config.Config = &Dataplane{}
 
 func (d *Dataplane) Validate() (errs error) {
-	if d.Id == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Id must be non-empty"))
+	if d.Mesh == "" {
+		errs = multierr.Append(errs, errors.Errorf(".Mesh must be non-empty"))
+	}
+	if d.Name == "" {
+		errs = multierr.Append(errs, errors.Errorf(".Name must be non-empty"))
 	}
 	if 65535 < d.AdminPort {
 		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
