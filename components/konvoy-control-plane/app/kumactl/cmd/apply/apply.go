@@ -50,7 +50,7 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
 			res, err := parseResource(configBytes)
 			if err != nil {
-				return errors.Wrap(err, "yaml contains invalid resource")
+				return errors.Wrap(err, "YAML contains invalid resource")
 			}
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
@@ -98,6 +98,12 @@ func parseResource(bytes []byte) (model.Resource, error) {
 	resMeta := rest.ResourceMeta{}
 	if err := yaml.Unmarshal(bytes, &resMeta); err != nil {
 		return nil, err
+	}
+	if resMeta.Name == "" {
+		return nil, errors.New("Name field cannot be empty")
+	}
+	if resMeta.Mesh == "" {
+		return nil, errors.New("Mesh field cannot be empty")
 	}
 	resource, err := registry.Global().NewObject(model.ResourceType(resMeta.Type))
 	if err != nil {
