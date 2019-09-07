@@ -52,6 +52,7 @@ func DefaultConfig() Config {
 					Builtin: &v1alpha1.CertificateAuthority_Builtin{},
 				},
 			},
+			Enabled: false,
 		},
 	}
 

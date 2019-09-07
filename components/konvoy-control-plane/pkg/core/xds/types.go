@@ -68,3 +68,11 @@ func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
 		Mesh:      id.Mesh,
 	}
 }
+
+func FromResourceKey(key core_model.ResourceKey) ProxyId {
+	return ProxyId{
+		Mesh:      key.Mesh,
+		Namespace: key.Namespace,
+		Name:      key.Name,
+	}
+}

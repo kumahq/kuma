@@ -39,6 +39,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					SdsLocation: "konvoy-system:5677",
 					SdsTlsCert:  []byte("12345"),
 				},
+				Mesh: xds_context.MeshContext{
+					TlsEnabled: true,
+				},
 			}
 
 			dataplane := mesh_proto.Dataplane{}

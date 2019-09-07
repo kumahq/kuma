@@ -83,16 +83,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 			},
 		},
 		FilterChains: []listener.FilterChain{{
-			TlsContext: &auth.DownstreamTlsContext{
-				CommonTlsContext: &auth.CommonTlsContext{
-					ValidationContextType: &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
-						ValidationContextSdsSecretConfig: sdsSecretConfig(ctx, server.MeshCaResource),
-					},
-					TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
-						sdsSecretConfig(ctx, server.IdentityCertResource),
-					},
-				},
-			},
+			TlsContext: downstreamTlsContext(ctx),
 			Filters: []listener.Filter{{
 				Name: util.TCPProxy,
 				ConfigType: &listener.Filter_TypedConfig{
@@ -108,6 +99,22 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 		}
 	}
 	return listener
+}
+
+func downstreamTlsContext(ctx xds_context.Context) *auth.DownstreamTlsContext {
+	if !ctx.Mesh.TlsEnabled {
+		return nil
+	}
+	return &auth.DownstreamTlsContext{
+		CommonTlsContext: &auth.CommonTlsContext{
+			ValidationContextType: &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
+				ValidationContextSdsSecretConfig: sdsSecretConfig(ctx, server.MeshCaResource),
+			},
+			TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
+				sdsSecretConfig(ctx, server.IdentityCertResource),
+			},
+		},
+	}
 }
 
 func sdsSecretConfig(context xds_context.Context, name string) *auth.SdsSecretConfig {

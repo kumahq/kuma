@@ -2,9 +2,6 @@ package server
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
-	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
-	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
@@ -19,36 +16,27 @@ var (
 	reconcileLog = core.Log.WithName("xds-server").WithName("reconcile")
 )
 
+type SnapshotReconciler interface {
+	Reconcile(ctx xds_context.Context, proxy *model.Proxy) error
+	Clear(proxyId *model.ProxyId) error
+}
+
+var _ SnapshotReconciler = &reconciler{}
+
 type reconciler struct {
-	generator  snapshotGenerator
-	cacher     snapshotCacher
-	envoyCpCtx *xds_context.ControlPlaneContext
+	generator snapshotGenerator
+	cacher    snapshotCacher
 }
 
-// Make sure that reconciler implements all relevant interfaces
-var _ core_discovery.DataplaneDiscoveryConsumer = &reconciler{}
-
-func (r *reconciler) OnDataplaneUpdate(dataplane *mesh_core.DataplaneResource) error {
-	proxyId := model.ProxyId{Name: dataplane.Meta.GetName(), Namespace: dataplane.Meta.GetNamespace(), Mesh: dataplane.Meta.GetMesh()}
-	return r.reconcile(
-		&envoy_core.Node{Id: proxyId.String()},
-		&model.Proxy{
-			Id:        proxyId,
-			Dataplane: dataplane,
-		})
-}
-func (r *reconciler) OnDataplaneDelete(key core_model.ResourceKey) error {
-	proxyId := model.ProxyId{Name: key.Name, Namespace: key.Namespace, Mesh: key.Mesh}
+func (r *reconciler) Clear(proxyId *model.ProxyId) error {
 	// cache.Clear() operation does not push a new (empty) configuration to Envoy.
 	// That is why instead of calling cache.Clear() we set configuration to an empty Snapshot.
 	// This fake value will be removed from cache on Envoy disconnect.
 	return r.cacher.Cache(&envoy_core.Node{Id: proxyId.String()}, envoy_cache.Snapshot{})
 }
 
-func (r *reconciler) reconcile(node *envoy_core.Node, proxy *model.Proxy) error {
-	ctx := xds_context.Context{
-		ControlPlane: r.envoyCpCtx,
-	}
+func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) error {
+	node := &envoy_core.Node{Id: proxy.Id.String()}
 	snapshot, err := r.generator.GenerateSnapshot(ctx, proxy)
 	if err != nil {
 		reconcileLog.Error(err, "failed to generate a snapshot", "node", node, "proxy", proxy)

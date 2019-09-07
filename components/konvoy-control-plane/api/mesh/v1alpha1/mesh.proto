@@ -13,6 +13,9 @@ message Mesh {
     // Certificate Authority of a Mesh.
     // +optional
     CertificateAuthority ca = 1;
+
+    // If true, then mTLS will be enabled for given mesh
+    bool enabled = 2;
   }
 
   // mTLS settings.
