@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
@@ -41,6 +42,24 @@ var _ = Describe("RemoteStore", func() {
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       ioutil.NopCloser(bufio.NewReader(file)),
+				}, nil
+			}),
+		}
+		apis := &core_rest.ApiDescriptor{
+			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "trafficroutes"),
+				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
+			},
+		}
+		return remote.NewStore(client, apis)
+	}
+
+	setupErrorStore := func(errorMsg string) core_store.ResourceStore {
+		client := &http.Client{
+			Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusBadRequest,
+					Body:       ioutil.NopCloser(strings.NewReader(errorMsg)),
 				}, nil
 			}),
 		}
@@ -197,6 +216,25 @@ var _ = Describe("RemoteStore", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		})
+
+		It("should return error from the api server", func() {
+			// given
+			store := setupErrorStore("some error from the server")
+
+			// when
+			resource := mesh.MeshResource{
+				Spec: v1alpha1.Mesh{},
+				Meta: &model.ResourceMeta{
+					Mesh:      "default",
+					Name:      "default",
+					Namespace: "",
+				},
+			}
+			err := store.Create(context.Background(), &resource)
+
+			// then
+			Expect(err).To(MatchError("(400): some error from the server"))
+		})
 	})
 
 	Describe("List()", func() {
@@ -248,6 +286,18 @@ var _ = Describe("RemoteStore", func() {
 			Expect(meshes.Items[1].Meta.GetNamespace()).To(Equal(""))
 			Expect(meshes.Items[1].Meta.GetName()).To(Equal("mesh-2"))
 			Expect(meshes.Items[1].Meta.GetMesh()).To(Equal("mesh-2"))
+		})
+
+		It("should return error from the api server", func() {
+			// given
+			store := setupErrorStore("some error from the server")
+
+			// when
+			meshes := mesh.MeshResourceList{}
+			err := store.List(context.Background(), &meshes)
+
+			// then
+			Expect(err).To(MatchError("(400): some error from the server"))
 		})
 	})
 })

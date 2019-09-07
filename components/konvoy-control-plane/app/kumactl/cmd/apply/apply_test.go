@@ -4,12 +4,14 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
@@ -224,4 +226,50 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Meta.GetMesh()).To(Equal("meshinit"))
 		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 	})
+
+	type testCase struct {
+		resource string
+		err      string
+	}
+
+	DescribeTable("should fail on invalid resource",
+		func(given testCase) {
+			// given
+			rootCmd.SetArgs([]string{
+				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+				"apply", "-f", "-"},
+			)
+			rootCmd.SetIn(strings.NewReader(given.resource))
+
+			// when
+			err := rootCmd.Execute()
+
+			// then
+			Expect(err).To(MatchError(given.err))
+		},
+		Entry("no mesh", testCase{
+			resource: `
+type: Dataplane
+name: dp-1
+`,
+			err: "YAML contains invalid resource: Mesh field cannot be empty",
+		}),
+		Entry("no name", testCase{
+			resource: `
+type: Dataplane
+mesh: default
+`,
+			err: "YAML contains invalid resource: Name field cannot be empty",
+		}),
+		Entry("invalid data", testCase{
+			resource: `
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  inbound: 0 # should be a string
+`,
+			err: "YAML contains invalid resource: json: cannot unmarshal number into Go value of type []json.RawMessage",
+		}),
+	)
 })

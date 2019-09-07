@@ -71,9 +71,9 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 		return err
 	}
 	req.Header.Set("content-type", "application/json")
-	statusCode, _, err := s.doRequest(ctx, req)
+	statusCode, b, err := s.doRequest(ctx, req)
 	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
-		return errors.Errorf("unexpected status code: %d", statusCode)
+		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
 	if err != nil {
 		return err
@@ -107,7 +107,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 		return store.ErrorResourceNotFound(res.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 	}
 	if statusCode != 200 {
-		return errors.Errorf("unexpected status code: %d", statusCode)
+		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
 	return Unmarshal(b, res)
 }
@@ -127,7 +127,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 		return err
 	}
 	if statusCode != http.StatusOK {
-		return errors.Errorf("unexpected status code: %d", statusCode)
+		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
 	return UnmarshalList(b, rs)
 }

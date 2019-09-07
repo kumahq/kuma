@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var _ = Describe("httpDataplaneOverviewClient", func() {
 	Describe("List()", func() {
 		It("should create url with tags and parse response", func() {
+			// given
 			meshName := "default"
 			tags := map[string]string{
 				"service": "mobile",
@@ -51,6 +53,26 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 			Expect(list.Items[0].Spec.Dataplane.Networking.Inbound[0].Tags).To(HaveKeyWithValue("version", "v1"))
 
 			Expect(list.Items[0].Spec.DataplaneInsight.Subscriptions).To(HaveLen(2))
+		})
+
+		It("should return error from the server", func() {
+			// given
+			client := httpDataplaneOverviewClient{
+				Client: &http.Client{
+					Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: http.StatusBadRequest,
+							Body:       ioutil.NopCloser(strings.NewReader("some error from server")),
+						}, nil
+					}),
+				},
+			}
+
+			// when
+			_, err := client.List(context.Background(), "mesh-1", map[string]string{})
+
+			// then
+			Expect(err).To(MatchError("(400): some error from server"))
 		})
 	})
 })
