@@ -36,12 +36,12 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
-    - name: KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
+    - name: KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
       value: http://konvoy-control-plane.konvoy-system:5682
-    - name: KONVOY_MESH
+    - name: KUMA_MESH
       value: default
-    - name: KONVOY_DATAPLANE_ID
-      value: $(KONVOY_MESH).$(POD_NAME).$(POD_NAMESPACE)
+    - name: KUMA_DATAPLANE_ID
+      value: $(KUMA_MESH).$(POD_NAME).$(POD_NAMESPACE)
     image: konvoy/konvoy-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:

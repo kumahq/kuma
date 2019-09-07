@@ -30,7 +30,7 @@ func DefaultConfig() Config {
 				},
 			},
 			SidecarContainer: SidecarContainer{
-				Image:        "konvoy/konvoy-dataplane:latest",
+				Image:        "kuma/kuma-dp:latest",
 				RedirectPort: 15001,
 				UID:          5678,
 				GID:          5678,

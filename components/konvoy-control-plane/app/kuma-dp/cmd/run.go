@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoy-dp/pkg/dataplane/envoy"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
-	konvoy_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
+	kuma_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 )
 
@@ -23,7 +23,7 @@ func newRunCmd() *cobra.Command {
 		Short: "Launch Dataplane (Envoy)",
 		Long:  `Launch Dataplane (Envoy).`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg := konvoy_dp.DefaultConfig()
+			cfg := kuma_dp.DefaultConfig()
 			err := config.Load("", &cfg) // only support configuration via environment variables
 			if err != nil {
 				runLog.Error(err, "unable to load configuration")

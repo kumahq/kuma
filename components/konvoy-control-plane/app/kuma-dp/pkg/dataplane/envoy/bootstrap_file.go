@@ -8,11 +8,11 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 
-	konvoy_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
+	kuma_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 )
 
-func GenerateBootstrapFile(cfg konvoy_dp.DataplaneRuntime, config proto.Message) (string, error) {
+func GenerateBootstrapFile(cfg kuma_dp.DataplaneRuntime, config proto.Message) (string, error) {
 	switch v := config.(type) {
 	case (interface{ Validate() error }):
 		if err := v.Validate(); err != nil {

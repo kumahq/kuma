@@ -1,6 +1,6 @@
 controlPlane:
   bootstrapServer:
-    url: https://konvoy-control-plane.internal:5682
+    url: https://kuma-control-plane.internal:5682
 dataplane:
   id: example
   adminPort: 2345

@@ -4,8 +4,8 @@ package cmd
 
 import (
 	"bytes"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoy-dp/pkg/dataplane/envoy"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-dp"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/gogo/protobuf/proto"
@@ -30,7 +30,7 @@ var _ = Describe("run", func() {
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
-		bootstrapGenerator = func(cfg konvoydp.Config) (proto.Message, error) {
+		bootstrapGenerator = func(cfg kumadp.Config) (proto.Message, error) {
 			bootstrap := envoy_bootstrap.Bootstrap{}
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
@@ -83,18 +83,18 @@ var _ = Describe("run", func() {
 		}
 	})
 
-	It("should be possible to start dataplane (Envoy) using `konvoy-dataplane run`", func(done Done) {
+	It("should be possible to start dataplane (Envoy) using `kuma-dp run`", func(done Done) {
 		// setup
 		pidFile := filepath.Join(configDir, "envoy-mock.pid")
 
 		// and
 		env := map[string]string{
-			"KONVOY_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "http://localhost:1234",
-			"KONVOY_DATAPLANE_ID":                       "example",
-			"KONVOY_DATAPLANE_ADMIN_PORT":               "2345",
-			"KONVOY_DATAPLANE_RUNTIME_BINARY_PATH":      filepath.Join("testdata", "envoy-mock.sleep.sh"),
-			"KONVOY_DATAPLANE_RUNTIME_CONFIG_DIR":       configDir,
-			"ENVOY_MOCK_PID_FILE":                       pidFile,
+			"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "http://localhost:1234",
+			"KUMA_DATAPLANE_ID":                       "example",
+			"KUMA_DATAPLANE_ADMIN_PORT":               "2345",
+			"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":      filepath.Join("testdata", "envoy-mock.sleep.sh"),
+			"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":       configDir,
+			"ENVOY_MOCK_PID_FILE":                     pidFile,
 		}
 		for key, value := range env {
 			os.Setenv(key, value)

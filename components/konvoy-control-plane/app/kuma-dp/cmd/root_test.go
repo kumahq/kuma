@@ -6,7 +6,7 @@ import (
 )
 
 var _ = Describe("root", func() {
-	It("should be possible to run `konvoy-dataplane` without a sub-command", func() {
+	It("should be possible to run `kuma-dp` without a sub-command", func() {
 		// given
 		cmd := newRootCmd()
 		cmd.SetArgs([]string{})
