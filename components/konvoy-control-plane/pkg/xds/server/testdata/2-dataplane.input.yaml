@@ -1,0 +1,3 @@
+networking:
+  transparentProxying:
+    redirectPort: 15001

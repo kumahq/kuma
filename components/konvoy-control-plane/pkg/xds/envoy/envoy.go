@@ -1,11 +1,14 @@
 package envoy
 
 import (
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/sds/server"
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"time"
 
 	"github.com/gogo/protobuf/types"
 
 	util_error "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/error"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
@@ -57,7 +60,7 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateInboundListener(listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
+func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
@@ -80,6 +83,16 @@ func CreateInboundListener(listenerName string, address string, port uint32, clu
 			},
 		},
 		FilterChains: []listener.FilterChain{{
+			TlsContext: &auth.DownstreamTlsContext{
+				CommonTlsContext: &auth.CommonTlsContext{
+					ValidationContextType: &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
+						ValidationContextSdsSecretConfig: sdsSecretConfig(ctx, server.MeshCaResource),
+					},
+					TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
+						sdsSecretConfig(ctx, server.IdentityCertResource),
+					},
+				},
+			},
 			Filters: []listener.Filter{{
 				Name: util.TCPProxy,
 				ConfigType: &listener.Filter_TypedConfig{
@@ -97,7 +110,41 @@ func CreateInboundListener(listenerName string, address string, port uint32, clu
 	return listener
 }
 
-func CreateCatchAllListener(listenerName string, address string, port uint32, clusterName string) *v2.Listener {
+func sdsSecretConfig(context xds_context.Context, name string) *auth.SdsSecretConfig {
+	return &auth.SdsSecretConfig{
+		Name: name,
+		SdsConfig: &core.ConfigSource{
+			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
+				ApiConfigSource: &core.ApiConfigSource{
+					ApiType: core.ApiConfigSource_GRPC,
+					GrpcServices: []*core.GrpcService{
+						{
+							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
+								GoogleGrpc: &core.GrpcService_GoogleGrpc{
+									TargetUri:  context.ControlPlane.SdsLocation,
+									StatPrefix: "sds_" + name,
+									ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
+										CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
+											SslCredentials: &core.GrpcService_GoogleGrpc_SslCredentials{
+												RootCerts: &core.DataSource{
+													Specifier: &core.DataSource_InlineBytes{
+														InlineBytes: context.ControlPlane.SdsTlsCert,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func CreateCatchAllListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string) *v2.Listener {
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{

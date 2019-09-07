@@ -6,6 +6,7 @@ import (
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/generator"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -19,8 +20,9 @@ var (
 )
 
 type reconciler struct {
-	generator snapshotGenerator
-	cacher    snapshotCacher
+	generator  snapshotGenerator
+	cacher     snapshotCacher
+	envoyCpCtx *xds_context.ControlPlaneContext
 }
 
 // Make sure that reconciler implements all relevant interfaces
@@ -44,7 +46,10 @@ func (r *reconciler) OnDataplaneDelete(key core_model.ResourceKey) error {
 }
 
 func (r *reconciler) reconcile(node *envoy_core.Node, proxy *model.Proxy) error {
-	snapshot, err := r.generator.GenerateSnapshot(proxy)
+	ctx := xds_context.Context{
+		ControlPlane: r.envoyCpCtx,
+	}
+	snapshot, err := r.generator.GenerateSnapshot(ctx, proxy)
 	if err != nil {
 		reconcileLog.Error(err, "failed to generate a snapshot", "node", node, "proxy", proxy)
 		return err
@@ -96,19 +101,19 @@ func equalSnapshots(old, new map[string]envoy_cache.Resource) bool {
 }
 
 type snapshotGenerator interface {
-	GenerateSnapshot(proxy *model.Proxy) (envoy_cache.Snapshot, error)
+	GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error)
 }
 
 type templateSnapshotGenerator struct {
 	ProxyTemplateResolver proxyTemplateResolver
 }
 
-func (s *templateSnapshotGenerator) GenerateSnapshot(proxy *model.Proxy) (envoy_cache.Snapshot, error) {
+func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error) {
 	template := s.ProxyTemplateResolver.GetTemplate(proxy)
 
 	gen := generator.TemplateProxyGenerator{ProxyTemplate: template}
 
-	rs, err := gen.Generate(proxy)
+	rs, err := gen.Generate(ctx, proxy)
 	if err != nil {
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return envoy_cache.Snapshot{}, err

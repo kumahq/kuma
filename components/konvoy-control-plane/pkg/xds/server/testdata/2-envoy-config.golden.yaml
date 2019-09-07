@@ -1,0 +1,24 @@
+resources:
+  - name: pass_through
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      connectTimeout: 5s
+      lbPolicy: ORIGINAL_DST_LB
+      name: pass_through
+      type: ORIGINAL_DST
+  - name: catch_all
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 0.0.0.0
+          portValue: 15001
+      filterChains:
+        - filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: pass_through
+                statPrefix: pass_through
+      name: catch_all
+      useOriginalDst: true

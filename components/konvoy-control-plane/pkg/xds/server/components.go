@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	xds_context "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/context"
 	"time"
 
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
@@ -17,7 +18,11 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
-func DefaultReconciler(rt core_runtime.Runtime) *core_discovery.DiscoverySink {
+func DefaultReconciler(rt core_runtime.Runtime) (*core_discovery.DiscoverySink, error) {
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
+	if err != nil {
+		return nil, err
+	}
 	return &core_discovery.DiscoverySink{
 		DataplaneConsumer: &reconciler{
 			&templateSnapshotGenerator{
@@ -27,8 +32,9 @@ func DefaultReconciler(rt core_runtime.Runtime) *core_discovery.DiscoverySink {
 				},
 			},
 			&simpleSnapshotCacher{rt.XDS().Hasher(), rt.XDS().Cache()},
+			envoyCpCtx,
 		},
-	}
+	}, nil
 }
 
 func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, ds *core_discovery.DiscoverySink) envoy_xds.Callbacks {

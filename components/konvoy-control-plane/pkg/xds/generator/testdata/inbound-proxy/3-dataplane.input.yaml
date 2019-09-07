@@ -1,0 +1,3 @@
+networking:
+  inbound:
+    - interface: 192.168.0.1:80:8080
