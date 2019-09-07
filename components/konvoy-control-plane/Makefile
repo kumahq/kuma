@@ -364,7 +364,7 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
     KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
     KONVOY_ENVIRONMENT=kubernetes \
     KONVOY_STORE_TYPE=kubernetes \
-	$(GO_RUN) ./app/konvoy-cp/main.go run
+	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
 
 run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
@@ -372,7 +372,7 @@ run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mod
 	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
 	KONVOY_ENVIRONMENT=universal \
 	KONVOY_STORE_TYPE=memory \
-	$(GO_RUN) ./app/konvoy-cp/main.go run
+	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
 
 start/postgres: ## Boostrap: start Postgres for Control Plane with initial schema
 	docker-compose -f tools/postgres/docker-compose.yaml up $(DOCKER_COMPOSE_OPTIONS) -d
@@ -389,7 +389,7 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KONVOY_STORE_POSTGRES_USER=konvoy \
 	KONVOY_STORE_POSTGRES_PASSWORD=konvoy \
 	KONVOY_STORE_POSTGRES_DB_NAME=konvoy \
-	$(GO_RUN) ./app/konvoy-cp/main.go run
+	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
 
 curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_ENVOY_ID)
 curl/listeners: ## Dev: Make Discovery request to LDS
@@ -408,7 +408,7 @@ run/example/envoy: build/kuma-dp ## Dev: Run Envoy configured against local Cont
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KUMA_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
-	${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp run
+	${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp run --log-level=debug
 
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
@@ -530,7 +530,7 @@ generate/test/cert/konvoy-injector:  ## Dev: Generate TLS cert for Konvoy Inject
 run/konvoy-injector: ## Dev: Run Konvoy Injector locally
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KONVOY_INJECTOR_WEBHOOK_SERVER_CERT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata \
-	$(GO_RUN) ./app/konvoy-injector/main.go run
+	$(GO_RUN) ./app/konvoy-injector/main.go run --log-level=debug
 
 test/konvoy-injector: PKG_LIST=./app/konvoy-injector/... ./pkg/config/app/konvoy-injector/...
 test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
@@ -539,7 +539,7 @@ run/kuma-dp: ## Dev: Run `kuma-dp` locally
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KUMA_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
-	$(GO_RUN) ./app/kuma-dp/main.go run
+	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
 
 test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
 test/kuma-dp: test ## Dev: Run `kuma-dp` tests only

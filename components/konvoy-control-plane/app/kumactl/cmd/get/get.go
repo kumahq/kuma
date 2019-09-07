@@ -3,6 +3,7 @@ package get
 import (
 	kumactl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/pkg/output"
+	kuma_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/cmd"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Long:  `Show Kuma resources.`,
 	}
 	// flags
-	cmd.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), kumactl_cmd.UsageOptions("Output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
+	cmd.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
 	cmd.AddCommand(newGetMeshesCmd(ctx))
 	cmd.AddCommand(newGetProxyTemplatesCmd(ctx))

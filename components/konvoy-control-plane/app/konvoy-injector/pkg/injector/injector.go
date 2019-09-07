@@ -54,6 +54,10 @@ func (i *KonvoyInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Conta
 		Name:            KonvoySidecarContainerName,
 		Image:           i.cfg.SidecarContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
+		Args: []string{
+			"run",
+			"--log-level=info",
+		},
 		Env: []kube_core.EnvVar{
 			{
 				Name: "POD_NAME",

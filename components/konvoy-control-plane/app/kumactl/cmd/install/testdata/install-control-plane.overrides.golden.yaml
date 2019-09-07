@@ -2188,6 +2188,7 @@ spec:
           value: kuma-ci/kuma-init:dev
         args:
         - run
+        - --log-level=info
         ports:
         - containerPort: 8443
         livenessProbe:
@@ -2265,6 +2266,7 @@ spec:
           value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.key
         args:
         - run
+        - --log-level=info
         ports:
         - containerPort: 5677
         - containerPort: 5678

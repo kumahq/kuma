@@ -79,7 +79,10 @@ spec:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: coredns-token-9gmrh
       readOnly: true
-  - env:
+  - args:
+    - run
+    - --log-level=info
+    env:
     - name: POD_NAME
       valueFrom:
         fieldRef:

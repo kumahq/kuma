@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd/apply"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd/config"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd/get"
@@ -9,9 +11,10 @@ import (
 	kumactl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/cmd/version"
 	"github.com/spf13/cobra"
-	"os"
 
+	kuma_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/cmd"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
+	kuma_log "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/log"
 )
 
 var (
@@ -20,12 +23,23 @@ var (
 
 // newRootCmd represents the base command when called without any subcommands.
 func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
+	args := struct {
+		logLevel string
+	}{}
 	cmd := &cobra.Command{
 		Use:   "kumactl",
 		Short: "Management tool for Kuma",
 		Long:  `Management tool for Kuma.`,
-		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
-			core.SetLogger(core.NewLogger(root.Args.Debug))
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			level, err := kuma_log.ParseLogLevel(args.logLevel)
+			if err != nil {
+				return err
+			}
+			core.SetLogger(core.NewLogger(level))
+
+			// once command line flags have been parsed,
+			// avoid printing usage instructions
+			cmd.SilenceUsage = true
 
 			return root.LoadConfig()
 		},
@@ -33,7 +47,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	// root flags
 	cmd.PersistentFlags().StringVar(&root.Args.ConfigFile, "config-file", "", "path to the configuration file to use")
 	cmd.PersistentFlags().StringVar(&root.Args.Mesh, "mesh", "", "mesh to use")
-	cmd.PersistentFlags().BoolVar(&root.Args.Debug, "debug", true, "enable debug-level logging")
+	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.OffLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	// sub-commands
 	cmd.AddCommand(install.NewInstallCmd(root))
 	cmd.AddCommand(config.NewConfigCmd(root))

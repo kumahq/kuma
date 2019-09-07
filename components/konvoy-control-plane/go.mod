@@ -13,7 +13,9 @@ require (
 	github.com/envoyproxy/go-control-plane v0.8.2
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-logr/glogr v0.1.0 // indirect
 	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/zapr v0.1.0
 	github.com/gogo/googleapis v1.2.0
 	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.3.2
@@ -34,6 +36,7 @@ require (
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.0.0-20190905203639-e85640baca1d
 	go.uber.org/multierr v1.1.0
+	go.uber.org/zap v1.9.1
 	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586 // indirect
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
 	golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a // indirect
