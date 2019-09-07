@@ -7,6 +7,7 @@ import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd/inspect"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd/install"
 	kumactl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/pkg/cmd"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/cmd/version"
 	"github.com/spf13/cobra"
 	"os"
 
@@ -39,6 +40,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(get.NewGetCmd(root))
 	cmd.AddCommand(inspect.NewInspectCmd(root))
 	cmd.AddCommand(apply.NewApplyCmd(root))
+	cmd.AddCommand(version.NewVersionCmd())
 	return cmd
 }
 

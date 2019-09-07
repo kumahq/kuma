@@ -13,6 +13,7 @@ Available Commands:
   help        Help about any command
   inspect     Inspect Kuma resources
   install     Install Kuma on Kubernetes
+  version     Print version
 
 Flags:
       --config-file string   path to the configuration file to use

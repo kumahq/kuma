@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/cmd/version"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 )
 
@@ -30,6 +31,7 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&args.debug, "debug", true, "enable debug-level logging")
 	// sub-commands
 	cmd.AddCommand(newRunCmd())
+	cmd.AddCommand(version.NewVersionCmd())
 	return cmd
 }
 
