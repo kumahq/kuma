@@ -21,13 +21,13 @@ RUN make build/kuma-dp
 ## runtime image
 FROM envoyproxy/envoy-alpine:latest
 
-ENV PATH=$PATH:/kuma-dataplane
-COPY --from=0 /go/src/github.com/Kong/konvoy/components/konvoy-control-plane/build/artifacts/kuma-dataplane/kuma-dataplane /kuma-dataplane/kuma-dataplane
+ENV PATH=$PATH:/kuma-dp
+COPY --from=0 /go/src/github.com/Kong/konvoy/components/konvoy-control-plane/build/artifacts/kuma-dp/kuma-dp /kuma-dp/kuma-dp
 
-RUN addgroup -S -g 5678 kuma-dataplane \
- && adduser -S -D -G kuma-dataplane -u 5678 kuma-dataplane
+RUN addgroup -S -g 5678 kuma-dp \
+ && adduser -S -D -G kuma-dp -u 5678 kuma-dp
 
-USER kuma-dataplane
+USER kuma-dp
 
-ENTRYPOINT ["kuma-dataplane"]
+ENTRYPOINT ["kuma-dp"]
 CMD ["run"]

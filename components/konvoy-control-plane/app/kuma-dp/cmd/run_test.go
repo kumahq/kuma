@@ -83,7 +83,7 @@ var _ = Describe("run", func() {
 		}
 	})
 
-	It("should be possible to start dataplane (Envoy) using `kuma-dataplane run`", func(done Done) {
+	It("should be possible to start dataplane (Envoy) using `kuma-dp run`", func(done Done) {
 		// setup
 		pidFile := filepath.Join(configDir, "envoy-mock.pid")
 

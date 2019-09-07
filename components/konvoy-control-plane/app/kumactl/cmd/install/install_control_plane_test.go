@@ -101,7 +101,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--injector-service-name", "injector",
 				"--injector-tls-cert", "InjectorCert",
 				"--injector-tls-key", "InjectorKey",
-				"--dataplane-image", "konvoy-ci/kuma-dataplane",
+				"--dataplane-image", "konvoy-ci/kuma-dp",
 				"--dataplane-init-image", "konvoy-ci/konvoy-init",
 				"--dataplane-init-version", "dev",
 				"--sds-tls-cert", "SdsCert",

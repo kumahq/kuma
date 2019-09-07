@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	dataplaneLog = core.Log.WithName("kuma-dataplane")
+	dataplaneLog = core.Log.WithName("kuma-dp")
 )
 
 // newRootCmd represents the base command when called without any subcommands.
@@ -19,7 +19,7 @@ func newRootCmd() *cobra.Command {
 		debug bool
 	}{}
 	cmd := &cobra.Command{
-		Use:   "kuma-dataplane",
+		Use:   "kuma-dp",
 		Short: "Dataplane manager for Envoy-based Service Mesh",
 		Long:  `Dataplane manager for Envoy-based Service Mesh.`,
 		PersistentPreRun: func(_ *cobra.Command, _ []string) {

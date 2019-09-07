@@ -68,7 +68,7 @@ BINTRAY_USERNAME ?=
 BINTRAY_API_KEY ?=
 
 KONVOY_CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
-KUMA_DP_DOCKER_IMAGE ?= kuma/kuma-dataplane:latest
+KUMA_DP_DOCKER_IMAGE ?= kuma/kuma-dp:latest
 KUMACTL_DOCKER_IMAGE ?= kuma/kumactl:latest
 KONVOY_INJECTOR_DOCKER_IMAGE ?= konvoy/konvoy-injector:latest
 
@@ -330,8 +330,8 @@ build: build/konvoy-cp build/kuma-dp build/kumactl build/konvoy-injector ## Dev:
 build/konvoy-cp: ## Dev: Build `Control Plane` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
 
-build/kuma-dp: ## Dev: Build `kuma-dataplane` binary
-	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/kuma-dataplane/kuma-dataplane ./app/kuma-dp
+build/kuma-dp: ## Dev: Build `kuma-dp` binary
+	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ./app/kuma-dp
 
 build/kumactl: ## Dev: Build `kumactl` binary
 	CGO_ENABLED=0 go build -ldflags="-s -w" -v -o $(BUILD_KUMACTL_DIR)/kumactl ./app/kumactl
@@ -391,7 +391,7 @@ run/example/envoy: build/kuma-dp ## Dev: Run Envoy configured against local Cont
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KUMA_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
-	${BUILD_ARTIFACTS_DIR}/kuma-dataplane/kuma-dataplane run
+	${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp run
 
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
@@ -401,7 +401,7 @@ images: image/konvoy-cp image/kuma-dp image/kumactl image/konvoy-injector ## Dev
 image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
 	docker build -t $(KONVOY_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
 
-image/kuma-dp: ## Dev: Build `kuma-dataplane` Docker image
+image/kuma-dp: ## Dev: Build `kuma-dp` Docker image
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f Dockerfile.kuma-dp .
 
 image/kumactl: ## Dev: Build `kumactl` Docker image
@@ -518,11 +518,11 @@ run/konvoy-injector: ## Dev: Run Konvoy Injector locally
 test/konvoy-injector: PKG_LIST=./app/konvoy-injector/... ./pkg/config/app/konvoy-injector/...
 test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
 
-run/kuma-dp: ## Dev: Run `kuma-dataplane` locally
+run/kuma-dp: ## Dev: Run `kuma-dp` locally
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KUMA_DATAPLANE_ID=$(EXAMPLE_ENVOY_ID) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	go run ./app/kuma-dp/main.go run
 
 test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
-test/kuma-dp: test ## Dev: Run `kuma-dataplane` tests only
+test/kuma-dp: test ## Dev: Run `kuma-dp` tests only

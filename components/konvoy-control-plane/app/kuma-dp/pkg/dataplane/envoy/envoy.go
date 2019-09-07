@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	runLog = core.Log.WithName("kuma-dataplane").WithName("run").WithName("envoy")
+	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 )
 
 var (
