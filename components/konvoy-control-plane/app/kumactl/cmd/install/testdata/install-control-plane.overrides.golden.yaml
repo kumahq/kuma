@@ -2183,9 +2183,9 @@ spec:
         - name: KONVOY_INJECTOR_CONTROL_PLANE_API_SERVER_URL
           value: http://konvoy-control-plane.konvoy:5681
         - name: KONVOY_INJECTOR_SIDECAR_CONTAINER_IMAGE
-          value: konvoy-ci/kuma-dp:greatest
+          value: kuma-ci/kuma-dp:greatest
         - name: KONVOY_INJECTOR_INIT_CONTAINER_IMAGE
-          value: konvoy-ci/konvoy-init:dev
+          value: kuma-ci/kuma-init:dev
         args:
         - run
         ports:
