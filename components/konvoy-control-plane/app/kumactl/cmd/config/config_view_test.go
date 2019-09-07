@@ -2,15 +2,16 @@ package config_test
 
 import (
 	"bytes"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("konvoy config view", func() {
+var _ = Describe("kumactl config view", func() {
 
 	It("should display configuration from a given file", func() {
 		// setup

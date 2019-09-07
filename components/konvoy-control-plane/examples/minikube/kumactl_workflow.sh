@@ -32,7 +32,7 @@ run kubectl port-forward -n kuma-system $(kubectl get pods -n kuma-system -l app
 run curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:15681
 
 # Add the CP to the config
-run kumactl config control-planes add --name demo-kubectl-port-forward --api-server-url http://localhost:15681
+run kumactl config control-planes add --name demo-kubectl-port-forward --address http://localhost:15681
 
 run kumactl config view
 
@@ -66,7 +66,7 @@ run kubectl proxy &
 run curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:8001
 
 # Add the CP to the config
-run kumactl config control-planes add --name demo-kubectl-proxy --api-server-url http://localhost:8001/api/v1/namespaces/kuma-system/services/kuma-control-plane:5681/proxy
+run kumactl config control-planes add --name demo-kubectl-proxy --address http://localhost:8001/api/v1/namespaces/kuma-system/services/kuma-control-plane:5681/proxy
 
 run kumactl config view
 

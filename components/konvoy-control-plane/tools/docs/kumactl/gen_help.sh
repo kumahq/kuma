@@ -31,6 +31,8 @@ gen_help kumactl config view
 gen_help kumactl config control-planes
 gen_help kumactl config control-planes list
 gen_help kumactl config control-planes add
+gen_help kumactl config control-planes remove
+gen_help kumactl config control-planes switch
 gen_help kumactl install
 gen_help kumactl install control-plane
 gen_help kumactl get

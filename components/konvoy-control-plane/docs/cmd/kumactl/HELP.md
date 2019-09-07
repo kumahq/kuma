@@ -93,7 +93,9 @@ Usage:
 
 Available Commands:
   add         Add a Control Plane
-  list        List known Control Planes
+  list        List Control Planes
+  remove      Remove a Control Plane
+  switch      Switch active Control Plane
 
 Flags:
   -h, --help   help for control-planes
@@ -109,7 +111,7 @@ Use "kumactl config control-planes [command] --help" for more information about 
 #### kumactl config control-planes list
 
 ```
-List known Control Planes.
+List Control Planes.
 
 Usage:
   kumactl config control-planes list [flags]
@@ -132,9 +134,45 @@ Usage:
   kumactl config control-planes add [flags]
 
 Flags:
-      --api-server-url string   URL of the Control Plane API Server (required)
-  -h, --help                    help for add
-      --name string             reference name for the Control Plane (required)
+      --address string   URL of the Control Plane API Server (required)
+  -h, --help             help for add
+      --name string      reference name for the Control Plane (required)
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use
+```
+
+#### kumactl config control-planes remove
+
+```
+Remove a Control Plane.
+
+Usage:
+  kumactl config control-planes remove [flags]
+
+Flags:
+  -h, --help          help for remove
+      --name string   reference name for the Control Plane (required)
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use
+```
+
+#### kumactl config control-planes switch
+
+```
+Switch active Control Plane.
+
+Usage:
+  kumactl config control-planes switch [flags]
+
+Flags:
+  -h, --help          help for switch
+      --name string   reference name for the Control Plane (required)
 
 Global Flags:
       --config-file string   path to the configuration file to use
