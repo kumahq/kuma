@@ -20,7 +20,10 @@ spec:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
-  - env:
+  - args:
+    - run
+    - --log-level=info
+    env:
     - name: POD_NAME
       valueFrom:
         fieldRef:

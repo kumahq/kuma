@@ -15,7 +15,6 @@ import (
 type RootArgs struct {
 	ConfigFile string
 	Mesh       string
-	Debug      bool
 }
 
 type RootRuntime struct {

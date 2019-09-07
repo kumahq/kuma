@@ -62,6 +62,7 @@ spec:
           value: {{ .DataplaneInitImage }}:{{ .DataplaneInitVersion }}
         args:
         - run
+        - --log-level=info
         ports:
         - containerPort: 8443
         livenessProbe:
