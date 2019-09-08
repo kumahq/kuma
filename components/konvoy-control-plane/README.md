@@ -23,7 +23,7 @@ Built by Envoy contributors at Kong 🦍.
 * **Traffic Tracing**: Automatic with Zipkin and Jeager integrations.
 * **Traffic Metrics**: Automatic with Prometheus/Splunk/ELK integrations.
 * **Proxy Configuration Templating**: For advanced users, to configure low-level Envoy configuration.
-* **Tagging Selectors**: To implement sophisticated policies via any tag.
+* **Tagging Selectors**: To apply sophisticated regional, cloud-specific and team-oriented policies.
 * **Platform-Agnostic**: Support for K8s, VMs, and bare metal.
 * **Powerful APIM Ingress**: Via Kong Gateway integration.
 
