@@ -2,7 +2,8 @@ controlPlane:
   bootstrapServer:
     url: https://kuma-control-plane.internal:5682
 dataplane:
-  id: example
+  mesh: pilot
+  name: example
   adminPort: 2345
 dataplaneRuntime:
   binaryPath: envoy.sh

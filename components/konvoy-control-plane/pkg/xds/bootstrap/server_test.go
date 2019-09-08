@@ -100,12 +100,16 @@ var _ = Describe("Bootstrap Server", func() {
 
 			Expect(received).To(MatchYAML(expected))
 		},
-		Entry("minimal data provided", testCase{
-			body:               `{ "nodeId": "default.dp-1.default" }`,
+		Entry("minimal data provided (universal)", testCase{
+			body:               `{ "mesh": "default", "name": "dp-1" }`,
+			expectedConfigFile: "bootstrap.golden.yaml",
+		}),
+		Entry("minimal data provided (k8s)", testCase{
+			body:               `{ "mesh": "default", "name": "dp-1.default" }`,
 			expectedConfigFile: "bootstrap.golden.yaml",
 		}),
 		Entry("overridden admin port", testCase{
-			body:               `{ "nodeId": "default.dp-1.default", "adminPort": 1234 }`,
+			body:               `{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234 }`,
 			expectedConfigFile: "bootstrap.overridden.golden.yaml",
 		}),
 	)
@@ -114,7 +118,8 @@ var _ = Describe("Bootstrap Server", func() {
 		// when
 		json := `
 		{
-			"nodeId": "default.dp-1.default"
+			"mesh": "default",
+			"name": "dp-1.default"
 		}
 		`
 

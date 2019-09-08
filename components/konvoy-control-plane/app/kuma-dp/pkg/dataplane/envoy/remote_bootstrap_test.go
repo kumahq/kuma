@@ -2,15 +2,16 @@ package envoy
 
 import (
 	"fmt"
-	kuma_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	kuma_dp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-dp"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Remote Bootstrap", func() {
@@ -25,7 +26,8 @@ var _ = Describe("Remote Bootstrap", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(`
 			{
-				"nodeId": "demo.sample",
+				"mesh": "demo",
+				"name": "sample",
 				"adminPort": 4321
 			}
 			`))
@@ -42,7 +44,8 @@ var _ = Describe("Remote Bootstrap", func() {
 		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
 
 		cfg := kuma_dp.DefaultConfig()
-		cfg.Dataplane.Id = "demo.sample"
+		cfg.Dataplane.Mesh = "demo"
+		cfg.Dataplane.Name = "sample"
 		cfg.Dataplane.AdminPort = 4321
 		cfg.ControlPlane.BootstrapServer.URL = fmt.Sprintf("http://localhost:%d", port)
 

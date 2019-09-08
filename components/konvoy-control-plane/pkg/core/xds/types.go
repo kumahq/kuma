@@ -27,6 +27,11 @@ type Proxy struct {
 	Dataplane *mesh_core.DataplaneResource
 }
 
+func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {
+	id := strings.Join(append([]string{mesh, name}, more...), ".")
+	return ParseProxyIdFromString(id)
+}
+
 func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
 	if node == nil {
 		return nil, errors.Errorf("Envoy node must not be nil")

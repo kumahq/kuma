@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"bytes"
 	"context"
+	"text/template"
+
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	xds_config "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/xds"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
@@ -13,11 +15,11 @@ import (
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	"text/template"
 )
 
 type BootstrapRequest struct {
-	NodeId    string `json:"nodeId"`
+	Mesh      string `json:"mesh"`
+	Name      string `json:"name"`
 	AdminPort uint32 `json:"adminPort,omitempty"`
 }
 
@@ -40,7 +42,11 @@ type bootstrapGenerator struct {
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request BootstrapRequest) (proto.Message, error) {
-	dataplane, err := b.fetchDataplane(ctx, request.NodeId)
+	proxyId, err := xds.BuildProxyId(request.Mesh, request.Name)
+	if err != nil {
+		return nil, err
+	}
+	dataplane, err := b.fetchDataplane(ctx, proxyId)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +63,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request BootstrapRequ
 		adminPort = request.AdminPort
 	}
 	params := configParameters{
-		Id:        request.NodeId,
+		Id:        proxyId.String(),
 		Service:   service,
 		AdminPort: adminPort,
 		XdsHost:   b.config.XdsHost,
@@ -67,13 +73,9 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request BootstrapRequ
 	return b.ConfigForParameters(params)
 }
 
-func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, nodeId string) (*mesh.DataplaneResource, error) {
-	id, err := xds.ParseProxyIdFromString(nodeId)
-	if err != nil {
-		return nil, err
-	}
+func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, proxyId *xds.ProxyId) (*mesh.DataplaneResource, error) {
 	res := mesh.DataplaneResource{}
-	if err := b.resManager.Get(ctx, &res, store.GetBy(id.ToResourceKey())); err != nil {
+	if err := b.resManager.Get(ctx, &res, store.GetBy(proxyId.ToResourceKey())); err != nil {
 		return nil, err
 	}
 	return &res, nil

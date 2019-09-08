@@ -91,14 +91,14 @@ func (i *KonvoyInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Conta
 				Value: i.cfg.ControlPlane.BootstrapServer.URL,
 			},
 			{
-				Name:  "KUMA_MESH", // need to refer to this variable while evaluating KUMA_DATAPLANE_ID
+				Name:  "KUMA_DATAPLANE_MESH",
 				Value: mesh,
 			},
 			{
-				Name: "KUMA_DATAPLANE_ID",
+				Name: "KUMA_DATAPLANE_NAME",
 				// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
 				// that is why we have to use a runtime reference to POD_NAME instead
-				Value: "$(KUMA_MESH).$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
+				Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
 			},
 		},
 		SecurityContext: &kube_core.SecurityContext{
