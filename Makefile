@@ -361,7 +361,7 @@ build/kuma-injector: ## Dev: Build `kuma-injector` binary
 
 build/artifact-tarball: build
 	mkdir ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
-	cp ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
+	cp ${BUILD_ARTIFACTS_DIR}/kuma-cp/kuma-cp ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 	cp ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 	cp $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 	cp ${BUILD_ARTIFACTS_DIR}/kuma-injector/kuma-injector ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
