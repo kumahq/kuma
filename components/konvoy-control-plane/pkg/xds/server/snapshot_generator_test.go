@@ -1,12 +1,13 @@
 package server
 
 import (
+	"io/ioutil"
+	"path/filepath"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"path/filepath"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
@@ -40,7 +41,7 @@ var _ = Describe("Reconcile", func() {
 				// given
 				ctx := xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation: "konvoy-system:5677",
+						SdsLocation: "kuma-system:5677",
 						SdsTlsCert:  []byte("12345"),
 					},
 					Mesh: xds_context.MeshContext{

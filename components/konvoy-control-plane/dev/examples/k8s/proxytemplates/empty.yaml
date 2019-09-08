@@ -1,6 +1,6 @@
 apiVersion: mesh.kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
-  namespace: konvoy-system
+  namespace: kuma-system
   name: empty
 mesh: default

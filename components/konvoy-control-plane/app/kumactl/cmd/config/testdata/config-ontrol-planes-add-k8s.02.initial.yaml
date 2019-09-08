@@ -12,7 +12,7 @@ controlPlanes:
     kubernetes:
       context: minikube
       kubeconfig: /root/.kube/config
-      namespace: konvoy-system
+      namespace: kuma-system
   name: k8s_minikube
 - coordinates:
     apiServer:
