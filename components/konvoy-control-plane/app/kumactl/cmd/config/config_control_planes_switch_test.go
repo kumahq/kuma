@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _ = Describe("kumactl config control-planes add", func() {
+var _ = Describe("kumactl config control-planes use", func() {
 
 	var configFile *os.File
 
@@ -47,46 +47,29 @@ var _ = Describe("kumactl config control-planes add", func() {
 		It("should require name", func() {
 			// given
 			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-				"config", "control-planes", "add"})
+				"config", "control-planes", "switch"})
 			// when
 			err := rootCmd.Execute()
 			// then
 			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("name")))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "address", "name" not set
+			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "name" not set
 `))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
-		It("should require API Server URL", func() {
+		It("should fail to switch to unknown Control Plane", func() {
 			// given
-			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-				"config", "control-planes", "add",
+			rootCmd.SetArgs([]string{"--config-file", filepath.Join("testdata", "config-control-planes-use.01.initial.yaml"),
+				"config", "control-planes", "switch",
 				"--name", "example"})
 			// when
 			err := rootCmd.Execute()
 			// then
-			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("address")))
+			Expect(err).To(MatchError(`there is no Control Plane with name "example"`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "address" not set
-`))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
-		})
-
-		It("should fail to add a new Control Plane with duplicate name", func() {
-			// given
-			rootCmd.SetArgs([]string{"--config-file", filepath.Join("testdata", "config-control-planes-add.01.golden.yaml"),
-				"config", "control-planes", "add",
-				"--name", "example",
-				"--address", "https://konvoy-control-plane.internal:5681"})
-			// when
-			err := rootCmd.Execute()
-			// then
-			Expect(err).To(MatchError(`Control Plane with name "example" already exists`))
-			// and
-			Expect(outbuf.String()).To(Equal(`Error: Control Plane with name "example" already exists
+			Expect(outbuf.String()).To(Equal(`Error: there is no Control Plane with name "example"
 `))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
@@ -101,7 +84,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 			expectedOut string
 		}
 
-		DescribeTable("should add a new Control Plane by name and address",
+		DescribeTable("should switch to an existing Control Plane",
 			func(given testCase) {
 				// setup
 				initial, err := ioutil.ReadFile(filepath.Join("testdata", given.configFile))
@@ -111,9 +94,8 @@ var _ = Describe("kumactl config control-planes add", func() {
 
 				// given
 				rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-					"config", "control-planes", "add",
-					"--name", "example",
-					"--address", "https://konvoy-control-plane.internal:5681"})
+					"config", "control-planes", "switch",
+					"--name", "example"})
 				// when
 				err = rootCmd.Execute()
 				// then
@@ -136,19 +118,17 @@ var _ = Describe("kumactl config control-planes add", func() {
 				// and
 				Expect(errbuf.Bytes()).To(BeEmpty())
 			},
-			Entry("should add a first Control Plane", testCase{
-				configFile: "config-control-planes-add.01.initial.yaml",
-				goldenFile: "config-control-planes-add.01.golden.yaml",
+			Entry("should switch to existing Control Plane", testCase{
+				configFile: "config-control-planes-use.11.initial.yaml",
+				goldenFile: "config-control-planes-use.11.golden.yaml",
 				expectedOut: `
-added Control Plane "example"
 switched active Control Plane to "example"
 `,
 			}),
-			Entry("should add a second Control Plane", testCase{
-				configFile: "config-control-planes-add.02.initial.yaml",
-				goldenFile: "config-control-planes-add.02.golden.yaml",
+			Entry("should switch to a Control Plane that is already active", testCase{
+				configFile: "config-control-planes-use.12.initial.yaml",
+				goldenFile: "config-control-planes-use.12.golden.yaml",
 				expectedOut: `
-added Control Plane "example"
 switched active Control Plane to "example"
 `,
 			}),

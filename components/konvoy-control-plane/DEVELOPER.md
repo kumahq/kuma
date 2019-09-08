@@ -102,7 +102,7 @@ export PATH=`pwd`/build/artifacts/kumactl:$PATH
 2. Configure a `kumactl` with running Control Plane
 
 ```bash
-kumactl config control-planes add --name universal --api-server-url http://localhost:5681
+kumactl config control-planes add --name universal --address http://localhost:5681
 ```
 
 3. Apply a Dataplane descriptor

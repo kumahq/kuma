@@ -23,6 +23,30 @@ func (cfg *Configuration) AddContext(c *Context) bool {
 	return true
 }
 
+func (cfg *Configuration) RemoveContext(name string) bool {
+	i, old := cfg.GetContext(name)
+	if old == nil {
+		return false
+	}
+	cfg.Contexts = append(cfg.Contexts[:i], cfg.Contexts[i+1:]...)
+	if cfg.CurrentContext == name {
+		cfg.CurrentContext = ""
+		if len(cfg.Contexts) > 0 {
+			cfg.CurrentContext = cfg.Contexts[0].Name
+		}
+	}
+	return true
+}
+
+func (cfg *Configuration) SwitchContext(name string) bool {
+	_, new := cfg.GetContext(name)
+	if new == nil {
+		return false
+	}
+	cfg.CurrentContext = new.Name
+	return true
+}
+
 func (cfg *Configuration) GetControlPlane(name string) (int, *ControlPlane) {
 	for i, p := range cfg.ControlPlanes {
 		if p.Name == name {
@@ -38,5 +62,19 @@ func (cfg *Configuration) AddControlPlane(cp *ControlPlane) bool {
 		return false
 	}
 	cfg.ControlPlanes = append(cfg.ControlPlanes, cp)
+	return true
+}
+
+func (cfg *Configuration) RemoveControlPlane(name string) bool {
+	i, old := cfg.GetControlPlane(name)
+	if old == nil {
+		return false
+	}
+	for _, context := range cfg.Contexts {
+		if context.ControlPlane == name {
+			cfg.RemoveContext(context.Name)
+		}
+	}
+	cfg.ControlPlanes = append(cfg.ControlPlanes[:i], cfg.ControlPlanes[i+1:]...)
 	return true
 }

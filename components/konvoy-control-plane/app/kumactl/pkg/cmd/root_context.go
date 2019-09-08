@@ -53,11 +53,11 @@ func (rc *RootContext) Config() *config_proto.Configuration {
 
 func (rc *RootContext) CurrentContext() (*config_proto.Context, error) {
 	if rc.Config().CurrentContext == "" {
-		return nil, errors.Errorf("Current context is not set. Use `kumactl config control-planes add` to add an existing Control Plane.")
+		return nil, errors.Errorf("active Control Plane is not set. Use `kumactl config control-planes add` to add a Control Plane and make it active")
 	}
 	_, currentContext := rc.Config().GetContext(rc.Config().CurrentContext)
 	if currentContext == nil {
-		return nil, errors.Errorf("Current context is broken. Use `kumactl config control-planes add` to add an existing Control Plane once again.")
+		return nil, errors.Errorf("apparently, configuration is broken. Use `kumactl config control-planes add` to add a Control Plane and make it active")
 	}
 	return currentContext, nil
 }
@@ -69,7 +69,7 @@ func (rc *RootContext) CurrentControlPlane() (*config_proto.ControlPlane, error)
 	}
 	_, controlPlane := rc.Config().GetControlPlane(currentContext.ControlPlane)
 	if controlPlane == nil {
-		return nil, errors.Errorf("Current context refers to a Control Plane that doesn't exist: %q", currentContext.ControlPlane)
+		return nil, errors.Errorf("apparently, configuration is broken. Use `kumactl config control-planes add` to add a Control Plane and make it active")
 	}
 	return controlPlane, nil
 }
@@ -92,7 +92,7 @@ func (rc *RootContext) CurrentResourceStore() (core_store.ResourceStore, error) 
 	}
 	rs, err := rc.Runtime.NewResourceStore(controlPlane.Coordinates.ApiServer)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create a client for a given Control Plane: %s", controlPlane)
+		return nil, errors.Wrapf(err, "failed to create a client for Control Plane %q", controlPlane.Name)
 	}
 	return rs, nil
 }

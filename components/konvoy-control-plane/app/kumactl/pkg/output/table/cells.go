@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+func Check(selected bool) string {
+	if selected {
+		return "*"
+	}
+	return ""
+}
+
 func Number(v interface{}) string {
 	return fmt.Sprintf("%d", v)
 }

@@ -14,5 +14,7 @@ func newConfigControlPlanesCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	// sub-commands
 	cmd.AddCommand(newConfigControlPlanesListCmd(pctx))
 	cmd.AddCommand(newConfigControlPlanesAddCmd(pctx))
+	cmd.AddCommand(newConfigControlPlanesRemoveCmd(pctx))
+	cmd.AddCommand(newConfigControlPlanesSwitchCmd(pctx))
 	return cmd
 }
