@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _ = Describe("konvoy get meshes", func() {
+var _ = Describe("kumactl get meshes", func() {
 
 	sampleMeshes := []*mesh.MeshResource{
 		{

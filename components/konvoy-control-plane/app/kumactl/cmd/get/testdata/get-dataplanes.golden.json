@@ -1,0 +1,43 @@
+{
+    "items": [
+      {
+        "mesh": "default",
+        "name": "experiment",
+        "networking": {
+          "inbound": [
+            {
+              "interface": "127.0.0.1:8080:80",
+              "tags": {
+                "service": "mobile",
+                "version": "v1"
+              }
+            },
+            {
+              "interface": "127.0.0.1:8090:90",
+              "tags": {
+                "service": "metrics",
+                "version": "v1"
+              }
+            }
+          ]
+        },
+        "type": "Dataplane"
+      },
+      {
+        "mesh": "default",
+        "name": "example",
+        "networking": {
+          "inbound": [
+            {
+              "interface": "127.0.0.2:8080:80",
+              "tags": {
+                "service": "web",
+                "version": "v2"
+              }
+            }
+          ]
+        },
+        "type": "Dataplane"
+      }
+    ]
+}

@@ -1,0 +1,3 @@
+MESH      NAME         TAGS
+default   experiment   service=metrics,mobile version=v1
+default   example      service=web version=v2

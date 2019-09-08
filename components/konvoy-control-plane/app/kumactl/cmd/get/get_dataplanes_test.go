@@ -3,10 +3,11 @@ package get_test
 import (
 	"bytes"
 	"context"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+
+	"github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/cmd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -26,40 +27,63 @@ import (
 	test_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/test/resources/model"
 )
 
-var _ = Describe("kumactl get proxytemplates", func() {
+var _ = Describe("kumactl get dataplanes", func() {
 
-	var sampleProxyTemplates []*mesh_core.ProxyTemplateResource
+	var dataplanes []*mesh_core.DataplaneResource
 
 	BeforeEach(func() {
-		sampleProxyTemplates = []*mesh_core.ProxyTemplateResource{
+		dataplanes = []*mesh_core.DataplaneResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh:      "default",
 					Namespace: "trial",
-					Name:      "custom-template",
+					Name:      "experiment",
 				},
-				Spec: mesh_proto.ProxyTemplate{},
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Interface: "127.0.0.1:8080:80",
+								Tags: map[string]string{
+									"service": "mobile",
+									"version": "v1",
+								},
+							},
+							{
+								Interface: "127.0.0.1:8090:90",
+								Tags: map[string]string{
+									"service": "metrics",
+									"version": "v1",
+								},
+							},
+						},
+					},
+				},
 			},
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh:      "default",
 					Namespace: "demo",
-					Name:      "another-template",
+					Name:      "example",
 				},
-				Spec: mesh_proto.ProxyTemplate{},
-			},
-			{
-				Meta: &test_model.ResourceMeta{
-					Mesh:      "pilot",
-					Namespace: "default",
-					Name:      "simple-template",
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Interface: "127.0.0.2:8080:80",
+								Tags: map[string]string{
+									"service": "web",
+									"version": "v2",
+								},
+							},
+						},
+					},
 				},
-				Spec: mesh_proto.ProxyTemplate{},
 			},
 		}
 	})
 
-	Describe("GetProxyTemplatesCmd", func() {
+	Describe("GetDataplanesCmd", func() {
 
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
@@ -79,7 +103,7 @@ var _ = Describe("kumactl get proxytemplates", func() {
 
 			store = memory_resources.NewStore()
 
-			for _, pt := range sampleProxyTemplates {
+			for _, pt := range dataplanes {
 				key := core_model.ResourceKey{
 					Mesh:      pt.Meta.GetMesh(),
 					Namespace: pt.Meta.GetNamespace(),
@@ -100,12 +124,12 @@ var _ = Describe("kumactl get proxytemplates", func() {
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
-		DescribeTable("kumactl get proxytemplates -o table|json|yaml",
+		DescribeTable("kumactl get dataplanes -o table|json|yaml",
 			func(given testCase) {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "proxytemplates"}, given.outputFormat))
+					"get", "dataplanes"}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()
@@ -121,26 +145,26 @@ var _ = Describe("kumactl get proxytemplates", func() {
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
-				goldenFile:   "get-proxytemplates.golden.txt",
+				goldenFile:   "get-dataplanes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "get-proxytemplates.golden.txt",
+				goldenFile:   "get-dataplanes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
-				goldenFile:   "get-proxytemplates.golden.json",
+				goldenFile:   "get-dataplanes.golden.json",
 				matcher:      MatchJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
-				goldenFile:   "get-proxytemplates.golden.yaml",
+				goldenFile:   "get-dataplanes.golden.yaml",
 				matcher:      MatchYAML,
 			}),
 		)

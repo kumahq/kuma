@@ -26,7 +26,7 @@ func newGetProxyTemplatesCmd(pctx *getContext) *cobra.Command {
 
 			proxyTemplates := &mesh_core.ProxyTemplateResourceList{}
 			if err := rs.List(context.Background(), proxyTemplates, core_store.ListByMesh(pctx.CurrentMesh())); err != nil {
-				return errors.Wrapf(err, "Failed to list ProxyTemplates")
+				return errors.Wrapf(err, "failed to list ProxyTemplates")
 			}
 
 			switch format := output.Format(pctx.args.outputFormat); format {

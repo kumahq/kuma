@@ -39,7 +39,7 @@ func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map
 
 var _ resources.DataplaneOverviewClient = &testDataplaneOverviewClient{}
 
-var _ = Describe("konvoy inspect dataplanes", func() {
+var _ = Describe("kumactl inspect dataplanes", func() {
 
 	var now, t1, t2 time.Time
 	var sampleDataplaneOverview []*mesh_core.DataplaneOverviewResource
