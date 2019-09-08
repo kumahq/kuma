@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package konvoy.test.v1alpha1;
+package kuma.test.v1alpha1;
 
 option go_package = "v1alpha1";
 
