@@ -6,20 +6,20 @@ import (
 
 	"github.com/pkg/errors"
 
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/tls"
 )
 
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
-func autoconfigure(cfg *konvoy_cp.Config) error {
+func autoconfigure(cfg *kuma_cp.Config) error {
 	return autoconfigureSds(cfg)
 }
 
-func autoconfigureSds(cfg *konvoy_cp.Config) error {
+func autoconfigureSds(cfg *kuma_cp.Config) error {
 	// to improve UX, we want to auto-generate TLS cert for SDS if possible
-	if cfg.Environment == konvoy_cp.UniversalEnvironment {
+	if cfg.Environment == kuma_cp.UniversalEnvironment {
 		if cfg.SdsServer.TlsCertFile == "" {
 			hosts := []string{
 				cfg.BootstrapServer.Params.XdsHost,

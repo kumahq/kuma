@@ -11,7 +11,7 @@ import (
 	secret_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/manager"
 	secret_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/secrets/store"
 
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	core_xds "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/xds"
 	bootstrap_universal "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/bootstrap/universal"
 	resources_memory "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/memory"
@@ -27,7 +27,7 @@ func (i TestRuntimeInfo) GetInstanceId() string {
 	return i.InstanceId
 }
 
-func BuilderFor(cfg konvoy_cp.Config) *core_runtime.Builder {
+func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	builder := core_runtime.BuilderFor(cfg).
 		WithComponentManager(bootstrap_universal.NewComponentManager()).
 		WithResourceStore(resources_memory.NewStore()).

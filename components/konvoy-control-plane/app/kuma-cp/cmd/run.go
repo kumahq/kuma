@@ -3,7 +3,7 @@ package cmd
 import (
 	api_server "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/api-server"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/bootstrap"
 	sds_server "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/sds/server"
@@ -34,7 +34,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 		Short: "Launch Control Plane",
 		Long:  `Launch Control Plane.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg := konvoy_cp.DefaultConfig()
+			cfg := kuma_cp.DefaultConfig()
 			err := config.Load(args.configPath, &cfg)
 			if err != nil {
 				runLog.Error(err, "could not load the configuration")

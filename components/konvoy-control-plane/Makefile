@@ -9,8 +9,8 @@
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector \
 		generate protoc/pkg/config/app/kumactl/v1alpha1 generate/kumactl/install/control-plane \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
-		images image/konvoy-cp image/kuma-dp image/kumactl image/kuma-injector \
-		build/konvoy-cp build/kuma-dp build/kumactl build/kuma-injector \
+		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector \
+		build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector \
 		docs docs/kumactl \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
@@ -282,7 +282,7 @@ deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-app
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app
 
-kind/load/control-plane: image/konvoy-cp
+kind/load/control-plane: image/kuma-cp
 	kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=kuma
 
 kind/load/kuma-dp: image/kuma-dp
@@ -346,10 +346,10 @@ integration: ## Dev: Run integration tests
 	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
-build: build/konvoy-cp build/kuma-dp build/kumactl build/kuma-injector ## Dev: Build all binaries
+build: build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector ## Dev: Build all binaries
 
-build/konvoy-cp: ## Dev: Build `Control Plane` binary
-	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
+build/kuma-cp: ## Dev: Build `Control Plane` binary
+	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-cp/kuma-cp ./app/kuma-cp
 
 build/kuma-dp: ## Dev: Build `kuma-dp` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ./app/kuma-dp
@@ -368,7 +368,7 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
     KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
     KUMA_ENVIRONMENT=kubernetes \
     KUMA_STORE_TYPE=kubernetes \
-	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
+	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
@@ -376,7 +376,7 @@ run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mod
 	KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=memory \
-	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
+	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 start/postgres: ## Boostrap: start Postgres for Control Plane with initial schema
 	docker-compose -f tools/postgres/docker-compose.yaml up $(DOCKER_COMPOSE_OPTIONS) -d
@@ -393,7 +393,7 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KUMA_STORE_POSTGRES_USER=kuma \
 	KUMA_STORE_POSTGRES_PASSWORD=kuma \
 	KUMA_STORE_POSTGRES_DB_NAME=kuma \
-	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
+	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_DATAPLANE_MESH).$(KIND_EXAMPLE_DATAPLANE_NAME)
 curl/listeners: ## Dev: Make Discovery request to LDS
@@ -419,10 +419,10 @@ run/example/envoy: build/kuma-dp ## Dev: Run Envoy configured against local Cont
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-images: image/konvoy-cp image/kuma-dp image/kumactl image/kuma-injector ## Dev: Build all Docker images
+images: image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector ## Dev: Build all Docker images
 
-image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
-	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
+image/kuma-cp: ## Dev: Build `kuma-cp` Docker image
+	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f Dockerfile.kuma-cp .
 
 image/kuma-dp: ## Dev: Build `kuma-dp` Docker image
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f Dockerfile.kuma-dp .
@@ -433,10 +433,10 @@ image/kumactl: ## Dev: Build `kumactl` Docker image
 image/kuma-injector: ## Dev: Build `kuma-injector` Docker image
 	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f Dockerfile.kuma-injector .
 
-image/konvoy-cp/push: image/konvoy-cp
+image/kuma-cp/push: image/kuma-cp
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KUMA_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoy-cp:$(KUMA_VERSION)
-	docker push $(BINTRAY_REGISTRY)/konvoy-cp:$(KUMA_VERSION)
+	docker tag $(KUMA_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-cp:$(KUMA_VERSION)
+	docker push $(BINTRAY_REGISTRY)/kuma-cp:$(KUMA_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
 image/kuma-dp/push: image/kuma-dp
@@ -451,7 +451,7 @@ image/kumactl/push: image/kumactl
 	docker push $(BINTRAY_REGISTRY)/kumactl:$(KUMA_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
-images/push: image/konvoy-cp/push image/kuma-dp/push image/kumactl/push
+images/push: image/kuma-cp/push image/kuma-dp/push image/kumactl/push
 
 docs: docs/kumactl ## Dev: Generate all docs
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	core_mesh "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -47,9 +47,9 @@ func NewUniversalAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator,
 
 func DefaultAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, error) {
 	switch env := rt.Config().Environment; env {
-	case konvoy_cp.KubernetesEnvironment:
+	case kuma_cp.KubernetesEnvironment:
 		return NewKubeAuthenticator(rt)
-	case konvoy_cp.UniversalEnvironment:
+	case kuma_cp.UniversalEnvironment:
 		return NewUniversalAuthenticator(rt)
 	default:
 		return nil, errors.Errorf("unable to choose SDS authenticator for environment type %q", env)

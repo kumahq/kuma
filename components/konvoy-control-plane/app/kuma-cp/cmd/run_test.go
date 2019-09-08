@@ -41,7 +41,7 @@ func RunSmokeTest(config string) {
 			}
 		})
 
-		It("should be possible to run `konvoy-cp run`", func(done Done) {
+		It("should be possible to run `kuma-cp run`", func(done Done) {
 			// given
 			config := fmt.Sprintf(config, diagnosticsPort)
 			_, err := configFile.WriteString(config)

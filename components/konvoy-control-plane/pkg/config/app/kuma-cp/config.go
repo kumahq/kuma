@@ -1,4 +1,4 @@
-package konvoy_cp
+package kuma_cp
 
 import (
 	"github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"

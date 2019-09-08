@@ -3,7 +3,7 @@ package runtime
 import (
 	"context"
 
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	builtin_ca "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
@@ -19,7 +19,7 @@ type BuilderContext interface {
 	ComponentManager() ComponentManager
 	ResourceStore() core_store.ResourceStore
 	XdsContext() core_xds.XdsContext
-	Config() konvoy_cp.Config
+	Config() kuma_cp.Config
 	Extensions() context.Context
 }
 
@@ -27,7 +27,7 @@ var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg konvoy_cp.Config
+	cfg kuma_cp.Config
 	cm  ComponentManager
 	rs  core_store.ResourceStore
 	rm  core_manager.ResourceManager
@@ -38,7 +38,7 @@ type Builder struct {
 	ext context.Context
 }
 
-func BuilderFor(cfg konvoy_cp.Config) *Builder {
+func BuilderFor(cfg kuma_cp.Config) *Builder {
 	return &Builder{cfg: cfg, ext: context.Background()}
 }
 
@@ -140,7 +140,7 @@ func (b *Builder) BuiltinCaManager() builtin_ca.BuiltinCaManager {
 func (b *Builder) XdsContext() core_xds.XdsContext {
 	return b.xds
 }
-func (b *Builder) Config() konvoy_cp.Config {
+func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg
 }
 func (b *Builder) Extensions() context.Context {
