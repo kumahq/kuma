@@ -6,11 +6,11 @@
 		dev/install/kubectl dev/install/kind dev/install/minikube \
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
-		kind/load/control-plane kind/load/kuma-dp kind/load/konvoy-injector \
+		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector \
 		generate protoc/pkg/config/app/kumactl/v1alpha1 generate/kumactl/install/control-plane \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
-		images image/konvoy-cp image/kuma-dp image/kumactl image/konvoy-injector \
-		build/konvoy-cp build/kuma-dp build/kumactl build/konvoy-injector \
+		images image/konvoy-cp image/kuma-dp image/kumactl image/kuma-injector \
+		build/konvoy-cp build/kuma-dp build/kumactl build/kuma-injector \
 		docs docs/kumactl \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
@@ -19,7 +19,7 @@
 		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
         verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		print/kubebuilder/test_assets \
-		generate/test/cert/konvoy-injector run/konvoy-injector \
+		generate/test/cert/kuma-injector run/kuma-injector \
 		run/kuma-dp
 
 PKG_LIST := ./... ./api/... ./pkg/plugins/resources/k8s/native/...
@@ -74,10 +74,10 @@ EXAMPLE_NAMESPACE ?= kuma-demo
 KIND_KUBECONFIG = $(shell kind get kubeconfig-path --name=kuma)
 
 define KIND_EXAMPLE_DATAPLANE_MESH
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar printenv KUMA_DATAPLANE_MESH)
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
 endef
 define KIND_EXAMPLE_DATAPLANE_NAME
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar printenv KUMA_DATAPLANE_NAME)
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
@@ -288,7 +288,7 @@ kind/load/control-plane: image/konvoy-cp
 kind/load/kuma-dp: image/kuma-dp
 	kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=kuma
 
-kind/load/konvoy-injector: image/konvoy-injector
+kind/load/kuma-injector: image/kuma-injector
 	kind load docker-image $(KUMA_INJECTOR_DOCKER_IMAGE) --name=kuma
 
 deploy/control-plane/k8s: build/kumactl
@@ -297,7 +297,7 @@ deploy/control-plane/k8s: build/kumactl
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
 
-start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/konvoy-injector deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
+start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
 clean: clean/build ## Dev: Clean
 
@@ -346,7 +346,7 @@ integration: ## Dev: Run integration tests
 	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
-build: build/konvoy-cp build/kuma-dp build/kumactl build/konvoy-injector ## Dev: Build all binaries
+build: build/konvoy-cp build/kuma-dp build/kumactl build/kuma-injector ## Dev: Build all binaries
 
 build/konvoy-cp: ## Dev: Build `Control Plane` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/konvoy-control-plane/konvoy-control-plane ./app/konvoy-cp
@@ -357,8 +357,8 @@ build/kuma-dp: ## Dev: Build `kuma-dp` binary
 build/kumactl: ## Dev: Build `kumactl` binary
 	$(GO_BUILD) -o $(BUILD_KUMACTL_DIR)/kumactl ./app/kumactl
 
-build/konvoy-injector: ## Dev: Build `konvoy-injector` binary
-	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/konvoy-injector/konvoy-injector ./app/konvoy-injector
+build/kuma-injector: ## Dev: Build `kuma-injector` binary
+	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-injector/kuma-injector ./app/kuma-injector
 
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
@@ -419,7 +419,7 @@ run/example/envoy: build/kuma-dp ## Dev: Run Envoy configured against local Cont
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-images: image/konvoy-cp image/kuma-dp image/kumactl image/konvoy-injector ## Dev: Build all Docker images
+images: image/konvoy-cp image/kuma-dp image/kumactl image/kuma-injector ## Dev: Build all Docker images
 
 image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
@@ -430,8 +430,8 @@ image/kuma-dp: ## Dev: Build `kuma-dp` Docker image
 image/kumactl: ## Dev: Build `kumactl` Docker image
 	docker build -t $(KUMACTL_DOCKER_IMAGE) -f Dockerfile.kumactl .
 
-image/konvoy-injector: ## Dev: Build `konvoy-injector` Docker image
-	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f Dockerfile.konvoy-injector .
+image/kuma-injector: ## Dev: Build `kuma-injector` Docker image
+	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f Dockerfile.kuma-injector .
 
 image/konvoy-cp/push: image/konvoy-cp
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
@@ -507,16 +507,16 @@ curl/example/minikube: ## Minikube: Make sample requests to demo setup
 	kubectl -n default run curl --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://demo-app.kuma-demo:8000/request | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
 
 stats/example/minikube: ## Minikube: Observe Envoy metrics from demo setup
-	kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
+	kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
 
 verify/example/minikube/inbound:
 	@echo "Checking number of Inbound requests via Envoy ..."
-	test $$( kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 10
+	test $$( kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 10
 	@echo "Check passed!"
 
 verify/example/minikube/outbound:
 	@echo "Checking number of Outbound requests via Envoy ..."
-	test $$( kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 1
+	test $$( kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 1
 	@echo "Check passed!"
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
@@ -524,8 +524,8 @@ verify/example/minikube: verify/example/minikube/inbound verify/example/minikube
 kumactl/example/minikube: image/kumactl
 	cat examples/minikube/kumactl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KUMACTL_DOCKER_IMAGE)
 
-generate/test/cert/konvoy-injector:  ## Dev: Generate TLS cert for Konvoy Injector (for use in development and unit tests)
-	OUTPUT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata && \
+generate/test/cert/kuma-injector:  ## Dev: Generate TLS cert for Konvoy Injector (for use in development and unit tests)
+	OUTPUT_DIR=$(shell pwd)/app/kuma-injector/cmd/testdata && \
 	TMP_DIR=$(shell mktemp -d) && \
 	cd $$TMP_DIR && \
 	go run $(shell go env GOROOT)/src/crypto/tls/generate_cert.go --host=*,*.kuma-system.svc --duration=87660h && \
@@ -533,13 +533,13 @@ generate/test/cert/konvoy-injector:  ## Dev: Generate TLS cert for Konvoy Inject
 	mv key.pem $$OUTPUT_DIR/tls.key && \
 	rm -rf $$TMP_DIR
 
-run/konvoy-injector: ## Dev: Run Konvoy Injector locally
+run/kuma-injector: ## Dev: Run Konvoy Injector locally
 	KUBECONFIG=$(KIND_KUBECONFIG) \
-	KONVOY_INJECTOR_WEBHOOK_SERVER_CERT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata \
-	$(GO_RUN) ./app/konvoy-injector/main.go run --log-level=debug
+	KUMA_INJECTOR_WEBHOOK_SERVER_CERT_DIR=$(shell pwd)/app/kuma-injector/cmd/testdata \
+	$(GO_RUN) ./app/kuma-injector/main.go run --log-level=debug
 
-test/konvoy-injector: PKG_LIST=./app/konvoy-injector/... ./pkg/config/app/konvoy-injector/...
-test/konvoy-injector: test ## Dev: Run Konvoy Injector tests only
+test/kuma-injector: PKG_LIST=./app/kuma-injector/... ./pkg/config/app/kuma-injector/...
+test/kuma-injector: test ## Dev: Run Konvoy Injector tests only
 
 run/kuma-dp: ## Dev: Run `kuma-dp` locally
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \

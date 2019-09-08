@@ -183,7 +183,7 @@ export KUBECONFIG="$(kind get kubeconfig-path --name=kuma)"
 make start/control-plane/k8s
 ```
 
-3. Redeploy demo app (to get Konvoy sidecar injected)
+3. Redeploy demo app (to get Kuma sidecar injected)
 
 ```bash
 kubectl delete -n kuma-demo pod -l app=demo-app

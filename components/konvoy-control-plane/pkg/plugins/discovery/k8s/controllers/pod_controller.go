@@ -16,7 +16,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	injector_metadata "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoy-injector/pkg/injector/metadata"
+	injector_metadata "github.com/Kong/konvoy/components/konvoy-control-plane/app/kuma-injector/pkg/injector/metadata"
 	mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 
 	util_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/discovery/k8s/util"
@@ -44,7 +44,7 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 	}
 
 	// only Pods with injected Konvoy need a Dataplane descriptor
-	if !injector_metadata.HasKonvoySidecar(pod) {
+	if !injector_metadata.HasKumaSidecar(pod) {
 		return kube_ctrl.Result{}, nil
 	}
 

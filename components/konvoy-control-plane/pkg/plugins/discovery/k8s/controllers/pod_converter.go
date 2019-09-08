@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	mesh_proto "github.com/Kong/konvoy/components/konvoy-control-plane/api/mesh/v1alpha1"
-	injector_metadata "github.com/Kong/konvoy/components/konvoy-control-plane/app/konvoy-injector/pkg/injector/metadata"
+	injector_metadata "github.com/Kong/konvoy/components/konvoy-control-plane/app/kuma-injector/pkg/injector/metadata"
 	util_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/discovery/k8s/util"
 	mesh_k8s "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	util_proto "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/util/proto"

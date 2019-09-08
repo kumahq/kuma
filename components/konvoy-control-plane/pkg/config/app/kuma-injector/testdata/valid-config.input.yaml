@@ -1,0 +1,18 @@
+webHookServer:
+  address: 127.0.0.2
+  port: 8442
+  certDir: /var/secret/kuma-injector
+injector:
+  controlPlane:
+    apiServer:
+      url: https://api-server:8765
+    bootstrapServer:
+      url: https://bootstrap-server:8765
+  sidecarContainer:
+    image: kuma-sidecar:latest
+    redirectPort: 1234
+    uid: 2345
+    gid: 3456
+    adminPort: 45678
+  initContainer:
+    image: kuma-init:latest

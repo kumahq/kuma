@@ -35,13 +35,13 @@ var _ = Describe("PodReconciler", func() {
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
-					Name:      "pod-without-konvoy-sidecar",
+					Name:      "pod-without-kuma-sidecar",
 				},
 			},
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
-					Name:      "pod-with-konvoy-sidecar-but-no-ip",
+					Name:      "pod-with-kuma-sidecar-but-no-ip",
 					Annotations: map[string]string{
 						"kuma.io/sidecar-injected": "true",
 					},
@@ -50,7 +50,7 @@ var _ = Describe("PodReconciler", func() {
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
-					Name:      "pod-with-konvoy-sidecar-and-ip",
+					Name:      "pod-with-kuma-sidecar-and-ip",
 					Annotations: map[string]string{
 						"kuma.io/mesh":             "pilot",
 						"kuma.io/sidecar-injected": "true",
@@ -129,10 +129,10 @@ var _ = Describe("PodReconciler", func() {
 		Expect(dataplanes.Items).To(HaveLen(0))
 	})
 
-	It("should ignore Pods without Konvoy sidecar", func() {
+	It("should ignore Pods without Kuma sidecar", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-without-konvoy-sidecar"},
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-without-kuma-sidecar"},
 		}
 
 		// when
@@ -152,10 +152,10 @@ var _ = Describe("PodReconciler", func() {
 		Expect(dataplanes.Items).To(HaveLen(0))
 	})
 
-	It("should ignore Pods without Konvoy sidecar", func() {
+	It("should ignore Pods without Kuma sidecar", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-without-konvoy-sidecar"},
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-without-kuma-sidecar"},
 		}
 
 		// when
@@ -178,7 +178,7 @@ var _ = Describe("PodReconciler", func() {
 	It("should ignore Pods without IP address", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-konvoy-sidecar-but-no-ip"},
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-but-no-ip"},
 		}
 
 		// when
@@ -198,10 +198,10 @@ var _ = Describe("PodReconciler", func() {
 		Expect(dataplanes.Items).To(HaveLen(0))
 	})
 
-	It("should generate Dataplane resource for every Pod that has Konvoy sidecar injected", func() {
+	It("should generate Dataplane resource for every Pod that has Kuma sidecar injected", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-konvoy-sidecar-and-ip"},
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-and-ip"},
 		}
 
 		// when
@@ -229,14 +229,14 @@ var _ = Describe("PodReconciler", func() {
         mesh: pilot
         metadata:
           creationTimestamp: null
-          name: pod-with-konvoy-sidecar-and-ip
+          name: pod-with-kuma-sidecar-and-ip
           namespace: demo
           ownerReferences:
           - apiVersion: v1
             blockOwnerDeletion: true
             controller: true
             kind: Pod
-            name: pod-with-konvoy-sidecar-and-ip
+            name: pod-with-kuma-sidecar-and-ip
             uid: ""
         spec:
           networking:
@@ -255,7 +255,7 @@ var _ = Describe("PodReconciler", func() {
 		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
 			ObjectMeta: kube_meta.ObjectMeta{
 				Namespace: "demo",
-				Name:      "pod-with-konvoy-sidecar-and-ip",
+				Name:      "pod-with-kuma-sidecar-and-ip",
 			},
 			Spec: map[string]interface{}{
 				"networking": map[string]interface{}{},
@@ -265,7 +265,7 @@ var _ = Describe("PodReconciler", func() {
 
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-konvoy-sidecar-and-ip"},
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-and-ip"},
 		}
 
 		// when
@@ -293,14 +293,14 @@ var _ = Describe("PodReconciler", func() {
         mesh: pilot
         metadata:
           creationTimestamp: null
-          name: pod-with-konvoy-sidecar-and-ip
+          name: pod-with-kuma-sidecar-and-ip
           namespace: demo
           ownerReferences:
           - apiVersion: v1
             blockOwnerDeletion: true
             controller: true
             kind: Pod
-            name: pod-with-konvoy-sidecar-and-ip
+            name: pod-with-kuma-sidecar-and-ip
             uid: ""
         spec:
           networking:
