@@ -8,7 +8,7 @@ import (
 
 func DefaultKubernetesStoreConfig() *KubernetesStoreConfig {
 	return &KubernetesStoreConfig{
-		SystemNamespace: "konvoy-system",
+		SystemNamespace: "kuma-system",
 	}
 }
 

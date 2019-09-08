@@ -42,7 +42,7 @@ resources:
                                 rootCerts:
                                   inlineBytes: MTIzNDU=
                             statPrefix: sds_identity_cert
-                            targetUri: konvoy-system:5677
+                            targetUri: kuma-system:5677
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
@@ -55,7 +55,7 @@ resources:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_mesh_ca
-                          targetUri: konvoy-system:5677
+                          targetUri: kuma-system:5677
       name: inbound:192.168.0.1:80
   - name: localhost:8443
     resource:
@@ -100,7 +100,7 @@ resources:
                                 rootCerts:
                                   inlineBytes: MTIzNDU=
                             statPrefix: sds_identity_cert
-                            targetUri: konvoy-system:5677
+                            targetUri: kuma-system:5677
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
@@ -113,7 +113,7 @@ resources:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_mesh_ca
-                          targetUri: konvoy-system:5677
+                          targetUri: kuma-system:5677
       name: inbound:192.168.0.1:443
   - name: inbound:192.168.0.2:80
     resource:
@@ -143,7 +143,7 @@ resources:
                                 rootCerts:
                                   inlineBytes: MTIzNDU=
                             statPrefix: sds_identity_cert
-                            targetUri: konvoy-system:5677
+                            targetUri: kuma-system:5677
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
@@ -156,7 +156,7 @@ resources:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_mesh_ca
-                          targetUri: konvoy-system:5677
+                          targetUri: kuma-system:5677
       name: inbound:192.168.0.2:80
   - name: inbound:192.168.0.2:443
     resource:
@@ -186,7 +186,7 @@ resources:
                                 rootCerts:
                                   inlineBytes: MTIzNDU=
                             statPrefix: sds_identity_cert
-                            targetUri: konvoy-system:5677
+                            targetUri: kuma-system:5677
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
@@ -199,5 +199,5 @@ resources:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_mesh_ca
-                          targetUri: konvoy-system:5677
+                          targetUri: kuma-system:5677
       name: inbound:192.168.0.2:443

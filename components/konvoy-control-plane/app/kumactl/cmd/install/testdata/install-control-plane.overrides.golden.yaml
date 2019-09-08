@@ -2,33 +2,33 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: konvoy
+  name: kuma
 ---
 apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
-  name: konvoy-injector-tls-cert
-  namespace: konvoy
-data:
-  tls.crt: SW5qZWN0b3JDZXJ0
-  tls.key: SW5qZWN0b3JLZXk=
----
-apiVersion: v1
-kind: Secret
-type: kubernetes.io/tls
-metadata:
-  name: konvoy-sds-tls-cert
-  namespace: konvoy
+  name: kuma-sds-tls-cert
+  namespace: kuma
 data:
   tls.crt: U2RzQ2VydA==
   tls.key: U2RzS2V5
 ---
 apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: kuma-injector-tls-cert
+  namespace: kuma
+data:
+  tls.crt: SW5qZWN0b3JDZXJ0
+  tls.key: SW5qZWN0b3JLZXk=
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: konvoy-control-plane
-  namespace: konvoy
+  name: kuma-control-plane
+  namespace: kuma
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -2016,7 +2016,7 @@ spec:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: konvoy:control-plane
+  name: kuma:control-plane
 rules:
 - apiGroups:
   - ""
@@ -2073,21 +2073,21 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: konvoy:control-plane
+  name: kuma:control-plane
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: konvoy:control-plane
+  name: kuma:control-plane
 subjects:
 - kind: ServiceAccount
-  name: konvoy-control-plane
-  namespace: konvoy
+  name: kuma-control-plane
+  namespace: kuma
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: konvoy:control-plane
-  namespace: konvoy
+  name: kuma:control-plane
+  namespace: kuma
 rules:
 - apiGroups:
   - ""
@@ -2105,35 +2105,35 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: konvoy:control-plane
-  namespace: konvoy
+  name: kuma:control-plane
+  namespace: kuma
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: konvoy:control-plane
+  name: kuma:control-plane
 subjects:
 - kind: ServiceAccount
-  name: konvoy-control-plane
-  namespace: konvoy
+  name: kuma-control-plane
+  namespace: kuma
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: konvoy-injector
-  namespace: konvoy
+  name: kuma-injector
+  namespace: kuma
 spec:
   ports:
   - port: 443
     name: https
     targetPort: 8443
   selector:
-    app: konvoy-injector
+    app: kuma-injector
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: konvoy-ctrl-plane
-  namespace: konvoy
+  name: kuma-ctrl-plane
+  namespace: kuma
 spec:
   ports:
   - port: 5677
@@ -2147,15 +2147,15 @@ spec:
   - port: 5682
     name: http-bootstrap-server
   selector:
-    app: konvoy-control-plane
+    app: kuma-control-plane
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: konvoy-injector
-  namespace: konvoy
+  name: kuma-control-plane
+  namespace: kuma
   labels:
-    app: konvoy-injector
+    app: kuma-control-plane
 spec:
   strategy:
     rollingUpdate:
@@ -2163,25 +2163,106 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: konvoy-injector
+      app: kuma-control-plane
   template:
     metadata:
       labels:
-        app: konvoy-injector
+        app: kuma-control-plane
+    spec:
+      serviceAccountName: kuma-control-plane
+      containers:
+      - name: control-plane
+        image: kuma-ci/kuma-cp:greatest
+        imagePullPolicy: Never
+        env:
+        - name: KONVOY_ENVIRONMENT
+          value: "kubernetes"
+        - name: KONVOY_STORE_TYPE
+          value: "kubernetes"
+        - name: KONVOY_STORE_KUBERNETES_SYSTEM_NAMESPACE
+          value: kuma
+        - name: KONVOY_SDS_SERVER_GRPC_PORT
+          value: "5677"
+        - name: KONVOY_XDS_SERVER_GRPC_PORT
+          value: "5678"
+        - name: KONVOY_XDS_SERVER_HTTP_PORT
+          value: "5679"
+        - name: KONVOY_API_SERVER_PORT
+          value: "5681"
+        - name: KONVOY_BOOTSTRAP_SERVER_PORT
+          value: "5682"
+        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+          value: "kuma-ctrl-plane.kuma"
+        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
+          value: "5678"
+        - name: KONVOY_SDS_SERVER_TLS_CERT_FILE
+          value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
+        - name: KONVOY_SDS_SERVER_TLS_KEY_FILE
+          value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
+        args:
+        - run
+        - --log-level=info
+        ports:
+        - containerPort: 5677
+        - containerPort: 5678
+        - containerPort: 5679
+        - containerPort: 5681
+        - containerPort: 5682
+        livenessProbe:
+          httpGet:
+            path: /healthy
+            port: 5680
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5680
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        volumeMounts:
+        - mountPath: /var/run/secrets/kuma.io/kuma-sds/tls-cert
+          name: kuma-sds-tls-cert
+          readOnly: true
+      serviceAccountName: kuma-control-plane
+      volumes:
+      - name: kuma-sds-tls-cert
+        secret:
+          secretName: kuma-sds-tls-cert
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-injector
+  namespace: kuma
+  labels:
+    app: kuma-injector
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: kuma-injector
+  template:
+    metadata:
+      labels:
+        app: kuma-injector
     spec:
       containers:
-      - name: konvoy-injector
-        image: konvoy-ci/konvoy-injector:greatest
+      - name: kuma-injector
+        image: kuma-ci/kuma-injector:greatest
         imagePullPolicy: Never
         env:
         - name: KONVOY_INJECTOR_WEBHOOK_SERVER_PORT
           value: "8443"
         - name: KONVOY_INJECTOR_WEBHOOK_SERVER_CERT_DIR
-          value: /var/run/secrets/kuma.io/konvoy-injector/tls-cert
+          value: /var/run/secrets/kuma.io/kuma-injector/tls-cert
         - name: KONVOY_INJECTOR_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
-          value: http://konvoy-control-plane.konvoy:5682
+          value: http://kuma-control-plane.kuma:5682
         - name: KONVOY_INJECTOR_CONTROL_PLANE_API_SERVER_URL
-          value: http://konvoy-control-plane.konvoy:5681
+          value: http://kuma-control-plane.kuma:5681
         - name: KONVOY_INJECTOR_SIDECAR_CONTAINER_IMAGE
           value: kuma-ci/kuma-dp:greatest
         - name: KONVOY_INJECTOR_INIT_CONTAINER_IMAGE
@@ -2206,101 +2287,20 @@ spec:
             cpu: 100m
             memory: 64Mi
         volumeMounts:
-        - name: konvoy-injector-tls-cert
-          mountPath: /var/run/secrets/kuma.io/konvoy-injector/tls-cert
+        - name: kuma-injector-tls-cert
+          mountPath: /var/run/secrets/kuma.io/kuma-injector/tls-cert
           readOnly: true
       volumes:
-      - name: konvoy-injector-tls-cert
+      - name: kuma-injector-tls-cert
         secret:
-          secretName: konvoy-injector-tls-cert
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: konvoy-control-plane
-  namespace: konvoy
-  labels:
-    app: konvoy-control-plane
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: konvoy-control-plane
-  template:
-    metadata:
-      labels:
-        app: konvoy-control-plane
-    spec:
-      serviceAccountName: konvoy-control-plane
-      containers:
-      - name: control-plane
-        image: konvoy-ci/konvoy-control-plane:greatest
-        imagePullPolicy: Never
-        env:
-        - name: KONVOY_ENVIRONMENT
-          value: "kubernetes"
-        - name: KONVOY_STORE_TYPE
-          value: "kubernetes"
-        - name: KONVOY_STORE_KUBERNETES_SYSTEM_NAMESPACE
-          value: konvoy
-        - name: KONVOY_SDS_SERVER_GRPC_PORT
-          value: "5677"
-        - name: KONVOY_XDS_SERVER_GRPC_PORT
-          value: "5678"
-        - name: KONVOY_XDS_SERVER_HTTP_PORT
-          value: "5679"
-        - name: KONVOY_API_SERVER_PORT
-          value: "5681"
-        - name: KONVOY_BOOTSTRAP_SERVER_PORT
-          value: "5682"
-        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
-          value: "konvoy-ctrl-plane.konvoy"
-        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
-          value: "5678"
-        - name: KONVOY_SDS_SERVER_TLS_CERT_FILE
-          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.crt
-        - name: KONVOY_SDS_SERVER_TLS_KEY_FILE
-          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.key
-        args:
-        - run
-        - --log-level=info
-        ports:
-        - containerPort: 5677
-        - containerPort: 5678
-        - containerPort: 5679
-        - containerPort: 5681
-        - containerPort: 5682
-        livenessProbe:
-          httpGet:
-            path: /healthy
-            port: 5680
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 5680
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-        volumeMounts:
-        - mountPath: /var/run/secrets/kuma.io/konvoy-sds/tls-cert
-          name: konvoy-sds-tls-cert
-          readOnly: true
-      serviceAccountName: konvoy-control-plane
-      volumes:
-      - name: konvoy-sds-tls-cert
-        secret:
-          secretName: konvoy-sds-tls-cert
+          secretName: kuma-injector-tls-cert
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: konvoy-injector-webhook-configuration
+  name: kuma-injector-webhook-configuration
 webhooks:
-- name: konvoy-injector.kuma.io
+- name: kuma-injector.kuma.io
   namespaceSelector:
     matchLabels:
       kuma.io/sidecar-injection: enabled
@@ -2308,8 +2308,8 @@ webhooks:
   clientConfig:
     caBundle: SW5qZWN0b3JDZXJ0
     service:
-      namespace: konvoy
-      name: konvoy-injector
+      namespace: kuma
+      name: kuma-injector
       path: /inject-sidecar
   rules:
   - apiGroups:

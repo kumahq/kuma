@@ -35,7 +35,7 @@ var _ = Describe("Proxy", func() {
 				})
 
 				// when
-				spt := k8s.NewServiceProxyTransport(rt, "konvoy-system", "konvoy-control-plane:http-apis-server")
+				spt := k8s.NewServiceProxyTransport(rt, "kuma-system", "kuma-control-plane:http-apis-server")
 				// and
 				resp, err := spt.RoundTrip(req)
 				// then
@@ -45,19 +45,19 @@ var _ = Describe("Proxy", func() {
 			},
 			Entry("", testCase{
 				originalPath: "",
-				expectedPath: "/api/v1/namespaces/konvoy-system/services/konvoy-control-plane:http-apis-server/proxy/",
+				expectedPath: "/api/v1/namespaces/kuma-system/services/kuma-control-plane:http-apis-server/proxy/",
 			}),
 			Entry("/", testCase{
 				originalPath: "/",
-				expectedPath: "/api/v1/namespaces/konvoy-system/services/konvoy-control-plane:http-apis-server/proxy/",
+				expectedPath: "/api/v1/namespaces/kuma-system/services/kuma-control-plane:http-apis-server/proxy/",
 			}),
 			Entry("meshes", testCase{
 				originalPath: "meshes",
-				expectedPath: "/api/v1/namespaces/konvoy-system/services/konvoy-control-plane:http-apis-server/proxy/meshes",
+				expectedPath: "/api/v1/namespaces/kuma-system/services/kuma-control-plane:http-apis-server/proxy/meshes",
 			}),
 			Entry("/meshes/default/dataplanes", testCase{
 				originalPath: "/meshes/default/dataplanes",
-				expectedPath: "/api/v1/namespaces/konvoy-system/services/konvoy-control-plane:http-apis-server/proxy/meshes/default/dataplanes",
+				expectedPath: "/api/v1/namespaces/kuma-system/services/kuma-control-plane:http-apis-server/proxy/meshes/default/dataplanes",
 			}),
 		)
 	})
@@ -65,7 +65,7 @@ var _ = Describe("Proxy", func() {
 	Describe("NewInprocessKubeProxyTransport(..)", func() {
 		It("should process requests in-process using a given handler", func() {
 			// given
-			req, _ := http.NewRequest("GET", "/api/v1/namespaces/konvoy-system/services/konvoy-control-plane:http-apis-server/proxy/meshes", nil)
+			req, _ := http.NewRequest("GET", "/api/v1/namespaces/kuma-system/services/kuma-control-plane:http-apis-server/proxy/meshes", nil)
 
 			// setup
 			handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -92,7 +92,7 @@ var _ = Describe("Proxy", func() {
 
 		It("should catch a panic and translate it into an error", func() {
 			// given
-			req, _ := http.NewRequest("GET", "/api/v1/namespaces/konvoy-system/services/konvoy-control-plane:http-apis-server/proxy/meshes", nil)
+			req, _ := http.NewRequest("GET", "/api/v1/namespaces/kuma-system/services/kuma-control-plane:http-apis-server/proxy/meshes", nil)
 
 			// setup
 			handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -113,7 +113,7 @@ var _ = Describe("Proxy", func() {
 	Describe("NewKubeApiProxyTransport(..)", func() {
 		It("should work", func() {
 			// given
-			req, _ := http.NewRequest("GET", "/api/v1/namespaces/konvoy-system/services/konvoy-control-plane:http-apis-server/proxy/meshes", nil)
+			req, _ := http.NewRequest("GET", "/api/v1/namespaces/kuma-system/services/kuma-control-plane:http-apis-server/proxy/meshes", nil)
 			expected := &http.Response{
 				StatusCode: http.StatusCreated,
 				Body:       ioutil.NopCloser(&bytes.Buffer{}),

@@ -6,6 +6,6 @@ controlPlanes:
     kubernetes:
       context: minikube
       kubeconfig: /home/user/.kube/config
-      namespace: konvoy-system
+      namespace: kuma-system
   name: example
 currentContext: example

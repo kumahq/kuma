@@ -17,19 +17,19 @@ spec:
   - port: 5682
     name: http-bootstrap-server
   selector:
-    app: konvoy-control-plane
+    app: kuma-control-plane
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: konvoy-control-plane
+  name: kuma-control-plane
   namespace: {{ .Namespace }}
 ---
 apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
-  name: konvoy-sds-tls-cert
+  name: kuma-sds-tls-cert
   namespace: {{ .Namespace }}
 data:
   tls.crt: {{ .SdsTlsCert | b64enc }}
@@ -38,10 +38,10 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: konvoy-control-plane
+  name: kuma-control-plane
   namespace: {{ .Namespace }}
   labels:
-    app: konvoy-control-plane
+    app: kuma-control-plane
 spec:
   strategy:
     rollingUpdate:
@@ -49,13 +49,13 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: konvoy-control-plane
+      app: kuma-control-plane
   template:
     metadata:
       labels:
-        app: konvoy-control-plane
+        app: kuma-control-plane
     spec:
-      serviceAccountName: konvoy-control-plane
+      serviceAccountName: kuma-control-plane
       containers:
       - name: control-plane
         image: {{ .ControlPlaneImage }}:{{ .ControlPlaneVersion }}
@@ -82,9 +82,9 @@ spec:
         - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
           value: "5678"
         - name: KONVOY_SDS_SERVER_TLS_CERT_FILE
-          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.crt
+          value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
         - name: KONVOY_SDS_SERVER_TLS_KEY_FILE
-          value: /var/run/secrets/kuma.io/konvoy-sds/tls-cert/tls.key
+          value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
         args:
         - run
         - --log-level=info
@@ -107,11 +107,11 @@ spec:
             cpu: 100m
             memory: 256Mi
         volumeMounts:
-        - name: konvoy-sds-tls-cert
-          mountPath: /var/run/secrets/kuma.io/konvoy-sds/tls-cert
+        - name: kuma-sds-tls-cert
+          mountPath: /var/run/secrets/kuma.io/kuma-sds/tls-cert
           readOnly: true
       volumes:
-      - name: konvoy-sds-tls-cert
+      - name: kuma-sds-tls-cert
         secret:
-          secretName: konvoy-sds-tls-cert
+          secretName: kuma-sds-tls-cert
 

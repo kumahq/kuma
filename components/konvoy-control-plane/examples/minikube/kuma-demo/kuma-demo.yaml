@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: konvoy-demo
+  name: kuma-demo
   labels:
     kuma.io/sidecar-injection: enabled
 
@@ -11,7 +11,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: demo-app-config
-  namespace: konvoy-demo
+  namespace: kuma-demo
 data:
   kong.yml: |
     _format_version: "1.1"
@@ -28,7 +28,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: demo-app
-  namespace: konvoy-demo
+  namespace: kuma-demo
 spec:
   ports:
   - port: 8000
@@ -40,13 +40,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: demo-app-service-account
-  namespace: konvoy-demo
+  namespace: kuma-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: demo-app
-  namespace: konvoy-demo
+  namespace: kuma-demo
   labels:
     app: demo-app
 spec:
