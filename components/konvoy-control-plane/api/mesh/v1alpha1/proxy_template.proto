@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package konvoy.mesh.v1alpha1;
+package kuma.mesh.v1alpha1;
 
 option go_package = "v1alpha1";
 
