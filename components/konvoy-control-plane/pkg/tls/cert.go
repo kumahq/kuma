@@ -2,21 +2,22 @@ package tls
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
+	"crypto"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"net"
 	"time"
 
 	"github.com/pkg/errors"
 )
 
 var (
-	DefaultEllipticCurve  = elliptic.P256()
-	DefaultValidityPeriod = 365 * 24 * time.Hour
+	DefaultRsaBits        = 2048
+	DefaultValidityPeriod = 10 * 365 * 24 * time.Hour
 )
 
 type KeyPair struct {
@@ -24,13 +25,13 @@ type KeyPair struct {
 	KeyPEM  []byte
 }
 
-func NewSelfSignedCert(commonName string) (KeyPair, error) {
-	key, err := ecdsa.GenerateKey(DefaultEllipticCurve, rand.Reader)
+func NewSelfSignedCert(commonName string, hosts ...string) (KeyPair, error) {
+	key, err := rsa.GenerateKey(rand.Reader, DefaultRsaBits)
 	if err != nil {
 		return KeyPair{}, errors.Wrap(err, "failed to generate TLS key")
 	}
 
-	certBytes, err := generateCert(commonName, key)
+	certBytes, err := generateCert(key, commonName, hosts...)
 	if err != nil {
 		return KeyPair{}, err
 	}
@@ -46,12 +47,12 @@ func NewSelfSignedCert(commonName string) (KeyPair, error) {
 	}, nil
 }
 
-func generateCert(commonName string, key *ecdsa.PrivateKey) ([]byte, error) {
-	csr, err := newCert(commonName)
+func generateCert(signer crypto.Signer, commonName string, hosts ...string) ([]byte, error) {
+	csr, err := newCert(commonName, hosts...)
 	if err != nil {
 		return nil, err
 	}
-	certDerBytes, err := x509.CreateCertificate(rand.Reader, &csr, &csr, &key.PublicKey, key)
+	certDerBytes, err := x509.CreateCertificate(rand.Reader, &csr, &csr, signer.Public(), signer)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate TLS certificate")
 	}
@@ -62,7 +63,7 @@ func generateCert(commonName string, key *ecdsa.PrivateKey) ([]byte, error) {
 	return certBuf.Bytes(), nil
 }
 
-func newCert(commonName string) (x509.Certificate, error) {
+func newCert(commonName string, hosts ...string) (x509.Certificate, error) {
 	notBefore := time.Now()
 	notAfter := notBefore.Add(DefaultValidityPeriod)
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
@@ -82,17 +83,27 @@ func newCert(commonName string) (x509.Certificate, error) {
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
+	for _, host := range hosts {
+		if ip := net.ParseIP(host); ip != nil {
+			csr.IPAddresses = append(csr.IPAddresses, ip)
+		} else {
+			csr.DNSNames = append(csr.DNSNames, host)
+		}
+	}
 	return csr, nil
 }
 
-func marshalKey(key *ecdsa.PrivateKey) ([]byte, error) {
-	keyDerBytes, err := x509.MarshalECPrivateKey(key)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal TLS key")
+func marshalKey(priv interface{}) ([]byte, error) {
+	var block *pem.Block
+	switch k := priv.(type) {
+	case *rsa.PrivateKey:
+		block = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
+	default:
+		return nil, errors.Errorf("unsupported private key type %T", priv)
 	}
 	var keyBuf bytes.Buffer
-	if err := pem.Encode(&keyBuf, &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDerBytes}); err != nil {
-		return nil, errors.Wrap(err, "failed to PEM encode TLS key")
+	if err := pem.Encode(&keyBuf, block); err != nil {
+		return nil, err
 	}
 	return keyBuf.Bytes(), nil
 }

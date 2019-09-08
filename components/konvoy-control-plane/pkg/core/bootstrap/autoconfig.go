@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
-	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/tls"
 )
@@ -20,9 +19,14 @@ func autoconfigure(cfg *konvoy_cp.Config) error {
 
 func autoconfigureSds(cfg *konvoy_cp.Config) error {
 	// to improve UX, we want to auto-generate TLS cert for SDS if possible
-	if cfg.Environment == konvoy_cp.UniversalEnvironment && cfg.Store.Type == store.MemoryStore {
+	if cfg.Environment == konvoy_cp.UniversalEnvironment {
 		if cfg.SdsServer.TlsCertFile == "" {
-			sdsCert, err := tls.NewSelfSignedCert("sds")
+			hosts := []string{
+				cfg.BootstrapServer.Params.XdsHost,
+				"localhost",
+			}
+			// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server
+			sdsCert, err := tls.NewSelfSignedCert("kuma-sds", hosts...)
 			if err != nil {
 				return errors.Wrap(err, "failed to auto-generate TLS certificate for SDS server")
 			}

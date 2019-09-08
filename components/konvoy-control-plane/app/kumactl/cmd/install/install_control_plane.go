@@ -62,10 +62,11 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Long:  `Install Kuma Control Plane on Kubernetes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if args.InjectorTlsCert == "" && args.InjectorTlsKey == "" {
-				commonName := fmt.Sprintf("%s.%s.svc", args.InjectorServiceName, args.Namespace)
-				injectorCert, err := NewSelfSignedCert(commonName)
+				fqdn := fmt.Sprintf("%s.%s.svc", args.InjectorServiceName, args.Namespace)
+				// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
+				injectorCert, err := NewSelfSignedCert(fqdn)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", commonName)
+					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 				}
 				args.InjectorTlsCert = string(injectorCert.CertPEM)
 				args.InjectorTlsKey = string(injectorCert.KeyPEM)
@@ -74,10 +75,17 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			}
 
 			if args.SdsTlsCert == "" && args.SdsTlsKey == "" {
-				commonName := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
-				sdsCert, err := NewSelfSignedCert(commonName)
+				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
+				hosts := []string{
+					fqdn,
+					fmt.Sprintf("%s.%s", args.ControlPlaneServiceName, args.Namespace),
+					args.ControlPlaneServiceName,
+					"localhost",
+				}
+				// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server
+				sdsCert, err := NewSelfSignedCert(fqdn, hosts...)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", commonName)
+					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 				}
 				args.SdsTlsCert = string(sdsCert.CertPEM)
 				args.SdsTlsKey = string(sdsCert.KeyPEM)
