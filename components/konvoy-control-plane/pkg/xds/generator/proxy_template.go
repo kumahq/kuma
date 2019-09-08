@@ -129,7 +129,7 @@ func (_ InboundProxyGenerator) Generate(proxy *model.Proxy) ([]*Resource, error)
 			resources = append(resources, &Resource{
 				Name:     inboundListenerName,
 				Version:  proxy.Dataplane.Meta.GetVersion(),
-				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual),
+				Resource: envoy.CreateInboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual, proxy.TrafficPermissions),
 			})
 			names[inboundListenerName] = true
 		}

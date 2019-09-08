@@ -23,9 +23,9 @@ func (id *ProxyId) String() string {
 }
 
 type Proxy struct {
-	Id        ProxyId
-	Dataplane *mesh_core.DataplaneResource
-	// here would go matching rules like traffic permissions
+	Id                 ProxyId
+	Dataplane          *mesh_core.DataplaneResource
+	TrafficPermissions *mesh_core.TrafficPermissionResourceList
 }
 
 func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {

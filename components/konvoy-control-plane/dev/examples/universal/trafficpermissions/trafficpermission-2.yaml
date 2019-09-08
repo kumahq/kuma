@@ -1,5 +1,5 @@
 type: TrafficPermission
-name: tp1
+name: tp2
 mesh: default
 rules:
   - sources:
@@ -9,3 +9,9 @@ rules:
     - match:
         service: backend
         version: "2.0"
+  - destinations:
+    - match:
+        env: production
+    sources:
+    - match:
+        service: s1

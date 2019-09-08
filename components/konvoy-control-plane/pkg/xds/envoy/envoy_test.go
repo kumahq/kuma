@@ -93,7 +93,7 @@ var _ = Describe("Envoy", func() {
               statPrefix: localhost:8080
 `
 		// when
-		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", false)
+		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", false, nil)
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
@@ -121,7 +121,7 @@ var _ = Describe("Envoy", func() {
           bindToPort: false
 `
 		// when
-		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", true)
+		resource := envoy.CreateInboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", true, nil)
 
 		// then
 		actual, err := util_proto.ToYAML(resource)
