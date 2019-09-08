@@ -58,8 +58,7 @@ var _ = Describe("Resource WS", func() {
 			json := `
 			{
 				"type": "Mesh",
-				"name": "mesh-1",
-				"mesh": "mesh-1"
+				"name": "mesh-1"
 			}`
 			Expect(body).To(MatchJSON(json))
 		})
@@ -85,14 +84,12 @@ var _ = Describe("Resource WS", func() {
 			json1 := `
 			{
 				"type": "Mesh",
-				"name": "mesh-1",
-				"mesh": "mesh-1"
+				"name": "mesh-1"
 			}`
 			json2 := `
 			{
 				"type": "Mesh",
-				"name": "mesh-2",
-				"mesh": "mesh-2"
+				"name": "mesh-2"
 			}`
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -110,7 +107,6 @@ var _ = Describe("Resource WS", func() {
 			res := rest.Resource{
 				Meta: rest.ResourceMeta{
 					Name: "new-mesh",
-					Mesh: "new-mesh",
 					Type: string(mesh.MeshType),
 				},
 				Spec: &v1alpha1.Mesh{},
@@ -132,7 +128,6 @@ var _ = Describe("Resource WS", func() {
 			res := rest.Resource{
 				Meta: rest.ResourceMeta{
 					Name: "mesh-1",
-					Mesh: "mesh-1",
 					Type: string(mesh.MeshType),
 				},
 				Spec: &v1alpha1.Mesh{
@@ -155,9 +150,8 @@ var _ = Describe("Resource WS", func() {
 			// given
 			json := `
 			{
-				"type": "Mesh",
+				"type": "Mesh-1",
 				"name": "tr-1",
-				"mesh": "default"
 			}
 			`
 
@@ -174,7 +168,6 @@ var _ = Describe("Resource WS", func() {
 			{
 				"type": "Mesh",
 				"name": "different-name",
-				"mesh": "different-name"
 			}
 			`
 
@@ -190,8 +183,7 @@ var _ = Describe("Resource WS", func() {
 			json := `
 			{
 				"type": "Mesh",
-				"name": "mesh-1",
-				"mesh": "different-mesh"
+				"name": "different-mesh",
 			}
 			`
 

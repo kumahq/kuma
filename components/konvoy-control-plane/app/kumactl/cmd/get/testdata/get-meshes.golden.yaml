@@ -1,12 +1,10 @@
 items:
-  - mesh: mesh1
-    mtls:
+  - mtls:
       ca:
         builtin: {}
     name: mesh1
     type: Mesh
-  - mesh: mesh2
-    mtls:
+  - mtls:
       ca:
         builtin: {}
     name: mesh2

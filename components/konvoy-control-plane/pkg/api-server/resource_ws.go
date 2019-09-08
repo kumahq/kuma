@@ -119,6 +119,7 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 	if err != nil {
 		core.Log.Error(err, "Could not read an entity")
 		writeError(response, 400, "Could not process the resource")
+		return
 	}
 
 	if err := r.validateResourceRequest(request, &resourceRes); err != nil {
@@ -147,7 +148,7 @@ func (r *resourceWs) validateResourceRequest(request *restful.Request, resource 
 	if string(r.ResourceFactory().GetType()) != resource.Meta.Type {
 		return errors.New("Type from the URL has to be the same as in body")
 	}
-	if meshName != resource.Meta.Mesh {
+	if meshName != resource.Meta.Mesh && r.ResourceFactory().GetType() != mesh.MeshType {
 		return errors.New("Mesh from the URL has to be the same as in body")
 	}
 	return nil

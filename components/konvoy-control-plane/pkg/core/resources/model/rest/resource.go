@@ -13,7 +13,7 @@ import (
 type ResourceMeta struct {
 	Type string `json:"type"`
 	Name string `json:"name"`
-	Mesh string `json:"mesh"`
+	Mesh string `json:"mesh,omitempty"`
 }
 
 type Resource struct {
