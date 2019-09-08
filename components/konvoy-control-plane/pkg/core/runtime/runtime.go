@@ -3,7 +3,7 @@ package runtime
 import (
 	"context"
 
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	builtin_ca "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	core_manager "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/manager"
@@ -23,7 +23,7 @@ type RuntimeInfo interface {
 }
 
 type RuntimeContext interface {
-	Config() konvoy_cp.Config
+	Config() kuma_cp.Config
 	DiscoverySources() []core_discovery.DiscoverySource
 	XDS() core_xds.XdsContext
 	ResourceManager() core_manager.ResourceManager
@@ -53,7 +53,7 @@ func (i *runtimeInfo) GetInstanceId() string {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg konvoy_cp.Config
+	cfg kuma_cp.Config
 	rm  core_manager.ResourceManager
 	sm  secret_manager.SecretManager
 	bcm builtin_ca.BuiltinCaManager
@@ -62,7 +62,7 @@ type runtimeContext struct {
 	ext context.Context
 }
 
-func (rc *runtimeContext) Config() konvoy_cp.Config {
+func (rc *runtimeContext) Config() kuma_cp.Config {
 	return rc.cfg
 }
 func (rc *runtimeContext) DiscoverySources() []core_discovery.DiscoverySource {

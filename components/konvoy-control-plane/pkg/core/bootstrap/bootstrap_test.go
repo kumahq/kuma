@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"context"
 
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	core_store "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/store"
@@ -15,7 +15,7 @@ var _ = Describe("Bootstrap", func() {
 
 	It("should create default mesh", func() {
 		// given
-		cfg := konvoy_cp.DefaultConfig()
+		cfg := kuma_cp.DefaultConfig()
 
 		// when control plane is started
 		rt, err := Bootstrap(cfg)
@@ -52,7 +52,7 @@ var _ = Describe("Bootstrap", func() {
 
 	It("should skip creating mesh if one already exist", func() {
 		// given
-		cfg := konvoy_cp.DefaultConfig()
+		cfg := kuma_cp.DefaultConfig()
 		runtime, err := buildRuntime(cfg)
 		Expect(err).ToNot(HaveOccurred())
 

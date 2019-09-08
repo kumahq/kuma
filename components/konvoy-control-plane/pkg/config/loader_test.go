@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -64,7 +64,7 @@ apiServer:
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		cfg := konvoy_cp.DefaultConfig()
+		cfg := kuma_cp.DefaultConfig()
 		err = config.Load(file.Name(), &cfg)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -78,7 +78,7 @@ apiServer:
 		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 
-		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironment))
+		Expect(cfg.Environment).To(Equal(kuma_cp.KubernetesEnvironment))
 
 		Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
 
@@ -121,7 +121,7 @@ apiServer:
 		setEnv("KUMA_API_SERVER_API_DOCS_PATH", "/apidocs.json")
 
 		// when
-		cfg := konvoy_cp.DefaultConfig()
+		cfg := kuma_cp.DefaultConfig()
 		err := config.Load("", &cfg)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -135,7 +135,7 @@ apiServer:
 		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 
-		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironment))
+		Expect(cfg.Environment).To(Equal(kuma_cp.KubernetesEnvironment))
 
 		Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
 		Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
@@ -161,7 +161,7 @@ apiServer:
 		setEnv("KUMA_STORE_POSTGRES_HOST", "overriden.host")
 
 		// when
-		cfg := konvoy_cp.DefaultConfig()
+		cfg := kuma_cp.DefaultConfig()
 		err = config.Load(file.Name(), &cfg)
 		Expect(err).ToNot(HaveOccurred())
 

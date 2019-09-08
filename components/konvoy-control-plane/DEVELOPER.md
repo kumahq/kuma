@@ -205,7 +205,7 @@ kubectl port-forward -n kuma-system $(kubectl get pods -n kuma-system -l app=kum
 6. Add `Control Plane` to your `kumactl` config:
 
 ```bash
-kumactl config control-planes add --name k8s --api-server-url http://localhost:15681
+kumactl config control-planes add --name k8s --address http://localhost:15681
 ```
 
 7. Verify that `Control Plane` has been added:

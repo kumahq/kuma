@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"context"
 
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core"
 	builtin_ca "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/ca/builtin"
@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func buildRuntime(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
+func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := autoconfigure(&cfg); err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 	cfg := runtime.Config()
 
 	namespace := core_model.DefaultNamespace
-	if runtime.Config().Environment == konvoy_cp.KubernetesEnvironment {
+	if runtime.Config().Environment == kuma_cp.KubernetesEnvironment {
 		namespace = runtime.Config().Store.Kubernetes.SystemNamespace
 	}
 
@@ -75,7 +75,7 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 	return nil
 }
 
-func Bootstrap(cfg konvoy_cp.Config) (core_runtime.Runtime, error) {
+func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	runtime, err := buildRuntime(cfg)
 	if err != nil {
 		return nil, err
@@ -98,12 +98,12 @@ func onStartup(runtime core_runtime.Runtime) error {
 	}))
 }
 
-func initializeBootstrap(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
+func initializeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	var pluginName core_plugins.PluginName
 	switch cfg.Environment {
-	case konvoy_cp.KubernetesEnvironment:
+	case kuma_cp.KubernetesEnvironment:
 		pluginName = core_plugins.Kubernetes
-	case konvoy_cp.UniversalEnvironment:
+	case kuma_cp.UniversalEnvironment:
 		pluginName = core_plugins.Universal
 	default:
 		return errors.Errorf("unknown environment type %s", cfg.Environment)
@@ -118,7 +118,7 @@ func initializeBootstrap(cfg konvoy_cp.Config, builder *core_runtime.Builder) er
 	return nil
 }
 
-func initializeResourceStore(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
+func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
 	switch cfg.Store.Type {
@@ -146,7 +146,7 @@ func initializeResourceStore(cfg konvoy_cp.Config, builder *core_runtime.Builder
 	}
 }
 
-func initializeSecretManager(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
+func initializeSecretManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
 	var cipher secret_cipher.Cipher
@@ -172,14 +172,14 @@ func initializeSecretManager(cfg konvoy_cp.Config, builder *core_runtime.Builder
 	}
 }
 
-func initializeDiscovery(cfg konvoy_cp.Config, builder *core_runtime.Builder) error {
+func initializeDiscovery(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
 	switch cfg.Environment {
-	case konvoy_cp.KubernetesEnvironment:
+	case kuma_cp.KubernetesEnvironment:
 		pluginName = core_plugins.Kubernetes
 		pluginConfig = nil
-	case konvoy_cp.UniversalEnvironment:
+	case kuma_cp.UniversalEnvironment:
 		pluginName = core_plugins.Universal
 		pluginConfig = cfg.Discovery.Universal
 	default:

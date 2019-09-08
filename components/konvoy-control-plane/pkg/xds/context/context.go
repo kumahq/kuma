@@ -2,7 +2,7 @@ package context
 
 import (
 	"fmt"
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	"io/ioutil"
 )
 
@@ -20,7 +20,7 @@ type MeshContext struct {
 	TlsEnabled bool
 }
 
-func BuildControlPlaneContext(config konvoy_cp.Config) (*ControlPlaneContext, error) {
+func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, error) {
 	var cert []byte
 	if config.SdsServer.TlsCertFile != "" {
 		c, err := ioutil.ReadFile(config.SdsServer.TlsCertFile)

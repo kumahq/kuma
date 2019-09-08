@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	controlPlaneLog = core.Log.WithName("konvoy-cp")
+	controlPlaneLog = core.Log.WithName("kuma-cp")
 )
 
 // newRootCmd represents the base command when called without any subcommands.
@@ -21,7 +21,7 @@ func newRootCmd() *cobra.Command {
 		logLevel string
 	}{}
 	cmd := &cobra.Command{
-		Use:   "konvoy-control-plane",
+		Use:   "kuma-cp",
 		Short: "Universal Control Plane for Envoy-based Service Mesh",
 		Long:  `Universal Control Plane for Envoy-based Service Mesh.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {

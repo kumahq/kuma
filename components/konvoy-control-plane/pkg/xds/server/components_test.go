@@ -11,7 +11,7 @@ import (
 
 	. "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/xds/server"
 
-	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
+	kuma_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/kuma-cp"
 	core_discovery "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/discovery"
 	mesh_core "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
@@ -48,7 +48,7 @@ var _ = Describe("Components", func() {
 	Describe("DefaultDataplaneSyncTracker", func() {
 		It("", func(done Done) {
 			// given
-			cfg := konvoy_cp.DefaultConfig()
+			cfg := kuma_cp.DefaultConfig()
 			cfg.XdsServer.DataplaneConfigurationRefreshInterval = 1 * time.Millisecond
 
 			// and
