@@ -82,7 +82,7 @@ endef
 
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
 
-KONVOY_VERSION ?= master
+KUMA_VERSION ?= master
 
 BINTRAY_REGISTRY ?= kong-docker-konvoy-docker.bintray.io
 BINTRAY_USERNAME ?=
@@ -363,19 +363,19 @@ build/kuma-injector: ## Dev: Build `kuma-injector` binary
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \
-	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
-	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
-    KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
-    KONVOY_ENVIRONMENT=kubernetes \
-    KONVOY_STORE_TYPE=kubernetes \
+	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
+	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
+    KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
+    KUMA_ENVIRONMENT=kubernetes \
+    KUMA_STORE_TYPE=kubernetes \
 	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
 
 run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
-	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
-	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
-	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
-	KONVOY_ENVIRONMENT=universal \
-	KONVOY_STORE_TYPE=memory \
+	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
+	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
+	KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
+	KUMA_ENVIRONMENT=universal \
+	KUMA_STORE_TYPE=memory \
 	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
 
 start/postgres: ## Boostrap: start Postgres for Control Plane with initial schema
@@ -383,16 +383,16 @@ start/postgres: ## Boostrap: start Postgres for Control Plane with initial schem
 	tools/postgres/wait-for-postgres.sh 15432
 
 run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
-	KONVOY_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
-	KONVOY_GRPC_PORT=$(CP_GRPC_PORT) \
-	KONVOY_HTTP_PORT=$(CP_HTTP_PORT) \
-	KONVOY_ENVIRONMENT=universal \
-	KONVOY_STORE_TYPE=postgres \
-	KONVOY_STORE_POSTGRES_HOST=localhost \
-	KONVOY_STORE_POSTGRES_PORT=15432 \
-	KONVOY_STORE_POSTGRES_USER=kuma \
-	KONVOY_STORE_POSTGRES_PASSWORD=kuma \
-	KONVOY_STORE_POSTGRES_DB_NAME=kuma \
+	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
+	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
+	KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
+	KUMA_ENVIRONMENT=universal \
+	KUMA_STORE_TYPE=postgres \
+	KUMA_STORE_POSTGRES_HOST=localhost \
+	KUMA_STORE_POSTGRES_PORT=15432 \
+	KUMA_STORE_POSTGRES_USER=kuma \
+	KUMA_STORE_POSTGRES_PASSWORD=kuma \
+	KUMA_STORE_POSTGRES_DB_NAME=kuma \
 	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
 
 curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_DATAPLANE_MESH).$(KIND_EXAMPLE_DATAPLANE_NAME)
@@ -435,20 +435,20 @@ image/kuma-injector: ## Dev: Build `kuma-injector` Docker image
 
 image/konvoy-cp/push: image/konvoy-cp
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KUMA_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
-	docker push $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
+	docker tag $(KUMA_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoy-cp:$(KUMA_VERSION)
+	docker push $(BINTRAY_REGISTRY)/konvoy-cp:$(KUMA_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
 image/kuma-dp/push: image/kuma-dp
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KUMA_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-dp:$(KONVOY_VERSION)
-	docker push $(BINTRAY_REGISTRY)/kuma-dp:$(KONVOY_VERSION)
+	docker tag $(KUMA_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-dp:$(KUMA_VERSION)
+	docker push $(BINTRAY_REGISTRY)/kuma-dp:$(KUMA_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
 image/kumactl/push: image/kumactl
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KUMA_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kumactl:$(KONVOY_VERSION)
-	docker push $(BINTRAY_REGISTRY)/kumactl:$(KONVOY_VERSION)
+	docker tag $(KUMA_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kumactl:$(KUMA_VERSION)
+	docker push $(BINTRAY_REGISTRY)/kumactl:$(KUMA_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
 images/push: image/konvoy-cp/push image/kuma-dp/push image/kumactl/push

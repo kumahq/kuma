@@ -13,16 +13,16 @@ var _ config.Config = &XdsServerConfig{}
 // Envoy XDS server configuration
 type XdsServerConfig struct {
 	// Port of GRPC server that Envoy connects to
-	GrpcPort int `yaml:"grpcPort" envconfig:"konvoy_xds_server_grpc_port"`
+	GrpcPort int `yaml:"grpcPort" envconfig:"kuma_xds_server_grpc_port"`
 	// Port of HTTP Server for retrieving xDS data in REST way
-	HttpPort int `yaml:"httpPort" envconfig:"konvoy_xds_server_http_port"`
+	HttpPort int `yaml:"httpPort" envconfig:"kuma_xds_server_http_port"`
 	// Port of Diagnostic Server for checking health and readiness of the Control Plane
-	DiagnosticsPort int `yaml:"diagnosticsPort" envconfig:"konvoy_xds_server_diagnostics_port"`
+	DiagnosticsPort int `yaml:"diagnosticsPort" envconfig:"kuma_xds_server_diagnostics_port"`
 
 	// Interval for re-genarting configuration for Dataplanes connected to the Control Plane
-	DataplaneConfigurationRefreshInterval time.Duration `yaml:"dataplaneConfigurationRefreshInterval" envconfig:"konvoy_xds_server_dataplane_configuration_refresh_interval"`
+	DataplaneConfigurationRefreshInterval time.Duration `yaml:"dataplaneConfigurationRefreshInterval" envconfig:"kuma_xds_server_dataplane_configuration_refresh_interval"`
 	// Interval for flushing status of Dataplanes connected to the Control Plane
-	DataplaneStatusFlushInterval time.Duration `yaml:"dataplaneStatusFlushInterval" envconfig:"konvoy_xds_server_dataplane_status_flush_interval"`
+	DataplaneStatusFlushInterval time.Duration `yaml:"dataplaneStatusFlushInterval" envconfig:"kuma_xds_server_dataplane_status_flush_interval"`
 }
 
 func (x *XdsServerConfig) Validate() error {
@@ -56,7 +56,7 @@ func DefaultXdsServerConfig() *XdsServerConfig {
 
 type BootstrapServerConfig struct {
 	// Port of Server that provides bootstrap configuration for dataplanes
-	Port int `yaml:"port" envconfig:"konvoy_bootstrap_server_port"`
+	Port int `yaml:"port" envconfig:"kuma_bootstrap_server_port"`
 	// Parameters of bootstrap configuration
 	Params *BootstrapParamsConfig `yaml:"params"`
 }
@@ -80,11 +80,11 @@ func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 
 type BootstrapParamsConfig struct {
 	// Port for Envoy Admin
-	AdminPort uint32 `yaml:"adminPort" envconfig:"konvoy_bootstrap_server_params_admin_port"`
+	AdminPort uint32 `yaml:"adminPort" envconfig:"kuma_bootstrap_server_params_admin_port"`
 	// Host of XDS Server
-	XdsHost string `yaml:"xdsHost" envconfig:"konvoy_bootstrap_server_params_xds_host"`
+	XdsHost string `yaml:"xdsHost" envconfig:"kuma_bootstrap_server_params_xds_host"`
 	// Port of XDS Server
-	XdsPort uint32 `yaml:"xdsPort" envconfig:"konvoy_bootstrap_server_params_xds_port"`
+	XdsPort uint32 `yaml:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 }
 
 func (b *BootstrapParamsConfig) Validate() error {

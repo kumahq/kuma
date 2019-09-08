@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"errors"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 )
 
@@ -10,17 +11,17 @@ var _ config.Config = &PostgresStoreConfig{}
 // Postgres store configuration
 type PostgresStoreConfig struct {
 	// Host of the Postgres DB
-	Host string `yaml:"host" envconfig:"konvoy_store_postgres_host"`
+	Host string `yaml:"host" envconfig:"kuma_store_postgres_host"`
 	// Port of the Postgres DB
-	Port int `yaml:"port" envconfig:"konvoy_store_postgres_port"`
+	Port int `yaml:"port" envconfig:"kuma_store_postgres_port"`
 	// User of the Postgres DB
-	User string `yaml:"user" envconfig:"konvoy_store_postgres_user"`
+	User string `yaml:"user" envconfig:"kuma_store_postgres_user"`
 	// Password of the Postgres DB
-	Password string `yaml:"password" envconfig:"konvoy_store_postgres_password"`
+	Password string `yaml:"password" envconfig:"kuma_store_postgres_password"`
 	// Database name of the Postgres DB
-	DbName string `yaml:"dbName" envconfig:"konvoy_store_postgres_db_name"`
+	DbName string `yaml:"dbName" envconfig:"kuma_store_postgres_db_name"`
 	// Connection Timeout to the DB in seconds
-	ConnectionTimeout int `yaml:"connectionTimeout" envconfig:"konvoy_store_postgres_connection_timeout"`
+	ConnectionTimeout int `yaml:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
 }
 
 func (p *PostgresStoreConfig) Validate() error {

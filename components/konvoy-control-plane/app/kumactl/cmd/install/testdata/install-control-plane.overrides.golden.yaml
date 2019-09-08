@@ -2240,29 +2240,29 @@ spec:
         image: kuma-ci/kuma-cp:greatest
         imagePullPolicy: Never
         env:
-        - name: KONVOY_ENVIRONMENT
+        - name: KUMA_ENVIRONMENT
           value: "kubernetes"
-        - name: KONVOY_STORE_TYPE
+        - name: KUMA_STORE_TYPE
           value: "kubernetes"
-        - name: KONVOY_STORE_KUBERNETES_SYSTEM_NAMESPACE
+        - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
           value: kuma
-        - name: KONVOY_SDS_SERVER_GRPC_PORT
+        - name: KUMA_SDS_SERVER_GRPC_PORT
           value: "5677"
-        - name: KONVOY_XDS_SERVER_GRPC_PORT
+        - name: KUMA_XDS_SERVER_GRPC_PORT
           value: "5678"
-        - name: KONVOY_XDS_SERVER_HTTP_PORT
+        - name: KUMA_XDS_SERVER_HTTP_PORT
           value: "5679"
-        - name: KONVOY_API_SERVER_PORT
+        - name: KUMA_API_SERVER_PORT
           value: "5681"
-        - name: KONVOY_BOOTSTRAP_SERVER_PORT
+        - name: KUMA_BOOTSTRAP_SERVER_PORT
           value: "5682"
-        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+        - name: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
           value: "kuma-ctrl-plane.kuma"
-        - name: KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
+        - name: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
           value: "5678"
-        - name: KONVOY_SDS_SERVER_TLS_CERT_FILE
+        - name: KUMA_SDS_SERVER_TLS_CERT_FILE
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
-        - name: KONVOY_SDS_SERVER_TLS_KEY_FILE
+        - name: KUMA_SDS_SERVER_TLS_KEY_FILE
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
         args:
         - run

@@ -52,11 +52,11 @@ var _ = Describe("XdsServerConfig", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KONVOY_XDS_SERVER_GRPC_PORT":                                "1234",
-				"KONVOY_XDS_SERVER_HTTP_PORT":                                "2345",
-				"KONVOY_XDS_SERVER_DIAGNOSTICS_PORT":                         "3456",
-				"KONVOY_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
-				"KONVOY_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
+				"KUMA_XDS_SERVER_GRPC_PORT":                                "1234",
+				"KUMA_XDS_SERVER_HTTP_PORT":                                "2345",
+				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                         "3456",
+				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
+				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)

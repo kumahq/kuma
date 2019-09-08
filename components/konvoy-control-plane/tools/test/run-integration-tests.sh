@@ -10,11 +10,11 @@ function get_unused_port() {
   done
 }
 
-export KONVOY_STORE_POSTGRES_HOST=localhost
-export KONVOY_STORE_POSTGRES_PORT=$(get_unused_port)
-export KONVOY_STORE_POSTGRES_USER=konvoy
-export KONVOY_STORE_POSTGRES_PASSWORD=konvoy
-export KONVOY_STORE_POSTGRES_DB_NAME=konvoy
+export KUMA_STORE_POSTGRES_HOST=localhost
+export KUMA_STORE_POSTGRES_PORT=$(get_unused_port)
+export KUMA_STORE_POSTGRES_USER=konvoy
+export KUMA_STORE_POSTGRES_PASSWORD=konvoy
+export KUMA_STORE_POSTGRES_DB_NAME=konvoy
 
 dockerCompose="$(dirname "$0")/../postgres/docker-compose.yaml"
 
@@ -23,7 +23,7 @@ docker-compose -f ${dockerCompose} up -d
 trap "docker-compose -f ${dockerCompose} down" EXIT
 
 # wait for postgres
-$(dirname "$0")/../postgres/wait-for-postgres.sh ${KONVOY_STORE_POSTGRES_PORT}
+$(dirname "$0")/../postgres/wait-for-postgres.sh ${KUMA_STORE_POSTGRES_PORT}
 
 # run tests
 eval $1
