@@ -25,14 +25,19 @@ function gen_help() {
 }
 
 gen_help kumactl
+gen_help kumactl apply
 gen_help kumactl config
 gen_help kumactl config view
 gen_help kumactl config control-planes
 gen_help kumactl config control-planes list
 gen_help kumactl config control-planes add
 gen_help kumactl install
+gen_help kumactl install control-plane
 gen_help kumactl get
 gen_help kumactl get meshes
+gen_help kumactl get dataplanes
 gen_help kumactl get proxytemplates
+gen_help kumactl get traffic-permissions
 gen_help kumactl inspect
 gen_help kumactl inspect dataplanes
+gen_help kumactl version

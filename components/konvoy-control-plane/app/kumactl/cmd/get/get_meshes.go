@@ -25,7 +25,7 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 
 			meshes := mesh.MeshResourceList{}
 			if err := rs.List(context.Background(), &meshes); err != nil {
-				return errors.Wrapf(err, "Failed to list Meshes")
+				return errors.Wrapf(err, "failed to list Meshes")
 			}
 
 			switch format := output.Format(pctx.args.outputFormat); format {

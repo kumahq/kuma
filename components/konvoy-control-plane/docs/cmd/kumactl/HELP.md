@@ -24,6 +24,25 @@ Flags:
 Use "kumactl [command] --help" for more information about a command.
 ```
 
+## kumactl apply
+
+```
+Create or modify Kuma resources.
+
+Usage:
+  kumactl apply [flags]
+
+Flags:
+  -f, --file string          Path to file to apply
+  -h, --help                 help for apply
+  -v, --var stringToString   Variable to replace in configuration (default [])
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use
+```
+
 ## kumactl config
 
 ```
@@ -145,6 +164,38 @@ Global Flags:
 Use "kumactl install [command] --help" for more information about a command.
 ```
 
+### kumactl install control-plane
+
+```
+Install Kuma Control Plane on Kubernetes.
+
+Usage:
+  kumactl install control-plane [flags]
+
+Flags:
+      --control-plane-image string          image of the Kuma Control Plane component (default "konvoy/konvoy-control-plane")
+      --control-plane-service-name string   Service name of the Kuma Control Plane (default "konvoy-control-plane")
+      --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
+      --dataplane-image string              image of the Kuma Dataplane component (default "kuma/kuma-dp")
+      --dataplane-init-image string         init image of the Kuma Dataplane component (default "docker.io/istio/proxy_init")
+      --dataplane-init-version string       version of the init image of the Kuma Dataplane component (default "1.1.2")
+  -h, --help                                help for control-plane
+      --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
+      --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
+      --injector-image string               image of the Kuma Injector component (default "konvoy/konvoy-injector")
+      --injector-service-name string        Service name of the mutating web hook implemented by the Kuma Injector component (default "konvoy-injector")
+      --injector-tls-cert string            TLS certificate for the mutating web hook implemented by the Kuma Injector component
+      --injector-tls-key string             TLS key for the mutating web hook implemented by the Kuma Injector component
+      --namespace string                    namespace to install Kuma Control Plane to (default "konvoy-system")
+      --sds-tls-cert string                 TLS certificate for the SDS server
+      --sds-tls-key string                  TLS key for the SDS server
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use
+```
+
 ## kumactl get
 
 ```
@@ -154,6 +205,7 @@ Usage:
   kumactl get [command]
 
 Available Commands:
+  dataplanes          Show Dataplanes
   meshes              Show Meshes
   proxytemplates      Show ProxyTemplates
   traffic-permissions Show TrafficPermissions
@@ -188,6 +240,24 @@ Global Flags:
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
+### kumactl get dataplanes
+
+```
+Show Dataplanes.
+
+Usage:
+  kumactl get dataplanes [flags]
+
+Flags:
+  -h, --help   help for dataplanes
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
 ### kumactl get proxytemplates
 
 ```
@@ -198,6 +268,24 @@ Usage:
 
 Flags:
   -h, --help   help for proxytemplates
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get traffic-permissions
+
+```
+Show TrafficPermission entities.
+
+Usage:
+  kumactl get traffic-permissions [flags]
+
+Flags:
+  -h, --help   help for traffic-permissions
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -246,5 +334,23 @@ Global Flags:
       --log-level string     log level: one of off|info|debug (default "off")
       --mesh string          mesh to use
   -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+## kumactl version
+
+```
+Print version.
+
+Usage:
+  kumactl version [flags]
+
+Flags:
+  -a, --detailed   Print detailed version
+  -h, --help       help for version
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use
 ```
 

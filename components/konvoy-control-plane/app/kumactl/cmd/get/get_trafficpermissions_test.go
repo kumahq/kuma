@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _ = Describe("konvoy get traffic-permissions", func() {
+var _ = Describe("kumactl get traffic-permissions", func() {
 
 	trafficPermissionResources := []*mesh.TrafficPermissionResource{
 		{
