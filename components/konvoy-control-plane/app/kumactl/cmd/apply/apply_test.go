@@ -170,36 +170,13 @@ var _ = Describe("kumactl apply", func() {
 
 		// when
 		resource := mesh.MeshResource{}
-		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", "sample"))
+		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", ""))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
-		Expect(resource.Meta.GetMesh()).To(Equal("sample"))
-		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
-	})
-
-	It("should fill in template (single variable)", func() {
-		// given
-		rootCmd.SetArgs([]string{
-			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"apply", "-f", filepath.Join("testdata", "apply-mesh-template-repeated-placeholder.yaml"),
-			"-v", "name=meshinit"},
-		)
-
-		// when
-		err := rootCmd.Execute()
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		resource := mesh.MeshResource{}
-		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "meshinit", "meshinit"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		Expect(resource.Meta.GetName()).To(Equal("meshinit"))
-		Expect(resource.Meta.GetMesh()).To(Equal("meshinit"))
+		Expect(resource.Meta.GetMesh()).To(Equal(""))
 		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 	})
 
@@ -208,7 +185,7 @@ var _ = Describe("kumactl apply", func() {
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
 			"apply", "-f", filepath.Join("testdata", "apply-mesh-template.yaml"),
-			"-v", "name=meshinit", "-v", "mesh=meshinit", "-v", "type=Mesh"},
+			"-v", "name=meshinit", "-v", "type=Mesh"},
 		)
 
 		// when
@@ -218,12 +195,13 @@ var _ = Describe("kumactl apply", func() {
 
 		// when
 		resource := mesh.MeshResource{}
-		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "meshinit", "meshinit"))
+		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "meshinit", ""))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("meshinit"))
-		Expect(resource.Meta.GetMesh()).To(Equal("meshinit"))
+		Expect(resource.Meta.GetMesh()).To(Equal(""))
 		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 	})
 

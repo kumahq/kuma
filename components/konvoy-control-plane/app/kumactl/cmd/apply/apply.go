@@ -3,6 +3,7 @@ package apply
 import (
 	"context"
 	kumactl_cmd "github.com/Kong/konvoy/components/konvoy-control-plane/app/kumactl/pkg/cmd"
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model/rest"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/registry"
@@ -102,7 +103,7 @@ func parseResource(bytes []byte) (model.Resource, error) {
 	if resMeta.Name == "" {
 		return nil, errors.New("Name field cannot be empty")
 	}
-	if resMeta.Mesh == "" {
+	if resMeta.Mesh == "" && resMeta.Type != string(mesh.MeshType) {
 		return nil, errors.New("Mesh field cannot be empty")
 	}
 	resource, err := registry.Global().NewObject(model.ResourceType(resMeta.Type))

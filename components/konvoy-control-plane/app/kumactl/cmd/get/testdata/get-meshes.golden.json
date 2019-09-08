@@ -1,7 +1,6 @@
 {
   "items": [
     {
-      "mesh": "mesh1",
       "mtls": {
         "ca": {
           "builtin": {}
@@ -11,7 +10,6 @@
       "type": "Mesh"
     },
     {
-      "mesh": "mesh2",
       "mtls": {
         "ca": {
           "builtin": {}

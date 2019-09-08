@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/apis/mesh"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/core/resources/model"
 )
 
@@ -9,9 +10,13 @@ var From = &from{}
 type from struct{}
 
 func (c *from) Resource(r model.Resource) *Resource {
+	var meshName string
+	if r.GetType() != mesh.MeshType {
+		meshName = r.GetMeta().GetMesh()
+	}
 	return &Resource{
 		Meta: ResourceMeta{
-			Mesh: r.GetMeta().GetMesh(),
+			Mesh: meshName,
 			Type: string(r.GetType()),
 			Name: r.GetMeta().GetName(),
 		},
