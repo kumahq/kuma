@@ -1,0 +1,16 @@
+webHookServer:
+  port: 8443
+injector:
+  controlPlane:
+    apiServer:
+      url: https://kuma-control-plane.kuma-system:5681
+    bootstrapServer:
+      url: http://kuma-control-plane.kuma-system:5682
+  sidecarContainer:
+    image: kuma/kuma-dp:latest
+    redirectPort: 15001
+    uid: 5678
+    gid: 5678
+    adminPort: 9901
+  initContainer:
+    image: docker.io/istio/proxy_init:1.1.2
