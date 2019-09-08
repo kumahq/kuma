@@ -1,0 +1,9 @@
+contexts:
+- controlPlane: example
+  name: example
+controlPlanes:
+- coordinates:
+    apiServer:
+      url: https://kuma-control-plane.internal:5681
+  name: example
+currentContext: example
