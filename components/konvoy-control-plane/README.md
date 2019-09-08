@@ -10,6 +10,8 @@ Built on top of Envoy, Kuma can instrument any L4/L7 traffic to secure, observe,
 
 Built by Envoy contributors at Kong 🦍.
 
+**Need help?** Installing and using Kuma should be as easy as possible. [Contact and chat](https://kuma.io/community) with the community in real-time if you get stuck or need clarifications. We are here to help.
+
 ## Features
 
 * **Universal Control Plane**: Easy to use, distributed, runs anywhere.
@@ -28,6 +30,10 @@ Built by Envoy contributors at Kong 🦍.
 ## Distributions
 
 Kuma is a platform-agnostic product that comes in many shapes. You can explore the available installation options from [the official website](https://kuma.io/install).
+
+You can use Kuma for both modern greenfield applications built on containers and Kubernetes, as well as existing applications running on more traditional infrastructure. Kuma can be fully configured via CRDs on Kubernetes, and via a RESTful HTTP API on other environments that can be easily integrated with CI/CD workflows. 
+
+Kuma also provides an easy to use `kumactl` CLI client for every environment.
 
 ## Official Documentation
 
