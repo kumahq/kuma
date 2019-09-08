@@ -79,7 +79,7 @@ make run/universal/memory
 #### Universal with Postgres as a storage
 
 1. Run Postgres with initial schema using docker-compose.
-It will run on port 15432 with username: `konvoy`, password: `konvoy` and db name: `konvoy`.
+It will run on port 15432 with username: `kuma`, password: `kuma` and db name: `kuma`.
 
 ```bash
 make start/postgres
@@ -140,7 +140,7 @@ make config_dump/example/envoy
 make start/k8s
 
 # set KUBECONFIG for use by `kumactl` and `kubectl`
-export KUBECONFIG="$(kind get kubeconfig-path --name=konvoy)"
+export KUBECONFIG="$(kind get kubeconfig-path --name=kuma)"
 ```
 
 2. Run `Control Plane` on local machine:
@@ -151,7 +151,7 @@ make run/k8s
 
 #### Running Dataplane (Envoy)
 
-1. Run the instructions at "Pointing Envoy at Control Plane" section, so the `konvoy-injector` is present in the KIND
+1. Run the instructions at "Pointing Envoy at Control Plane" section, so the `kuma-injector` is present in the KIND
 cluster and Dataplane descriptor is available in the Control Plane.
 
 2. Start `Envoy` on local machine (requires `envoy` binary to be on your `PATH`):
@@ -174,7 +174,7 @@ make config_dump/example/envoy
 make start/k8s
 
 # set KUBECONFIG for use by `kubectl`
-export KUBECONFIG="$(kind get kubeconfig-path --name=konvoy)"
+export KUBECONFIG="$(kind get kubeconfig-path --name=kuma)"
 ```
 
 2. Deploy `Control Plane` to [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
@@ -186,7 +186,7 @@ make start/control-plane/k8s
 3. Redeploy demo app (to get Konvoy sidecar injected)
 
 ```bash
-kubectl delete -n konvoy-demo pod -l app=demo-app
+kubectl delete -n kuma-demo pod -l app=demo-app
 ```
 
 4. Build `kumactl`
@@ -199,7 +199,7 @@ export PATH=`pwd`/build/artifacts/kumactl:$PATH
 
 5. Forward the `Control Plane` port to `localhost`:
 ```bash
-kubectl port-forward -n konvoy-system $(kubectl get pods -n konvoy-system -l app=konvoy-control-plane -o=jsonpath='{.items[0].metadata.name}') 15681:5681
+kubectl port-forward -n kuma-system $(kubectl get pods -n kuma-system -l app=kuma-control-plane -o=jsonpath='{.items[0].metadata.name}') 15681:5681
 ```
 
 6. Add `Control Plane` to your `kumactl` config:
@@ -222,6 +222,6 @@ k8s    http://localhost:15681
 ```bash
 kumactl inspect dataplanes
 
-MESH      NAME                        TAGS                                                                            STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
-default   demo-app-7cbbd658d5-dj9l6   app=demo-app pod-template-hash=7cbbd658d5 service=demo-app.konvoy-demo.svc:80   Online   42m28s               42m28s             8               0
+MESH      NAME                        TAGS                                                                          STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
+default   demo-app-7cbbd658d5-dj9l6   app=demo-app pod-template-hash=7cbbd658d5 service=demo-app.kuma-demo.svc:80   Online   42m28s               42m28s             8               0
 ```

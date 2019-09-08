@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: konvoy-injector
+  name: kuma-injector
   namespace: {{ .Namespace }}
 spec:
   ports:
@@ -11,13 +11,13 @@ spec:
     name: https
     targetPort: 8443
   selector:
-    app: konvoy-injector
+    app: kuma-injector
 ---
 apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
-  name: konvoy-injector-tls-cert
+  name: kuma-injector-tls-cert
   namespace: {{ .Namespace }}
 data:
   tls.crt: {{ .InjectorTlsCert | b64enc }}
@@ -26,10 +26,10 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: konvoy-injector
+  name: kuma-injector
   namespace: {{ .Namespace }}
   labels:
-    app: konvoy-injector
+    app: kuma-injector
 spec:
   strategy:
     rollingUpdate:
@@ -37,25 +37,25 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: konvoy-injector
+      app: kuma-injector
   template:
     metadata:
       labels:
-        app: konvoy-injector
+        app: kuma-injector
     spec:
       containers:
-      - name: konvoy-injector
+      - name: kuma-injector
         image: {{ .InjectorImage }}:{{ .ControlPlaneVersion }}
         imagePullPolicy: {{ .ImagePullPolicy }}
         env:
         - name: KONVOY_INJECTOR_WEBHOOK_SERVER_PORT
           value: "8443"
         - name: KONVOY_INJECTOR_WEBHOOK_SERVER_CERT_DIR
-          value: /var/run/secrets/kuma.io/konvoy-injector/tls-cert
+          value: /var/run/secrets/kuma.io/kuma-injector/tls-cert
         - name: KONVOY_INJECTOR_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
-          value: http://konvoy-control-plane.{{ .Namespace }}:5682
+          value: http://kuma-control-plane.{{ .Namespace }}:5682
         - name: KONVOY_INJECTOR_CONTROL_PLANE_API_SERVER_URL
-          value: http://konvoy-control-plane.{{ .Namespace }}:5681
+          value: http://kuma-control-plane.{{ .Namespace }}:5681
         - name: KONVOY_INJECTOR_SIDECAR_CONTAINER_IMAGE
           value: {{ .DataplaneImage }}:{{ .ControlPlaneVersion }}
         - name: KONVOY_INJECTOR_INIT_CONTAINER_IMAGE
@@ -80,20 +80,20 @@ spec:
             cpu: 100m
             memory: 64Mi
         volumeMounts:
-        - name: konvoy-injector-tls-cert
-          mountPath: /var/run/secrets/kuma.io/konvoy-injector/tls-cert
+        - name: kuma-injector-tls-cert
+          mountPath: /var/run/secrets/kuma.io/kuma-injector/tls-cert
           readOnly: true
       volumes:
-      - name: konvoy-injector-tls-cert
+      - name: kuma-injector-tls-cert
         secret:
-          secretName: konvoy-injector-tls-cert
+          secretName: kuma-injector-tls-cert
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: konvoy-injector-webhook-configuration
+  name: kuma-injector-webhook-configuration
 webhooks:
-- name: konvoy-injector.kuma.io
+- name: kuma-injector.kuma.io
   namespaceSelector:
     matchLabels:
       kuma.io/sidecar-injection: enabled
@@ -102,7 +102,7 @@ webhooks:
     caBundle: {{ .InjectorTlsCert | b64enc }}
     service:
       namespace: {{ .Namespace }}
-      name: konvoy-injector
+      name: kuma-injector
       path: /inject-sidecar
   rules:
   - apiGroups:

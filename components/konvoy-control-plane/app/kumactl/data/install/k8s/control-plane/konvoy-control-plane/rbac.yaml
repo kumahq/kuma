@@ -3,7 +3,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: konvoy:control-plane
+  name: kuma:control-plane
 rules:
 - apiGroups:
   - ""
@@ -60,20 +60,20 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: konvoy:control-plane
+  name: kuma:control-plane
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: konvoy:control-plane
+  name: kuma:control-plane
 subjects:
 - kind: ServiceAccount
-  name: konvoy-control-plane
+  name: kuma-control-plane
   namespace: {{ .Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: konvoy:control-plane
+  name: kuma:control-plane
   namespace: {{ .Namespace }}
 rules:
 - apiGroups:
@@ -92,13 +92,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: konvoy:control-plane
+  name: kuma:control-plane
   namespace: {{ .Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: konvoy:control-plane
+  name: kuma:control-plane
 subjects:
 - kind: ServiceAccount
-  name: konvoy-control-plane
+  name: kuma-control-plane
   namespace: {{ .Namespace }}

@@ -40,14 +40,14 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		SdsTlsCert              string
 		SdsTlsKey               string
 	}{
-		Namespace:               "konvoy-system",
+		Namespace:               "kuma-system",
 		ImagePullPolicy:         "IfNotPresent",
 		ControlPlaneVersion:     "latest",
-		ControlPlaneImage:       "konvoy/konvoy-control-plane",
-		ControlPlaneServiceName: "konvoy-control-plane",
-		InjectorImage:           "konvoy/konvoy-injector",
+		ControlPlaneImage:       "kuma/kuma-cp",
+		ControlPlaneServiceName: "kuma-control-plane",
+		InjectorImage:           "kuma/kuma-injector",
 		InjectorFailurePolicy:   "Ignore",
-		InjectorServiceName:     "konvoy-injector",
+		InjectorServiceName:     "kuma-injector",
 		InjectorTlsCert:         "",
 		InjectorTlsKey:          "",
 		DataplaneImage:          "kuma/kuma-dp",

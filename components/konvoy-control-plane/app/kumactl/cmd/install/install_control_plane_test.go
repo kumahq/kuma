@@ -91,12 +91,12 @@ var _ = Describe("kumactl install control-plane", func() {
 		}),
 		Entry("should generate Kubernetes resources with custom settings", testCase{
 			extraArgs: []string{
-				"--namespace", "konvoy",
+				"--namespace", "kuma",
 				"--image-pull-policy", "Never",
 				"--control-plane-version", "greatest",
-				"--control-plane-image", "konvoy-ci/konvoy-control-plane",
-				"--control-plane-service-name", "konvoy-ctrl-plane",
-				"--injector-image", "konvoy-ci/konvoy-injector",
+				"--control-plane-image", "kuma-ci/kuma-cp",
+				"--control-plane-service-name", "kuma-ctrl-plane",
+				"--injector-image", "kuma-ci/kuma-injector",
 				"--injector-failure-policy", "Crash",
 				"--injector-service-name", "injector",
 				"--injector-tls-cert", "InjectorCert",

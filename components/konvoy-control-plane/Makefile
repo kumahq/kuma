@@ -69,9 +69,9 @@ EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
 EXAMPLE_ENVOY_PORT ?= 8080
 ENVOY_ADMIN_PORT ?= 9901
 
-EXAMPLE_NAMESPACE ?= konvoy-demo
+EXAMPLE_NAMESPACE ?= kuma-demo
 
-KIND_KUBECONFIG = $(shell kind get kubeconfig-path --name=konvoy)
+KIND_KUBECONFIG = $(shell kind get kubeconfig-path --name=kuma)
 
 define KIND_EXAMPLE_DATAPLANE_MESH
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar printenv KUMA_DATAPLANE_MESH)
@@ -88,10 +88,10 @@ BINTRAY_REGISTRY ?= kong-docker-konvoy-docker.bintray.io
 BINTRAY_USERNAME ?=
 BINTRAY_API_KEY ?=
 
-KONVOY_CP_DOCKER_IMAGE ?= konvoy/konvoy-control-plane:latest
+KUMA_CP_DOCKER_IMAGE ?= kuma/kuma-cp:latest
 KUMA_DP_DOCKER_IMAGE ?= kuma/kuma-dp:latest
 KUMACTL_DOCKER_IMAGE ?= kuma/kumactl:latest
-KONVOY_INJECTOR_DOCKER_IMAGE ?= konvoy/konvoy-injector:latest
+KUMA_INJECTOR_DOCKER_IMAGE ?= kuma/kuma-injector:latest
 
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.1.0
@@ -266,11 +266,11 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 start/k8s: start/kind deploy/example-app/k8s ## Bootstrap: Start Kubernetes locally (KIND) and deploy sample app
 
 start/kind:
-	kind create cluster --name konvoy 2>/dev/null || true
+	kind create cluster --name kuma 2>/dev/null || true
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
-	@echo export KUBECONFIG="$$(kind get kubeconfig-path --name=konvoy)"
+	@echo export KUBECONFIG="$$(kind get kubeconfig-path --name=kuma)"
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
@@ -279,23 +279,23 @@ deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl label namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n konvoy-demo deployment/demo-app
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n konvoy-demo pods -l app=demo-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app
 
 kind/load/control-plane: image/konvoy-cp
-	kind load docker-image $(KONVOY_CP_DOCKER_IMAGE) --name=konvoy
+	kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=kuma
 
 kind/load/kuma-dp: image/kuma-dp
-	kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=konvoy
+	kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=kuma
 
 kind/load/konvoy-injector: image/konvoy-injector
-	kind load docker-image $(KONVOY_INJECTOR_DOCKER_IMAGE) --name=konvoy
+	kind load docker-image $(KUMA_INJECTOR_DOCKER_IMAGE) --name=kuma
 
 deploy/control-plane/k8s: build/kumactl
 	kumactl install control-plane | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n konvoy-system pod -l app=konvoy-injector
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n kuma-system pod -l app=kuma-injector
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
 
 start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/konvoy-injector deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
@@ -390,9 +390,9 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KONVOY_STORE_TYPE=postgres \
 	KONVOY_STORE_POSTGRES_HOST=localhost \
 	KONVOY_STORE_POSTGRES_PORT=15432 \
-	KONVOY_STORE_POSTGRES_USER=konvoy \
-	KONVOY_STORE_POSTGRES_PASSWORD=konvoy \
-	KONVOY_STORE_POSTGRES_DB_NAME=konvoy \
+	KONVOY_STORE_POSTGRES_USER=kuma \
+	KONVOY_STORE_POSTGRES_PASSWORD=kuma \
+	KONVOY_STORE_POSTGRES_DB_NAME=kuma \
 	$(GO_RUN) ./app/konvoy-cp/main.go run --log-level=debug
 
 curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_DATAPLANE_MESH).$(KIND_EXAMPLE_DATAPLANE_NAME)
@@ -422,7 +422,7 @@ config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 images: image/konvoy-cp image/kuma-dp image/kumactl image/konvoy-injector ## Dev: Build all Docker images
 
 image/konvoy-cp: ## Dev: Build `konvoy-control-plane` Docker image
-	docker build -t $(KONVOY_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
+	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f Dockerfile.konvoy-cp .
 
 image/kuma-dp: ## Dev: Build `kuma-dp` Docker image
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f Dockerfile.kuma-dp .
@@ -431,11 +431,11 @@ image/kumactl: ## Dev: Build `kumactl` Docker image
 	docker build -t $(KUMACTL_DOCKER_IMAGE) -f Dockerfile.kumactl .
 
 image/konvoy-injector: ## Dev: Build `konvoy-injector` Docker image
-	docker build -t $(KONVOY_INJECTOR_DOCKER_IMAGE) -f Dockerfile.konvoy-injector .
+	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f Dockerfile.konvoy-injector .
 
 image/konvoy-cp/push: image/konvoy-cp
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KONVOY_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
+	docker tag $(KUMA_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
 	docker push $(BINTRAY_REGISTRY)/konvoy-cp:$(KONVOY_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
@@ -494,29 +494,29 @@ build/example/minikube: ## Minikube: build demo setup
 
 deploy/example/minikube: image/kumactl ## Minikube: deploy demo setup
 	docker run --rm kuma/kumactl kumactl install control-plane | kubectl apply -f -
-	kubectl wait --timeout=60s --for=condition=Available -n konvoy-system deployment/konvoy-injector
-	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-system pods -l app=konvoy-injector
-	kubectl apply -f examples/minikube/konvoy-demo/
-	kubectl wait --timeout=60s --for=condition=Available -n konvoy-demo deployment/demo-app
-	kubectl wait --timeout=60s --for=condition=Ready -n konvoy-demo pods -l app=demo-app
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
+	kubectl apply -f examples/minikube/kuma-demo/
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-app
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app
 
 wait/example/minikube: ## Minikube: Wait for demo setup to get ready
-	kubectl -n default run wait --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- dockerize -wait http://demo-app.konvoy-demo:8000/request -timeout 1m
+	kubectl -n default run wait --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- dockerize -wait http://demo-app.kuma-demo:8000/request -timeout 1m
 
 curl/example/minikube: ## Minikube: Make sample requests to demo setup
-	kubectl -n default run curl --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://demo-app.konvoy-demo:8000/request | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
+	kubectl -n default run curl --rm -ti --restart=Never --image=$(CI_TOOLS_IMAGE) -- sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://demo-app.kuma-demo:8000/request | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
 
 stats/example/minikube: ## Minikube: Observe Envoy metrics from demo setup
-	kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
+	kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
 
 verify/example/minikube/inbound:
 	@echo "Checking number of Inbound requests via Envoy ..."
-	test $$( kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 10
+	test $$( kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 10
 	@echo "Check passed!"
 
 verify/example/minikube/outbound:
 	@echo "Checking number of Outbound requests via Envoy ..."
-	test $$( kubectl -n konvoy-demo exec $$(kubectl -n konvoy-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 1
+	test $$( kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c konvoy-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 1
 	@echo "Check passed!"
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
@@ -528,7 +528,7 @@ generate/test/cert/konvoy-injector:  ## Dev: Generate TLS cert for Konvoy Inject
 	OUTPUT_DIR=$(shell pwd)/app/konvoy-injector/cmd/testdata && \
 	TMP_DIR=$(shell mktemp -d) && \
 	cd $$TMP_DIR && \
-	go run $(shell go env GOROOT)/src/crypto/tls/generate_cert.go --host=*,*.konvoy-system.svc --duration=87660h && \
+	go run $(shell go env GOROOT)/src/crypto/tls/generate_cert.go --host=*,*.kuma-system.svc --duration=87660h && \
 	mv cert.pem $$OUTPUT_DIR/tls.crt && \
 	mv key.pem $$OUTPUT_DIR/tls.key && \
 	rm -rf $$TMP_DIR
