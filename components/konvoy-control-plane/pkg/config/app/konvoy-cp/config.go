@@ -28,7 +28,7 @@ type Defaults struct {
 
 type Config struct {
 	// Environment Type, can be either "kubernetes" or "universal"
-	Environment EnvironmentType `yaml:"environment" envconfig:"konvoy_environment"`
+	Environment EnvironmentType `yaml:"environment" envconfig:"kuma_environment"`
 	// Resource Store configuration
 	Store *store.StoreConfig `yaml:"store"`
 	// Discovery configuration

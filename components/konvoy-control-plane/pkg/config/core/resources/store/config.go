@@ -21,7 +21,7 @@ const (
 // Resource Store configuration
 type StoreConfig struct {
 	// Type of Store used in the Control Plane
-	Type StoreType `yaml:"type" envconfig:"konvoy_store_type"`
+	Type StoreType `yaml:"type" envconfig:"kuma_store_type"`
 	// Postgres Store configuration
 	Postgres *postgres.PostgresStoreConfig `yaml:"postgres"`
 	// Kubernetes Store configuration

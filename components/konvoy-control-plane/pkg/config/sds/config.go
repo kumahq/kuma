@@ -15,11 +15,11 @@ func DefaultSdsServerConfig() *SdsServerConfig {
 // Envoy SDS server configuration
 type SdsServerConfig struct {
 	// Port of GRPC server that Envoy connects to
-	GrpcPort int `yaml:"grpcPort" envconfig:"konvoy_sds_server_grpc_port"`
+	GrpcPort int `yaml:"grpcPort" envconfig:"kuma_sds_server_grpc_port"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert.
-	TlsCertFile string `yaml:"tlsCertFile" envconfig:"konvoy_sds_server_tls_cert_file"`
+	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_sds_server_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
-	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"konvoy_sds_server_tls_key_file"`
+	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_sds_server_tls_key_file"`
 }
 
 var _ config.Config = &SdsServerConfig{}

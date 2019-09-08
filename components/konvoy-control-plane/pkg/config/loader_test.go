@@ -1,13 +1,14 @@
 package config_test
 
 import (
+	"io/ioutil"
+	"os"
+
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config"
 	konvoy_cp "github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/app/konvoy-cp"
 	"github.com/Kong/konvoy/components/konvoy-control-plane/pkg/config/core/resources/store"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"os"
 )
 
 var _ = Describe("Config loader", func() {
@@ -35,9 +36,9 @@ store:
   postgres:
     host: postgres.host
     port: 5432
-    user: konvoy
-    password: konvoy
-    dbName: konvoy
+    user: kuma
+    password: kuma
+    dbName: kuma
     connectionTimeout: 10
 xdsServer:
   grpcPort: 5000
@@ -47,7 +48,7 @@ bootstrapServer:
   port: 5004
   params:
     adminPort: 1234
-    xdsHost: konvoy-control-plane
+    xdsHost: kuma-control-plane
     xdsPort: 4321
 apiServer:
   port: 9090
@@ -74,7 +75,7 @@ apiServer:
 
 		Expect(cfg.BootstrapServer.Port).To(Equal(5004))
 		Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
-		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("konvoy-control-plane"))
+		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 
 		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironment))
@@ -83,9 +84,9 @@ apiServer:
 
 		Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
 		Expect(int(cfg.Store.Postgres.Port)).To(Equal(5432))
-		Expect(cfg.Store.Postgres.User).To(Equal("konvoy"))
-		Expect(cfg.Store.Postgres.Password).To(Equal("konvoy"))
-		Expect(cfg.Store.Postgres.DbName).To(Equal("konvoy"))
+		Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
+		Expect(cfg.Store.Postgres.Password).To(Equal("kuma"))
+		Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
 		Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
@@ -100,24 +101,24 @@ apiServer:
 
 	It("should load config from env vars", func() {
 		// given
-		setEnv("KONVOY_XDS_SERVER_GRPC_PORT", "5000")
-		setEnv("KONVOY_XDS_SERVER_HTTP_PORT", "5001")
-		setEnv("KONVOY_XDS_SERVER_DIAGNOSTICS_PORT", "5003")
-		setEnv("KONVOY_BOOTSTRAP_SERVER_PORT", "5004")
-		setEnv("KONVOY_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT", "1234")
-		setEnv("KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_HOST", "konvoy-control-plane")
-		setEnv("KONVOY_BOOTSTRAP_SERVER_PARAMS_XDS_PORT", "4321")
-		setEnv("KONVOY_ENVIRONMENT", "kubernetes")
-		setEnv("KONVOY_STORE_TYPE", "postgres")
-		setEnv("KONVOY_STORE_POSTGRES_HOST", "postgres.host")
-		setEnv("KONVOY_STORE_POSTGRES_PORT", "5432")
-		setEnv("KONVOY_STORE_POSTGRES_USER", "konvoy")
-		setEnv("KONVOY_STORE_POSTGRES_PASSWORD", "konvoy")
-		setEnv("KONVOY_STORE_POSTGRES_DB_NAME", "konvoy")
-		setEnv("KONVOY_STORE_POSTGRES_CONNECTION_TIMEOUT", "10")
-		setEnv("KONVOY_API_SERVER_READ_ONLY", "true")
-		setEnv("KONVOY_API_SERVER_PORT", "9090")
-		setEnv("KONVOY_API_SERVER_API_DOCS_PATH", "/apidocs.json")
+		setEnv("KUMA_XDS_SERVER_GRPC_PORT", "5000")
+		setEnv("KUMA_XDS_SERVER_HTTP_PORT", "5001")
+		setEnv("KUMA_XDS_SERVER_DIAGNOSTICS_PORT", "5003")
+		setEnv("KUMA_BOOTSTRAP_SERVER_PORT", "5004")
+		setEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT", "1234")
+		setEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST", "kuma-control-plane")
+		setEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT", "4321")
+		setEnv("KUMA_ENVIRONMENT", "kubernetes")
+		setEnv("KUMA_STORE_TYPE", "postgres")
+		setEnv("KUMA_STORE_POSTGRES_HOST", "postgres.host")
+		setEnv("KUMA_STORE_POSTGRES_PORT", "5432")
+		setEnv("KUMA_STORE_POSTGRES_USER", "kuma")
+		setEnv("KUMA_STORE_POSTGRES_PASSWORD", "kuma")
+		setEnv("KUMA_STORE_POSTGRES_DB_NAME", "kuma")
+		setEnv("KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT", "10")
+		setEnv("KUMA_API_SERVER_READ_ONLY", "true")
+		setEnv("KUMA_API_SERVER_PORT", "9090")
+		setEnv("KUMA_API_SERVER_API_DOCS_PATH", "/apidocs.json")
 
 		// when
 		cfg := konvoy_cp.DefaultConfig()
@@ -131,7 +132,7 @@ apiServer:
 
 		Expect(cfg.BootstrapServer.Port).To(Equal(5004))
 		Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
-		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("konvoy-control-plane"))
+		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 
 		Expect(cfg.Environment).To(Equal(konvoy_cp.KubernetesEnvironment))
@@ -139,9 +140,9 @@ apiServer:
 		Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
 		Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
 		Expect(int(cfg.Store.Postgres.Port)).To(Equal(5432))
-		Expect(cfg.Store.Postgres.User).To(Equal("konvoy"))
-		Expect(cfg.Store.Postgres.Password).To(Equal("konvoy"))
-		Expect(cfg.Store.Postgres.DbName).To(Equal("konvoy"))
+		Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
+		Expect(cfg.Store.Postgres.Password).To(Equal("kuma"))
+		Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
 		Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
@@ -157,7 +158,7 @@ apiServer:
 		Expect(err).ToNot(HaveOccurred())
 
 		// and overriden config
-		setEnv("KONVOY_STORE_POSTGRES_HOST", "overriden.host")
+		setEnv("KUMA_STORE_POSTGRES_HOST", "overriden.host")
 
 		// when
 		cfg := konvoy_cp.DefaultConfig()
