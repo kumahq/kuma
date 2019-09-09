@@ -28,7 +28,10 @@ type Mesh struct {
 	Mtls *Mesh_Mtls `protobuf:"bytes,1,opt,name=mtls,proto3" json:"mtls,omitempty"`
 	// Tracing settings.
 	// +optional
-	Tracing              *Tracing `protobuf:"bytes,2,opt,name=tracing,proto3" json:"tracing,omitempty"`
+	Tracing *Tracing `protobuf:"bytes,2,opt,name=tracing,proto3" json:"tracing,omitempty"`
+	// Logging settings.
+	// +optional
+	Logging              *Logging `protobuf:"bytes,3,opt,name=logging,proto3" json:"logging,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -77,6 +80,13 @@ func (m *Mesh) GetMtls() *Mesh_Mtls {
 func (m *Mesh) GetTracing() *Tracing {
 	if m != nil {
 		return m.Tracing
+	}
+	return nil
+}
+
+func (m *Mesh) GetLogging() *Logging {
+	if m != nil {
+		return m.Logging
 	}
 	return nil
 }
@@ -477,6 +487,108 @@ func (m *Tracing_Zipkin) GetAddress() string {
 	return ""
 }
 
+type Logging struct {
+	AccessLogs           *Logging_AccessLogs `protobuf:"bytes,1,opt,name=accessLogs,proto3" json:"accessLogs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
+}
+
+func (m *Logging) Reset()         { *m = Logging{} }
+func (m *Logging) String() string { return proto.CompactTextString(m) }
+func (*Logging) ProtoMessage()    {}
+func (*Logging) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ae9b3cd8c92bbf6a, []int{3}
+}
+func (m *Logging) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Logging) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Logging.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Logging) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Logging.Merge(m, src)
+}
+func (m *Logging) XXX_Size() int {
+	return m.Size()
+}
+func (m *Logging) XXX_DiscardUnknown() {
+	xxx_messageInfo_Logging.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Logging proto.InternalMessageInfo
+
+func (m *Logging) GetAccessLogs() *Logging_AccessLogs {
+	if m != nil {
+		return m.AccessLogs
+	}
+	return nil
+}
+
+type Logging_AccessLogs struct {
+	Enabled              bool     `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	FilePath             string   `protobuf:"bytes,2,opt,name=filePath,proto3" json:"filePath,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Logging_AccessLogs) Reset()         { *m = Logging_AccessLogs{} }
+func (m *Logging_AccessLogs) String() string { return proto.CompactTextString(m) }
+func (*Logging_AccessLogs) ProtoMessage()    {}
+func (*Logging_AccessLogs) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ae9b3cd8c92bbf6a, []int{3, 0}
+}
+func (m *Logging_AccessLogs) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Logging_AccessLogs) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Logging_AccessLogs.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Logging_AccessLogs) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Logging_AccessLogs.Merge(m, src)
+}
+func (m *Logging_AccessLogs) XXX_Size() int {
+	return m.Size()
+}
+func (m *Logging_AccessLogs) XXX_DiscardUnknown() {
+	xxx_messageInfo_Logging_AccessLogs.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Logging_AccessLogs proto.InternalMessageInfo
+
+func (m *Logging_AccessLogs) GetEnabled() bool {
+	if m != nil {
+		return m.Enabled
+	}
+	return false
+}
+
+func (m *Logging_AccessLogs) GetFilePath() string {
+	if m != nil {
+		return m.FilePath
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*Mesh)(nil), "kuma.mesh.v1alpha1.Mesh")
 	proto.RegisterType((*Mesh_Mtls)(nil), "kuma.mesh.v1alpha1.Mesh.Mtls")
@@ -484,31 +596,37 @@ func init() {
 	proto.RegisterType((*CertificateAuthority_Builtin)(nil), "kuma.mesh.v1alpha1.CertificateAuthority.Builtin")
 	proto.RegisterType((*Tracing)(nil), "kuma.mesh.v1alpha1.Tracing")
 	proto.RegisterType((*Tracing_Zipkin)(nil), "kuma.mesh.v1alpha1.Tracing.Zipkin")
+	proto.RegisterType((*Logging)(nil), "kuma.mesh.v1alpha1.Logging")
+	proto.RegisterType((*Logging_AccessLogs)(nil), "kuma.mesh.v1alpha1.Logging.AccessLogs")
 }
 
 func init() { proto.RegisterFile("mesh/v1alpha1/mesh.proto", fileDescriptor_ae9b3cd8c92bbf6a) }
 
 var fileDescriptor_ae9b3cd8c92bbf6a = []byte{
-	// 296 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x91, 0xbf, 0x4e, 0xc3, 0x30,
-	0x10, 0x87, 0xeb, 0x2a, 0x4a, 0xda, 0x63, 0xb3, 0x10, 0x8a, 0x8a, 0x88, 0x50, 0xa6, 0x4e, 0x2e,
-	0x01, 0x21, 0x31, 0xb0, 0x10, 0x96, 0x0e, 0x74, 0xb1, 0x98, 0xb2, 0x39, 0x89, 0x21, 0x56, 0xf3,
-	0x4f, 0xb1, 0x03, 0x2a, 0x4f, 0xc8, 0xc0, 0xc0, 0x23, 0xa0, 0x3c, 0x09, 0x8a, 0x13, 0xb3, 0x10,
-	0x21, 0xc6, 0x3b, 0xff, 0xbe, 0xfb, 0x74, 0x3e, 0x70, 0x0b, 0x2e, 0xb3, 0xcd, 0x4b, 0xc0, 0xf2,
-	0x3a, 0x63, 0xc1, 0xa6, 0xaf, 0x48, 0xdd, 0x54, 0xaa, 0xc2, 0x78, 0xdf, 0x16, 0x8c, 0xe8, 0x86,
-	0x79, 0xf6, 0x3f, 0x10, 0x58, 0x3b, 0x2e, 0x33, 0x1c, 0x80, 0x55, 0xa8, 0x5c, 0xba, 0xe8, 0x1c,
-	0xad, 0x8f, 0x2e, 0xcf, 0xc8, 0xef, 0x2c, 0xe9, 0x73, 0x64, 0xa7, 0x72, 0x49, 0x75, 0x14, 0x5f,
-	0x83, 0xa3, 0x1a, 0x96, 0x88, 0xf2, 0xd9, 0x9d, 0x6b, 0xea, 0x74, 0x8a, 0x7a, 0x1c, 0x22, 0xd4,
-	0x64, 0x57, 0x11, 0x58, 0xfd, 0x10, 0x7c, 0x03, 0xf3, 0x84, 0x8d, 0xbe, 0xf5, 0x14, 0x79, 0xcf,
-	0x1b, 0x25, 0x9e, 0x44, 0xc2, 0x14, 0xbf, 0x6b, 0x55, 0x56, 0x35, 0x42, 0x1d, 0xe8, 0x3c, 0x61,
-	0xd8, 0x05, 0x87, 0x97, 0x2c, 0xce, 0x79, 0xaa, 0xc5, 0x0b, 0x6a, 0x4a, 0xff, 0x15, 0x8e, 0xa7,
-	0x28, 0xfc, 0x00, 0x4e, 0xdc, 0x8a, 0x5c, 0x89, 0x72, 0x14, 0x5e, 0xfc, 0x57, 0x48, 0xc2, 0x81,
-	0xdb, 0xce, 0xa8, 0x19, 0xb1, 0x5a, 0x82, 0x33, 0x76, 0x43, 0x1b, 0x2c, 0x75, 0xa8, 0xb9, 0x2f,
-	0xc1, 0x19, 0x17, 0xc5, 0xb7, 0x60, 0xbf, 0x89, 0x7a, 0xff, 0xa3, 0xf2, 0xff, 0xf8, 0x15, 0x12,
-	0xe9, 0xe4, 0x76, 0x46, 0x47, 0x66, 0xe5, 0x83, 0x3d, 0xf4, 0xfa, 0x2d, 0x59, 0x9a, 0x36, 0x5c,
-	0x0e, 0x47, 0x59, 0x52, 0x53, 0x1a, 0x69, 0x78, 0xf2, 0xde, 0x79, 0xe8, 0xb3, 0xf3, 0xd0, 0x57,
-	0xe7, 0xa1, 0x68, 0x61, 0x86, 0xc7, 0xb6, 0xbe, 0xf7, 0xd5, 0x77, 0x00, 0x00, 0x00, 0xff, 0xff,
-	0xba, 0x2c, 0x83, 0x43, 0x0b, 0x02, 0x00, 0x00,
+	// 367 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0x41, 0x4b, 0xc3, 0x30,
+	0x14, 0xc7, 0xd7, 0x5a, 0xda, 0xed, 0x79, 0x0b, 0x22, 0xa5, 0xe2, 0x90, 0x1e, 0x64, 0xa7, 0xcc,
+	0x29, 0x82, 0x07, 0x2f, 0xab, 0x20, 0x3b, 0x6c, 0x20, 0xc1, 0xd3, 0x6e, 0x59, 0x97, 0xb5, 0x61,
+	0xdd, 0x5a, 0x9a, 0x4c, 0x99, 0x57, 0x3f, 0x83, 0xdf, 0xc9, 0xa3, 0x1f, 0x41, 0xf6, 0x49, 0xa4,
+	0x69, 0x53, 0x27, 0xce, 0xe1, 0xf1, 0xbd, 0xfc, 0x7e, 0xfd, 0xa7, 0xef, 0x05, 0xdc, 0x05, 0x13,
+	0x71, 0xf7, 0xa9, 0x47, 0x93, 0x2c, 0xa6, 0xbd, 0x6e, 0x51, 0xe1, 0x2c, 0x4f, 0x65, 0x8a, 0xd0,
+	0x7c, 0xb5, 0xa0, 0x58, 0x35, 0xf4, 0xb1, 0xff, 0x6a, 0x82, 0x35, 0x62, 0x22, 0x46, 0x3d, 0xb0,
+	0x16, 0x32, 0x11, 0xae, 0x71, 0x66, 0x74, 0x0e, 0x2f, 0x4f, 0xf1, 0x6f, 0x16, 0x17, 0x1c, 0x1e,
+	0xc9, 0x44, 0x10, 0x85, 0xa2, 0x6b, 0x70, 0x64, 0x4e, 0x43, 0xbe, 0x8c, 0x5c, 0x53, 0x59, 0x27,
+	0xbb, 0xac, 0xc7, 0x12, 0x21, 0x9a, 0x2d, 0xb4, 0x24, 0x8d, 0xa2, 0x42, 0x3b, 0xf8, 0x5b, 0x1b,
+	0x96, 0x08, 0xd1, 0xac, 0x37, 0x06, 0xab, 0xc8, 0x46, 0x37, 0x60, 0x86, 0xb4, 0xba, 0x66, 0x67,
+	0x97, 0x79, 0xc7, 0x72, 0xc9, 0x67, 0x3c, 0xa4, 0x92, 0xf5, 0x57, 0x32, 0x4e, 0x73, 0x2e, 0xd7,
+	0xc4, 0x0c, 0x29, 0x72, 0xc1, 0x61, 0x4b, 0x3a, 0x49, 0xd8, 0x54, 0xdd, 0xb7, 0x49, 0x74, 0xe9,
+	0x3f, 0xc3, 0xd1, 0x2e, 0x0b, 0x0d, 0xc1, 0x99, 0xac, 0x78, 0x22, 0xf9, 0xb2, 0x0a, 0xbc, 0xf8,
+	0x6f, 0x20, 0x0e, 0x4a, 0x6f, 0xd0, 0x20, 0xfa, 0x13, 0x5e, 0x0b, 0x9c, 0xaa, 0x1b, 0xd8, 0x60,
+	0xc9, 0x75, 0xc6, 0x7c, 0x01, 0x4e, 0x35, 0x1f, 0x74, 0x0b, 0xf6, 0x0b, 0xcf, 0xe6, 0x75, 0x94,
+	0xbf, 0x67, 0x98, 0x78, 0xac, 0xc8, 0x41, 0x83, 0x54, 0x8e, 0xe7, 0x83, 0x5d, 0xf6, 0x8a, 0xbf,
+	0xa4, 0xd3, 0x69, 0xce, 0x44, 0xb9, 0xcb, 0x16, 0xd1, 0x65, 0x1d, 0xfa, 0x66, 0x80, 0x53, 0x8d,
+	0x17, 0xdd, 0x03, 0xd0, 0x30, 0x64, 0x42, 0x0c, 0xd3, 0x48, 0x2f, 0xff, 0x7c, 0xcf, 0x3e, 0x70,
+	0xbf, 0xa6, 0xc9, 0x96, 0xe9, 0x05, 0x00, 0xdf, 0x27, 0xdb, 0x93, 0x36, 0x7e, 0x4c, 0x1a, 0x79,
+	0xd0, 0x9c, 0xf1, 0x84, 0x3d, 0x50, 0x19, 0xab, 0x25, 0xb4, 0x48, 0x5d, 0x07, 0xc7, 0xef, 0x9b,
+	0xb6, 0xf1, 0xb1, 0x69, 0x1b, 0x9f, 0x9b, 0xb6, 0x31, 0x6e, 0xea, 0xe8, 0x89, 0xad, 0x9e, 0xef,
+	0xd5, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0x05, 0x13, 0xca, 0x3d, 0xda, 0x02, 0x00, 0x00,
 }
 
 func (m *Mesh) Marshal() (dAtA []byte, err error) {
@@ -546,6 +664,16 @@ func (m *Mesh) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i += n2
 	}
+	if m.Logging != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintMesh(dAtA, i, uint64(m.Logging.Size()))
+		n3, err := m.Logging.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -571,11 +699,11 @@ func (m *Mesh_Mtls) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintMesh(dAtA, i, uint64(m.Ca.Size()))
-		n3, err := m.Ca.MarshalTo(dAtA[i:])
+		n4, err := m.Ca.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n4
 	}
 	if m.Enabled {
 		dAtA[i] = 0x10
@@ -609,11 +737,11 @@ func (m *CertificateAuthority) MarshalTo(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if m.Type != nil {
-		nn4, err := m.Type.MarshalTo(dAtA[i:])
+		nn5, err := m.Type.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn4
+		i += nn5
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -627,11 +755,11 @@ func (m *CertificateAuthority_Builtin_) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintMesh(dAtA, i, uint64(m.Builtin.Size()))
-		n5, err := m.Builtin.MarshalTo(dAtA[i:])
+		n6, err := m.Builtin.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n6
 	}
 	return i, nil
 }
@@ -672,11 +800,11 @@ func (m *Tracing) MarshalTo(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if m.Type != nil {
-		nn6, err := m.Type.MarshalTo(dAtA[i:])
+		nn7, err := m.Type.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn6
+		i += nn7
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -690,11 +818,11 @@ func (m *Tracing_Zipkin_) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintMesh(dAtA, i, uint64(m.Zipkin.Size()))
-		n7, err := m.Zipkin.MarshalTo(dAtA[i:])
+		n8, err := m.Zipkin.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n8
 	}
 	return i, nil
 }
@@ -725,6 +853,74 @@ func (m *Tracing_Zipkin) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Logging) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Logging) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.AccessLogs != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintMesh(dAtA, i, uint64(m.AccessLogs.Size()))
+		n9, err := m.AccessLogs.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n9
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Logging_AccessLogs) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Logging_AccessLogs) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Enabled {
+		dAtA[i] = 0x8
+		i++
+		if m.Enabled {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if len(m.FilePath) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintMesh(dAtA, i, uint64(len(m.FilePath)))
+		i += copy(dAtA[i:], m.FilePath)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func encodeVarintMesh(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -746,6 +942,10 @@ func (m *Mesh) Size() (n int) {
 	}
 	if m.Tracing != nil {
 		l = m.Tracing.Size()
+		n += 1 + l + sovMesh(uint64(l))
+	}
+	if m.Logging != nil {
+		l = m.Logging.Size()
 		n += 1 + l + sovMesh(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -846,6 +1046,41 @@ func (m *Tracing_Zipkin) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Address)
+	if l > 0 {
+		n += 1 + l + sovMesh(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Logging) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AccessLogs != nil {
+		l = m.AccessLogs.Size()
+		n += 1 + l + sovMesh(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Logging_AccessLogs) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Enabled {
+		n += 2
+	}
+	l = len(m.FilePath)
 	if l > 0 {
 		n += 1 + l + sovMesh(uint64(l))
 	}
@@ -966,6 +1201,42 @@ func (m *Mesh) Unmarshal(dAtA []byte) error {
 				m.Tracing = &Tracing{}
 			}
 			if err := m.Tracing.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Logging", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMesh
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMesh
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMesh
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Logging == nil {
+				m.Logging = &Logging{}
+			}
+			if err := m.Logging.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1396,6 +1667,202 @@ func (m *Tracing_Zipkin) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Address = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMesh(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMesh
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthMesh
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Logging) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMesh
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Logging: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Logging: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccessLogs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMesh
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMesh
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMesh
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AccessLogs == nil {
+				m.AccessLogs = &Logging_AccessLogs{}
+			}
+			if err := m.AccessLogs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMesh(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMesh
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthMesh
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Logging_AccessLogs) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMesh
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AccessLogs: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AccessLogs: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Enabled", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMesh
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Enabled = bool(v != 0)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FilePath", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMesh
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMesh
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMesh
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FilePath = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
