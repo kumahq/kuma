@@ -73,7 +73,7 @@ func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 }
 
 type BootstrapParamsConfig struct {
-	// Port for Envoy Admin
+	// Port of Envoy Admin
 	AdminPort uint32 `yaml:"adminPort" envconfig:"kuma_bootstrap_server_params_admin_port"`
 	// Host of XDS Server
 	XdsHost string `yaml:"xdsHost" envconfig:"kuma_bootstrap_server_params_xds_host"`
