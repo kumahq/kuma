@@ -12,7 +12,7 @@ Consult the Table of Contents below, and jump to the desired section.
 
 - [Contributing to Kuma](#contributing-to-kuma)
   - [Table of Contents](#table-of-contents)
-  - [Where to seek for help?](#where-to-seek-for-help)
+  - [Where to seek help?](#where-to-seek-help)
   - [Where to report bugs?](#where-to-report-bugs)
   - [Where to submit feature requests?](#where-to-submit-feature-requests)
   - [Contributing](#contributing)
@@ -22,6 +22,7 @@ Consult the Table of Contents below, and jump to the desired section.
       - [Commit atomicity](#commit-atomicity)
       - [Commit message format](#commit-message-format)
         - [Type](#type)
+        - [Scope](#scope)
         - [Subject](#subject)
         - [Body](#body)
         - [Footer](#footer)
@@ -29,7 +30,7 @@ Consult the Table of Contents below, and jump to the desired section.
       - [Writing tests](#writing-tests)
     - [Contributor T-shirt](#contributor-t-shirt)
 
-## Where to seek for help?
+## Where to seek help?
 
 [Slack](https://kuma-mesh.slack.com) is the main chat channel used by the
 community and the maintainers of this project. If you do not have an
@@ -82,6 +83,7 @@ make without coding:
   the [documentation contribution](#improving-the-documentation) section)
 - Providing your feedback on the proposed features and designs
 - Reviewing Pull Requests
+- Writing a blog post on how you're using Kuma
 
 If you wish to contribute code (features or bug fixes), see the [Submitting a
 patch](#submitting-a-patch) section.
@@ -103,7 +105,7 @@ https://github.com/Kong/kuma-website
 
 Feel free to contribute fixes or minor features, we love to receive Pull
 Requests! If you are planning to develop a larger feature, come talk to us
-first!
+first on [Slack](#where-to-seek-for-help)!
 
 When contributing, please follow the guidelines provided in this document. They
 will cover topics such as the different Git branches we use, the commit message
@@ -144,15 +146,7 @@ not forget to include your name if you are an external contributor. :wink:
 
 #### Git branches
 
-We work on two branches: `master`, where non-breaking changes land, and 
-`feature/latest`, where important features or breaking changes land in-between
-major releases.
-
-When contributing to Kuma, this distinction is important. Please ensure that
-you are basing your work on top of the appropriate branch, it might save you
-some time down the road!
-
-If you have write access to the GitHub repository, please follow the following
+As a best practice to keep your development environment as organized as possible, create local branches to work within. These should also be created directly off of the master branch. If you have write access to the GitHub repository, please follow the following
 naming scheme when pushing your branch(es):
 
 - `feat/foo-bar` for new features
@@ -225,8 +219,21 @@ accepted types are:
 - **refactor**: A code change that neither fixes a bug nor adds a feature, and
   is too big to be considered just `perf`
 - **chore**: Maintenance changes related to code cleaning that isn't
-  considered part of a refactor, build process updates, dependency bumps, or
-  auxiliary tools and libraries updates (LuaRocks, Travis-ci, etc...).
+  considered part of a refactor, build process updates, or dependency bumps
+
+##### Scope
+
+The scope is the part of the codebase that is affected by your change. Choosing
+it is at your discretion, but here are some of the most frequent ones:
+
+- **kuma-cp**: A change that affects the control-plane
+- **kuma-dp**: A change that affects the data-plane
+- **injector**: A change to the Kuma injector
+- **kumactl**: A change to the kumactl
+- **deps**: When updating dependencies (to be used with the `chore` prefix)
+- **conf**: Configuration-related changes (new values, improvements...)
+- `*`: When the change affects too many parts of the codebase at once (this
+  should be rare and avoided)
 
 ##### Subject
 
