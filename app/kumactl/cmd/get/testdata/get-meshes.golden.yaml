@@ -1,5 +1,6 @@
 items:
   - mtls:
+      enabled: true
       ca:
         builtin: {}
     name: mesh1

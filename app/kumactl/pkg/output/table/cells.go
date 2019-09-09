@@ -12,6 +12,14 @@ func Check(selected bool) string {
 	return ""
 }
 
+func OnOff(on bool) string {
+	if on {
+		return "On"
+	} else {
+		return "Off"
+	}
+}
+
 func Number(v interface{}) string {
 	return fmt.Sprintf("%d", v)
 }
