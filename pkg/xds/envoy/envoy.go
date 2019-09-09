@@ -1,9 +1,10 @@
 package envoy
 
 import (
+	"time"
+
 	"github.com/Kong/kuma/pkg/sds/server"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	"time"
 
 	"github.com/gogo/protobuf/types"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 )
 
@@ -118,6 +120,36 @@ func downstreamTlsContext(ctx xds_context.Context) *auth.DownstreamTlsContext {
 }
 
 func sdsSecretConfig(context xds_context.Context, name string) *auth.SdsSecretConfig {
+	withCallCredentials := func(grpc *core.GrpcService_GoogleGrpc) *core.GrpcService_GoogleGrpc {
+		// TODO(yskopets): credentials should be determined based on properties of a Dataplane rather than global Control Plane settings
+		if context.ControlPlane.DataplaneTokenFile == "" {
+			return grpc
+		}
+
+		config := &grpc_credential.FileBasedMetadataConfig{
+			SecretData: &core.DataSource{
+				Specifier: &core.DataSource_Filename{
+					Filename: context.ControlPlane.DataplaneTokenFile,
+				},
+			},
+		}
+		typedConfig, err := types.MarshalAny(config)
+		util_error.MustNot(err)
+
+		grpc.CallCredentials = append(grpc.CallCredentials, &core.GrpcService_GoogleGrpc_CallCredentials{
+			CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
+				FromPlugin: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
+					Name: "envoy.grpc_credentials.file_based_metadata",
+					ConfigType: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
+						TypedConfig: typedConfig,
+					},
+				},
+			},
+		})
+		grpc.CredentialsFactoryName = "envoy.grpc_credentials.file_based_metadata"
+
+		return grpc
+	}
 	return &auth.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &core.ConfigSource{
@@ -127,7 +159,7 @@ func sdsSecretConfig(context xds_context.Context, name string) *auth.SdsSecretCo
 					GrpcServices: []*core.GrpcService{
 						{
 							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
-								GoogleGrpc: &core.GrpcService_GoogleGrpc{
+								GoogleGrpc: withCallCredentials(&core.GrpcService_GoogleGrpc{
 									TargetUri:  context.ControlPlane.SdsLocation,
 									StatPrefix: "sds_" + name,
 									ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
@@ -141,7 +173,7 @@ func sdsSecretConfig(context xds_context.Context, name string) *auth.SdsSecretCo
 											},
 										},
 									},
-								},
+								}),
 							},
 						},
 					},

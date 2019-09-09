@@ -41,6 +41,9 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, proxyId core_xds.P
 }
 
 func (k *kubeAuthenticator) reviewToken(ctx context.Context, proxyId core_xds.ProxyId, credential sds_auth.Credential) error {
+	if credential == "" {
+		return errors.New("authentication failed: k8s token is missing")
+	}
 	tokenReview := &kube_auth.TokenReview{
 		Spec: kube_auth.TokenReviewSpec{
 			Token: string(credential),

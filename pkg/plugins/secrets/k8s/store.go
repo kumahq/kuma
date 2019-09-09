@@ -24,54 +24,56 @@ const (
 var _ secret_store.SecretStore = &KubernetesStore{}
 
 type KubernetesStore struct {
-	Client    kube_client.Client
-	Converter Converter
+	reader    kube_client.Reader
+	writer    kube_client.Writer
+	converter Converter
 	// Namespace to store Secrets in, e.g. namespace where Control Plane is installed to
-	Namespace string
+	namespace string
 }
 
-func NewStore(client kube_client.Client, namespace string) (secret_store.SecretStore, error) {
+func NewStore(reader kube_client.Reader, writer kube_client.Writer, namespace string) (secret_store.SecretStore, error) {
 	return &KubernetesStore{
-		Client:    client,
-		Converter: DefaultConverter(),
-		Namespace: namespace,
+		reader:    reader,
+		writer:    writer,
+		converter: DefaultConverter(),
+		namespace: namespace,
 	}, nil
 }
 
 func (s *KubernetesStore) Create(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.CreateOptionsFunc) error {
 	opts := core_store.NewCreateOptions(fs...)
-	secret, err := s.Converter.ToKubernetesObject(r)
+	secret, err := s.converter.ToKubernetesObject(r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
 	}
-	secret.Namespace = s.Namespace
+	secret.Namespace = s.namespace
 	secret.Name = opts.Name
 
-	if err := s.Client.Create(ctx, secret); err != nil {
+	if err := s.writer.Create(ctx, secret); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
 			return core_store.ErrorResourceAlreadyExists(r.GetType(), secret.Namespace, secret.Name, noMesh)
 		}
 		return errors.Wrap(err, "failed to create k8s Secret")
 	}
-	err = s.Converter.ToCoreResource(secret, r)
+	err = s.converter.ToCoreResource(secret, r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
 	return nil
 }
 func (s *KubernetesStore) Update(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.UpdateOptionsFunc) error {
-	secret, err := s.Converter.ToKubernetesObject(r)
+	secret, err := s.converter.ToKubernetesObject(r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
 	}
-	secret.Namespace = s.Namespace
-	if err := s.Client.Update(ctx, secret); err != nil {
+	secret.Namespace = s.namespace
+	if err := s.writer.Update(ctx, secret); err != nil {
 		if kube_apierrs.IsConflict(err) {
 			return core_store.ErrorResourceConflict(r.GetType(), secret.Namespace, secret.Name, noMesh)
 		}
 		return errors.Wrap(err, "failed to update k8s Secret")
 	}
-	err = s.Converter.ToCoreResource(secret, r)
+	err = s.converter.ToCoreResource(secret, r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
@@ -79,14 +81,14 @@ func (s *KubernetesStore) Update(ctx context.Context, r *secret_model.SecretReso
 }
 func (s *KubernetesStore) Delete(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.DeleteOptionsFunc) error {
 	opts := core_store.NewDeleteOptions(fs...)
-	secret, err := s.Converter.ToKubernetesObject(r)
+	secret, err := s.converter.ToKubernetesObject(r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
 	}
-	secret.Namespace = s.Namespace
+	secret.Namespace = s.namespace
 	secret.Name = opts.Name
 
-	if err := s.Client.Delete(ctx, secret); err != nil {
+	if err := s.writer.Delete(ctx, secret); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			return nil
 		}
@@ -97,23 +99,23 @@ func (s *KubernetesStore) Delete(ctx context.Context, r *secret_model.SecretReso
 func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.GetOptionsFunc) error {
 	opts := core_store.NewGetOptions(fs...)
 	secret := &kube_core.Secret{}
-	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: s.Namespace, Name: opts.Name}, secret); err != nil {
+	if err := s.reader.Get(ctx, kube_client.ObjectKey{Namespace: s.namespace, Name: opts.Name}, secret); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return core_store.ErrorResourceNotFound(r.GetType(), s.Namespace, opts.Name, noMesh)
+			return core_store.ErrorResourceNotFound(r.GetType(), s.namespace, opts.Name, noMesh)
 		}
 		return errors.Wrap(err, "failed to get k8s secret")
 	}
-	if err := s.Converter.ToCoreResource(secret, r); err != nil {
+	if err := s.converter.ToCoreResource(secret, r); err != nil {
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
 	return nil
 }
 func (s *KubernetesStore) List(ctx context.Context, rs *secret_model.SecretResourceList, fs ...core_store.ListOptionsFunc) error {
 	secrets := &kube_core.SecretList{}
-	if err := s.Client.List(ctx, secrets, kube_client.InNamespace(s.Namespace)); err != nil {
+	if err := s.reader.List(ctx, secrets, kube_client.InNamespace(s.namespace)); err != nil {
 		return errors.Wrap(err, "failed to list k8s Secrets")
 	}
-	if err := s.Converter.ToCoreList(secrets, rs); err != nil {
+	if err := s.converter.ToCoreList(secrets, rs); err != nil {
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
 	return nil

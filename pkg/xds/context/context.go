@@ -2,8 +2,9 @@ package context
 
 import (
 	"fmt"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"io/ioutil"
+
+	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 )
 
 type Context struct {
@@ -14,6 +15,8 @@ type Context struct {
 type ControlPlaneContext struct {
 	SdsLocation string
 	SdsTlsCert  []byte
+
+	DataplaneTokenFile string
 }
 
 type MeshContext struct {
@@ -30,8 +33,15 @@ func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, erro
 		cert = c
 	}
 	sdsLocation := fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.SdsServer.GrpcPort)
+	dataplaneTokenFile := ""
+	if config.Environment == kuma_cp.KubernetesEnvironment {
+		dataplaneTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	}
+
 	return &ControlPlaneContext{
 		SdsLocation: sdsLocation,
 		SdsTlsCert:  cert,
+
+		DataplaneTokenFile: dataplaneTokenFile,
 	}, nil
 }
