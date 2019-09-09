@@ -1,5 +1,5 @@
 .PHONY: help clean clean/build clean/proto \
-		dev/tools \
+		dev/tools dev/tools/all \
 		dev/install/protoc dev/install/protoc-gen-gogofast dev/install/protoc-gen-validate \
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
@@ -14,10 +14,10 @@
 		docs docs/kumactl \
 		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
-        run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
-        verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
+		run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
+		verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
 		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
-        verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
+		verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		print/kubebuilder/test_assets \
 		generate/test/cert/kuma-injector run/kuma-injector \
 		run/kuma-dp
@@ -100,7 +100,7 @@ PROTOC_PGV_VERSION := v0.1.0
 GOGO_PROTOBUF_VERSION := v1.2.1
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0-alpha.4
-CI_KIND_VERSION ?= v0.3.0
+CI_KIND_VERSION ?= v0.5.1
 CI_MINIKUBE_VERSION ?= v1.1.0
 CI_KUBECTL_VERSION ?= v1.14.0
 CI_TOOLS_IMAGE ?= circleci/golang:1.12
@@ -160,10 +160,12 @@ DOCKER_COMPOSE_OPTIONS ?=
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z0-9_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-dev/tools: dev/install/protoc dev/install/protoc-gen-gogofast dev/install/protoc-gen-validate \
-           dev/install/ginkgo \
-		   dev/install/kubebuilder dev/install/kustomize \
-		   dev/install/kubectl dev/install/kind dev/install/minikube ## Bootstrap: Install all development tools
+dev/tools: dev/tools/all ## Bootstrap: Install all development tools
+
+dev/tools/all: dev/install/protoc dev/install/protoc-gen-gogofast dev/install/protoc-gen-validate \
+	dev/install/ginkgo \
+	dev/install/kubebuilder dev/install/kustomize \
+	dev/install/kubectl dev/install/kind dev/install/minikube
 
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 	@if [ -e $(PROTOC_PATH) ]; then echo "Protoc $$( $(PROTOC_PATH) --version ) is already installed at $(PROTOC_PATH)" ; fi
@@ -191,7 +193,7 @@ dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	go get -u github.com/onsi/ginkgo/ginkgo  # installs the ginkgo CLI
 	echo "Ginkgo has been installed at $(GOPATH_BIN_DIR)/ginkgo"
 	echo "Installing Gomega ..."
-	go get -u github.com/onsi/gomega/...     # fetches the matcher library
+	go get -u github.com/onsi/gomega/... # fetches the matcher library
 	echo "Gomega has been installed"
 
 dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and kube-apiserver)
@@ -278,8 +280,8 @@ deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl label namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-app
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=120s --for=condition=Available -n $(EXAMPLE_NAMESPACE) deployment/demo-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=demo-app
 
 kind/load/control-plane: image/kuma-cp
 	kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=kuma
@@ -295,6 +297,8 @@ deploy/control-plane/k8s: build/kumactl
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n kuma-system pod -l app=kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=demo-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=demo-app
 
 start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
@@ -374,9 +378,9 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
-    KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
-    KUMA_ENVIRONMENT=kubernetes \
-    KUMA_STORE_TYPE=kubernetes \
+	KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
+	KUMA_ENVIRONMENT=kubernetes \
+	KUMA_STORE_TYPE=kubernetes \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
