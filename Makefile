@@ -37,12 +37,14 @@ build_info_fields := \
 build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/Kong/kuma/pkg/version.$(entry))
 
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags)"
-GO_BUILD := CGO_ENABLED=0 go build -v $(LD_FLAGS)
+GOOS := $(shell go env GOOS)
+GOARCH := $(shell go env GOARCH)
+GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(LD_FLAGS)
 GO_RUN := CGO_ENABLED=0 go run $(LD_FLAGS)
 GO_TEST := go test $(LD_FLAGS)
 
 BUILD_DIR ?= build
-BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts
+BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 
 GO_TEST_OPTS ?=
 
@@ -154,9 +156,6 @@ export TEST_ASSET_ETCD=$(ETCD_PATH)
 export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
 DOCKER_COMPOSE_OPTIONS ?=
-
-GOOS := $(shell go env GOOS)
-GOARCH := $(shell go env GOARCH)
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z0-9_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -355,10 +354,20 @@ build/kuma-dp: ## Dev: Build `kuma-dp` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ./app/kuma-dp
 
 build/kumactl: ## Dev: Build `kumactl` binary
-	$(GO_BUILD) -o $(BUILD_KUMACTL_DIR)/kumactl ./app/kumactl
+	$(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl ./app/kumactl
 
 build/kuma-injector: ## Dev: Build `kuma-injector` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-injector/kuma-injector ./app/kuma-injector
+
+build/artifact-tarball: build
+	mkdir ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
+	cp ${BUILD_ARTIFACTS_DIR}/kuma-cp/kuma-cp ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
+	cp ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
+	cp $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
+	cp ${BUILD_ARTIFACTS_DIR}/kuma-injector/kuma-injector ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
+	cd ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
+	tar -czf ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}.tar.gz -C ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH} .
+	rm -rf ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native

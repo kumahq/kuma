@@ -22,7 +22,7 @@ RUN make build/kumactl
 FROM alpine:latest
 RUN apk add --no-cache curl
 
-COPY --from=0 /go/src/github.com/Kong/kuma/build/artifacts/kumactl/kumactl /usr/local/bin/
+COPY --from=0 /go/src/github.com/Kong/kuma/build/artifacts-linux-amd64/kumactl/kumactl /usr/local/bin/
 
 RUN addgroup -S -g 5678 kumactl \
  && adduser -S -D -G kumactl -u 5678 kumactl

@@ -22,7 +22,7 @@ RUN make build/kuma-dp
 FROM envoyproxy/envoy-alpine:latest
 
 ENV PATH=$PATH:/kuma-dp
-COPY --from=0 /go/src/github.com/Kong/kuma/build/artifacts/kuma-dp/kuma-dp /kuma-dp/kuma-dp
+COPY --from=0 /go/src/github.com/Kong/kuma/build/artifacts-linux-amd64/kuma-dp/kuma-dp /kuma-dp/kuma-dp
 
 RUN addgroup -S -g 5678 kuma-dp \
  && adduser -S -D -G kuma-dp -u 5678 kuma-dp
