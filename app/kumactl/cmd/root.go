@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	kumactl_config "github.com/Kong/kuma/app/kumactl/pkg/config"
 	"os"
 
 	"github.com/Kong/kuma/app/kumactl/cmd/apply"
@@ -41,6 +42,12 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			// avoid printing usage instructions
 			cmd.SilenceUsage = true
 
+			if root.IsFirstTimeUsage() {
+				root.Runtime.Config = kumactl_config.DefaultConfiguration()
+				if err := root.SaveConfig(); err != nil {
+					return err
+				}
+			}
 			return root.LoadConfig()
 		},
 	}

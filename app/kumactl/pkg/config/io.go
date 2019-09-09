@@ -15,50 +15,21 @@ var DefaultConfigFile = filepath.Join(os.Getenv("HOME"), ".kumactl", "config")
 func Load(file string, cfg *config_proto.Configuration) error {
 	configFile := DefaultConfigFile
 	if file != "" {
-		if fileExists(file) {
+		if FileExists(file) {
 			configFile = file
 		} else {
 			return errors.Errorf("Failed to access configuration file %q", file)
 		}
 	}
-	if fileExists(configFile) {
+	if FileExists(configFile) {
 		if contents, err := ioutil.ReadFile(configFile); err != nil {
 			return errors.Wrapf(err, "Failed to read configuration from file %q", configFile)
 		} else if err := util_proto.FromYAML(contents, cfg); err != nil {
 			return errors.Wrapf(err, "Failed to parse configuration from file %q", configFile)
 		}
 	}
-	if configFile == DefaultConfigFile && !fileExists(configFile) {
-		if err := saveDefaultConfig(cfg); err != nil {
-			return err
-		}
-	}
 	if err := cfg.Validate(); err != nil {
 		return errors.Wrapf(err, "Failed to load invalid configuration from file %q", configFile)
-	}
-	return nil
-}
-
-func saveDefaultConfig(cfg *config_proto.Configuration) error {
-	cfg.ControlPlanes = []*config_proto.ControlPlane{
-		{
-			Name: "local",
-			Coordinates: &config_proto.ControlPlaneCoordinates{
-				ApiServer: &config_proto.ControlPlaneCoordinates_ApiServer{
-					Url: "http://localhost:5681",
-				},
-			},
-		},
-	}
-	cfg.Contexts = []*config_proto.Context{
-		{
-			Name:         "local",
-			ControlPlane: "local",
-		},
-	}
-	cfg.CurrentContext = "local"
-	if err := Save(DefaultConfigFile, cfg); err != nil {
-		return err
 	}
 	return nil
 }
@@ -87,7 +58,7 @@ func Save(file string, cfg *config_proto.Configuration) error {
 	return nil
 }
 
-func fileExists(path string) bool {
+func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }

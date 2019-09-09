@@ -104,3 +104,7 @@ func (rc *RootContext) CurrentDataplaneOverviewClient() (kumactl_resources.Datap
 	}
 	return rc.Runtime.NewDataplaneOverviewClient(controlPlane.Coordinates.ApiServer)
 }
+
+func (rc *RootContext) IsFirstTimeUsage() bool {
+	return rc.Args.ConfigFile == "" && !config.FileExists(config.DefaultConfigFile)
+}
