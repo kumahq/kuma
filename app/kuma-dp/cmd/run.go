@@ -19,14 +19,14 @@ var (
 )
 
 func newRunCmd() *cobra.Command {
+	cfg := kuma_dp.DefaultConfig()
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Dataplane (Envoy)",
 		Long:  `Launch Dataplane (Envoy).`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg := kuma_dp.DefaultConfig()
-			err := config.Load("", &cfg) // only support configuration via environment variables
-			if err != nil {
+			// only support configuration via environment variables and args
+			if err := config.Load("", &cfg); err != nil {
 				runLog.Error(err, "unable to load configuration")
 				return err
 			}
@@ -54,5 +54,12 @@ func newRunCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
+	cmd.PersistentFlags().Uint32Var(&cfg.Dataplane.AdminPort, "admin-port", cfg.Dataplane.AdminPort, "Port for Envoy Admin")
+	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
+	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.BootstrapServer.URL, "cp-address", cfg.ControlPlane.BootstrapServer.URL, "Mesh that Dataplane belongs to")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	return cmd
 }
