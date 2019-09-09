@@ -3,6 +3,10 @@ items:
       enabled: true
       ca:
         builtin: {}
+    logging:
+      accessLogs:
+        enabled: true
+        filePath: "/tmp/access.log"
     name: mesh1
     type: Mesh
   - mtls:

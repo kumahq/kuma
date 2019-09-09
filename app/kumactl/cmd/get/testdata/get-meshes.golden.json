@@ -1,6 +1,12 @@
 {
   "items": [
     {
+      "logging": {
+        "accessLogs": {
+          "enabled": true,
+          "filePath": "/tmp/access.log"
+        }
+      },
       "mtls": {
         "enabled": true,
         "ca": {
