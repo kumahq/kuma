@@ -14,8 +14,6 @@ var _ config.Config = &XdsServerConfig{}
 type XdsServerConfig struct {
 	// Port of GRPC server that Envoy connects to
 	GrpcPort int `yaml:"grpcPort" envconfig:"kuma_xds_server_grpc_port"`
-	// Port of HTTP Server for retrieving xDS data in REST way
-	HttpPort int `yaml:"httpPort" envconfig:"kuma_xds_server_http_port"`
 	// Port of Diagnostic Server for checking health and readiness of the Control Plane
 	DiagnosticsPort int `yaml:"diagnosticsPort" envconfig:"kuma_xds_server_diagnostics_port"`
 
@@ -28,9 +26,6 @@ type XdsServerConfig struct {
 func (x *XdsServerConfig) Validate() error {
 	if x.GrpcPort < 0 {
 		return errors.New("GrpcPort cannot be negative")
-	}
-	if x.HttpPort < 0 {
-		return errors.New("HttpPort cannot be negative")
 	}
 	if x.DiagnosticsPort < 0 {
 		return errors.New("DiagnosticPort cannot be negative")
@@ -47,7 +42,6 @@ func (x *XdsServerConfig) Validate() error {
 func DefaultXdsServerConfig() *XdsServerConfig {
 	return &XdsServerConfig{
 		GrpcPort:                              5678,
-		HttpPort:                              5679,
 		DiagnosticsPort:                       5680,
 		DataplaneConfigurationRefreshInterval: 1 * time.Second,
 		DataplaneStatusFlushInterval:          1 * time.Second,

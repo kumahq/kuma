@@ -42,7 +42,6 @@ store:
     connectionTimeout: 10
 xdsServer:
   grpcPort: 5000
-  httpPort: 5001
   diagnosticsPort: 5003
 bootstrapServer:
   port: 5004
@@ -70,7 +69,6 @@ apiServer:
 
 		// then
 		Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
-		Expect(cfg.XdsServer.HttpPort).To(Equal(5001))
 		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
 		Expect(cfg.BootstrapServer.Port).To(Equal(5004))
@@ -102,7 +100,6 @@ apiServer:
 	It("should load config from env vars", func() {
 		// given
 		setEnv("KUMA_XDS_SERVER_GRPC_PORT", "5000")
-		setEnv("KUMA_XDS_SERVER_HTTP_PORT", "5001")
 		setEnv("KUMA_XDS_SERVER_DIAGNOSTICS_PORT", "5003")
 		setEnv("KUMA_BOOTSTRAP_SERVER_PORT", "5004")
 		setEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT", "1234")
@@ -127,7 +124,6 @@ apiServer:
 
 		// then
 		Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
-		Expect(cfg.XdsServer.HttpPort).To(Equal(5001))
 		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
 		Expect(cfg.BootstrapServer.Port).To(Equal(5004))

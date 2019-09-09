@@ -27,7 +27,6 @@ var _ = Describe("XdsServerConfig", func() {
 
 		// and
 		Expect(cfg.GrpcPort).To(Equal(1234))
-		Expect(cfg.HttpPort).To(Equal(2345))
 		Expect(cfg.DiagnosticsPort).To(Equal(3456))
 		Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
 		Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
@@ -53,7 +52,6 @@ var _ = Describe("XdsServerConfig", func() {
 			// setup
 			env := map[string]string{
 				"KUMA_XDS_SERVER_GRPC_PORT":                                "1234",
-				"KUMA_XDS_SERVER_HTTP_PORT":                                "2345",
 				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                         "3456",
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
@@ -73,7 +71,6 @@ var _ = Describe("XdsServerConfig", func() {
 
 			// and
 			Expect(cfg.GrpcPort).To(Equal(1234))
-			Expect(cfg.HttpPort).To(Equal(2345))
 			Expect(cfg.DiagnosticsPort).To(Equal(3456))
 			Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
 			Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))

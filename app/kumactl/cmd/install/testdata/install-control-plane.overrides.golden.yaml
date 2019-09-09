@@ -2257,8 +2257,6 @@ spec:
           value: "5677"
         - name: KUMA_XDS_SERVER_GRPC_PORT
           value: "5678"
-        - name: KUMA_XDS_SERVER_HTTP_PORT
-          value: "5679"
         - name: KUMA_API_SERVER_PORT
           value: "5681"
         - name: KUMA_BOOTSTRAP_SERVER_PORT
