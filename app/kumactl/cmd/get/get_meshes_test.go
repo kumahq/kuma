@@ -38,6 +38,12 @@ var _ = Describe("kumactl get meshes", func() {
 						},
 					},
 				},
+				Logging: &v1alpha1.Logging{
+					AccessLogs: &v1alpha1.Logging_AccessLogs{
+						Enabled:              true,
+						FilePath:             "/tmp/access.log",
+					},
+				},
 			},
 			Meta: &test_model.ResourceMeta{
 				Mesh:      "mesh1",
