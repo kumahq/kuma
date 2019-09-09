@@ -6,11 +6,11 @@
 
 Kuma is a universal open source control-plane for Service Mesh and Microservices that can run and be operated natively across both Kubernetes and VM environments, in order to be easily adopted by every team in the organization.
 
-Built on top of Envoy, Kuma can instrument any L4/L7 traffic to secure, observe, route and enhance connectivity between any service or database. It can be used natively in Kubernetes via CRDs or via a RESTful API across other environments, and it doesn't require to change our application's code in order to be used.
+Built on top of Envoy, Kuma can instrument any L4/L7 traffic to secure, observe, route and enhance connectivity between any service or database. It can be used natively in Kubernetes via CRDs or via a RESTful API across other environments, and it doesn't require a change to your application's code in order to be used.
 
 Built by Envoy contributors at Kong 🦍.
 
-**Need help?** Installing and using Kuma should be as easy as possible. [Contact and chat](https://kuma.io/community) with the community in real-time if you get stuck or need clarifications. We are here to help.
+**Need help?** Kuma has been built to be easy to install and use. However, if you need get stuck and need help, you can [contact and chat](https://kuma.io/community) with the community in real-time. We are here to help.
 
 ## Features
 
@@ -33,7 +33,7 @@ Kuma is a platform-agnostic product that comes in many shapes. You can explore t
 
 You can use Kuma for both modern greenfield applications built on containers and Kubernetes, as well as existing applications running on more traditional infrastructure. Kuma can be fully configured via CRDs on Kubernetes, and via a RESTful HTTP API on other environments that can be easily integrated with CI/CD workflows. 
 
-Kuma also provides an easy to use `kumactl` CLI client for every environment.
+Kuma provides an easy to use `kumactl` CLI client for every environment.
 
 ## Official Documentation
 
@@ -43,7 +43,7 @@ Getting up and running with Kuma is easy, and it can be done in a few steps. Rea
 
 Kuma is an open source product that wouldn't exist without the broader community adoption and contributions.
 
-Contributions are welcomed and can be submitted as PRs on this repository. Kuma also provides [community chat and monthly calls](https://kuma.io/community) to provide a place for the community to meet and talk.
+Contributions are welcome and can be submitted as PRs on this repository. Kuma has a [community chat and holds monthly calls](https://kuma.io/community) to provide a place for the community to meet and talk.
 
 ## Development
 
