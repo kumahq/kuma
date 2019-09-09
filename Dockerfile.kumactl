@@ -24,8 +24,8 @@ RUN apk add --no-cache curl
 
 COPY --from=0 /go/src/github.com/Kong/kuma/build/artifacts-linux-amd64/kumactl/kumactl /usr/local/bin/
 
-RUN addgroup -S -g 5678 kumactl \
- && adduser -S -D -G kumactl -u 5678 kumactl
+RUN addgroup -S -g 6789 kumactl \
+ && adduser -S -D -G kumactl -u 6789 kumactl
 
 USER kumactl
 WORKDIR /home/kumactl
