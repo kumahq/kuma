@@ -1,13 +1,8 @@
-# Bazel
-bazel-*
-.cache/
-
-# IDE: CLion
+# IDE: Goland
 .idea/
-.clwb/
 
 # IDE: VS Code
 .vscode/
 
 # CI
-_build/
+build/

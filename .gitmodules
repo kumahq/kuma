@@ -1,3 +1,0 @@
-[submodule "envoy"]
-	path = components/konvoy-filter/envoy
-	url = https://github.com/envoyproxy/envoy.git
