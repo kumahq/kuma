@@ -1,3 +1,3 @@
-NAME
-mesh1
-mesh2
+NAME    MTLS
+mesh1   On
+mesh2   Off

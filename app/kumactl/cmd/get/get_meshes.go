@@ -2,6 +2,7 @@ package get
 
 import (
 	"context"
+	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 	"io"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
@@ -45,7 +46,7 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 
 func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME"},
+		Headers: []string{"NAME", "MTLS"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -56,7 +57,8 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 				mesh := meshes.Items[i]
 
 				return []string{
-					mesh.GetMeta().GetName(), // NAME
+					mesh.GetMeta().GetName(),            // NAME
+					table.OnOff(mesh.Spec.Mtls.Enabled), // MTLS
 				}
 			}
 		}(),

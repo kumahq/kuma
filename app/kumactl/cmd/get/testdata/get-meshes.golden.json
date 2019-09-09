@@ -2,6 +2,7 @@
   "items": [
     {
       "mtls": {
+        "enabled": true,
         "ca": {
           "builtin": {}
         }
