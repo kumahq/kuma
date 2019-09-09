@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"bytes"
 	"context"
+	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
 	"text/template"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -17,14 +18,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-type BootstrapRequest struct {
-	Mesh      string `json:"mesh"`
-	Name      string `json:"name"`
-	AdminPort uint32 `json:"adminPort,omitempty"`
-}
-
 type BootstrapGenerator interface {
-	Generate(ctx context.Context, request BootstrapRequest) (proto.Message, error)
+	Generate(ctx context.Context, request rest.BootstrapRequest) (proto.Message, error)
 }
 
 func NewDefaultBootstrapGenerator(
@@ -41,7 +36,7 @@ type bootstrapGenerator struct {
 	config     *xds_config.BootstrapParamsConfig
 }
 
-func (b *bootstrapGenerator) Generate(ctx context.Context, request BootstrapRequest) (proto.Message, error) {
+func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.BootstrapRequest) (proto.Message, error) {
 	proxyId, err := xds.BuildProxyId(request.Mesh, request.Name)
 	if err != nil {
 		return nil, err
