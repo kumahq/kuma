@@ -15,6 +15,8 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
+	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	"github.com/envoyproxy/go-control-plane/pkg/util"
@@ -153,6 +155,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
+		AccessLog: accessLog(ctx),
 	}
 	pbst, err := types.MarshalAny(config)
 	util_error.MustNot(err)
@@ -186,6 +189,27 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 		}
 	}
 	return listener
+}
+
+func accessLog(ctx xds_context.Context) []*filter_accesslog.AccessLog {
+	if !ctx.Mesh.LoggingEnabled {
+		return []*filter_accesslog.AccessLog{}
+	}
+	fileAccessLog := &accesslog.FileAccessLog{
+		AccessLogFormat: &accesslog.FileAccessLog_Format{
+			Format: "[%START_TIME%] %DOWNSTREAM_REMOTE_ADDRESS%->%UPSTREAM_HOST% took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes\n",
+		},
+		Path: ctx.Mesh.LoggingPath,
+	}
+	pbst, err := types.MarshalAny(fileAccessLog)
+	util_error.MustNot(err)
+	logs := &filter_accesslog.AccessLog{
+		Name: util.FileAccessLog,
+		ConfigType: &filter_accesslog.AccessLog_TypedConfig{
+			TypedConfig: pbst,
+		},
+	}
+	return []*filter_accesslog.AccessLog{logs}
 }
 
 func CreateDownstreamTlsContext(ctx xds_context.Context) *auth.DownstreamTlsContext {
@@ -288,6 +312,7 @@ func CreateCatchAllListener(ctx xds_context.Context, listenerName string, addres
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
+		AccessLog: accessLog(ctx),
 	}
 	pbst, err := types.MarshalAny(config)
 	util_error.MustNot(err)

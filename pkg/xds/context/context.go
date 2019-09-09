@@ -21,8 +21,8 @@ type ControlPlaneContext struct {
 
 type MeshContext struct {
 	LoggingEnabled bool
-	LoggingPath string
-	TlsEnabled bool
+	LoggingPath    string
+	TlsEnabled     bool
 }
 
 func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, error) {
