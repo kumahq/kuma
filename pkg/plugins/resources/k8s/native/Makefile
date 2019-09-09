@@ -84,7 +84,7 @@ docker-push:
 # download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0-beta.2
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1
 CONTROLLER_GEN=$(GOPATH_BIN_DIR)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)

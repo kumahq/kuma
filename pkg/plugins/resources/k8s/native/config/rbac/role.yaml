@@ -25,44 +25,44 @@ rules:
 - apiGroups:
   - mesh.kuma.io
   resources:
-  - dataplanes
+  - dataplaneinsights
   verbs:
+  - create
+  - delete
   - get
   - list
-  - watch
-  - create
-  - update
   - patch
-  - delete
+  - update
+  - watch
 - apiGroups:
   - mesh.kuma.io
   resources:
-  - dataplaneinsights
+  - dataplanes
   verbs:
+  - create
+  - delete
   - get
   - list
-  - watch
-  - create
-  - update
   - patch
-  - delete
+  - update
+  - watch
 - apiGroups:
   - mesh.kuma.io
   resources:
   - proxytemplates
   verbs:
+  - create
+  - delete
   - get
   - list
-  - watch
-  - create
-  - update
   - patch
-  - delete
+  - update
+  - watch
 - apiGroups:
   - mesh.kuma.io
   resources:
   - proxytemplates/status
   verbs:
   - get
-  - update
   - patch
+  - update
