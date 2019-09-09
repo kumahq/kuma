@@ -17,7 +17,7 @@ Built by Envoy contributors at Kong 🦍.
 * **Universal Control Plane**: Easy to use, distributed, runs anywhere.
 * **Lightweight Data Plane**: To process any traffic, powered by Envoy.
 * **Automatic**: No code changes required in K8s, flexible on VMs.
-* **Multi-Tenanct**: To setup multiple isolated Service Meshes in one cluster and one Control Plane.
+* **Multi-Tenancy**: To setup multiple isolated Service Meshes in one cluster and one Control Plane.
 * **Network Security**: Automatic mTLS encryption.
 * **Traffic Segmentation**: With flexible ACL rules.
 * **Traffic Tracing**: Automatic with Zipkin and Jeager integrations.
