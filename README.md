@@ -70,4 +70,4 @@ limitations under the License.
 ```
 
 [kuma-url]: https://kuma.io/
-[kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo.jpg
+[kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo.png
