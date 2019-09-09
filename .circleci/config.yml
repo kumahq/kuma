@@ -335,7 +335,7 @@ jobs:
     - checkout
     - run:
         name: Push Docker images
-        command: make images/push BINTRAY_USERNAME=$BINTRAY_USERNAME BINTRAY_API_KEY=$BINTRAY_API_KEY KUMA_VERSION=$CIRCLE_TAG -C components/konvoy-control-plane
+        command: make images/push BINTRAY_USERNAME=$BINTRAY_USERNAME BINTRAY_API_KEY=$BINTRAY_API_KEY KUMA_VERSION=$CIRCLE_TAG
 
 #
 # Below, the tag filter needs to be in all jobs
