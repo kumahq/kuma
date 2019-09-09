@@ -88,10 +88,10 @@ BINTRAY_REGISTRY ?= kong-docker-konvoy-docker.bintray.io
 BINTRAY_USERNAME ?=
 BINTRAY_API_KEY ?=
 
-KUMA_CP_DOCKER_IMAGE ?= kuma/kuma-cp:latest
-KUMA_DP_DOCKER_IMAGE ?= kuma/kuma-dp:latest
-KUMACTL_DOCKER_IMAGE ?= kuma/kumactl:latest
-KUMA_INJECTOR_DOCKER_IMAGE ?= kuma/kuma-injector:latest
+KUMA_CP_DOCKER_IMAGE ?= kuma/kuma-cp:$(BUILD_INFO_VERSION)
+KUMA_DP_DOCKER_IMAGE ?= kuma/kuma-dp:$(BUILD_INFO_VERSION)
+KUMACTL_DOCKER_IMAGE ?= kuma/kumactl:$(BUILD_INFO_VERSION)
+KUMA_INJECTOR_DOCKER_IMAGE ?= kuma/kuma-injector:$(BUILD_INFO_VERSION)
 
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.1.0
@@ -495,7 +495,7 @@ build/example/minikube: ## Minikube: build demo setup
 	eval $$(minikube docker-env) && $(MAKE) images
 
 deploy/example/minikube: image/kumactl ## Minikube: deploy demo setup
-	docker run --rm kuma/kumactl kumactl install control-plane | kubectl apply -f -
+	docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
 	kubectl apply -f examples/minikube/kuma-demo/

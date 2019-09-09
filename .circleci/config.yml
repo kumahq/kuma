@@ -75,7 +75,7 @@ jobs:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
           export PATH=$HOME/go/bin:$PATH
-          make check
+          make check BUILD_INFO_VERSION=latest
     - run:
         name: "Build all binaries"
         command: |
@@ -113,7 +113,7 @@ jobs:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
           export PATH=$HOME/go/bin:$PATH
-          make check
+          make check BUILD_INFO_VERSION=latest
     - run:
         name: "Build all binaries"
         command: |
@@ -173,7 +173,7 @@ jobs:
           apt update && apt install -y clang-format-10
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-        command: make check
+        command: make check BUILD_INFO_VERSION=latest
 
   api/check:
     <<: *go-defaults

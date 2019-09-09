@@ -14,12 +14,12 @@ import (
 
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 	"github.com/Kong/kuma/pkg/tls"
+	kuma_version "github.com/Kong/kuma/pkg/version"
 )
 
 var _ = Describe("kumactl install control-plane", func() {
 
 	var backupNewSelfSignedCert func(string, ...string) (tls.KeyPair, error)
-
 	BeforeEach(func() {
 		backupNewSelfSignedCert = install.NewSelfSignedCert
 	})
@@ -33,6 +33,23 @@ var _ = Describe("kumactl install control-plane", func() {
 				CertPEM: []byte("CERT"),
 				KeyPEM:  []byte("KEY"),
 			}, nil
+		}
+	})
+
+	var backupBuildInfo kuma_version.BuildInfo
+	BeforeEach(func() {
+		backupBuildInfo = kuma_version.Build
+	})
+	AfterEach(func() {
+		kuma_version.Build = backupBuildInfo
+	})
+
+	BeforeEach(func() {
+		kuma_version.Build = kuma_version.BuildInfo{
+			Version:   "0.0.1",
+			GitTag:    "v0.0.1",
+			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+			BuildDate: "2019-08-07T11:26:06Z",
 		}
 	})
 
