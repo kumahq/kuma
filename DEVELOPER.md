@@ -99,18 +99,33 @@ make build/kumactl
 export PATH=`pwd`/build/artifacts/kumactl:$PATH
 ```
 
-2. Apply a Dataplane descriptor
+2. Configure a `kumactl` with running Control Plane
+
+Check current config
+```bash
+kumactl config control-planes list
+
+ACTIVE   NAME    ADDRESS
+*        local   http://localhost:5681
+```
+
+If active control plane points to different address than http://localhost:5681, add a new one 
+```bash
+kumactl config control-planes add --name universal --address http://localhost:5681
+```
+
+3. Apply a Dataplane descriptor
 
 ```bash
 kumactl apply -f dev/examples/universal/dataplanes/example.yaml
 ```
 
-3. Run a Dataplane (requires `envoy` binary to be on your `PATH`)
+4. Run a Dataplane (requires `envoy` binary to be on your `PATH`)
 ```bash
 make run/example/envoy/universal
 ```
 
-4. List `Dataplanes` connected to the `Control Plane`:
+5. List `Dataplanes` connected to the `Control Plane`:
 
 ```bash
 kumactl inspect dataplanes
@@ -119,7 +134,7 @@ MESH      NAME      TAGS                                     STATUS   LAST CONNE
 default   example   env=production service=web version=2.0   Online   32s                  32s                2               0
 ```
 
-5. Dump effective `Envoy` config:
+6. Dump effective `Envoy` config:
 
 ```bash
 make config_dump/example/envoy
