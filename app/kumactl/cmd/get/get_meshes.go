@@ -57,8 +57,8 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 				mesh := meshes.Items[i]
 
 				return []string{
-					mesh.GetMeta().GetName(),            // NAME
-					table.OnOff(mesh.Spec.Mtls.Enabled), // MTLS
+					mesh.GetMeta().GetName(),                 // NAME
+					table.OnOff(mesh.Spec.Mtls.GetEnabled()), // MTLS
 				}
 			}
 		}(),
