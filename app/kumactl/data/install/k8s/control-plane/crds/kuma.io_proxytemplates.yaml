@@ -4,16 +4,16 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: trafficpermissions.mesh.kuma.io
+  name: proxytemplates.kuma.io
 spec:
-  group: mesh.kuma.io
+  group: kuma.io
   names:
-    kind: TrafficPermission
-    plural: trafficpermissions
+    kind: ProxyTemplate
+    plural: proxytemplates
   scope: ""
   validation:
     openAPIV3Schema:
-      description: TrafficPermission is the Schema for the trafficpermissions API
+      description: ProxyTemplate is the Schema for the proxytemplates API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -257,6 +257,10 @@ spec:
                         no information available. A Reason clarifies an HTTP status
                         code but does not override it.
                       type: string
+                    status:
+                      description: 'Status of the operation. One of: "Success" or
+                        "Failure". More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status'
+                      type: string
                   type: object
               required:
               - pending
@@ -383,8 +387,16 @@ spec:
           type: string
         spec:
           type: object
+        status:
+          type: object
       type: object
   versions:
   - name: v1alpha1
     served: true
     storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

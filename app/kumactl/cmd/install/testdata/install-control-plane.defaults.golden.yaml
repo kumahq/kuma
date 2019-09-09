@@ -34,9 +34,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: dataplaneinsights.mesh.kuma.io
+  name: dataplaneinsights.kuma.io
 spec:
-  group: mesh.kuma.io
+  group: kuma.io
   names:
     kind: DataplaneInsight
     plural: dataplaneinsights
@@ -431,9 +431,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: dataplanes.mesh.kuma.io
+  name: dataplanes.kuma.io
 spec:
-  group: mesh.kuma.io
+  group: kuma.io
   names:
     kind: Dataplane
     plural: dataplanes
@@ -828,9 +828,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: meshes.mesh.kuma.io
+  name: meshes.kuma.io
 spec:
-  group: mesh.kuma.io
+  group: kuma.io
   names:
     kind: Mesh
     plural: meshes
@@ -1227,9 +1227,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: proxytemplates.mesh.kuma.io
+  name: proxytemplates.kuma.io
 spec:
-  group: mesh.kuma.io
+  group: kuma.io
   names:
     kind: ProxyTemplate
     plural: proxytemplates
@@ -1628,9 +1628,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: trafficpermissions.mesh.kuma.io
+  name: trafficpermissions.kuma.io
 spec:
-  group: mesh.kuma.io
+  group: kuma.io
   names:
     kind: TrafficPermission
     plural: trafficpermissions
@@ -2028,7 +2028,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - mesh.kuma.io
+  - kuma.io
   resources:
   - dataplanes
   - dataplaneinsights
@@ -2042,7 +2042,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - mesh.kuma.io
+  - kuma.io
   resources:
   - proxytemplates
   verbs:
@@ -2054,7 +2054,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - mesh.kuma.io
+  - kuma.io
   resources:
   - proxytemplates/status
   verbs:
@@ -2062,7 +2062,7 @@ rules:
   - update
   - patch
 - apiGroups:
-  - mesh.kuma.io
+  - kuma.io
   resources:
   - trafficpermissions
   verbs:

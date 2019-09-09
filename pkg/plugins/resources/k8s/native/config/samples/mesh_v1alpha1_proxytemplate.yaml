@@ -1,4 +1,4 @@
-apiVersion: mesh.kuma.io/v1alpha1
+apiVersion: kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
   name: default
@@ -7,7 +7,7 @@ spec:
   - profile:
       name: default-proxy
 ---
-apiVersion: mesh.kuma.io/v1alpha1
+apiVersion: kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
   name: default-and-raw
@@ -50,7 +50,7 @@ spec:
           name: inbound:192.168.0.1:8080
         version: 0d587dfbb17f97fafd84e15c2a6f3a1521889921
 ---
-apiVersion: mesh.kuma.io/v1alpha1
+apiVersion: kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
   name: default-and-scripted

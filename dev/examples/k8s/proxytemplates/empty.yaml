@@ -1,4 +1,4 @@
-apiVersion: mesh.kuma.io/v1alpha1
+apiVersion: kuma.io/v1alpha1
 kind: ProxyTemplate
 metadata:
   namespace: kuma-system
