@@ -32,8 +32,8 @@ type ProxyTemplateReconciler struct {
 	Log logr.Logger
 }
 
-// +kubebuilder:rbac:groups=mesh.kuma.io,resources=proxytemplates,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=mesh.kuma.io,resources=proxytemplates/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kuma.io,resources=proxytemplates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kuma.io,resources=proxytemplates/status,verbs=get;update;patch
 
 func (r *ProxyTemplateReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
