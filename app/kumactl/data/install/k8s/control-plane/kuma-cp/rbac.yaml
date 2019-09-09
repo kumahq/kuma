@@ -56,6 +56,13 @@ rules:
   - get
   - list
   - watch
+# validate k8s token before issueing mTLS cert
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
