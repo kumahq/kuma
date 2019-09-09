@@ -25,6 +25,10 @@ message Mesh {
   // Tracing settings.
   // +optional
   Tracing tracing = 2;
+
+  // Logging settings.
+  // +optional
+  Logging logging = 3;
 }
 
 // CertificateAuthority defines configuration of a CA.
@@ -55,4 +59,16 @@ message Tracing {
     // Use Zipkin tracer.
     Zipkin zipkin = 1;
   }
+}
+
+message Logging {
+
+  message AccessLogs {
+
+    bool enabled = 1;
+
+    string filePath = 2;
+  }
+
+  AccessLogs accessLogs = 1;
 }

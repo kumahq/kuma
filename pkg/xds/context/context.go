@@ -20,6 +20,8 @@ type ControlPlaneContext struct {
 }
 
 type MeshContext struct {
+	LoggingEnabled bool
+	LoggingPath string
 	TlsEnabled bool
 }
 
