@@ -10,7 +10,7 @@ Built on top of Envoy, Kuma can instrument any L4/L7 traffic to secure, observe,
 
 Built by Envoy contributors at Kong 🦍.
 
-**Need help?** Kuma has been built to be easy to install and use. However, if you need get stuck and need help, you can [contact and chat](https://kuma.io/community) with the community in real-time. We are here to help.
+**Need help?** Kuma has been built to be easy to install and use. However, if you get stuck and need help, you can [contact and chat](https://kuma.io/community) with the community in real-time. We are here to help.
 
 ## Features
 
