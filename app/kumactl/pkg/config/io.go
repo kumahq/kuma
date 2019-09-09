@@ -10,8 +10,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+var DefaultConfigFile = filepath.Join(os.Getenv("HOME"), ".kumactl", "config")
+
 func Load(file string, cfg *config_proto.Configuration) error {
-	configFile := defaultConfigFile()
+	configFile := DefaultConfigFile
 	if file != "" {
 		if fileExists(file) {
 			configFile = file
@@ -26,8 +28,37 @@ func Load(file string, cfg *config_proto.Configuration) error {
 			return errors.Wrapf(err, "Failed to parse configuration from file %q", configFile)
 		}
 	}
+	if configFile == DefaultConfigFile && !fileExists(configFile) {
+		if err := saveDefaultConfig(cfg); err != nil {
+			return err
+		}
+	}
 	if err := cfg.Validate(); err != nil {
 		return errors.Wrapf(err, "Failed to load invalid configuration from file %q", configFile)
+	}
+	return nil
+}
+
+func saveDefaultConfig(cfg *config_proto.Configuration) error {
+	cfg.ControlPlanes = []*config_proto.ControlPlane{
+		{
+			Name: "local",
+			Coordinates: &config_proto.ControlPlaneCoordinates{
+				ApiServer: &config_proto.ControlPlaneCoordinates_ApiServer{
+					Url: "http://localhost:5681",
+				},
+			},
+		},
+	}
+	cfg.Contexts = []*config_proto.Context{
+		{
+			Name:         "local",
+			ControlPlane: "local",
+		},
+	}
+	cfg.CurrentContext = "local"
+	if err := Save(DefaultConfigFile, cfg); err != nil {
+		return err
 	}
 	return nil
 }
@@ -40,7 +71,7 @@ func Save(file string, cfg *config_proto.Configuration) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to format configuration: %#v", cfg)
 	}
-	configFile := defaultConfigFile()
+	configFile := DefaultConfigFile
 	if file != "" {
 		configFile = file
 	}
@@ -54,10 +85,6 @@ func Save(file string, cfg *config_proto.Configuration) error {
 		return errors.Wrapf(err, "Failed to write configuration into file %q", configFile)
 	}
 	return nil
-}
-
-func defaultConfigFile() string {
-	return filepath.Join(os.Getenv("HOME"), ".kumactl", "config")
 }
 
 func fileExists(path string) bool {
