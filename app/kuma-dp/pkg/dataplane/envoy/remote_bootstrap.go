@@ -3,12 +3,12 @@ package envoy
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
 	"io/ioutil"
 	"net/http"
 
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	xds_bootstrap "github.com/Kong/kuma/pkg/xds/bootstrap"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
@@ -25,7 +25,7 @@ func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc
 
 func (b *remoteBootstrap) Generate(cfg kuma_dp.Config) (proto.Message, error) {
 	url := cfg.ControlPlane.BootstrapServer.URL + "/bootstrap"
-	request := xds_bootstrap.BootstrapRequest{
+	request := rest.BootstrapRequest{
 		Mesh: cfg.Dataplane.Mesh,
 		Name: cfg.Dataplane.Name,
 		// if not set in config, the 0 will be sent which will result in providing default admin port
