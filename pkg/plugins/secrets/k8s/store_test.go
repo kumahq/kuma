@@ -76,7 +76,7 @@ var _ = Describe("KubernetesStore", func() {
 		ns = string(uuid.NewUUID())
 
 		var err error
-		s, err = k8s.NewStore(k8sClient, ns)
+		s, err = k8s.NewStore(k8sClient, k8sClient, ns)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

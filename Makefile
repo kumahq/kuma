@@ -378,6 +378,8 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
 	KUMA_ENVIRONMENT=kubernetes \
 	KUMA_STORE_TYPE=kubernetes \
+	KUMA_SDS_SERVER_TLS_CERT_FILE=app/kuma-injector/cmd/testdata/tls.crt \
+	KUMA_SDS_SERVER_TLS_KEY_FILE=app/kuma-injector/cmd/testdata/tls.key \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
@@ -528,7 +530,7 @@ generate/test/cert/kuma-injector:  ## Dev: Generate TLS cert for Kuma Injector (
 	OUTPUT_DIR=$(shell pwd)/app/kuma-injector/cmd/testdata && \
 	TMP_DIR=$(shell mktemp -d) && \
 	cd $$TMP_DIR && \
-	go run $(shell go env GOROOT)/src/crypto/tls/generate_cert.go --host=*,*.kuma-system.svc --duration=87660h && \
+	go run $(shell go env GOROOT)/src/crypto/tls/generate_cert.go --host=*.kuma-system.svc,*.kuma-system,localhost --duration=87660h && \
 	mv cert.pem $$OUTPUT_DIR/tls.crt && \
 	mv key.pem $$OUTPUT_DIR/tls.key && \
 	rm -rf $$TMP_DIR

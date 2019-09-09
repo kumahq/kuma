@@ -26,5 +26,5 @@ func (p *plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.Pl
 	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
 	}
-	return NewStore(mgr.GetClient(), pc.Config().Store.Kubernetes.SystemNamespace)
+	return NewStore(mgr.GetAPIReader(), mgr.GetClient(), pc.Config().Store.Kubernetes.SystemNamespace)
 }
