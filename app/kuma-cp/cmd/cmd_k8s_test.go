@@ -48,7 +48,6 @@ var _ = Describe("K8S CMD test", func() {
 	RunSmokeTest(`
 xdsServer:
   grpcPort: 0
-  httpPort: 0
   diagnosticsPort: %d
 bootstrapServer:
   port: 0

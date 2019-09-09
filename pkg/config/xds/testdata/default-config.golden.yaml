@@ -1,5 +1,4 @@
 grpcPort: 5678
-httpPort: 5679
 diagnosticsPort: 5680
 dataplaneConfigurationRefreshInterval: 1s
 dataplaneStatusFlushInterval: 1s

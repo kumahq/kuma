@@ -29,8 +29,6 @@ func SetupServer(rt core_runtime.Runtime) error {
 		rt,
 		// xDS gRPC API
 		&grpcServer{srv, rt.Config().XdsServer.GrpcPort},
-		// xDS HTTP API
-		&httpGateway{srv, rt.Config().XdsServer.HttpPort},
 		// diagnostics server
 		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort},
 		// bootstrap server

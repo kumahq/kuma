@@ -12,7 +12,6 @@
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector \
 		build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector \
 		docs docs/kumactl \
-		curl/listeners curl/clusters \
 		run/example/envoy config_dump/example/envoy \
 		run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
 		verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
@@ -58,7 +57,6 @@ COVERAGE_INTEGRATION_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage-integration.h
 
 CP_BIND_HOST ?= localhost
 CP_GRPC_PORT ?= 5678
-CP_HTTP_PORT ?= 5679
 SDS_GRPC_PORT ?= 5677
 
 LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
@@ -378,7 +376,6 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
-	KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
 	KUMA_ENVIRONMENT=kubernetes \
 	KUMA_STORE_TYPE=kubernetes \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
@@ -386,7 +383,6 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
-	KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=memory \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
@@ -398,7 +394,6 @@ start/postgres: ## Boostrap: start Postgres for Control Plane with initial schem
 run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
-	KUMA_HTTP_PORT=$(CP_HTTP_PORT) \
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=postgres \
 	KUMA_STORE_POSTGRES_HOST=localhost \
@@ -407,14 +402,6 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KUMA_STORE_POSTGRES_PASSWORD=kuma \
 	KUMA_STORE_POSTGRES_DB_NAME=kuma \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
-
-curl/listeners: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_DATAPLANE_MESH).$(KIND_EXAMPLE_DATAPLANE_NAME)
-curl/listeners: ## Dev: Make Discovery request to LDS
-	curl -s $(CP_BIND_HOST):$(CP_HTTP_PORT)/v2/discovery:listeners --data-binary $(SIMPLE_DISCOVERY_REQUEST)
-
-curl/clusters: EXAMPLE_ENVOY_ID=$(KIND_EXAMPLE_DATAPLANE_MESH).$(KIND_EXAMPLE_DATAPLANE_NAME)
-curl/clusters: ## Dev: Make Discovery request to CDS
-	curl -s $(CP_BIND_HOST):$(CP_HTTP_PORT)/v2/discovery:clusters --data-binary $(SIMPLE_DISCOVERY_REQUEST)
 
 run/example/envoy/k8s: EXAMPLE_DATAPLANE_MESH=$(KIND_EXAMPLE_DATAPLANE_MESH)
 run/example/envoy/k8s: EXAMPLE_DATAPLANE_NAME=$(KIND_EXAMPLE_DATAPLANE_NAME)
