@@ -10,4 +10,4 @@ services:
     ports:
       - ${KUMA_STORE_POSTGRES_PORT:-15432}:5432
     volumes:
-      - ../../install/postgres/resource.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../../app/kumactl/data/install/universal/control-plane/postgres/resource.sql:/docker-entrypoint-initdb.d/init.sql

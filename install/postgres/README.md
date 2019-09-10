@@ -1,6 +1,9 @@
-## Postgres installation script
+## Postgres installation
 
-Run `resource.sql` on your Postgres instance to be able to use it as Kuma Control Plane resources store.
+You can install Kuma on Postgres DB with following command:
+```bash
+kumactl install postgres-schema | PGPASSWORD=mysecretpassword psql -h localhost -U postgres
+```
 
 ### Schema
 
