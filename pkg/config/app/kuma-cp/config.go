@@ -26,6 +26,10 @@ type Defaults struct {
 	Mesh v1alpha1.Mesh `yaml:"mesh"`
 }
 
+type Reports struct {
+	Enabled bool `yaml:"enabled" envconfig:"kuma_anonymous_reports"`
+}
+
 type Config struct {
 	// Environment Type, can be either "kubernetes" or "universal"
 	Environment EnvironmentType `yaml:"environment" envconfig:"kuma_environment"`
@@ -42,6 +46,7 @@ type Config struct {
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
 	Defaults  *Defaults                   `yaml:"defaults"`
+	Reports   *Reports                    `yaml:"reports"`
 }
 
 func DefaultConfig() Config {
@@ -66,6 +71,9 @@ func DefaultConfig() Config {
 		Discovery:       discovery.DefaultDiscoveryConfig(),
 		Defaults: &Defaults{
 			Mesh: defaultMesh,
+		},
+		Reports: &Reports{
+			Enabled: true,
 		},
 	}
 }
