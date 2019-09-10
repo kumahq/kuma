@@ -349,6 +349,18 @@ test: ## Dev: Run tests
 	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
+test/kuma-cp: PKG_LIST=./app/kuma-cp/... ./pkg/config/app/kuma-cp/...
+test/kuma-cp: test ## Dev: Run `kuma-cp` tests only
+
+test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
+test/kuma-dp: test ## Dev: Run `kuma-dp` tests only
+
+test/kumactl: PKG_LIST=./app/kumactl/... ./pkg/config/app/kumactl/...
+test/kumactl: test ## Dev: Run `kumactl` tests only
+
+test/kuma-injector: PKG_LIST=./app/kuma-injector/... ./pkg/config/app/kuma-injector/...
+test/kuma-injector: test ## Dev: Run 'kuma injector' tests only
+
 integration: ## Dev: Run integration tests
 	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
 	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
@@ -560,15 +572,9 @@ run/kuma-injector: ## Dev: Run Kuma Injector locally
 	KUMA_INJECTOR_WEBHOOK_SERVER_CERT_DIR=$(shell pwd)/app/kuma-injector/cmd/testdata \
 	$(GO_RUN) ./app/kuma-injector/main.go run --log-level=debug
 
-test/kuma-injector: PKG_LIST=./app/kuma-injector/... ./pkg/config/app/kuma-injector/...
-test/kuma-injector: test ## Dev: Run Kuma Injector tests only
-
 run/kuma-dp: ## Dev: Run `kuma-dp` locally
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
-
-test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
-test/kuma-dp: test ## Dev: Run `kuma-dp` tests only
