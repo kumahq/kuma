@@ -30,9 +30,9 @@ Built by Envoy contributors at Kong 🦍.
 
 ## Why Kuma?
 
-If you are building any software architecture, you will inevitably introduce services that will communicate with each ohter ny requests on a network. Every time our services interconnect via a network request, we put the end-user experience at risk. As we all know the connectivity between different services can be slow and unpredictable. It can be insecure, hard to trace, and pose many other problems (e.g., routing, versioning, canary deployments).
+If you are building any software architecture, you will inevitably introduce services that will communicate with each other using requests on a network. Every time services interconnect via a network request the end-user experience at risk. As we all know the connectivity between different services can be slow and unpredictable. It can be insecure, hard to trace, and pose many other problems (e.g. routing, versioning, canary deployments).
 
-With Kuma, our main goal is to reduce the code that has to be written and maintained to build reliable architectures. Therefore, Kuma embraces the sidecar proxy model by leveraging Envoy as its sidecar data-plane technology and by providing a Universal Control Plane that can run on both modern Kubernetes architectures and existing VM-based applications in order to deliver business value today across every team in the organization.
+Kuma's main goal is to reduce the code that has to be written and maintained to build reliable architectures. Therefore, Kuma embraces the sidecar proxy model by leveraging Envoy as its sidecar data-plane technology and by providing a Universal Control Plane that can run on both modern Kubernetes architectures and existing VM-based architectures in order to deliver business value across every team in the organization.
 
 [![][kuma-benefits]][kuma-url]
 
@@ -44,7 +44,7 @@ With Kuma, our main goal is to reduce the code that has to be written and mainta
 * **Multi-Tenancy**: To setup multiple isolated Service Meshes in one cluster and one Control Plane.
 * **Network Security**: Automatic mTLS encryption.
 * **Traffic Segmentation**: With flexible ACL rules.
-* **Traffic Tracing**: Automatic with Zipkin and Jeager integrations.
+* **Traffic Tracing**: Automatic with Zipkin and Jaeger integrations.
 * **Traffic Metrics**: Automatic with Prometheus/Splunk/ELK integrations.
 * **Proxy Configuration Templating**: For advanced users, to configure low-level Envoy configuration.
 * **Tagging Selectors**: To apply sophisticated regional, cloud-specific and team-oriented policies.
@@ -53,15 +53,15 @@ With Kuma, our main goal is to reduce the code that has to be written and mainta
 
 ## Distributions
 
-Kuma is a platform-agnostic product that comes in many shapes. You can explore the available installation options from [the official website](https://kuma.io/install).
+Kuma is a platform-agnostic product that comes in many shapes. You can explore the available installation options at [the official website](https://kuma.io/install).
 
-You can use Kuma for both modern greenfield applications built on containers and Kubernetes, as well as existing applications running on more traditional infrastructure. Kuma can be fully configured via CRDs on Kubernetes, and via a RESTful HTTP API on other environments that can be easily integrated with CI/CD workflows. 
+You can use Kuma for modern greenfield applications built on containers as well as existing applications running on more traditional infrastructure. Kuma can be fully configured via CRDs (Custom Resource Definitions) on Kubernetes and via a RESTful HTTP API in other environments that can be easily integrated with CI/CD workflows.
 
 Kuma also provides an easy to use `kumactl` CLI client for every environment.
 
 ## Development
 
-Kuma is under active development and prodution-ready.
+Kuma is under active development and production-ready.
 
 See [Developer Guide](DEVELOPER.md) for further details.
 
