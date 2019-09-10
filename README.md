@@ -12,6 +12,30 @@ Built by Envoy contributors at Kong 🦍.
 
 **Need help?** Installing and using Kuma should be as easy as possible. [Contact and chat](https://kuma.io/community) with the community in real-time if you get stuck or need clarifications. We are here to help.
 
+[Installation](https://kuma.io/install) |
+[Documentation](https://kuma.io/docs) |
+[Slack Chat](https://chat.kuma.io) |
+[Community](https://kuma.io/community) |
+[Blog](https://konghq.com/blog) |
+[Kong](https://konghq.com)
+
+## Summary
+
+- [**Why Kuma?**](#why-kuma)
+- [**Features**](#features)
+- [**Distributions**](#distributions)
+- [**Development**](#development)
+- [**Enterprise Demo**](#enterprise-demo)
+- [**License**](#license)
+
+## Why Kuma?
+
+If you are building any software architecture, you will inevitably introduce services that will communicate with each ohter ny requests on a network. Every time our services interconnect via a network request, we put the end-user experience at risk. As we all know the connectivity between different services can be slow and unpredictable. It can be insecure, hard to trace, and pose many other problems (e.g., routing, versioning, canary deployments).
+
+With Kuma, our main goal is to reduce the code that has to be written and maintained to build reliable architectures. Therefore, Kuma embraces the sidecar proxy model by leveraging Envoy as its sidecar data-plane technology and by providing a Universal Control Plane that can run on both modern Kubernetes architectures and existing VM-based applications in order to deliver business value today across every team in the organization.
+
+[![][kuma-benefits]][kuma-url]
+
 ## Features
 
 * **Universal Control Plane**: Easy to use, distributed, runs anywhere.
@@ -35,21 +59,15 @@ You can use Kuma for both modern greenfield applications built on containers and
 
 Kuma also provides an easy to use `kumactl` CLI client for every environment.
 
-## Official Documentation
-
-Getting up and running with Kuma is easy, and it can be done in a few steps. Read the [official documentation](https://kuma.io/docs) to learn everything from the basics to most advanced topics, and to build and orchestrate your modern Service Mesh across any environment.
-
-## Community
-
-Kuma is an open source product that wouldn't exist without the broader community adoption and contributions.
-
-Contributions are welcomed and can be submitted as PRs on this repository. Kuma also provides [community chat and monthly calls](https://kuma.io/community) to provide a place for the community to meet and talk.
-
 ## Development
 
 Kuma is under active development and prodution-ready.
 
 See [Developer Guide](DEVELOPER.md) for further details.
+
+## Enterprise Demo
+
+If you are implementing Kuma in a mission-critical environment, visit [Request Demo](https://kuma.io/request-demo/) and get in touch with Kong.
 
 ## License
 
@@ -71,3 +89,4 @@ limitations under the License.
 
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo.png
+[kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits.png
