@@ -60,3 +60,13 @@ apiServer:
   port: 5681 # ENV: KUMA_API_SERVER_PORT
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
+
+# Default Kuma entities configuration
+defaults:
+  # Default Mesh configuration
+  mesh: # ENV: KUMA_DEFAULTS_MESH
+
+# Reports configuration
+reports:
+  # If true then usage stats will be reported
+  enabled: true

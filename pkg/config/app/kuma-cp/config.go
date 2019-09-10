@@ -21,13 +21,14 @@ const (
 	UniversalEnvironment  EnvironmentType = "universal"
 )
 
-// Kuma default entities
 type Defaults struct {
+	// Default Mesh configuration
 	Mesh v1alpha1.Mesh `yaml:"mesh"`
 }
 
 type Reports struct {
-	Enabled bool `yaml:"enabled" envconfig:"kuma_anonymous_reports"`
+	// If true then usage stats will be reported
+	Enabled bool `yaml:"enabled" envconfig:"kuma_reports_enabled"`
 }
 
 type Config struct {
@@ -45,8 +46,10 @@ type Config struct {
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
-	Defaults  *Defaults                   `yaml:"defaults"`
-	Reports   *Reports                    `yaml:"reports"`
+	// Default Kuma entities configuration
+	Defaults *Defaults `yaml:"defaults"`
+	// Reports configuration
+	Reports *Reports `yaml:"reports"`
 }
 
 func DefaultConfig() Config {

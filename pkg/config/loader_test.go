@@ -53,6 +53,8 @@ apiServer:
   port: 9090
   readOnly: true
   apiDocsPath: "/apidocs.json"
+reports:
+  enabled: false
 `
 
 	It("should load config from file", func() {
@@ -90,6 +92,8 @@ apiServer:
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 		Expect(cfg.ApiServer.ApiDocsPath).To(Equal("/apidocs.json"))
+
+		Expect(cfg.Reports.Enabled).To(BeFalse())
 	})
 
 	setEnv := func(key, value string) {
@@ -116,6 +120,7 @@ apiServer:
 		setEnv("KUMA_API_SERVER_READ_ONLY", "true")
 		setEnv("KUMA_API_SERVER_PORT", "9090")
 		setEnv("KUMA_API_SERVER_API_DOCS_PATH", "/apidocs.json")
+		setEnv("KUMA_REPORTS_ENABLED", "false")
 
 		// when
 		cfg := kuma_cp.DefaultConfig()
@@ -144,6 +149,8 @@ apiServer:
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 		Expect(cfg.ApiServer.ApiDocsPath).To(Equal("/apidocs.json"))
+
+		Expect(cfg.Reports.Enabled).To(BeFalse())
 	})
 
 	It("should override via env var", func() {
