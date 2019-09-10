@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
+	"time"
+
 	"github.com/Kong/kuma/pkg/core/xds"
 	"github.com/pkg/errors"
-	"time"
 
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -13,6 +14,7 @@ import (
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	xds_sync "github.com/Kong/kuma/pkg/xds/sync"
 	xds_template "github.com/Kong/kuma/pkg/xds/template"
+	xds_topology "github.com/Kong/kuma/pkg/xds/topology"
 
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 
@@ -66,9 +68,16 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					},
 				}
 
+				outbound, err := xds_topology.GetOutboundTargets(ctx, dataplane, rt.ResourceManager())
+				if err != nil {
+					return err
+				}
+
 				proxy := xds.Proxy{
 					Id:        proxyId,
 					Dataplane: dataplane,
+
+					OutboundTargets: outbound,
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},

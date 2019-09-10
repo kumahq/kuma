@@ -22,11 +22,16 @@ type InboundInterface struct {
 }
 
 func (i InboundInterface) String() string {
-	return strings.Join([]string{
-		i.DataplaneIP,
-		strconv.FormatUint(uint64(i.DataplanePort), 10),
-		strconv.FormatUint(uint64(i.WorkloadPort), 10),
-	}, ":")
+	return fmt.Sprintf("%s:%d:%d", i.DataplaneIP, i.DataplanePort, i.WorkloadPort)
+}
+
+type OutboundInterface struct {
+	DataplaneIP   string
+	DataplanePort uint32
+}
+
+func (i OutboundInterface) String() string {
+	return fmt.Sprintf("%s:%d", i.DataplaneIP, i.DataplanePort)
 }
 
 const inboundInterfacePattern = `^(?P<dataplane_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)):(?P<dataplane_port>[0-9]{1,5}):(?P<workload_port>[0-9]{1,5})$`
@@ -54,6 +59,35 @@ func ParseInboundInterface(text string) (InboundInterface, error) {
 		DataplaneIP:   dataplaneIP,
 		DataplanePort: dataplanePort,
 		WorkloadPort:  workloadPort,
+	}, nil
+}
+
+const outboundInterfacePattern = `^(?P<dataplane_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|):(?P<dataplane_port>[0-9]{1,5})$`
+
+var outboundInterfaceRegexp = regexp.MustCompile(outboundInterfacePattern)
+
+func ParseOutboundInterface(text string) (OutboundInterface, error) {
+	groups := outboundInterfaceRegexp.FindStringSubmatch(text)
+	if groups == nil {
+		return OutboundInterface{}, errors.Errorf("invalid format: expected %s, got %q", outboundInterfacePattern, text)
+	}
+	var dataplaneIP string
+	if groups[1] == "" {
+		dataplaneIP = "127.0.0.1"
+	} else {
+		var err error
+		dataplaneIP, err = ParseIP(groups[1])
+		if err != nil {
+			return OutboundInterface{}, errors.Wrapf(err, "invalid <DATAPLANE_IP> in %q", text)
+		}
+	}
+	dataplanePort, err := ParsePort(groups[2])
+	if err != nil {
+		return OutboundInterface{}, errors.Wrapf(err, "invalid <DATAPLANE_PORT> in %q", text)
+	}
+	return OutboundInterface{
+		DataplaneIP:   dataplaneIP,
+		DataplanePort: dataplanePort,
 	}, nil
 }
 

@@ -1,0 +1,80 @@
+resources:
+- name: 127.0.0.1:18080
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    name: 127.0.0.1:18080
+    type: EDS
+- name: 127.0.0.1:18080
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: 127.0.0.1:18080
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.1
+              portValue: 8081
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.2
+              portValue: 8082
+- name: outbound:127.0.0.1:18080
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 18080
+    deprecatedV1:
+      bindToPort: false
+    filterChains:
+    - filters:
+      - name: envoy.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          cluster: 127.0.0.1:18080
+          statPrefix: 127.0.0.1:18080
+    name: outbound:127.0.0.1:18080
+- name: 127.0.0.1:54321
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    name: 127.0.0.1:54321
+    type: EDS
+- name: 127.0.0.1:54321
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: 127.0.0.1:54321
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.3
+              portValue: 5432
+- name: outbound:127.0.0.1:54321
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 54321
+    deprecatedV1:
+      bindToPort: false
+    filterChains:
+    - filters:
+      - name: envoy.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          cluster: 127.0.0.1:54321
+          statPrefix: 127.0.0.1:54321
+    name: outbound:127.0.0.1:54321

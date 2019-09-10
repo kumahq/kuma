@@ -1,0 +1,7 @@
+networking:
+networking:
+  outbound:
+  - interface: :18080
+    service: backend
+  - interface: :54321
+    service: db

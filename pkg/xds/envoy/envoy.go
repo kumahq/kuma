@@ -1,6 +1,7 @@
 package envoy
 
 import (
+	"net"
 	"time"
 
 	"github.com/Kong/kuma/pkg/sds/server"
@@ -44,12 +45,55 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.C
 	}
 }
 
+func CreateClusterLoadAssignment(clusterName string, endpoints []net.SRV) *v2.ClusterLoadAssignment {
+	lbEndpoints := make([]endpoint.LbEndpoint, 0, len(endpoints))
+	for _, ep := range endpoints {
+		lbEndpoints = append(lbEndpoints, endpoint.LbEndpoint{
+			HostIdentifier: &endpoint.LbEndpoint_Endpoint{
+				Endpoint: &endpoint.Endpoint{
+					Address: &core.Address{
+						Address: &core.Address_SocketAddress{
+							SocketAddress: &core.SocketAddress{
+								Protocol: core.TCP,
+								Address:  ep.Target,
+								PortSpecifier: &core.SocketAddress_PortValue{
+									PortValue: uint32(ep.Port),
+								},
+							},
+						},
+					},
+				}},
+		})
+	}
+	return &v2.ClusterLoadAssignment{
+		ClusterName: clusterName,
+		Endpoints: []endpoint.LocalityLbEndpoints{{
+			LbEndpoints: lbEndpoints,
+		}},
+	}
+}
+
 func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Cluster {
 	return &v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       5 * time.Second,
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_STATIC},
 		LoadAssignment:       CreateStaticEndpoint(clusterName, address, port),
+	}
+}
+
+func CreateEdsCluster(clusterName string) *v2.Cluster {
+	return &v2.Cluster{
+		Name:                 clusterName,
+		ConnectTimeout:       5 * time.Second,
+		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_EDS},
+		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
+			EdsConfig: &core.ConfigSource{
+				ConfigSourceSpecifier: &core.ConfigSource_Ads{
+					Ads: &core.AggregatedConfigSource{},
+				},
+			},
+		},
 	}
 }
 
@@ -60,6 +104,46 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_ORIGINAL_DST},
 		LbPolicy:             v2.Cluster_ORIGINAL_DST_LB,
 	}
+}
+
+func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
+	config := &tcp.TcpProxy{
+		StatPrefix: clusterName,
+		ClusterSpecifier: &tcp.TcpProxy_Cluster{
+			Cluster: clusterName,
+		},
+	}
+	pbst, err := types.MarshalAny(config)
+	util_error.MustNot(err)
+	listener := &v2.Listener{
+		Name: listenerName,
+		Address: core.Address{
+			Address: &core.Address_SocketAddress{
+				SocketAddress: &core.SocketAddress{
+					Protocol: core.TCP,
+					Address:  address,
+					PortSpecifier: &core.SocketAddress_PortValue{
+						PortValue: port,
+					},
+				},
+			},
+		},
+		FilterChains: []listener.FilterChain{{
+			Filters: []listener.Filter{{
+				Name: util.TCPProxy,
+				ConfigType: &listener.Filter_TypedConfig{
+					TypedConfig: pbst,
+				},
+			}},
+		}},
+	}
+	if virtual {
+		// TODO(yskopets): What is the up-to-date alternative ?
+		listener.DeprecatedV1 = &v2.Listener_DeprecatedV1{
+			BindToPort: &types.BoolValue{Value: false},
+		}
+	}
+	return listener
 }
 
 func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
