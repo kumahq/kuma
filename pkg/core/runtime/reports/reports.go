@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	pingInterval = 1
+	pingInterval = 3600
 	pingHost     = "kong-hf.konghq.com"
 	pingPort     = 61831
 )
