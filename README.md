@@ -89,4 +89,4 @@ limitations under the License.
 
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo.png
-[kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits.png
+[kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits.jpg
