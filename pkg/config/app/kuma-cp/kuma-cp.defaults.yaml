@@ -13,11 +13,11 @@ store:
 #    # Port of the Postgres DB
 #    port: 5432 # ENV: KUMA_STORE_POSTGRES_PORT
 #    # User of the Postgres DB
-#    user: konvoy # ENV: KUMA_STORE_POSTGRES_USER
+#    user: kuma # ENV: KUMA_STORE_POSTGRES_USER
 #    # Password of the Postgres DB
-#    password: konvoy # ENV: KUMA_STORE_POSTGRES_PASSWORD
+#    password: kuma # ENV: KUMA_STORE_POSTGRES_PASSWORD
 #    # Database name of the Postgres DB
-#    dbName: konvoy # ENV: KUMA_STORE_POSTGRES_DB_NAME
+#    dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
 #    # Connection Timeout to the DB in seconds
 #    connectionTimeout: 10 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
 
