@@ -22,7 +22,7 @@ staticResources:
               - endpoint:
                   address:
                     socketAddress:
-                      address: localhost
+                      address: 127.0.0.1
                       portValue: 5678
       name: ads_cluster
       type: STRICT_DNS

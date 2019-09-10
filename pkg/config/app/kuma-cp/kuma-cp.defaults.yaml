@@ -30,7 +30,7 @@ bootstrapServer:
     # Port of Envoy Admin
     adminPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
     # Host of XDS Server
-    xdsHost: localhost # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+    xdsHost: 127.0.0.1 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
     # Port of XDS Server
     xdsPort: 5678 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
 
@@ -69,4 +69,4 @@ defaults:
 # Reports configuration
 reports:
   # If true then usage stats will be reported
-  enabled: true
+  enabled: true # ENV: KUMA_REPORTS_ENABLED

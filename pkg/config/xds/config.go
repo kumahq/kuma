@@ -97,7 +97,7 @@ func (b *BootstrapParamsConfig) Validate() error {
 func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
 		AdminPort: 0, // by default, turn off Admin interface of Envoy
-		XdsHost:   "localhost",
+		XdsHost:   "127.0.0.1",
 		XdsPort:   5678,
 	}
 }
