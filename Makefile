@@ -88,11 +88,17 @@ BINTRAY_REGISTRY ?= kong-docker-konvoy-docker.bintray.io
 BINTRAY_USERNAME ?=
 BINTRAY_API_KEY ?=
 
-KUMA_CP_DOCKER_IMAGE ?= kuma/kuma-cp:$(BUILD_INFO_VERSION)
-KUMA_DP_DOCKER_IMAGE ?= kuma/kuma-dp:$(BUILD_INFO_VERSION)
-KUMACTL_DOCKER_IMAGE ?= kuma/kumactl:$(BUILD_INFO_VERSION)
-KUMA_INJECTOR_DOCKER_IMAGE ?= kuma/kuma-injector:$(BUILD_INFO_VERSION)
-KUMA_TCP_ECHO_DOCKER_IMAGE ?= kuma/kuma-tcp-echo:$(BUILD_INFO_VERSION)
+KUMA_CP_DOCKER_IMAGE_NAME ?= kuma/kuma-cp
+KUMA_DP_DOCKER_IMAGE_NAME ?= kuma/kuma-dp
+KUMACTL_DOCKER_IMAGE_NAME ?= kuma/kumactl
+KUMA_INJECTOR_DOCKER_IMAGE_NAME ?= kuma/kuma-injector
+KUMA_TCP_ECHO_DOCKER_IMAGE_NAME ?= kuma/kuma-tcp-echo
+
+KUMA_CP_DOCKER_IMAGE ?= $(KUMA_CP_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
+KUMA_DP_DOCKER_IMAGE ?= $(KUMA_DP_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
+KUMACTL_DOCKER_IMAGE ?= $(KUMACTL_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
+KUMA_INJECTOR_DOCKER_IMAGE ?= $(KUMA_INJECTOR_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
+KUMA_TCP_ECHO_DOCKER_IMAGE ?= $(KUMA_TCP_ECHO_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.1.0
@@ -509,7 +515,7 @@ build/example/minikube: ## Minikube: build demo setup
 	eval $$(minikube docker-env) && $(MAKE) images
 
 deploy/example/minikube: image/kumactl ## Minikube: deploy demo setup
-	docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane | kubectl apply -f -
+	docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME) | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
 	kubectl apply -f examples/minikube/kuma-demo/
