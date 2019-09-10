@@ -24,8 +24,8 @@ FROM alpine:latest
 ENV PATH=$PATH:/kuma-injector
 COPY --from=0 /go/src/github.com/Kong/kuma/build/artifacts-linux-amd64/kuma-injector/kuma-injector /kuma-injector/kuma-injector
 
-RUN addgroup -S -g 5678 kuma-injector \
- && adduser -S -D -G kuma-injector -u 5678 kuma-injector
+RUN addgroup -S -g 6789 kuma-injector \
+ && adduser -S -D -G kuma-injector -u 6789 kuma-injector
 
 USER kuma-injector
 

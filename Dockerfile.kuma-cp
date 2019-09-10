@@ -24,8 +24,8 @@ FROM alpine:latest
 ENV PATH=$PATH:/kuma-cp
 COPY --from=0 /go/src/github.com/Kong/kuma/build/artifacts-linux-amd64/kuma-cp/kuma-cp /kuma-cp/kuma-cp
 
-RUN addgroup -S -g 5678 kuma-cp \
- && adduser -S -D -G kuma-cp -u 5678 kuma-cp
+RUN addgroup -S -g 6789 kuma-cp \
+ && adduser -S -D -G kuma-cp -u 6789 kuma-cp
 
 USER kuma-cp
 

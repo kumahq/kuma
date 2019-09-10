@@ -9,8 +9,8 @@
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector \
 		generate protoc/pkg/config/app/kumactl/v1alpha1 generate/kumactl/install/control-plane \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
-		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector \
-		build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector \
+		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo \
+		build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector build/kuma-tcp-echo \
 		docs docs/kumactl \
 		run/example/envoy config_dump/example/envoy \
 		run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
@@ -92,6 +92,7 @@ KUMA_CP_DOCKER_IMAGE ?= kuma/kuma-cp:$(BUILD_INFO_VERSION)
 KUMA_DP_DOCKER_IMAGE ?= kuma/kuma-dp:$(BUILD_INFO_VERSION)
 KUMACTL_DOCKER_IMAGE ?= kuma/kumactl:$(BUILD_INFO_VERSION)
 KUMA_INJECTOR_DOCKER_IMAGE ?= kuma/kuma-injector:$(BUILD_INFO_VERSION)
+KUMA_TCP_ECHO_DOCKER_IMAGE ?= kuma/kuma-tcp-echo:$(BUILD_INFO_VERSION)
 
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.1.0
@@ -347,7 +348,7 @@ integration: ## Dev: Run integration tests
 	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
-build: build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector ## Dev: Build all binaries
+build: build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector build/kuma-tcp-echo ## Dev: Build all binaries
 
 build/kuma-cp: ## Dev: Build `Control Plane` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-cp/kuma-cp ./app/kuma-cp
@@ -361,12 +362,16 @@ build/kumactl: ## Dev: Build `kumactl` binary
 build/kuma-injector: ## Dev: Build `kuma-injector` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-injector/kuma-injector ./app/kuma-injector
 
+build/kuma-tcp-echo: ## Dev: Build `kuma-tcp-echo` binary
+	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-tcp-echo/kuma-tcp-echo ./app/kuma-tcp-echo/main.go
+
 build/artifact-tarball: build
 	mkdir ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 	cp ${BUILD_ARTIFACTS_DIR}/kuma-cp/kuma-cp ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 	cp ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 	cp $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 	cp ${BUILD_ARTIFACTS_DIR}/kuma-injector/kuma-injector ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
+	cp $(BUILD_ARTIFACTS_DIR)/kuma-tcp-echo/kuma-tcp-echo ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 	cd ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
 	tar -czf ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}.tar.gz -C ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH} .
 	rm -rf ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
@@ -421,7 +426,7 @@ run/example/envoy: build/kuma-dp ## Dev: Run Envoy configured against local Cont
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-images: image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector ## Dev: Build all Docker images
+images: image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo ## Dev: Build all Docker images
 
 image/kuma-cp: ## Dev: Build `kuma-cp` Docker image
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f Dockerfile.kuma-cp .
@@ -434,6 +439,9 @@ image/kumactl: ## Dev: Build `kumactl` Docker image
 
 image/kuma-injector: ## Dev: Build `kuma-injector` Docker image
 	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f Dockerfile.kuma-injector .
+
+image/kuma-tcp-echo: ## Dev: Build `kumactl` Docker image
+	docker build -t $(KUMA_TCP_ECHO_DOCKER_IMAGE) -f Dockerfile.kuma-tcp-echo .
 
 image/kuma-cp/push: image/kuma-cp
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
@@ -449,11 +457,17 @@ image/kuma-dp/push: image/kuma-dp
 
 image/kumactl/push: image/kumactl
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KUMA_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kumactl:$(KUMA_VERSION)
+	docker tag $(KUMACTL_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kumactl:$(KUMA_VERSION)
 	docker push $(BINTRAY_REGISTRY)/kumactl:$(KUMA_VERSION)
 	docker logout $(BINTRAY_REGISTRY)
 
-images/push: image/kuma-cp/push image/kuma-dp/push image/kumactl/push
+image/kuma-tcp-echo/push: image/kuma-tcp-echo
+	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
+	docker tag $(KUMA_TCP_ECHO_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-tcp-echo:$(KUMA_VERSION)
+	docker push $(BINTRAY_REGISTRY)/kuma-tcp-echo:$(KUMA_VERSION)
+	docker logout $(BINTRAY_REGISTRY)
+
+images/push: image/kuma-cp/push image/kuma-dp/push image/kumactl/push image/kuma-tcp-echo/push
 
 docs: docs/kumactl ## Dev: Generate all docs
 
