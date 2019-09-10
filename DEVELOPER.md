@@ -1,13 +1,49 @@
 # Developer documentation
 
-## Pre-requirements
+Hello, and welcome! If you're thinking about contributing to Kuma's code base, you came to the
+right place. This document serves as guide/reference for technical
+contributors. 
 
-- `curl`
-- `git`
-- `go`
-- `make`
+Consult the Table of Contents below, and jump to the desired section.
 
-For a quick start, use the official `golang` Docker image (which has all these tools pre-installed), e.g.
+## Table of Contents
+
+- [Developer documentation](#developer-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [Dependencies](#dependencies)
+    - [Command line tool](#command-line-tool)
+    - [Helper commands](#helper-commands)
+    - [Installing dev tools](#installing-dev-tools)
+  - [Testing](#testing)
+  - [Building](#building)
+  - [Running Control Plane on local machine](#running-control-plane-on-local-machine)
+    - [Universal](#universal)
+      - [Universal without any external dependency (in-memory storage)](#universal-without-any-external-dependency-in-memory-storage)
+      - [Universal with Postgres as a storage](#universal-with-postgres-as-a-storage)
+      - [Running a Dataplane (Envoy)](#running-a-dataplane-envoy)
+  - [Kubernetes](#kubernetes)
+    - [Local Control Plane working with Kubernetes](#local-control-plane-working-with-kubernetes)
+      - [Running Dataplane (Envoy)](#running-dataplane-envoy)
+    - [Control Plane on Kubernetes](#control-plane-on-kubernetes)
+
+##  Dependencies
+
+The following dependencies are all necessary. Please follow the installation instructions 
+for any tools/libraries that you may be missing.
+
+### Command line tool
+
+- [`curl`](https://curl.haxx.se/)  
+- [`git`](https://git-scm.com/) 
+- [`make`](https://www.gnu.org/software/make/)
+- [`go`](https://golang.org/)
+- [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) # normally included in
+  system's clang package with some exceptions, please check with the following command:
+  ```bash
+  clang-format --version
+  ```
+
+For a quick start, use the official `golang` Docker image. It includes all the command line tools pre-installed, with exception for from [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html). 
 
 ```bash
 docker run --rm -ti \
@@ -20,23 +56,28 @@ docker run --rm -ti \
 export PATH=$HOME/bin:$PATH
 ```
 
-## Helper commands
+### Helper commands
+
+Throughout this guide, we will use the `make` utility to run pre-defined
+tasks in the [Makefile](Makefile). Use the following command to list out all the possible commands:
 
 ```bash
 make help
 ```
 
-## Installing dev tools
+### Installing dev tools
 
-Run:
+We packaged the remaining dependencies into one command. This is one of many commands
+that's listed if you run the `make help` command above. You can also install each tool
+individually if you know what you are missing. Run:
 
 ```bash
 make dev/tools
 ```
 
-which will install the following tools at `$HOME/bin`:
+to install all of the following tools at `$HOME/bin`:
 
-1. [Ginkgo](https://github.com/onsi/ginkgo#set-me-up) (BDD testing framework)
+1. [Ginkgo](https://github.com/onsi/ginkgo#set-me-up) (BDD-style Go testing framework)
 2. [Kubebuilder](https://book.kubebuilder.io/quick-start.html#installation) (Kubernetes API extension framework, comes with `etcd` and `kube-apiserver`)
 3. [kustomize](https://book.kubebuilder.io/quick-start.html#installation) (Customization of kubernetes YAML configurations)
 4. [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-binary-with-curl-on-linux) (Kubernetes API client)
@@ -46,21 +87,36 @@ which will install the following tools at `$HOME/bin`:
 ATTENTION: By default, development tools will be installed at `$HOME/bin`. Remember to include this directory into your `PATH`, 
 e.g. by adding `export PATH=$HOME/bin:$PATH` line to the `$HOME/.bashrc` file.
 
+## Testing
+
+We use Ginkgo as our testing framework. To run the existing test suite, you have several options:
+
+For all tests, run:
+```bash
+make test
+```
+For integration tests, run:
+```bash
+make integration
+```
+And you can run tests that are specific to a part of Kuma by appending the app name as shown below:
+```bash
+make test/kumactl
+```
+Please make sure that all tests pass before submitting a pull request in the `master` branch. Thank you!
+
+
 ## Building
 
-Run:
-
+After you made some changes, you will need to re-build the binaries. You can build all binaries by running:
 ```bash
 make build
 ```
-
-## Integration tests
-
-Integration tests will run all dependencies (ex. Postgres). Run:
-
- ```bash
-make integration
+And similar to `make test`, you can appending the app name to the build command to build the binary of a specific app. For example, here is how you would build the binary for only `kumactl`:
+```bash
+make build/kumactl
 ```
+This could help expedite your development process if you only made changes to the `kumactl` files.
 
 ## Running Control Plane on local machine
 
@@ -141,7 +197,11 @@ make config_dump/example/envoy
 ```
 
 
-### Kubernetes
+## Kubernetes
+
+### Local Control Plane working with Kubernetes
+
+The following instructions are for folks who want to run `Control Plane` on their local machine. Local development is a viable path for people who are familiar with Kubernetes and understands trade-offs of out-off cluster deployment. If you want to run the `Control Plane` on Kubernetes instead, jump to the [Control Plane on Kubernetes](#Control-Plane-on-Kubernetes) section below.
 
 1. Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
 
@@ -175,7 +235,9 @@ make run/example/envoy/k8s
 make config_dump/example/envoy
 ```
 
-## Running Control Plane on Kubernetes
+### Control Plane on Kubernetes
+
+To run the Kuma `Control Plane` on Kubernetes, follow these steps:
 
 1. Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
 
