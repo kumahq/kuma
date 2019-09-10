@@ -14,9 +14,9 @@ func Check(selected bool) string {
 
 func OnOff(on bool) string {
 	if on {
-		return "On"
+		return "on"
 	} else {
-		return "Off"
+		return "off"
 	}
 }
 
