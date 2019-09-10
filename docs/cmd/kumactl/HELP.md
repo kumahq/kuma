@@ -211,16 +211,16 @@ Usage:
   kumactl install control-plane [flags]
 
 Flags:
-      --control-plane-image string          image of the Kuma Control Plane component (default "kuma/kuma-cp")
+      --control-plane-image string          image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io/kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
       --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
-      --dataplane-image string              image of the Kuma Dataplane component (default "kuma/kuma-dp")
+      --dataplane-image string              image of the Kuma Dataplane component (default "kong-docker-kuma-docker.bintray.io/kuma-dp")
       --dataplane-init-image string         init image of the Kuma Dataplane component (default "docker.io/istio/proxy_init")
       --dataplane-init-version string       version of the init image of the Kuma Dataplane component (default "1.1.2")
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
-      --injector-image string               image of the Kuma Injector component (default "kuma/kuma-injector")
+      --injector-image string               image of the Kuma Injector component (default "kong-docker-kuma-docker.bintray.io/kuma-injector")
       --injector-service-name string        Service name of the mutating web hook implemented by the Kuma Injector component (default "kuma-injector")
       --injector-tls-cert string            TLS certificate for the mutating web hook implemented by the Kuma Injector component
       --injector-tls-key string             TLS key for the mutating web hook implemented by the Kuma Injector component
