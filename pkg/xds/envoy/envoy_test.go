@@ -7,6 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
@@ -318,8 +321,43 @@ var _ = Describe("Envoy", func() {
 
 		DescribeTable("should generate 'inbound' Listener",
 			func(given testCase) {
+				// given
+				permissions := &mesh_core.TrafficPermissionResourceList{
+					Items: []*mesh_core.TrafficPermissionResource{
+						&mesh_core.TrafficPermissionResource{
+							Meta: &test_model.ResourceMeta{
+								Name:      "tp-1",
+								Mesh:      "default",
+								Namespace: "default",
+							},
+							Spec: mesh_proto.TrafficPermission{
+								Rules: []*mesh_proto.TrafficPermission_Rule{
+									{
+										Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
+											{
+												Match: map[string]string{
+													"service": "web1",
+													"version": "1.0",
+												},
+											},
+										},
+										Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
+											{
+												Match: map[string]string{
+													"service": "backend1",
+													"env":     "dev",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
 				// when
-				resource := envoy.CreateInboundListener(given.ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", given.virtual)
+				resource := envoy.CreateInboundListener(given.ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", given.virtual, permissions)
 
 				// then
 				actual, err := util_proto.ToYAML(resource)
@@ -420,47 +458,60 @@ name: inbound:192.168.0.1:8080
 				},
 				virtual: false,
 				expected: `
-                name: inbound:192.168.0.1:8080
-                address:
-                  socketAddress:
-                    address: 192.168.0.1
-                    portValue: 8080
-                filterChains:
-                - filters:
-                  - name: envoy.tcp_proxy
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                      cluster: localhost:8080
-                      statPrefix: localhost:8080
-                  tlsContext:
-                    commonTlsContext:
-                      tlsCertificateSdsSecretConfigs:
-                      - name: identity_cert
-                        sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - googleGrpc:
-                                channelCredentials:
-                                  sslCredentials:
-                                    rootCerts:
-                                      inlineBytes: Q0VSVElGSUNBVEU=
-                                statPrefix: sds_identity_cert
-                                targetUri: kuma-control-plane:5677
-                      validationContextSdsSecretConfig:
-                        name: mesh_ca
-                        sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - googleGrpc:
-                                channelCredentials:
-                                  sslCredentials:
-                                    rootCerts:
-                                      inlineBytes: Q0VSVElGSUNBVEU=
-                                statPrefix: sds_mesh_ca
-                                targetUri: kuma-control-plane:5677
-                    requireClientCertificate: true
+          address:
+            socketAddress:
+              address: 192.168.0.1
+              portValue: 8080
+          filterChains:
+          - filters:
+            - name: envoy.filters.network.rbac
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+                rules:
+                  policies:
+                    default.tp-1:
+                      permissions:
+                      - any: true
+                      principals:
+                      - authenticated:
+                          principalName:
+                            exact: spiffe://default/web1
+                statPrefix: inbound:192.168.0.1:8080
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: localhost:8080
+                statPrefix: localhost:8080
+            tlsContext:
+              commonTlsContext:
+                tlsCertificateSdsSecretConfigs:
+                - name: identity_cert
+                  sdsConfig:
+                    apiConfigSource:
+                      apiType: GRPC
+                      grpcServices:
+                      - googleGrpc:
+                          channelCredentials:
+                            sslCredentials:
+                              rootCerts:
+                                inlineBytes: Q0VSVElGSUNBVEU=
+                          statPrefix: sds_identity_cert
+                          targetUri: kuma-control-plane:5677
+                validationContextSdsSecretConfig:
+                  name: mesh_ca
+                  sdsConfig:
+                    apiConfigSource:
+                      apiType: GRPC
+                      grpcServices:
+                      - googleGrpc:
+                          channelCredentials:
+                            sslCredentials:
+                              rootCerts:
+                                inlineBytes: Q0VSVElGSUNBVEU=
+                          statPrefix: sds_mesh_ca
+                          targetUri: kuma-control-plane:5677
+              requireClientCertificate: true
+          name: inbound:192.168.0.1:8080
 `,
 			}),
 			Entry("with mTLS and Dataplane credentials", testCase{
@@ -476,63 +527,76 @@ name: inbound:192.168.0.1:8080
 				},
 				virtual: false,
 				expected: `
-                name: inbound:192.168.0.1:8080
-                address:
-                  socketAddress:
-                    address: 192.168.0.1
-                    portValue: 8080
-                filterChains:
-                - filters:
-                  - name: envoy.tcp_proxy
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                      cluster: localhost:8080
-                      statPrefix: localhost:8080
-                  tlsContext:
-                    commonTlsContext:
-                      tlsCertificateSdsSecretConfigs:
-                      - name: identity_cert
-                        sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - googleGrpc:
-                                callCredentials:
-                                - fromPlugin:
-                                    name: envoy.grpc_credentials.file_based_metadata
-                                    typedConfig:
-                                      '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
-                                      secretData:
-                                        filename: /var/secret/token
-                                channelCredentials:
-                                  sslCredentials:
-                                    rootCerts:
-                                      inlineBytes: Q0VSVElGSUNBVEU=
-                                credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                                statPrefix: sds_identity_cert
-                                targetUri: kuma-control-plane:5677
-                      validationContextSdsSecretConfig:
-                        name: mesh_ca
-                        sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - googleGrpc:
-                                callCredentials:
-                                - fromPlugin:
-                                    name: envoy.grpc_credentials.file_based_metadata
-                                    typedConfig:
-                                      '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
-                                      secretData:
-                                        filename: /var/secret/token
-                                channelCredentials:
-                                  sslCredentials:
-                                    rootCerts:
-                                      inlineBytes: Q0VSVElGSUNBVEU=
-                                credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                                statPrefix: sds_mesh_ca
-                                targetUri: kuma-control-plane:5677
-                    requireClientCertificate: true
+          address:
+            socketAddress:
+              address: 192.168.0.1
+              portValue: 8080
+          filterChains:
+          - filters:
+            - name: envoy.filters.network.rbac
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+                rules:
+                  policies:
+                    default.tp-1:
+                      permissions:
+                      - any: true
+                      principals:
+                      - authenticated:
+                          principalName:
+                            exact: spiffe://default/web1
+                statPrefix: inbound:192.168.0.1:8080
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: localhost:8080
+                statPrefix: localhost:8080
+            tlsContext:
+              commonTlsContext:
+                tlsCertificateSdsSecretConfigs:
+                - name: identity_cert
+                  sdsConfig:
+                    apiConfigSource:
+                      apiType: GRPC
+                      grpcServices:
+                      - googleGrpc:
+                          callCredentials:
+                          - fromPlugin:
+                              name: envoy.grpc_credentials.file_based_metadata
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+                                secretData:
+                                  filename: /var/secret/token
+                          channelCredentials:
+                            sslCredentials:
+                              rootCerts:
+                                inlineBytes: Q0VSVElGSUNBVEU=
+                          credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
+                          statPrefix: sds_identity_cert
+                          targetUri: kuma-control-plane:5677
+                validationContextSdsSecretConfig:
+                  name: mesh_ca
+                  sdsConfig:
+                    apiConfigSource:
+                      apiType: GRPC
+                      grpcServices:
+                      - googleGrpc:
+                          callCredentials:
+                          - fromPlugin:
+                              name: envoy.grpc_credentials.file_based_metadata
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+                                secretData:
+                                  filename: /var/secret/token
+                          channelCredentials:
+                            sslCredentials:
+                              rootCerts:
+                                inlineBytes: Q0VSVElGSUNBVEU=
+                          credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
+                          statPrefix: sds_mesh_ca
+                          targetUri: kuma-control-plane:5677
+              requireClientCertificate: true
+          name: inbound:192.168.0.1:8080
 `,
 			}),
 		)

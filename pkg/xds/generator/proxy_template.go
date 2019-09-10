@@ -130,7 +130,7 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			resources = append(resources, &Resource{
 				Name:     inboundListenerName,
 				Version:  "",
-				Resource: envoy.CreateInboundListener(ctx, inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual),
+				Resource: envoy.CreateInboundListener(ctx, inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual, proxy.TrafficPermissions),
 			})
 			names[inboundListenerName] = true
 		}

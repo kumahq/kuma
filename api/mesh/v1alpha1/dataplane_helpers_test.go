@@ -326,6 +326,10 @@ var _ = Describe("TagSelector()", func() {
 			},
 			match: true,
 		}),
+		Entry("should match * tag", testCase{
+			tags:  map[string]string{"service": "*"},
+			match: true,
+		}),
 		Entry("should not match on one mismatch", testCase{
 			tags: map[string]string{
 				"service": "backend",
