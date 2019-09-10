@@ -4,6 +4,5 @@ name: profile
 selectors:
 - match:
     app: backend
-conf:
-- profile:
-    name: default-proxy
+imports:
+- default-proxy
