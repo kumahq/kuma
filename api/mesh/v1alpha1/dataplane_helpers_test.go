@@ -104,6 +104,67 @@ var _ = Describe("ParseInboundInterface(..)", func() {
 	})
 })
 
+var _ = Describe("ParseOutboundInterface(..)", func() {
+
+	Context("valid input values", func() {
+		type testCase struct {
+			input    string
+			expected OutboundInterface
+		}
+
+		DescribeTable("should parse valid input values",
+			func(given testCase) {
+				// when
+				oface, err := ParseOutboundInterface(given.input)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// and
+				Expect(oface).To(Equal(given.expected))
+			},
+			Entry("all fields set", testCase{
+				input: "127.0.0.2:18080",
+				expected: OutboundInterface{
+					DataplaneIP:   "127.0.0.2",
+					DataplanePort: 18080,
+				},
+			}),
+			Entry("dataplane IP address is missing", testCase{
+				input: ":18080",
+				expected: OutboundInterface{
+					DataplaneIP:   "127.0.0.1",
+					DataplanePort: 18080,
+				},
+			}),
+		)
+	})
+
+	Context("invalid input values", func() {
+		type testCase struct {
+			input       string
+			expectedErr gomega_types.GomegaMatcher
+		}
+
+		DescribeTable("should fail on invalid input values",
+			func(given testCase) {
+				// when
+				iface, err := ParseInboundInterface(given.input)
+				// then
+				Expect(err.Error()).To(given.expectedErr)
+				// and
+				Expect(iface).To(BeZero())
+			},
+			Entry("dataplane IP address is not valid", testCase{
+				input:       "localhost:65536",
+				expectedErr: MatchRegexp(`invalid format: expected .*, got "localhost:65536"`),
+			}),
+			Entry("port without colon", testCase{
+				input:       "18080",
+				expectedErr: MatchRegexp(`invalid format: expected .*, got "18080"`),
+			}),
+		)
+	})
+})
+
 var _ = Describe("Dataplane_Networking", func() {
 
 	Describe("GetInboundInterfaces()", func() {

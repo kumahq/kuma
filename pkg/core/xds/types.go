@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -25,6 +26,8 @@ func (id *ProxyId) String() string {
 type Proxy struct {
 	Id        ProxyId
 	Dataplane *mesh_core.DataplaneResource
+
+	OutboundTargets map[string][]net.SRV
 }
 
 func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {

@@ -1,0 +1,6 @@
+networking:
+  transparentProxying:
+    redirectPort: 15001
+  outbound:
+  - interface: :18080
+    service: backend

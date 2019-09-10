@@ -81,7 +81,7 @@ func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Pr
 var predefinedProfiles = make(map[string]ResourceGenerator)
 
 func NewDefaultProxyProfile() ResourceGenerator {
-	return CompositeResourceGenerator{TransparentProxyGenerator{}, InboundProxyGenerator{}}
+	return CompositeResourceGenerator{TransparentProxyGenerator{}, InboundProxyGenerator{}, OutboundProxyGenerator{}}
 }
 
 func init() {
@@ -133,6 +133,48 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 				Resource: envoy.CreateInboundListener(ctx, inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual),
 			})
 			names[inboundListenerName] = true
+		}
+	}
+	return resources, nil
+}
+
+type OutboundProxyGenerator struct {
+}
+
+func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
+	ofaces := proxy.Dataplane.Spec.Networking.GetOutbound()
+	if len(ofaces) == 0 {
+		return nil, nil
+	}
+	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
+	resources := make([]*Resource, 0, len(ofaces))
+	names := make(map[string]bool)
+	for _, oface := range ofaces {
+		endpoint, err := kuma_mesh.ParseOutboundInterface(oface.Interface)
+		if err != nil {
+			return nil, err
+		}
+
+		edsClusterName := fmt.Sprintf("%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
+		if used := names[edsClusterName]; !used {
+			resources = append(resources, &Resource{
+				Name:     edsClusterName,
+				Resource: envoy.CreateEdsCluster(edsClusterName),
+			})
+			resources = append(resources, &Resource{
+				Name:     edsClusterName,
+				Resource: envoy.CreateClusterLoadAssignment(edsClusterName, proxy.OutboundTargets[oface.Service]),
+			})
+			names[edsClusterName] = true
+		}
+
+		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
+		if used := names[outboundListenerName]; !used {
+			resources = append(resources, &Resource{
+				Name:     outboundListenerName,
+				Resource: envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, edsClusterName, virtual),
+			})
+			names[outboundListenerName] = true
 		}
 	}
 	return resources, nil
