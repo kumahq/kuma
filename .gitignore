@@ -6,3 +6,6 @@
 
 # CI
 build/
+
+# macOS
+.DS_Store
