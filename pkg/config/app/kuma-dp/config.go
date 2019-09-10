@@ -19,7 +19,7 @@ func DefaultConfig() Config {
 		Dataplane: Dataplane{
 			Mesh:      "default",
 			Name:      "", // Dataplane name must be set explicitly
-			AdminPort: 9901,
+			AdminPort: 0,  // by default, turn off Admin interface of Envoy
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",

@@ -44,6 +44,8 @@ spec:
       value: default
     - name: KUMA_DATAPLANE_NAME
       value: $(POD_NAME).$(POD_NAMESPACE)
+    - name: KUMA_DATAPLANE_ADMIN_PORT
+      value: "9901"
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:

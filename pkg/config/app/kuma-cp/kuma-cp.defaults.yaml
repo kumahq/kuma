@@ -28,7 +28,7 @@ bootstrapServer:
   # Parameters of bootstrap configuration
   params:
     # Port of Envoy Admin
-    adminPort: 9901 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
+    adminPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
     # Host of XDS Server
     xdsHost: localhost # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
     # Port of XDS Server
