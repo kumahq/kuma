@@ -153,7 +153,8 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			return nil, err
 		}
 
-		edsClusterName := fmt.Sprintf("%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
+		serviceTag := kuma_mesh.ServiceTagValue(oface.Service)
+		edsClusterName := outboundClusterName(serviceTag, oface.ServicePort)
 		if used := names[edsClusterName]; !used {
 			resources = append(resources, &Resource{
 				Name:     edsClusterName,
@@ -198,4 +199,19 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 			Resource: envoy.CreatePassThroughCluster("pass_through"),
 		},
 	}, nil
+}
+
+// outboundClusterName generates a proper name for a Cluster,
+// taking into account the value of "service" tag.
+//
+// Notice that on k8s, we automatically generate Dataplane definitions,
+// including "service" tag on inbound interfaces.
+// In order to prevent ambiguity when a k8s service has multiple ports,
+// we include service port into the "service" tag.
+// Which makes explicit servicePort field redundant, we might even consider removing it.
+func outboundClusterName(serviceTag kuma_mesh.ServiceTagValue, servicePort uint32) string {
+	if serviceTag.HasPort() || servicePort == 0 {
+		return string(serviceTag)
+	}
+	return fmt.Sprintf("%s:%d", serviceTag, servicePort)
 }

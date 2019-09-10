@@ -56,19 +56,24 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, nil
 	}
 
-	services, err := r.matchingServices(pod)
+	services, err := r.findMatchingServices(pod)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
-	if err := r.createOrUpdateDataplane(pod, services); err != nil {
+	others, err := r.findOtherDataplanes(pod)
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+
+	if err := r.createOrUpdateDataplane(pod, services, others); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
 	return kube_ctrl.Result{}, nil
 }
 
-func (r *PodReconciler) matchingServices(pod *kube_core.Pod) ([]*kube_core.Service, error) {
+func (r *PodReconciler) findMatchingServices(pod *kube_core.Pod) ([]*kube_core.Service, error) {
 	ctx := context.Background()
 
 	// List Services in the same Namespace
@@ -85,7 +90,31 @@ func (r *PodReconciler) matchingServices(pod *kube_core.Pod) ([]*kube_core.Servi
 	return matchingServices, nil
 }
 
-func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*kube_core.Service) error {
+func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dataplane, error) {
+	ctx := context.Background()
+
+	// List all Dataplanes
+	allDataplanes := &mesh_k8s.DataplaneList{}
+	if err := r.List(ctx, allDataplanes); err != nil {
+		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
+		log.Error(err, "unable to list Dataplanes")
+		return nil, err
+	}
+
+	// only consider Dataplanes in the same Mesh as Pod
+	mesh := MeshFor(pod)
+	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
+	for i := range allDataplanes.Items {
+		dataplane := allDataplanes.Items[i]
+		if dataplane.Mesh == mesh {
+			otherDataplanes = append(otherDataplanes, &dataplane)
+		}
+	}
+
+	return otherDataplanes, nil
+}
+
+func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane) error {
 	ctx := context.Background()
 
 	dataplane := &mesh_k8s.Dataplane{
@@ -95,7 +124,7 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := PodToDataplane(pod, services, dataplane); err != nil {
+		if err := PodToDataplane(dataplane, pod, services, others, r.Client); err != nil {
 			return errors.Wrap(err, "unable to convert Pod to Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
