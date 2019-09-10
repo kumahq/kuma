@@ -14,6 +14,7 @@ import (
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	runtime_reports "github.com/Kong/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
@@ -44,7 +45,14 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 
 	initializeXds(builder)
 
-	return builder.Build()
+	rt, err := builder.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	runtime_reports.Init(rt, cfg)
+
+	return rt, nil
 }
 
 func createDefaultMesh(runtime core_runtime.Runtime) error {
@@ -81,21 +89,32 @@ func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	if err = onStartup(runtime); err != nil {
+	if err = onStartup(runtime, cfg); err != nil {
 		return nil, err
 	}
 
 	return runtime, nil
 }
 
-func onStartup(runtime core_runtime.Runtime) error {
-	return runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
+func onStartup(runtime core_runtime.Runtime, cfg kuma_cp.Config) error {
+	err := runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
 		if err := createDefaultMesh(runtime); err != nil {
 			return err
 		}
 		<-stop // it has to block, otherwise the k8s component manager stops all other components
 		return nil
 	}))
+	if err != nil {
+		return err
+	}
+
+	err = runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
+		runtime_reports.Init(runtime, cfg)
+		<-stop
+		return nil
+	}))
+
+	return nil
 }
 
 func initializeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
