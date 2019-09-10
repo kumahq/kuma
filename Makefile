@@ -324,6 +324,7 @@ protoc/pkg/config/app/kumactl/v1alpha1:
 # Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
 generate/kumactl/install/control-plane:
 	go generate ./app/kumactl/pkg/install/k8s/control-plane/...
+	go generate ./app/kumactl/pkg/install/universal/control-plane/postgres/...
 
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 

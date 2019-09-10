@@ -39,3 +39,15 @@ func ReadFiles(fs http.FileSystem) ([]File, error) {
 	}
 	return files, nil
 }
+
+func ReadFile(fs http.FileSystem, file string) (File, error) {
+	f, err := fs.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}

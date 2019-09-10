@@ -189,7 +189,8 @@ Usage:
   kumactl install [command]
 
 Available Commands:
-  control-plane Install Kuma Control Plane on Kubernetes
+  control-plane   Install Kuma Control Plane on Kubernetes
+  postgres-schema Install Kuma on Postgres DB.
 
 Flags:
   -h, --help   help for install
@@ -227,6 +228,24 @@ Flags:
       --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
       --sds-tls-cert string                 TLS certificate for the SDS server
       --sds-tls-key string                  TLS key for the SDS server
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use
+```
+
+### kumactl install postgres-schema
+
+```
+Install Kuma on Postgres DB. You can apply it with following command:
+kumactl install postgres-schema | PGPASSWORD=mysecretpassword psql -h localhost -U postgres
+
+Usage:
+  kumactl install postgres-schema [flags]
+
+Flags:
+  -h, --help   help for postgres-schema
 
 Global Flags:
       --config-file string   path to the configuration file to use
