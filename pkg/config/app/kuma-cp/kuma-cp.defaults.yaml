@@ -6,20 +6,25 @@ store:
   # Type of Store used in the Control Plane. Can be either "kubernetes", "postgres" or "memory"
   type: memory # ENV: KUMA_STORE_TYPE
 
-#  # Postgres Store configuration (used when store.type=postgres)
-#  postgres:
-#    # Host of the Postgres DB
-#    host: postgres.host # ENV: KUMA_STORE_POSTGRES_HOST
-#    # Port of the Postgres DB
-#    port: 5432 # ENV: KUMA_STORE_POSTGRES_PORT
-#    # User of the Postgres DB
-#    user: kuma # ENV: KUMA_STORE_POSTGRES_USER
-#    # Password of the Postgres DB
-#    password: kuma # ENV: KUMA_STORE_POSTGRES_PASSWORD
-#    # Database name of the Postgres DB
-#    dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
-#    # Connection Timeout to the DB in seconds
-#    connectionTimeout: 10 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
+  # Kubernetes Store configuration (used when store.type=kubernetes)
+  kubernetes:
+    # Namespace where Control Plane is installed to.
+    systemNamespace: kuma-system # ENV: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
+
+  # Postgres Store configuration (used when store.type=postgres)
+  postgres:
+    # Host of the Postgres DB
+    host: 127.0.0.1 # ENV: KUMA_STORE_POSTGRES_HOST
+    # Port of the Postgres DB
+    port: 15432 # ENV: KUMA_STORE_POSTGRES_PORT
+    # User of the Postgres DB
+    user: kuma # ENV: KUMA_STORE_POSTGRES_USER
+    # Password of the Postgres DB
+    password: kuma # ENV: KUMA_STORE_POSTGRES_PASSWORD
+    # Database name of the Postgres DB
+    dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
+    # Connection Timeout to the DB in seconds
+    connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
@@ -63,8 +68,13 @@ apiServer:
 
 # Default Kuma entities configuration
 defaults:
-  # Default Mesh configuration
-  mesh: # ENV: KUMA_DEFAULTS_MESH
+  # Default Mesh configuration in YAML that will be applied on first usage of Kuma CP
+  mesh: | # ENV: KUMA_DEFAULTS_MESH
+    type: Mesh
+    name: default
+    mtls:
+      ca: {}
+      enabled: false
 
 # Reports configuration
 reports:

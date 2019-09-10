@@ -8,6 +8,7 @@ import (
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/config/sds"
 	"github.com/Kong/kuma/pkg/config/xds"
+	"github.com/Kong/kuma/pkg/util/proto"
 
 	"github.com/pkg/errors"
 )
@@ -21,9 +22,19 @@ const (
 	UniversalEnvironment  EnvironmentType = "universal"
 )
 
+var _ config.Config = &Defaults{}
+
 type Defaults struct {
-	// Default Mesh configuration
-	Mesh v1alpha1.Mesh `yaml:"mesh"`
+	// Default Mesh configuration in YAML that will be applied on first usage of Kuma CP
+	Mesh string `yaml:"mesh"`
+}
+
+func (d *Defaults) Validate() error {
+	mesh := v1alpha1.Mesh{}
+	if err := proto.FromYAML([]byte(d.Mesh), &mesh); err != nil {
+		return errors.Wrap(err, "Mesh is not valid")
+	}
+	return nil
 }
 
 type Reports struct {
@@ -53,17 +64,6 @@ type Config struct {
 }
 
 func DefaultConfig() Config {
-	defaultMesh := v1alpha1.Mesh{
-		Mtls: &v1alpha1.Mesh_Mtls{
-			Ca: &v1alpha1.CertificateAuthority{
-				Type: &v1alpha1.CertificateAuthority_Builtin_{
-					Builtin: &v1alpha1.CertificateAuthority_Builtin{},
-				},
-			},
-			Enabled: false,
-		},
-	}
-
 	return Config{
 		Environment:     UniversalEnvironment,
 		Store:           store.DefaultStoreConfig(),
@@ -73,7 +73,12 @@ func DefaultConfig() Config {
 		BootstrapServer: xds.DefaultBootstrapServerConfig(),
 		Discovery:       discovery.DefaultDiscoveryConfig(),
 		Defaults: &Defaults{
-			Mesh: defaultMesh,
+			Mesh: `type: Mesh
+name: default
+mtls:
+  ca: {}
+  enabled: false
+`,
 		},
 		Reports: &Reports{
 			Enabled: true,
@@ -102,6 +107,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Discovery.Validate(); err != nil {
 		return errors.Wrap(err, "Discovery validation failed")
+	}
+	if err := c.Defaults.Validate(); err != nil {
+		return errors.Wrap(err, "Defaults validation failed")
 	}
 	return nil
 }

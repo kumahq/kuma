@@ -18,6 +18,7 @@ import (
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/pkg/errors"
 )
 
@@ -69,8 +70,10 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 
 	if err := resManager.Get(context.Background(), &defaultMesh, core_store.GetBy(key)); err != nil {
 		if core_store.IsResourceNotFound(err) {
-			core.Log.Info("Creating default mesh from the settings", "mesh", cfg.Defaults.Mesh)
-			defaultMesh.Spec = cfg.Defaults.Mesh
+			if err := util_proto.FromYAML([]byte(cfg.Defaults.Mesh), &defaultMesh.Spec); err != nil {
+				return err
+			}
+			core.Log.Info("Creating default mesh from the settings", "mesh", defaultMesh.Spec)
 
 			if err := resManager.Create(context.Background(), &defaultMesh, core_store.CreateBy(key)); err != nil {
 				return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")

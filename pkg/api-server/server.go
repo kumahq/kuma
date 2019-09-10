@@ -11,7 +11,6 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/emicklei/go-restful"
-	restfulspec "github.com/emicklei/go-restful-openapi"
 )
 
 var (
@@ -42,7 +41,6 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	addToWs(ws, defs, resManager, config)
 	container.Add(ws)
 	container.Add(indexWs())
-	configureOpenApi(config, container, ws)
 
 	return &ApiServer{
 		server: srv,
@@ -63,17 +61,6 @@ func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, re
 		}
 		resourceWs.AddToWs(ws)
 	}
-}
-
-func configureOpenApi(config config.ApiServerConfig, container *restful.Container, webService *restful.WebService) {
-	openApiConfig := restfulspec.Config{
-		WebServices: []*restful.WebService{webService},
-		APIPath:     config.ApiDocsPath,
-	}
-	container.Add(restfulspec.NewOpenAPIService(openApiConfig))
-
-	// todo(jakubdyszkiewicz) figure out how to pack swagger ui dist package and expose swagger ui
-	//container.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("path/to/swagger-ui-dist"))))
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {
