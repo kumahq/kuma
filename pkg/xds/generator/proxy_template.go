@@ -19,33 +19,31 @@ type TemplateProxyGenerator struct {
 }
 
 func (g *TemplateProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
-	resources := make([]*Resource, 0, len(g.ProxyTemplate.Conf))
-	for i, source := range g.ProxyTemplate.Conf {
-		var generator ResourceGenerator
-		switch s := source.Type.(type) {
-		case *kuma_mesh.ProxyTemplateSource_Profile:
-			generator = &ProxyTemplateProfileSource{Profile: s.Profile}
-		case *kuma_mesh.ProxyTemplateSource_Raw:
-			generator = &ProxyTemplateRawSource{Raw: s.Raw}
-		default:
-			return nil, fmt.Errorf("sources[%d]{name=%q}: unknown source type", i, source.Name)
-		}
+	resources := make([]*Resource, 0, len(g.ProxyTemplate.Imports)+1)
+	for i, name := range g.ProxyTemplate.Imports {
+		generator := &ProxyTemplateProfileSource{ProfileName: name}
 		if rs, err := generator.Generate(ctx, proxy); err != nil {
-			return nil, fmt.Errorf("sources[%d]{name=%q}: %s", i, source.Name, err)
+			return nil, fmt.Errorf("imports[%d]{name=%q}: %s", i, name, err)
 		} else {
 			resources = append(resources, rs...)
 		}
+	}
+	generator := &ProxyTemplateRawSource{Resources: g.ProxyTemplate.Resources}
+	if rs, err := generator.Generate(ctx, proxy); err != nil {
+		return nil, fmt.Errorf("resources: %s", err)
+	} else {
+		resources = append(resources, rs...)
 	}
 	return resources, nil
 }
 
 type ProxyTemplateRawSource struct {
-	Raw *kuma_mesh.ProxyTemplateRawSource
+	Resources []*kuma_mesh.ProxyTemplateRawResource
 }
 
 func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
-	resources := make([]*Resource, 0, len(s.Raw.Resources))
-	for i, r := range s.Raw.Resources {
+	resources := make([]*Resource, 0, len(s.Resources))
+	for i, r := range s.Resources {
 		json, err := yaml.YAMLToJSON([]byte(r.Resource))
 		if err != nil {
 			json = []byte(r.Resource)
@@ -89,13 +87,13 @@ func init() {
 }
 
 type ProxyTemplateProfileSource struct {
-	Profile *kuma_mesh.ProxyTemplateProfileSource
+	ProfileName string
 }
 
 func (s *ProxyTemplateProfileSource) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
-	g, ok := predefinedProfiles[s.Profile.Name]
+	g, ok := predefinedProfiles[s.ProfileName]
 	if !ok {
-		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.Profile.Name)
+		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.ProfileName)
 	}
 	return g.Generate(ctx, proxy)
 }

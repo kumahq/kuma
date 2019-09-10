@@ -21,7 +21,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 
 		type testCase struct {
 			proxy *model.Proxy
-			raw   *mesh_proto.ProxyTemplateRawSource
+			raw   []*mesh_proto.ProxyTemplateRawResource
 			err   interface{}
 		}
 
@@ -29,7 +29,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			func(given testCase) {
 				// setup
 				gen := &generator.ProxyTemplateRawSource{
-					Raw: given.raw,
+					Resources: given.raw,
 				}
 				ctx := xds_context.Context{}
 
@@ -57,14 +57,12 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						},
 					},
 				},
-				raw: &mesh_proto.ProxyTemplateRawSource{
-					Resources: []*mesh_proto.ProxyTemplateRawResource{{
-						Name:    "raw-name",
-						Version: "raw-version",
-						Resource: `
+				raw: []*mesh_proto.ProxyTemplateRawResource{{
+					Name:    "raw-name",
+					Version: "raw-version",
+					Resource: `
 `,
-					}},
-				},
+				}},
 				err: "raw.resources[0]{name=\"raw-name\"}.resource: Any JSON doesn't have '@type'",
 			}),
 			Entry("should fail when `resource` field is neither a YAML nor a JSON", testCase{
@@ -83,13 +81,11 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						},
 					},
 				},
-				raw: &mesh_proto.ProxyTemplateRawSource{
-					Resources: []*mesh_proto.ProxyTemplateRawResource{{
-						Name:     "raw-name",
-						Version:  "raw-version",
-						Resource: `{`,
-					}},
-				},
+				raw: []*mesh_proto.ProxyTemplateRawResource{{
+					Name:     "raw-name",
+					Version:  "raw-version",
+					Resource: `{`,
+				}},
 				err: "raw.resources[0]{name=\"raw-name\"}.resource: unexpected EOF",
 			}),
 			Entry("should fail when `resource` field has unknown @type", testCase{
@@ -108,15 +104,13 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						},
 					},
 				},
-				raw: &mesh_proto.ProxyTemplateRawSource{
-					Resources: []*mesh_proto.ProxyTemplateRawResource{{
-						Name:    "raw-name",
-						Version: "raw-version",
-						Resource: `
-              '@type': type.googleapis.com/unknown.Resource
+				raw: []*mesh_proto.ProxyTemplateRawResource{{
+					Name:    "raw-name",
+					Version: "raw-version",
+					Resource: `
+                    '@type': type.googleapis.com/unknown.Resource
 `,
-					}},
-				},
+				}},
 				err: "raw.resources[0]{name=\"raw-name\"}.resource: unknown message type \"unknown.Resource\"",
 			}),
 			Entry("should fail when `resource` field is a YAML without '@type' field", testCase{
@@ -135,11 +129,10 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						},
 					},
 				},
-				raw: &mesh_proto.ProxyTemplateRawSource{
-					Resources: []*mesh_proto.ProxyTemplateRawResource{{
-						Name:    "raw-name",
-						Version: "raw-version",
-						Resource: `
+				raw: []*mesh_proto.ProxyTemplateRawResource{{
+					Name:    "raw-name",
+					Version: "raw-version",
+					Resource: `
               connectTimeout: 5s
               loadAssignment:
                 clusterName: localhost:8080
@@ -153,8 +146,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
               name: localhost:8080
               type: STATIC
 `,
-					}},
-				},
+				}},
 				err: "raw.resources[0]{name=\"raw-name\"}.resource: Any JSON doesn't have '@type'",
 			}),
 			Entry("should fail when `resource` field is an invalid xDS resource", testCase{
@@ -173,26 +165,24 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						},
 					},
 				},
-				raw: &mesh_proto.ProxyTemplateRawSource{
-					Resources: []*mesh_proto.ProxyTemplateRawResource{{
-						Name:    "raw-name",
-						Version: "raw-version",
-						Resource: `
-              '@type': type.googleapis.com/envoy.api.v2.Cluster
-              connectTimeout: 5s
-              loadAssignment:
-                clusterName: localhost:8080
-                endpoints:
-                - lbEndpoints:
-                  - endpoint:
-                      address:
-                        socketAddress:
-                          address: 127.0.0.1
-                          portValue: 8080
-              type: STATIC
+				raw: []*mesh_proto.ProxyTemplateRawResource{{
+					Name:    "raw-name",
+					Version: "raw-version",
+					Resource: `
+                    '@type': type.googleapis.com/envoy.api.v2.Cluster
+                    connectTimeout: 5s
+                    loadAssignment:
+                      clusterName: localhost:8080
+                      endpoints:
+                      - lbEndpoints:
+                        - endpoint:
+                            address:
+                              socketAddress:
+                                address: 127.0.0.1
+                                portValue: 8080
+                    type: STATIC
 `,
-					}},
-				},
+				}},
 				err: "raw.resources[0]{name=\"raw-name\"}.resource: invalid Cluster.Name: value length must be at least 1 bytes",
 			}),
 		)
@@ -202,14 +192,14 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 
 		type testCase struct {
 			proxy    *model.Proxy
-			raw      *mesh_proto.ProxyTemplateRawSource
+			raw      []*mesh_proto.ProxyTemplateRawResource
 			expected string
 		}
 
 		DescribeTable("Generate Envoy xDS resources", func(given testCase) {
 			// setup
 			gen := &generator.ProxyTemplateRawSource{
-				Raw: given.raw,
+				Resources: given.raw,
 			}
 			ctx := xds_context.Context{}
 
@@ -242,9 +232,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						},
 					},
 				},
-				raw: &mesh_proto.ProxyTemplateRawSource{
-					Resources: nil,
-				},
+				raw:      nil,
 				expected: `{}`,
 			}),
 			Entry("should support Listener resource as YAML", testCase{
@@ -263,28 +251,26 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						},
 					},
 				},
-				raw: &mesh_proto.ProxyTemplateRawSource{
-					Resources: []*mesh_proto.ProxyTemplateRawResource{{
-						Name:    "raw-name",
-						Version: "raw-version",
-						Resource: `
-              '@type': type.googleapis.com/envoy.api.v2.Listener
-              address:
-                socketAddress:
-                  address: 0.0.0.0
-                  portValue: 15001
-              filterChains:
-              - filters:
-                - name: envoy.tcp_proxy
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                    cluster: pass_through
-                    statPrefix: pass_through
-              name: catch_all
-              useOriginalDst: true
+				raw: []*mesh_proto.ProxyTemplateRawResource{{
+					Name:    "raw-name",
+					Version: "raw-version",
+					Resource: `
+          '@type': type.googleapis.com/envoy.api.v2.Listener
+          address:
+            socketAddress:
+              address: 0.0.0.0
+              portValue: 15001
+          filterChains:
+          - filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: pass_through
+                statPrefix: pass_through
+          name: catch_all
+          useOriginalDst: true
 `,
-					}},
-				},
+				}},
 				expected: `
           resources:
             - name: raw-name
@@ -322,27 +308,25 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						},
 					},
 				},
-				raw: &mesh_proto.ProxyTemplateRawSource{
-					Resources: []*mesh_proto.ProxyTemplateRawResource{{
-						Name:    "raw-name",
-						Version: "raw-version",
-						Resource: `
-              '@type': type.googleapis.com/envoy.api.v2.Cluster
-              connectTimeout: 5s
-              loadAssignment:
-                clusterName: localhost:8080
-                endpoints:
-                - lbEndpoints:
-                  - endpoint:
-                      address:
-                        socketAddress:
-                          address: 127.0.0.1
-                          portValue: 8080
-              name: localhost:8080
-              type: STATIC
+				raw: []*mesh_proto.ProxyTemplateRawResource{{
+					Name:    "raw-name",
+					Version: "raw-version",
+					Resource: `
+                    '@type': type.googleapis.com/envoy.api.v2.Cluster
+                    connectTimeout: 5s
+                    loadAssignment:
+                      clusterName: localhost:8080
+                      endpoints:
+                      - lbEndpoints:
+                        - endpoint:
+                            address:
+                              socketAddress:
+                                address: 127.0.0.1
+                                portValue: 8080
+                    name: localhost:8080
+                    type: STATIC
 `,
-					}},
-				},
+				}},
 				expected: `
           resources:
             - name: raw-name
@@ -379,11 +363,10 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						},
 					},
 				},
-				raw: &mesh_proto.ProxyTemplateRawSource{
-					Resources: []*mesh_proto.ProxyTemplateRawResource{{
-						Name:    "raw-name",
-						Version: "raw-version",
-						Resource: `
+				raw: []*mesh_proto.ProxyTemplateRawResource{{
+					Name:    "raw-name",
+					Version: "raw-version",
+					Resource: `
               {
                 "@type": "type.googleapis.com/envoy.api.v2.Cluster",
                 "connectTimeout": "5s",
@@ -410,8 +393,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                 "type": "STATIC"
               }
 `,
-					}},
-				},
+				}},
 				expected: `
           resources:
             - name: raw-name

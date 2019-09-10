@@ -10,14 +10,8 @@ const (
 
 var (
 	DefaultProxyTemplate = &kuma_mesh.ProxyTemplate{
-		Conf: []*kuma_mesh.ProxyTemplateSource{
-			&kuma_mesh.ProxyTemplateSource{
-				Type: &kuma_mesh.ProxyTemplateSource_Profile{
-					Profile: &kuma_mesh.ProxyTemplateProfileSource{
-						Name: ProfileDefaultProxy,
-					},
-				},
-			},
+		Imports: []string{
+			ProfileDefaultProxy,
 		},
 	}
 )

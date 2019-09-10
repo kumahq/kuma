@@ -23,7 +23,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 
 	type testCaseFile struct {
 		dataplaneFile   string
-		profile         *mesh_proto.ProxyTemplateProfileSource
+		profile         string
 		envoyConfigFile string
 	}
 
@@ -31,7 +31,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		func(given testCaseFile) {
 			// setup
 			gen := &generator.ProxyTemplateProfileSource{
-				Profile: given.profile,
+				ProfileName: given.profile,
 			}
 
 			// given
@@ -107,17 +107,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			Expect(actual).To(MatchYAML(expected))
 		},
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCaseFile{
-			dataplaneFile: "1-dataplane.input.yaml",
-			profile: &mesh_proto.ProxyTemplateProfileSource{
-				Name: template.ProfileDefaultProxy,
-			},
+			dataplaneFile:   "1-dataplane.input.yaml",
+			profile:         template.ProfileDefaultProxy,
 			envoyConfigFile: "1-envoy-config.golden.yaml",
 		}),
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCaseFile{
-			dataplaneFile: "2-dataplane.input.yaml",
-			profile: &mesh_proto.ProxyTemplateProfileSource{
-				Name: template.ProfileDefaultProxy,
-			},
+			dataplaneFile:   "2-dataplane.input.yaml",
+			profile:         template.ProfileDefaultProxy,
 			envoyConfigFile: "2-envoy-config.golden.yaml",
 		}),
 	)

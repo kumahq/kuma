@@ -101,28 +101,16 @@ var _ = Describe("TemplateProxyGenerator", func() {
 					},
 				},
 				template: &mesh_proto.ProxyTemplate{
-					Conf: []*mesh_proto.ProxyTemplateSource{
-						{
-							Type: &mesh_proto.ProxyTemplateSource_Profile{
-								Profile: &mesh_proto.ProxyTemplateProfileSource{
-									Name: template.ProfileDefaultProxy,
-								},
-							},
-						},
-						{
-							Type: &mesh_proto.ProxyTemplateSource_Raw{
-								Raw: &mesh_proto.ProxyTemplateRawSource{
-									Resources: []*mesh_proto.ProxyTemplateRawResource{{
-										Name:     "raw-name",
-										Version:  "raw-version",
-										Resource: `{`,
-									}},
-								},
-							},
-						},
+					Imports: []string{
+						template.ProfileDefaultProxy,
 					},
+					Resources: []*mesh_proto.ProxyTemplateRawResource{{
+						Name:     "raw-name",
+						Version:  "raw-version",
+						Resource: `{`,
+					}},
 				},
-				err: "sources[1]{name=\"\"}: raw.resources[0]{name=\"raw-name\"}.resource: unexpected EOF",
+				err: "resources: raw.resources[0]{name=\"raw-name\"}.resource: unexpected EOF",
 			}),
 		)
 	})

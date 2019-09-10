@@ -2,8 +2,9 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"sort"
+
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -71,9 +72,7 @@ var _ = Describe("Reconcile", func() {
 					Name:      "expected",
 				},
 				Spec: mesh_proto.ProxyTemplate{
-					Conf: []*mesh_proto.ProxyTemplateSource{
-						{Name: "custom-template"},
-					},
+					Imports: []string{"custom-template"},
 				},
 			}
 
@@ -84,9 +83,7 @@ var _ = Describe("Reconcile", func() {
 					Name:      "other",
 				},
 				Spec: mesh_proto.ProxyTemplate{
-					Conf: []*mesh_proto.ProxyTemplateSource{
-						{Name: "irrelevant-template"},
-					},
+					Imports: []string{"irrelevant-template"},
 				},
 			}
 
@@ -107,9 +104,7 @@ var _ = Describe("Reconcile", func() {
 
 			// then
 			Expect(actual).To(Equal(&mesh_proto.ProxyTemplate{
-				Conf: []*mesh_proto.ProxyTemplateSource{
-					{Name: "custom-template"},
-				},
+				Imports: []string{"custom-template"},
 			}))
 		})
 
