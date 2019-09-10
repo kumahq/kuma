@@ -9,12 +9,13 @@ import (
 
 	"github.com/gogo/protobuf/types"
 
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
@@ -131,10 +132,10 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 				},
 			},
 		},
-		FilterChains: []listener.FilterChain{{
-			Filters: []listener.Filter{{
+		FilterChains: []envoy_listener.FilterChain{{
+			Filters: []envoy_listener.Filter{{
 				Name: util.TCPProxy,
-				ConfigType: &listener.Filter_TypedConfig{
+				ConfigType: &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,
 				},
 			}},
@@ -149,7 +150,7 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 	return listener
 }
 
-func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
+func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, permissions *mesh_core.TrafficPermissionResourceList) *v2.Listener {
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
@@ -172,16 +173,23 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 				},
 			},
 		},
-		FilterChains: []listener.FilterChain{{
+		FilterChains: []envoy_listener.FilterChain{{
 			TlsContext: CreateDownstreamTlsContext(ctx),
-			Filters: []listener.Filter{{
+			Filters: []envoy_listener.Filter{{
 				Name: util.TCPProxy,
-				ConfigType: &listener.Filter_TypedConfig{
+				ConfigType: &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,
 				},
 			}},
 		}},
 	}
+
+	if ctx.Mesh.TlsEnabled {
+		filter := createRbacFilter(listenerName, permissions)
+		// RBAC filter should be first in chain
+		listener.FilterChains[0].Filters = append([]envoy_listener.Filter{filter}, listener.FilterChains[0].Filters...)
+	}
+
 	if virtual {
 		// TODO(yskopets): What is the up-to-date alternative ?
 		listener.DeprecatedV1 = &v2.Listener_DeprecatedV1{
@@ -329,18 +337,18 @@ func CreateCatchAllListener(ctx xds_context.Context, listenerName string, addres
 				},
 			},
 		},
-		FilterChains: []listener.FilterChain{{
-			Filters: []listener.Filter{{
+		FilterChains: []envoy_listener.FilterChain{{
+			Filters: []envoy_listener.Filter{{
 				Name: util.TCPProxy,
-				ConfigType: &listener.Filter_TypedConfig{
+				ConfigType: &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,
 				},
 			}},
 		}},
 		// TODO(yskopets): What is the up-to-date alternative ?
 		UseOriginalDst: &types.BoolValue{Value: true},
-		// TODO(yskopets): Apparently, `envoy.listener.original_dst` has different effect than `UseOriginalDst`
-		//ListenerFilters: []listener.ListenerFilter{{
+		// TODO(yskopets): Apparently, `envoy.envoy_listener.original_dst` has different effect than `UseOriginalDst`
+		//ListenerFilters: []envoy_listener.ListenerFilter{{
 		//	Name: util.OriginalDestination,
 		//}},
 	}

@@ -24,10 +24,10 @@ func (id *ProxyId) String() string {
 }
 
 type Proxy struct {
-	Id        ProxyId
-	Dataplane *mesh_core.DataplaneResource
-
-	OutboundTargets map[string][]net.SRV
+	Id                 ProxyId
+	Dataplane          *mesh_core.DataplaneResource
+	TrafficPermissions *mesh_core.TrafficPermissionResourceList
+	OutboundTargets    map[string][]net.SRV
 }
 
 func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {

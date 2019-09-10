@@ -133,6 +133,7 @@ func (d *Dataplane) MatchTags(selector TagSelector) bool {
 	return false
 }
 
+const MatchAllTag = "*"
 type TagSelector map[string]string
 
 func (s TagSelector) Matches(tags map[string]string) bool {
@@ -141,7 +142,10 @@ func (s TagSelector) Matches(tags map[string]string) bool {
 	}
 	for tag, value := range s {
 		inboundVal, exist := tags[tag]
-		if !exist || value != inboundVal {
+		if !exist {
+			return false
+		}
+		if value != inboundVal && value != MatchAllTag {
 			return false
 		}
 	}

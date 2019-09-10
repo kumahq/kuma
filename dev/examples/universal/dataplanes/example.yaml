@@ -5,9 +5,9 @@ networking:
   inbound:
   - interface: 127.0.0.1:11011:11012
     tags:
-      service: web
+      service: backend
       version: "2.0"
       env: production
   outbound:
   - interface: :33033
-    service: backend
+    service: database
