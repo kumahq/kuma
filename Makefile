@@ -298,7 +298,7 @@ kind/load/kuma-injector: image/kuma-injector
 	kind load docker-image $(KUMA_INJECTOR_DOCKER_IMAGE) --name=kuma
 
 deploy/control-plane/k8s: build/kumactl
-	kumactl install control-plane | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+	kumactl install control-plane --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n kuma-system pod -l app=kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
