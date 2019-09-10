@@ -159,7 +159,7 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		if used := names[edsClusterName]; !used {
 			resources = append(resources, &Resource{
 				Name:     edsClusterName,
-				Resource: envoy.CreateEdsCluster(edsClusterName),
+				Resource: envoy.CreateEdsCluster(ctx, edsClusterName),
 			})
 			resources = append(resources, &Resource{
 				Name:     edsClusterName,
