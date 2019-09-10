@@ -82,7 +82,7 @@ func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Clu
 	}
 }
 
-func CreateEdsCluster(clusterName string) *v2.Cluster {
+func CreateEdsCluster(ctx xds_context.Context, clusterName string) *v2.Cluster {
 	return &v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       5 * time.Second,
@@ -94,6 +94,7 @@ func CreateEdsCluster(clusterName string) *v2.Cluster {
 				},
 			},
 		},
+		TlsContext: CreateUpstreamTlsContext(ctx),
 	}
 }
 
@@ -169,7 +170,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 			},
 		},
 		FilterChains: []listener.FilterChain{{
-			TlsContext: downstreamTlsContext(ctx),
+			TlsContext: CreateDownstreamTlsContext(ctx),
 			Filters: []listener.Filter{{
 				Name: util.TCPProxy,
 				ConfigType: &listener.Filter_TypedConfig{
@@ -187,18 +188,32 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 	return listener
 }
 
-func downstreamTlsContext(ctx xds_context.Context) *auth.DownstreamTlsContext {
+func CreateDownstreamTlsContext(ctx xds_context.Context) *auth.DownstreamTlsContext {
 	if !ctx.Mesh.TlsEnabled {
 		return nil
 	}
 	return &auth.DownstreamTlsContext{
-		CommonTlsContext: &auth.CommonTlsContext{
-			ValidationContextType: &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
-				ValidationContextSdsSecretConfig: sdsSecretConfig(ctx, server.MeshCaResource),
-			},
-			TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
-				sdsSecretConfig(ctx, server.IdentityCertResource),
-			},
+		CommonTlsContext:         CreateCommonTlsContext(ctx),
+		RequireClientCertificate: &types.BoolValue{Value: true},
+	}
+}
+
+func CreateUpstreamTlsContext(ctx xds_context.Context) *auth.UpstreamTlsContext {
+	if !ctx.Mesh.TlsEnabled {
+		return nil
+	}
+	return &auth.UpstreamTlsContext{
+		CommonTlsContext: CreateCommonTlsContext(ctx),
+	}
+}
+
+func CreateCommonTlsContext(ctx xds_context.Context) *auth.CommonTlsContext {
+	return &auth.CommonTlsContext{
+		ValidationContextType: &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
+			ValidationContextSdsSecretConfig: sdsSecretConfig(ctx, server.MeshCaResource),
+		},
+		TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
+			sdsSecretConfig(ctx, server.IdentityCertResource),
 		},
 	}
 }

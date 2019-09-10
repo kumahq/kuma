@@ -7,6 +7,34 @@ resources:
       edsConfig:
         ads: {}
     name: 127.0.0.1:18080
+    tlsContext:
+      commonTlsContext:
+        tlsCertificateSdsSecretConfigs:
+        - name: identity_cert
+          sdsConfig:
+            apiConfigSource:
+              apiType: GRPC
+              grpcServices:
+              - googleGrpc:
+                  channelCredentials:
+                    sslCredentials:
+                      rootCerts:
+                        inlineBytes: MTIzNDU=
+                  statPrefix: sds_identity_cert
+                  targetUri: kuma-system:5677
+        validationContextSdsSecretConfig:
+          name: mesh_ca
+          sdsConfig:
+            apiConfigSource:
+              apiType: GRPC
+              grpcServices:
+              - googleGrpc:
+                  channelCredentials:
+                    sslCredentials:
+                      rootCerts:
+                        inlineBytes: MTIzNDU=
+                  statPrefix: sds_mesh_ca
+                  targetUri: kuma-system:5677
     type: EDS
 - name: 127.0.0.1:18080
   resource:

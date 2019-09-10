@@ -80,24 +80,201 @@ var _ = Describe("Envoy", func() {
 		Expect(actual).To(MatchYAML(expected))
 	})
 
-	It("should generate 'EDS' Cluster", func() {
-		// given
-		expected := `
-        connectTimeout: 5s
-        edsClusterConfig:
-          edsConfig:
-            ads: {}
-        name: 192.168.0.1:8080
-        type: EDS
-`
-		// when
-		resource := envoy.CreateEdsCluster("192.168.0.1:8080")
+	Describe("'EDS' Cluster", func() {
 
-		// then
-		actual, err := util_proto.ToYAML(resource)
+		type testCase struct {
+			ctx      xds_context.Context
+			expected string
+		}
 
-		Expect(err).ToNot(HaveOccurred())
-		Expect(actual).To(MatchYAML(expected))
+		DescribeTable("should generate 'EDS' Cluster",
+			func(given testCase) {
+				// when
+				resource := envoy.CreateEdsCluster(given.ctx, "192.168.0.1:8080")
+
+				// then
+				actual, err := util_proto.ToYAML(resource)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(actual).To(MatchYAML(given.expected))
+			},
+			Entry("without mTLS", testCase{
+				ctx: xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{},
+					Mesh: xds_context.MeshContext{
+						TlsEnabled: false,
+					},
+				},
+				expected: `
+                connectTimeout: 5s
+                edsClusterConfig:
+                  edsConfig:
+                    ads: {}
+                name: 192.168.0.1:8080
+                type: EDS
+`,
+			}),
+			Entry("with mTLS", testCase{
+				ctx: xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{
+						SdsLocation:        "kuma-control-plane:5677",
+						SdsTlsCert:         []byte("CERTIFICATE"),
+						DataplaneTokenFile: "",
+					},
+					Mesh: xds_context.MeshContext{
+						TlsEnabled: true,
+					},
+				},
+				expected: `
+                connectTimeout: 5s
+                edsClusterConfig:
+                  edsConfig:
+                    ads: {}
+                name: 192.168.0.1:8080
+                tlsContext:
+                  commonTlsContext:
+                    tlsCertificateSdsSecretConfigs:
+                    - name: identity_cert
+                      sdsConfig:
+                        apiConfigSource:
+                          apiType: GRPC
+                          grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: Q0VSVElGSUNBVEU=
+                              statPrefix: sds_identity_cert
+                              targetUri: kuma-control-plane:5677
+                    validationContextSdsSecretConfig:
+                      name: mesh_ca
+                      sdsConfig:
+                        apiConfigSource:
+                          apiType: GRPC
+                          grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: Q0VSVElGSUNBVEU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-control-plane:5677
+                type: EDS
+`,
+			}),
+			Entry("with mTLS", testCase{
+				ctx: xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{
+						SdsLocation:        "kuma-control-plane:5677",
+						SdsTlsCert:         []byte("CERTIFICATE"),
+						DataplaneTokenFile: "",
+					},
+					Mesh: xds_context.MeshContext{
+						TlsEnabled: true,
+					},
+				},
+				expected: `
+                connectTimeout: 5s
+                edsClusterConfig:
+                  edsConfig:
+                    ads: {}
+                name: 192.168.0.1:8080
+                tlsContext:
+                  commonTlsContext:
+                    tlsCertificateSdsSecretConfigs:
+                    - name: identity_cert
+                      sdsConfig:
+                        apiConfigSource:
+                          apiType: GRPC
+                          grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: Q0VSVElGSUNBVEU=
+                              statPrefix: sds_identity_cert
+                              targetUri: kuma-control-plane:5677
+                    validationContextSdsSecretConfig:
+                      name: mesh_ca
+                      sdsConfig:
+                        apiConfigSource:
+                          apiType: GRPC
+                          grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: Q0VSVElGSUNBVEU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-control-plane:5677
+                type: EDS
+`,
+			}),
+			Entry("with mTLS and Dataplane credentials", testCase{
+				ctx: xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{
+						SdsLocation:        "kuma-control-plane:5677",
+						SdsTlsCert:         []byte("CERTIFICATE"),
+						DataplaneTokenFile: "/var/secret/token",
+					},
+					Mesh: xds_context.MeshContext{
+						TlsEnabled: true,
+					},
+				},
+				expected: `
+                connectTimeout: 5s
+                edsClusterConfig:
+                  edsConfig:
+                    ads: {}
+                name: 192.168.0.1:8080
+                tlsContext:
+                  commonTlsContext:
+                    tlsCertificateSdsSecretConfigs:
+                    - name: identity_cert
+                      sdsConfig:
+                        apiConfigSource:
+                          apiType: GRPC
+                          grpcServices:
+                          - googleGrpc:
+                              callCredentials:
+                              - fromPlugin:
+                                  name: envoy.grpc_credentials.file_based_metadata
+                                  typedConfig:
+                                    '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+                                    secretData:
+                                      filename: /var/secret/token
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: Q0VSVElGSUNBVEU=
+                              credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
+                              statPrefix: sds_identity_cert
+                              targetUri: kuma-control-plane:5677
+                    validationContextSdsSecretConfig:
+                      name: mesh_ca
+                      sdsConfig:
+                        apiConfigSource:
+                          apiType: GRPC
+                          grpcServices:
+                          - googleGrpc:
+                              callCredentials:
+                              - fromPlugin:
+                                  name: envoy.grpc_credentials.file_based_metadata
+                                  typedConfig:
+                                    '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+                                    secretData:
+                                      filename: /var/secret/token
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: Q0VSVElGSUNBVEU=
+                              credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-control-plane:5677
+                type: EDS
+`,
+			}),
+		)
 	})
 
 	It("should generate ClusterLoadAssignment", func() {
@@ -251,6 +428,7 @@ var _ = Describe("Envoy", func() {
                                       inlineBytes: Q0VSVElGSUNBVEU=
                                 statPrefix: sds_mesh_ca
                                 targetUri: kuma-control-plane:5677
+                    requireClientCertificate: true
 `,
 			}),
 			Entry("with mTLS and Dataplane credentials", testCase{
@@ -322,6 +500,7 @@ var _ = Describe("Envoy", func() {
                                 credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                                 statPrefix: sds_mesh_ca
                                 targetUri: kuma-control-plane:5677
+                    requireClientCertificate: true
 `,
 			}),
 		)

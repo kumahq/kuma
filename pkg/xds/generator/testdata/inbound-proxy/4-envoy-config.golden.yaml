@@ -59,3 +59,4 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_mesh_ca
                           targetUri: kuma-system:5677
+            requireClientCertificate: true

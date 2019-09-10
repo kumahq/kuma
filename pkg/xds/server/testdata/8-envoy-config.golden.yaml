@@ -96,6 +96,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_mesh_ca
                           targetUri: kuma-system:5677
+            requireClientCertificate: true
       name: inbound:192.168.0.1:443
   - name: inbound:192.168.0.1:80
     resource:
@@ -141,6 +142,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_mesh_ca
                           targetUri: kuma-system:5677
+            requireClientCertificate: true
       name: inbound:192.168.0.1:80
   - name: inbound:192.168.0.2:443
     resource:
@@ -186,6 +188,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_mesh_ca
                           targetUri: kuma-system:5677
+            requireClientCertificate: true
       name: inbound:192.168.0.2:443
   - name: inbound:192.168.0.2:80
     resource:
@@ -231,4 +234,5 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_mesh_ca
                           targetUri: kuma-system:5677
+            requireClientCertificate: true
       name: inbound:192.168.0.2:80
