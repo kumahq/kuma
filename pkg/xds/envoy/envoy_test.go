@@ -350,7 +350,7 @@ var _ = Describe("Envoy", func() {
                       statPrefix: localhost:8080
 `,
 			}),
-			Entry("without transparent proxying", testCase{
+			Entry("with access logs", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{

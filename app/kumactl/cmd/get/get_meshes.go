@@ -59,7 +59,7 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 
 				accessLogs := table.OnOff(mesh.Spec.GetLogging().GetAccessLogs().GetEnabled())
 				if mesh.Spec.GetLogging().GetAccessLogs().GetEnabled() {
-					accessLogs += " (" + mesh.Spec.GetLogging().GetAccessLogs().FilePath + ")"
+					accessLogs += " (" + mesh.Spec.GetLogging().GetAccessLogs().GetFilePath() + ")"
 				}
 				return []string{
 					mesh.GetMeta().GetName(),                 // NAME
