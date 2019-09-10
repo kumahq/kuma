@@ -13,6 +13,7 @@ node:
   id: {{.Id}}
   cluster: {{.Service}}
 
+{{if .AdminPort }}
 admin:
   access_log_path: /dev/null
   address:
@@ -20,6 +21,7 @@ admin:
       protocol: TCP
       address: 127.0.0.1
       port_value: {{ .AdminPort }}
+{{ end }}
 
 dynamic_resources:
   lds_config: {ads: {}}

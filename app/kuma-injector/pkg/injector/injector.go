@@ -100,6 +100,10 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 				// that is why we have to use a runtime reference to POD_NAME instead
 				Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
 			},
+			{
+				Name:  "KUMA_DATAPLANE_ADMIN_PORT",
+				Value: fmt.Sprintf("%d", i.cfg.SidecarContainer.AdminPort),
+			},
 		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,

@@ -1,9 +1,3 @@
-admin:
-  accessLogPath: /dev/null
-  address:
-    socketAddress:
-      address: 127.0.0.1
-      portValue: 9901
 dynamicResources:
   adsConfig:
     apiType: GRPC
