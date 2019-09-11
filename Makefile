@@ -11,7 +11,7 @@
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo \
 		build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector build/kuma-tcp-echo \
-		docs docs/kumactl \
+		docs _docs_ docs/kumactl \
 		run/example/envoy config_dump/example/envoy \
 		run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
 		verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
@@ -298,7 +298,7 @@ kind/load/kuma-injector: image/kuma-injector
 	kind load docker-image $(KUMA_INJECTOR_DOCKER_IMAGE) --name=kuma
 
 deploy/control-plane/k8s: build/kumactl
-	kumactl install control-plane | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+	kumactl install control-plane --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n kuma-system pod -l app=kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
@@ -487,7 +487,11 @@ image/kuma-tcp-echo/push: image/kuma-tcp-echo
 
 images/push: image/kuma-cp/push image/kuma-dp/push image/kumactl/push image/kuma-tcp-echo/push
 
-docs: docs/kumactl ## Dev: Generate all docs
+docs: ## Dev: Generate all docs
+	# re-build `kumactl` binary with a predictable `version`
+	$(MAKE) _docs_ BUILD_INFO_VERSION=latest
+
+_docs_: docs/kumactl
 
 docs/kumactl: build/kumactl ## Dev: Generate `kumactl` docs
 	tools/docs/kumactl/gen_help.sh ${BUILD_KUMACTL_DIR}/kumactl >docs/cmd/kumactl/HELP.md
