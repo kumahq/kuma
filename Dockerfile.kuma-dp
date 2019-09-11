@@ -1,5 +1,5 @@
 ## build image
-FROM golang:1.12.5
+FROM golang:1.12.9
 ENV GO111MODULE=on
 
 WORKDIR /go/src/github.com/Kong/kuma

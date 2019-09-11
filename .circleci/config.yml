@@ -3,7 +3,7 @@ version: 2
 go-defaults: &go-defaults
   working_directory: /go/src/github.com/Kong/kuma
   docker:
-  - image: golang:1.12.5
+  - image: golang:1.12.9
   environment:
     GO111MODULE: "on"
 
@@ -22,7 +22,7 @@ mac-executor-defaults: &mac-executor-defaults
 jobs:
   dev/golang:
     docker:
-    - image: golang:1.12.5
+    - image: golang:1.12.9
     environment:
       GO111MODULE: "on"
     steps:
@@ -45,7 +45,7 @@ jobs:
     docker:
     - image: ubuntu:16.04
     environment:
-      GO_VERSION: 1.12.5
+      GO_VERSION: 1.12.9
       GO111MODULE: "on"
       CLANG_FORMAT_PATH: clang-format-6.0
     steps:
@@ -90,7 +90,7 @@ jobs:
   dev/mac:
     <<: *mac-executor-defaults
     environment:
-      GO_VERSION: 1.12.5
+      GO_VERSION: 1.12.9
       GO111MODULE: "on"
     steps:
     - checkout
@@ -227,7 +227,7 @@ jobs:
   integration:
     <<: *vm-executor-defaults
     environment:
-      GO_VERSION: 1.12.5
+      GO_VERSION: 1.12.9
       GO111MODULE: "on"
       GOPATH: /home/circleci/.go
     steps:
