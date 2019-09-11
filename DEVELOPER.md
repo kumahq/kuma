@@ -52,7 +52,7 @@ docker run --rm -ti \
   --workdir /go/src/github.com/Kong/kuma \
   --env HOME=/tmp/home \
   --env GO111MODULE=on \
-  golang:1.12.5 bash
+  golang:1.12.9 bash
 export PATH=$HOME/bin:$PATH
 ```
 
