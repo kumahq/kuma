@@ -12,6 +12,9 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,5 +119,31 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Pod{}).
+		// on Service update reconcile affected Pods (all Pods in the same namespace)
+		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, &kube_handler.EnqueueRequestsFromMapFunc{
+			ToRequests: &ServiceToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("service-to-pods-mapper")},
+		}).
 		Complete(r)
+}
+
+type ServiceToPodsMapper struct {
+	kube_client.Client
+	Log logr.Logger
+}
+
+func (m *ServiceToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
+	// List Pods in the same namespace as a Service
+	pods := &kube_core.PodList{}
+	if err := m.Client.List(context.Background(), pods, kube_client.InNamespace(obj.Meta.GetNamespace())); err != nil {
+		m.Log.WithValues("service", obj.Meta).Error(err, "failed to fetch Pods")
+		return nil
+	}
+
+	var req []kube_reconile.Request
+	for _, pod := range pods.Items {
+		req = append(req, kube_reconile.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
+		})
+	}
+	return req
 }
