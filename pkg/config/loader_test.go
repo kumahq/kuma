@@ -52,7 +52,6 @@ bootstrapServer:
 apiServer:
   port: 9090
   readOnly: true
-  apiDocsPath: "/apidocs.json"
 reports:
   enabled: false
 `
@@ -91,7 +90,6 @@ reports:
 
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
-		Expect(cfg.ApiServer.ApiDocsPath).To(Equal("/apidocs.json"))
 
 		Expect(cfg.Reports.Enabled).To(BeFalse())
 	})
@@ -119,7 +117,6 @@ reports:
 		setEnv("KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT", "10")
 		setEnv("KUMA_API_SERVER_READ_ONLY", "true")
 		setEnv("KUMA_API_SERVER_PORT", "9090")
-		setEnv("KUMA_API_SERVER_API_DOCS_PATH", "/apidocs.json")
 		setEnv("KUMA_REPORTS_ENABLED", "false")
 
 		// when
@@ -148,7 +145,6 @@ reports:
 
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
-		Expect(cfg.ApiServer.ApiDocsPath).To(Equal("/apidocs.json"))
 
 		Expect(cfg.Reports.Enabled).To(BeFalse())
 	})

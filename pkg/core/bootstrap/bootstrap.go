@@ -69,8 +69,12 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 
 	if err := resManager.Get(context.Background(), &defaultMesh, core_store.GetBy(key)); err != nil {
 		if core_store.IsResourceNotFound(err) {
-			core.Log.Info("Creating default mesh from the settings", "mesh", cfg.Defaults.Mesh)
-			defaultMesh.Spec = cfg.Defaults.Mesh
+			meshProto, err := cfg.Defaults.MeshProto()
+			if err != nil {
+				return err
+			}
+			defaultMesh.Spec = meshProto
+			core.Log.Info("Creating default mesh from the settings", "mesh", defaultMesh.Spec)
 
 			if err := resManager.Create(context.Background(), &defaultMesh, core_store.CreateBy(key)); err != nil {
 				return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")

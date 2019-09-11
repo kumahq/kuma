@@ -45,6 +45,11 @@ func (p *PostgresStoreConfig) Validate() error {
 
 func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 	return &PostgresStoreConfig{
+		Host:              "127.0.0.1",
+		Port:              15432,
+		User:              "kuma",
+		Password:          "kuma",
+		DbName:            "kuma",
 		ConnectionTimeout: 5,
 	}
 }
