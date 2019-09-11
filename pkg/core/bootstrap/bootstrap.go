@@ -50,8 +50,6 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	runtime_reports.Init(rt, cfg)
-
 	return rt, nil
 }
 
