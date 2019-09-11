@@ -329,13 +329,19 @@ jobs:
     - run:
         name: Verify kumactl workflow
         command: make kumactl/example/minikube
-  images/push:
-    <<: *vm-executor-defaults
+  release:
+    <<: *go-defaults
     steps:
     - checkout
+    - restore_cache:
+        keys:
+        - go.mod/{{ checksum "go.sum" }}
     - run:
-        name: Push Docker images
-        command: make images/push BINTRAY_USERNAME=$BINTRAY_USERNAME BINTRAY_API_KEY=$BINTRAY_API_KEY KUMA_VERSION=$CIRCLE_TAG
+        name: Build packages
+        command: ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+    - run:
+        name: Push Packages
+        command: ./tools/releases/distros.sh --release --version $CIRCLE_TAG
 
 #
 # Below, the tag filter needs to be in all jobs
@@ -390,9 +396,12 @@ workflows:
     - example/minikube:
         requires:
         - build
-    - images/push:
+    - release:
         requires:
-        - images
+        - check
+        - build
+        - test
+        - integration
         filters:
           branches:
             ignore: /.*/
