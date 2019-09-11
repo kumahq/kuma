@@ -11,7 +11,7 @@
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo \
 		build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector build/kuma-tcp-echo \
-		docs docs/kumactl \
+		docs _docs_ docs/kumactl \
 		run/example/envoy config_dump/example/envoy \
 		run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
 		verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
@@ -487,7 +487,11 @@ image/kuma-tcp-echo/push: image/kuma-tcp-echo
 
 images/push: image/kuma-cp/push image/kuma-dp/push image/kumactl/push image/kuma-tcp-echo/push
 
-docs: docs/kumactl ## Dev: Generate all docs
+docs: ## Dev: Generate all docs
+	# re-build `kumactl` binary with a predictable `version`
+	$(MAKE) _docs_ BUILD_INFO_VERSION=latest
+
+_docs_: docs/kumactl
 
 docs/kumactl: build/kumactl ## Dev: Generate `kumactl` docs
 	tools/docs/kumactl/gen_help.sh ${BUILD_KUMACTL_DIR}/kumactl >docs/cmd/kumactl/HELP.md

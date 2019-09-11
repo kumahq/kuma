@@ -173,7 +173,7 @@ jobs:
           apt update && apt install -y clang-format-10
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-        command: make check BUILD_INFO_VERSION=latest
+        command: make check
 
   api/check:
     <<: *go-defaults
