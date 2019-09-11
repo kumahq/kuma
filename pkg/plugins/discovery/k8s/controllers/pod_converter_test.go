@@ -326,10 +326,10 @@ var _ = Describe("PodToDataplane(..)", func() {
                     service: example.demo.svc:80
                     version: "0.1"
                 outbound:
-                - interface: 10.108.144.24:80
-                  service: test-app.playground.svc:80
                 - interface: 10.108.144.24:443
                   service: test-app.playground.svc:443
+                - interface: 10.108.144.24:80
+                  service: test-app.playground.svc:80
 `,
 		}),
 	)

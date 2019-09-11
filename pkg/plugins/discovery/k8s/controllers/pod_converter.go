@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -118,7 +119,7 @@ func OutboundInterfacesFor(others []*mesh_k8s.Dataplane, serviceGetter kube_clie
 			allServiceTags[svc] = true
 		}
 	}
-	for serviceTag := range allServiceTags {
+	for _, serviceTag := range stringSetToSortedList(allServiceTags) {
 		host, port, err := mesh_proto.ServiceTagValue(serviceTag).HostAndPort()
 		if err != nil {
 			converterLog.Error(err, "failed to parse `service` tag value", "value", serviceTag)
@@ -171,4 +172,13 @@ func ParseServiceFQDN(host string) (name string, namespace string, err error) {
 	}
 	name, namespace = segments[0], segments[1]
 	return
+}
+
+func stringSetToSortedList(set map[string]bool) []string {
+	list := make([]string, 0, len(set))
+	for key := range set {
+		list = append(list, key)
+	}
+	sort.Strings(list)
+	return list
 }
