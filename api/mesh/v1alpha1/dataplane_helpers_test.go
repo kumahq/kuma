@@ -9,6 +9,76 @@ import (
 	. "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
+var _ = Describe("ServiceTagValue", func() {
+
+	Describe("HasPort()", func() {
+		type testCase struct {
+			value    string
+			expected bool
+		}
+
+		DescribeTable("should determine correctly whether a service tag includes service port",
+			func(given testCase) {
+				Expect(ServiceTagValue(given.value).HasPort()).To(Equal(given.expected))
+			},
+			Entry("name only", testCase{
+				value:    "web",
+				expected: false,
+			}),
+			Entry("name and port", testCase{
+				value:    "web.default.svc:80",
+				expected: true,
+			}),
+			Entry("incomplete value", testCase{
+				value:    "web:",
+				expected: true,
+			}),
+		)
+	})
+
+	Describe("HostAndPort()", func() {
+		type testCase struct {
+			value        string
+			expectedHost string
+			expectedPort uint32
+			expectedErr  string
+		}
+
+		DescribeTable("should parse `service` tag value into host and port",
+			func(given testCase) {
+				// when
+				host, port, err := ServiceTagValue(given.value).HostAndPort()
+
+				if given.expectedErr != "" {
+					Expect(err).To(MatchError(given.expectedErr))
+				} else {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(host).To(Equal(given.expectedHost))
+					Expect(port).To(Equal(given.expectedPort))
+				}
+			},
+			Entry("name and port", testCase{
+				value:       "web.default.svc:80",
+				expectedHost: "web.default.svc",
+				expectedPort: 80,
+				expectedErr:  "",
+			}),
+			Entry("incomplete value", testCase{
+				value:        "web:",
+				expectedHost: "",
+				expectedPort: 0,
+				expectedErr:  `strconv.ParseUint: parsing "": invalid syntax`,
+			}),
+			Entry("name only", testCase{
+				value:        "web",
+				expectedHost: "",
+				expectedPort: 0,
+				expectedErr:  "address web: missing port in address",
+			}),
+		)
+	})
+})
+
 var _ = Describe("InboundInterface", func() {
 
 	Describe("String()", func() {

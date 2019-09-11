@@ -15,6 +15,29 @@ const (
 	ServiceTag = "service"
 )
 
+// ServiceTagValue represents the value of "service" tag.
+//
+// E.g., "web", "backend", "database" are typical values in universal case,
+// "web.default.svc:80" in k8s case.
+type ServiceTagValue string
+
+func (v ServiceTagValue) HasPort() bool {
+	_, _, err := net.SplitHostPort(string(v))
+	return err == nil
+}
+
+func (v ServiceTagValue) HostAndPort() (string, uint32, error) {
+	host, port, err := net.SplitHostPort(string(v))
+	if err != nil {
+		return "", 0, err
+	}
+	num, err := strconv.ParseUint(port, 10, 32)
+	if err != nil {
+		return "", 0, err
+	}
+	return host, uint32(num), nil
+}
+
 type InboundInterface struct {
 	DataplaneIP   string
 	DataplanePort uint32
@@ -134,6 +157,7 @@ func (d *Dataplane) MatchTags(selector TagSelector) bool {
 }
 
 const MatchAllTag = "*"
+
 type TagSelector map[string]string
 
 func (s TagSelector) Matches(tags map[string]string) bool {

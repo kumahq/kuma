@@ -1,12 +1,12 @@
 resources:
-- name: 127.0.0.1:18080
+- name: backend
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Cluster
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    name: 127.0.0.1:18080
+    name: backend
     tlsContext:
       commonTlsContext:
         tlsCertificateSdsSecretConfigs:
@@ -36,10 +36,10 @@ resources:
                   statPrefix: sds_mesh_ca
                   targetUri: kuma-system:5677
     type: EDS
-- name: 127.0.0.1:18080
+- name: backend
   resource:
     '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-    clusterName: 127.0.0.1:18080
+    clusterName: backend
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -66,6 +66,6 @@ resources:
       - name: envoy.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-          cluster: 127.0.0.1:18080
-          statPrefix: 127.0.0.1:18080
+          cluster: backend
+          statPrefix: backend
     name: outbound:127.0.0.1:18080
