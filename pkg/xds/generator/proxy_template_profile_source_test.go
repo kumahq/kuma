@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"github.com/Kong/kuma/pkg/core/permissions"
 	"io/ioutil"
 	"path/filepath"
 
@@ -57,39 +58,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 					Spec: dataplane,
 				},
-				TrafficPermissions: &mesh_core.TrafficPermissionResourceList{
-					Items: []*mesh_core.TrafficPermissionResource{
-						&mesh_core.TrafficPermissionResource{
-							Meta: &test_model.ResourceMeta{
-								Name:      "tp-1",
-								Mesh:      "default",
-								Namespace: "default",
-							},
-							Spec: mesh_proto.TrafficPermission{
-								Rules: []*mesh_proto.TrafficPermission_Rule{
-									{
-										Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
-											{
-												Match: map[string]string{
-													"service": "web1",
-													"version": "1.0",
-												},
-											},
-										},
-										Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
-											{
-												Match: map[string]string{
-													"service": "backend1",
-													"env":     "dev",
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				TrafficPermissions: permissions.MatchedPermissions{},
 			}
 
 			// when

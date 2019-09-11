@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"github.com/Kong/kuma/pkg/core/permissions"
 	"net"
 	"strings"
 
@@ -26,7 +27,7 @@ func (id *ProxyId) String() string {
 type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
-	TrafficPermissions *mesh_core.TrafficPermissionResourceList
+	TrafficPermissions permissions.MatchedPermissions
 	OutboundTargets    map[string][]net.SRV
 }
 
