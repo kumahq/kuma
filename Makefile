@@ -383,17 +383,6 @@ build/kuma-injector: ## Dev: Build `kuma-injector` binary
 build/kuma-tcp-echo: ## Dev: Build `kuma-tcp-echo` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-tcp-echo/kuma-tcp-echo ./app/kuma-tcp-echo/main.go
 
-build/artifact-tarball: build
-	mkdir ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
-	cp ${BUILD_ARTIFACTS_DIR}/kuma-cp/kuma-cp ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
-	cp ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
-	cp $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
-	cp ${BUILD_ARTIFACTS_DIR}/kuma-injector/kuma-injector ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
-	cp $(BUILD_ARTIFACTS_DIR)/kuma-tcp-echo/kuma-tcp-echo ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
-	cd ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
-	tar -czf ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}.tar.gz -C ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH} .
-	rm -rf ${BUILD_ARTIFACTS_DIR}/kuma-${GOOS}-${GOARCH}
-
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \

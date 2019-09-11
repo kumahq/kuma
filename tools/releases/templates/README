@@ -1,0 +1,18 @@
+Welcome to Kuma!
+
+===============================================================================
+
+This folder contains your download of Kuma:
+├── LICENSE
+├── README
+├── bin
+│   ├── envoy
+│   ├── kuma-cp
+│   ├── kuma-dp
+│   ├── kuma-tcp-echo
+│   └── kumactl
+└── conf
+    └── kuma-cp.conf
+
+The official documentation can be found at https://kuma.io
+
