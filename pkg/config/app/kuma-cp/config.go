@@ -29,12 +29,17 @@ type Defaults struct {
 	Mesh string `yaml:"mesh"`
 }
 
-func (d *Defaults) Validate() error {
+func (d *Defaults) MeshProto() (v1alpha1.Mesh, error) {
 	mesh := v1alpha1.Mesh{}
 	if err := proto.FromYAML([]byte(d.Mesh), &mesh); err != nil {
-		return errors.Wrap(err, "Mesh is not valid")
+		return mesh, errors.Wrap(err, "Mesh is not valid")
 	}
-	return nil
+	return mesh, nil
+}
+
+func (d *Defaults) Validate() error {
+	_, err := d.MeshProto()
+	return err
 }
 
 type Reports struct {

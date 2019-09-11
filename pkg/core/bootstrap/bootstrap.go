@@ -18,7 +18,6 @@ import (
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/pkg/errors"
 )
 
@@ -70,9 +69,11 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 
 	if err := resManager.Get(context.Background(), &defaultMesh, core_store.GetBy(key)); err != nil {
 		if core_store.IsResourceNotFound(err) {
-			if err := util_proto.FromYAML([]byte(cfg.Defaults.Mesh), &defaultMesh.Spec); err != nil {
+			meshProto, err := cfg.Defaults.MeshProto()
+			if err != nil {
 				return err
 			}
+			defaultMesh.Spec = meshProto
 			core.Log.Info("Creating default mesh from the settings", "mesh", defaultMesh.Spec)
 
 			if err := resManager.Create(context.Background(), &defaultMesh, core_store.CreateBy(key)); err != nil {
