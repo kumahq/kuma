@@ -66,15 +66,7 @@ resources:
             - name: envoy.filters.network.rbac
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
-                rules:
-                  policies:
-                    default.tp-1:
-                      permissions:
-                      - any: true
-                      principals:
-                      - authenticated:
-                          principalName:
-                            exact: spiffe://default/web1
+                rules: {}
                 statPrefix: inbound:192.168.0.1:443
             - name: envoy.tcp_proxy
               typedConfig:
@@ -184,15 +176,7 @@ resources:
             - name: envoy.filters.network.rbac
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
-                rules:
-                  policies:
-                    default.tp-1:
-                      permissions:
-                      - any: true
-                      principals:
-                      - authenticated:
-                          principalName:
-                            exact: spiffe://default/web1
+                rules: {}
                 statPrefix: inbound:192.168.0.2:443
             - name: envoy.tcp_proxy
               typedConfig:
@@ -243,15 +227,7 @@ resources:
             - name: envoy.filters.network.rbac
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
-                rules:
-                  policies:
-                    default.tp-1:
-                      permissions:
-                      - any: true
-                      principals:
-                      - authenticated:
-                          principalName:
-                            exact: spiffe://default/web1
+                rules: {}
                 statPrefix: inbound:192.168.0.2:80
             - name: envoy.tcp_proxy
               typedConfig:

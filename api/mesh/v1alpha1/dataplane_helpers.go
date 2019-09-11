@@ -149,11 +149,15 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 
 func (d *Dataplane) MatchTags(selector TagSelector) bool {
 	for _, inbound := range d.GetNetworking().GetInbound() {
-		if selector.Matches(inbound.Tags) {
+		if inbound.MatchTags(selector) {
 			return true
 		}
 	}
 	return false
+}
+
+func (d *Dataplane_Networking_Inbound) MatchTags(selector TagSelector) bool {
+	return selector.Matches(d.Tags)
 }
 
 const MatchAllTag = "*"
