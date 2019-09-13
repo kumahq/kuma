@@ -23,7 +23,7 @@ func DefaultConfig() Config {
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
-			ConfigDir:  "/tmp/kuma.io/envoy",
+			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
 		},
 	}
 }
@@ -111,9 +111,6 @@ var _ config.Config = &DataplaneRuntime{}
 func (d *DataplaneRuntime) Validate() (errs error) {
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
-	}
-	if d.ConfigDir == "" {
-		errs = multierr.Append(errs, errors.Errorf(".ConfigDir must be non-empty"))
 	}
 	return
 }

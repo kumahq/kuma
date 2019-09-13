@@ -2,4 +2,3 @@ dataplane:
   mesh: default
 dataplaneRuntime:
   binaryPath: envoy
-  configDir: /tmp/kuma.io/envoy

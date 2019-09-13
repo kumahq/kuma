@@ -7,4 +7,3 @@ dataplane:
   adminPort: 82345
 dataplaneRuntime:
   binaryPath:
-  configDir:
