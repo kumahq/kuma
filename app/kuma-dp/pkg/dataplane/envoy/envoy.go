@@ -51,7 +51,19 @@ func (e *Envoy) Run(stop <-chan struct{}) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	command := exec.CommandContext(ctx, e.opts.Config.DataplaneRuntime.BinaryPath, "-c", configFile)
+	args := []string{
+		"-c", configFile,
+		// "hot restart" (enabled by default) requires each Envoy instance to have
+		// `--base-id <uint32_t>` argument.
+		// it is not possible to start multiple Envoy instances on the same Linux machine
+		// without `--base-id <uint32_t>` set.
+		// although we could come up with a solution how to generate `--base-id <uint32_t>`
+		// automatically, it is not strictly necessary since we're not using "hot restart"
+		// and we don't expect users to do "hot restart" manually.
+		// so, let's turn it off to simplify getting started experience.
+		"--disable-hot-restart",
+	}
+	command := exec.CommandContext(ctx, e.opts.Config.DataplaneRuntime.BinaryPath, args...)
 	command.Stdout = e.opts.Stdout
 	command.Stderr = e.opts.Stderr
 	if err := command.Start(); err != nil {

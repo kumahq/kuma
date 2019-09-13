@@ -115,7 +115,7 @@ var _ = Describe("Envoy", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-c %s", expectedConfigFile)))
+			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-c %s --disable-hot-restart", expectedConfigFile)))
 
 			By("verifying the contents Envoy config file")
 			// when
