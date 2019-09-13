@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -35,6 +37,21 @@ func newRunCmd() *cobra.Command {
 			} else {
 				runLog.Error(err, "unable to format effective configuration", "config", cfg)
 				return err
+			}
+
+			if cfg.DataplaneRuntime.ConfigDir == "" {
+				tmpDir, err := ioutil.TempDir("", "kuma-dp-")
+				if err != nil {
+					runLog.Error(err, "unable to create a temporary directory to store generated Envoy config at")
+					return err
+				}
+				defer func() {
+					if err := os.RemoveAll(tmpDir); err != nil {
+						runLog.Error(err, "unable to remove a temporary directory with a generated Envoy config")
+					}
+				}()
+				cfg.DataplaneRuntime.ConfigDir = tmpDir
+				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
 			runLog.Info("starting Dataplane (Envoy) ...")
