@@ -95,6 +95,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			// then
 			resp := generator.ResourceList(rs).ToDeltaDiscoveryResponse()
 			actual, err := util_proto.ToYAML(resp)
+			Expect(err).ToNot(HaveOccurred())
 
 			expected, err := ioutil.ReadFile(filepath.Join("testdata", "inbound-proxy", given.envoyConfigFile))
 			Expect(err).ToNot(HaveOccurred())
