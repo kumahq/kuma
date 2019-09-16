@@ -5,7 +5,4 @@ metadata:
 spec:
   mtls:
     ca:
-      embedded: {}
-  tracing:
-    zipkin:
-      address: zipkin:9411
+      builtin: {}

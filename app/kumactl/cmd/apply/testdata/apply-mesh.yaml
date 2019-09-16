@@ -2,4 +2,4 @@ name: sample
 type: Mesh
 mtls:
   ca:
-    embedded:
+    builtin:
