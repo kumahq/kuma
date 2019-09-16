@@ -101,6 +101,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			// then
 			resp := generator.ResourceList(rs).ToDeltaDiscoveryResponse()
 			actual, err := util_proto.ToYAML(resp)
+			Expect(err).ToNot(HaveOccurred())
 
 			expected, err := ioutil.ReadFile(filepath.Join("testdata", "profile-source", given.envoyConfigFile))
 			Expect(err).ToNot(HaveOccurred())
