@@ -1,0 +1,9 @@
+FROM alpine:3.10
+
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-injector/kuma-injector /usr/bin
+
+RUN mkdir /kuma
+COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
+COPY $KUMA_ROOT/tools/releases/templates/README /kuma
+
+ENTRYPOINT ["kuma-injector"]
