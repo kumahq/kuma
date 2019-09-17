@@ -3,13 +3,13 @@ package install_test
 import (
 	"bytes"
 	"github.com/Kong/kuma/app/kumactl/cmd"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-	postgres_schema "github.com/Kong/kuma/app/kumactl/pkg/install/universal/control-plane/postgres"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"io/ioutil"
+	"path/filepath"
 )
 
-var _ = Describe("kumactl install control-plane", func() {
+var _ = Describe("kumactl install postgres-schema", func() {
 	It("should give the schema postgres", func() {
 		// given
 		stdout := bytes.Buffer{}
@@ -17,7 +17,7 @@ var _ = Describe("kumactl install control-plane", func() {
 		rootCmd.SetOut(&stdout)
 		rootCmd.SetArgs([]string{"install", "postgres-schema"})
 
-		schemaFile, err := data.ReadFile(postgres_schema.Schema, "resource.sql")
+		bytes, err := ioutil.ReadFile(filepath.Join("testdata", "postgres_schema.sql"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -25,6 +25,6 @@ var _ = Describe("kumactl install control-plane", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(string(stdout.Bytes())).To(Equal(string(schemaFile)))
+		Expect(string(stdout.Bytes())).To(Equal(string(bytes)))
 	})
 })

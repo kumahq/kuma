@@ -9,10 +9,10 @@ import (
 
 func newInstallPostgresSchemaCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "postgres-schema",
-		Short: "Install Kuma on Postgres DB.",
-		Long: `Install Kuma on Postgres DB. You can apply it with following command:
-kumactl install postgres-schema | PGPASSWORD=mysecretpassword psql -h localhost -U postgres`,
+		Use:     "postgres-schema",
+		Short:   "Install Kuma on Postgres DB.",
+		Long:    `Install Kuma on Postgres DB.`,
+		Example: "kumactl install postgres-schema | PGPASSWORD=mysecretpassword psql -h localhost -U postgres",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			file, err := data.ReadFile(postgres_schema.Schema, "resource.sql")
 			if err != nil {
