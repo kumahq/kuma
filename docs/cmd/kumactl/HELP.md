@@ -238,11 +238,13 @@ Global Flags:
 ### kumactl install postgres-schema
 
 ```
-Install Kuma on Postgres DB. You can apply it with following command:
-kumactl install postgres-schema | PGPASSWORD=mysecretpassword psql -h localhost -U postgres
+Install Kuma on Postgres DB.
 
 Usage:
   kumactl install postgres-schema [flags]
+
+Examples:
+kumactl install postgres-schema | PGPASSWORD=mysecretpassword psql -h localhost -U postgres
 
 Flags:
   -h, --help   help for postgres-schema
