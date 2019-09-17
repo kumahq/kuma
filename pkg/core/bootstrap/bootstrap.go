@@ -116,7 +116,7 @@ func onStartup(runtime core_runtime.Runtime, cfg kuma_cp.Config) error {
 		return nil
 	}))
 
-	return nil
+	return err
 }
 
 func initializeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
