@@ -1,0 +1,29 @@
+items:
+  - mesh: default
+    name: web1-to-backend1
+    rules:
+    - destinations:
+      - match:
+          env: dev
+          service: backend1
+      sources:
+      - match:
+          service: web1
+          version: "1.0"
+      conf:
+        backend: file
+    type: TrafficLogging
+  - mesh: default
+    name: web2-to-backend2
+    rules:
+    - destinations:
+      - match:
+          env: dev
+          service: backend2
+      sources:
+      - match:
+          service: web2
+          version: "1.0"
+      conf:
+        backend: logstash
+    type: TrafficLogging
