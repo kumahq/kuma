@@ -55,7 +55,7 @@ function get_envoy() {
     --write-out %{http_code} --silent --output /dev/null \
     "https://kong.bintray.com/envoy/envoy-1.11.0-$distro")
 
-  [ "$status" -ne "200" ] && msg_err "Error: failed downloading Envoy"
+  [ "$status" -ne "200" ] && msg_err "Error: failed downloading Envoy" || true
 }
 
 

@@ -1,0 +1,10 @@
+# using Envoy's base to inherit the Envoy binary
+FROM envoyproxy/envoy-alpine:latest
+
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
+
+RUN mkdir /kuma
+COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
+COPY $KUMA_ROOT/tools/releases/templates/README /kuma
+
+ENTRYPOINT ["kuma-dp"]
