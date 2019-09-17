@@ -1,6 +1,0 @@
-networking:
-  inbound:
-    - interface: 192.168.0.1:80:8080
-    - interface: 192.168.0.1:443:8443
-    - interface: 192.168.0.2:80:8080
-    - interface: 192.168.0.2:443:8443
