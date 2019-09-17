@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+message TrafficLogging {
+  message Rule {
+    message Selector { map<string, string> match = 1; }
+
+    repeated Selector sources = 1;
+    repeated Selector destinations = 2;
+
+    message Conf { string backend = 1; }
+
+    Conf conf = 3;
+  }
+
+  repeated Rule rules = 1;
+}
