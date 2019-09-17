@@ -8,3 +8,6 @@ resources:
 - group: mesh
   version: v1alpha1
   kind: Mesh
+- group: mesh
+  version: v1alpha1
+  kind: TrafficLogging

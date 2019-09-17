@@ -1,0 +1,17 @@
+apiVersion: kuma.io/v1alpha1
+kind: TrafficLogging
+mesh: default
+metadata:
+  namespace: default
+  name: logging-1
+spec:
+  rules:
+    - sources:
+        - match:
+            service: backend
+      destinations:
+        - match:
+            service: redis
+            version: "5.0"
+      conf:
+        backend: file
