@@ -3,7 +3,10 @@ package envoy
 import (
 	"context"
 	"io"
+	"os"
 	"os/exec"
+
+	"path/filepath"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
@@ -38,6 +41,49 @@ type Envoy struct {
 	opts Opts
 }
 
+func getSelfPath() (string, error) {
+	ex, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Dir(ex), nil
+}
+
+func lookupBinaryPath(candidatePaths []string) (string, error) {
+	for _, candidatePath := range candidatePaths {
+		path, err := exec.LookPath(candidatePath)
+		if err == nil {
+			return path, nil
+		}
+	}
+
+	return "", errors.New("could not find binary")
+}
+
+func lookupEnvoyPath(configuredPath string) (string, error) {
+	selfPath, err := getSelfPath()
+	if err != nil {
+		return "", err
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	path, err := lookupBinaryPath([]string{
+		configuredPath,
+		selfPath + "/envoy",
+		cwd + "/envoy",
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
+}
+
 func (e *Envoy) Run(stop <-chan struct{}) error {
 	bootstrapConfig, err := e.opts.Generator(e.opts.Config)
 	if err != nil {
@@ -51,6 +97,13 @@ func (e *Envoy) Run(stop <-chan struct{}) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	binaryPathConfig := e.opts.Config.DataplaneRuntime.BinaryPath
+	resolvedPath, err := lookupEnvoyPath(binaryPathConfig)
+	if err != nil {
+		runLog.Error(err, "Envoy binary not found; make sure it is in PATH or in the same directory as "+os.Args[0])
+		return nil
+	}
+
 	args := []string{
 		"-c", configFile,
 		// "hot restart" (enabled by default) requires each Envoy instance to have
@@ -63,7 +116,7 @@ func (e *Envoy) Run(stop <-chan struct{}) error {
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
 	}
-	command := exec.CommandContext(ctx, e.opts.Config.DataplaneRuntime.BinaryPath, args...)
+	command := exec.CommandContext(ctx, resolvedPath, args...)
 	command.Stdout = e.opts.Stdout
 	command.Stderr = e.opts.Stderr
 	if err := command.Start(); err != nil {
