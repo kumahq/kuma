@@ -36,7 +36,6 @@ var (
 
 func init() {
 
-	meshv1alpha1.AddToScheme(scheme)
 	_ = meshv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }

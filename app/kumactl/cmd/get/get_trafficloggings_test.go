@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _ = Describe("kumactl get traffic-logging", func() {
+var _ = Describe("kumactl get traffic-loggings", func() {
 
 	trafficLoggingResources := []*mesh.TrafficLoggingResource{
 		{
@@ -129,12 +129,12 @@ var _ = Describe("kumactl get traffic-logging", func() {
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
-		DescribeTable("kumactl get traffic-logging -o table|json|yaml",
+		DescribeTable("kumactl get traffic-loggings -o table|json|yaml",
 			func(given testCase) {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "traffic-logging"}, given.outputFormat))
+					"get", "traffic-loggings"}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()
@@ -150,26 +150,26 @@ var _ = Describe("kumactl get traffic-logging", func() {
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
-				goldenFile:   "get-traffic-logging.golden.txt",
+				goldenFile:   "get-traffic-loggings.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "get-traffic-logging.golden.txt",
+				goldenFile:   "get-traffic-loggings.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
-				goldenFile:   "get-traffic-logging.golden.json",
+				goldenFile:   "get-traffic-loggings.golden.json",
 				matcher:      MatchJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
-				goldenFile:   "get-traffic-logging.golden.yaml",
+				goldenFile:   "get-traffic-loggings.golden.yaml",
 				matcher:      MatchYAML,
 			}),
 		)

@@ -13,10 +13,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newGetTrafficLoggingCmd(pctx *getContext) *cobra.Command {
+func newGetTrafficLoggingsCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "traffic-logging",
-		Short: "Show TrafficLogging",
+		Use:   "traffic-loggings",
+		Short: "Show TrafficLoggings",
 		Long:  `Show TrafficLogging entities.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()

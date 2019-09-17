@@ -272,6 +272,7 @@ Available Commands:
   dataplanes          Show Dataplanes
   meshes              Show Meshes
   proxytemplates      Show ProxyTemplates
+  traffic-loggings    Show TrafficLoggings
   traffic-permissions Show TrafficPermissions
 
 Flags:

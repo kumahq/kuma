@@ -46,6 +46,8 @@ run kumactl get proxytemplates
 
 run kumactl get traffic-permissions
 
+run kumactl get traffic-loggings
+
 run kumactl inspect dataplanes
 
 run kumactl inspect dataplanes -otable
