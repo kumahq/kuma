@@ -26,8 +26,6 @@ import (
 // TrafficLoggingSpec defines the desired state of TrafficLogging
 type TrafficLoggingSpec = map[string]interface{}
 
-// +kubebuilder:object:root=true
-
 // TrafficLogging is the Schema for the trafficloggings API
 type TrafficLogging struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -36,8 +34,6 @@ type TrafficLogging struct {
 
 	Spec TrafficLoggingSpec `json:"spec,omitempty"`
 }
-
-// +kubebuilder:object:root=true
 
 // TrafficLoggingList contains a list of TrafficLogging
 type TrafficLoggingList struct {

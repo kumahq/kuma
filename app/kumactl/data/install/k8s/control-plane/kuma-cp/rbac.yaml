@@ -56,6 +56,14 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - kuma.io
+  resources:
+  - trafficloggings
+  verbs:
+  - get
+  - list
+  - watch
 # validate k8s token before issueing mTLS cert
 - apiGroups:
   - authentication.k8s.io
