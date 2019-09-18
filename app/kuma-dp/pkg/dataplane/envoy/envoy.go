@@ -58,7 +58,7 @@ func lookupBinaryPath(candidatePaths []string) (string, error) {
 		}
 	}
 
-	return "", errors.New("could not find binary")
+	return "", errors.Errorf("could not find binary in any of the following paths: %v", candidatePaths)
 }
 
 func lookupEnvoyPath(configuredPath string) (string, error) {
@@ -100,8 +100,7 @@ func (e *Envoy) Run(stop <-chan struct{}) error {
 	binaryPathConfig := e.opts.Config.DataplaneRuntime.BinaryPath
 	resolvedPath, err := lookupEnvoyPath(binaryPathConfig)
 	if err != nil {
-		runLog.Error(err, "Envoy binary not found; make sure it is in PATH or in the same directory as "+os.Args[0])
-		return nil
+		return err
 	}
 
 	args := []string{
