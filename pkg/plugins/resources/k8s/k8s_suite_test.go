@@ -34,7 +34,6 @@ import (
 	sample_v1alpha1 "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
 )
 
-var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
 var k8sClientScheme = runtime.NewScheme()

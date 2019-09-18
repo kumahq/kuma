@@ -31,7 +31,6 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
 
