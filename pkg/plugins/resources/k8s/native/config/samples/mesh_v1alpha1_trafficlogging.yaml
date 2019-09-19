@@ -1,5 +1,5 @@
 apiVersion: kuma.io/v1alpha1
-kind: TrafficLogging
+kind: TrafficLog
 mesh: default
 metadata:
   namespace: default

@@ -6,7 +6,7 @@ option go_package = "v1alpha1";
 
 import "mesh/v1alpha1/selector.proto";
 
-message TrafficLogging {
+message TrafficLog {
   message Rule {
 
     repeated Selector sources = 1;

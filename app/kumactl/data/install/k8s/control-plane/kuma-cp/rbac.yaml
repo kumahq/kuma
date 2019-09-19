@@ -59,7 +59,7 @@ rules:
 - apiGroups:
   - kuma.io
   resources:
-  - trafficloggings
+  - trafficlogs
   verbs:
   - get
   - list

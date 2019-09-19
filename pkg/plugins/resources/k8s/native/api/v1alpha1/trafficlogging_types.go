@@ -23,25 +23,25 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// TrafficLoggingSpec defines the desired state of TrafficLogging
-type TrafficLoggingSpec = map[string]interface{}
+// TrafficLogSpec defines the desired state of TrafficLog
+type TrafficLogSpec = map[string]interface{}
 
-// TrafficLogging is the Schema for the trafficloggings API
-type TrafficLogging struct {
+// TrafficLog is the Schema for the trafficlogs API
+type TrafficLog struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec TrafficLoggingSpec `json:"spec,omitempty"`
+	Spec TrafficLogSpec `json:"spec,omitempty"`
 }
 
-// TrafficLoggingList contains a list of TrafficLogging
-type TrafficLoggingList struct {
+// TrafficLogList contains a list of TrafficLog
+type TrafficLogList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []TrafficLogging `json:"items"`
+	Items           []TrafficLog `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&TrafficLogging{}, &TrafficLoggingList{})
+	SchemeBuilder.Register(&TrafficLog{}, &TrafficLogList{})
 }
