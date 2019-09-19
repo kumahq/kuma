@@ -14,7 +14,7 @@ func newInstallDatabaseSchemaCmd() *cobra.Command {
 	}{}
 	cmd := &cobra.Command{
 		Use:   "database-schema",
-		Short: "Install Kuma schema on DB.",
+		Short: "Install Kuma schema on DB",
 		Long:  `Install Kuma schema on DB.`,
 		Example: `1. kumactl install database-schema --target=postgres | PGPASSWORD=mysecretpassword psql -h localhost -U postgres
 2. sql_file=$(mktemp) ; \ 

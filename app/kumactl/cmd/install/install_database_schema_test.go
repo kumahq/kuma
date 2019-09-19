@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-var _ = Describe("kumactl install postgres-schema", func() {
+var _ = Describe("kumactl install database-schema", func() {
 	It("should give the schema postgres", func() {
 		// given
 		stdout := bytes.Buffer{}
@@ -17,7 +17,7 @@ var _ = Describe("kumactl install postgres-schema", func() {
 		rootCmd.SetOut(&stdout)
 		rootCmd.SetArgs([]string{"install", "database-schema", "--target=postgres"})
 
-		bytes, err := ioutil.ReadFile(filepath.Join("testdata", "postgres_schema.sql"))
+		expected, err := ioutil.ReadFile(filepath.Join("testdata", "postgres_schema.golden.sql"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -25,6 +25,6 @@ var _ = Describe("kumactl install postgres-schema", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(string(stdout.Bytes())).To(Equal(string(bytes)))
+		Expect(string(stdout.Bytes())).To(Equal(string(expected)))
 	})
 })
