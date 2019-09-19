@@ -13,25 +13,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newGetTrafficLoggingsCmd(pctx *getContext) *cobra.Command {
+func newGetTrafficLogsCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "traffic-loggings",
-		Short: "Show TrafficLoggings",
-		Long:  `Show TrafficLogging entities.`,
+		Use:   "traffic-logs",
+		Short: "Show TrafficLogs",
+		Long:  `Show TrafficLog entities.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
 			}
 
-			trafficLogging := mesh.TrafficLoggingResourceList{}
+			trafficLogging := mesh.TrafficLogResourceList{}
 			if err := rs.List(context.Background(), &trafficLogging, core_store.ListByMesh(pctx.CurrentMesh())); err != nil {
-				return errors.Wrapf(err, "failed to list TrafficLogging")
+				return errors.Wrapf(err, "failed to list TrafficLog")
 			}
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficLogging(&trafficLogging, cmd.OutOrStdout())
+				return printTrafficLog(&trafficLogging, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -44,7 +44,7 @@ func newGetTrafficLoggingsCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printTrafficLogging(trafficLogging *mesh.TrafficLoggingResourceList, out io.Writer) error {
+func printTrafficLog(trafficLogging *mesh.TrafficLogResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {

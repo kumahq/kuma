@@ -5,13 +5,13 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
-var TrafficLoggingWsDefinition = ResourceWsDefinition{
+var TrafficLogWsDefinition = ResourceWsDefinition{
 	Name: "Traffic Logging",
-	Path: "traffic-logging",
+	Path: "traffic-log",
 	ResourceFactory: func() model.Resource {
-		return &mesh.TrafficLoggingResource{}
+		return &mesh.TrafficLogResource{}
 	},
 	ResourceListFactory: func() model.ResourceList {
-		return &mesh.TrafficLoggingResourceList{}
+		return &mesh.TrafficLogResourceList{}
 	},
 }

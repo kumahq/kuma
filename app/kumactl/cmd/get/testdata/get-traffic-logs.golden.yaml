@@ -12,7 +12,7 @@ items:
           version: "1.0"
       conf:
         backend: file
-    type: TrafficLogging
+    type: TrafficLog
   - mesh: default
     name: web2-to-backend2
     rules:
@@ -26,4 +26,4 @@ items:
           version: "1.0"
       conf:
         backend: logstash
-    type: TrafficLogging
+    type: TrafficLog

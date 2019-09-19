@@ -26,7 +26,7 @@
           }
         }
       ],
-      "type": "TrafficLogging"
+      "type": "TrafficLog"
     },
     {
       "mesh": "default",
@@ -54,7 +54,7 @@
           }
         }
       ],
-      "type": "TrafficLogging"
+      "type": "TrafficLog"
     }
   ]
 }

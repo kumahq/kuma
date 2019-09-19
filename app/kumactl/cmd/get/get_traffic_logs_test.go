@@ -24,12 +24,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _ = Describe("kumactl get traffic-loggings", func() {
+var _ = Describe("kumactl get traffic-logs", func() {
 
-	trafficLoggingResources := []*mesh.TrafficLoggingResource{
+	trafficLoggingResources := []*mesh.TrafficLogResource{
 		{
-			Spec: v1alpha1.TrafficLogging{
-				Rules: []*v1alpha1.TrafficLogging_Rule{
+			Spec: v1alpha1.TrafficLog{
+				Rules: []*v1alpha1.TrafficLog_Rule{
 					{
 						Sources: []*v1alpha1.Selector{
 							{
@@ -47,7 +47,7 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 								},
 							},
 						},
-						Conf: &v1alpha1.TrafficLogging_Rule_Conf{
+						Conf: &v1alpha1.TrafficLog_Rule_Conf{
 							Backend: "file",
 						},
 					},
@@ -60,8 +60,8 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 			},
 		},
 		{
-			Spec: v1alpha1.TrafficLogging{
-				Rules: []*v1alpha1.TrafficLogging_Rule{
+			Spec: v1alpha1.TrafficLog{
+				Rules: []*v1alpha1.TrafficLog_Rule{
 					{
 						Sources: []*v1alpha1.Selector{
 							{
@@ -79,7 +79,7 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 								},
 							},
 						},
-						Conf: &v1alpha1.TrafficLogging_Rule_Conf{
+						Conf: &v1alpha1.TrafficLog_Rule_Conf{
 							Backend: "logstash",
 						},
 					},
@@ -93,7 +93,7 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 		},
 	}
 
-	Describe("GetTrafficLoggingCmd", func() {
+	Describe("GetTrafficLogCmd", func() {
 
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
@@ -129,12 +129,12 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
-		DescribeTable("kumactl get traffic-loggings -o table|json|yaml",
+		DescribeTable("kumactl get traffic-logs -o table|json|yaml",
 			func(given testCase) {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "traffic-loggings"}, given.outputFormat))
+					"get", "traffic-logs"}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()
@@ -150,26 +150,26 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
-				goldenFile:   "get-traffic-loggings.golden.txt",
+				goldenFile:   "get-traffic-logs.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "get-traffic-loggings.golden.txt",
+				goldenFile:   "get-traffic-logs.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
-				goldenFile:   "get-traffic-loggings.golden.json",
+				goldenFile:   "get-traffic-logs.golden.json",
 				matcher:      MatchJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
-				goldenFile:   "get-traffic-loggings.golden.yaml",
+				goldenFile:   "get-traffic-logs.golden.yaml",
 				matcher:      MatchYAML,
 			}),
 		)
