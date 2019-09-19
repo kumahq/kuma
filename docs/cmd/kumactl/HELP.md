@@ -190,7 +190,7 @@ Usage:
 
 Available Commands:
   control-plane   Install Kuma Control Plane on Kubernetes
-  postgres-schema Install Kuma on Postgres DB.
+  database-schema Install Kuma schema on DB.
 
 Flags:
   -h, --help   help for install
@@ -238,21 +238,24 @@ Global Flags:
 ### kumactl install postgres-schema
 
 ```
-Install Kuma on Postgres DB.
+Install Kuma on Kubernetes.
 
 Usage:
-  kumactl install postgres-schema [flags]
+  kumactl install [command]
 
-Examples:
-kumactl install postgres-schema | PGPASSWORD=mysecretpassword psql -h localhost -U postgres
+Available Commands:
+  control-plane   Install Kuma Control Plane on Kubernetes
+  database-schema Install Kuma schema on DB.
 
 Flags:
-  -h, --help   help for postgres-schema
+  -h, --help   help for install
 
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
       --mesh string          mesh to use
+
+Use "kumactl install [command] --help" for more information about a command.
 ```
 
 ## kumactl get
