@@ -15,7 +15,7 @@ var _ = Describe("kumactl install postgres-schema", func() {
 		stdout := bytes.Buffer{}
 		rootCmd := cmd.DefaultRootCmd()
 		rootCmd.SetOut(&stdout)
-		rootCmd.SetArgs([]string{"install", "postgres-schema"})
+		rootCmd.SetArgs([]string{"install", "database-schema", "--target=postgres"})
 
 		bytes, err := ioutil.ReadFile(filepath.Join("testdata", "postgres_schema.sql"))
 		Expect(err).ToNot(HaveOccurred())
