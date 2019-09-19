@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+// Selector defines structure for selecting tags for given dataplane
+message Selector {
+  // Tags to match, can be used for both source and destinations
+  map<string, string> match = 1;
+}

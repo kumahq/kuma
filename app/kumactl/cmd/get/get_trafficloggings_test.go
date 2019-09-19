@@ -31,7 +31,7 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 			Spec: v1alpha1.TrafficLogging{
 				Rules: []*v1alpha1.TrafficLogging_Rule{
 					{
-						Sources: []*v1alpha1.TrafficLogging_Rule_Selector{
+						Sources: []*v1alpha1.Selector{
 							{
 								Match: map[string]string{
 									"service": "web1",
@@ -39,7 +39,7 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 								},
 							},
 						},
-						Destinations: []*v1alpha1.TrafficLogging_Rule_Selector{
+						Destinations: []*v1alpha1.Selector{
 							{
 								Match: map[string]string{
 									"service": "backend1",
@@ -63,7 +63,7 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 			Spec: v1alpha1.TrafficLogging{
 				Rules: []*v1alpha1.TrafficLogging_Rule{
 					{
-						Sources: []*v1alpha1.TrafficLogging_Rule_Selector{
+						Sources: []*v1alpha1.Selector{
 							{
 								Match: map[string]string{
 									"service": "web2",
@@ -71,7 +71,7 @@ var _ = Describe("kumactl get traffic-loggings", func() {
 								},
 							},
 						},
-						Destinations: []*v1alpha1.TrafficLogging_Rule_Selector{
+						Destinations: []*v1alpha1.Selector{
 							{
 								Match: map[string]string{
 									"service": "backend2",
