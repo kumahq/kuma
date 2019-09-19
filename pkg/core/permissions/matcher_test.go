@@ -40,14 +40,14 @@ var _ = Describe("Matcher", func() {
 					Spec: mesh_proto.TrafficPermission{
 						Rules: []*mesh_proto.TrafficPermission_Rule{
 							{
-								Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Sources: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "mobile",
 										},
 									},
 								},
-								Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Destinations: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "api-gateway",
@@ -67,14 +67,14 @@ var _ = Describe("Matcher", func() {
 					Spec: mesh_proto.TrafficPermission{
 						Rules: []*mesh_proto.TrafficPermission_Rule{
 							{ // relevant rule
-								Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Sources: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "mobile",
 										},
 									},
 								},
-								Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Destinations: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "backend",
@@ -83,14 +83,14 @@ var _ = Describe("Matcher", func() {
 								},
 							},
 							{ // not relevant rule
-								Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Sources: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "mobile",
 										},
 									},
 								},
-								Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Destinations: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "stats",
@@ -110,14 +110,14 @@ var _ = Describe("Matcher", func() {
 					Spec: mesh_proto.TrafficPermission{
 						Rules: []*mesh_proto.TrafficPermission_Rule{
 							{ // relevant rule
-								Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Sources: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "load-balancer",
 										},
 									},
 								},
-								Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Destinations: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "web",
@@ -126,14 +126,14 @@ var _ = Describe("Matcher", func() {
 								},
 							},
 							{ // not relevant rule
-								Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Sources: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "load-balancer",
 										},
 									},
 								},
-								Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Destinations: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "mobile",
@@ -163,14 +163,14 @@ var _ = Describe("Matcher", func() {
 					Spec: mesh_proto.TrafficPermission{
 						Rules: []*mesh_proto.TrafficPermission_Rule{
 							{ // relevant rule
-								Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Sources: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "mobile",
 										},
 									},
 								},
-								Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Destinations: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "backend",
@@ -197,14 +197,14 @@ var _ = Describe("Matcher", func() {
 					Spec: mesh_proto.TrafficPermission{
 						Rules: []*mesh_proto.TrafficPermission_Rule{
 							{ // relevant rule
-								Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Sources: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "load-balancer",
 										},
 									},
 								},
-								Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
+								Destinations: []*mesh_proto.Selector{
 									{
 										Match: map[string]string{
 											"service": "web",

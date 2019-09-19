@@ -4,9 +4,10 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "v1alpha1";
 
+import "mesh/v1alpha1/selector.proto";
+
 message TrafficPermission {
   message Rule {
-    message Selector { map<string, string> match = 1; }
 
     repeated Selector sources = 1;
     repeated Selector destinations = 2;

@@ -333,7 +333,7 @@ var _ = Describe("Envoy", func() {
 							Spec: mesh_proto.TrafficPermission{
 								Rules: []*mesh_proto.TrafficPermission_Rule{
 									{
-										Sources: []*mesh_proto.TrafficPermission_Rule_Selector{
+										Sources: []*mesh_proto.Selector{
 											{
 												Match: map[string]string{
 													"service": "web1",
@@ -341,7 +341,7 @@ var _ = Describe("Envoy", func() {
 												},
 											},
 										},
-										Destinations: []*mesh_proto.TrafficPermission_Rule_Selector{
+										Destinations: []*mesh_proto.Selector{
 											{
 												Match: map[string]string{
 													"service": "backend1",
