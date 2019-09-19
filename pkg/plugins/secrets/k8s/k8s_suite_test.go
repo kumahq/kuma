@@ -33,7 +33,6 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
 var k8sClientScheme = runtime.NewScheme()

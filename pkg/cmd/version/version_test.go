@@ -39,9 +39,8 @@ var _ = Describe("version", func() {
 	})
 
 	type testCase struct {
-		buildInfo kuma_version.BuildInfo
-		args      []string
-		expected  string
+		args     []string
+		expected string
 	}
 
 	DescribeTable("should format output properly",
