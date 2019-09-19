@@ -1,8 +1,8 @@
 ## Postgres installation
 
-You can install Kuma on Postgres DB with following command:
+Run following command for installation examples:
 ```bash
-kumactl install postgres-schema | PGPASSWORD=mysecretpassword psql -h localhost -U postgres
+kumactl install database-schema --help
 ```
 
 ### Schema
