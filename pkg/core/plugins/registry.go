@@ -11,6 +11,7 @@ const (
 	resourceStorePlugin pluginType = "resource-store"
 	secretStorePlugin   pluginType = "secret-store"
 	discoveryPlugin     pluginType = "discovery"
+	runtimePlugin       pluginType = "runtime"
 )
 
 type PluginName string
@@ -27,6 +28,7 @@ type Registry interface {
 	ResourceStore(name PluginName) (ResourceStorePlugin, error)
 	SecretStore(name PluginName) (SecretStorePlugin, error)
 	Discovery(name PluginName) (DiscoveryPlugin, error)
+	Runtime(name PluginName) (RuntimePlugin, error)
 }
 
 type RegistryMutator interface {
@@ -44,6 +46,7 @@ func NewRegistry() MutableRegistry {
 		resourceStore: make(map[PluginName]ResourceStorePlugin),
 		secretStore:   make(map[PluginName]SecretStorePlugin),
 		discovery:     make(map[PluginName]DiscoveryPlugin),
+		runtime:       make(map[PluginName]RuntimePlugin),
 	}
 }
 
@@ -54,6 +57,7 @@ type registry struct {
 	resourceStore map[PluginName]ResourceStorePlugin
 	secretStore   map[PluginName]SecretStorePlugin
 	discovery     map[PluginName]DiscoveryPlugin
+	runtime       map[PluginName]RuntimePlugin
 }
 
 func (r *registry) Bootstrap(name PluginName) (BootstrapPlugin, error) {
@@ -88,6 +92,14 @@ func (r *registry) Discovery(name PluginName) (DiscoveryPlugin, error) {
 	}
 }
 
+func (r *registry) Runtime(name PluginName) (RuntimePlugin, error) {
+	if p, ok := r.runtime[name]; ok {
+		return p, nil
+	} else {
+		return nil, noSuchPluginError(runtimePlugin, name)
+	}
+}
+
 func (r *registry) Register(name PluginName, plugin Plugin) error {
 	if bp, ok := plugin.(BootstrapPlugin); ok {
 		if old, exists := r.bootstrap[name]; exists {
@@ -112,6 +124,12 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 			return pluginAlreadyRegisteredError(discoveryPlugin, name, old, dp)
 		}
 		r.discovery[name] = dp
+	}
+	if rp, ok := plugin.(RuntimePlugin); ok {
+		if old, exists := r.runtime[name]; exists {
+			return pluginAlreadyRegisteredError(runtimePlugin, name, old, rp)
+		}
+		r.runtime[name] = rp
 	}
 	return nil
 }

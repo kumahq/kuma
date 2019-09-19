@@ -40,3 +40,10 @@ type DiscoveryPlugin interface {
 	Plugin
 	NewDiscoverySource(PluginContext, PluginConfig) (core_discovery.DiscoverySource, error)
 }
+
+// RuntimePlugin is responsible for registering environment-specific components,
+// e.g. Kubernetes admission web hooks.
+type RuntimePlugin interface {
+	Plugin
+	Customize(core_runtime.Runtime) error
+}
