@@ -160,6 +160,11 @@ func (d *Dataplane_Networking_Inbound) MatchTags(selector TagSelector) bool {
 	return selector.Matches(d.Tags)
 }
 
+func (d *Dataplane_Networking_Outbound) MatchTags(selector TagSelector) bool {
+	service := selector[ServiceTag]
+	return service == MatchAllTag || service == d.Service
+}
+
 const MatchAllTag = "*"
 
 type TagSelector map[string]string

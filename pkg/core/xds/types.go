@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"github.com/Kong/kuma/pkg/core/logs"
 	"github.com/Kong/kuma/pkg/core/permissions"
 	"net"
 	"strings"
@@ -28,6 +29,7 @@ type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
 	TrafficPermissions permissions.MatchedPermissions
+	Logs               *logs.MatchedLogs
 	OutboundTargets    map[string][]net.SRV
 }
 

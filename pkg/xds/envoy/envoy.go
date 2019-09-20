@@ -1,6 +1,7 @@
 package envoy
 
 import (
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"net"
 	"time"
 
@@ -110,12 +111,17 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool) *v2.Listener {
+func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, backends []*v1alpha1.LoggingBackend) (*v2.Listener, error) {
+	accessLog, err := convertLoggingBackends(backends)
+	if err != nil {
+		return nil, err
+	}
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
+		AccessLog: accessLog,
 	}
 	pbst, err := types.MarshalAny(config)
 	util_error.MustNot(err)
@@ -147,7 +153,7 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 			BindToPort: &types.BoolValue{Value: false},
 		}
 	}
-	return listener
+	return listener, nil
 }
 
 func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, permissions *mesh_core.TrafficPermissionResourceList) *v2.Listener {

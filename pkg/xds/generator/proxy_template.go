@@ -3,6 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"github.com/pkg/errors"
 
 	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
 	model "github.com/Kong/kuma/pkg/core/xds"
@@ -169,9 +170,13 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 
 		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
 		if used := names[outboundListenerName]; !used {
+			listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, edsClusterName, virtual, proxy.Logs.Outbounds[oface.Interface])
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not generate listener %s", outboundListenerName)
+			}
 			resources = append(resources, &Resource{
 				Name:     outboundListenerName,
-				Resource: envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, edsClusterName, virtual),
+				Resource: listener,
 			})
 			names[outboundListenerName] = true
 		}

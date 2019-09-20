@@ -306,6 +306,49 @@ var _ = Describe("Dataplane_Networking", func() {
 	})
 })
 
+var _ = Describe("Dataplane_Networking_Outbound", func() {
+	type testCase struct {
+		serviceTag string
+		selector TagSelector
+		expectedMatch bool
+	}
+	DescribeTable("MatchTags()", func(given testCase) {
+			//given
+			outbound := Dataplane_Networking_Outbound{
+				Interface: "sdf",
+				Service: given.serviceTag,
+			}
+
+			// when
+			matched := outbound.MatchTags(given.selector)
+
+			// then
+			Expect(matched).To(Equal(given.expectedMatch))
+		},
+		Entry("it should match *", testCase{
+			serviceTag: "backend",
+			selector: map[string]string{
+				"service": "*",
+			},
+			expectedMatch: true,
+		}),
+		Entry("it should match service", testCase{
+			serviceTag: "backend",
+			selector: map[string]string{
+				"service": "backend",
+			},
+			expectedMatch: true,
+		}),
+		Entry("it shouldn't match tag other than service", testCase{
+			serviceTag: "backend",
+			selector: map[string]string{
+				"version": "1.0",
+			},
+			expectedMatch: false,
+		}),
+	)
+})
+
 var _ = Describe("Dataplane", func() {
 	d := Dataplane{
 		Networking: &Dataplane_Networking{
