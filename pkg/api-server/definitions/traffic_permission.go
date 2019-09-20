@@ -7,7 +7,7 @@ import (
 
 var TrafficPermissionWsDefinition = ResourceWsDefinition{
 	Name: "Traffic Permission",
-	Path: "traffic-permission",
+	Path: "traffic-permissions",
 	ResourceFactory: func() model.Resource {
 		return &mesh.TrafficPermissionResource{}
 	},
