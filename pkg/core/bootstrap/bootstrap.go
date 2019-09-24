@@ -4,6 +4,7 @@ import (
 	"context"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/core"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
@@ -59,7 +60,7 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 	cfg := runtime.Config()
 
 	namespace := core_model.DefaultNamespace
-	if runtime.Config().Environment == kuma_cp.KubernetesEnvironment {
+	if runtime.Config().Environment == config_core.KubernetesEnvironment {
 		namespace = runtime.Config().Store.Kubernetes.SystemNamespace
 	}
 
@@ -122,9 +123,9 @@ func onStartup(runtime core_runtime.Runtime, cfg kuma_cp.Config) error {
 func initializeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	var pluginName core_plugins.PluginName
 	switch cfg.Environment {
-	case kuma_cp.KubernetesEnvironment:
+	case config_core.KubernetesEnvironment:
 		pluginName = core_plugins.Kubernetes
-	case kuma_cp.UniversalEnvironment:
+	case config_core.UniversalEnvironment:
 		pluginName = core_plugins.Universal
 	default:
 		return errors.Errorf("unknown environment type %s", cfg.Environment)
@@ -197,10 +198,10 @@ func initializeDiscovery(cfg kuma_cp.Config, builder *core_runtime.Builder) erro
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
 	switch cfg.Environment {
-	case kuma_cp.KubernetesEnvironment:
+	case config_core.KubernetesEnvironment:
 		pluginName = core_plugins.Kubernetes
 		pluginConfig = nil
-	case kuma_cp.UniversalEnvironment:
+	case config_core.UniversalEnvironment:
 		pluginName = core_plugins.Universal
 		pluginConfig = cfg.Discovery.Universal
 	default:

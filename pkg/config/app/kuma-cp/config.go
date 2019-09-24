@@ -4,6 +4,7 @@ import (
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/config"
 	api_server "github.com/Kong/kuma/pkg/config/api-server"
+	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/discovery"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/config/sds"
@@ -14,13 +15,6 @@ import (
 )
 
 var _ config.Config = &Config{}
-
-type EnvironmentType = string
-
-const (
-	KubernetesEnvironment EnvironmentType = "kubernetes"
-	UniversalEnvironment  EnvironmentType = "universal"
-)
 
 var _ config.Config = &Defaults{}
 
@@ -49,7 +43,7 @@ type Reports struct {
 
 type Config struct {
 	// Environment Type, can be either "kubernetes" or "universal"
-	Environment EnvironmentType `yaml:"environment" envconfig:"kuma_environment"`
+	Environment core.EnvironmentType `yaml:"environment" envconfig:"kuma_environment"`
 	// Resource Store configuration
 	Store *store.StoreConfig `yaml:"store"`
 	// Discovery configuration
@@ -70,7 +64,7 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
-		Environment:     UniversalEnvironment,
+		Environment:     core.UniversalEnvironment,
 		Store:           store.DefaultStoreConfig(),
 		XdsServer:       xds.DefaultXdsServerConfig(),
 		SdsServer:       sds.DefaultSdsServerConfig(),
@@ -101,8 +95,8 @@ func (c *Config) Validate() error {
 	if err := c.SdsServer.Validate(); err != nil {
 		return errors.Wrap(err, "SDS Server validation failed")
 	}
-	if c.Environment != KubernetesEnvironment && c.Environment != UniversalEnvironment {
-		return errors.Errorf("Environment should be either %s or %s", KubernetesEnvironment, UniversalEnvironment)
+	if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
+		return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
 	}
 	if err := c.Store.Validate(); err != nil {
 		return errors.Wrap(err, "Store validation failed")

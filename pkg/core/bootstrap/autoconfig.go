@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/tls"
 )
@@ -19,7 +20,7 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 
 func autoconfigureSds(cfg *kuma_cp.Config) error {
 	// to improve UX, we want to auto-generate TLS cert for SDS if possible
-	if cfg.Environment == kuma_cp.UniversalEnvironment {
+	if cfg.Environment == config_core.UniversalEnvironment {
 		if cfg.SdsServer.TlsCertFile == "" {
 			hosts := []string{
 				cfg.BootstrapServer.Params.XdsHost,

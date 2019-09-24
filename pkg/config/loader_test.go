@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -77,7 +78,7 @@ reports:
 		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 
-		Expect(cfg.Environment).To(Equal(kuma_cp.KubernetesEnvironment))
+		Expect(cfg.Environment).To(Equal(config_core.KubernetesEnvironment))
 
 		Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
 
@@ -133,7 +134,7 @@ reports:
 		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 
-		Expect(cfg.Environment).To(Equal(kuma_cp.KubernetesEnvironment))
+		Expect(cfg.Environment).To(Equal(config_core.KubernetesEnvironment))
 
 		Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
 		Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))

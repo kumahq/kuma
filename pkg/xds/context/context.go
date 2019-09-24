@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/Kong/kuma/pkg/config/core"
 )
 
 type Context struct {
@@ -36,7 +37,7 @@ func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, erro
 	}
 	sdsLocation := fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.SdsServer.GrpcPort)
 	dataplaneTokenFile := ""
-	if config.Environment == kuma_cp.KubernetesEnvironment {
+	if config.Environment == config_core.KubernetesEnvironment {
 		dataplaneTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	}
 
