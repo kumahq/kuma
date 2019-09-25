@@ -40,6 +40,16 @@ func (l *TrafficPermissionList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.TrafficPermission{}, &TrafficPermission{})
-	registry.RegisterListType(&proto.TrafficPermission{}, &TrafficPermissionList{})
+	registry.RegisterObjectType(&proto.TrafficPermission{}, &TrafficPermission{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "TrafficPermission",
+		},
+	})
+	registry.RegisterListType(&proto.TrafficPermission{}, &TrafficPermissionList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "TrafficPermissionList",
+		},
+	})
 }
