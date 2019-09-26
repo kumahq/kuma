@@ -607,7 +607,8 @@ func (m *Logging_AccessLogs) GetFilePath() string {
 	return ""
 }
 
-// LoggingBackend defines logging backend available to mesh. Backends can be used in TrafficLog rules.
+// LoggingBackend defines logging backend available to mesh. Backends can be
+// used in TrafficLog rules.
 type LoggingBackend struct {
 	// Name of the backend, can be then used in Mesh.logging.defaultBackend or in
 	// TrafficLogging
