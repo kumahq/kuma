@@ -608,12 +608,14 @@ name: inbound:192.168.0.1:8080
 			ctx      xds_context.Context
 			virtual  bool
 			expected string
+			logs     []*mesh_proto.LoggingBackend
 		}
 
 		DescribeTable("should generate 'outbound' Listener",
 			func(given testCase) {
 				// when
-				resource := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual)
+				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, given.logs)
+				Expect(err).ToNot(HaveOccurred())
 
 				// then
 				actual, err := util_proto.ToYAML(resource)
@@ -718,6 +720,59 @@ name: inbound:192.168.0.1:8080
                   - name: envoy.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                      cluster: outbound:127.0.0.1:18080
+                      statPrefix: outbound:127.0.0.1:18080
+                name: outbound:127.0.0.1:18080
+`,
+			}),
+			Entry("with traffic logs", testCase{
+				ctx: xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{},
+					Mesh: xds_context.MeshContext{
+						TlsEnabled: false,
+					},
+				},
+				logs: []*mesh_proto.LoggingBackend{
+					{
+						Name: "file-1",
+						Type: &mesh_proto.LoggingBackend_File_{
+							File: &mesh_proto.LoggingBackend_File{
+								Path: "/tmp/log",
+							},
+						},
+					},
+					{
+						Name:   "file-2",
+						Format: "custom format",
+						Type: &mesh_proto.LoggingBackend_File_{
+							File: &mesh_proto.LoggingBackend_File{
+								Path: "/tmp/log2",
+							},
+						},
+					},
+				},
+				expected: `
+                address:
+                  socketAddress:
+                    address: 127.0.0.1
+                    portValue: 18080
+                filterChains:
+                - filters:
+                  - name: envoy.tcp_proxy
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                      accessLog:
+                      - name: envoy.file_access_log
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
+                          format: |
+                            [%START_TIME%] %DOWNSTREAM_REMOTE_ADDRESS%->%UPSTREAM_HOST%(%UPSTREAM_CLUSTER%) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                          path: /tmp/log
+                      - name: envoy.file_access_log
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
+                          format: custom format
+                          path: /tmp/log2
                       cluster: outbound:127.0.0.1:18080
                       statPrefix: outbound:127.0.0.1:18080
                 name: outbound:127.0.0.1:18080

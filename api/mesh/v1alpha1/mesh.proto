@@ -71,4 +71,27 @@ message Logging {
   }
 
   AccessLogs accessLogs = 1;
+
+  // Name of the default backend
+  string defaultBackend = 2;
+
+  // List of available logging backends
+  repeated LoggingBackend backends = 3;
+}
+
+// LoggingBackend defines logging backend available to mesh. Backends can be
+// used in TrafficLog rules.
+message LoggingBackend {
+  // Name of the backend, can be then used in Mesh.logging.defaultBackend or in
+  // TrafficLogging
+  string name = 1;
+
+  // Format of access logs. Placehodlers available on
+  // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+  string format = 2;
+
+  // Simple logging to file
+  message File { string path = 1; }
+
+  oneof type { File file = 3; }
 }

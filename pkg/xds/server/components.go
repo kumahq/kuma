@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/logs"
 	"time"
 
 	"github.com/Kong/kuma/pkg/core/permissions"
@@ -36,6 +37,7 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 
 func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ResourceManager()}
+	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ResourceManager()}
 	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
 	if err != nil {
 		return nil, err
@@ -84,11 +86,17 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					return err
 				}
 
+				matchedLogs, err := logsMatcher.Match(ctx, dataplane)
+				if err != nil {
+					return err
+				}
+
 				proxy := xds.Proxy{
 					Id:                 proxyID,
 					Dataplane:          dataplane,
 					TrafficPermissions: matchedPermissions,
 					OutboundTargets:    outbound,
+					Logs:               matchedLogs,
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},

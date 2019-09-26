@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Kong/kuma/pkg/core/logs"
 	"github.com/Kong/kuma/pkg/core/permissions"
 	"io/ioutil"
 	"path/filepath"
@@ -91,6 +92,7 @@ var _ = Describe("Reconcile", func() {
 						},
 					},
 				},
+				Logs: logs.NewMatchedLogs(),
 			}
 
 			// when

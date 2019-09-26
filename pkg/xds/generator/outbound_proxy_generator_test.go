@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"github.com/Kong/kuma/pkg/core/logs"
 	"io/ioutil"
 	"net"
 	"path/filepath"
@@ -72,6 +73,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						{Target: "192.168.0.3", Port: 5432},
 					},
 				},
+				Logs: logs.NewMatchedLogs(),
 			}
 
 			// when
