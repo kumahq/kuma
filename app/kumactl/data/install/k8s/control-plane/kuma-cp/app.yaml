@@ -6,6 +6,9 @@ metadata:
   namespace: {{ .Namespace }}
 spec:
   ports:
+  - port: 443
+    name: https-admission-server
+    targetPort: 5443
   - port: 5677
     name: grpc-sds
   - port: 5678
@@ -34,6 +37,16 @@ metadata:
 data:
   tls.crt: {{ .SdsTlsCert | b64enc }}
   tls.key: {{ .SdsTlsKey | b64enc }}
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: kuma-admission-server-tls-cert
+  namespace: {{ .Namespace }}
+data:
+  tls.crt: {{ .AdmissionServerTlsCert | b64enc }}
+  tls.key: {{ .AdmissionServerTlsKey | b64enc }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -83,10 +96,15 @@ spec:
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
         - name: KUMA_SDS_SERVER_TLS_KEY_FILE
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
+        - name: KUMA_KUBERNETES_ADMISSION_SERVER_PORT
+          value: "5443"
+        - name: KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR
+          value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
         args:
         - run
         - --log-level=info
         ports:
+        - containerPort: 5443
         - containerPort: 5677
         - containerPort: 5678
         - containerPort: 5679
@@ -108,8 +126,37 @@ spec:
         - name: kuma-sds-tls-cert
           mountPath: /var/run/secrets/kuma.io/kuma-sds/tls-cert
           readOnly: true
+        - name: kuma-admission-server-tls-cert
+          mountPath: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
+          readOnly: true
       volumes:
       - name: kuma-sds-tls-cert
         secret:
           secretName: kuma-sds-tls-cert
-
+      - name: kuma-admission-server-tls-cert
+        secret:
+          secretName: kuma-admission-server-tls-cert
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: kuma-admission-mutating-webhook-configuration
+webhooks:
+- name: mesh.defaulter.kuma-admission.kuma.io
+  failurePolicy: Fail
+  clientConfig:
+    caBundle: {{ .AdmissionServerTlsCert | b64enc }}
+    service:
+      namespace: {{ .Namespace }}
+      name: {{ .ControlPlaneServiceName }}
+      path: /default-kuma-io-v1alpha1-mesh
+  rules:
+  - apiGroups:
+    - kuma.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - meshes

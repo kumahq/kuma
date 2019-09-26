@@ -53,6 +53,12 @@ bootstrapServer:
 apiServer:
   port: 9090
   readOnly: true
+runtime:
+  kubernetes:
+    admissionServer:
+      address: 127.0.0.2
+      port: 9443
+      certDir: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
 reports:
   enabled: false
 `
@@ -92,6 +98,10 @@ reports:
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 
+		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
+		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
+		Expect(cfg.Runtime.Kubernetes.AdmissionServer.CertDir).To(Equal("/var/run/secrets/kuma.io/kuma-admission-server/tls-cert"))
+
 		Expect(cfg.Reports.Enabled).To(BeFalse())
 	})
 
@@ -119,6 +129,9 @@ reports:
 		setEnv("KUMA_API_SERVER_READ_ONLY", "true")
 		setEnv("KUMA_API_SERVER_PORT", "9090")
 		setEnv("KUMA_REPORTS_ENABLED", "false")
+		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS", "127.0.0.2")
+		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_PORT", "9443")
+		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR", "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert")
 
 		// when
 		cfg := kuma_cp.DefaultConfig()
@@ -146,6 +159,10 @@ reports:
 
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
+
+		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
+		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
+		Expect(cfg.Runtime.Kubernetes.AdmissionServer.CertDir).To(Equal("/var/run/secrets/kuma.io/kuma-admission-server/tls-cert"))
 
 		Expect(cfg.Reports.Enabled).To(BeFalse())
 	})

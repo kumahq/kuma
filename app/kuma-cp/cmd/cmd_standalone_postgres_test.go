@@ -8,7 +8,7 @@ import (
 
 var _ = Describe("Standalone Postgres test", func() {
 
-	RunSmokeTest(`
+	RunSmokeTest(StaticConfig(`
 xdsServer:
   grpcPort: 0
   diagnosticsPort: %d
@@ -21,5 +21,5 @@ sdsServer:
 environment: universal
 store:
   type: postgres
-`)
+`))
 })

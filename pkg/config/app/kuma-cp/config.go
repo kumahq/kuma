@@ -7,6 +7,7 @@ import (
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/discovery"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
+	"github.com/Kong/kuma/pkg/config/plugins/runtime"
 	"github.com/Kong/kuma/pkg/config/sds"
 	"github.com/Kong/kuma/pkg/config/xds"
 	util_error "github.com/Kong/kuma/pkg/util/error"
@@ -63,6 +64,8 @@ type Config struct {
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
+	// Environment-specific configuration
+	Runtime *runtime.RuntimeConfig
 	// Default Kuma entities configuration
 	Defaults *Defaults `yaml:"defaults"`
 	// Reports configuration
@@ -78,6 +81,7 @@ func DefaultConfig() Config {
 		ApiServer:       api_server.DefaultApiServerConfig(),
 		BootstrapServer: xds.DefaultBootstrapServerConfig(),
 		Discovery:       discovery.DefaultDiscoveryConfig(),
+		Runtime:         runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
 			Mesh: `type: Mesh
 name: default
@@ -113,6 +117,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Discovery.Validate(); err != nil {
 		return errors.Wrap(err, "Discovery validation failed")
+	}
+	if err := c.Runtime.Validate(c.Environment); err != nil {
+		return errors.Wrap(err, "Runtime validation failed")
 	}
 	if err := c.Defaults.Validate(); err != nil {
 		return errors.Wrap(err, "Defaults validation failed")

@@ -30,6 +30,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		ControlPlaneVersion     string
 		ControlPlaneImage       string
 		ControlPlaneServiceName string
+		AdmissionServerTlsCert  string
+		AdmissionServerTlsKey   string
 		InjectorImage           string
 		InjectorFailurePolicy   string
 		InjectorServiceName     string
@@ -46,6 +48,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		ControlPlaneVersion:     kuma_version.Build.Version,
 		ControlPlaneImage:       "kong-docker-kuma-docker.bintray.io/kuma-cp",
 		ControlPlaneServiceName: "kuma-control-plane",
+		AdmissionServerTlsCert:  "",
+		AdmissionServerTlsKey:   "",
 		InjectorImage:           "kong-docker-kuma-docker.bintray.io/kuma-injector",
 		InjectorFailurePolicy:   "Ignore",
 		InjectorServiceName:     "kuma-injector",
@@ -62,6 +66,19 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Kuma Control Plane on Kubernetes",
 		Long:  `Install Kuma Control Plane on Kubernetes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
+				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
+				// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
+				admissionCert, err := NewSelfSignedCert(fqdn)
+				if err != nil {
+					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
+				}
+				args.AdmissionServerTlsCert = string(admissionCert.CertPEM)
+				args.AdmissionServerTlsKey = string(admissionCert.KeyPEM)
+			} else if args.AdmissionServerTlsCert == "" || args.AdmissionServerTlsKey == "" {
+				return errors.Errorf("Admission Server: both TLS Cert and TLS Key must be provided at the same time")
+			}
+
 			if args.InjectorTlsCert == "" && args.InjectorTlsKey == "" {
 				fqdn := fmt.Sprintf("%s.%s.svc", args.InjectorServiceName, args.Namespace)
 				// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
@@ -121,6 +138,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.ControlPlaneVersion, "control-plane-version", args.ControlPlaneVersion, "version shared by all components of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.ControlPlaneImage, "control-plane-image", args.ControlPlaneImage, "image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlaneServiceName, "control-plane-service-name", args.ControlPlaneServiceName, "Service name of the Kuma Control Plane")
+	cmd.Flags().StringVar(&args.AdmissionServerTlsCert, "admission-server-tls-cert", args.AdmissionServerTlsCert, "TLS certificate for the admission web hooks implemented by the Kuma Control Plane")
+	cmd.Flags().StringVar(&args.AdmissionServerTlsKey, "admission-server-tls-key", args.AdmissionServerTlsKey, "TLS key for the admission web hooks implemented by the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.InjectorImage, "injector-image", args.InjectorImage, "image of the Kuma Injector component")
 	cmd.Flags().StringVar(&args.InjectorFailurePolicy, "injector-failure-policy", args.InjectorFailurePolicy, "failue policy of the mutating web hook implemented by the Kuma Injector component")
 	cmd.Flags().StringVar(&args.InjectorServiceName, "injector-service-name", args.InjectorServiceName, "Service name of the mutating web hook implemented by the Kuma Injector component")
