@@ -8,6 +8,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/pkg/errors"
+	"sort"
 )
 
 var logger = core.Log.WithName("logs")
@@ -39,6 +40,10 @@ func (m *MatchedLogs) AddForOutbound(outbound string, backend *mesh_proto.Loggin
 		m.Outbounds[outbound] = []*mesh_proto.LoggingBackend{}
 	}
 	m.Outbounds[outbound] = append(m.Outbounds[outbound], backend)
+	// sort the slice for stability of envoy configuration
+	sort.Slice(m.Outbounds[outbound], func(i, j int) bool {
+		return m.Outbounds[outbound][i].Name > m.Outbounds[outbound][j].Name
+	})
 }
 
 func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (*MatchedLogs, error) {
@@ -102,10 +107,10 @@ func matchBackends(dataplane *mesh_proto.Dataplane, logs *mesh_core.TrafficLogRe
 // To Match outbound, we need to match service tag of outbound and all tags of any inbound interface
 func matchOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound, inbounds []*mesh_proto.Dataplane_Networking_Inbound, logs []*mesh_core.TrafficLogResource) []*mesh_core.TrafficLogResource {
 	matchedLogs := []*mesh_core.TrafficLogResource{}
-	for _, perm := range logs {
+	for _, log := range logs {
 		matchedRules := []*mesh_proto.TrafficLog_Rule{}
 
-		for _, rule := range perm.Spec.Rules {
+		for _, rule := range log.Spec.Rules {
 			if !anySelectorMatchAnyInbound(rule.Sources, inbounds) {
 				continue
 			}
@@ -119,7 +124,7 @@ func matchOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound, inbounds 
 		if len(matchedRules) > 0 {
 			// construct copy of the resource but only with matched rules
 			matchedLogs = append(matchedLogs, &mesh_core.TrafficLogResource{
-				Meta: perm.Meta,
+				Meta: log.Meta,
 				Spec: mesh_proto.TrafficLog{
 					Rules: matchedRules,
 				},
