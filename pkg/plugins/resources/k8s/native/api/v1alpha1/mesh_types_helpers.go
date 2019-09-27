@@ -40,6 +40,16 @@ func (l *MeshList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.Mesh{}, &Mesh{})
-	registry.RegisterListType(&proto.Mesh{}, &MeshList{})
+	registry.RegisterObjectType(&proto.Mesh{}, &Mesh{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "Mesh",
+		},
+	})
+	registry.RegisterListType(&proto.Mesh{}, &MeshList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshList",
+		},
+	})
 }

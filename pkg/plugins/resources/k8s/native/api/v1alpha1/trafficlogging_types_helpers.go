@@ -40,6 +40,16 @@ func (l *TrafficLogList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.TrafficLog{}, &TrafficLog{})
-	registry.RegisterListType(&proto.TrafficLog{}, &TrafficLogList{})
+	registry.RegisterObjectType(&proto.TrafficLog{}, &TrafficLog{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "TrafficLog",
+		},
+	})
+	registry.RegisterListType(&proto.TrafficLog{}, &TrafficLogList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "TrafficLogList",
+		},
+	})
 }

@@ -40,6 +40,16 @@ func (l *DataplaneList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.Dataplane{}, &Dataplane{})
-	registry.RegisterListType(&proto.Dataplane{}, &DataplaneList{})
+	registry.RegisterObjectType(&proto.Dataplane{}, &Dataplane{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "Dataplane",
+		},
+	})
+	registry.RegisterListType(&proto.Dataplane{}, &DataplaneList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "DataplaneList",
+		},
+	})
 }

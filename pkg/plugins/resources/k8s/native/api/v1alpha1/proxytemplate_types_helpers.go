@@ -40,6 +40,16 @@ func (l *ProxyTemplateList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.ProxyTemplate{}, &ProxyTemplate{})
-	registry.RegisterListType(&proto.ProxyTemplate{}, &ProxyTemplateList{})
+	registry.RegisterObjectType(&proto.ProxyTemplate{}, &ProxyTemplate{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "ProxyTemplate",
+		},
+	})
+	registry.RegisterListType(&proto.ProxyTemplate{}, &ProxyTemplateList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "ProxyTemplateList",
+		},
+	})
 }
