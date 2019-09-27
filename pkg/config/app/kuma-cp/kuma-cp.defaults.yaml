@@ -76,7 +76,9 @@ runtime:
       address:
       # Port the Admission WebHook Server should be listening on
       port: 5443
-      # Directory with a TLS cert and private key for the Admission WebHook Server
+      # Directory with a TLS cert and private key for the Admission WebHook Server.
+      # TLS certificate file must be named `tls.crt`.
+      # TLS key file must be named `tls.key`.
       certDir:
 
 # Default Kuma entities configuration
