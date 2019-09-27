@@ -47,6 +47,10 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
+	if err := customizeRuntime(rt); err != nil {
+		return nil, err
+	}
+
 	return rt, nil
 }
 
@@ -71,17 +75,18 @@ func onStartup(runtime core_runtime.Runtime) error {
 }
 
 func scheduleCreateDefaultMesh(runtime core_runtime.Runtime) error {
-	ns := core_model.DefaultNamespace
 	switch env := runtime.Config().Environment; env {
 	case config_core.KubernetesEnvironment:
-		ns = runtime.Config().Store.Kubernetes.SystemNamespace
+		// default Mesh on Kubernetes is managed by a Controller
+		return nil
 	case config_core.UniversalEnvironment:
+		// schedule a one-off create default Mesh operation
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}
 	// schedule a one-off create default Mesh operation
 	return runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
-		if err := mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto(), ns); err != nil {
+		if err := mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto(), core_model.DefaultNamespace); err != nil {
 			return err
 		}
 		<-stop // it has to block, otherwise the k8s component manager stops all other components
@@ -212,4 +217,21 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
 	builder.WithResourceManager(customizableManager)
+}
+
+func customizeRuntime(rt core_runtime.Runtime) error {
+	var pluginName core_plugins.PluginName
+	switch env := rt.Config().Environment; env {
+	case config_core.KubernetesEnvironment:
+		pluginName = core_plugins.Kubernetes
+	case config_core.UniversalEnvironment:
+		return nil
+	default:
+		return errors.Errorf("unknown environment type %q", env)
+	}
+	plugin, err := core_plugins.Plugins().Runtime(pluginName)
+	if err != nil {
+		return err
+	}
+	return plugin.Customize(rt)
 }
