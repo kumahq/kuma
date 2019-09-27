@@ -47,7 +47,10 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 }
 
 func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
-	return addNamespaceReconciler(mgr, rt)
+	if err := addNamespaceReconciler(mgr, rt); err != nil {
+		return err
+	}
+	return addMeshReconciler(mgr, rt)
 }
 
 func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
@@ -57,6 +60,19 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 		SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager:     rt.ResourceManager(),
 		DefaultMeshTemplate: rt.Config().Defaults.MeshProto(),
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	reconciler := &k8s_controllers.MeshReconciler{
+		Client:           mgr.GetClient(),
+		Reader:           mgr.GetAPIReader(),
+		Log:              core.Log.WithName("controllers").WithName("Mesh"),
+		Scheme:           mgr.GetScheme(),
+		Converter:        k8s_resources.DefaultConverter(),
+		BuiltinCaManager: rt.BuiltinCaManager(),
+		SystemNamespace:  rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
