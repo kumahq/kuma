@@ -93,5 +93,10 @@ message LoggingBackend {
   // Simple logging to file
   message File { string path = 1; }
 
-  oneof type { File file = 3; }
+  message Tcp { string address = 1; }
+
+  oneof type {
+    File file = 3;
+    Tcp tcp = 4;
+  }
 }

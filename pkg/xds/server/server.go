@@ -15,12 +15,15 @@ var (
 func SetupServer(rt core_runtime.Runtime) error {
 	reconciler := DefaultReconciler(rt)
 
-	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler)
+	metadataTracker := newDataplaneMetadataTracker()
+
+	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler, metadataTracker)
 	if err != nil {
 		return err
 	}
 	callbacks := util_xds.CallbacksChain{
 		tracker,
+		metadataTracker,
 		DefaultDataplaneStatusTracker(rt),
 	}
 

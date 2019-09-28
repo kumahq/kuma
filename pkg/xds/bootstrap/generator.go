@@ -58,11 +58,12 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.Bootstra
 		adminPort = request.AdminPort
 	}
 	params := configParameters{
-		Id:        proxyId.String(),
-		Service:   service,
-		AdminPort: adminPort,
-		XdsHost:   b.config.XdsHost,
-		XdsPort:   b.config.XdsPort,
+		Id:            proxyId.String(),
+		Service:       service,
+		AdminPort:     adminPort,
+		XdsHost:       b.config.XdsHost,
+		XdsPort:       b.config.XdsPort,
+		AccessLogPort: request.AccessLogsPort,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.ConfigForParameters(params)

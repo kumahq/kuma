@@ -31,6 +31,7 @@ type Proxy struct {
 	TrafficPermissions permissions.MatchedPermissions
 	Logs               *logs.MatchedLogs
 	OutboundTargets    map[string][]net.SRV
+	Metadata           *DataplaneMetadata
 }
 
 func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {

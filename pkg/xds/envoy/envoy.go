@@ -11,6 +11,7 @@ import (
 	"github.com/gogo/protobuf/types"
 
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -111,8 +112,8 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, backends []*v1alpha1.LoggingBackend) (*v2.Listener, error) {
-	accessLog, err := convertLoggingBackends(backends)
+func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, backends []*v1alpha1.LoggingBackend, metadata *core_xds.DataplaneMetadata) (*v2.Listener, error) {
+	accessLog, err := convertLoggingBackends(backends, metadata)
 	if err != nil {
 		return nil, err
 	}

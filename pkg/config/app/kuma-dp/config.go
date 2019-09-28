@@ -57,6 +57,8 @@ type Dataplane struct {
 	Name string `yaml:"name,omitempty" envconfig:"kuma_dataplane_name"`
 	// Envoy Admin port.
 	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
+	// Access logs port
+	AccessLogsPort uint32 `yaml:"accessLogsPort,omitempty" envconfig:"kuma_dataplane_access_logs_port"`
 }
 
 // DataplaneRuntime defines the context in which dataplane (Envoy) runs.

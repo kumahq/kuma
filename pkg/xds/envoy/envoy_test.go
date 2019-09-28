@@ -614,7 +614,7 @@ name: inbound:192.168.0.1:8080
 		DescribeTable("should generate 'outbound' Listener",
 			func(given testCase) {
 				// when
-				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, given.logs)
+				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, given.logs, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then

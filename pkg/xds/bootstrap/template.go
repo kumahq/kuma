@@ -1,17 +1,20 @@
 package bootstrap
 
 type configParameters struct {
-	Id        string
-	Service   string
-	AdminPort uint32
-	XdsHost   string
-	XdsPort   uint32
+	Id            string
+	Service       string
+	AdminPort     uint32
+	XdsHost       string
+	XdsPort       uint32
+	AccessLogPort uint32
 }
 
 const configTemplate string = `
 node:
   id: {{.Id}}
   cluster: {{.Service}}
+  metadata:
+    accessLogPort: {{.AccessLogPort}}
 
 {{if .AdminPort }}
 admin:

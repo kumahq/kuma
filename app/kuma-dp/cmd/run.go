@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/Kong/kuma/pkg/util/network"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -54,6 +57,14 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			if cfg.Dataplane.AccessLogsPort == 0 {
+				port, err := network.GetFreePort()
+				if err != nil {
+					return errors.Wrap(err, "could not retrieve free port for access logs")
+				}
+				cfg.Dataplane.AccessLogsPort = uint32(port)
+			}
+
 			runLog.Info("starting Dataplane (Envoy) ...")
 
 			dataplane := envoy.New(envoy.Opts{
@@ -62,6 +73,15 @@ func newRunCmd() *cobra.Command {
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 			})
+
+			server := accesslogs.NewAccessLogServer()
+			defer server.Close()
+			go func() {
+				if err := server.Start(cfg.Dataplane.AccessLogsPort); err != nil {
+					runLog.Error(err, "could not start access log server")
+				}
+			}()
+
 			if err := dataplane.Run(core.SetupSignalHandler()); err != nil {
 				runLog.Error(err, "problem running Dataplane (Envoy)")
 				return err
