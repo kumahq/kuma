@@ -2,9 +2,15 @@ package config_test
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
+	api_server "github.com/Kong/kuma/pkg/api-server"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -84,9 +90,9 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// when
 			err := rootCmd.Execute()
 			// then
-			Expect(err).To(MatchError(`Control Plane with name "example" already exists`))
+			Expect(err).To(MatchError(`could not add the control plane: Control Plane with name "example" already exists`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: Control Plane with name "example" already exists
+			Expect(outbuf.String()).To(Equal(`Error: could not add the control plane: Control Plane with name "example" already exists
 `))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
@@ -109,20 +115,24 @@ var _ = Describe("kumactl config control-planes add", func() {
 				err = ioutil.WriteFile(configFile.Name(), initial, 0600)
 				Expect(err).ToNot(HaveOccurred())
 
+				// setup cp index server for validation to pass
+				port := setupCpIndexServer()
+
 				// given
 				rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
 					"config", "control-planes", "add",
 					"--name", "example",
-					"--address", "https://kuma-control-plane.internal:5681"})
+					"--address", fmt.Sprintf("http://localhost:%d", port)})
 				// when
 				err = rootCmd.Execute()
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				expectedWithPlaceholder, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
+				expected := strings.ReplaceAll(string(expectedWithPlaceholder), "http://placeholder-address", fmt.Sprintf("http://localhost:%d", port))
 
 				// when
 				actual, err := ioutil.ReadFile(configFile.Name())
@@ -155,3 +165,22 @@ switched active Control Plane to "example"
 		)
 	})
 })
+
+func setupCpIndexServer() int {
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+	mux.HandleFunc("/", func(writer http.ResponseWriter, req *http.Request) {
+		defer GinkgoRecover()
+		response := api_server.IndexResponse{
+			Tagline: api_server.TaglineKuma,
+			Version: "unknown",
+		}
+		marshaled, err := json.Marshal(response)
+		Expect(err).ToNot(HaveOccurred())
+		_, err = writer.Write(marshaled)
+		Expect(err).ToNot(HaveOccurred())
+	})
+	port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
+	Expect(err).ToNot(HaveOccurred())
+	return port
+}

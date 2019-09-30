@@ -31,8 +31,8 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			if err := cp.Validate(); err != nil {
 				return errors.Wrapf(err, "Control Plane configuration is not valid")
 			}
-			if !cfg.AddControlPlane(cp) {
-				return errors.Errorf("Control Plane with name %q already exists", cp.Name)
+			if err := cfg.AddControlPlane(cp); err != nil {
+				return errors.Wrap(err, "could not add the control plane")
 			}
 			ctx := &config_proto.Context{
 				Name:         cp.Name,
