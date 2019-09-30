@@ -34,12 +34,11 @@ func (a *accessLogServer) StreamAccessLogs(server v2.AccessLogService_StreamAcce
 		return err
 	}
 
-	for _, entry := range msg.LogEntries.(*v2.StreamAccessLogsMessage_HttpLogs).HttpLogs.LogEntry {
+	for _, httpLogEntry := range msg.LogEntries.(*v2.StreamAccessLogsMessage_HttpLogs).HttpLogs.LogEntry {
 		split := strings.Split(msg.GetIdentifier().GetLogName(), ";")
 		address := split[0]
 		format := split[1]
-		println(entry.String())
-		entry := logEntry(entry, format)
+		entry := formatEntry(httpLogEntry, format)
 		if err := a.sendLog(address, entry); err != nil {
 			return errors.Wrap(err, "could not send log")
 		}
@@ -47,7 +46,7 @@ func (a *accessLogServer) StreamAccessLogs(server v2.AccessLogService_StreamAcce
 	return nil
 }
 
-func logEntry(entry *envoy_data_accesslog_v2.HTTPAccessLogEntry, format string) string {
+func formatEntry(entry *envoy_data_accesslog_v2.HTTPAccessLogEntry, format string) string {
 	addrToString := func(addr *envoy_core.Address) string {
 		return fmt.Sprintf("%s:%d", addr.GetSocketAddress().GetAddress(), addr.GetSocketAddress().GetPortValue())
 	}

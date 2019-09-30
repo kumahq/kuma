@@ -112,8 +112,8 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, backends []*v1alpha1.LoggingBackend, id core_xds.ProxyId) (*v2.Listener, error) {
-	accessLog, err := convertLoggingBackends(backends, id)
+func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, backends []*v1alpha1.LoggingBackend, proxy *core_xds.Proxy) (*v2.Listener, error) {
+	accessLog, err := convertLoggingBackends(backends, proxy)
 	if err != nil {
 		return nil, err
 	}
