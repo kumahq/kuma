@@ -1,8 +1,8 @@
 package accesslogs
 
-
 import (
 	"fmt"
+	"github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
@@ -103,9 +103,9 @@ func (a *accessLogServer) connect(address string) error {
 	return nil
 }
 
-func (a *accessLogServer) Start(port uint32) error {
+func (a *accessLogServer) Start(dataplane kumadp.Dataplane) error {
 	v2.RegisterAccessLogServiceServer(a.server, a)
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	lis, err := net.Listen("unix", fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", dataplane.Name, dataplane.Mesh))
 	if err != nil {
 		return err
 	}

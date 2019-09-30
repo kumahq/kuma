@@ -14,10 +14,10 @@ import (
 
 const AccessLogDefaultFormat = "[%START_TIME%] %DOWNSTREAM_REMOTE_ADDRESS%->%UPSTREAM_HOST%(%UPSTREAM_CLUSTER%) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes\n"
 
-func convertLoggingBackends(backends []*v1alpha1.LoggingBackend, metadata *core_xds.DataplaneMetadata) ([]*filter_accesslog.AccessLog, error) {
+func convertLoggingBackends(backends []*v1alpha1.LoggingBackend, id core_xds.ProxyId) ([]*filter_accesslog.AccessLog, error) {
 	var result []*filter_accesslog.AccessLog
 	for _, backend := range backends {
-		log, err := convertLoggingBackend(backend, metadata)
+		log, err := convertLoggingBackend(backend, id)
 		if err != nil {
 			return nil, err
 		}
@@ -26,7 +26,7 @@ func convertLoggingBackends(backends []*v1alpha1.LoggingBackend, metadata *core_
 	return result, nil
 }
 
-func convertLoggingBackend(backend *v1alpha1.LoggingBackend, metadata *core_xds.DataplaneMetadata) (*filter_accesslog.AccessLog, error) {
+func convertLoggingBackend(backend *v1alpha1.LoggingBackend, id core_xds.ProxyId) (*filter_accesslog.AccessLog, error) {
 	format := AccessLogDefaultFormat
 	if backend.Format != "" {
 		format = backend.Format
@@ -34,16 +34,13 @@ func convertLoggingBackend(backend *v1alpha1.LoggingBackend, metadata *core_xds.
 	if file, ok := backend.GetType().(*v1alpha1.LoggingBackend_File_); ok {
 		return fileAccessLog(format, file)
 	} else if tcp, ok := backend.GetType().(*v1alpha1.LoggingBackend_Tcp_); ok {
-		return tcpAccessLog(format, tcp, metadata)
+		return tcpAccessLog(format, tcp, id)
 	} else {
 		return nil, errors.Errorf("could not convert LoggingBackend of type %T to AccessLog", backend.GetType())
 	}
 }
 
-func tcpAccessLog(format string, tcp *v1alpha1.LoggingBackend_Tcp_, metadata *core_xds.DataplaneMetadata) (*filter_accesslog.AccessLog, error) {
-	if metadata.AccessLogPort == 0 {
-		return nil, errors.New("access log port is not set in metadata. Access log is not set")
-	}
+func tcpAccessLog(format string, tcp *v1alpha1.LoggingBackend_Tcp_, id core_xds.ProxyId) (*filter_accesslog.AccessLog, error) {
 	fileAccessLog := &accesslog.HttpGrpcAccessLogConfig{
 		CommonConfig: &accesslog.CommonGrpcAccessLogConfig{
 			LogName: fmt.Sprintf("%s;%s", tcp.Tcp.Address, format),
@@ -51,7 +48,7 @@ func tcpAccessLog(format string, tcp *v1alpha1.LoggingBackend_Tcp_, metadata *co
 				TargetSpecifier: &core.GrpcService_GoogleGrpc_{
 					GoogleGrpc: &core.GrpcService_GoogleGrpc{
 						StatPrefix: "grpc_service",
-						TargetUri:  fmt.Sprintf("127.0.0.1:%d", metadata.AccessLogPort),
+						TargetUri:  fmt.Sprintf("unix:///tmp/kuma-access-logs-%s-%s.sock", id.Name, id.Mesh),
 					},
 				},
 			},

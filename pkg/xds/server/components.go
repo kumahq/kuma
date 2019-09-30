@@ -35,7 +35,7 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 	}
 }
 
-func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler, metadataTracker *dataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
+func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ResourceManager()}
 	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ResourceManager()}
 	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
@@ -97,7 +97,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					TrafficPermissions: matchedPermissions,
 					OutboundTargets:    outbound,
 					Logs:               matchedLogs,
-					Metadata:           metadataTracker.Metadata(proxyID),
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},

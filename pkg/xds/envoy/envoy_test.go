@@ -1,6 +1,7 @@
 package envoy_test
 
 import (
+	"github.com/Kong/kuma/pkg/core/xds"
 	"net"
 
 	. "github.com/onsi/ginkgo"
@@ -614,7 +615,7 @@ name: inbound:192.168.0.1:8080
 		DescribeTable("should generate 'outbound' Listener",
 			func(given testCase) {
 				// when
-				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, given.logs, nil)
+				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, given.logs, xds.ProxyId{})
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
