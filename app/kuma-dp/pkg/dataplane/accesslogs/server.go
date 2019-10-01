@@ -108,14 +108,20 @@ func formatEntry(entry *envoy_data_accesslog_v2.HTTPAccessLogEntry, format strin
 	addrToString := func(addr *envoy_core.Address) string {
 		return fmt.Sprintf("%s:%d", addr.GetSocketAddress().GetAddress(), addr.GetSocketAddress().GetPortValue())
 	}
+	connectionTime := int64(0)
+	if entry.GetCommonProperties().GetTimeToLastDownstreamTxByte() != nil {
+		connectionTime = int64(*entry.GetCommonProperties().GetTimeToLastDownstreamTxByte() / time.Millisecond)
+	}
 	placeholders := map[string]string{
 		"%START_TIME%":                entry.GetCommonProperties().GetStartTime().Format(time.RFC3339),
 		"%DOWNSTREAM_REMOTE_ADDRESS%": addrToString(entry.GetCommonProperties().GetDownstreamRemoteAddress()),
 		"%DOWNSTREAM_LOCAL_ADDRESS%":  addrToString(entry.GetCommonProperties().GetDownstreamLocalAddress()),
 		"%UPSTREAM_LOCAL_ADDRESS%":    addrToString(entry.GetCommonProperties().GetUpstreamLocalAddress()),
 		"%UPSTREAM_CLUSTER%":          entry.GetCommonProperties().GetUpstreamCluster(),
-		"%BYTES_RECEIVED%":            strconv.Itoa(int(entry.GetResponse().GetResponseBodyBytes())),
-		"%BYTES_SENT%":                strconv.Itoa(int(entry.GetRequest().GetRequestBodyBytes())),
+		"%BYTES_RECEIVED%":            strconv.FormatUint(entry.GetResponse().GetResponseBodyBytes(), 10),
+		"%BYTES_SENT%":                strconv.FormatUint(entry.GetRequest().GetRequestBodyBytes(), 10),
+		"%DURATION%":                  strconv.FormatInt(connectionTime, 10),
+		"%RESPONSE_TX_DURATION%":      strconv.FormatInt(connectionTime, 10),
 	}
 	log := format
 	for placeholder, value := range placeholders {
