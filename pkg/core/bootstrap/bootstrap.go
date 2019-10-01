@@ -68,33 +68,25 @@ func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 }
 
 func onStartup(runtime core_runtime.Runtime) error {
-	if err := scheduleCreateDefaultMesh(runtime); err != nil {
+	if err := createDefaultMesh(runtime); err != nil {
 		return err
 	}
-	return scheduleStartReporter(runtime)
+	return startReporter(runtime)
 }
 
-func scheduleCreateDefaultMesh(runtime core_runtime.Runtime) error {
+func createDefaultMesh(runtime core_runtime.Runtime) error {
 	switch env := runtime.Config().Environment; env {
 	case config_core.KubernetesEnvironment:
 		// default Mesh on Kubernetes is managed by a Controller
 		return nil
 	case config_core.UniversalEnvironment:
-		// schedule a one-off create default Mesh operation
+		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto(), core_model.DefaultNamespace)
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}
-	// schedule a one-off create default Mesh operation
-	return runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
-		if err := mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto(), core_model.DefaultNamespace); err != nil {
-			return err
-		}
-		<-stop // it has to block, otherwise the k8s component manager stops all other components
-		return nil
-	}))
 }
 
-func scheduleStartReporter(runtime core_runtime.Runtime) error {
+func startReporter(runtime core_runtime.Runtime) error {
 	return runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
 		runtime_reports.Init(runtime, runtime.Config())
 		<-stop
