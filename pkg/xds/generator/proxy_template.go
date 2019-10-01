@@ -3,6 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -148,6 +149,7 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
 	resources := make([]*Resource, 0, len(ofaces))
 	names := make(map[string]bool)
+	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	for _, oface := range ofaces {
 		endpoint, err := kuma_mesh.ParseOutboundInterface(oface.Interface)
 		if err != nil {
@@ -170,7 +172,8 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 
 		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
 		if used := names[outboundListenerName]; !used {
-			listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, edsClusterName, virtual, proxy.Logs.Outbounds[oface.Interface], proxy)
+			destinationService := oface.Service
+			listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, edsClusterName, virtual, sourceService, destinationService, proxy.Logs.Outbounds[oface.Interface], proxy)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not generate listener %s", outboundListenerName)
 			}

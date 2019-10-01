@@ -116,6 +116,8 @@ func formatEntry(entry *envoy_data_accesslog_v2.HTTPAccessLogEntry, format strin
 		"%START_TIME%":                entry.GetCommonProperties().GetStartTime().Format(time.RFC3339),
 		"%DOWNSTREAM_REMOTE_ADDRESS%": addrToString(entry.GetCommonProperties().GetDownstreamRemoteAddress()),
 		"%DOWNSTREAM_LOCAL_ADDRESS%":  addrToString(entry.GetCommonProperties().GetDownstreamLocalAddress()),
+		"%UPSTREAM_HOST%":             addrToString(entry.GetCommonProperties().GetUpstreamRemoteAddress()),
+		"%UPSTREAM_REMOTE_ADDRESS%":   addrToString(entry.GetCommonProperties().GetUpstreamRemoteAddress()),
 		"%UPSTREAM_LOCAL_ADDRESS%":    addrToString(entry.GetCommonProperties().GetUpstreamLocalAddress()),
 		"%UPSTREAM_CLUSTER%":          entry.GetCommonProperties().GetUpstreamCluster(),
 		"%BYTES_RECEIVED%":            strconv.FormatUint(entry.GetResponse().GetResponseBodyBytes(), 10),

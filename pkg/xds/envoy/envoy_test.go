@@ -626,6 +626,7 @@ name: inbound:192.168.0.1:8080
 							Networking: &mesh_proto.Dataplane_Networking{
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
+										Interface: "192.168.0.1:1234:8765",
 										Tags: map[string]string{
 											"service": "backend",
 										},
@@ -635,9 +636,11 @@ name: inbound:192.168.0.1:8080
 						},
 					},
 				}
+				sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
+				destinationService := "db"
 
 				// when
-				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, given.logs, &proxy)
+				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, sourceService, destinationService, given.logs, &proxy)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -789,7 +792,7 @@ name: inbound:192.168.0.1:8080
                   typedConfig:
                     '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                     format: |
-                      [%START_TIME%] %DOWNSTREAM_REMOTE_ADDRESS%(backend)->%UPSTREAM_HOST%(%UPSTREAM_CLUSTER%) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                      [%START_TIME%] 192.168.0.1:0(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                     path: /tmp/log
                 - name: envoy.http_grpc_access_log
                   typedConfig:

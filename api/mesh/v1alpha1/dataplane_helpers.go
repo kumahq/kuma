@@ -133,6 +133,20 @@ func ParseIP(text string) (string, error) {
 	return text, nil
 }
 
+func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInterface, error) {
+	for _, inbound := range n.Inbound {
+		if inbound.Tags[ServiceTag] != service {
+			continue
+		}
+		iface, err := ParseInboundInterface(inbound.Interface)
+		if err != nil {
+			return nil, err
+		}
+		return &iface, nil
+	}
+	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
+}
+
 func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error) {
 	if n == nil {
 		return nil, nil

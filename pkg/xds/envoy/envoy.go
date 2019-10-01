@@ -1,9 +1,10 @@
 package envoy
 
 import (
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"net"
 	"time"
+
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
 
 	"github.com/Kong/kuma/pkg/sds/server"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
@@ -112,8 +113,8 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, backends []*v1alpha1.LoggingBackend, proxy *core_xds.Proxy) (*v2.Listener, error) {
-	accessLog, err := convertLoggingBackends(backends, proxy)
+func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, sourceService string, destinationService string, backends []*v1alpha1.LoggingBackend, proxy *core_xds.Proxy) (*v2.Listener, error) {
+	accessLog, err := convertLoggingBackends(sourceService, destinationService, backends, proxy)
 	if err != nil {
 		return nil, err
 	}
