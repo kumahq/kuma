@@ -1,19 +1,15 @@
 package bootstrap
 
 import (
-	"context"
-
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	"github.com/Kong/kuma/pkg/core"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	runtime_reports "github.com/Kong/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
@@ -51,39 +47,11 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
+	if err := customizeRuntime(rt); err != nil {
+		return nil, err
+	}
+
 	return rt, nil
-}
-
-func createDefaultMesh(runtime core_runtime.Runtime) error {
-	resManager := runtime.ResourceManager()
-	defaultMesh := mesh.MeshResource{}
-	cfg := runtime.Config()
-
-	namespace := core_model.DefaultNamespace
-	if runtime.Config().Environment == config_core.KubernetesEnvironment {
-		namespace = runtime.Config().Store.Kubernetes.SystemNamespace
-	}
-
-	key := core_model.ResourceKey{Namespace: namespace, Mesh: core_model.DefaultMesh, Name: core_model.DefaultMesh}
-
-	if err := resManager.Get(context.Background(), &defaultMesh, core_store.GetBy(key)); err != nil {
-		if core_store.IsResourceNotFound(err) {
-			meshProto, err := cfg.Defaults.MeshProto()
-			if err != nil {
-				return err
-			}
-			defaultMesh.Spec = meshProto
-			core.Log.Info("Creating default mesh from the settings", "mesh", defaultMesh.Spec)
-
-			if err := resManager.Create(context.Background(), &defaultMesh, core_store.CreateBy(key)); err != nil {
-				return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")
-			}
-		} else {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
@@ -92,32 +60,38 @@ func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	if err = onStartup(runtime, cfg); err != nil {
+	if err = onStartup(runtime); err != nil {
 		return nil, err
 	}
 
 	return runtime, nil
 }
 
-func onStartup(runtime core_runtime.Runtime, cfg kuma_cp.Config) error {
-	err := runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
-		if err := createDefaultMesh(runtime); err != nil {
-			return err
-		}
-		<-stop // it has to block, otherwise the k8s component manager stops all other components
-		return nil
-	}))
-	if err != nil {
+func onStartup(runtime core_runtime.Runtime) error {
+	if err := createDefaultMesh(runtime); err != nil {
 		return err
 	}
+	return startReporter(runtime)
+}
 
-	err = runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
-		runtime_reports.Init(runtime, cfg)
+func createDefaultMesh(runtime core_runtime.Runtime) error {
+	switch env := runtime.Config().Environment; env {
+	case config_core.KubernetesEnvironment:
+		// default Mesh on Kubernetes is managed by a Controller
+		return nil
+	case config_core.UniversalEnvironment:
+		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto(), core_model.DefaultNamespace)
+	default:
+		return errors.Errorf("unknown environment type %s", env)
+	}
+}
+
+func startReporter(runtime core_runtime.Runtime) error {
+	return runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
+		runtime_reports.Init(runtime, runtime.Config())
 		<-stop
 		return nil
 	}))
-
-	return err
 }
 
 func initializeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
@@ -235,4 +209,21 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
 	builder.WithResourceManager(customizableManager)
+}
+
+func customizeRuntime(rt core_runtime.Runtime) error {
+	var pluginName core_plugins.PluginName
+	switch env := rt.Config().Environment; env {
+	case config_core.KubernetesEnvironment:
+		pluginName = core_plugins.Kubernetes
+	case config_core.UniversalEnvironment:
+		return nil
+	default:
+		return errors.Errorf("unknown environment type %q", env)
+	}
+	plugin, err := core_plugins.Plugins().Runtime(pluginName)
+	if err != nil {
+		return err
+	}
+	return plugin.Customize(rt)
 }

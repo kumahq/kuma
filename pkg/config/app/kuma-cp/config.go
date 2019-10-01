@@ -9,6 +9,7 @@ import (
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/config/sds"
 	"github.com/Kong/kuma/pkg/config/xds"
+	util_error "github.com/Kong/kuma/pkg/util/error"
 	"github.com/Kong/kuma/pkg/util/proto"
 
 	"github.com/pkg/errors"
@@ -23,7 +24,13 @@ type Defaults struct {
 	Mesh string `yaml:"mesh"`
 }
 
-func (d *Defaults) MeshProto() (v1alpha1.Mesh, error) {
+func (d *Defaults) MeshProto() v1alpha1.Mesh {
+	mesh, err := d.parseMesh()
+	util_error.MustNot(err)
+	return mesh
+}
+
+func (d *Defaults) parseMesh() (v1alpha1.Mesh, error) {
 	mesh := v1alpha1.Mesh{}
 	if err := proto.FromYAML([]byte(d.Mesh), &mesh); err != nil {
 		return mesh, errors.Wrap(err, "Mesh is not valid")
@@ -32,7 +39,7 @@ func (d *Defaults) MeshProto() (v1alpha1.Mesh, error) {
 }
 
 func (d *Defaults) Validate() error {
-	_, err := d.MeshProto()
+	_, err := d.parseMesh()
 	return err
 }
 

@@ -4,9 +4,11 @@ import (
 	"context"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -56,8 +58,10 @@ var _ = Describe("Bootstrap", func() {
 		runtime, err := buildRuntime(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
+		template := runtime.Config().Defaults.MeshProto()
+
 		// when
-		Expect(createDefaultMesh(runtime)).To(Succeed())
+		Expect(mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), template, core_model.DefaultNamespace)).To(Succeed())
 
 		// then mesh exists
 		getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh, core_model.DefaultMesh)
@@ -65,7 +69,7 @@ var _ = Describe("Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when createDefaultMesh is called once mesh already exist
-		err = createDefaultMesh(runtime)
+		err = mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), template, core_model.DefaultNamespace)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
