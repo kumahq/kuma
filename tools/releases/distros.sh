@@ -11,7 +11,7 @@ DISTRIBUTIONS=(debian:linux ubuntu:linux rhel:linux centos:linux darwin:darwin)
 
 BINTRAY_ENDPOINT="https://api.bintray.com/"
 BINTRAY_SUBJECT="kong"
-BINTRAY_REPOSITORY="kuma"
+[ -z "$BINTRAY_REPOSITORY" ] && BINTRAY_REPOSITORY="kuma"
 
 
 function msg_green {

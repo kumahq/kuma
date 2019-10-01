@@ -2,7 +2,7 @@
 
 set -e
 
-KUMA_DOCKER_REPO="kong-docker-kuma-docker.bintray.io"
+[ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="kong-docker-kuma-docker.bintray.io"
 KUMA_COMPONENTS=("kuma-cp" "kuma-dp" "kuma-injector" "kuma-tcp-echo")
 
 function msg_green {
