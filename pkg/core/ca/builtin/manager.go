@@ -28,10 +28,13 @@ type BuiltinCa struct {
 }
 
 type BuiltinCaManager interface {
+	Ensure(ctx context.Context, mesh string) error
 	Create(ctx context.Context, mesh string) error
 	Delete(ctx context.Context, mesh string) error
 	GetRootCerts(ctx context.Context, mesh string) ([]CaRootCert, error)
 	GenerateWorkloadCert(ctx context.Context, mesh string, workload string) (*tls.KeyPair, error)
+
+	GetSecretName(mesh string) string
 }
 
 func NewBuiltinCaManager(secretManager secret_manager.SecretManager) BuiltinCaManager {
@@ -42,6 +45,14 @@ func NewBuiltinCaManager(secretManager secret_manager.SecretManager) BuiltinCaMa
 
 type builtinCaManager struct {
 	secretManager secret_manager.SecretManager
+}
+
+func (m *builtinCaManager) Ensure(ctx context.Context, mesh string) error {
+	_, err := m.getMeshCa(ctx, mesh)
+	if core_store.IsResourceNotFound(err) {
+		err = m.Create(ctx, mesh)
+	}
+	return err
 }
 
 func (m *builtinCaManager) Create(ctx context.Context, mesh string) error {
@@ -125,6 +136,10 @@ func (m *builtinCaManager) getMeshCa(ctx context.Context, mesh string) (*Builtin
 		return nil, errors.Wrapf(err, "failed to deserialize a Root CA cert for Mesh %q", mesh)
 	}
 	return &builtinCa, nil
+}
+
+func (m *builtinCaManager) GetSecretName(mesh string) string {
+	return builtinCaSecretKey(mesh).Name
 }
 
 func builtinCaSecretKey(mesh string) core_model.ResourceKey {
