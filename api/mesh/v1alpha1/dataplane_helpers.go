@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	ServiceTag = "service"
+	ServiceTag     = "service"
+	ServiceUnknown = "unknown"
 )
 
 // ServiceTagValue represents the value of "service" tag.
@@ -132,6 +133,20 @@ func ParseIP(text string) (string, error) {
 	return text, nil
 }
 
+func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInterface, error) {
+	for _, inbound := range n.Inbound {
+		if inbound.Tags[ServiceTag] != service {
+			continue
+		}
+		iface, err := ParseInboundInterface(inbound.Interface)
+		if err != nil {
+			return nil, err
+		}
+		return &iface, nil
+	}
+	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
+}
+
 func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error) {
 	if n == nil {
 		return nil, nil
@@ -208,6 +223,14 @@ func (d *Dataplane) Tags() Tags {
 		}
 	}
 	return tags
+}
+
+func (d *Dataplane) GetIdentifyingService() string {
+	services := d.Tags().Values(ServiceTag)
+	if len(services) > 0 {
+		return services[0]
+	}
+	return ServiceUnknown
 }
 
 func (t Tags) String() string {

@@ -3,6 +3,8 @@ package envoy_test
 import (
 	"net"
 
+	"github.com/Kong/kuma/pkg/core/xds"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -613,8 +615,32 @@ name: inbound:192.168.0.1:8080
 
 		DescribeTable("should generate 'outbound' Listener",
 			func(given testCase) {
+				proxy := xds.Proxy{
+					Id: xds.ProxyId{
+						Name:      "backend",
+						Mesh:      "example",
+						Namespace: "sample",
+					},
+					Dataplane: &mesh_core.DataplaneResource{
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Interface: "192.168.0.1:1234:8765",
+										Tags: map[string]string{
+											"service": "backend",
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
+				destinationService := "db"
+
 				// when
-				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, given.logs)
+				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, sourceService, destinationService, given.logs, &proxy)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -734,7 +760,7 @@ name: inbound:192.168.0.1:8080
 				},
 				logs: []*mesh_proto.LoggingBackend{
 					{
-						Name: "file-1",
+						Name: "file",
 						Type: &mesh_proto.LoggingBackend_File_{
 							File: &mesh_proto.LoggingBackend_File{
 								Path: "/tmp/log",
@@ -742,40 +768,44 @@ name: inbound:192.168.0.1:8080
 						},
 					},
 					{
-						Name:   "file-2",
+						Name:   "tcp",
 						Format: "custom format",
-						Type: &mesh_proto.LoggingBackend_File_{
-							File: &mesh_proto.LoggingBackend_File{
-								Path: "/tmp/log2",
+						Type: &mesh_proto.LoggingBackend_Tcp_{
+							Tcp: &mesh_proto.LoggingBackend_Tcp{
+								Address: "127.0.0.1:1234",
 							},
 						},
 					},
 				},
 				expected: `
-                address:
-                  socketAddress:
-                    address: 127.0.0.1
-                    portValue: 18080
-                filterChains:
-                - filters:
-                  - name: envoy.tcp_proxy
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                      accessLog:
-                      - name: envoy.file_access_log
-                        typedConfig:
-                          '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-                          format: |
-                            [%START_TIME%] %DOWNSTREAM_REMOTE_ADDRESS%->%UPSTREAM_HOST%(%UPSTREAM_CLUSTER%) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-                          path: /tmp/log
-                      - name: envoy.file_access_log
-                        typedConfig:
-                          '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-                          format: custom format
-                          path: /tmp/log2
-                      cluster: outbound:127.0.0.1:18080
-                      statPrefix: outbound:127.0.0.1:18080
-                name: outbound:127.0.0.1:18080
+          address:
+            socketAddress:
+              address: 127.0.0.1
+              portValue: 18080
+          filterChains:
+          - filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                accessLog:
+                - name: envoy.file_access_log
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
+                    format: |
+                      [%START_TIME%] 192.168.0.1:0(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                    path: /tmp/log
+                - name: envoy.http_grpc_access_log
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
+                    commonConfig:
+                      grpcService:
+                        googleGrpc:
+                          statPrefix: grpc_service
+                          targetUri: unix:///tmp/kuma-access-logs-backend-example.sock
+                      logName: 127.0.0.1:1234;custom format
+                cluster: outbound:127.0.0.1:18080
+                statPrefix: outbound:127.0.0.1:18080
+          name: outbound:127.0.0.1:18080
 `,
 			}),
 		)

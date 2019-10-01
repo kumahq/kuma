@@ -6,8 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
@@ -62,13 +64,39 @@ func newRunCmd() *cobra.Command {
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 			})
-			if err := dataplane.Run(core.SetupSignalHandler()); err != nil {
-				runLog.Error(err, "problem running Dataplane (Envoy)")
+
+			server := accesslogs.NewAccessLogServer()
+			defer server.Close()
+
+			logServerErr := make(chan error)
+			go func() {
+				defer close(logServerErr)
+				if err := server.Start(cfg.Dataplane); err != nil {
+					runLog.Error(err, "problem running Access Log server")
+					logServerErr <- err
+				}
+				runLog.Info("stopped Access Log server")
+			}()
+
+			dataplaneErr := make(chan error)
+			go func() {
+				defer close(dataplaneErr)
+				if err := dataplane.Run(core.SetupSignalHandler()); err != nil {
+					runLog.Error(err, "problem running Dataplane (Envoy)")
+					dataplaneErr <- err
+				}
+				runLog.Info("stopped Dataplane (Envoy)")
+			}()
+
+			select {
+			case err := <-logServerErr:
+				if err == nil {
+					return errors.New("Access Log server terminated unexpectedly")
+				}
+				return err
+			case err := <-dataplaneErr:
 				return err
 			}
-
-			runLog.Info("stopped Dataplane (Envoy)")
-			return nil
 		},
 	}
 
