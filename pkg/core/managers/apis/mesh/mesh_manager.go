@@ -47,18 +47,8 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err != nil {
 		return err
 	}
-	// default CA
-	if mesh.Spec.Mtls == nil {
-		mesh.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
-	}
-	if mesh.Spec.Mtls.Ca == nil {
-		mesh.Spec.Mtls.Ca = &mesh_proto.CertificateAuthority{}
-	}
-	if mesh.Spec.Mtls.Ca.Type == nil {
-		mesh.Spec.Mtls.Ca.Type = &mesh_proto.CertificateAuthority_Builtin_{
-			Builtin: &mesh_proto.CertificateAuthority_Builtin{},
-		}
-	}
+	// apply defaults, e.g. Builtin CA
+	mesh.Default()
 	// keep creation of Mesh and Built-in CA in sync
 	var rollback func() error
 	defer func() {
@@ -107,6 +97,8 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	if err != nil {
 		return err
 	}
+	// apply defaults, e.g. Builtin CA
+	mesh.Default()
 	return m.store.Update(ctx, mesh, fs...)
 }
 

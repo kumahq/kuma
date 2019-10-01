@@ -58,6 +58,7 @@ COVERAGE_INTEGRATION_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage-integration.h
 CP_BIND_HOST ?= localhost
 CP_GRPC_PORT ?= 5678
 SDS_GRPC_PORT ?= 5677
+CP_K8S_ADMISSION_PORT ?= 5443
 
 LOCAL_IP ?= $(shell ifconfig en0 | grep 'inet ' | awk '{print $$2}')
 
@@ -393,6 +394,8 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUMA_STORE_TYPE=kubernetes \
 	KUMA_SDS_SERVER_TLS_CERT_FILE=app/kuma-injector/cmd/testdata/tls.crt \
 	KUMA_SDS_SERVER_TLS_KEY_FILE=app/kuma-injector/cmd/testdata/tls.key \
+	KUMA_KUBERNETES_ADMISSION_SERVER_PORT=$(CP_K8S_ADMISSION_PORT) \
+	KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-injector/cmd/testdata \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store

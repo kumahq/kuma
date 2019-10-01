@@ -5,7 +5,7 @@ import (
 )
 
 var _ = Describe("Universal In-Memory test", func() {
-	RunSmokeTest(`
+	RunSmokeTest(StaticConfig(`
 xdsServer:
   grpcPort: 0
   diagnosticsPort: %d
@@ -18,5 +18,5 @@ sdsServer:
 environment: universal
 store:
   type: memory
-`)
+`))
 })

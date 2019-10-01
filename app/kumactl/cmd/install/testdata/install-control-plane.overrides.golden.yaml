@@ -25,6 +25,16 @@ data:
   tls.key: U2RzS2V5
 ---
 apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: kuma-admission-server-tls-cert
+  namespace: kuma
+data:
+  tls.crt: QWRtaXNzaW9uQ2VydA==
+  tls.key: QWRtaXNzaW9uS2V5
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kuma-control-plane
@@ -2541,6 +2551,9 @@ metadata:
   namespace: kuma
 spec:
   ports:
+  - port: 443
+    name: https-admission-server
+    targetPort: 5443
   - port: 5677
     name: grpc-sds
   - port: 5678
@@ -2553,6 +2566,96 @@ spec:
     name: http-bootstrap-server
   selector:
     app: kuma-control-plane
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-control-plane
+  namespace: kuma
+  labels:
+    app: kuma-control-plane
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: kuma-control-plane
+  template:
+    metadata:
+      labels:
+        app: kuma-control-plane
+    spec:
+      serviceAccountName: kuma-control-plane
+      containers:
+      - name: control-plane
+        image: kuma-ci/kuma-cp:greatest
+        imagePullPolicy: Never
+        env:
+        - name: KUMA_ENVIRONMENT
+          value: "kubernetes"
+        - name: KUMA_STORE_TYPE
+          value: "kubernetes"
+        - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
+          value: kuma
+        - name: KUMA_SDS_SERVER_GRPC_PORT
+          value: "5677"
+        - name: KUMA_XDS_SERVER_GRPC_PORT
+          value: "5678"
+        - name: KUMA_API_SERVER_PORT
+          value: "5681"
+        - name: KUMA_BOOTSTRAP_SERVER_PORT
+          value: "5682"
+        - name: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+          value: "kuma-ctrl-plane.kuma"
+        - name: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
+          value: "5678"
+        - name: KUMA_SDS_SERVER_TLS_CERT_FILE
+          value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
+        - name: KUMA_SDS_SERVER_TLS_KEY_FILE
+          value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
+        - name: KUMA_KUBERNETES_ADMISSION_SERVER_PORT
+          value: "5443"
+        - name: KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR
+          value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
+        args:
+        - run
+        - --log-level=info
+        ports:
+        - containerPort: 5443
+        - containerPort: 5677
+        - containerPort: 5678
+        - containerPort: 5679
+        - containerPort: 5681
+        - containerPort: 5682
+        livenessProbe:
+          httpGet:
+            path: /healthy
+            port: 5680
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5680
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        volumeMounts:
+        - mountPath: /var/run/secrets/kuma.io/kuma-sds/tls-cert
+          name: kuma-sds-tls-cert
+          readOnly: true
+        - name: kuma-admission-server-tls-cert
+          mountPath: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
+          readOnly: true
+      serviceAccountName: kuma-control-plane
+      volumes:
+      - name: kuma-sds-tls-cert
+        secret:
+          secretName: kuma-sds-tls-cert
+      - name: kuma-admission-server-tls-cert
+        secret:
+          secretName: kuma-admission-server-tls-cert
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -2619,84 +2722,29 @@ spec:
         secret:
           secretName: kuma-injector-tls-cert
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
 metadata:
-  name: kuma-control-plane
-  namespace: kuma
-  labels:
-    app: kuma-control-plane
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: kuma-control-plane
-  template:
-    metadata:
-      labels:
-        app: kuma-control-plane
-    spec:
-      serviceAccountName: kuma-control-plane
-      containers:
-      - name: control-plane
-        image: kuma-ci/kuma-cp:greatest
-        imagePullPolicy: Never
-        env:
-        - name: KUMA_ENVIRONMENT
-          value: "kubernetes"
-        - name: KUMA_STORE_TYPE
-          value: "kubernetes"
-        - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-          value: kuma
-        - name: KUMA_SDS_SERVER_GRPC_PORT
-          value: "5677"
-        - name: KUMA_XDS_SERVER_GRPC_PORT
-          value: "5678"
-        - name: KUMA_API_SERVER_PORT
-          value: "5681"
-        - name: KUMA_BOOTSTRAP_SERVER_PORT
-          value: "5682"
-        - name: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
-          value: "kuma-ctrl-plane.kuma"
-        - name: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
-          value: "5678"
-        - name: KUMA_SDS_SERVER_TLS_CERT_FILE
-          value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
-        - name: KUMA_SDS_SERVER_TLS_KEY_FILE
-          value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
-        args:
-        - run
-        - --log-level=info
-        ports:
-        - containerPort: 5677
-        - containerPort: 5678
-        - containerPort: 5679
-        - containerPort: 5681
-        - containerPort: 5682
-        livenessProbe:
-          httpGet:
-            path: /healthy
-            port: 5680
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 5680
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-        volumeMounts:
-        - mountPath: /var/run/secrets/kuma.io/kuma-sds/tls-cert
-          name: kuma-sds-tls-cert
-          readOnly: true
-      serviceAccountName: kuma-control-plane
-      volumes:
-      - name: kuma-sds-tls-cert
-        secret:
-          secretName: kuma-sds-tls-cert
+  name: kuma-admission-mutating-webhook-configuration
+webhooks:
+- name: mesh.defaulter.kuma-admission.kuma.io
+  failurePolicy: Fail
+  clientConfig:
+    caBundle: QWRtaXNzaW9uQ2VydA==
+    service:
+      namespace: kuma
+      name: kuma-ctrl-plane
+      path: /default-kuma-io-v1alpha1-mesh
+  rules:
+  - apiGroups:
+    - kuma.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - meshes
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration

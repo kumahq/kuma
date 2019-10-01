@@ -21,7 +21,13 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 	scheme := kube_runtime.NewScheme()
 	mgr, err := kube_ctrl.NewManager(
 		kube_ctrl.GetConfigOrDie(),
-		kube_ctrl.Options{Scheme: scheme},
+		kube_ctrl.Options{
+			Scheme: scheme,
+			// Admission WebHook Server
+			Host:    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
+			Port:    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
+			CertDir: b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+		},
 	)
 	if err != nil {
 		return err

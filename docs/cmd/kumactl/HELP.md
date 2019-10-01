@@ -212,6 +212,8 @@ Usage:
   kumactl install control-plane [flags]
 
 Flags:
+      --admission-server-tls-cert string    TLS certificate for the admission web hooks implemented by the Kuma Control Plane
+      --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
       --control-plane-image string          image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io/kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
       --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")

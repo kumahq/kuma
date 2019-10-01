@@ -2,16 +2,33 @@ package cmd
 
 import (
 	"fmt"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"net/http"
 	"os"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"sigs.k8s.io/testing_frameworks/integration/addr"
 )
 
-func RunSmokeTest(config string) {
+type ConfigFactory interface {
+	GenerateConfig() string
+}
+
+type StaticConfig string
+
+func (c StaticConfig) GenerateConfig() string {
+	return string(c)
+}
+
+type ConfigFactoryFunc func() string
+
+func (f ConfigFactoryFunc) GenerateConfig() string {
+	return f()
+}
+
+func RunSmokeTest(factory ConfigFactory) {
 
 	Describe("run", func() {
 
@@ -43,7 +60,7 @@ func RunSmokeTest(config string) {
 
 		It("should be possible to run `kuma-cp run`", func(done Done) {
 			// given
-			config := fmt.Sprintf(config, diagnosticsPort)
+			config := fmt.Sprintf(factory.GenerateConfig(), diagnosticsPort)
 			_, err := configFile.WriteString(config)
 			Expect(err).ToNot(HaveOccurred())
 

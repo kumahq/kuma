@@ -113,6 +113,8 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--control-plane-version", "greatest",
 				"--control-plane-image", "kuma-ci/kuma-cp",
 				"--control-plane-service-name", "kuma-ctrl-plane",
+				"--admission-server-tls-cert", "AdmissionCert",
+				"--admission-server-tls-key", "AdmissionKey",
 				"--injector-image", "kuma-ci/kuma-injector",
 				"--injector-failure-policy", "Crash",
 				"--injector-service-name", "injector",

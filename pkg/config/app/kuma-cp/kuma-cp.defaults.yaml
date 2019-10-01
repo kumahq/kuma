@@ -66,6 +66,21 @@ apiServer:
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
 
+# Environment-specific configuration
+runtime:
+  # Kubernetes-specific configuration
+  kubernetes:
+    # Admission WebHook Server configuration
+    admissionServer:
+      # Address the Admission WebHook Server should be listening on
+      address:
+      # Port the Admission WebHook Server should be listening on
+      port: 5443
+      # Directory with a TLS cert and private key for the Admission WebHook Server.
+      # TLS certificate file must be named `tls.crt`.
+      # TLS key file must be named `tls.key`.
+      certDir:
+
 # Default Kuma entities configuration
 defaults:
   # Default Mesh configuration in YAML that will be applied on first usage of Kuma CP
