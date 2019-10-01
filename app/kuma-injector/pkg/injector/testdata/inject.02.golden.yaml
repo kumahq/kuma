@@ -55,6 +55,11 @@ spec:
         - wget
         - -qO-
         - http://localhost:9901
+      failureThreshold: 212
+      initialDelaySeconds: 260
+      periodSeconds: 25
+      successThreshold: 1
+      timeoutSeconds: 23
     name: kuma-sidecar
     readinessProbe:
       exec:
@@ -62,10 +67,18 @@ spec:
         - wget
         - -qO-
         - http://localhost:9901
+      failureThreshold: 112
+      initialDelaySeconds: 11
+      periodSeconds: 15
+      successThreshold: 11
+      timeoutSeconds: 13
     resources:
       limits:
-        cpu: 50m
-        memory: 64M
+        cpu: 1100m
+        memory: 1512Mi
+      requests:
+        cpu: 150m
+        memory: 164Mi
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678

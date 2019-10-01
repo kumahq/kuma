@@ -119,6 +119,11 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 					},
 				},
 			},
+			InitialDelaySeconds: i.cfg.SidecarContainer.LivenessProbe.InitialDelaySeconds,
+			TimeoutSeconds:      i.cfg.SidecarContainer.LivenessProbe.TimeoutSeconds,
+			PeriodSeconds:       i.cfg.SidecarContainer.LivenessProbe.PeriodSeconds,
+			SuccessThreshold:    1,
+			FailureThreshold:    i.cfg.SidecarContainer.LivenessProbe.FailureThreshold,
 		},
 		ReadinessProbe: &kube_core.Probe{
 			Handler: kube_core.Handler{
@@ -130,11 +135,20 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 					},
 				},
 			},
+			InitialDelaySeconds: i.cfg.SidecarContainer.ReadinessProbe.InitialDelaySeconds,
+			TimeoutSeconds:      i.cfg.SidecarContainer.ReadinessProbe.TimeoutSeconds,
+			PeriodSeconds:       i.cfg.SidecarContainer.ReadinessProbe.PeriodSeconds,
+			SuccessThreshold:    i.cfg.SidecarContainer.ReadinessProbe.SuccessThreshold,
+			FailureThreshold:    i.cfg.SidecarContainer.ReadinessProbe.FailureThreshold,
 		},
 		Resources: kube_core.ResourceRequirements{
+			Requests: kube_core.ResourceList{
+				kube_core.ResourceCPU:    kube_api.MustParse(i.cfg.SidecarContainer.Resources.Requests.CPU),
+				kube_core.ResourceMemory: kube_api.MustParse(i.cfg.SidecarContainer.Resources.Requests.Memory),
+			},
 			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(50, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(64, kube_api.Mega),
+				kube_core.ResourceCPU:    kube_api.MustParse(i.cfg.SidecarContainer.Resources.Limits.CPU),
+				kube_core.ResourceMemory: kube_api.MustParse(i.cfg.SidecarContainer.Resources.Limits.Memory),
 			},
 		},
 	}
