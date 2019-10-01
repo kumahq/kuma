@@ -1,8 +1,9 @@
 package envoy_test
 
 import (
-	"github.com/Kong/kuma/pkg/core/xds"
 	"net"
+
+	"github.com/Kong/kuma/pkg/core/xds"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -756,7 +757,7 @@ name: inbound:192.168.0.1:8080
 				},
 				logs: []*mesh_proto.LoggingBackend{
 					{
-						Name: "file-1",
+						Name: "file",
 						Type: &mesh_proto.LoggingBackend_File_{
 							File: &mesh_proto.LoggingBackend_File{
 								Path: "/tmp/log",
@@ -764,7 +765,7 @@ name: inbound:192.168.0.1:8080
 						},
 					},
 					{
-						Name:   "file-2",
+						Name:   "tcp",
 						Format: "custom format",
 						Type: &mesh_proto.LoggingBackend_Tcp_{
 							Tcp: &mesh_proto.LoggingBackend_Tcp{

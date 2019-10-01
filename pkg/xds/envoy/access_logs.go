@@ -32,11 +32,8 @@ func convertLoggingBackend(backend *v1alpha1.LoggingBackend, proxy *core_xds.Pro
 	if backend.Format != "" {
 		format = backend.Format
 	}
-	services := proxy.Dataplane.Spec.Tags().Values(v1alpha1.ServiceTag)
-	service := "unknown"
-	if len(services) > 0 {
-		service = services[0]
-	}
+	// if dataplane has no service - fill this with placeholder. Otherwise take the first service
+	service := proxy.Dataplane.Spec.GetIdentifyingService()
 	format = strings.ReplaceAll(format, "%KUMA_DOWNSTREAM_CLUSTER%", service)
 
 	if file, ok := backend.GetType().(*v1alpha1.LoggingBackend_File_); ok {

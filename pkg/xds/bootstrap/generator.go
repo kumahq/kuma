@@ -3,10 +3,10 @@ package bootstrap
 import (
 	"bytes"
 	"context"
-	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
 	"text/template"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
+
 	xds_config "github.com/Kong/kuma/pkg/config/xds"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
@@ -47,11 +47,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.Bootstra
 	}
 
 	// if dataplane has no service - fill this with placeholder. Otherwise take the first service
-	service := "unknown"
-	services := dataplane.Spec.Tags().Values(mesh_proto.ServiceTag)
-	if len(services) > 0 {
-		service = services[0]
-	}
+	service := dataplane.Spec.GetIdentifyingService()
 
 	adminPort := b.config.AdminPort
 	if request.AdminPort != 0 {

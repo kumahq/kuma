@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	ServiceTag = "service"
+	ServiceTag     = "service"
+	ServiceUnknown = "unknown"
 )
 
 // ServiceTagValue represents the value of "service" tag.
@@ -208,6 +209,14 @@ func (d *Dataplane) Tags() Tags {
 		}
 	}
 	return tags
+}
+
+func (d *Dataplane) GetIdentifyingService() string {
+	services := d.Tags().Values(ServiceTag)
+	if len(services) > 0 {
+		return services[0]
+	}
+	return ServiceUnknown
 }
 
 func (t Tags) String() string {
