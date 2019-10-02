@@ -75,6 +75,8 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 }
 
 func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, fs ...core_store.DeleteOptionsFunc) error {
+	opts := core_store.NewDeleteOptions(fs...)
+
 	mesh, err := m.mesh(resource)
 	if err != nil {
 		return err
@@ -88,6 +90,10 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	name := core_store.NewDeleteOptions(fs...).Mesh
 	if err := m.builtinCaManager.Delete(ctx, name); err != nil {
 		return errors.Wrapf(err, "failed to delete Builtin CA for a given mesh")
+	}
+	// delete associated resources
+	if err := m.store.DeleteMany(ctx, core_store.DeleteManyByMesh(opts.Name)); err != nil {
+		return errors.Wrapf(err, "failed to delete associated resources")
 	}
 	return nil
 }

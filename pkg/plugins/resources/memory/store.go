@@ -151,6 +151,21 @@ func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.De
 	}
 	return nil
 }
+func (c *memoryStore) DeleteMany(_ context.Context, fs ...store.DeleteManyOptionsFunc) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	opts := store.NewDeleteManyOptions(fs...)
+
+	retained := memoryStoreRecords{}
+	for _, record := range c.records {
+		if opts.Mesh != "" && opts.Mesh != record.Mesh {
+			retained = append(retained, record)
+		}
+	}
+	c.records = retained
+	return nil
+}
 
 func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOptionsFunc) error {
 	c.mu.RLock()

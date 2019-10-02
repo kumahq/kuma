@@ -20,6 +20,22 @@ type typeRegistry struct {
 	objectListTypes map[string]model.KubernetesList
 }
 
+func (r *typeRegistry) RegisteredObjects() []model.KubernetesObject {
+	var objs []model.KubernetesObject
+	for _, obj := range r.objectTypes {
+		objs = append(objs, obj.DeepCopyObject().(model.KubernetesObject))
+	}
+	return objs
+}
+
+func (r *typeRegistry) RegisteredLists() []model.KubernetesList {
+	var lists []model.KubernetesList
+	for _, list := range r.objectListTypes {
+		lists = append(lists, list.DeepCopyObject().(model.KubernetesList))
+	}
+	return lists
+}
+
 func (r *typeRegistry) RegisterObjectType(typ ResourceType, obj model.KubernetesObject) error {
 	name := proto.MessageName(typ)
 	if previous, ok := r.objectTypes[name]; ok {

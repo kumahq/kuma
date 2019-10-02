@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
 	. "github.com/onsi/ginkgo"
@@ -173,6 +175,68 @@ func ExecuteStoreTests(
 
 			// then resource cannot be found
 			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
+		})
+	})
+
+	Describe("DeleteMany()", func() {
+		BeforeEach(func() {
+			trRes := sample_model.TrafficRouteResource{
+				Spec: sample_proto.TrafficRoute{
+					Path: "demo",
+				},
+			}
+			err := s.Create(context.Background(), &trRes, CreateByKey(namespace, "tr-1", "mesh-1"))
+			Expect(err).ToNot(HaveOccurred())
+
+			dpRes := core_mesh.DataplaneResource{
+				Spec: mesh_proto.Dataplane{},
+			}
+			err = s.Create(context.Background(), &dpRes, CreateByKey(namespace, "dp-1", "mesh-2"))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should delete all resources", func() {
+			// when
+			err := s.DeleteMany(context.Background())
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// when query for deleted resource
+			resource := sample_model.TrafficRouteResource{}
+			err = s.Get(context.Background(), &resource, GetByKey(namespace, "tr-1", "mesh-1"))
+
+			// then resource cannot be found
+			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, "tr-1", "mesh-1")))
+
+			// when query for deleted resource
+			dpResource := core_mesh.DataplaneResource{}
+			err = s.Get(context.Background(), &dpResource, GetByKey(namespace, "dp-1", "mesh-2"))
+
+			// then resource cannot be found
+			Expect(err).To(Equal(ErrorResourceNotFound(dpResource.GetType(), namespace, "dp-1", "mesh-2")))
+		})
+
+		It("should delete resources by mesh", func() {
+			// when
+			err := s.DeleteMany(context.Background(), DeleteManyByMesh("mesh-1"))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// when query for deleted resource in given mesh
+			resource := sample_model.TrafficRouteResource{}
+			err = s.Get(context.Background(), &resource, GetByKey(namespace, "tr-1", "mesh-1"))
+
+			// then resource cannot be found
+			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, "tr-1", "mesh-1")))
+
+			// when query for resource in another mesh
+			dpResource := core_mesh.DataplaneResource{}
+			err = s.Get(context.Background(), &dpResource, GetByKey(namespace, "dp-1", "mesh-2"))
+
+			// then resource is not deleted
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 

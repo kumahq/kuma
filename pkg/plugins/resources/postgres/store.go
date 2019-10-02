@@ -127,6 +127,20 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 	return nil
 }
 
+func (r *postgresResourceStore) DeleteMany(ctx context.Context, fs ...store.DeleteManyOptionsFunc) error {
+	opts := store.NewDeleteManyOptions(fs...)
+	statement := `DELETE FROM resources`
+	var statementArgs []interface{}
+	if opts.Mesh != "" {
+		statement += ` WHERE mesh=$1`
+		statementArgs = append(statementArgs, opts.Mesh)
+	}
+	if _, err := r.db.Exec(statement, statementArgs...); err != nil {
+		return errors.Wrapf(err, "failed to execute query: %s", statement)
+	}
+	return nil
+}
+
 func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 

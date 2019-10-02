@@ -13,6 +13,7 @@ type ResourceStore interface {
 	Create(context.Context, model.Resource, ...CreateOptionsFunc) error
 	Update(context.Context, model.Resource, ...UpdateOptionsFunc) error
 	Delete(context.Context, model.Resource, ...DeleteOptionsFunc) error
+	DeleteMany(context.Context, ...DeleteManyOptionsFunc) error
 	Get(context.Context, model.Resource, ...GetOptionsFunc) error
 	List(context.Context, model.ResourceList, ...ListOptionsFunc) error
 }
@@ -87,6 +88,9 @@ func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs .
 		}
 	}
 	return s.delegate.Delete(ctx, r, fs...)
+}
+func (s *strictResourceStore) DeleteMany(ctx context.Context, fs ...DeleteManyOptionsFunc) error {
+	return s.delegate.DeleteMany(ctx, fs...)
 }
 func (s *strictResourceStore) Get(ctx context.Context, r model.Resource, fs ...GetOptionsFunc) error {
 	if r == nil {

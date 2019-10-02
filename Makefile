@@ -365,7 +365,7 @@ test/kuma-injector: test ## Dev: Run 'kuma injector' tests only
 
 integration: ## Dev: Run integration tests
 	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
-	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
+	tools/test/run-integration-tests.sh '$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
 build: build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector build/kuma-tcp-echo ## Dev: Build all binaries

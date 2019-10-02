@@ -89,6 +89,9 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 func (s *remoteStore) Delete(context.Context, model.Resource, ...store.DeleteOptionsFunc) error {
 	return errors.Errorf("not implemented yet")
 }
+func (s *remoteStore) DeleteMany(context.Context, ...store.DeleteManyOptionsFunc) error {
+	return errors.Errorf("not implemented yet")
+}
 func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
 	resourceApi, err := s.api.GetResourceApi(res.GetType())
 	if err != nil {

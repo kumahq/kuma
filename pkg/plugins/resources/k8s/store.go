@@ -3,7 +3,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	k8s_model "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/model"
@@ -18,14 +17,16 @@ import (
 var _ store.ResourceStore = &KubernetesStore{}
 
 type KubernetesStore struct {
-	Client    kube_client.Client
-	Converter Converter
+	Client       kube_client.Client
+	Converter    Converter
+	TypeRegistry k8s_registry.TypeRegistry
 }
 
 func NewStore(client kube_client.Client) (store.ResourceStore, error) {
 	return &KubernetesStore{
-		Client:    client,
-		Converter: DefaultConverter(),
+		Client:       client,
+		Converter:    DefaultConverter(),
+		TypeRegistry: k8s_registry.Global(),
 	}, nil
 }
 
@@ -90,6 +91,23 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 			return nil
 		}
 		return errors.Wrap(err, "failed to delete k8s resource")
+	}
+	return nil
+}
+func (s *KubernetesStore) DeleteMany(ctx context.Context, fs ...store.DeleteManyOptionsFunc) error {
+	opts := store.NewDeleteManyOptions(fs...)
+
+	for _, list := range s.TypeRegistry.RegisteredLists() {
+		if err := s.Client.List(ctx, list); err != nil {
+			return errors.Wrapf(err, "failed to list resources of type %s", list.GetObjectKind().GroupVersionKind().String())
+		}
+		for _, obj := range list.GetItems() {
+			if opts.Mesh == "" || opts.Mesh == obj.GetMesh() {
+				if err := s.Client.Delete(ctx, obj); err != nil {
+					return errors.Wrap(err, "failed to delete k8s resource")
+				}
+			}
+		}
 	}
 	return nil
 }

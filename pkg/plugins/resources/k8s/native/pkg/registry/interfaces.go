@@ -10,6 +10,8 @@ type ResourceType = proto.Message
 type TypeRegistry interface {
 	RegisterObjectType(ResourceType, model.KubernetesObject) error
 	RegisterListType(ResourceType, model.KubernetesList) error
+	RegisteredObjects() []model.KubernetesObject
+	RegisteredLists() []model.KubernetesList
 
 	NewObject(ResourceType) (model.KubernetesObject, error)
 	NewList(ResourceType) (model.KubernetesList, error)

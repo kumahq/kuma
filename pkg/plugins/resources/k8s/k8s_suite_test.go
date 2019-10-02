@@ -30,7 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	// +kubebuilder:scaffold:imports
-	sample_v1alpha1 "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
+	mesh_proto "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	sample_proto "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
 )
 
 var k8sClient client.Client
@@ -50,14 +51,20 @@ var _ = BeforeSuite(func(done Done) {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("native", "test", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("native", "test", "config", "crd", "bases"),
+			filepath.Join("native", "config", "crd", "bases"),
+		},
 	}
 
 	cfg, err := testEnv.Start()
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = sample_v1alpha1.AddToScheme(k8sClientScheme)
+	err = sample_proto.AddToScheme(k8sClientScheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = mesh_proto.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
