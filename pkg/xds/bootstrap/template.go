@@ -1,11 +1,12 @@
 package bootstrap
 
 type configParameters struct {
-	Id        string
-	Service   string
-	AdminPort uint32
-	XdsHost   string
-	XdsPort   uint32
+	Id            string
+	Service       string
+	AdminPort     uint32
+	XdsHost       string
+	XdsPort       uint32
+	AccessLogPipe string
 }
 
 const configTemplate string = `
@@ -52,4 +53,21 @@ static_resources:
               socket_address:
                 address: {{ .XdsHost }}
                 port_value: {{ .XdsPort }}
+  - name: access_log_sink
+    connect_timeout: 1s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    http2_protocol_options: {}
+    upstream_connection_options:
+      # configure a TCP keep-alive to detect and reconnect to the admin
+      # server in the event of a TCP socket half open connection
+      tcp_keepalive: {}
+    load_assignment:
+      cluster_name: access_log_sink
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: {{ .AccessLogPipe }}
 `

@@ -799,9 +799,8 @@ name: inbound:192.168.0.1:8080
                     '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
                     commonConfig:
                       grpcService:
-                        googleGrpc:
-                          statPrefix: grpc_service
-                          targetUri: unix:///tmp/kuma-access-logs-backend-example.sock
+                        envoyGrpc:
+                          clusterName: access_log_sink
                       logName: 127.0.0.1:1234;custom format
                 cluster: outbound:127.0.0.1:18080
                 statPrefix: outbound:127.0.0.1:18080

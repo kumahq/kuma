@@ -16,6 +16,8 @@ import (
 
 const AccessLogDefaultFormat = "[%START_TIME%] %KUMA_SOURCE_ADDRESS%(%KUMA_SOURCE_SERVICE%)->%UPSTREAM_HOST%(%KUMA_DESTINATION_SERVICE%) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes\n"
 
+const AccessLogSink = "access_log_sink"
+
 func convertLoggingBackends(sourceService string, destinationService string, backends []*v1alpha1.LoggingBackend, proxy *core_xds.Proxy) ([]*filter_accesslog.AccessLog, error) {
 	var result []*filter_accesslog.AccessLog
 	for _, backend := range backends {
@@ -56,10 +58,9 @@ func tcpAccessLog(format string, tcp *v1alpha1.LoggingBackend_Tcp_, id core_xds.
 		CommonConfig: &accesslog.CommonGrpcAccessLogConfig{
 			LogName: fmt.Sprintf("%s;%s", tcp.Tcp.Address, format),
 			GrpcService: &core.GrpcService{
-				TargetSpecifier: &core.GrpcService_GoogleGrpc_{
-					GoogleGrpc: &core.GrpcService_GoogleGrpc{
-						StatPrefix: "grpc_service",
-						TargetUri:  fmt.Sprintf("unix:///tmp/kuma-access-logs-%s-%s.sock", id.Name, id.Mesh),
+				TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
+						ClusterName: AccessLogSink,
 					},
 				},
 			},

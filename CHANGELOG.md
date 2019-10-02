@@ -2,10 +2,13 @@
 
 ## [0.2.0]
 
-> Released on 2019/10/01
+> Released on 2019/10/02
 
 Changes:
 
+* Fix an issue with `Access Log Server` (integrated into `kuma-dp`) on Kubernetes
+  by replacing `Google gRPC client` with `Envoy gRPC client`
+  [#306](https://github.com/Kong/kuma/pull/306)
 * Settings of a `kuma-sidecar` container, such as `ReadinessProbe`, `LivenessProbe` and `Resources`,
   are now configurable
   [#304](https://github.com/Kong/kuma/pull/304)
