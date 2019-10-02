@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"text/template"
 
 	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
@@ -53,12 +54,14 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.Bootstra
 	if request.AdminPort != 0 {
 		adminPort = request.AdminPort
 	}
+	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s-%s.sock", dataplane.Meta.GetName(), dataplane.Meta.GetMesh(), dataplane.Meta.GetNamespace())
 	params := configParameters{
-		Id:        proxyId.String(),
-		Service:   service,
-		AdminPort: adminPort,
-		XdsHost:   b.config.XdsHost,
-		XdsPort:   b.config.XdsPort,
+		Id:            proxyId.String(),
+		Service:       service,
+		AdminPort:     adminPort,
+		XdsHost:       b.config.XdsHost,
+		XdsPort:       b.config.XdsPort,
+		AccessLogPipe: accessLogPipe,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.ConfigForParameters(params)

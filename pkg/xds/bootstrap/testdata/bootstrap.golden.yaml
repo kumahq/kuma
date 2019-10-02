@@ -28,3 +28,17 @@ staticResources:
       type: STRICT_DNS
       upstreamConnectionOptions:
         tcpKeepalive: {}
+    - connectTimeout: 1s
+      http2ProtocolOptions: {}
+      loadAssignment:
+        clusterName: access_log_sink
+        endpoints:
+          - lbEndpoints:
+              - endpoint:
+                  address:
+                    pipe:
+                      path: /tmp/kuma-access-logs-dp-1-default-default.sock
+      name: access_log_sink
+      type: STATIC
+      upstreamConnectionOptions:
+        tcpKeepalive: {}
