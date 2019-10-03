@@ -2,6 +2,12 @@ package bootstrap
 
 import (
 	"context"
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
+	"strconv"
+	"strings"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	xds_config "github.com/Kong/kuma/pkg/config/xds"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -12,11 +18,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"net/http"
-	"path/filepath"
-	"strconv"
-	"strings"
 )
 
 var _ = Describe("Bootstrap Server", func() {
@@ -102,11 +103,11 @@ var _ = Describe("Bootstrap Server", func() {
 		},
 		Entry("minimal data provided (universal)", testCase{
 			body:               `{ "mesh": "default", "name": "dp-1" }`,
-			expectedConfigFile: "bootstrap.golden.yaml",
+			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{
 			body:               `{ "mesh": "default", "name": "dp-1.default" }`,
-			expectedConfigFile: "bootstrap.golden.yaml",
+			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
 		Entry("overridden admin port", testCase{
 			body:               `{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234 }`,

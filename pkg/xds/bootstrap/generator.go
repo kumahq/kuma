@@ -54,7 +54,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.Bootstra
 	if request.AdminPort != 0 {
 		adminPort = request.AdminPort
 	}
-	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s-%s.sock", dataplane.Meta.GetName(), dataplane.Meta.GetMesh(), dataplane.Meta.GetNamespace())
+	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
 	params := configParameters{
 		Id:            proxyId.String(),
 		Service:       service,
