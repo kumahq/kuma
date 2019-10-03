@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [0.2.1]
+
+> Released on 2019/10/03
+
+Fixed issues:
+
+* Issue with `Access Log Server` (integrated into `kuma-dp`) on k8s:
+ `kuma-cp` was configuring Envoy to use a Unix socket other than
+ `kuma-dp` was actually listening on
+  [#307](https://github.com/Kong/kuma/pull/307)
+
 ## [0.2.0]
 
 > Released on 2019/10/02
