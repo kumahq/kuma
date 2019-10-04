@@ -14,6 +14,7 @@ injector:
     uid: 2345
     gid: 3456
     adminPort: 45678
+    drainTime: 15s
 
     readinessProbe:
       initialDelaySeconds: 11

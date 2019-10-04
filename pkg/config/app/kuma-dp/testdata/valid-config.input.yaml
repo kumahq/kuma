@@ -5,6 +5,7 @@ dataplane:
   mesh: pilot
   name: example
   adminPort: 2345
+  drainTime: 60s
 dataplaneRuntime:
   binaryPath: envoy.sh
   configDir: /var/run/envoy

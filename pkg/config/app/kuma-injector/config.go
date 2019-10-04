@@ -3,6 +3,7 @@ package kumainjector
 import (
 	"net"
 	"net/url"
+	"time"
 
 	"github.com/Kong/kuma/pkg/config"
 
@@ -37,6 +38,7 @@ func DefaultConfig() Config {
 				UID:          5678,
 				GID:          5678,
 				AdminPort:    9901,
+				DrainTime:    30 * time.Second,
 
 				ReadinessProbe: SidecarReadinessProbe{
 					InitialDelaySeconds: 1,
@@ -130,6 +132,8 @@ type SidecarContainer struct {
 	GID int64 `yaml:"gid,omitempty" envconfig:"kuma_injector_sidecar_container_gui"`
 	// Admin port.
 	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_injector_sidecar_container_admin_port"`
+	// Drain time for listeners.
+	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_injector_sidecar_container_drain_time"`
 	// Readiness probe.
 	ReadinessProbe SidecarReadinessProbe `yaml:"readinessProbe,omitempty"`
 	// Liveness probe.
@@ -287,6 +291,9 @@ func (c *SidecarContainer) Validate() (errs error) {
 	}
 	if 65535 < c.AdminPort {
 		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
+	}
+	if c.DrainTime <= 0 {
+		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 	if err := c.ReadinessProbe.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ReadinessProbe is not valid"))

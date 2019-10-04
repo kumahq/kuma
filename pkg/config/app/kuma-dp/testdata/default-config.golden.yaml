@@ -1,4 +1,5 @@
 dataplane:
   mesh: default
+  drainTime: 30s
 dataplaneRuntime:
   binaryPath: envoy

@@ -3,6 +3,7 @@ package kumainjector_test
 import (
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -37,6 +38,7 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.SidecarContainer.UID).To(Equal(int64(2345)))
 		Expect(cfg.Injector.SidecarContainer.GID).To(Equal(int64(3456)))
 		Expect(cfg.Injector.SidecarContainer.AdminPort).To(Equal(uint32(45678)))
+		Expect(cfg.Injector.SidecarContainer.DrainTime).To(Equal(15 * time.Second))
 		// and
 		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(11)))
 		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32((13))))
@@ -82,6 +84,6 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err).To(MatchError(`Invalid configuration: .WebHookServer is not valid: .Address must be either empty or a valid IPv4/IPv6 address; .Port must be in the range [0, 65535]; .CertDir must be non-empty; .Injector is not valid: .ControlPlane is not valid: .BootstrapServer is not valid: .URL must be a valid absolute URI; .ApiServer is not valid: .URL must be a valid absolute URI; .SidecarContainer is not valid: .Image must be non-empty; .RedirectPort must be in the range [0, 65535]; .AdminPort must be in the range [0, 65535]; .ReadinessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .SuccessThreshold must be >= 1; .FailureThreshold must be >= 1; .LivenessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .FailureThreshold must be >= 1; .Resources is not valid: .Requests is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Limits is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .InitContainer is not valid: .Image must be non-empty`))
+		Expect(err).To(MatchError(`Invalid configuration: .WebHookServer is not valid: .Address must be either empty or a valid IPv4/IPv6 address; .Port must be in the range [0, 65535]; .CertDir must be non-empty; .Injector is not valid: .ControlPlane is not valid: .BootstrapServer is not valid: .URL must be a valid absolute URI; .ApiServer is not valid: .URL must be a valid absolute URI; .SidecarContainer is not valid: .Image must be non-empty; .RedirectPort must be in the range [0, 65535]; .AdminPort must be in the range [0, 65535]; .DrainTime must be positive; .ReadinessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .SuccessThreshold must be >= 1; .FailureThreshold must be >= 1; .LivenessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .FailureThreshold must be >= 1; .Resources is not valid: .Requests is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Limits is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .InitContainer is not valid: .Image must be non-empty`))
 	})
 })

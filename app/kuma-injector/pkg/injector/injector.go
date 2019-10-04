@@ -104,6 +104,10 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 				Name:  "KUMA_DATAPLANE_ADMIN_PORT",
 				Value: fmt.Sprintf("%d", i.cfg.SidecarContainer.AdminPort),
 			},
+			{
+				Name:  "KUMA_DATAPLANE_DRAIN_TIME",
+				Value: fmt.Sprintf("%s", i.cfg.SidecarContainer.DrainTime),
+			},
 		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,
