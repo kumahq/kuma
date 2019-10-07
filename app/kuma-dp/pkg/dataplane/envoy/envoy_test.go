@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -63,6 +64,9 @@ var _ = Describe("Envoy", func() {
 		It("should generate bootstrap config file and start Envoy", func(done Done) {
 			// given
 			cfg := kuma_dp.Config{
+				Dataplane: kuma_dp.Dataplane{
+					DrainTime: 15 * time.Second,
+				},
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath: filepath.Join("testdata", "envoy-mock.exit-0.sh"),
 					ConfigDir:  configDir,
@@ -115,7 +119,7 @@ var _ = Describe("Envoy", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-c %s --disable-hot-restart", expectedConfigFile)))
+			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-c %s --drain-time-s 15 --disable-hot-restart", expectedConfigFile)))
 
 			By("verifying the contents Envoy config file")
 			// when

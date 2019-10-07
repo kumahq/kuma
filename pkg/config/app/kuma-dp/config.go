@@ -2,6 +2,7 @@ package kumadp
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/Kong/kuma/pkg/config"
 
@@ -20,6 +21,7 @@ func DefaultConfig() Config {
 			Mesh:      "default",
 			Name:      "", // Dataplane name must be set explicitly
 			AdminPort: 0,  // by default, turn off Admin interface of Envoy
+			DrainTime: 30 * time.Second,
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
@@ -57,6 +59,8 @@ type Dataplane struct {
 	Name string `yaml:"name,omitempty" envconfig:"kuma_dataplane_name"`
 	// Envoy Admin port.
 	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
+	// Drain time for listeners.
+	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
 }
 
 // DataplaneRuntime defines the context in which dataplane (Envoy) runs.
@@ -102,6 +106,9 @@ func (d *Dataplane) Validate() (errs error) {
 	}
 	if 65535 < d.AdminPort {
 		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
+	}
+	if d.DrainTime <= 0 {
+		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 	return
 }

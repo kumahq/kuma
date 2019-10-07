@@ -106,6 +106,8 @@ spec:
       value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_ADMIN_PORT
       value: "9901"
+    - name: KUMA_DATAPLANE_DRAIN_TIME
+      value: 31s
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
