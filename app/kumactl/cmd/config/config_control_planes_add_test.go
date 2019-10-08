@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	api_server "github.com/Kong/kuma/pkg/api-server"
+	"github.com/Kong/kuma/app/kumactl/pkg/config"
+	"github.com/Kong/kuma/pkg/api-server/types"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/Kong/kuma/app/kumactl/cmd"
@@ -82,17 +84,71 @@ var _ = Describe("kumactl config control-planes add", func() {
 		})
 
 		It("should fail to add a new Control Plane with duplicate name", func() {
+			// setup
+			port := setupCpIndexServer()
+
 			// given
 			rootCmd.SetArgs([]string{"--config-file", filepath.Join("testdata", "config-control-planes-add.01.golden.yaml"),
 				"config", "control-planes", "add",
 				"--name", "example",
-				"--address", "https://kuma-control-plane.internal:5681"})
+				"--address", fmt.Sprintf("http://localhost:%d", port)})
 			// when
 			err := rootCmd.Execute()
 			// then
 			Expect(err).To(MatchError(`could not add the control plane: Control Plane with name "example" already exists`))
 			// and
 			Expect(outbuf.String()).To(Equal(`Error: could not add the control plane: Control Plane with name "example" already exists
+`))
+			// and
+			Expect(errbuf.Bytes()).To(BeEmpty())
+		})
+
+		It("should fail when CP timeouts", func() {
+			// setup
+			currentTimeout := config.DefaultApiServerTimeout
+			config.DefaultApiServerTimeout = 10 * time.Millisecond
+			defer func() {
+				config.DefaultApiServerTimeout = currentTimeout
+			}()
+			timeout := config.DefaultApiServerTimeout * 2 // so we are sure we exceed the timeout
+			port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
+				time.Sleep(timeout)
+			})
+
+			// given
+			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+				"config", "control-planes", "add",
+				"--name", "example",
+				"--address", fmt.Sprintf("http://localhost:%d", port)})
+			// when
+			err := rootCmd.Execute()
+			// then
+			Expect(err).To(MatchError(fmt.Sprintf(`could not connect to the Control Plane API Server: Get http://localhost:%d: context deadline exceeded`, port)))
+			// and
+			Expect(outbuf.String()).To(Equal(fmt.Sprintf(`Error: could not connect to the Control Plane API Server: Get http://localhost:%d: context deadline exceeded
+`, port)))
+			// and
+			Expect(errbuf.Bytes()).To(BeEmpty())
+		})
+
+		It("should fail on invalid api server", func() {
+			// setup
+			port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
+				_, err := writer.Write([]byte("{}"))
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			// given
+			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+				"config", "control-planes", "add",
+				"--name", "example",
+				"--address", fmt.Sprintf("http://localhost:%d", port)})
+			// when
+			err := rootCmd.Execute()
+			// then
+			Expect(err).To(MatchError(`provided address is not valid Kuma Control Plane API Server`))
+			// and
+			Expect(outbuf.String()).To(Equal(`Error: provided address is not valid Kuma Control Plane API Server
 `))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
@@ -167,18 +223,24 @@ switched active Control Plane to "example"
 })
 
 func setupCpIndexServer() int {
-	mux := http.NewServeMux()
-	server := httptest.NewServer(mux)
-	mux.HandleFunc("/", func(writer http.ResponseWriter, req *http.Request) {
-		defer GinkgoRecover()
-		response := api_server.IndexResponse{
-			Tagline: api_server.TaglineKuma,
+	return setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
+		response := types.IndexResponse{
+			Tagline: types.TaglineKuma,
 			Version: "unknown",
 		}
 		marshaled, err := json.Marshal(response)
 		Expect(err).ToNot(HaveOccurred())
 		_, err = writer.Write(marshaled)
 		Expect(err).ToNot(HaveOccurred())
+	})
+}
+
+func setupCpServer(fn func(http.ResponseWriter, *http.Request)) int {
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+	mux.HandleFunc("/", func(writer http.ResponseWriter, req *http.Request) {
+		defer GinkgoRecover()
+		fn(writer, req)
 	})
 	port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
 	Expect(err).ToNot(HaveOccurred())

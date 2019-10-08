@@ -1,11 +1,7 @@
 package v1alpha1
 
 import (
-	"encoding/json"
-	api_server "github.com/Kong/kuma/pkg/api-server"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"net/http"
 )
 
 func (cfg *Configuration) GetCurrent() *Context {
@@ -69,33 +65,8 @@ func (cfg *Configuration) AddControlPlane(cp *ControlPlane) error {
 	if old != nil {
 		return errors.Errorf("Control Plane with name %q already exists", cp.Name)
 	}
-	if err := validateCpCoordinates(cp); err != nil {
-		return err
-	}
 
 	cfg.ControlPlanes = append(cfg.ControlPlanes, cp)
-	return nil
-}
-
-func validateCpCoordinates(cp *ControlPlane) error {
-	resp, err := http.Get(cp.Coordinates.ApiServer.Url)
-	if err != nil {
-		return errors.Wrap(err, "could not connect to the Control Plane API Server")
-	}
-	if resp.StatusCode != 200 {
-		return errors.New("Control Plane API Server is not responding")
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return errors.Wrap(err, "could not read body from the Control Plane API Server")
-	}
-	response := api_server.IndexResponse{}
-	if err := json.Unmarshal(body, &response); err != nil {
-		return errors.Wrap(err, "could not unmarshal body from the Control Plane API Server. Provided address is not valid Kuma Control Plane API Server")
-	}
-	if response.Tagline != api_server.TaglineKuma {
-		return errors.New("provided address is not valid Kuma Control Plane API Server")
-	}
 	return nil
 }
 

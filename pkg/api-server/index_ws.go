@@ -1,23 +1,17 @@
 package api_server
 
 import (
+	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/emicklei/go-restful"
 
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
 
-const TaglineKuma = "Kuma"
-
-type IndexResponse struct {
-	Tagline string `json:"tagline"`
-	Version string `json:"version"`
-}
-
 func indexWs() *restful.WebService {
 	ws := new(restful.WebService)
 	return ws.Route(ws.GET("/").To(func(req *restful.Request, resp *restful.Response) {
-		response := IndexResponse{
-			Tagline: TaglineKuma,
+		response := types.IndexResponse{
+			Tagline: types.TaglineKuma,
 			Version: kuma_version.Build.Version,
 		}
 		if err := resp.WriteAsJson(response); err != nil {
