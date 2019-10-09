@@ -4,6 +4,7 @@ Welcome to Kuma!
 
 This folder contains your download of Kuma:
 ├── LICENSE
+├── NOTICE
 ├── README
 ├── bin
 │   ├── envoy
