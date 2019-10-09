@@ -36,3 +36,24 @@ func (c *SdsServerConfig) Validate() error {
 	}
 	return nil
 }
+
+func DefaultInitialTokenServerConfig() *InitialTokenServerConfig {
+	return &InitialTokenServerConfig{
+		LocalHttpPort: 5679,
+	}
+}
+
+// Initial Token Server configuration
+type InitialTokenServerConfig struct {
+	// Port of server listening on HTTP bind to localhost
+	LocalHttpPort int `yaml:"localHttpPort" envconfig:"kuma_initial_token_server_local_http_port"`
+}
+
+var _ config.Config = &InitialTokenServerConfig{}
+
+func (i *InitialTokenServerConfig) Validate() error {
+	if i.LocalHttpPort < 0 {
+		return errors.New("LocalHttpPort cannot be negative")
+	}
+	return nil
+}

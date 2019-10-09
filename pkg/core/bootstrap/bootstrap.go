@@ -71,7 +71,22 @@ func onStartup(runtime core_runtime.Runtime) error {
 	if err := createDefaultMesh(runtime); err != nil {
 		return err
 	}
+	if err := createPrivateKeyForInitialTokens(runtime); err != nil {
+		return err
+	}
 	return startReporter(runtime)
+}
+
+func createPrivateKeyForInitialTokens(runtime core_runtime.Runtime) error {
+	switch env := runtime.Config().Environment; env {
+	case config_core.KubernetesEnvironment:
+		// we use service account token on K8S, so there is no need for initial token server
+		return nil
+	case config_core.UniversalEnvironment:
+		return secret_manager.CreateDefaultPrivateKey(runtime.SecretManager())
+	default:
+		return errors.Errorf("unknown environment type %s", env)
+	}
 }
 
 func createDefaultMesh(runtime core_runtime.Runtime) error {

@@ -16,3 +16,7 @@ type Identity struct {
 type Authenticator interface {
 	Authenticate(ctx context.Context, proxyId core_xds.ProxyId, credential Credential) (Identity, error)
 }
+
+type CredentialGenerator interface {
+	Generate(proxyId core_xds.ProxyId) (Credential, error)
+}

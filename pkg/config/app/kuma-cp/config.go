@@ -63,6 +63,8 @@ type Config struct {
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
 	// Envoy SDS server configuration
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer"`
+	// Initial Token server configuration
+	InitialTokenServer *sds.InitialTokenServerConfig `yaml:"initialTokenServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
 	// Environment-specific configuration
@@ -75,14 +77,15 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
-		Environment:     core.UniversalEnvironment,
-		Store:           store.DefaultStoreConfig(),
-		XdsServer:       xds.DefaultXdsServerConfig(),
-		SdsServer:       sds.DefaultSdsServerConfig(),
-		ApiServer:       api_server.DefaultApiServerConfig(),
-		BootstrapServer: bootstrap.DefaultBootstrapServerConfig(),
-		Discovery:       discovery.DefaultDiscoveryConfig(),
-		Runtime:         runtime.DefaultRuntimeConfig(),
+		Environment:        core.UniversalEnvironment,
+		Store:              store.DefaultStoreConfig(),
+		XdsServer:          xds.DefaultXdsServerConfig(),
+		SdsServer:          sds.DefaultSdsServerConfig(),
+		InitialTokenServer: sds.DefaultInitialTokenServerConfig(),
+		ApiServer:          api_server.DefaultApiServerConfig(),
+		BootstrapServer:    bootstrap.DefaultBootstrapServerConfig(),
+		Discovery:          discovery.DefaultDiscoveryConfig(),
+		Runtime:            runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
 			Mesh: `type: Mesh
 name: default
@@ -106,6 +109,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.SdsServer.Validate(); err != nil {
 		return errors.Wrap(err, "SDS Server validation failed")
+	}
+	if err := c.InitialTokenServer.Validate(); err != nil {
+		return errors.Wrap(err, "Initial Token Server validation failed")
 	}
 	if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
 		return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)

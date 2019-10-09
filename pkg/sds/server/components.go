@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-
+	"github.com/Kong/kuma/pkg/core/secrets/manager"
 	"github.com/pkg/errors"
 
 	config_core "github.com/Kong/kuma/pkg/config/core"
@@ -41,8 +41,20 @@ func NewKubeAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, erro
 	return k8s_sds_auth.New(mgr.GetClient(), DefaultDataplaneResolver(rt.ResourceManager())), nil
 }
 
+func NewCredentialGenerator(rt core_runtime.Runtime) (sds_auth.CredentialGenerator, error) {
+	key, err := manager.GetPrivateKey(rt.SecretManager())
+	if err != nil {
+		return nil, err
+	}
+	return universal_sds_auth.NewCredentialGenerator(key), nil
+}
+
 func NewUniversalAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, error) {
-	return universal_sds_auth.New(DefaultDataplaneResolver(rt.ResourceManager())), nil
+	key, err := manager.GetPrivateKey(rt.SecretManager())
+	if err != nil {
+		return nil, err
+	}
+	return universal_sds_auth.NewAuthenticator(key, DefaultDataplaneResolver(rt.ResourceManager())), nil
 }
 
 func DefaultAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, error) {
