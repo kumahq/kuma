@@ -73,6 +73,7 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		Converter:        k8s_resources.DefaultConverter(),
 		BuiltinCaManager: rt.BuiltinCaManager(),
 		SystemNamespace:  rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceManager:  rt.ResourceManager(),
 	}
 	return reconciler.SetupWithManager(mgr)
 }

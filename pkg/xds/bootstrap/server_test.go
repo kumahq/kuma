@@ -15,6 +15,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/test"
+	test_resources "github.com/Kong/kuma/pkg/test/resources"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -28,7 +29,7 @@ var _ = Describe("Bootstrap Server", func() {
 	var baseUrl string
 
 	BeforeEach(func() {
-		resManager = manager.NewResourceManager(memory.NewStore())
+		resManager = manager.NewResourceManager(memory.NewStore(), test_resources.Global())
 		config = bootstrap_config.DefaultBootstrapParamsConfig()
 
 		port, err := test.GetFreePort()

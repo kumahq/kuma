@@ -3,8 +3,6 @@ package system
 import (
 	"errors"
 
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/gogo/protobuf/types"
 )
@@ -68,9 +66,4 @@ func (l *SecretResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*SecretResource)(nil), r)
 	}
-}
-
-func init() {
-	registry.RegisterType(&SecretResource{})
-	registry.RegistryListType(&SecretResourceList{})
 }

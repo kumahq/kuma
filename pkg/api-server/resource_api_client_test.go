@@ -10,6 +10,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/test"
 	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
+	test_resources "github.com/Kong/kuma/pkg/test/resources"
 	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
 
 	. "github.com/onsi/gomega"
@@ -101,6 +102,6 @@ func createTestApiServer(store store.ResourceStore, config config.ApiServerConfi
 		TrafficRouteWsDefinition,
 		definitions.MeshWsDefinition,
 	}
-	resources := manager.NewResourceManager(store)
+	resources := manager.NewResourceManager(store, test_resources.Global())
 	return api_server.NewApiServer(resources, defs, config)
 }

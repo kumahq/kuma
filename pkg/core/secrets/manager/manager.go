@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/resources/model"
 
 	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -13,6 +14,7 @@ type SecretManager interface {
 	Create(context.Context, *secret_model.SecretResource, ...core_store.CreateOptionsFunc) error
 	Update(context.Context, *secret_model.SecretResource, ...core_store.UpdateOptionsFunc) error
 	Delete(context.Context, *secret_model.SecretResource, ...core_store.DeleteOptionsFunc) error
+	DeleteAll(context.Context, ...core_store.DeleteAllOptionsFunc) error
 	Get(context.Context, *secret_model.SecretResource, ...core_store.GetOptionsFunc) error
 	List(context.Context, *secret_model.SecretResourceList, ...core_store.ListOptionsFunc) error
 }
@@ -66,6 +68,20 @@ func (s *secretManager) Update(ctx context.Context, secret *secret_model.SecretR
 
 func (s *secretManager) Delete(ctx context.Context, secret *secret_model.SecretResource, fs ...core_store.DeleteOptionsFunc) error {
 	return s.secretStore.Delete(ctx, secret, fs...)
+}
+
+func (s *secretManager) DeleteAll(ctx context.Context, fs ...core_store.DeleteAllOptionsFunc) error {
+	list := &secret_model.SecretResourceList{}
+	opts := core_store.NewDeleteAllOptions(fs...)
+	if err := s.secretStore.List(context.Background(), list, core_store.ListByMesh(opts.Mesh)); err != nil {
+		return err
+	}
+	for _, item := range list.Items {
+		if err := s.Delete(ctx, item, core_store.DeleteBy(model.MetaToResourceKey(item.Meta))); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *secretManager) encrypt(secret *secret_model.SecretResource) error {

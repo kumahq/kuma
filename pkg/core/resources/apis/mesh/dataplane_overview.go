@@ -2,8 +2,6 @@ package mesh
 
 import (
 	"errors"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 )
@@ -72,11 +70,6 @@ func (l *DataplaneOverviewResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*DataplaneOverviewResource)(nil), r)
 	}
-}
-
-func init() {
-	registry.RegisterType(&DataplaneOverviewResource{})
-	registry.RegistryListType(&DataplaneOverviewResourceList{})
 }
 
 func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneInsightResourceList) DataplaneOverviewResourceList {
