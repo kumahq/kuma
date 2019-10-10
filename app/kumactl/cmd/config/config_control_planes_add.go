@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/Kong/kuma/app/kumactl/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -30,6 +31,9 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			cfg := pctx.Config()
 			if err := cp.Validate(); err != nil {
 				return errors.Wrapf(err, "Control Plane configuration is not valid")
+			}
+			if err := config.ValidateCpCoordinates(cp); err != nil {
+				return err
 			}
 			if !cfg.AddControlPlane(cp) {
 				return errors.Errorf("Control Plane with name %q already exists", cp.Name)

@@ -20,6 +20,6 @@ controlPlanes:
   name: test2
 - coordinates:
     apiServer:
-      url: https://kuma-control-plane.internal:5681
+      url: http://placeholder-address
   name: example
 currentContext: example
