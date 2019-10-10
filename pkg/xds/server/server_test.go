@@ -32,6 +32,16 @@ import (
 	"github.com/Kong/kuma/pkg/xds/server"
 )
 
+type hasher struct {
+}
+
+func (h hasher) ID(node *core.Node) string {
+	if node == nil {
+		return "unknown"
+	}
+	return node.Id
+}
+
 type mockConfigWatcher struct {
 	counts     map[string]int
 	responses  map[string][]cache.Response
@@ -458,6 +468,68 @@ func TestAggregatedHandlers(t *testing.T) {
 			}
 		case <-time.After(1 * time.Second):
 			t.Fatalf("got %d messages on the stream, not 4", count)
+		}
+	}
+}
+
+func TestClusterWarming(t *testing.T) {
+	config := cache.NewSnapshotCache(true, hasher{}, nil)
+	config.SetSnapshot(node.Id, cache.NewSnapshot("1", []cache.Resource{endpoint}, nil, nil, nil))
+	resp := makeMockStream(t)
+
+	s := server.NewServer(config, &callbacks{})
+	go func() {
+		if err := s.StreamAggregatedResources(resp); err != nil {
+			t.Errorf("StreamAggregatedResources() => got %v, want no error", err)
+		}
+	}()
+
+	// simulate initial EDS request
+
+	resp.recv <- &v2.DiscoveryRequest{
+		Node:          node,
+		TypeUrl:       cache.EndpointType,
+		ResourceNames: []string{clusterName},
+	}
+
+	var resp1 *v2.DiscoveryResponse
+resp1:
+	for {
+		select {
+		case resp := <-resp.sent:
+			if resp.TypeUrl != cache.EndpointType {
+				t.Errorf("TypeUrl => got %v, want %v", resp.TypeUrl, cache.EndpointType)
+			}
+			resp1 = resp
+			break resp1
+		case <-time.After(1 * time.Second):
+			t.Fatalf("got %d messages on the stream, not 1", 0)
+		}
+	}
+
+	// simulate EDS request as part of cluster warming
+
+	req2 := &v2.DiscoveryRequest{
+		VersionInfo:   resp1.VersionInfo,
+		ResponseNonce: resp1.Nonce,
+		Node:          node,
+		TypeUrl:       cache.EndpointType,
+		ResourceNames: []string{clusterName},
+	}
+
+	resp.recv <- req2 // ACK to resp1
+	resp.recv <- req2 // cluster warming
+
+resp2:
+	for {
+		select {
+		case resp := <-resp.sent:
+			if resp.TypeUrl != cache.EndpointType {
+				t.Errorf("TypeUrl => got %v, want %v", resp.TypeUrl, cache.EndpointType)
+			}
+			break resp2
+		case <-time.After(1 * time.Second):
+			t.Fatalf("got %d messages on the stream, not 1", 0)
 		}
 	}
 }

@@ -72,6 +72,8 @@ type watches struct {
 	routeNonce    string
 	listenerNonce string
 	secretNonce   string
+
+	endpointNonceAcked bool
 }
 
 // Cancel all watches
@@ -156,6 +158,31 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 		}
 	}
 
+	peekResponse := func(req cache.Request) *cache.Response {
+		versionInfo := req.VersionInfo
+		req.VersionInfo = "" // trick cache into returning a response despite unchanged version
+		resp, err := s.cache.Fetch(stream.Context(), req)
+		if err != nil || resp == nil {
+			return nil
+		}
+		resp.Request.VersionInfo = versionInfo // restore the original value
+		return resp
+	}
+	scheduleResponse := func(resp cache.Response) (value chan cache.Response, cancel func()) {
+		value = make(chan cache.Response, 1)
+		value <- resp
+		cancel = func() {
+			close(value)
+
+			// consume channel
+			select {
+			case <-value:
+			default:
+			}
+		}
+		return
+	}
+
 	for {
 		select {
 		// config watcher can send the requested resources types in any order
@@ -168,6 +195,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 				return err
 			}
 			values.endpointNonce = nonce
+			values.endpointNonceAcked = false
 
 		case resp, more := <-values.clusters:
 			if !more {
@@ -239,10 +267,22 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			// cancel existing watches to (re-)request a newer version
 			switch {
 			case req.TypeUrl == cache.EndpointType && (values.endpointNonce == "" || values.endpointNonce == nonce):
+				// If Envoy uses the same Nonce for the second time, it probably means that
+				// a Cluster has been created or updated and goes through the warming stage.
+				// In that case we must respond even if EDS configuration hasn't changed.
+				var resp *cache.Response
+				if values.endpointNonceAcked {
+					resp = peekResponse(*req)
+				}
+				values.endpointNonceAcked = values.endpointNonce != "" && values.endpointNonce == nonce
 				if values.endpointCancel != nil {
 					values.endpointCancel()
 				}
-				values.endpoints, values.endpointCancel = s.cache.CreateWatch(*req)
+				if resp != nil {
+					values.endpoints, values.endpointCancel = scheduleResponse(*resp)
+				} else {
+					values.endpoints, values.endpointCancel = s.cache.CreateWatch(*req)
+				}
 			case req.TypeUrl == cache.ClusterType && (values.clusterNonce == "" || values.clusterNonce == nonce):
 				if values.clusterCancel != nil {
 					values.clusterCancel()
