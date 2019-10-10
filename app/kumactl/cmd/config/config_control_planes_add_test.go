@@ -95,9 +95,9 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// when
 			err := rootCmd.Execute()
 			// then
-			Expect(err).To(MatchError(`could not add the control plane: Control Plane with name "example" already exists`))
+			Expect(err).To(MatchError(`Control Plane with name "example" already exists`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: could not add the control plane: Control Plane with name "example" already exists
+			Expect(outbuf.String()).To(Equal(`Error: Control Plane with name "example" already exists
 `))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())

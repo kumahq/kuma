@@ -1,9 +1,5 @@
 package v1alpha1
 
-import (
-	"github.com/pkg/errors"
-)
-
 func (cfg *Configuration) GetCurrent() *Context {
 	_, c := cfg.GetContext(cfg.CurrentContext)
 	return c
@@ -60,14 +56,13 @@ func (cfg *Configuration) GetControlPlane(name string) (int, *ControlPlane) {
 	return -1, nil
 }
 
-func (cfg *Configuration) AddControlPlane(cp *ControlPlane) error {
+func (cfg *Configuration) AddControlPlane(cp *ControlPlane) bool {
 	_, old := cfg.GetControlPlane(cp.Name)
 	if old != nil {
-		return errors.Errorf("Control Plane with name %q already exists", cp.Name)
+		return false
 	}
-
 	cfg.ControlPlanes = append(cfg.ControlPlanes, cp)
-	return nil
+	return true
 }
 
 func (cfg *Configuration) RemoveControlPlane(name string) bool {
