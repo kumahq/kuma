@@ -26,11 +26,15 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 )
 
+const (
+	defaultConnectTimeout = 5 * time.Second
+)
+
 func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.ClusterLoadAssignment {
 	return &v2.ClusterLoadAssignment{
 		ClusterName: clusterName,
-		Endpoints: []endpoint.LocalityLbEndpoints{{
-			LbEndpoints: []endpoint.LbEndpoint{{
+		Endpoints: []*endpoint.LocalityLbEndpoints{{
+			LbEndpoints: []*endpoint.LbEndpoint{{
 				HostIdentifier: &endpoint.LbEndpoint_Endpoint{
 					Endpoint: &endpoint.Endpoint{
 						Address: &core.Address{
@@ -52,9 +56,9 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.C
 }
 
 func CreateClusterLoadAssignment(clusterName string, endpoints []net.SRV) *v2.ClusterLoadAssignment {
-	lbEndpoints := make([]endpoint.LbEndpoint, 0, len(endpoints))
+	lbEndpoints := make([]*endpoint.LbEndpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
-		lbEndpoints = append(lbEndpoints, endpoint.LbEndpoint{
+		lbEndpoints = append(lbEndpoints, &endpoint.LbEndpoint{
 			HostIdentifier: &endpoint.LbEndpoint_Endpoint{
 				Endpoint: &endpoint.Endpoint{
 					Address: &core.Address{
@@ -73,25 +77,27 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []net.SRV) *v2.Cl
 	}
 	return &v2.ClusterLoadAssignment{
 		ClusterName: clusterName,
-		Endpoints: []endpoint.LocalityLbEndpoints{{
+		Endpoints: []*endpoint.LocalityLbEndpoints{{
 			LbEndpoints: lbEndpoints,
 		}},
 	}
 }
 
 func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Cluster {
+	connectTimeout := defaultConnectTimeout
 	return &v2.Cluster{
 		Name:                 clusterName,
-		ConnectTimeout:       5 * time.Second,
+		ConnectTimeout:       &connectTimeout,
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_STATIC},
 		LoadAssignment:       CreateStaticEndpoint(clusterName, address, port),
 	}
 }
 
 func CreateEdsCluster(ctx xds_context.Context, clusterName string) *v2.Cluster {
+	connectTimeout := defaultConnectTimeout
 	return &v2.Cluster{
 		Name:                 clusterName,
-		ConnectTimeout:       5 * time.Second,
+		ConnectTimeout:       &connectTimeout,
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_EDS},
 		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
 			EdsConfig: &core.ConfigSource{
@@ -105,9 +111,10 @@ func CreateEdsCluster(ctx xds_context.Context, clusterName string) *v2.Cluster {
 }
 
 func CreatePassThroughCluster(clusterName string) *v2.Cluster {
+	connectTimeout := defaultConnectTimeout
 	return &v2.Cluster{
 		Name:                 clusterName,
-		ConnectTimeout:       5 * time.Second,
+		ConnectTimeout:       &connectTimeout,
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_ORIGINAL_DST},
 		LbPolicy:             v2.Cluster_ORIGINAL_DST_LB,
 	}
@@ -129,7 +136,7 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 	util_error.MustNot(err)
 	listener := &v2.Listener{
 		Name: listenerName,
-		Address: core.Address{
+		Address: &core.Address{
 			Address: &core.Address_SocketAddress{
 				SocketAddress: &core.SocketAddress{
 					Protocol: core.TCP,
@@ -140,8 +147,8 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 				},
 			},
 		},
-		FilterChains: []envoy_listener.FilterChain{{
-			Filters: []envoy_listener.Filter{{
+		FilterChains: []*envoy_listener.FilterChain{{
+			Filters: []*envoy_listener.Filter{{
 				Name: util.TCPProxy,
 				ConfigType: &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,
@@ -170,7 +177,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 	util_error.MustNot(err)
 	listener := &v2.Listener{
 		Name: listenerName,
-		Address: core.Address{
+		Address: &core.Address{
 			Address: &core.Address_SocketAddress{
 				SocketAddress: &core.SocketAddress{
 					Protocol: core.TCP,
@@ -181,9 +188,9 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 				},
 			},
 		},
-		FilterChains: []envoy_listener.FilterChain{{
+		FilterChains: []*envoy_listener.FilterChain{{
 			TlsContext: CreateDownstreamTlsContext(ctx),
-			Filters: []envoy_listener.Filter{{
+			Filters: []*envoy_listener.Filter{{
 				Name: util.TCPProxy,
 				ConfigType: &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,
@@ -195,7 +202,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 	if ctx.Mesh.TlsEnabled {
 		filter := createRbacFilter(listenerName, permissions)
 		// RBAC filter should be first in chain
-		listener.FilterChains[0].Filters = append([]envoy_listener.Filter{filter}, listener.FilterChains[0].Filters...)
+		listener.FilterChains[0].Filters = append([]*envoy_listener.Filter{&filter}, listener.FilterChains[0].Filters...)
 	}
 
 	if virtual {
@@ -334,7 +341,7 @@ func CreateCatchAllListener(ctx xds_context.Context, listenerName string, addres
 	util_error.MustNot(err)
 	return &v2.Listener{
 		Name: listenerName,
-		Address: core.Address{
+		Address: &core.Address{
 			Address: &core.Address_SocketAddress{
 				SocketAddress: &core.SocketAddress{
 					Protocol: core.TCP,
@@ -345,8 +352,8 @@ func CreateCatchAllListener(ctx xds_context.Context, listenerName string, addres
 				},
 			},
 		},
-		FilterChains: []envoy_listener.FilterChain{{
-			Filters: []envoy_listener.Filter{{
+		FilterChains: []*envoy_listener.FilterChain{{
+			Filters: []*envoy_listener.Filter{{
 				Name: util.TCPProxy,
 				ConfigType: &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,

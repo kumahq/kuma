@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	rpc "github.com/gogo/googleapis/google/rpc"
+	rpc "istio.io/gogo-genproto/googleapis/google/rpc"
 
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"

@@ -80,13 +80,13 @@ func createResponse(resp *envoy_cache.Response, typeURL string) (*envoy.Discover
 	if resp == nil {
 		return nil, errors.New("missing response")
 	}
-	resources := make([]types.Any, len(resp.Resources))
+	resources := make([]*types.Any, len(resp.Resources))
 	for i := 0; i < len(resp.Resources); i++ {
 		data, err := proto.Marshal(resp.Resources[i])
 		if err != nil {
 			return nil, err
 		}
-		resources[i] = types.Any{
+		resources[i] = &types.Any{
 			TypeUrl: typeURL,
 			Value:   data,
 		}

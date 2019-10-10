@@ -17,7 +17,7 @@ func ToDeltaDiscoveryResponse(s ctl_cache.Snapshot) *v2.DeltaDiscoveryResponse {
 			r := rs.Items[name]
 			pbany, err := types.MarshalAny(r)
 			util_error.MustNot(err)
-			resp.Resources = append(resp.Resources, v2.Resource{
+			resp.Resources = append(resp.Resources, &v2.Resource{
 				Version:  rs.Version,
 				Name:     name,
 				Resource: pbany,
