@@ -5,7 +5,6 @@ import (
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	"github.com/Kong/kuma/pkg/xds/bootstrap"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
 var (
@@ -24,7 +23,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 		DefaultDataplaneStatusTracker(rt),
 	}
 
-	srv := envoy_xds.NewServer(rt.XDS().Cache(), callbacks)
+	srv := util_xds.NewServer(rt.XDS().Cache(), callbacks)
 	return core_runtime.Add(
 		rt,
 		// xDS gRPC API
