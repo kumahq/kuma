@@ -12,7 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-package xds_test
+package server_test
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/envoyproxy/go-control-plane/pkg/test/resource"
 
-	server "github.com/Kong/kuma/pkg/util/xds"
+	"github.com/Kong/kuma/pkg/xds/server"
 )
 
 type mockConfigWatcher struct {
