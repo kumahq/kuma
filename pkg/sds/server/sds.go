@@ -185,6 +185,13 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest, de
 				}
 			}
 
+			if len(req.ResourceNames) == 0 {
+				// Do not respond to SDS requests with an empty list of resource names.
+				// In practice, such requests can be observed when Envoy is removing
+				// Listeners and Clusters with TLS configuration that refers to SDS.
+				continue
+			}
+
 			if err := s.validateSdsRequest(&state, req); err != nil {
 				return err
 			}

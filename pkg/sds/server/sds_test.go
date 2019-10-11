@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -36,6 +37,43 @@ var _ = Describe("Sds", func() {
 
 			errCh <- sds.StreamSecrets(stream)
 		}()
+
+		// when
+		close(stream.in)
+		// then
+		err := <-errCh
+		Expect(err).ToNot(HaveOccurred())
+
+		// finally
+		close(done)
+	})
+
+	It("should support SDS requests with an empty list of resource names", func(done Done) {
+		// given
+		sds := NewServer(nil, nil, test_logr.NewTestLogger(GinkgoT()))
+
+		// when
+		errCh := make(chan error)
+		go func() {
+			defer GinkgoRecover()
+
+			errCh <- sds.StreamSecrets(stream)
+		}()
+
+		// when
+		stream.in <- &envoy.DiscoveryRequest{
+			// In practice, such requests can be observed when Envoy is removing
+			// Listeners and Clusters with TLS configuration that refers to SDS.
+			ResourceNames: []string{},
+		}
+		// then
+		select {
+		case <-stream.out:
+			Fail("SDS server should not respond to SDS requests with an empty list of resource names")
+		case <-time.After(200 * time.Millisecond):
+			// this is expected behaviour since SDS server should ignore
+			// SDS requests with an empty list of resource names
+		}
 
 		// when
 		close(stream.in)
