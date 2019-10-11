@@ -2,17 +2,20 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/logs"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core/permissions"
-	"github.com/Kong/kuma/pkg/core/xds"
 	"github.com/pkg/errors"
 
+	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/logs"
+	"github.com/Kong/kuma/pkg/core/permissions"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/Kong/kuma/pkg/core/xds"
 	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	xds_bootstrap "github.com/Kong/kuma/pkg/xds/bootstrap"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	xds_sync "github.com/Kong/kuma/pkg/xds/sync"
 	xds_template "github.com/Kong/kuma/pkg/xds/template"
@@ -22,6 +25,37 @@ import (
 
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
+
+var (
+	xdsServerLog = core.Log.WithName("xds-server")
+)
+
+func SetupServer(rt core_runtime.Runtime) error {
+	reconciler := DefaultReconciler(rt)
+
+	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler)
+	if err != nil {
+		return err
+	}
+	callbacks := util_xds.CallbacksChain{
+		tracker,
+		DefaultDataplaneStatusTracker(rt),
+	}
+
+	srv := NewServer(rt.XDS().Cache(), callbacks)
+	return core_runtime.Add(
+		rt,
+		// xDS gRPC API
+		&grpcServer{srv, rt.Config().XdsServer.GrpcPort},
+		// diagnostics server
+		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort},
+		// bootstrap server
+		&xds_bootstrap.BootstrapServer{
+			Port:      rt.Config().BootstrapServer.Port,
+			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params),
+		},
+	)
+}
 
 func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 	return &reconciler{
