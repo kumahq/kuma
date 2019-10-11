@@ -25,4 +25,3 @@ func (i *DataplaneTokenServerConfig) Validate() error {
 	}
 	return nil
 }
-

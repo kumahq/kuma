@@ -2,7 +2,9 @@ package issuer
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -10,6 +12,8 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 )
+
+const defaultRsaBits = 2048
 
 var signingKeyResourceKey = model.ResourceKey{
 	Mesh:      "default",
@@ -22,8 +26,12 @@ func CreateDefaultSigningKey(manager core_manager.SecretManager) error {
 	resource := system.SecretResource{}
 	if err := manager.Get(ctx, &resource, store.GetBy(signingKeyResourceKey)); err != nil {
 		if store.IsResourceNotFound(err) {
+			key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
+			if err != nil {
+				return errors.Wrap(err, "failed to generate rsa key")
+			}
 			resource.Spec = types.BytesValue{
-				Value: []byte(core.NewUUID()),
+				Value: x509.MarshalPKCS1PrivateKey(key),
 			}
 			if err := manager.Create(ctx, &resource, store.CreateBy(signingKeyResourceKey)); err != nil {
 				return errors.Wrap(err, "could not store a private key")
