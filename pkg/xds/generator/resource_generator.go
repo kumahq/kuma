@@ -43,7 +43,7 @@ func (rs ResourceList) ToDeltaDiscoveryResponse() *envoy.DeltaDiscoveryResponse 
 	for _, r := range rs {
 		pbany, err := types.MarshalAny(r.Resource)
 		util_error.MustNot(err)
-		resp.Resources = append(resp.Resources, envoy.Resource{
+		resp.Resources = append(resp.Resources, &envoy.Resource{
 			Name:     r.Name,
 			Version:  r.Version,
 			Resource: pbany,

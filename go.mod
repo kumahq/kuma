@@ -10,14 +10,14 @@ require (
 	github.com/Masterminds/sprig v2.20.0+incompatible
 	github.com/emicklei/go-restful v2.9.6+incompatible
 	github.com/emicklei/go-restful-openapi v1.2.0
-	github.com/envoyproxy/go-control-plane v0.8.2
+	github.com/envoyproxy/go-control-plane v0.8.6
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/glogr v0.1.0 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.0
 	github.com/gogo/googleapis v1.2.0
-	github.com/gogo/protobuf v1.2.1
+	github.com/gogo/protobuf v1.2.2-0.20190730201129-28a6bbf47e48
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
@@ -25,7 +25,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.1.1
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
-	github.com/onsi/ginkgo v1.10.1
+	github.com/onsi/ginkgo v1.10.2
 	github.com/onsi/gomega v1.7.0
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/pkg/errors v0.8.1
@@ -44,6 +44,7 @@ require (
 	google.golang.org/grpc v1.22.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.2
+	istio.io/gogo-genproto v0.0.0-20190731221249-06e20ada0df2
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
