@@ -104,11 +104,7 @@ jobs:
         command: |
           export PATH=$HOME/go/bin:$PATH
           make dev/tools
-    - run:
-        name: "Install check tools (clang-format, ...)"
-        # `clang-format` is used to format `*.proto` files
-        command: |
-          brew install clang-format
+    # Do NOT install `clang-format` on Mac since it takes unreasonable amount of time
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
