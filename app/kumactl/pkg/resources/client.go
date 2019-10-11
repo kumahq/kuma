@@ -18,11 +18,5 @@ func apiServerClient(apiUrl string) (util_http.Client, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
 	}
-	return util_http.ClientWithBaseURL(newClient(), baseURL), nil
-}
-
-func newClient() *http.Client {
-	return &http.Client{
-		Timeout: Timeout,
-	}
+	return util_http.ClientWithBaseURL(util_http.ClientWithTimeout(&http.Client{}, Timeout), baseURL), nil
 }

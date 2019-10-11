@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kong/kuma/app/kumactl/cmd/apply"
 	"github.com/Kong/kuma/app/kumactl/cmd/config"
+	"github.com/Kong/kuma/app/kumactl/cmd/generate"
 	"github.com/Kong/kuma/app/kumactl/cmd/get"
 	"github.com/Kong/kuma/app/kumactl/cmd/inspect"
 	"github.com/Kong/kuma/app/kumactl/cmd/install"
@@ -62,6 +63,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(inspect.NewInspectCmd(root))
 	cmd.AddCommand(apply.NewApplyCmd(root))
 	cmd.AddCommand(version.NewVersionCmd())
+	cmd.AddCommand(generate.NewGenerateCmd(root))
 	return cmd
 }
 

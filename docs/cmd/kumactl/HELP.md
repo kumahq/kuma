@@ -9,6 +9,7 @@ Usage:
 Available Commands:
   apply       Create or modify Kuma resources
   config      Manage kumactl config
+  generate    Generate resources
   get         Show Kuma resources
   help        Help about any command
   inspect     Inspect Kuma resources
@@ -255,6 +256,24 @@ rm $sql_file
 Flags:
   -h, --help            help for database-schema
       --target string   Database type: one of postgres (default "postgres")
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use
+```
+
+### kumactl generate dp-token
+
+```
+Generate Dataplane Token that is used to prove Dataplane identity.
+
+Usage:
+  kumactl generate dp-token [flags]
+
+Flags:
+  -h, --help          help for dp-token
+      --name string   name of the Dataplane
 
 Global Flags:
       --config-file string   path to the configuration file to use

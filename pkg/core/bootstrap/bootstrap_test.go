@@ -76,7 +76,7 @@ var _ = Describe("Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should create a default api token", func() {
+	It("should create a default signing key", func() {
 		// given
 		cfg := kuma_cp.DefaultConfig()
 		rt, err := Bootstrap(cfg)
@@ -94,7 +94,7 @@ var _ = Describe("Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 		key2, err := builtin_issuer.GetSigningKey(rt.SecretManager())
 
-		// then it should skip creating a new private key
+		// then it should skip creating a new signing key
 		Expect(err).ToNot(HaveOccurred())
 		Expect(key).To(Equal(key2))
 	})
