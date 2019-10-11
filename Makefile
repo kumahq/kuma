@@ -335,7 +335,7 @@ fmt/go: ## Dev: Run go fmt
 	make fmt -C pkg/plugins/resources/k8s/native
 
 fmt/proto: ## Dev: Run clang-format on .proto files
-	find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT_PATH) -i
+	which $(CLANG_FORMAT_PATH) && find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT_PATH) -i || true
 
 vet: ## Dev: Run go vet
 	go vet ./...
