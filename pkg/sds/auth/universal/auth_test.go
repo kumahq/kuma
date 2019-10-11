@@ -11,6 +11,7 @@ import (
 	"github.com/Kong/kuma/pkg/sds/auth"
 	"github.com/Kong/kuma/pkg/sds/auth/universal"
 	"github.com/Kong/kuma/pkg/sds/server"
+	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -18,13 +19,16 @@ import (
 var _ = Describe("Authentication flow", func() {
 	var privateKey = []byte("testPrivateKey")
 
-	generator := universal.NewCredentialGenerator(privateKey)
+	issuer := builtin_issuer.NewDataplaneTokenIssuer(privateKey)
 	var authenticator auth.Authenticator
 	var resStore store.ResourceStore
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		authenticator = universal.NewAuthenticator(privateKey, server.DefaultDataplaneResolver(manager.NewResourceManager(manager.NewResourceManager(resStore))))
+		authenticator = universal.NewAuthenticator(
+			issuer,
+			server.DefaultDataplaneResolver(manager.NewResourceManager(manager.NewResourceManager(resStore))),
+		)
 	})
 
 	It("should correctly authenticate dataplane", func() {
@@ -53,7 +57,7 @@ var _ = Describe("Authentication flow", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		credential, err := generator.Generate(id)
+		credential, err := issuer.Generate(id)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -87,7 +91,7 @@ var _ = Describe("Authentication flow", func() {
 			Namespace: "default",
 			Name:      "different-name-than-dp1",
 		}
-		token, err := generator.Generate(generateId)
+		token, err := issuer.Generate(generateId)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -111,7 +115,7 @@ var _ = Describe("Authentication flow", func() {
 			Namespace: "default",
 			Name:      "dp1",
 		}
-		token, err := generator.Generate(generateId)
+		token, err := issuer.Generate(generateId)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -137,7 +141,7 @@ var _ = Describe("Authentication flow", func() {
 		}
 
 		// when
-		token, err := generator.Generate(id)
+		token, err := issuer.Generate(id)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

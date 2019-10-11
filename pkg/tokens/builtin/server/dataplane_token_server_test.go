@@ -3,11 +3,13 @@ package server_test
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Kong/kuma/pkg/core/xds"
 	"github.com/Kong/kuma/pkg/sds/auth"
-	"github.com/Kong/kuma/pkg/sds/server"
 	"github.com/Kong/kuma/pkg/test"
+	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
+	"github.com/Kong/kuma/pkg/tokens/builtin/server"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -16,17 +18,21 @@ import (
 	"strings"
 )
 
-type staticCredentialGenerator struct {
+type staticTokenIssuer struct {
 	resp string
 }
 
-var _ auth.CredentialGenerator = &staticCredentialGenerator{}
+var _ issuer.DataplaneTokenIssuer = &staticTokenIssuer{}
 
-func (s *staticCredentialGenerator) Generate(proxyId xds.ProxyId) (auth.Credential, error) {
+func (s *staticTokenIssuer) Generate(proxyId xds.ProxyId) (auth.Credential, error) {
 	return auth.Credential(s.resp), nil
 }
 
-var _ = Describe("Initial Token Server", func() {
+func (s *staticTokenIssuer) Validate(credential auth.Credential) (xds.ProxyId, error) {
+	return xds.ProxyId{}, errors.New("not implemented")
+}
+
+var _ = Describe("Dataplane Token Server", func() {
 
 	var port int
 	const credentials = "test"
@@ -35,9 +41,9 @@ var _ = Describe("Initial Token Server", func() {
 		p, err := test.GetFreePort()
 		port = p
 		Expect(err).ToNot(HaveOccurred())
-		srv := server.InitialTokenServer{
-			LocalHttpPort:       port,
-			CredentialGenerator: &staticCredentialGenerator{credentials},
+		srv := server.DataplaneTokenServer{
+			Port:                port,
+			Issuer: &staticTokenIssuer{credentials},
 		}
 
 		ch := make(chan struct{})
@@ -50,7 +56,7 @@ var _ = Describe("Initial Token Server", func() {
 
 	It("should respond with generated token", func(done Done) {
 		// given
-		idReq := server.IdentityRequest{
+		idReq := server.DataplaneTokenRequest{
 			Mesh: "defualt",
 			Name: "dp-1",
 		}

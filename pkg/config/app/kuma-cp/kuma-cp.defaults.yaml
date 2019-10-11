@@ -54,10 +54,10 @@ sdsServer:
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
   tlsKeyFile: # ENV: KUMA_SDS_SERVER_TLS_KEY_FILE
 
-# Initial Token server configuration
-initialTokenServer:
-  # Port of server listening on HTTP bind to localhost
-  localHttpPort: 5679
+# Dataplane Token server configuration
+dataplaneTokenServer:
+  # Port of the server
+  port: 5679
 
 # Envoy XDS server configuration
 xdsServer:

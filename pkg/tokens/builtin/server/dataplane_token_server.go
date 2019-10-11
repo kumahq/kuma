@@ -6,19 +6,38 @@ import (
 	"fmt"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/sds/auth"
+	"github.com/Kong/kuma/pkg/tokens/builtin"
+	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 	"io/ioutil"
 	"net/http"
 
+	config_core "github.com/Kong/kuma/pkg/config/core"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 )
 
-type IdentityRequest struct {
+func SetupServer(rt core_runtime.Runtime) error {
+	if rt.Config().Environment != config_core.KubernetesEnvironment {
+		generator, err := builtin.NewDataplaneTokenIssuer(rt)
+		if err != nil {
+			return err
+		}
+		srv := &DataplaneTokenServer{
+			Port:   rt.Config().DataplaneTokenServer.Port,
+			Issuer: generator,
+		}
+		if err := core_runtime.Add(rt, srv); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type DataplaneTokenRequest struct {
 	Name string `json:"name"`
 	Mesh string `json:"mesh"`
 }
 
-func (i IdentityRequest) ToProxyId() xds.ProxyId {
+func (i DataplaneTokenRequest) ToProxyId() xds.ProxyId {
 	return xds.ProxyId{
 		Mesh:      i.Mesh,
 		Namespace: "default",
@@ -26,21 +45,21 @@ func (i IdentityRequest) ToProxyId() xds.ProxyId {
 	}
 }
 
-var log = core.Log.WithName("initial-token-server")
+var log = core.Log.WithName("dataplane-token-server")
 
-type InitialTokenServer struct {
-	LocalHttpPort       int
-	CredentialGenerator auth.CredentialGenerator
+type DataplaneTokenServer struct {
+	Port   int
+	Issuer issuer.DataplaneTokenIssuer
 }
 
-var _ core_runtime.Component = &InitialTokenServer{}
+var _ core_runtime.Component = &DataplaneTokenServer{}
 
-func (a *InitialTokenServer) Start(stop <-chan struct{}) error {
+func (a *DataplaneTokenServer) Start(stop <-chan struct{}) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/token", a.handleIdentityRequest)
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", a.LocalHttpPort),
+		Addr:    fmt.Sprintf("127.0.0.1:%d", a.Port),
 		Handler: mux,
 	}
 
@@ -57,7 +76,7 @@ func (a *InitialTokenServer) Start(stop <-chan struct{}) error {
 		}
 		log.Info("terminated normally")
 	}()
-	log.Info("starting", "port", a.LocalHttpPort)
+	log.Info("starting", "port", a.Port)
 
 	select {
 	case <-stop:
@@ -68,14 +87,14 @@ func (a *InitialTokenServer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (a *InitialTokenServer) handleIdentityRequest(resp http.ResponseWriter, req *http.Request) {
+func (a *DataplaneTokenServer) handleIdentityRequest(resp http.ResponseWriter, req *http.Request) {
 	bytes, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Error(err, "Could not read a request")
 		resp.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	idReq := IdentityRequest{}
+	idReq := DataplaneTokenRequest{}
 	if err := json.Unmarshal(bytes, &idReq); err != nil {
 		log.Error(err, "Could not parse a request")
 		resp.WriteHeader(http.StatusBadRequest)
@@ -96,12 +115,13 @@ func (a *InitialTokenServer) handleIdentityRequest(resp http.ResponseWriter, req
 		return
 	}
 
-	token, err := a.CredentialGenerator.Generate(idReq.ToProxyId())
+	token, err := a.Issuer.Generate(idReq.ToProxyId())
 	if err != nil {
 		log.Error(err, "Could not sign a token")
 		resp.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	resp.Header().Set("content-type", "text/plain")
 	if _, err := resp.Write([]byte(token)); err != nil {
 		log.Error(err, "Could write a response")
 	}

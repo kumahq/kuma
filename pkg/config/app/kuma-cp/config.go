@@ -9,6 +9,7 @@ import (
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
 	"github.com/Kong/kuma/pkg/config/sds"
+	token_server "github.com/Kong/kuma/pkg/config/token-server"
 	"github.com/Kong/kuma/pkg/config/xds"
 	"github.com/Kong/kuma/pkg/config/xds/bootstrap"
 	util_error "github.com/Kong/kuma/pkg/util/error"
@@ -63,8 +64,8 @@ type Config struct {
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
 	// Envoy SDS server configuration
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer"`
-	// Initial Token server configuration
-	InitialTokenServer *sds.InitialTokenServerConfig `yaml:"initialTokenServer"`
+	// Dataplane Token server configuration
+	DataplaneTokenServer *token_server.DataplaneTokenServerConfig `yaml:"dataplaneTokenServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
 	// Environment-specific configuration
@@ -77,15 +78,15 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
-		Environment:        core.UniversalEnvironment,
-		Store:              store.DefaultStoreConfig(),
-		XdsServer:          xds.DefaultXdsServerConfig(),
-		SdsServer:          sds.DefaultSdsServerConfig(),
-		InitialTokenServer: sds.DefaultInitialTokenServerConfig(),
-		ApiServer:          api_server.DefaultApiServerConfig(),
-		BootstrapServer:    bootstrap.DefaultBootstrapServerConfig(),
-		Discovery:          discovery.DefaultDiscoveryConfig(),
-		Runtime:            runtime.DefaultRuntimeConfig(),
+		Environment:          core.UniversalEnvironment,
+		Store:                store.DefaultStoreConfig(),
+		XdsServer:            xds.DefaultXdsServerConfig(),
+		SdsServer:            sds.DefaultSdsServerConfig(),
+		DataplaneTokenServer: token_server.DefaultDataplaneTokenServerConfig(),
+		ApiServer:            api_server.DefaultApiServerConfig(),
+		BootstrapServer:      bootstrap.DefaultBootstrapServerConfig(),
+		Discovery:            discovery.DefaultDiscoveryConfig(),
+		Runtime:              runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
 			Mesh: `type: Mesh
 name: default
@@ -110,8 +111,8 @@ func (c *Config) Validate() error {
 	if err := c.SdsServer.Validate(); err != nil {
 		return errors.Wrap(err, "SDS Server validation failed")
 	}
-	if err := c.InitialTokenServer.Validate(); err != nil {
-		return errors.Wrap(err, "Initial Token Server validation failed")
+	if err := c.DataplaneTokenServer.Validate(); err != nil {
+		return errors.Wrap(err, "Dataplane Token Server validation failed")
 	}
 	if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
 		return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)

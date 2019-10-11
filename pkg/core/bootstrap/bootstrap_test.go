@@ -8,7 +8,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
+	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -83,7 +83,7 @@ var _ = Describe("Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		key, err := core_manager.GetPrivateKey(rt.SecretManager())
+		key, err := builtin_issuer.GetSigningKey(rt.SecretManager())
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -92,7 +92,7 @@ var _ = Describe("Bootstrap", func() {
 		// when kuma-cp is run again
 		err = onStartup(rt)
 		Expect(err).ToNot(HaveOccurred())
-		key2, err := core_manager.GetPrivateKey(rt.SecretManager())
+		key2, err := builtin_issuer.GetSigningKey(rt.SecretManager())
 
 		// then it should skip creating a new private key
 		Expect(err).ToNot(HaveOccurred())

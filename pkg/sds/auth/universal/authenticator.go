@@ -2,24 +2,24 @@ package universal
 
 import (
 	"context"
-	"github.com/dgrijalva/jwt-go"
 
 	"github.com/pkg/errors"
 
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
 	common_auth "github.com/Kong/kuma/pkg/sds/auth/common"
+	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 )
 
-func NewAuthenticator(privateKey []byte, dataplaneResolver common_auth.DataplaneResolver) sds_auth.Authenticator {
+func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer, dataplaneResolver common_auth.DataplaneResolver) sds_auth.Authenticator {
 	return &universalAuthenticator{
-		privateKey:        privateKey,
+		issuer:            issuer,
 		dataplaneResolver: dataplaneResolver,
 	}
 }
 
 type universalAuthenticator struct {
-	privateKey        []byte
+	issuer            builtin_issuer.DataplaneTokenIssuer
 	dataplaneResolver common_auth.DataplaneResolver
 }
 
@@ -35,24 +35,17 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, proxyId core_
 	return common_auth.GetDataplaneIdentity(dataplane)
 }
 
-func (u *universalAuthenticator) reviewToken(proxyId core_xds.ProxyId, credential sds_auth.Credential) error {
-	c := &claims{}
-
-	token, err := jwt.ParseWithClaims(string(credential), c, func(*jwt.Token) (interface{}, error) {
-		return u.privateKey, nil
-	})
+func (u *universalAuthenticator) reviewToken(expectedId core_xds.ProxyId, credential sds_auth.Credential) error {
+	proxyId, err := u.issuer.Validate(credential)
 	if err != nil {
-		return errors.Wrap(err, "could not parse token")
-	}
-	if !token.Valid {
-		return errors.New("token is not valid")
+		return err
 	}
 
-	if proxyId.Name != c.Name {
-		return errors.Errorf("proxy name from requestor is different than in token. Expected %s got %s", proxyId.Name, c.Name)
+	if expectedId.Name != proxyId.Name {
+		return errors.Errorf("proxy name from requestor is different than in token. Expected %s got %s", expectedId.Name, proxyId.Name)
 	}
-	if proxyId.Mesh != c.Mesh {
-		return errors.Errorf("proxy mesh from requestor is different than in token. Expected %s got %s", proxyId.Mesh, c.Mesh)
+	if expectedId.Mesh != proxyId.Mesh {
+		return errors.Errorf("proxy mesh from requestor is different than in token. Expected %s got %s", expectedId.Mesh, proxyId.Mesh)
 	}
 	return nil
 }
