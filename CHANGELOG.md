@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## [0.2.2]
+
+> Released on 2019/10/11
+
+Changes:
+
+* Draining time is now configurable
+  [#310](https://github.com/Kong/kuma/pull/310)
+* Validation that Control Plane is running when adding it with `kumactl`
+  [#181](https://github.com/Kong/kuma/issues/181)
+* Upgraded version of go-control-plane
+* Upgraded version of Envoy to 1.11.2 
+
+Fixed issues:
+* Cluster never went out warming state
+  [#331](https://github.com/Kong/kuma/pull/331)
+* SDS server didn't handle requests with empty resources list
+  [#337](https://github.com/Kong/kuma/pull/337) 
+
 ## [0.2.1]
 
 > Released on 2019/10/03
