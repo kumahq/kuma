@@ -7,6 +7,7 @@ ADD $KUMA_ROOT/pkg/config/app/kuma-cp/kuma-cp.defaults.yaml /etc/kuma
 
 RUN mkdir /kuma
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
+COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
 
 USER nobody:nobody
