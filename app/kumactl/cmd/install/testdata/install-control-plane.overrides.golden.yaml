@@ -37,6 +37,17 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: kuma-control-plane-config
+  namespace: kuma
+data:
+  config.yaml: |
+    # use this file to override default configuration of `kuma-cp`
+    #
+    # see conf/kuma-cp.conf for available settings
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: kuma-injector-config
   namespace: kuma
 data:
@@ -2656,6 +2667,7 @@ spec:
         args:
         - run
         - --log-level=info
+        - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
         ports:
         - containerPort: 5443
         - containerPort: 5677
@@ -2682,6 +2694,9 @@ spec:
         - name: kuma-admission-server-tls-cert
           mountPath: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
           readOnly: true
+        - mountPath: /etc/kuma.io/kuma-control-plane
+          name: kuma-control-plane-config
+          readOnly: true
       serviceAccountName: kuma-control-plane
       volumes:
       - name: kuma-sds-tls-cert
@@ -2690,6 +2705,9 @@ spec:
       - name: kuma-admission-server-tls-cert
         secret:
           secretName: kuma-admission-server-tls-cert
+      - configMap:
+          name: kuma-control-plane-config
+        name: kuma-control-plane-config
 ---
 apiVersion: apps/v1
 kind: Deployment

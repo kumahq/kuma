@@ -1,12 +1,17 @@
 package bootstrap
 
+import "time"
+
 type configParameters struct {
-	Id            string
-	Service       string
-	AdminPort     uint32
-	XdsHost       string
-	XdsPort       uint32
-	AccessLogPipe string
+	Id                 string
+	Service            string
+	AdminAddress       string
+	AdminPort          uint32
+	AdminAccessLogPath string
+	XdsHost            string
+	XdsPort            uint32
+	XdsConnectTimeout  time.Duration
+	AccessLogPipe      string
 }
 
 const configTemplate string = `
@@ -16,11 +21,11 @@ node:
 
 {{if .AdminPort }}
 admin:
-  access_log_path: /dev/null
+  access_log_path: {{ .AdminAccessLogPath }}
   address:
     socket_address:
       protocol: TCP
-      address: 127.0.0.1
+      address: {{ .AdminAddress }}
       port_value: {{ .AdminPort }}
 {{ end }}
 
@@ -36,7 +41,7 @@ dynamic_resources:
 static_resources:
   clusters:
   - name: ads_cluster
-    connect_timeout: 0.25s
+    connect_timeout: {{ .XdsConnectTimeout }}
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     http2_protocol_options: {}
@@ -54,7 +59,7 @@ static_resources:
                 address: {{ .XdsHost }}
                 port_value: {{ .XdsPort }}
   - name: access_log_sink
-    connect_timeout: 1s
+    connect_timeout: {{ .XdsConnectTimeout }}
     type: STATIC
     lb_policy: ROUND_ROBIN
     http2_protocol_options: {}

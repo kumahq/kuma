@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	xds_config "github.com/Kong/kuma/pkg/config/xds"
+	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -24,18 +24,18 @@ var _ = Describe("Bootstrap Server", func() {
 
 	var stop chan struct{}
 	var resManager manager.ResourceManager
-	var config *xds_config.BootstrapParamsConfig
+	var config *bootstrap_config.BootstrapParamsConfig
 	var baseUrl string
 
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
-		config = xds_config.DefaultBootstrapParamsConfig()
+		config = bootstrap_config.DefaultBootstrapParamsConfig()
 
 		port, err := test.GetFreePort()
 		baseUrl = "http://localhost:" + strconv.Itoa(port)
 		Expect(err).ToNot(HaveOccurred())
 		server := BootstrapServer{
-			Port:      port,
+			Port:      uint32(port),
 			Generator: NewDefaultBootstrapGenerator(resManager, config),
 		}
 		stop = make(chan struct{})
@@ -95,6 +95,8 @@ var _ = Describe("Bootstrap Server", func() {
 			received, err := ioutil.ReadAll(resp.Body)
 			Expect(resp.Body.Close()).To(Succeed())
 			Expect(err).ToNot(HaveOccurred())
+
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.expectedConfigFile))
 			Expect(err).ToNot(HaveOccurred())

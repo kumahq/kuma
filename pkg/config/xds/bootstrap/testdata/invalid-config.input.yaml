@@ -1,0 +1,8 @@
+port: 65536
+params:
+  adminAccessLogPath:
+  adminAddress: localhost
+  adminPort: 65537
+  xdsConnectTimeout: -1s
+  xdsHost:
+  xdsPort: 65538

@@ -4,19 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/util/proto"
 	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
-	"io/ioutil"
-	"net/http"
 )
 
 var log = core.Log.WithName("bootstrap-server")
 
 type BootstrapServer struct {
-	Port      int
+	Port      uint32
 	Generator BootstrapGenerator
 }
 
