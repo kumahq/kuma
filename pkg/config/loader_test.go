@@ -79,7 +79,7 @@ reports:
 		Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
 		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
-		Expect(cfg.BootstrapServer.Port).To(Equal(5004))
+		Expect(cfg.BootstrapServer.Port).To(Equal(uint32(5004)))
 		Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -142,7 +142,7 @@ reports:
 		Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
 		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
-		Expect(cfg.BootstrapServer.Port).To(Equal(5004))
+		Expect(cfg.BootstrapServer.Port).To(Equal(uint32(5004)))
 		Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))

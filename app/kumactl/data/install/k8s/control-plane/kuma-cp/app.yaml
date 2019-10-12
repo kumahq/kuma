@@ -48,6 +48,17 @@ data:
   tls.crt: {{ .AdmissionServerTlsCert | b64enc }}
   tls.key: {{ .AdmissionServerTlsKey | b64enc }}
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kuma-control-plane-config
+  namespace: {{ .Namespace }}
+data:
+  config.yaml: |
+    # use this file to override default configuration of `kuma-cp`
+    #
+    # see conf/kuma-cp.conf for available settings
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -103,6 +114,7 @@ spec:
         args:
         - run
         - --log-level=info
+        - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
         ports:
         - containerPort: 5443
         - containerPort: 5677
@@ -129,6 +141,9 @@ spec:
         - name: kuma-admission-server-tls-cert
           mountPath: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
           readOnly: true
+        - name: kuma-control-plane-config
+          mountPath: /etc/kuma.io/kuma-control-plane
+          readOnly: true
       volumes:
       - name: kuma-sds-tls-cert
         secret:
@@ -136,6 +151,9 @@ spec:
       - name: kuma-admission-server-tls-cert
         secret:
           secretName: kuma-admission-server-tls-cert
+      - name: kuma-control-plane-config
+        configMap:
+          name: kuma-control-plane-config
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration

@@ -8,7 +8,7 @@ import (
 
 	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
 
-	xds_config "github.com/Kong/kuma/pkg/config/xds"
+	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -25,7 +25,7 @@ type BootstrapGenerator interface {
 
 func NewDefaultBootstrapGenerator(
 	resManager manager.ResourceManager,
-	config *xds_config.BootstrapParamsConfig) BootstrapGenerator {
+	config *bootstrap_config.BootstrapParamsConfig) BootstrapGenerator {
 	return &bootstrapGenerator{
 		resManager: resManager,
 		config:     config,
@@ -34,7 +34,7 @@ func NewDefaultBootstrapGenerator(
 
 type bootstrapGenerator struct {
 	resManager manager.ResourceManager
-	config     *xds_config.BootstrapParamsConfig
+	config     *bootstrap_config.BootstrapParamsConfig
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.BootstrapRequest) (proto.Message, error) {
@@ -46,7 +46,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.Bootstra
 	if err != nil {
 		return nil, err
 	}
+	return b.GenerateFor(*proxyId, dataplane, request)
+}
 
+func (b *bootstrapGenerator) GenerateFor(proxyId xds.ProxyId, dataplane *mesh.DataplaneResource, request rest.BootstrapRequest) (proto.Message, error) {
 	// if dataplane has no service - fill this with placeholder. Otherwise take the first service
 	service := dataplane.Spec.GetIdentifyingService()
 
@@ -56,12 +59,15 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.Bootstra
 	}
 	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
 	params := configParameters{
-		Id:            proxyId.String(),
-		Service:       service,
-		AdminPort:     adminPort,
-		XdsHost:       b.config.XdsHost,
-		XdsPort:       b.config.XdsPort,
-		AccessLogPipe: accessLogPipe,
+		Id:                 proxyId.String(),
+		Service:            service,
+		AdminAddress:       b.config.AdminAddress,
+		AdminPort:          adminPort,
+		AdminAccessLogPath: b.config.AdminAccessLogPath,
+		XdsHost:            b.config.XdsHost,
+		XdsPort:            b.config.XdsPort,
+		XdsConnectTimeout:  b.config.XdsConnectTimeout,
+		AccessLogPipe:      accessLogPipe,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.ConfigForParameters(params)

@@ -1,0 +1,50 @@
+admin:
+  accessLogPath: /var/log
+  address:
+    socketAddress:
+      address: 192.168.0.1
+      portValue: 9902
+dynamicResources:
+  adsConfig:
+    apiType: GRPC
+    grpcServices:
+    - envoyGrpc:
+        clusterName: ads_cluster
+  cdsConfig:
+    ads: {}
+  ldsConfig:
+    ads: {}
+node:
+  cluster: backend
+  id: mesh.name.namespace
+staticResources:
+  clusters:
+  - connectTimeout: 2s
+    http2ProtocolOptions: {}
+    loadAssignment:
+      clusterName: ads_cluster
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: kuma-control-plane.internal
+                portValue: 15678
+    name: ads_cluster
+    type: STRICT_DNS
+    upstreamConnectionOptions:
+      tcpKeepalive: {}
+  - connectTimeout: 2s
+    http2ProtocolOptions: {}
+    loadAssignment:
+      clusterName: access_log_sink
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-access-logs-name.namespace-mesh.sock
+    name: access_log_sink
+    type: STATIC
+    upstreamConnectionOptions:
+      tcpKeepalive: {}

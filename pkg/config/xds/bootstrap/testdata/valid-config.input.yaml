@@ -1,0 +1,8 @@
+port: 1234
+params:
+  adminAddress: 192.168.0.1
+  adminPort: 4321
+  adminAccessLogPath: /var/log
+  xdsHost: kuma-control-plane.internal
+  xdsPort: 10101
+  xdsConnectTimeout: 2s

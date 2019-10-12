@@ -32,12 +32,18 @@ bootstrapServer:
   port: 5682 # ENV: KUMA_BOOTSTRAP_SERVER_PORT
   # Parameters of bootstrap configuration
   params:
+    # Address of Envoy Admin
+    adminAddress: 127.0.0.1 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS
     # Port of Envoy Admin
     adminPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
+    # Path to access log file of Envoy Admin
+    adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
     # Host of XDS Server
     xdsHost: 127.0.0.1 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
     # Port of XDS Server
     xdsPort: 5678 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
+    # Connection timeout to the XDS Server
+    xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
 
 # Envoy SDS server configuration
 sdsServer:

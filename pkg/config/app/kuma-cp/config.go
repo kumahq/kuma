@@ -10,6 +10,7 @@ import (
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
 	"github.com/Kong/kuma/pkg/config/sds"
 	"github.com/Kong/kuma/pkg/config/xds"
+	"github.com/Kong/kuma/pkg/config/xds/bootstrap"
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	"github.com/Kong/kuma/pkg/util/proto"
 
@@ -57,7 +58,7 @@ type Config struct {
 	// Discovery configuration
 	Discovery *discovery.DiscoveryConfig `yaml:"discovery"`
 	// Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
-	BootstrapServer *xds.BootstrapServerConfig `yaml:"bootstrapServer"`
+	BootstrapServer *bootstrap.BootstrapServerConfig `yaml:"bootstrapServer"`
 	// Envoy XDS server configuration
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
 	// Envoy SDS server configuration
@@ -79,7 +80,7 @@ func DefaultConfig() Config {
 		XdsServer:       xds.DefaultXdsServerConfig(),
 		SdsServer:       sds.DefaultSdsServerConfig(),
 		ApiServer:       api_server.DefaultApiServerConfig(),
-		BootstrapServer: xds.DefaultBootstrapServerConfig(),
+		BootstrapServer: bootstrap.DefaultBootstrapServerConfig(),
 		Discovery:       discovery.DefaultDiscoveryConfig(),
 		Runtime:         runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{

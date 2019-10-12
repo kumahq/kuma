@@ -11,7 +11,9 @@ Changes:
 * Validation that Control Plane is running when adding it with `kumactl`
   [#181](https://github.com/Kong/kuma/issues/181)
 * Upgraded version of go-control-plane
-* Upgraded version of Envoy to 1.11.2 
+* Upgraded version of Envoy to 1.11.2
+* Connection timeout to ADS server is now configurable (part of `envoy` bootstrap config)
+  [#340](https://github.com/Kong/kuma/pull/340)
 
 Fixed issues:
 * Cluster never went out warming state
