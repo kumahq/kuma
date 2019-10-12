@@ -12,7 +12,7 @@ DISTRIBUTIONS=(debian:linux ubuntu:linux rhel:linux centos:linux darwin:darwin)
 BINTRAY_ENDPOINT="https://api.bintray.com/"
 BINTRAY_SUBJECT="kong"
 [ -z "$BINTRAY_REPOSITORY" ] && BINTRAY_REPOSITORY="kuma"
-
+ENVOY_VERSION=1.11.2
 
 function msg_green {
   builtin echo -en "\033[1;32m"
@@ -53,7 +53,7 @@ function get_envoy() {
 
   local status=$(curl -L -o build/envoy-$distro -u $BINTRAY_USERNAME:$BINTRAY_API_KEY \
     --write-out %{http_code} --silent --output /dev/null \
-    "https://kong.bintray.com/envoy/envoy-1.11.0-$distro")
+    "https://kong.bintray.com/envoy/envoy-$ENVOY_VERSION-$distro")
 
   [ "$status" -ne "200" ] && msg_err "Error: failed downloading Envoy" || true
 }
