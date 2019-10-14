@@ -18,8 +18,8 @@ type claims struct {
 	jwt.StandardClaims
 }
 
-func NewDataplaneTokenIssuer(PrivateKey []byte) DataplaneTokenIssuer {
-	return &jwtTokenIssuer{PrivateKey}
+func NewDataplaneTokenIssuer(privateKey []byte) DataplaneTokenIssuer {
+	return &jwtTokenIssuer{privateKey}
 }
 
 var _ DataplaneTokenIssuer = &jwtTokenIssuer{}
@@ -58,7 +58,7 @@ func (i *jwtTokenIssuer) Validate(credential auth.Credential) (xds.ProxyId, erro
 
 	id := xds.ProxyId{
 		Mesh:      c.Mesh,
-		Namespace: "",
+		Namespace: "default", // namespace is irrelevant as this is only used in Universal
 		Name:      c.Name,
 	}
 	return id, nil

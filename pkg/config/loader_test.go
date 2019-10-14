@@ -100,7 +100,7 @@ reports:
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 
-		Expect(cfg.DataplaneTokenServer.Port).To(Equal(1111))
+		Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
 
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -165,7 +165,7 @@ reports:
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 
-		Expect(cfg.DataplaneTokenServer.Port).To(Equal(1111))
+		Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
 
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))

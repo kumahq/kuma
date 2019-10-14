@@ -8,6 +8,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/xds"
 	"github.com/Kong/kuma/pkg/tokens/builtin"
 	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 
@@ -16,7 +17,10 @@ import (
 )
 
 func SetupServer(rt core_runtime.Runtime) error {
-	if rt.Config().Environment != config_core.KubernetesEnvironment {
+	switch env := rt.Config().Environment; env {
+	case config_core.KubernetesEnvironment:
+		return nil
+	case config_core.UniversalEnvironment:
 		generator, err := builtin.NewDataplaneTokenIssuer(rt)
 		if err != nil {
 			return err
@@ -28,6 +32,10 @@ func SetupServer(rt core_runtime.Runtime) error {
 		if err := core_runtime.Add(rt, srv); err != nil {
 			return err
 		}
+	default:
+		return errors.Errorf("unknown environment type %s", env)
+	}
+	if rt.Config().Environment != config_core.KubernetesEnvironment {
 	}
 	return nil
 }
@@ -48,7 +56,7 @@ func (i DataplaneTokenRequest) ToProxyId() xds.ProxyId {
 var log = core.Log.WithName("dataplane-token-server")
 
 type DataplaneTokenServer struct {
-	Port   int
+	Port   uint32
 	Issuer issuer.DataplaneTokenIssuer
 }
 

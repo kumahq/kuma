@@ -42,10 +42,10 @@ func (u *universalAuthenticator) reviewToken(expectedId core_xds.ProxyId, creden
 	}
 
 	if expectedId.Name != proxyId.Name {
-		return errors.Errorf("proxy name from requestor is different than in token. Expected %s got %s", expectedId.Name, proxyId.Name)
+		return errors.Errorf("proxy name from requestor: %s is different than in token: %s", expectedId.Name, proxyId.Name)
 	}
 	if expectedId.Mesh != proxyId.Mesh {
-		return errors.Errorf("proxy mesh from requestor is different than in token. Expected %s got %s", expectedId.Mesh, proxyId.Mesh)
+		return errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", expectedId.Mesh, proxyId.Mesh)
 	}
 	return nil
 }

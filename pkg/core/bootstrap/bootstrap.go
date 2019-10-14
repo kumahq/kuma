@@ -72,13 +72,13 @@ func onStartup(runtime core_runtime.Runtime) error {
 	if err := createDefaultMesh(runtime); err != nil {
 		return err
 	}
-	if err := createPrivateKeyForInitialTokens(runtime); err != nil {
+	if err := createDefaultSigningKey(runtime); err != nil {
 		return err
 	}
 	return startReporter(runtime)
 }
 
-func createPrivateKeyForInitialTokens(runtime core_runtime.Runtime) error {
+func createDefaultSigningKey(runtime core_runtime.Runtime) error {
 	switch env := runtime.Config().Environment; env {
 	case config_core.KubernetesEnvironment:
 		// we use service account token on K8S, so there is no need for dataplane token server

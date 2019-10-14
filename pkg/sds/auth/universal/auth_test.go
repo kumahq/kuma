@@ -27,7 +27,7 @@ var _ = Describe("Authentication flow", func() {
 		resStore = memory.NewStore()
 		authenticator = universal.NewAuthenticator(
 			issuer,
-			server.DefaultDataplaneResolver(manager.NewResourceManager(manager.NewResourceManager(resStore))),
+			server.DefaultDataplaneResolver(manager.NewResourceManager(resStore)),
 		)
 	})
 
@@ -105,7 +105,7 @@ var _ = Describe("Authentication flow", func() {
 		_, err = authenticator.Authenticate(context.Background(), authId, token)
 
 		// then
-		Expect(err).To(MatchError("proxy name from requestor is different than in token. Expected dp1 got different-name-than-dp1"))
+		Expect(err).To(MatchError("proxy name from requestor: dp1 is different than in token: different-name-than-dp1"))
 	})
 
 	It("should throw an error on token with different mesh", func() {
@@ -129,7 +129,7 @@ var _ = Describe("Authentication flow", func() {
 		_, err = authenticator.Authenticate(context.Background(), authId, token)
 
 		// then
-		Expect(err).To(MatchError("proxy mesh from requestor is different than in token. Expected default got different-mesh-than-default"))
+		Expect(err).To(MatchError("proxy mesh from requestor: default is different than in token: different-mesh-than-default"))
 	})
 
 	It("should throw an error when dataplane is not present in CP", func() {

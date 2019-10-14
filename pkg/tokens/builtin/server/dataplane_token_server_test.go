@@ -42,7 +42,7 @@ var _ = Describe("Dataplane Token Server", func() {
 		port = p
 		Expect(err).ToNot(HaveOccurred())
 		srv := server.DataplaneTokenServer{
-			Port:   port,
+			Port:   uint32(port),
 			Issuer: &staticTokenIssuer{credentials},
 		}
 

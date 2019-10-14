@@ -17,23 +17,24 @@ const defaultRsaBits = 2048
 
 var signingKeyResourceKey = model.ResourceKey{
 	Mesh:      "default",
-	Namespace: "default",
+	Namespace: "default", // namespace is irrelevant as this is only used in Universal
 	Name:      "dataplane-token-signing-key",
 }
 
 func CreateDefaultSigningKey(manager core_manager.SecretManager) error {
+	key, err := createSigningKey()
+	if err != nil {
+		return err
+	}
+	return storeKeyIfNotExist(manager, key)
+}
+
+func storeKeyIfNotExist(manager core_manager.SecretManager, keyResource system.SecretResource) error {
 	ctx := context.Background()
 	resource := system.SecretResource{}
 	if err := manager.Get(ctx, &resource, store.GetBy(signingKeyResourceKey)); err != nil {
 		if store.IsResourceNotFound(err) {
-			key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
-			if err != nil {
-				return errors.Wrap(err, "failed to generate rsa key")
-			}
-			resource.Spec = types.BytesValue{
-				Value: x509.MarshalPKCS1PrivateKey(key),
-			}
-			if err := manager.Create(ctx, &resource, store.CreateBy(signingKeyResourceKey)); err != nil {
+			if err := manager.Create(ctx, &keyResource, store.CreateBy(signingKeyResourceKey)); err != nil {
 				return errors.Wrap(err, "could not store a private key")
 			}
 		} else {
@@ -41,6 +42,18 @@ func CreateDefaultSigningKey(manager core_manager.SecretManager) error {
 		}
 	}
 	return nil
+}
+
+func createSigningKey() (system.SecretResource, error) {
+	res := system.SecretResource{}
+	key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
+	if err != nil {
+		return res, errors.Wrap(err, "failed to generate rsa key")
+	}
+	res.Spec = types.BytesValue{
+		Value: x509.MarshalPKCS1PrivateKey(key),
+	}
+	return res, nil
 }
 
 func GetSigningKey(manager core_manager.SecretManager) ([]byte, error) {
