@@ -52,6 +52,12 @@ var _ = Describe("Dataplane Token Server", func() {
 			defer GinkgoRecover()
 			errCh <- srv.Start(ch)
 		}()
+
+		// wait for the server to be started
+		Eventually(func() error {
+			_, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", port), nil)
+			return err
+		}, "5s", "100ms").ShouldNot(HaveOccurred())
 	})
 
 	It("should respond with generated token", func(done Done) {
