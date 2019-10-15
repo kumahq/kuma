@@ -10,6 +10,7 @@ Available Commands:
   apply       Create or modify Kuma resources
   config      Manage kumactl config
   generate    Generate resources, tokens, etc
+  delete      Delete Kuma resources
   get         Show Kuma resources
   help        Help about any command
   inspect     Inspect Kuma resources
