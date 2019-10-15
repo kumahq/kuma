@@ -35,8 +35,6 @@ func SetupServer(rt core_runtime.Runtime) error {
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}
-	if rt.Config().Environment != config_core.KubernetesEnvironment {
-	}
 	return nil
 }
 
@@ -64,7 +62,7 @@ var _ core_runtime.Component = &DataplaneTokenServer{}
 
 func (a *DataplaneTokenServer) Start(stop <-chan struct{}) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/token", a.handleIdentityRequest)
+	mux.HandleFunc("/tokens", a.handleIdentityRequest)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", a.Port),

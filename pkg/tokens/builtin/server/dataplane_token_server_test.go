@@ -70,7 +70,7 @@ var _ = Describe("Dataplane Token Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/token", port), bytes.NewReader(reqBytes))
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/tokens", port), bytes.NewReader(reqBytes))
 		resp, err := http.DefaultClient.Do(req)
 
 		// then
@@ -90,7 +90,7 @@ var _ = Describe("Dataplane Token Server", func() {
 
 	DescribeTable("should return bad request on invalid json",
 		func(json string) {
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/token", port), strings.NewReader(json))
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/tokens", port), strings.NewReader(json))
 			resp, err := http.DefaultClient.Do(req)
 
 			// then
