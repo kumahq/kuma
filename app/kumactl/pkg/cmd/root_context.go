@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
+	"net"
 	"net/url"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/config"
@@ -26,7 +26,7 @@ type RootRuntime struct {
 	Now                        func() time.Time
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
-	NewDpTokenClient           func(string) (tokens.DpTokenClient, error)
+	NewDataplaneTokenClient    func(string) (tokens.DataplaneTokenClient, error)
 }
 
 type RootContext struct {
@@ -40,7 +40,7 @@ func DefaultRootContext() *RootContext {
 			Now:                        time.Now,
 			NewResourceStore:           kumactl_resources.NewResourceStore,
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
-			NewDpTokenClient:           tokens.NewDpTokenClient,
+			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 		},
 	}
 }
@@ -111,19 +111,19 @@ func (rc *RootContext) CurrentDataplaneOverviewClient() (kumactl_resources.Datap
 	return rc.Runtime.NewDataplaneOverviewClient(controlPlane.Coordinates.ApiServer)
 }
 
-func (rc *RootContext) CurrentDpTokenClient() (tokens.DpTokenClient, error) {
+func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {
 		return nil, err
 	}
-	// this will be replaced by inferring addresses https://github.com/Kong/kuma/issues/315
+	// todo(jakubdyszkiewicz) this will be replaced by inferring addresses https://github.com/Kong/kuma/issues/315
 	apiServerUrl, err := url.Parse(controlPlane.Coordinates.ApiServer.Url)
 	if err != nil {
 		return nil, err
 	}
-	port := apiServerUrl.Port()
+	host, _, err := net.SplitHostPort(apiServerUrl.Host)
 	const defaultDpTokenPort = 5679
-	return rc.Runtime.NewDpTokenClient(strings.ReplaceAll(controlPlane.Coordinates.ApiServer.Url, port, strconv.Itoa(defaultDpTokenPort)))
+	return rc.Runtime.NewDataplaneTokenClient(fmt.Sprintf("http://%s:%d", host, defaultDpTokenPort))
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {

@@ -7,7 +7,7 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/tokens/builtin"
 	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
-	"github.com/Kong/kuma/pkg/tokens/builtin/server/model"
+	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
@@ -87,7 +87,7 @@ func (a *DataplaneTokenServer) handleIdentityRequest(resp http.ResponseWriter, r
 		resp.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	idReq := model.DataplaneTokenRequest{}
+	idReq := types.DataplaneTokenRequest{}
 	if err := json.Unmarshal(bytes, &idReq); err != nil {
 		log.Error(err, "Could not parse a request")
 		resp.WriteHeader(http.StatusBadRequest)

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
-	"github.com/Kong/kuma/pkg/tokens/builtin/server/model"
+	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"io/ioutil"
@@ -17,8 +17,8 @@ var _ = Describe("Tokens Client", func() {
 		// given
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
-		mux.HandleFunc("/token", func(writer http.ResponseWriter, req *http.Request) {
-			dpTokenReq := model.DataplaneTokenRequest{}
+		mux.HandleFunc("/tokens", func(writer http.ResponseWriter, req *http.Request) {
+			dpTokenReq := types.DataplaneTokenRequest{}
 			reqBytes, err := ioutil.ReadAll(req.Body)
 			Expect(err).ToNot(HaveOccurred())
 			err = json.Unmarshal(reqBytes, &dpTokenReq)
@@ -29,7 +29,7 @@ var _ = Describe("Tokens Client", func() {
 			_, err = writer.Write([]byte(token))
 			Expect(err).ToNot(HaveOccurred())
 		})
-		client, err := tokens.NewDpTokenClient(server.URL)
+		client, err := tokens.NewDataplaneTokenClient(server.URL)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -44,10 +44,10 @@ var _ = Describe("Tokens Client", func() {
 		// given
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
-		mux.HandleFunc("/token", func(writer http.ResponseWriter, req *http.Request) {
+		mux.HandleFunc("/tokens", func(writer http.ResponseWriter, req *http.Request) {
 			writer.WriteHeader(500)
 		})
-		client, err := tokens.NewDpTokenClient(server.URL)
+		client, err := tokens.NewDataplaneTokenClient(server.URL)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

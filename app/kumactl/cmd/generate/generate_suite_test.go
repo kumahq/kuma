@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestGenerateDpTokenCmd(t *testing.T) {
+func TestGenerateDataplaneTokenCmd(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Generate Dp Token Suite")
+	RunSpecs(t, "Generate Dataplane Token Suite")
 }

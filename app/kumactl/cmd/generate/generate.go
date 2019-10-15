@@ -8,10 +8,10 @@ import (
 func NewGenerateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate",
-		Short: "Generate resources",
-		Long:  `Generate resources.`,
+		Short: "Generate resources, tokens etc",
+		Long:  `Generate resources, tokens etc.`,
 	}
 	// sub-commands
-	cmd.AddCommand(NewGenerateDpTokenCmd(pctx))
+	cmd.AddCommand(NewGenerateDataplaneTokenCmd(pctx))
 	return cmd
 }

@@ -3,7 +3,7 @@ package tokens
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/Kong/kuma/pkg/tokens/builtin/server/model"
+	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
 	util_http "github.com/Kong/kuma/pkg/util/http"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -16,29 +16,29 @@ const (
 	timeout = 10 * time.Second
 )
 
-func NewDpTokenClient(address string) (DpTokenClient, error) {
+func NewDataplaneTokenClient(address string) (DataplaneTokenClient, error) {
 	baseURL, err := url.Parse(address)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
 	}
 	client := util_http.ClientWithTimeout(util_http.ClientWithBaseURL(&http.Client{}, baseURL), timeout)
-	return &httpDpTokenClient{
+	return &httpDataplaneTokenClient{
 		client: client,
 	}, nil
 }
 
-type DpTokenClient interface {
+type DataplaneTokenClient interface {
 	Generate(name string, mesh string) (string, error)
 }
 
-type httpDpTokenClient struct {
+type httpDataplaneTokenClient struct {
 	client util_http.Client
 }
 
-var _ DpTokenClient = &httpDpTokenClient{}
+var _ DataplaneTokenClient = &httpDataplaneTokenClient{}
 
-func (h *httpDpTokenClient) Generate(name string, mesh string) (string, error) {
-	tokenReq := &model.DataplaneTokenRequest{
+func (h *httpDataplaneTokenClient) Generate(name string, mesh string) (string, error) {
+	tokenReq := &types.DataplaneTokenRequest{
 		Name: name,
 		Mesh: mesh,
 	}
@@ -46,10 +46,11 @@ func (h *httpDpTokenClient) Generate(name string, mesh string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "could not marshal token request to json")
 	}
-	req, err := http.NewRequest("GET", "/token", bytes.NewReader(reqBytes))
+	req, err := http.NewRequest("GET", "/tokens", bytes.NewReader(reqBytes))
 	if err != nil {
 		return "", errors.Wrap(err, "could not construct the request")
 	}
+	req.Header.Set("content-type", "application/json")
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return "", errors.Wrap(err, "could not execute the request")

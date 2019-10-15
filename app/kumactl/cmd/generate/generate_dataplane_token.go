@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type generateDpTokenContext struct {
+type generateDataplaneTokenContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
@@ -15,19 +15,19 @@ type generateDpTokenContext struct {
 	}
 }
 
-func NewGenerateDpTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	ctx := &generateDpTokenContext{RootContext: pctx}
+func NewGenerateDataplaneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
+	ctx := &generateDataplaneTokenContext{RootContext: pctx}
 	cmd := &cobra.Command{
-		Use:   "dp-token",
+		Use:   "dataplane-token",
 		Short: "Generate Dataplane Token",
 		Long:  `Generate Dataplane Token that is used to prove Dataplane identity.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			client, err := pctx.CurrentDpTokenClient()
+			client, err := pctx.CurrentDataplaneTokenClient()
 			if err != nil {
-				return errors.Wrap(err, "failed to create dp token client")
+				return errors.Wrap(err, "failed to create dataplane token client")
 			}
 
-			token, err := client.Generate(ctx.args.name, ctx.args.mesh)
+			token, err := client.Generate(ctx.args.name, pctx.Args.Mesh)
 			if err != nil {
 				return errors.Wrap(err, "failed to generate a dataplane token")
 			}
@@ -35,9 +35,7 @@ func NewGenerateDpTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			return err
 		},
 	}
-	cmd.Flags().StringVarP(&ctx.args.name, "name", "", "", "name of the Dataplane")
+	cmd.Flags().StringVar(&ctx.args.name, "name", "", "name of the Dataplane")
 	_ = cmd.MarkFlagRequired("name")
-	cmd.Flags().StringVarP(&ctx.args.mesh, "mesh", "", "", "mesh to which the Dataplane belongs to")
-	_ = cmd.MarkFlagRequired("mesh")
 	return cmd
 }

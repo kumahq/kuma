@@ -19,7 +19,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
+	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("bootstrapGenerator", func() {
@@ -68,7 +68,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			generator := NewDefaultBootstrapGenerator(resManager, given.config)
 
 			// when
-			bootstrapConfig, err := generator.Generate(context.Background(), rest.BootstrapRequest{
+			bootstrapConfig, err := generator.Generate(context.Background(), types.BootstrapRequest{
 				Mesh: "mesh",
 				Name: "name.namespace",
 			})

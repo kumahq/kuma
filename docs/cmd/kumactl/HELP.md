@@ -9,7 +9,7 @@ Usage:
 Available Commands:
   apply       Create or modify Kuma resources
   config      Manage kumactl config
-  generate    Generate resources
+  generate    Generate resources, tokens etc
   get         Show Kuma resources
   help        Help about any command
   inspect     Inspect Kuma resources
@@ -20,7 +20,7 @@ Flags:
       --config-file string   path to the configuration file to use
   -h, --help                 help for kumactl
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 
 Use "kumactl [command] --help" for more information about a command.
 ```
@@ -41,7 +41,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 ```
 
 ## kumactl config
@@ -62,7 +62,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 
 Use "kumactl config [command] --help" for more information about a command.
 ```
@@ -81,7 +81,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 ```
 
 ### kumactl config control-planes
@@ -104,7 +104,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 
 Use "kumactl config control-planes [command] --help" for more information about a command.
 ```
@@ -123,7 +123,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 ```
 
 #### kumactl config control-planes add
@@ -142,7 +142,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 ```
 
 #### kumactl config control-planes remove
@@ -160,7 +160,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 ```
 
 #### kumactl config control-planes switch
@@ -178,7 +178,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 ```
 
 ## kumactl install
@@ -199,7 +199,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 
 Use "kumactl install [command] --help" for more information about a command.
 ```
@@ -235,7 +235,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 ```
 
 ### kumactl install database-schema
@@ -260,25 +260,29 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 ```
 
 ### kumactl generate dp-token
 
 ```
-Generate Dataplane Token that is used to prove Dataplane identity.
+Generate resources, tokens etc.
 
 Usage:
-  kumactl generate dp-token [flags]
+  kumactl generate [command]
+
+Available Commands:
+  dataplane-token Generate Dataplane Token
 
 Flags:
-  -h, --help          help for dp-token
-      --name string   name of the Dataplane
+  -h, --help   help for generate
 
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
+
+Use "kumactl generate [command] --help" for more information about a command.
 ```
 
 ## kumactl get
@@ -303,7 +307,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 
 Use "kumactl get [command] --help" for more information about a command.
 ```
@@ -322,7 +326,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -340,7 +344,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -358,7 +362,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -376,7 +380,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -398,7 +402,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 
 Use "kumactl inspect [command] --help" for more information about a command.
 ```
@@ -418,7 +422,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -437,6 +441,6 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use
+      --mesh string          mesh to use (default "default")
 ```
 

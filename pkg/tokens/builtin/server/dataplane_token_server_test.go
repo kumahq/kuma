@@ -10,7 +10,7 @@ import (
 	"github.com/Kong/kuma/pkg/test"
 	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 	"github.com/Kong/kuma/pkg/tokens/builtin/server"
-	"github.com/Kong/kuma/pkg/tokens/builtin/server/model"
+	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -65,7 +65,7 @@ var _ = Describe("Dataplane Token Server", func() {
 
 	It("should respond with generated token", func(done Done) {
 		// given
-		idReq := model.DataplaneTokenRequest{
+		idReq := types.DataplaneTokenRequest{
 			Mesh: "defualt",
 			Name: "dp-1",
 		}

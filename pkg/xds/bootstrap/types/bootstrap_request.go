@@ -1,4 +1,4 @@
-package rest
+package types
 
 type BootstrapRequest struct {
 	Mesh      string `json:"mesh"`
