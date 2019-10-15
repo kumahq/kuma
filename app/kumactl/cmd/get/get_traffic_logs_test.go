@@ -56,7 +56,7 @@ var _ = Describe("kumactl get traffic-logs", func() {
 			Meta: &test_model.ResourceMeta{
 				Mesh:      "default",
 				Name:      "web1-to-backend1",
-				Namespace: "",
+				Namespace: "namespace1",
 			},
 		},
 		{
@@ -88,7 +88,7 @@ var _ = Describe("kumactl get traffic-logs", func() {
 			Meta: &test_model.ResourceMeta{
 				Mesh:      "default",
 				Name:      "web2-to-backend2",
-				Namespace: "",
+				Namespace: "namespace2",
 			},
 		},
 	}
@@ -132,9 +132,15 @@ var _ = Describe("kumactl get traffic-logs", func() {
 		DescribeTable("kumactl get traffic-logs -o table|json|yaml",
 			func(given testCase) {
 				// given
-				rootCmd.SetArgs(append([]string{
+				args := append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "traffic-logs"}, given.outputFormat))
+					"get", "traffic-logs"})
+
+				if given.outputFormat != "" {
+					args = append(args, given.outputFormat)
+				}
+
+				rootCmd.SetArgs(args)
 
 				// when
 				err := rootCmd.Execute()
@@ -170,6 +176,57 @@ var _ = Describe("kumactl get traffic-logs", func() {
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
 				goldenFile:   "get-traffic-logs.golden.yaml",
+				matcher:      MatchYAML,
+			}),
+		)
+
+		DescribeTable("kumactl get traffic-logs web2-to-backend2.namespace2  -o table|json|yaml",
+			func(given testCase) {
+				// given
+
+				args := append([]string{
+					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+					"get", "traffic-logs", "web2-to-backend2.namespace2"})
+
+				if given.outputFormat != "" {
+					args = append(args, given.outputFormat)
+				}
+				rootCmd.SetArgs(args)
+
+				// when
+				err := rootCmd.Execute()
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// and
+				Expect(buf.String()).To(given.matcher(expected))
+			},
+			Entry("should support Table output by default", testCase{
+				outputFormat: "",
+				goldenFile:   "get-traffic-logs_one_item.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support Table output explicitly", testCase{
+				outputFormat: "-otable",
+				goldenFile:   "get-traffic-logs_one_item.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support JSON output", testCase{
+				outputFormat: "-ojson",
+				goldenFile:   "get-traffic-logs_one_item.golden.json",
+				matcher:      MatchJSON,
+			}),
+			Entry("should support YAML output", testCase{
+				outputFormat: "-oyaml",
+				goldenFile:   "get-traffic-logs_one_item.golden.yaml",
 				matcher:      MatchYAML,
 			}),
 		)
