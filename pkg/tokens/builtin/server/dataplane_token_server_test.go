@@ -55,7 +55,9 @@ var _ = Describe("Dataplane Token Server", func() {
 
 		// wait for the server to be started
 		Eventually(func() error {
-			_, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", port), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/tokens", port), nil)
+			Expect(err).ToNot(HaveOccurred())
+			_, err = http.DefaultClient.Do(req)
 			return err
 		}, "5s", "100ms").ShouldNot(HaveOccurred())
 	})
