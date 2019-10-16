@@ -1,0 +1,56 @@
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+  namespace: kuma-system
+spec:
+  mtls:
+    ca:
+      builtin: {}
+    enabled: true
+  logging:
+    backends:
+    - name: logstash
+      format: |
+        {
+            "destination": "%KUMA_DESTINATION_SERVICE%",
+            "destinationAddress": "%UPSTREAM_HOST%",
+            "source": "%KUMA_SOURCE_SERVICE%",
+            "sourceAddress": "%KUMA_SOURCE_ADDRESS%",
+            "bytesReceived": "%BYTES_RECEIVED%",
+            "bytesSent": "%BYTES_SENT%"
+        }
+      tcp:
+        address: logstash.logging:5000
+---
+apiVersion: kuma.io/v1alpha1
+kind: TrafficLog
+mesh: default
+metadata:
+  namespace: kuma-demo
+  name: everything
+spec:
+  rules:
+  - sources:
+    - match:
+        service: '*'
+    destinations:
+    - match:
+        service: '*'
+    conf:
+      backend: logstash
+---
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  namespace: kuma-demo
+  name: node-api-to-elasticsearch-only
+spec:
+  rules:
+  - sources:
+    - match:
+        service: 'kuma-demo-api.kuma-demo.svc:3001'
+    destinations:
+    - match:
+        service: 'elasticsearch.kuma-demo.svc:80'
