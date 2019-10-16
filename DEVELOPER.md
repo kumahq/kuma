@@ -46,14 +46,24 @@ for any tools/libraries that you may be missing.
 For a quick start, use the official `golang` Docker image. It includes all the command line tools pre-installed, with exception for from [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html). 
 
 ```bash
-docker run --rm -ti \
-  --user 65534:65534 \
+docker run --name kuma-build -ti \
   --volume `pwd`:/go/src/github.com/Kong/kuma \
   --workdir /go/src/github.com/Kong/kuma \
-  --env HOME=/tmp/home \
   --env GO111MODULE=on \
-  golang:1.12.9 bash
-export PATH=$HOME/bin:$PATH
+  golang:1.12.9 \
+  bash -c 'apt update && apt install -y unzip && export PATH=$HOME/bin:$PATH && bash'
+```
+
+If `kuma-build` container already exists, start it with
+
+```bash
+docker start --attach --interactive kuma-build
+```
+
+To cleanup disk space, run
+
+```bash
+docker rm kuma-build
 ```
 
 ### Helper commands
