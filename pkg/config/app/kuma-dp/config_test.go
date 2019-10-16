@@ -57,6 +57,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_DRAIN_TIME":               "60s",
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":      "envoy.sh",
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":       "/var/run/envoy",
+				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":       "/tmp/token",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -79,6 +80,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.Dataplane.DrainTime).To(Equal(60 * time.Second))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
+			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))
 		})
 	})
 

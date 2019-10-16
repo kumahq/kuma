@@ -3,7 +3,7 @@ admin:
   address:
     socketAddress:
       address: 192.168.0.1
-      portValue: 1234
+      portValue: 9902
 dynamicResources:
   adsConfig:
     apiType: GRPC
@@ -17,8 +17,6 @@ dynamicResources:
 node:
   cluster: backend
   id: mesh.name.namespace
-  metadata:
-    dataplaneTokenPath: /tmp/token
 staticResources:
   clusters:
   - connectTimeout: 2s

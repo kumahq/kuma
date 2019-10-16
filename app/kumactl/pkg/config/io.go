@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
+	util_files "github.com/Kong/kuma/pkg/util/files"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/pkg/errors"
 )
@@ -15,13 +16,13 @@ var DefaultConfigFile = filepath.Join(os.Getenv("HOME"), ".kumactl", "config")
 func Load(file string, cfg *config_proto.Configuration) error {
 	configFile := DefaultConfigFile
 	if file != "" {
-		if FileExists(file) {
+		if util_files.FileExists(file) {
 			configFile = file
 		} else {
 			return errors.Errorf("Failed to access configuration file %q", file)
 		}
 	}
-	if FileExists(configFile) {
+	if util_files.FileExists(configFile) {
 		if contents, err := ioutil.ReadFile(configFile); err != nil {
 			return errors.Wrapf(err, "Failed to read configuration from file %q", configFile)
 		} else if err := util_proto.FromYAML(contents, cfg); err != nil {
@@ -56,9 +57,4 @@ func Save(file string, cfg *config_proto.Configuration) error {
 		return errors.Wrapf(err, "Failed to write configuration into file %q", configFile)
 	}
 	return nil
-}
-
-func FileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
 }

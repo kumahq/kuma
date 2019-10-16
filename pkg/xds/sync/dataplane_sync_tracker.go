@@ -17,7 +17,7 @@ var (
 	dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")
 )
 
-type NewDataplaneWatchdogFunc func(dataplaneId core_model.ResourceKey) util_watchdog.Watchdog
+type NewDataplaneWatchdogFunc func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog
 
 func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) envoy_xds.Callbacks {
 	return &dataplaneSyncTracker{
@@ -75,7 +75,7 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID int64, req *envoy.Discov
 		t.streams[streamID] = context.CancelFunc(func() {
 			close(stopCh)
 		})
-		go t.newDataplaneWatchdog(dataplaneKey).Start(stopCh)
+		go t.newDataplaneWatchdog(dataplaneKey, streamID).Start(stopCh)
 		dataplaneSyncTrackerLog.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", id, "dataplaneKey", dataplaneKey)
 	} else {
 		dataplaneSyncTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "req", req)

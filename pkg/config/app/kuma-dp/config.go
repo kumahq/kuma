@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Kong/kuma/pkg/config"
-
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 )
@@ -69,6 +68,8 @@ type DataplaneRuntime struct {
 	BinaryPath string `yaml:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
 	// Dir to store auto-generated Envoy bootstrap config in.
 	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
+	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
+	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
 }
 
 var _ config.Config = &Config{}

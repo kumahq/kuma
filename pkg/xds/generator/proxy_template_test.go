@@ -127,6 +127,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 						Spec: dataplane,
 					},
 					TrafficPermissions: permissions.MatchedPermissions{},
+					Metadata:           &model.DataplaneMetadata{},
 				}
 
 				// when

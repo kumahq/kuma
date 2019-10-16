@@ -12,12 +12,17 @@ type configParameters struct {
 	XdsPort            uint32
 	XdsConnectTimeout  time.Duration
 	AccessLogPipe      string
+	DataplaneTokenPath string
 }
 
 const configTemplate string = `
 node:
   id: {{.Id}}
   cluster: {{.Service}}
+  metadata:
+{{if .DataplaneTokenPath}}
+    dataplaneTokenPath: {{.DataplaneTokenPath}}
+{{end}}    
 
 {{if .AdminPort }}
 admin:

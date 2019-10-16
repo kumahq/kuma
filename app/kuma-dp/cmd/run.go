@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	kumadp_config "github.com/Kong/kuma/app/kuma-dp/pkg/config"
 	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/Kong/kuma/pkg/config"
@@ -38,6 +39,10 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("effective configuration", "config", string(conf))
 			} else {
 				runLog.Error(err, "unable to format effective configuration", "config", cfg)
+				return err
+			}
+
+			if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
 				return err
 			}
 
@@ -106,5 +111,6 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.BootstrapServer.URL, "cp-address", cfg.ControlPlane.BootstrapServer.URL, "Mesh that Dataplane belongs to")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	return cmd
 }

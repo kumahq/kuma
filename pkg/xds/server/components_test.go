@@ -12,7 +12,6 @@ import (
 	. "github.com/Kong/kuma/pkg/xds/server"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	core_discovery "github.com/Kong/kuma/pkg/core/discovery"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -64,7 +63,7 @@ var _ = Describe("Components", func() {
 			reconciler := eventSnapshotReconciler{}
 			reconciler.events = make(chan event)
 			// and
-			tracker, err := DefaultDataplaneSyncTracker(runtime, &reconciler)
+			tracker, err := DefaultDataplaneSyncTracker(runtime, &reconciler, NewDataplaneMetadataTracker())
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
@@ -116,23 +115,3 @@ var _ = Describe("Components", func() {
 		}, 10)
 	})
 })
-
-var _ core_discovery.DataplaneDiscoveryConsumer = DataplaneDiscoveryConsumerFuncs{}
-
-type DataplaneDiscoveryConsumerFuncs struct {
-	OnDataplaneUpdateFunc func(*mesh_core.DataplaneResource) error
-	OnDataplaneDeleteFunc func(core_model.ResourceKey) error
-}
-
-func (f DataplaneDiscoveryConsumerFuncs) OnDataplaneUpdate(dataplane *mesh_core.DataplaneResource) error {
-	if f.OnDataplaneUpdateFunc != nil {
-		return f.OnDataplaneUpdateFunc(dataplane)
-	}
-	return nil
-}
-func (f DataplaneDiscoveryConsumerFuncs) OnDataplaneDelete(key core_model.ResourceKey) error {
-	if f.OnDataplaneDeleteFunc != nil {
-		return f.OnDataplaneDeleteFunc(key)
-	}
-	return nil
-}

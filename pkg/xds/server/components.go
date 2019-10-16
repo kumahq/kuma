@@ -33,12 +33,15 @@ var (
 func SetupServer(rt core_runtime.Runtime) error {
 	reconciler := DefaultReconciler(rt)
 
-	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler)
+	metadataTracker := NewDataplaneMetadataTracker()
+
+	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler, metadataTracker)
 	if err != nil {
 		return err
 	}
 	callbacks := util_xds.CallbacksChain{
 		tracker,
+		metadataTracker,
 		DefaultDataplaneStatusTracker(rt),
 	}
 
@@ -69,14 +72,14 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 	}
 }
 
-func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler) (envoy_xds.Callbacks, error) {
+func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ResourceManager()}
 	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ResourceManager()}
 	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
 	if err != nil {
 		return nil, err
 	}
-	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
+	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
@@ -131,6 +134,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					TrafficPermissions: matchedPermissions,
 					OutboundTargets:    outbound,
 					Logs:               matchedLogs,
+					Metadata:           metadataTracker.Metadata(streamId),
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},

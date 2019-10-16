@@ -111,8 +111,8 @@ var _ = Describe("Bootstrap Server", func() {
 			body:               `{ "mesh": "default", "name": "dp-1.default" }`,
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
-		Entry("overridden admin port", testCase{
-			body:               `{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234 }`,
+		Entry("full data provided", testCase{
+			body:               `{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneTokenPath": "/tmp/token" }`,
 			expectedConfigFile: "bootstrap.overridden.golden.yaml",
 		}),
 	)

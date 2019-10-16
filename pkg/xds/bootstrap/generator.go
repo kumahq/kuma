@@ -67,6 +67,7 @@ func (b *bootstrapGenerator) GenerateFor(proxyId xds.ProxyId, dataplane *mesh.Da
 		XdsPort:            b.config.XdsPort,
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
+		DataplaneTokenPath: request.DataplaneTokenPath,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.ConfigForParameters(params)

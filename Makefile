@@ -441,11 +441,13 @@ run/example/envoy/k8s: run/example/envoy
 
 run/example/envoy/universal: run/example/envoy
 
-run/example/envoy: build/kuma-dp ## Dev: Run Envoy configured against local Control Plane
+run/example/envoy: build/kuma-dp build/kumactl ## Dev: Run Envoy configured against local Control Plane
+	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
+	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token \
 	${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp run --log-level=debug
 
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
