@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 
 	config_core "github.com/Kong/kuma/pkg/config/core"
@@ -18,6 +17,7 @@ import (
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
 	ca_sds_provider "github.com/Kong/kuma/pkg/sds/provider/ca"
 	identity_sds_provider "github.com/Kong/kuma/pkg/sds/provider/identity"
+	"github.com/Kong/kuma/pkg/tokens/builtin"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
@@ -42,7 +42,11 @@ func NewKubeAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, erro
 }
 
 func NewUniversalAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, error) {
-	return universal_sds_auth.New(DefaultDataplaneResolver(rt.ResourceManager())), nil
+	issuer, err := builtin.NewDataplaneTokenIssuer(rt)
+	if err != nil {
+		return nil, err
+	}
+	return universal_sds_auth.NewAuthenticator(issuer, DefaultDataplaneResolver(rt.ResourceManager())), nil
 }
 
 func DefaultAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, error) {

@@ -53,6 +53,8 @@ bootstrapServer:
 apiServer:
   port: 9090
   readOnly: true
+dataplaneTokenServer:
+  port: 1111
 runtime:
   kubernetes:
     admissionServer:
@@ -98,6 +100,8 @@ reports:
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 
+		Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
+
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.CertDir).To(Equal("/var/run/secrets/kuma.io/kuma-admission-server/tls-cert"))
@@ -128,6 +132,7 @@ reports:
 		setEnv("KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT", "10")
 		setEnv("KUMA_API_SERVER_READ_ONLY", "true")
 		setEnv("KUMA_API_SERVER_PORT", "9090")
+		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_PORT", "1111")
 		setEnv("KUMA_REPORTS_ENABLED", "false")
 		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS", "127.0.0.2")
 		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_PORT", "9443")
@@ -159,6 +164,8 @@ reports:
 
 		Expect(cfg.ApiServer.Port).To(Equal(9090))
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
+
+		Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
 
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))

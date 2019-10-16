@@ -15,6 +15,7 @@ import (
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 	"github.com/pkg/errors"
 )
 
@@ -71,7 +72,22 @@ func onStartup(runtime core_runtime.Runtime) error {
 	if err := createDefaultMesh(runtime); err != nil {
 		return err
 	}
+	if err := createDefaultSigningKey(runtime); err != nil {
+		return err
+	}
 	return startReporter(runtime)
+}
+
+func createDefaultSigningKey(runtime core_runtime.Runtime) error {
+	switch env := runtime.Config().Environment; env {
+	case config_core.KubernetesEnvironment:
+		// we use service account token on K8S, so there is no need for dataplane token server
+		return nil
+	case config_core.UniversalEnvironment:
+		return builtin_issuer.CreateDefaultSigningKey(runtime.SecretManager())
+	default:
+		return errors.Errorf("unknown environment type %s", env)
+	}
 }
 
 func createDefaultMesh(runtime core_runtime.Runtime) error {

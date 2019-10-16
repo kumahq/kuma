@@ -8,6 +8,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -75,4 +76,26 @@ var _ = Describe("Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	It("should create a default api token", func() {
+		// given
+		cfg := kuma_cp.DefaultConfig()
+		rt, err := Bootstrap(cfg)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		key, err := builtin_issuer.GetSigningKey(rt.SecretManager())
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(key).ToNot(HaveLen(0))
+
+		// when kuma-cp is run again
+		err = onStartup(rt)
+		Expect(err).ToNot(HaveOccurred())
+		key2, err := builtin_issuer.GetSigningKey(rt.SecretManager())
+
+		// then it should skip creating a new private key
+		Expect(err).ToNot(HaveOccurred())
+		Expect(key).To(Equal(key2))
+	})
 })
