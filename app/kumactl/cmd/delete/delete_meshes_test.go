@@ -66,7 +66,7 @@ var _ = Describe("kumactl delete mesh", func() {
 		},
 	}
 
-	Describe("DeleteMeshCommand", func() {
+	Describe("Delete Mesh", func() {
 
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
@@ -111,9 +111,9 @@ var _ = Describe("kumactl delete mesh", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("accepts 1 arg(s), received 0"))
+			Expect(err.Error()).To(Equal("accepts 2 arg(s), received 1"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`Error: accepts 1 arg\(s\), received 0`))
+			Expect(outbuf.String()).To(MatchRegexp(`Error: accepts 2 arg\(s\), received 1`))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
