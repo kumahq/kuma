@@ -36,6 +36,8 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				resourceType = model.ResourceType(mesh.ProxyTemplateType)
 			case "traffic-log":
 				resourceType = model.ResourceType(mesh.TrafficLogType)
+			case "traffic-permission":
+				resourceType = model.ResourceType(mesh.TrafficPermissionType)
 
 			default:
 				return errors.Errorf("unknown resource type: %s. Allowed types: mesh, dataplane, proxytemplate, traffic-log, traffic-permission", resourceTypeArg)
