@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	test_resources "github.com/Kong/kuma/pkg/test/resources"
 	"sort"
 
 	"github.com/Kong/kuma/pkg/core/resources/manager"
@@ -34,7 +33,7 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			resolver := &simpleProxyTemplateResolver{
-				ResourceManager:      manager.NewResourceManager(memory.NewStore(), test_resources.Global()),
+				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 
@@ -96,7 +95,7 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			resolver := &simpleProxyTemplateResolver{
-				ResourceManager:      manager.NewResourceManager(memStore, test_resources.Global()),
+				ResourceManager:      manager.NewResourceManager(memStore),
 				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 
@@ -121,7 +120,7 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			resolver := &simpleProxyTemplateResolver{
-				ResourceManager:      manager.NewResourceManager(memory.NewStore(), test_resources.Global()),
+				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
 			}
 

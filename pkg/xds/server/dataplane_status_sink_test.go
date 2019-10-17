@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
-	test_resources "github.com/Kong/kuma/pkg/test/resources"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -150,7 +149,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			lastSeenVersion := ""
 
 			// given
-			statusStore := NewDataplaneInsightStore(manager.NewResourceManager(store, test_resources.Global()))
+			statusStore := NewDataplaneInsightStore(manager.NewResourceManager(store))
 
 			// when
 			err := statusStore.Upsert(key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))

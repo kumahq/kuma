@@ -8,7 +8,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
-	test_resources "github.com/Kong/kuma/pkg/test/resources"
 	"github.com/Kong/kuma/pkg/test/resources/apis/sample"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,7 +20,7 @@ var _ = Describe("Resource Manager", func() {
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		resManager = manager.NewResourceManager(resStore, test_resources.Global())
+		resManager = manager.NewResourceManager(resStore)
 	})
 
 	createSampleMesh := func(name string) error {
@@ -66,7 +65,7 @@ var _ = Describe("Resource Manager", func() {
 	})
 
 	Describe("DeleteAll()", func() {
-		It("should delete all resources withing a mesh", func() {
+		It("should delete all resources within a mesh", func() {
 			// setup
 			Expect(createSampleMesh("mesh-1")).To(Succeed())
 			Expect(createSampleMesh("mesh-2")).To(Succeed())
@@ -76,7 +75,7 @@ var _ = Describe("Resource Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = resManager.DeleteAll(context.Background(), store.DeleteAllByMesh("mesh-1"))
+			err = resManager.DeleteAll(context.Background(), &sample.TrafficRouteResourceList{}, store.DeleteAllByMesh("mesh-1"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

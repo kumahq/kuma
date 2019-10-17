@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/Kong/kuma/pkg/core/logs"
 	"github.com/Kong/kuma/pkg/core/permissions"
-	test_resources "github.com/Kong/kuma/pkg/test/resources"
 	"io/ioutil"
 	"path/filepath"
 
@@ -28,7 +27,7 @@ var _ = Describe("Reconcile", func() {
 
 		gen := templateSnapshotGenerator{
 			ProxyTemplateResolver: &simpleProxyTemplateResolver{
-				ResourceManager:      manager.NewResourceManager(memory.NewStore(), test_resources.Global()),
+				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate: template.DefaultProxyTemplate,
 			},
 		}

@@ -219,10 +219,10 @@ func initializeBuiltinCaManager(builder *core_runtime.Builder) {
 }
 
 func initializeResourceManager(builder *core_runtime.Builder) {
-	defaultManager := core_manager.NewResourceManager(builder.ResourceStore(), registry.Global())
+	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
-	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers, registry.Global())
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), customizableManager, builder.SecretManager())
+	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), customizableManager, builder.SecretManager(), registry.Global())
 	customManagers[mesh.MeshType] = meshManager
 	builder.WithResourceManager(customizableManager)
 }

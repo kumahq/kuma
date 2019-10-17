@@ -8,7 +8,6 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	test_resources "github.com/Kong/kuma/pkg/test/resources"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -24,7 +23,7 @@ var _ = Describe("Matcher", func() {
 	var backendFile3 *mesh_proto.LoggingBackend
 
 	BeforeEach(func() {
-		manager = core_manager.NewResourceManager(memory.NewStore(), test_resources.Global())
+		manager = core_manager.NewResourceManager(memory.NewStore())
 		matcher = logs.TrafficLogsMatcher{manager}
 
 		// given mesh with 3 backends and file1 backend as default

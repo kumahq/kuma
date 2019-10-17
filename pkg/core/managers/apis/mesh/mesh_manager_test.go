@@ -28,9 +28,9 @@ var _ = Describe("Mesh Manager", func() {
 		resStore = memory.NewStore()
 		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None())
 		caManager = builtin.NewBuiltinCaManager(secretManager)
-		manager := manager.NewResourceManager(resStore, test_resources.Global())
+		manager := manager.NewResourceManager(resStore)
 
-		resManager = NewMeshManager(resStore, caManager, manager, secretManager)
+		resManager = NewMeshManager(resStore, caManager, manager, secretManager, test_resources.Global())
 	})
 
 	Describe("Create()", func() {
