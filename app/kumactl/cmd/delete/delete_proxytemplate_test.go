@@ -130,6 +130,5 @@ var _ = Describe("kumactl delete proxytemplates", func() {
 			Expect(outbuf.String()).To(Equal("deleted ProxyTemplate \"custom-template\"\n"))
 		})
 
-
 	})
 })

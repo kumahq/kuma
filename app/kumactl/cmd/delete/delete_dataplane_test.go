@@ -18,7 +18,6 @@ import (
 	"path/filepath"
 )
 
-
 var _ = Describe("kumactl delete dataplane", func() {
 	var dataplanes []*mesh_core.DataplaneResource
 

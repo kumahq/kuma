@@ -116,7 +116,6 @@ var _ = Describe("kumactl delete traffic permission", func() {
 			rootCmd.SetErr(errbuf)
 		})
 
-
 		It("should throw an error in case of a non existing traffic permission", func() {
 			// given
 			rootCmd.SetArgs([]string{
@@ -160,7 +159,6 @@ var _ = Describe("kumactl delete traffic permission", func() {
 			// and
 			Expect(outbuf.String()).To(Equal("deleted TrafficPermission \"web2-to-backend2\"\n"))
 		})
-
 
 	})
 })
