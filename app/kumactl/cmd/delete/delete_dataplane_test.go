@@ -26,8 +26,8 @@ var _ = Describe("kumactl delete dataplane", func() {
 			{
 				Meta: &test_model.ResourceMeta{
 					Namespace: "default",
-					Mesh:      "Mesh1",
-					Name:      "Mesh1",
+					Mesh:      "demo",
+					Name:      "web-01",
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
@@ -53,8 +53,8 @@ var _ = Describe("kumactl delete dataplane", func() {
 			{
 				Meta: &test_model.ResourceMeta{
 					Namespace: "default",
-					Mesh:      "Mesh2",
-					Name:      "Mesh2",
+					Mesh:      "demo1",
+					Name:      "web-02",
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
@@ -129,7 +129,7 @@ var _ = Describe("kumactl delete dataplane", func() {
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"delete", "dataplane", "Mesh2"})
+				"delete", "dataplane", "web-01", "--mesh", "demo"})
 
 			// when
 			err := rootCmd.Execute()
@@ -145,7 +145,7 @@ var _ = Describe("kumactl delete dataplane", func() {
 			// and
 			Expect(errbuf.String()).To(BeEmpty())
 			// and
-			Expect(outbuf.String()).To(Equal("deleted Dataplane \"Mesh2\"\n"))
+			Expect(outbuf.String()).To(Equal("deleted Dataplane \"web-01\"\n"))
 		})
 	})
 })

@@ -29,25 +29,30 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			var resourceType model.ResourceType
 			switch resourceTypeArg {
 			case "mesh":
-				resourceType = model.ResourceType(mesh.MeshType)
+				resourceType = mesh.MeshType
 			case "dataplane":
-				resourceType = model.ResourceType(mesh.DataplaneType)
+				resourceType = mesh.DataplaneType
 			case "proxytemplate":
-				resourceType = model.ResourceType(mesh.ProxyTemplateType)
+				resourceType = mesh.ProxyTemplateType
 			case "traffic-log":
-				resourceType = model.ResourceType(mesh.TrafficLogType)
+				resourceType = mesh.TrafficLogType
 			case "traffic-permission":
-				resourceType = model.ResourceType(mesh.TrafficPermissionType)
+				resourceType = mesh.TrafficPermissionType
 
 			default:
 				return errors.Errorf("unknown resource type: %s. Allowed types: mesh, dataplane, proxytemplate, traffic-log, traffic-permission", resourceTypeArg)
+			}
+
+			currentMesh := pctx.CurrentMesh()
+			if resourceType == mesh.MeshType {
+				currentMesh = name
 			}
 
 			if resource, err = registry.Global().NewObject(resourceType); err != nil {
 				return err
 			}
 
-			if err := deleteResource(name, resource, resourceType, rs); err != nil {
+			if err := deleteResource(name, currentMesh, resource, resourceType, rs); err != nil {
 				return err
 			}
 
@@ -59,8 +64,8 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func deleteResource(name string, resource model.Resource, resourceType model.ResourceType, rs store.ResourceStore) error {
-	getOptions := store.GetByKey(model.DefaultNamespace, name, name)
+func deleteResource(name string, currentMesh string, resource model.Resource, resourceType model.ResourceType, rs store.ResourceStore) error {
+	getOptions := store.GetByKey(model.DefaultNamespace, name, currentMesh)
 	if err := rs.Get(context.Background(), resource, getOptions); err != nil {
 		if store.IsResourceNotFound(err) {
 			return errors.Errorf("there is no %s with name %q", resourceType, name)
@@ -68,7 +73,7 @@ func deleteResource(name string, resource model.Resource, resourceType model.Res
 		return errors.Wrapf(err, "failed to get %s with the name %q", resourceType, name)
 	}
 
-	deleteOptions := store.DeleteByKey(model.DefaultNamespace, name, name)
+	deleteOptions := store.DeleteByKey(model.DefaultNamespace, name, currentMesh)
 	if err := rs.Delete(context.Background(), resource, deleteOptions); err != nil {
 		return errors.Wrapf(err, "failed to delete %s with the name %q", resourceType, name)
 	}

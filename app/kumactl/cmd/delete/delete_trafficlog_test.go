@@ -51,7 +51,7 @@ var _ = Describe("kumactl delete trafficlog", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "web1-to-backend1",
+				Mesh:      "Mesh1",
 				Name:      "web1-to-backend1",
 				Namespace: "default",
 			},
@@ -83,7 +83,7 @@ var _ = Describe("kumactl delete trafficlog", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "web2-to-backend2",
+				Mesh:      "Mesh2",
 				Name:      "web2-to-backend2",
 				Namespace: "default",
 			},
@@ -148,7 +148,7 @@ var _ = Describe("kumactl delete trafficlog", func() {
 				// given
 				rootCmd.SetArgs([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"delete", "traffic-log", "web1-to-backend1"})
+					"delete", "traffic-log", "web1-to-backend1", "--mesh", "Mesh1"})
 
 				// when
 				err := rootCmd.Execute()

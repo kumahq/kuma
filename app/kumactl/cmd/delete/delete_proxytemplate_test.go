@@ -29,7 +29,7 @@ var _ = Describe("kumactl delete proxytemplates", func() {
 			{
 				Meta: &test_model.ResourceMeta{
 					Namespace: "default",
-					Mesh:      "custom-template",
+					Mesh:      "Mesh1",
 					Name:      "custom-template",
 				},
 				Spec: mesh_proto.ProxyTemplate{},
@@ -37,7 +37,7 @@ var _ = Describe("kumactl delete proxytemplates", func() {
 			{
 				Meta: &test_model.ResourceMeta{
 					Namespace: "default",
-					Mesh:      "another-template",
+					Mesh:      "Mesh2",
 					Name:      "another-template",
 				},
 				Spec: mesh_proto.ProxyTemplate{},
@@ -45,7 +45,7 @@ var _ = Describe("kumactl delete proxytemplates", func() {
 			{
 				Meta: &test_model.ResourceMeta{
 					Namespace: "default",
-					Mesh:      "simple-template",
+					Mesh:      "Mesh3",
 					Name:      "simple-template",
 				},
 				Spec: mesh_proto.ProxyTemplate{},
@@ -110,7 +110,7 @@ var _ = Describe("kumactl delete proxytemplates", func() {
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"delete", "proxytemplate", "custom-template"})
+				"delete", "proxytemplate", "custom-template", "--mesh", "Mesh1"})
 
 			// when
 			err := rootCmd.Execute()

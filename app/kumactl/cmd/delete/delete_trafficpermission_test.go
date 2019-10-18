@@ -48,7 +48,7 @@ var _ = Describe("kumactl delete traffic permission", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "web1-to-backend1",
+				Mesh:      "Mesh1",
 				Name:      "web1-to-backend1",
 				Namespace: "default",
 			},
@@ -77,7 +77,7 @@ var _ = Describe("kumactl delete traffic permission", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "web2-to-backend2",
+				Mesh:      "Mesh2",
 				Name:      "web2-to-backend2",
 				Namespace: "default",
 			},
@@ -140,7 +140,7 @@ var _ = Describe("kumactl delete traffic permission", func() {
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"delete", "traffic-permission", "web2-to-backend2"})
+				"delete", "traffic-permission", "web2-to-backend2", "--mesh", "Mesh2"})
 
 			// when
 			err := rootCmd.Execute()
