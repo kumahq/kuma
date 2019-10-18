@@ -57,7 +57,17 @@ sdsServer:
 # Dataplane Token server configuration
 dataplaneTokenServer:
   # Port of the server
-  port: 5679
+  port: 5679 # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PORT
+  # Public interface on which the SSL server will be exposed
+  publicInterface: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE
+  # Public port. If not specified (0) then Port will be used
+  publicPort: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT
+  # Path to TLS certificate file
+  tlsCertFile: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_TLS_CERT_FILE
+  # Path to TLS key file
+  tlsKeyFile: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_TLS_KEY_FILE
+  # Paths to authorized client certificates
+  clientCertFiles: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_CLIENT_CERT_FILES
 
 # Envoy XDS server configuration
 xdsServer:

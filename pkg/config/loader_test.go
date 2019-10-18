@@ -55,6 +55,13 @@ apiServer:
   readOnly: true
 dataplaneTokenServer:
   port: 1111
+  publicInterface: 192.168.0.1
+  publicPort: 2222
+  tlsCertFile: /tmp/cert
+  tlsKeyFile: /tmp/key
+  clientCertFiles:
+  - /tmp/cert1
+  - /tmp/cert2
 runtime:
   kubernetes:
     admissionServer:
@@ -101,6 +108,11 @@ reports:
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 
 		Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
+		Expect(cfg.DataplaneTokenServer.PublicInterface).To(Equal("192.168.0.1"))
+		Expect(cfg.DataplaneTokenServer.PublicPort).To(Equal(uint32(2222)))
+		Expect(cfg.DataplaneTokenServer.TlsKeyFile).To(Equal("/tmp/key"))
+		Expect(cfg.DataplaneTokenServer.TlsCertFile).To(Equal("/tmp/cert"))
+		Expect(cfg.DataplaneTokenServer.ClientCertFiles).To(Equal([]string{"/tmp/cert1", "/tmp/cert2"}))
 
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -133,6 +145,11 @@ reports:
 		setEnv("KUMA_API_SERVER_READ_ONLY", "true")
 		setEnv("KUMA_API_SERVER_PORT", "9090")
 		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_PORT", "1111")
+		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE", "192.168.0.1")
+		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT", "2222")
+		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_TLS_KEY_FILE", "/tmp/key")
+		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_TLS_CERT_FILE", "/tmp/cert")
+		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_CLIENT_CERT_FILES", "/tmp/cert1,/tmp/cert2")
 		setEnv("KUMA_REPORTS_ENABLED", "false")
 		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS", "127.0.0.2")
 		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_PORT", "9443")
@@ -166,6 +183,11 @@ reports:
 		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 
 		Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
+		Expect(cfg.DataplaneTokenServer.PublicInterface).To(Equal("192.168.0.1"))
+		Expect(cfg.DataplaneTokenServer.PublicPort).To(Equal(uint32(2222)))
+		Expect(cfg.DataplaneTokenServer.TlsKeyFile).To(Equal("/tmp/key"))
+		Expect(cfg.DataplaneTokenServer.TlsCertFile).To(Equal("/tmp/cert"))
+		Expect(cfg.DataplaneTokenServer.ClientCertFiles).To(Equal([]string{"/tmp/cert1", "/tmp/cert2"}))
 
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
