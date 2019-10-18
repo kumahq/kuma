@@ -8,7 +8,9 @@ import (
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -30,7 +32,71 @@ var _ = Describe("Config loader", func() {
 		}
 	})
 
-	sampleConfigYaml := `
+	setEnv := func(key, value string) {
+		err := os.Setenv(key, value)
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	type testCase struct {
+		yamlFileConfig string
+		envVars        map[string]string
+	}
+	DescribeTable("should load config",
+		func(given testCase) {
+			// given file with sample config
+			file, err := ioutil.TempFile("", "*")
+			Expect(err).ToNot(HaveOccurred())
+			_, err = file.WriteString(given.yamlFileConfig)
+			Expect(err).ToNot(HaveOccurred())
+
+			// and config from environment variables
+			for key, value := range given.envVars {
+				setEnv(key, value)
+			}
+
+			// when
+			cfg := kuma_cp.DefaultConfig()
+			err = config.Load(file.Name(), &cfg)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
+			Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
+
+			Expect(cfg.BootstrapServer.Port).To(Equal(uint32(5004)))
+			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
+			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
+			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
+
+			Expect(cfg.Environment).To(Equal(config_core.KubernetesEnvironment))
+
+			Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
+			Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
+			Expect(int(cfg.Store.Postgres.Port)).To(Equal(5432))
+			Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
+			Expect(cfg.Store.Postgres.Password).To(Equal("kuma"))
+			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
+			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
+
+			Expect(cfg.ApiServer.Port).To(Equal(9090))
+			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
+
+			Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
+			Expect(cfg.DataplaneTokenServer.PublicInterface).To(Equal("192.168.0.1"))
+			Expect(cfg.DataplaneTokenServer.PublicPort).To(Equal(uint32(2222)))
+			Expect(cfg.DataplaneTokenServer.TlsKeyFile).To(Equal("/tmp/key"))
+			Expect(cfg.DataplaneTokenServer.TlsCertFile).To(Equal("/tmp/cert"))
+			Expect(cfg.DataplaneTokenServer.ClientCertFiles).To(Equal([]string{"/tmp/cert1", "/tmp/cert2"}))
+
+			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
+			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
+			Expect(cfg.Runtime.Kubernetes.AdmissionServer.CertDir).To(Equal("/var/run/secrets/kuma.io/kuma-admission-server/tls-cert"))
+
+			Expect(cfg.Reports.Enabled).To(BeFalse())
+		},
+		Entry("from config file", testCase{
+			envVars: map[string]string{},
+			yamlFileConfig: `
 environment: kubernetes
 store:
   type: postgres
@@ -70,141 +136,50 @@ runtime:
       certDir: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
 reports:
   enabled: false
-`
-
-	It("should load config from file", func() {
-		// given file with sample config
-		file, err := ioutil.TempFile("", "*")
-		Expect(err).ToNot(HaveOccurred())
-		_, err = file.WriteString(sampleConfigYaml)
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		cfg := kuma_cp.DefaultConfig()
-		err = config.Load(file.Name(), &cfg)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
-		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
-
-		Expect(cfg.BootstrapServer.Port).To(Equal(uint32(5004)))
-		Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
-		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
-		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
-
-		Expect(cfg.Environment).To(Equal(config_core.KubernetesEnvironment))
-
-		Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
-
-		Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
-		Expect(int(cfg.Store.Postgres.Port)).To(Equal(5432))
-		Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
-		Expect(cfg.Store.Postgres.Password).To(Equal("kuma"))
-		Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
-		Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
-
-		Expect(cfg.ApiServer.Port).To(Equal(9090))
-		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
-
-		Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
-		Expect(cfg.DataplaneTokenServer.PublicInterface).To(Equal("192.168.0.1"))
-		Expect(cfg.DataplaneTokenServer.PublicPort).To(Equal(uint32(2222)))
-		Expect(cfg.DataplaneTokenServer.TlsKeyFile).To(Equal("/tmp/key"))
-		Expect(cfg.DataplaneTokenServer.TlsCertFile).To(Equal("/tmp/cert"))
-		Expect(cfg.DataplaneTokenServer.ClientCertFiles).To(Equal([]string{"/tmp/cert1", "/tmp/cert2"}))
-
-		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
-		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
-		Expect(cfg.Runtime.Kubernetes.AdmissionServer.CertDir).To(Equal("/var/run/secrets/kuma.io/kuma-admission-server/tls-cert"))
-
-		Expect(cfg.Reports.Enabled).To(BeFalse())
-	})
-
-	setEnv := func(key, value string) {
-		err := os.Setenv(key, value)
-		Expect(err).ToNot(HaveOccurred())
-	}
-
-	It("should load config from env vars", func() {
-		// given
-		setEnv("KUMA_XDS_SERVER_GRPC_PORT", "5000")
-		setEnv("KUMA_XDS_SERVER_DIAGNOSTICS_PORT", "5003")
-		setEnv("KUMA_BOOTSTRAP_SERVER_PORT", "5004")
-		setEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT", "1234")
-		setEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST", "kuma-control-plane")
-		setEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT", "4321")
-		setEnv("KUMA_ENVIRONMENT", "kubernetes")
-		setEnv("KUMA_STORE_TYPE", "postgres")
-		setEnv("KUMA_STORE_POSTGRES_HOST", "postgres.host")
-		setEnv("KUMA_STORE_POSTGRES_PORT", "5432")
-		setEnv("KUMA_STORE_POSTGRES_USER", "kuma")
-		setEnv("KUMA_STORE_POSTGRES_PASSWORD", "kuma")
-		setEnv("KUMA_STORE_POSTGRES_DB_NAME", "kuma")
-		setEnv("KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT", "10")
-		setEnv("KUMA_API_SERVER_READ_ONLY", "true")
-		setEnv("KUMA_API_SERVER_PORT", "9090")
-		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_PORT", "1111")
-		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE", "192.168.0.1")
-		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT", "2222")
-		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_TLS_KEY_FILE", "/tmp/key")
-		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_TLS_CERT_FILE", "/tmp/cert")
-		setEnv("KUMA_DATAPLANE_TOKEN_SERVER_CLIENT_CERT_FILES", "/tmp/cert1,/tmp/cert2")
-		setEnv("KUMA_REPORTS_ENABLED", "false")
-		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS", "127.0.0.2")
-		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_PORT", "9443")
-		setEnv("KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR", "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert")
-
-		// when
-		cfg := kuma_cp.DefaultConfig()
-		err := config.Load("", &cfg)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
-		Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
-
-		Expect(cfg.BootstrapServer.Port).To(Equal(uint32(5004)))
-		Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
-		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
-		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
-
-		Expect(cfg.Environment).To(Equal(config_core.KubernetesEnvironment))
-
-		Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
-		Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
-		Expect(int(cfg.Store.Postgres.Port)).To(Equal(5432))
-		Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
-		Expect(cfg.Store.Postgres.Password).To(Equal("kuma"))
-		Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
-		Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
-
-		Expect(cfg.ApiServer.Port).To(Equal(9090))
-		Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
-
-		Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
-		Expect(cfg.DataplaneTokenServer.PublicInterface).To(Equal("192.168.0.1"))
-		Expect(cfg.DataplaneTokenServer.PublicPort).To(Equal(uint32(2222)))
-		Expect(cfg.DataplaneTokenServer.TlsKeyFile).To(Equal("/tmp/key"))
-		Expect(cfg.DataplaneTokenServer.TlsCertFile).To(Equal("/tmp/cert"))
-		Expect(cfg.DataplaneTokenServer.ClientCertFiles).To(Equal([]string{"/tmp/cert1", "/tmp/cert2"}))
-
-		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
-		Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
-		Expect(cfg.Runtime.Kubernetes.AdmissionServer.CertDir).To(Equal("/var/run/secrets/kuma.io/kuma-admission-server/tls-cert"))
-
-		Expect(cfg.Reports.Enabled).To(BeFalse())
-	})
+`,
+		}),
+		Entry("from env variables", testCase{
+			envVars: map[string]string{
+				"KUMA_XDS_SERVER_GRPC_PORT":                     "5000",
+				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":              "5003",
+				"KUMA_BOOTSTRAP_SERVER_PORT":                    "5004",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":       "1234",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":         "kuma-control-plane",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":         "4321",
+				"KUMA_ENVIRONMENT":                              "kubernetes",
+				"KUMA_STORE_TYPE":                               "postgres",
+				"KUMA_STORE_POSTGRES_HOST":                      "postgres.host",
+				"KUMA_STORE_POSTGRES_PORT":                      "5432",
+				"KUMA_STORE_POSTGRES_USER":                      "kuma",
+				"KUMA_STORE_POSTGRES_PASSWORD":                  "kuma",
+				"KUMA_STORE_POSTGRES_DB_NAME":                   "kuma",
+				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":        "10",
+				"KUMA_API_SERVER_READ_ONLY":                     "true",
+				"KUMA_API_SERVER_PORT":                          "9090",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PORT":              "1111",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE":  "192.168.0.1",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT":       "2222",
+				"KUMA_DATAPLANE_TOKEN_SERVER_TLS_KEY_FILE":      "/tmp/key",
+				"KUMA_DATAPLANE_TOKEN_SERVER_TLS_CERT_FILE":     "/tmp/cert",
+				"KUMA_DATAPLANE_TOKEN_SERVER_CLIENT_CERT_FILES": "/tmp/cert1,/tmp/cert2",
+				"KUMA_REPORTS_ENABLED":                          "false",
+				"KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS":      "127.0.0.2",
+				"KUMA_KUBERNETES_ADMISSION_SERVER_PORT":         "9443",
+				"KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR":     "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
+			},
+			yamlFileConfig: "",
+		}),
+	)
 
 	It("should override via env var", func() {
 		// given file with sample cfg
 		file, err := ioutil.TempFile("", "*")
 		Expect(err).ToNot(HaveOccurred())
-		_, err = file.WriteString(sampleConfigYaml)
+		_, err = file.WriteString("environment: kubernetes")
 		Expect(err).ToNot(HaveOccurred())
 
 		// and overriden config
-		setEnv("KUMA_STORE_POSTGRES_HOST", "overriden.host")
+		setEnv("KUMA_ENVIRONMENT", "universal")
 
 		// when
 		cfg := kuma_cp.DefaultConfig()
@@ -212,7 +187,7 @@ reports:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(cfg.Store.Postgres.Host).To(Equal("overriden.host"))
+		Expect(cfg.Environment).To(Equal(config_core.UniversalEnvironment))
 
 	})
 
