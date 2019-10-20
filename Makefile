@@ -106,13 +106,21 @@ KUMACTL_DOCKER_IMAGE ?= $(KUMACTL_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 KUMA_INJECTOR_DOCKER_IMAGE ?= $(KUMA_INJECTOR_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 KUMA_TCP_ECHO_DOCKER_IMAGE ?= $(KUMA_TCP_ECHO_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 
+KUMACTL_INSTALL_USE_LOCAL_IMAGES ?= yes
+ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),yes)
+	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME)
+else
+	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
+endif
+
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.1.0
 GOGO_PROTOBUF_VERSION := v1.2.1
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0
 CI_KIND_VERSION ?= v0.5.1
-CI_MINIKUBE_VERSION ?= v1.1.0
+CI_MINIKUBE_VERSION ?= v1.4.0
+CI_KUBERNETES_VERSION ?= v1.15.3
 CI_KUBECTL_VERSION ?= v1.14.0
 CI_TOOLS_IMAGE ?= circleci/golang:1.12.9
 
@@ -278,7 +286,7 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 start/k8s: start/kind deploy/example-app/k8s ## Bootstrap: Start Kubernetes locally (KIND) and deploy sample app
 
 start/kind:
-	kind create cluster --name kuma 2>/dev/null || true
+	kind create cluster --name kuma --image=kindest/node:$(CI_KUBERNETES_VERSION) 2>/dev/null || true
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
@@ -304,7 +312,7 @@ kind/load/kuma-injector: image/kuma-injector
 	kind load docker-image $(KUMA_INJECTOR_DOCKER_IMAGE) --name=kuma
 
 deploy/control-plane/k8s: build/kumactl
-	kumactl install control-plane --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+	kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n kuma-system pod -l app=kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
@@ -596,7 +604,7 @@ load/example/minikube: ## Minikube: load Docker images into Minikube
 	eval $$(minikube docker-env) && $(MAKE) docker/load
 
 deploy/example/minikube: ## Minikube: deploy demo setup
-	docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME) | kubectl apply -f -
+	docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
 	kubectl apply -f examples/minikube/kuma-demo/
