@@ -383,6 +383,14 @@ jobs:
         name: Push Docker
         command: ./tools/releases/docker.sh --push --version $CIRCLE_TAG
 
+# reusable YAML snippet
+release_workflow_filters: &release_workflow_filters
+  filters:
+    branches:
+      ignore: /.*/
+    tags:
+      only: /.*/
+
 #
 # Below, the tag filter needs to be in all jobs
 # transitively required by the push job; otherwise,
@@ -393,42 +401,26 @@ jobs:
 #
 workflows:
   version: 2
-  kuma:
+  kuma-commit:
     jobs:
-    - api/check:
-        filters:
-          tags:
-            only: /.*/
+    - api/check
     - dev/golang
     - dev/mac
     - dev/ubuntu
-    - check:
-        filters:
-          tags:
-            only: /.*/
+    - check
     - test:
         requires:
         - check
         - api/check
-        filters:
-          tags:
-            only:
-              /.*/
     - integration:
         requires:
         - check
     - build:
         requires:
         - test
-        filters:
-          tags:
-            only: /.*/
     - images:
         requires:
         - build
-        filters:
-          tags:
-            only: /.*/
 #    TODO(yskopets): Bring back support for Docker Compose
 #    - example/docker-compose:
 #        requires:
@@ -436,14 +428,25 @@ workflows:
     - example/minikube:
         requires:
         - build
-    - release:
+
+  kuma-release:
+    jobs:
+    - api/check: *release_workflow_filters
+    - check:     *release_workflow_filters
+    - test:
+        <<: *release_workflow_filters
         requires:
         - check
-        - build
+        - api/check
+    - integration:
+        <<: *release_workflow_filters
+        requires:
+        - check
+    - build:
+        <<: *release_workflow_filters
+        requires:
         - test
-        - integration
-        filters:
-          branches:
-            ignore: /.*/
-          tags:
-            only: /.*/
+    - release:
+        <<: *release_workflow_filters
+        requires:
+        - build
