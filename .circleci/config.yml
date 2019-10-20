@@ -1,29 +1,43 @@
-version: 2
+version: 2.1 # Adds support for executors, parameterized jobs, etc
 
-go-defaults: &go-defaults
-  working_directory: /go/src/github.com/Kong/kuma
-  docker:
-  - image: golang:1.12.9
-  environment:
-    GO111MODULE: "on"
-
-remote-docker-defaults: &remote-docker-defaults
-  docker:
-  - image: circleci/golang:1.12
-
-vm-executor-defaults: &vm-executor-defaults
-  machine:
-    image: ubuntu-1604:201903-01
-
-mac-executor-defaults: &mac-executor-defaults
-  macos:
-    xcode: "9.0"
-
-jobs:
-  dev/golang:
+executors:
+  golang:
     docker:
     - image: golang:1.12.9
     environment:
+      GO_VERSION: 1.12.9
+      GO111MODULE: "on"
+    working_directory: /go/src/github.com/Kong/kuma
+
+  remote-docker:
+    docker:
+    - image: circleci/golang:1.12
+    environment:
+      GO_VERSION: 1.12.9
+      GO111MODULE: "on"
+
+  vm:
+    resource_class: large
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      GO_VERSION: 1.12.9
+      GO111MODULE: "on"
+
+  mac:
+    resource_class: large
+    macos:
+      xcode: "9.0"
+    environment:
+      GO_VERSION: 1.12.9
+      GO111MODULE: "on"
+
+jobs:
+  dev_golang:
+    docker:
+    - image: golang:1.12.9
+    environment:
+      GO_VERSION: 1.12.9
       GO111MODULE: "on"
     steps:
     - checkout
@@ -41,7 +55,7 @@ jobs:
         name: "Run unit tests"
         command: GO_TEST_OPTS='-p 2' make test
 
-  dev/ubuntu:
+  dev_ubuntu:
     docker:
     - image: ubuntu:16.04
     environment:
@@ -87,11 +101,8 @@ jobs:
           export PATH=$HOME/go/bin:$PATH
           GO_TEST_OPTS='-p 2' make test
 
-  dev/mac:
-    <<: *mac-executor-defaults
-    environment:
-      GO_VERSION: 1.12.9
-      GO111MODULE: "on"
+  dev_mac:
+    executor: mac
     steps:
     - checkout
     - run:
@@ -121,11 +132,8 @@ jobs:
           export PATH=$HOME/go/bin:$PATH
           GO_TEST_OPTS='-p 2' make test
 
-  check:
-    <<: *go-defaults
-    environment:
-      GO111MODULE: "on"
-      CLANG_FORMAT_PATH: clang-format-10
+  go_cache:
+    executor: golang
     steps:
     - checkout
     - restore_cache:
@@ -144,7 +152,22 @@ jobs:
     - save_cache:
         key: go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
         paths:
-          - "/go/pkg/mod"
+        - "/go/pkg/mod"
+
+  check:
+    executor: golang
+    environment:
+      CLANG_FORMAT_PATH: clang-format-10
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        # prefer the exact match
+        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        # otherwise, fallback to the most recently generated cache on that branch
+        - go.mod-{{ .Branch }}-
+        # otherwise, fallback to the most recently generated cache on any branch
+        - go.mod-
     - run:
         name: "Install pre-requirements"
         # `unzip` is necessary to install `protoc`
@@ -157,16 +180,11 @@ jobs:
         command: |
           # see https://apt.llvm.org/
 
-          cat  >>/etc/apt/sources.list <<EOF
+          cat  >>/etc/apt/sources.list \<<EOF
 
           deb http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
           deb-src http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
-          # 7
-          deb http://apt.llvm.org/stretch/ llvm-toolchain-stretch-7 main
-          deb-src http://apt.llvm.org/stretch/ llvm-toolchain-stretch-7 main
-          # 8
-          deb http://apt.llvm.org/stretch/ llvm-toolchain-stretch-8 main
-          deb-src http://apt.llvm.org/stretch/ llvm-toolchain-stretch-8 main
+
           EOF
 
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
@@ -176,8 +194,8 @@ jobs:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
 
-  api/check:
-    <<: *go-defaults
+  api_check:
+    executor: golang
     steps:
     - checkout
     - restore_cache:
@@ -209,7 +227,7 @@ jobs:
         command: make check -C api
 
   test:
-    <<: *go-defaults
+    executor: golang
     resource_class: large
     steps:
     - checkout
@@ -236,10 +254,8 @@ jobs:
         destination: /coverage
 
   integration:
-    <<: *vm-executor-defaults
+    executor: vm
     environment:
-      GO_VERSION: 1.12.9
-      GO111MODULE: "on"
       GOPATH: /home/circleci/.go
     steps:
     - checkout
@@ -282,7 +298,7 @@ jobs:
         destination: /coverage
 
   build:
-    <<: *go-defaults
+    executor: golang
     steps:
     - checkout
     - restore_cache:
@@ -293,17 +309,38 @@ jobs:
         - go.mod-{{ .Branch }}-
         # otherwise, fallback to the most recently generated cache on any branch
         - go.mod-
-    - run: make build
+    - run:
+        name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-injector, kuma-tcp-echo)
+        command: make build
+
+    # Persist the specified paths into the workspace for use in downstream jobs
+    - persist_to_workspace:
+        root: build
+        paths:
+        - artifacts-linux-amd64
 
   images:
-    <<: *remote-docker-defaults
+    executor: remote-docker
     steps:
     - checkout
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: build
     - setup_remote_docker
-    - run: make images
+    - run:
+        name: Build Docker images
+        command: make docker/build
+    - run:
+        name: Save Docker images into TAR archives
+        command: make docker/save
+    # Persist the specified paths into the workspace for use in downstream jobs
+    - persist_to_workspace:
+        root: build
+        paths:
+        - docker-images
 
-  example/docker-compose:
-    <<: *vm-executor-defaults
+  example_docker-compose:
+    executor: vm
     steps:
     - checkout
     - run:
@@ -319,10 +356,13 @@ jobs:
         name: Verify Envoy stats
         command: make verify/example/docker-compose
 
-  example/minikube:
-    <<: *vm-executor-defaults
+  example_minikube:
+    executor: vm
     steps:
     - checkout
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: build
     - run:
         name: Install Minikube
         command: make dev/install/minikube
@@ -333,8 +373,8 @@ jobs:
         name: Start Minikube
         command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none
     - run:
-        name: Build Control Plane
-        command: make build/example/minikube
+        name: Load Docker images into Minikube
+        command: make load/example/minikube
     - run:
         name: Deploy Kuma demo
         command: make deploy/example/minikube
@@ -350,8 +390,9 @@ jobs:
     - run:
         name: Verify kumactl workflow
         command: make kumactl/example/minikube
+
   release:
-    <<: *go-defaults
+    executor: golang
     steps:
     - checkout
     - setup_remote_docker
@@ -403,49 +444,64 @@ workflows:
   version: 2
   kuma-commit:
     jobs:
-    - api/check
-    - dev/golang
-    - dev/mac
-    - dev/ubuntu
-    - check
-    - test:
+    - dev_golang
+    - dev_mac
+    - dev_ubuntu
+    - go_cache
+    - api_check:
         requires:
-        - check
-        - api/check
-    - integration:
+        - go_cache
+    - check:
         requires:
-        - check
+        - go_cache
     - build:
         requires:
-        - test
+        - go_cache
+    - test:
+        requires:
+        - api_check
+        - check
+    - integration:
+        requires:
+        - api_check
+        - check
     - images:
         requires:
         - build
 #    TODO(yskopets): Bring back support for Docker Compose
-#    - example/docker-compose:
+#    - example_docker-compose:
 #        requires:
 #        - build
-    - example/minikube:
+    - example_minikube:
         requires:
-        - build
+        - images
 
   kuma-release:
     jobs:
-    - api/check: *release_workflow_filters
-    - check:     *release_workflow_filters
+    - go_cache: *release_workflow_filters
+    - api_check:
+        <<: *release_workflow_filters
+        requires:
+        - go_cache
+    - check:
+        <<: *release_workflow_filters
+        requires:
+        - go_cache
     - test:
         <<: *release_workflow_filters
         requires:
+        - api_check
         - check
-        - api/check
     - integration:
         <<: *release_workflow_filters
         requires:
+        - api_check
         - check
     - build:
         <<: *release_workflow_filters
         requires:
         - test
+        - integration
     - release:
         <<: *release_workflow_filters
         requires:
