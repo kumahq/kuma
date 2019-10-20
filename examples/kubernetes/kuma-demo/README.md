@@ -2,7 +2,7 @@
 
 ## Setup Environment
 
-1. Start a Kubernetes cluster with version 1.15 or higher
+1. Start a Kubernetes cluster with version 1.15 or higher and at least 4GB of memory
 
 ```
 $ minikube start --kubernetes-version v1.15.4
@@ -15,7 +15,65 @@ $ minikube start --kubernetes-version v1.15.4
 🏄  Done! kubectl is now configured to use "minikube"
 ```
 
-2. Download the latest version of Kuma
+2. Navigate into the directory where all the kuma-demo YAML files are:
+
+```
+$ cd examples/kubernetes/kuma-demo/
+```
+
+3. Deploy Kuma's sample marketplace application
+
+```
+$ kubectl apply -f kuma-demo-aio.yaml
+namespace/kuma-demo created
+serviceaccount/elasticsearch created
+service/elasticsearch created
+replicationcontroller/es created
+deployment.apps/redis-master created
+service/redis-master created
+service/kuma-demo-api created
+deployment.apps/kuma-demo-app created
+```
+
+This will deploy our demo marketplace application split across 3 pods. The first pod is an Elasticsearch service that stores all the items in our marketplace. The second pod is our Node/Vue application that allows you to visually query the Elastic and Redis endpoints. The last pod is a Redis service that stores reviews for each item.
+
+Check the pods are up and running by checking the `kuma-demo` namespace
+
+```
+$ kubectl get pods -n kuma-demo
+NAME                            READY   STATUS    RESTARTS   AGE
+es-n8df7                        1/1     Running   0          13m
+kuma-demo-app-8fc49ddbf-gfjtb   2/2     Running   0          13m
+redis-master-6d4cf995c5-nsghm   1/1     Running   0          13m
+```
+
+In the following steps, we will be using the pod name of the `kuma-demo-app-*************` pod. Please replace any `${KUMA_DEMO_APP_POD_NAME}` variables with your pod name.
+
+4. Deploy the logstash service.
+
+```
+$ kubectl apply -f kuma-demo-log.yaml
+namespace/logging created
+service/logstash created
+configmap/logstash-config created
+deployment.apps/logstash created
+```
+
+5. Port-forward the sample application to access the front-end UI at http://localhost:8080
+
+<pre><code>$ kubectl port-forward <b>${KUMA_DEMO_APP_POD_NAME}</b> -n kuma-demo 8080 3001
+Forwarding from 127.0.0.1:8080 -> 8080
+Forwarding from [::1]:8080 -> 8080
+Forwarding from 127.0.0.1:3001 -> 3001
+Forwarding from [::1]:3001 -> 3001
+</code></pre>
+
+Now you can access the marketplace application through your web browser at http://localhost:8080.
+
+The items on the front page are pulled from the Elasticsearch service. While the reviews for each item sit within the Redis service. You    can query for individual items and look at their reviews. 
+
+
+6. Download the latest version of Kuma
 
 ```
 $ wget https://kong.bintray.com/kuma/kuma-0.2.2-darwin-amd64.tar.gz
@@ -36,7 +94,7 @@ kuma-0.2.2-darwin-amd64.tar.g 100%[=============================================
 2019-10-13 05:54:08 (2.09 MB/s) - ‘kuma-0.2.2-darwin-amd64.tar.gz’ saved [42892462/42892462]
 ```
 
-3. Unbundle the files to get the following components:
+7. Unbundle the files to get the following components:
 
 ```
 $ tar xvzf kuma-0.2.2-darwin-amd64.tar.gz
@@ -53,17 +111,17 @@ x ./README
 x ./LICENSE
 ```
 
-4. Go into the /bin directory where the kuma components will be:
+8. Go into the ./bin directory where the kuma components will be:
 
 ```
 $ cd bin && ls
 envoy   kuma-cp   kuma-dp   kuma-tcp-echo kumactl
 ```
 
-5. Install the control plane using `kumactl`
+7. Install the control plane using `kumactl`
 
 ```
-$ kumactl install control-plane | kubectl apply -f -
+$ ./kumactl install control-plane | kubectl apply -f -
 namespace/kuma-system created
 secret/kuma-injector-tls-cert created
 secret/kuma-sds-tls-cert created
@@ -88,7 +146,7 @@ mutatingwebhookconfiguration.admissionregistration.k8s.io/kuma-admission-mutatin
 mutatingwebhookconfiguration.admissionregistration.k8s.io/kuma-injector-webhook-configuration created
 ```
 
-Check the pods are up and running by checking the `kuma-system` namespace
+You can check the pods are up and running by checking the `kuma-system` namespace
 
 ```
 $ kubectl get pods -n kuma-system
@@ -97,139 +155,214 @@ kuma-control-plane-7bcc56c869-lzw9t   1/1     Running   0          70s
 kuma-injector-9c96cddc8-745r7         1/1     Running   0          70s
 ```
 
-In the following steps, we will be using the pod name of the `kuma-control-plane-*************` pod. Please replace any `{KUMA_CP_POD_NAME}` with your pod name.
+In the following steps, we will be using the pod name of the `kuma-control-plane-*************` pod. Please replace any `${KUMA_CP_POD_NAME}` with your pod name.
 
-6. Navigate into the directory where all the kuma-demo YAML files are:
-
-```
-cd kuma/examples/kubernetes/kuma-demo/
-```
-
-1. Deploy Kuma's sample marketplace application
+8. Delete the existing kuma-demo pods so they restart:
 
 ```
-$ kubectl apply -f kuma-demo-aio.yaml
-namespace/kuma-demo created
-serviceaccount/elasticsearch created
-service/elasticsearch created
-replicationcontroller/es created
-deployment.apps/redis-master created
-service/redis-master created
-service/kuma-demo-api created
-deployment.apps/kuma-demo-app created
+$ kubectl delete pods --all -n kuma-demo
+pod "es-n8df7" deleted
+pod "kuma-demo-app-8fc49ddbf-gfjtb" deleted
+pod "redis-master-6d4cf995c5-nsghm" deleted
 ```
 
-This will deploy our demo marketplace application split across 3 pods. The first pod is an Elasticsearch service that stores all the items in our marketplace. The second pod is a Redis service that stores reviews for each item. The last pod is our Node/Vue application that allows you to visually query the Elastic and Redis endpoints.
-
-Check the pods are up and running by checking the `kuma-demo` namespace
+And check the pods are up and running again with an additional container. The additional container is the Envoy sidecar proxy that Kuma is injecting into each pod.
 
 ```
-kubectl get pods -n kuma-demo
-NAME                             READY   STATUS    RESTARTS   AGE
-es-pkm29                         2/2     Running   0          7m23s
-kuma-demo-app-5b8674794f-7r2sf   3/3     Running   0          7m23s
-redis-master-6b88967745-8ct5c    2/2     Running   0          7m23s
+$ kubectl get pods -n kuma-demo
+NAME                            READY   STATUS    RESTARTS   AGE
+es-gsc8w                        2/2     Running   0          2m25s
+kuma-demo-app-8fc49ddbf-k5z5q   3/3     Running   0          2m25s
+redis-master-6d4cf995c5-jxjjm   2/2     Running   0          2m25s
 ```
 
-In the following steps, we will be using the pod name of the `kuma-demo-app-*************` pod. Please replace any `{KUMA_DEMO_APP_POD_NAME}` with your pod name.
+10. Port-forward the sample application again to access the front-end UI at http://localhost:8080
 
-8. Deploy the logstash service
-
-```
-$ kubectl apply -f kuma-demo-log.yaml
-namespace/logging created
-service/logstash created
-configmap/logstash-config created
-deployment.apps/logstash created
-```
-
-9. Port-forward the sample application to access the front-end UI at http://localhost:3001
-
-<pre><code>$ kubectl port-forward <b>{KUMA_DEMO_APP_POD_NAME}</b> -n kuma-demo 8080 3001
+<pre><code>$ kubectl port-forward <b>${KUMA_DEMO_APP_POD_NAME}</b> -n kuma-demo 8080 3001
 Forwarding from 127.0.0.1:8080 -> 8080
 Forwarding from [::1]:8080 -> 8080
 Forwarding from 127.0.0.1:3001 -> 3001
 Forwarding from [::1]:3001 -> 3001
 </code></pre>
 
-Now you can access the application through your web browser at http://localhost:3001.
+Now you can access the marketplace application through your web browser at http://localhost:8080 with Envoy handling all the traffic between the services. Happy shopping!
 
-The items on the front page are pulled from the Elasticsearch service. While the reviews for each item sit within the Redis service. You can query for individual items and look at their reviews. Happy shopping!
+11.  Now we will port forward the kuma-control-plane so we can access it with `kumactl`
 
-10. Now we will port forward the kuma-control-plane so we can access it with `kumactl`
-
-<pre><code>$ kubectl -n kuma-system port-forward <b>{KUMA_CP_POD_NAME}</b> 5681
+<pre><code>$ kubectl -n kuma-system port-forward <b>${KUMA_CP_POD_NAME}</b> 5681
 Forwarding from 127.0.0.1:5681 -> 5681
 Forwarding from [::1]:5681 -> 5681
 </code></pre>
 
-Please refer to step 5 to copy the correct `{KUMA_CP_POD_NAME}`.
+Please refer to step 7 to copy the correct `${KUMA_CP_POD_NAME}`.
 
-11. Now configure `kumactl` to point towards the control plane address
-
-```
-$ kumactl config control-planes add --name=kuma-app --address=http://localhost:5681
-added Control Plane "kuma-app"
-switched active Control Plane to "kuma-app"
-```
-
-12. You can use `kumactl` to look at the dataplanes in the mesh. You should see three dataplanes:
+12.  Now configure `kumactl` to point towards the control plane address
 
 ```
-$ kumactl get dataplanes
-MESH      NAME                             TAGS
-default   es-pkm29                         component=elasticsearch service=elasticsearch.kuma-demo.svc:80
-default   kuma-demo-app-5b8674794f-7r2sf   app=kuma-demo-api pod-template-hash=5b8674794f service=kuma-demo-api.kuma-demo.svc:3001
-default   redis-master-6b88967745-8ct5c    app=redis pod-template-hash=6b88967745 role=master service=redis-master.kuma-demo.svc:6379 tier=backend
+$ ./kumactl config control-planes add --name=minikube --address=http://localhost:5681
+added Control Plane "minikube"
+switched active Control Plane to "minikube"
+```
+
+13. You can use `kumactl` to look at the dataplanes in the mesh. You should see three dataplanes that correlates with our pods in Kubernetes:
+
+```
+$ ./kumactl inspect dataplanes
+MESH      NAME                            TAGS                                                                                                      STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
+default   es-gsc8w                        component=elasticsearch service=elasticsearch.kuma-demo.svc:80                                            Online   9m5s                 9m4s               3               0
+default   redis-master-6d4cf995c5-jxjjm   app=redis pod-template-hash=6d4cf995c5 role=master service=redis-master.kuma-demo.svc:6379 tier=backend   Online   9m2s                 9m1s               3               0
+default   kuma-demo-app-8fc49ddbf-k5z5q   app=kuma-demo-api pod-template-hash=8fc49ddbf service=kuma-demo-api.kuma-demo.svc:3001                    Online   9m8s                 9m7s               3               0
 ```
 
 13. You can also use `kumactl` to look at the mesh. As shown below, our default mesh does not have mTLS enabled.
 
 ```
-$ kumactl get meshes
+$ ./kumactl get meshes
 NAME      mTLS   DP ACCESS LOGS
 default   off    off
 ```
 
-14. Let's enable mTLS and also create a traffic-permission policy. We will set a policy that allows traffic only between node application and our Elasticsearch service. The expected behavior is that the application will no longer be able to access Redis service for reviews.
+14.  Let's enable mTLS.
 
 ```
-$ kubectl apply -f kuma-demo-policy.yaml
-Warning: kubectl apply should be used on resource created by either kubectl create --save-config or kubectl apply
-mesh.kuma.io/default configured
-trafficlog.kuma.io/everything created
-trafficpermission.kuma.io/everyone-to-everyone created
+$ cat <<EOF | kubectl apply -f - 
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+  namespace: kuma-system
+spec:
+  mtls:
+    ca:
+      builtin: {}
+    enabled: true
+EOF
 ```
 
-15. Using `kumactl`, inspect the mesh again to see if mTLS is enabled:
+Using `kumactl`, inspect the mesh again to see if mTLS is enabled:
 
 ```
-kumactl get meshes
+$ ./kumactl get meshes
 NAME      mTLS   DP ACCESS LOGS
 default   on     off
 ```
 
-16. You can also get `traffic-permissions` to see that has been applied correctly:
+15.  Now let's enable traffic-permission for all services so our application will work like it use to:
 
 ```
-kumactl get traffic-permissions
-MESH      NAME
-default   node-api-to-elasticsearch-only
-```
-
-17. Now try to access the reviews on each item. They will not load because of the traffic-permissions you described in the `kuma-demo-policy.yaml` file. You can inspect the policy we created by using the following `kumactl` command:
-
-```
-$ kumactl get traffic-permissions -o yaml
-items:
-- mesh: default
-  name: node-api-to-elasticsearch-only
+$ cat <<EOF | kubectl apply -f - 
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  namespace: kuma-demo
+  name: everything
+spec:
   rules:
-  - destinations:
+  - sources:
     - match:
-        service: elasticsearch.kuma-demo.svc:80
-    sources:
+        service: '*'
+    destinations:
     - match:
-        service: kuma-demo-api.kuma-demo.svc:3001
-  type: TrafficPermission
+        service: '*'
+EOF
+```
+
+Using `kumactl`, you can check the traffic permissions like this:
+```
+$ ./kumactl get traffic-permissions
+MESH      NAME
+default   everything
+```
+
+Now that we have traffic permission that allows any source to talk to any destination, our application should work like it use to. 
+
+16. Let's add logging for traffic between all services and send them to logstash: 
+```
+$ cat <<EOF | kubectl apply -f - 
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+  namespace: kuma-system
+spec:
+  mtls:
+    ca:
+      builtin: {}
+    enabled: true
+  logging:
+    backends:
+    - name: logstash
+      format: |
+        {
+            "destination": "%KUMA_DESTINATION_SERVICE%",
+            "destinationAddress": "%UPSTREAM_HOST%",
+            "source": "%KUMA_SOURCE_SERVICE%",
+            "sourceAddress": "%KUMA_SOURCE_ADDRESS%",
+            "bytesReceived": "%BYTES_RECEIVED%",
+            "bytesSent": "%BYTES_SENT%"
+        }
+      tcp:
+        address: logstash.logging:5000
+---
+apiVersion: kuma.io/v1alpha1
+kind: TrafficLog
+mesh: default
+metadata:
+  namespace: kuma-demo
+  name: everything
+spec:
+  rules:
+  - sources:
+    - match:
+        service: '*'
+    destinations:
+    - match:
+        service: '*'
+    conf:
+      backend: logstash
+EOF
+```
+Logs will be sent to https://kumademo.loggly.com/
+
+17. Now let's take down our Redis service because someone is spamming fake reviews. We can easily accomplish that by changing our traffic-permissions:
+```
+$ cat <<EOF | kubectl apply -f - 
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  namespace: kuma-demo
+  name: everything
+spec:
+  rules:
+  - sources:
+    - match:
+        service: 'kuma-demo-api.kuma-demo.svc:3001'
+    destinations:
+    - match:
+        service: 'elasticsearch.kuma-demo.svc:80'
+EOF
+```
+
+This traffic-permission will only allow traffic from the kuma-demo-api service to the Elasticsearch service. Now try to access the reviews on each item. They will not load because of the traffic-permissions you described in the the policy above.
+
+18. If we wanted to enable the Redis service again in the future, just change the traffic-permission back like this:
+```
+$ cat <<EOF | kubectl apply -f - 
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  namespace: kuma-demo
+  name: everything
+spec:
+  rules:
+  - sources:
+    - match:
+        service: '*'
+    destinations:
+    - match:
+        service: '*'
+EOF
 ```
