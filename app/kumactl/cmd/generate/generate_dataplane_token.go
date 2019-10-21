@@ -11,7 +11,6 @@ type generateDataplaneTokenContext struct {
 
 	args struct {
 		dataplane string
-		mesh      string
 	}
 }
 

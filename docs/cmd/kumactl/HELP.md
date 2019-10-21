@@ -266,7 +266,7 @@ Global Flags:
 ### kumactl generate dp-token
 
 ```
-Generate resources, tokens etc.
+Generate resources, tokens, etc.
 
 Usage:
   kumactl generate [command]
