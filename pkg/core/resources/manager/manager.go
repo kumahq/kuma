@@ -13,6 +13,7 @@ type ResourceManager interface {
 	Create(context.Context, model.Resource, ...store.CreateOptionsFunc) error
 	Update(context.Context, model.Resource, ...store.UpdateOptionsFunc) error
 	Delete(context.Context, model.Resource, ...store.DeleteOptionsFunc) error
+	DeleteAll(context.Context, model.ResourceList, ...store.DeleteAllOptionsFunc) error
 	Get(context.Context, model.Resource, ...store.GetOptionsFunc) error
 	List(context.Context, model.ResourceList, ...store.ListOptionsFunc) error
 }
@@ -60,6 +61,20 @@ func (r *resourcesManager) ensureMeshExists(ctx context.Context, meshName string
 
 func (r *resourcesManager) Delete(ctx context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
 	return r.Store.Delete(ctx, resource, fs...)
+}
+
+func (r *resourcesManager) DeleteAll(ctx context.Context, list model.ResourceList, fs ...store.DeleteAllOptionsFunc) error {
+	opts := store.NewDeleteAllOptions(fs...)
+
+	if err := r.List(ctx, list, store.ListByMesh(opts.Mesh)); err != nil {
+		return err
+	}
+	for _, obj := range list.GetItems() {
+		if err := r.Delete(ctx, obj, store.DeleteBy(model.MetaToResourceKey(obj.GetMeta()))); err != nil && !store.IsResourceNotFound(err) {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {

@@ -3,6 +3,7 @@ package memory_test
 import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	test_store "github.com/Kong/kuma/pkg/test/store"
 	. "github.com/onsi/ginkgo"
 )
 
@@ -11,5 +12,5 @@ var _ = Describe("MemoryStore", func() {
 		return memory.NewStore()
 	}
 
-	store.ExecuteStoreTests(createStore)
+	test_store.ExecuteStoreTests(createStore)
 })

@@ -53,7 +53,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...store.UpdateOptionsFunc) error {
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
+		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
@@ -81,7 +81,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
+		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
 	obj.GetObjectMeta().SetNamespace(opts.Namespace)
 	obj.GetObjectMeta().SetName(opts.Name)
@@ -97,7 +97,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	opts := store.NewGetOptions(fs...)
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
+		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
 	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: opts.Namespace, Name: opts.Name}, obj); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -117,7 +117,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	opts := store.NewListOptions(fs...)
 	obj, err := s.Converter.ToKubernetesList(rs)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
+		return errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
 	}
 	if err := s.Client.List(ctx, obj, kube_client.InNamespace(opts.Namespace)); err != nil {
 		return errors.Wrap(err, "failed to list k8s resources")

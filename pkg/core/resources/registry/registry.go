@@ -12,6 +12,9 @@ type TypeRegistry interface {
 
 	NewObject(model.ResourceType) (model.Resource, error)
 	NewList(model.ResourceType) (model.ResourceList, error)
+
+	ObjectTypes() []model.ResourceType
+	ListTypes() []model.ResourceType
 }
 
 func NewTypeRegistry() TypeRegistry {
@@ -24,6 +27,22 @@ func NewTypeRegistry() TypeRegistry {
 type typeRegistry struct {
 	objectTypes     map[model.ResourceType]reflect.Type
 	objectListTypes map[model.ResourceType]reflect.Type
+}
+
+func (t *typeRegistry) ObjectTypes() []model.ResourceType {
+	var types []model.ResourceType
+	for typ := range t.objectTypes {
+		types = append(types, typ)
+	}
+	return types
+}
+
+func (t *typeRegistry) ListTypes() []model.ResourceType {
+	var types []model.ResourceType
+	for typ := range t.objectListTypes {
+		types = append(types, typ)
+	}
+	return types
 }
 
 func (t *typeRegistry) RegisterType(res model.Resource) error {

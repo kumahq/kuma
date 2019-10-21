@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -132,6 +133,8 @@ var _ = Describe("DataplaneInsightSink", func() {
 
 		BeforeEach(func() {
 			store = memory_resources.NewStore()
+			err := store.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("default", "default", "default"))
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should create/update DataplaneInsight resource", func() {
@@ -146,7 +149,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			lastSeenVersion := ""
 
 			// given
-			statusStore := NewDataplaneInsightStore(store)
+			statusStore := NewDataplaneInsightStore(manager.NewResourceManager(store))
 
 			// when
 			err := statusStore.Upsert(key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))

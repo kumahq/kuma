@@ -35,6 +35,10 @@ func (m *customizableResourceManager) Delete(ctx context.Context, resource model
 	return m.resourceManager(resource.GetType()).Delete(ctx, resource, fs...)
 }
 
+func (m *customizableResourceManager) DeleteAll(ctx context.Context, list model.ResourceList, fs ...store.DeleteAllOptionsFunc) error {
+	return m.resourceManager(list.GetItemType()).DeleteAll(ctx, list, fs...)
+}
+
 func (m *customizableResourceManager) Update(ctx context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
 	return m.resourceManager(resource.GetType()).Update(ctx, resource, fs...)
 }

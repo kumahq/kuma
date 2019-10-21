@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/Kong/kuma/pkg/core/resources/store"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -30,6 +32,7 @@ type MeshReconciler struct {
 	Converter        k8s_resources.Converter
 	BuiltinCaManager builtin_ca.BuiltinCaManager
 	SystemNamespace  string
+	ResourceManager  manager.ResourceManager
 }
 
 func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -40,7 +43,8 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 	mesh := &mesh_k8s.Mesh{}
 	if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return kube_ctrl.Result{}, nil
+			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Namespace, req.Name, req.Name))
+			return kube_ctrl.Result{}, err
 		}
 		log.Error(err, "unable to fetch Mesh")
 		return kube_ctrl.Result{}, err

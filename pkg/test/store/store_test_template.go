@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/resources/store"
 	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
 	. "github.com/onsi/ginkgo"
@@ -10,15 +11,15 @@ import (
 )
 
 func ExecuteStoreTests(
-	createStore func() ResourceStore,
+	createStore func() store.ResourceStore,
 ) {
 	var namespace string
 	const mesh = "default-mesh"
-	var s ClosableResourceStore
+	var s store.ClosableResourceStore
 
 	BeforeEach(func() {
 		namespace = string(uuid.New())
-		s = NewStrictResourceStore(createStore())
+		s = store.NewStrictResourceStore(createStore())
 	})
 
 	AfterEach(func() {
@@ -32,7 +33,7 @@ func ExecuteStoreTests(
 				Path: "demo",
 			},
 		}
-		err := s.Create(context.Background(), &res, CreateByKey(namespace, name, mesh))
+		err := s.Create(context.Background(), &res, store.CreateByKey(namespace, name, mesh))
 		Expect(err).ToNot(HaveOccurred())
 		return &res
 	}
@@ -47,7 +48,7 @@ func ExecuteStoreTests(
 
 			// when retrieve created object
 			resource := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &resource, GetByKey(namespace, name, mesh))
+			err := s.Get(context.Background(), &resource, store.GetByKey(namespace, name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -67,10 +68,10 @@ func ExecuteStoreTests(
 
 			// when try to create another one with same name
 			resource.SetMeta(nil)
-			err := s.Create(context.Background(), resource, CreateByKey(namespace, name, mesh))
+			err := s.Create(context.Background(), resource, store.CreateByKey(namespace, name, mesh))
 
 			// then
-			Expect(err).To(MatchError(ErrorResourceAlreadyExists(resource.GetType(), namespace, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(resource.GetType(), namespace, name, mesh)))
 		})
 	})
 
@@ -84,7 +85,7 @@ func ExecuteStoreTests(
 			err := s.Delete(
 				context.Background(),
 				resource,
-				DeleteByKey(resource.GetMeta().GetNamespace(), resource.Meta.GetName(), mesh),
+				store.DeleteByKey(resource.GetMeta().GetNamespace(), resource.Meta.GetName(), mesh),
 			)
 
 			// then
@@ -94,7 +95,7 @@ func ExecuteStoreTests(
 			err = s.Update(context.Background(), resource)
 
 			// then
-			Expect(err).To(MatchError(ErrorResourceConflict(resource.GetType(), namespace, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(resource.GetType(), namespace, name, mesh)))
 		})
 
 		It("should update an existing resource", func() {
@@ -111,7 +112,7 @@ func ExecuteStoreTests(
 
 			// when retrieve the resource
 			res := sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &res, GetByKey(namespace, name, mesh))
+			err = s.Get(context.Background(), &res, store.GetByKey(namespace, name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -129,7 +130,7 @@ func ExecuteStoreTests(
 			resource := sample_model.TrafficRouteResource{}
 
 			// when
-			err := s.Delete(context.TODO(), &resource, DeleteByKey(namespace, "non-existent-name", mesh))
+			err := s.Delete(context.TODO(), &resource, store.DeleteByKey(namespace, "non-existent-name", mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -142,14 +143,14 @@ func ExecuteStoreTests(
 
 			// when
 			resource.SetMeta(nil) // otherwise the validation from strict client fires that mesh is different
-			err := s.Delete(context.TODO(), resource, DeleteByKey(namespace, name, "different-mesh"))
+			err := s.Delete(context.TODO(), resource, store.DeleteByKey(namespace, name, "different-mesh"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// and when getting the given resource
 			getResource := sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &getResource, GetByKey(namespace, name, mesh))
+			err = s.Get(context.Background(), &getResource, store.GetByKey(namespace, name, mesh))
 
 			// then resource still exists
 			Expect(err).ToNot(HaveOccurred())
@@ -162,17 +163,17 @@ func ExecuteStoreTests(
 
 			// when
 			resource := sample_model.TrafficRouteResource{}
-			err := s.Delete(context.TODO(), &resource, DeleteByKey(namespace, name, mesh))
+			err := s.Delete(context.TODO(), &resource, store.DeleteByKey(namespace, name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when query for deleted resource
 			resource = sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &resource, GetByKey(namespace, name, mesh))
+			err = s.Get(context.Background(), &resource, store.GetByKey(namespace, name, mesh))
 
 			// then resource cannot be found
-			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
 		})
 	})
 
@@ -183,10 +184,10 @@ func ExecuteStoreTests(
 			resource := sample_model.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), &resource, GetByKey(namespace, name, mesh))
+			err := s.Get(context.Background(), &resource, store.GetByKey(namespace, name, mesh))
 
 			// then
-			Expect(err).To(MatchError(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
 		})
 
 		It("should return an error if resource is not found in given mesh", func() {
@@ -197,10 +198,10 @@ func ExecuteStoreTests(
 
 			// when
 			resource := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &resource, GetByKey(namespace, name, mesh))
+			err := s.Get(context.Background(), &resource, store.GetByKey(namespace, name, mesh))
 
 			// then
-			Expect(err).To(Equal(ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
 		})
 
 		It("should return an existing resource", func() {
@@ -210,7 +211,7 @@ func ExecuteStoreTests(
 
 			// when
 			res := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &res, GetByKey(namespace, name, mesh))
+			err := s.Get(context.Background(), &res, store.GetByKey(namespace, name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -229,7 +230,7 @@ func ExecuteStoreTests(
 			list := sample_model.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), &list, ListByNamespace("non-existent-namespace"), ListByMesh(mesh))
+			err := s.List(context.Background(), &list, store.ListByNamespace("non-existent-namespace"), store.ListByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -245,7 +246,7 @@ func ExecuteStoreTests(
 			list := sample_model.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), &list, ListByNamespace(namespace))
+			err := s.List(context.Background(), &list, store.ListByNamespace(namespace))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -270,7 +271,7 @@ func ExecuteStoreTests(
 			list := sample_model.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), &list, ListByNamespace("different-namespace"))
+			err := s.List(context.Background(), &list, store.ListByNamespace("different-namespace"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -286,7 +287,7 @@ func ExecuteStoreTests(
 			list := sample_model.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), &list, ListByMesh("different-mesh"))
+			err := s.List(context.Background(), &list, store.ListByMesh("different-mesh"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

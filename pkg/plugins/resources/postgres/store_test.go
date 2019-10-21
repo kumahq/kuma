@@ -7,6 +7,7 @@ import (
 	"github.com/Kong/kuma/pkg/config"
 	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/kuma/pkg/core/resources/store"
+	test_store "github.com/Kong/kuma/pkg/test/store"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"math/rand"
@@ -32,7 +33,7 @@ var _ = Describe("postgresResourceStore", func() {
 		return pStore
 	}
 
-	store.ExecuteStoreTests(createStore)
+	test_store.ExecuteStoreTests(createStore)
 })
 
 func createRandomDb(cfg postgres.PostgresStoreConfig) (string, error) {

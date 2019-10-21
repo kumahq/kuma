@@ -9,11 +9,12 @@ import (
 	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	sample_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
 	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
+	test_store "github.com/Kong/kuma/pkg/test/store"
 )
 
 var _ = Describe("KubernetesStore template", func() {
 
-	store.ExecuteStoreTests(func() store.ResourceStore {
+	test_store.ExecuteStoreTests(func() store.ResourceStore {
 		kubeTypes := k8s_registry.NewTypeRegistry()
 		Expect(kubeTypes.RegisterObjectType(&sample_proto.TrafficRoute{}, &sample_k8s.TrafficRoute{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&sample_proto.TrafficRoute{}, &sample_k8s.TrafficRouteList{})).To(Succeed())

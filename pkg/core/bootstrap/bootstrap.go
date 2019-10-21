@@ -10,6 +10,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/Kong/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	runtime_reports "github.com/Kong/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
@@ -219,11 +220,10 @@ func initializeBuiltinCaManager(builder *core_runtime.Builder) {
 
 func initializeResourceManager(builder *core_runtime.Builder) {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager())
-	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{
-		mesh.MeshType: meshManager,
-	}
+	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), customizableManager, builder.SecretManager(), registry.Global())
+	customManagers[mesh.MeshType] = meshManager
 	builder.WithResourceManager(customizableManager)
 }
 

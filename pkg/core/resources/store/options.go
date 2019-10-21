@@ -73,6 +73,26 @@ func DeleteByKey(ns, name, mesh string) DeleteOptionsFunc {
 	}
 }
 
+type DeleteAllOptions struct {
+	Mesh string
+}
+
+type DeleteAllOptionsFunc func(*DeleteAllOptions)
+
+func DeleteAllByMesh(mesh string) DeleteAllOptionsFunc {
+	return func(opts *DeleteAllOptions) {
+		opts.Mesh = mesh
+	}
+}
+
+func NewDeleteAllOptions(fs ...DeleteAllOptionsFunc) *DeleteAllOptions {
+	opts := &DeleteAllOptions{}
+	for _, f := range fs {
+		f(opts)
+	}
+	return opts
+}
+
 type GetOptions struct {
 	Namespace string
 	Name      string
