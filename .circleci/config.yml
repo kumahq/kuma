@@ -380,6 +380,16 @@ jobs:
 
   example_minikube:
     executor: vm
+    parameters:
+      kubernetes_version:
+        description: The version of Kubernetes to test on.
+        type: string
+        default: "v1.15.0"
+      use_local_kuma_images:
+        description: Use local Docker images instead of bintray.io. Must be one of "yes", "no".
+        type: enum
+        enum: ["yes", "no"]
+        default: "no"
     steps:
     - checkout
     # Mount files from the upstream jobs
@@ -393,13 +403,13 @@ jobs:
         command: make dev/install/kubectl
     - run:
         name: Start Minikube
-        command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none
+        command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none --kubernetes-version=<< parameters.kubernetes_version >>
     - run:
         name: Load Docker images into Minikube
         command: make load/example/minikube
     - run:
         name: Deploy Kuma demo
-        command: make deploy/example/minikube
+        command: make deploy/example/minikube KUMACTL_INSTALL_USE_LOCAL_IMAGES=<< parameters.use_local_kuma_images >>
     - run:
         name: Wait until Envoy listener gets configured
         command: make wait/example/minikube
@@ -486,9 +496,35 @@ workflows:
 #    - example_docker-compose:
 #        requires:
 #        - build
+
     - example_minikube:
+        name: minikube_v1_13_0
         requires:
         - images
+        # custom parameters
+        kubernetes_version: v1.13.0
+        use_local_kuma_images: "yes"
+    - example_minikube:
+        name: minikube_v1_14_0
+        requires:
+        - images
+        # custom parameters
+        kubernetes_version: v1.14.0
+        use_local_kuma_images: "yes"
+    - example_minikube:
+        name: minikube_v1_15_0
+        requires:
+        - images
+        # custom parameters
+        kubernetes_version: v1.15.0
+        use_local_kuma_images: "yes"
+    - example_minikube:
+        name: minikube_v1_16_0
+        requires:
+        - images
+        # custom parameters
+        kubernetes_version: v1.16.0
+        use_local_kuma_images: "yes"
 
   kuma-release:
     jobs:
@@ -511,12 +547,36 @@ workflows:
         requires:
         - api_check
         - check
-    - build:
+    - release:
         <<: *release_workflow_filters
         requires:
         - test
         - integration
-    - release:
+    - example_minikube:
         <<: *release_workflow_filters
+        name: minikube_v1_13_0
         requires:
-        - build
+        - release
+        # custom parameters
+        kubernetes_version: v1.13.0
+    - example_minikube:
+        <<: *release_workflow_filters
+        name: minikube_v1_14_0
+        requires:
+        - release
+        # custom parameters
+        kubernetes_version: v1.14.0
+    - example_minikube:
+        <<: *release_workflow_filters
+        name: minikube_v1_15_0
+        requires:
+        - release
+        # custom parameters
+        kubernetes_version: v1.15.0
+    - example_minikube:
+        <<: *release_workflow_filters
+        name: minikube_v1_16_0
+        requires:
+        - release
+        # custom parameters
+        kubernetes_version: v1.16.0
