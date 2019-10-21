@@ -10,12 +10,16 @@
 		generate protoc/pkg/config/app/kumactl/v1alpha1 generate/kumactl/install/control-plane \
 		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo \
+		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-tcp-echo \
+		docker/save docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-injector docker/save/kuma-tcp-echo \
+		docker/load docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-injector docker/load/kuma-tcp-echo \
 		build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector build/kuma-tcp-echo \
+		build/kuma-cp/linux-amd64 build/kuma-dp/linux-amd64 build/kumactl/linux-amd64 build/kuma-injector/linux-amd64 build/kuma-tcp-echo/linux-amd64 \
 		docs _docs_ docs/kumactl \
 		run/example/envoy config_dump/example/envoy \
 		run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
 		verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
-		build/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
+		build/example/minikube load/example/minikube deploy/example/minikube wait/example/minikube curl/example/minikube stats/example/minikube \
 		verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		print/kubebuilder/test_assets \
 		generate/test/cert/kuma-injector run/kuma-injector \
@@ -44,6 +48,7 @@ GO_TEST := go test $(LD_FLAGS)
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
+BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
 
 GO_TEST_OPTS ?=
 
@@ -439,20 +444,84 @@ config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 
 images: image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo ## Dev: Build all Docker images
 
-image/kuma-cp: ## Dev: Build `kuma-cp` Docker image
-	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f Dockerfile.kuma-cp .
+build/kuma-cp/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cp
 
-image/kuma-dp: ## Dev: Build `kuma-dp` Docker image
-	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f Dockerfile.kuma-dp .
+build/kuma-dp/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-dp
 
-image/kumactl: ## Dev: Build `kumactl` Docker image
-	docker build -t $(KUMACTL_DOCKER_IMAGE) -f Dockerfile.kumactl .
+build/kumactl/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/kumactl
 
-image/kuma-injector: ## Dev: Build `kuma-injector` Docker image
-	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f Dockerfile.kuma-injector .
+build/kuma-injector/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-injector
 
-image/kuma-tcp-echo: ## Dev: Build `kumactl` Docker image
-	docker build -t $(KUMA_TCP_ECHO_DOCKER_IMAGE) -f Dockerfile.kuma-tcp-echo .
+build/kuma-tcp-echo/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-tcp-echo
+
+docker/build: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-tcp-echo
+
+docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp
+	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
+
+docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp
+	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
+
+docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl
+	docker build -t $(KUMACTL_DOCKER_IMAGE) -f tools/ci/dockerfiles/Dockerfile.kumactl .
+
+docker/build/kuma-injector: build/artifacts-linux-amd64/kuma-injector/kuma-injector
+	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-injector .
+
+docker/build/kuma-tcp-echo: build/artifacts-linux-amd64/kuma-tcp-echo/kuma-tcp-echo
+	docker build -t $(KUMA_TCP_ECHO_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-tcp-echo .
+
+image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Build `kuma-cp` Docker image
+
+image/kuma-dp: build/kuma-dp/linux-amd64 docker/build/kuma-dp ## Dev: Build `kuma-dp` Docker image
+
+image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Build `kumactl` Docker image
+
+image/kuma-injector: build/kuma-injector/linux-amd64 docker/build/kuma-injector ## Dev: Build `kuma-injector` Docker image
+
+image/kuma-tcp-echo: build/kuma-tcp-echo/linux-amd64 docker/build/kuma-tcp-echo ## Dev: Build `kuma-tcp-echo` Docker image
+
+${BUILD_DOCKER_IMAGES_DIR}:
+	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
+
+docker/save: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-injector docker/save/kuma-tcp-echo
+
+docker/save/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}
+	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar $(KUMA_CP_DOCKER_IMAGE)
+
+docker/save/kuma-dp: ${BUILD_DOCKER_IMAGES_DIR}
+	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-dp.tar $(KUMA_DP_DOCKER_IMAGE)
+
+docker/save/kumactl: ${BUILD_DOCKER_IMAGES_DIR}
+	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar $(KUMACTL_DOCKER_IMAGE)
+
+docker/save/kuma-injector: ${BUILD_DOCKER_IMAGES_DIR}
+	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-injector.tar $(KUMA_INJECTOR_DOCKER_IMAGE)
+
+docker/save/kuma-tcp-echo: ${BUILD_DOCKER_IMAGES_DIR}
+	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-tcp-echo.tar $(KUMA_TCP_ECHO_DOCKER_IMAGE)
+
+docker/load: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-injector docker/load/kuma-tcp-echo
+
+docker/load/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
+	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
+
+docker/load/kuma-dp: ${BUILD_DOCKER_IMAGES_DIR}/kuma-dp.tar
+	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-dp.tar
+
+docker/load/kumactl: ${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar
+	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar
+
+docker/load/kuma-injector: ${BUILD_DOCKER_IMAGES_DIR}/kuma-injector.tar
+	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-injector.tar
+
+docker/load/kuma-tcp-echo: ${BUILD_DOCKER_IMAGES_DIR}/kuma-tcp-echo.tar
+	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-tcp-echo.tar
 
 image/kuma-cp/push: image/kuma-cp
 	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
@@ -520,10 +589,13 @@ verify/example/docker-compose/outbound:
 
 verify/example/docker-compose: verify/example/docker-compose/inbound verify/example/docker-compose/outbound ## Docker Compose: Verify Envoy stats (after sample requests)
 
-build/example/minikube: ## Minikube: build demo setup
+build/example/minikube: ## Minikube: build Docker images inside Minikube
 	eval $$(minikube docker-env) && $(MAKE) images
 
-deploy/example/minikube: image/kumactl ## Minikube: deploy demo setup
+load/example/minikube: ## Minikube: load Docker images into Minikube
+	eval $$(minikube docker-env) && $(MAKE) docker/load
+
+deploy/example/minikube: ## Minikube: deploy demo setup
 	docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME) | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
@@ -552,7 +624,7 @@ verify/example/minikube/outbound:
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
 
-kumactl/example/minikube: image/kumactl
+kumactl/example/minikube:
 	cat examples/minikube/kumactl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KUMACTL_DOCKER_IMAGE)
 
 generate/test/cert/kuma-injector:  ## Dev: Generate TLS cert for Kuma Injector (for use in development and unit tests)
