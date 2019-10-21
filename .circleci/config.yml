@@ -1,27 +1,49 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
 
+reusable:
+
+  constants:
+  - &go_version "1.12.9"
+
+  docker_images:
+  - &golang_image "golang:1.12.9"
+  - &circleci_golang_image "circleci/golang:1.12"
+
+  vm_images:
+  - &ubuntu_vm_image "ubuntu-1604:201903-01"
+
+  snippets:
+
+    # apparently, a job can run on a tag only if it has an explicit configuration for tag filters
+    release_workflow_filters: &release_workflow_filters
+      filters:
+        branches:
+          ignore: /.*/
+        tags:
+          only: /.*/
+
 executors:
   golang:
     docker:
-    - image: golang:1.12.9
+    - image: *golang_image
     environment:
-      GO_VERSION: 1.12.9
+      GO_VERSION: *go_version
       GO111MODULE: "on"
     working_directory: /go/src/github.com/Kong/kuma
 
   remote-docker:
     docker:
-    - image: circleci/golang:1.12
+    - image: *circleci_golang_image
     environment:
-      GO_VERSION: 1.12.9
+      GO_VERSION: *go_version
       GO111MODULE: "on"
 
   vm:
     resource_class: large
     machine:
-      image: ubuntu-1604:201903-01
+      image: *ubuntu_vm_image
     environment:
-      GO_VERSION: 1.12.9
+      GO_VERSION: *go_version
       GO111MODULE: "on"
 
   mac:
@@ -29,15 +51,15 @@ executors:
     macos:
       xcode: "9.0"
     environment:
-      GO_VERSION: 1.12.9
+      GO_VERSION: *go_version
       GO111MODULE: "on"
 
 jobs:
   dev_golang:
     docker:
-    - image: golang:1.12.9
+    - image: *golang_image
     environment:
-      GO_VERSION: 1.12.9
+      GO_VERSION: *go_version
       GO111MODULE: "on"
     steps:
     - checkout
@@ -59,7 +81,7 @@ jobs:
     docker:
     - image: ubuntu:16.04
     environment:
-      GO_VERSION: 1.12.9
+      GO_VERSION: *go_version
       GO111MODULE: "on"
       CLANG_FORMAT_PATH: clang-format-6.0
     steps:
@@ -423,14 +445,6 @@ jobs:
     - run:
         name: Push Docker
         command: ./tools/releases/docker.sh --push --version $CIRCLE_TAG
-
-# reusable YAML snippet
-release_workflow_filters: &release_workflow_filters
-  filters:
-    branches:
-      ignore: /.*/
-    tags:
-      only: /.*/
 
 #
 # Below, the tag filter needs to be in all jobs
