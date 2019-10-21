@@ -6,21 +6,20 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
-
 	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/xds"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 )
 
 type BootstrapGenerator interface {
-	Generate(ctx context.Context, request rest.BootstrapRequest) (proto.Message, error)
+	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error)
 }
 
 func NewDefaultBootstrapGenerator(
@@ -37,7 +36,7 @@ type bootstrapGenerator struct {
 	config     *bootstrap_config.BootstrapParamsConfig
 }
 
-func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.BootstrapRequest) (proto.Message, error) {
+func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
 	proxyId, err := xds.BuildProxyId(request.Mesh, request.Name)
 	if err != nil {
 		return nil, err
@@ -49,7 +48,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request rest.Bootstra
 	return b.GenerateFor(*proxyId, dataplane, request)
 }
 
-func (b *bootstrapGenerator) GenerateFor(proxyId xds.ProxyId, dataplane *mesh.DataplaneResource, request rest.BootstrapRequest) (proto.Message, error) {
+func (b *bootstrapGenerator) GenerateFor(proxyId xds.ProxyId, dataplane *mesh.DataplaneResource, request types.BootstrapRequest) (proto.Message, error) {
 	// if dataplane has no service - fill this with placeholder. Otherwise take the first service
 	service := dataplane.Spec.GetIdentifyingService()
 

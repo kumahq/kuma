@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/xds"
 	"github.com/Kong/kuma/pkg/tokens/builtin"
 	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
+	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
@@ -36,19 +36,6 @@ func SetupServer(rt core_runtime.Runtime) error {
 		return errors.Errorf("unknown environment type %s", env)
 	}
 	return nil
-}
-
-type DataplaneTokenRequest struct {
-	Name string `json:"name"`
-	Mesh string `json:"mesh"`
-}
-
-func (i DataplaneTokenRequest) ToProxyId() xds.ProxyId {
-	return xds.ProxyId{
-		Mesh:      i.Mesh,
-		Namespace: "default",
-		Name:      i.Name,
-	}
 }
 
 var log = core.Log.WithName("dataplane-token-server")
@@ -100,7 +87,7 @@ func (a *DataplaneTokenServer) handleIdentityRequest(resp http.ResponseWriter, r
 		resp.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	idReq := DataplaneTokenRequest{}
+	idReq := types.DataplaneTokenRequest{}
 	if err := json.Unmarshal(bytes, &idReq); err != nil {
 		log.Error(err, "Could not parse a request")
 		resp.WriteHeader(http.StatusBadRequest)

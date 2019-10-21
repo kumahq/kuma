@@ -36,6 +36,7 @@ gen_help kumactl config control-planes switch
 gen_help kumactl install
 gen_help kumactl install control-plane
 gen_help kumactl install database-schema
+gen_help kumactl generate dp-token
 gen_help kumactl get
 gen_help kumactl get meshes
 gen_help kumactl get dataplanes

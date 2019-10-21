@@ -11,7 +11,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/bootstrap/rest"
+	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
 )
 
 var log = core.Log.WithName("bootstrap-server")
@@ -63,7 +63,7 @@ func (b *BootstrapServer) handleBootstrapRequest(resp http.ResponseWriter, req *
 		resp.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	reqParams := rest.BootstrapRequest{}
+	reqParams := types.BootstrapRequest{}
 	if err := json.Unmarshal(bytes, &reqParams); err != nil {
 		log.Error(err, "Could not parse a request")
 		resp.WriteHeader(http.StatusBadRequest)
