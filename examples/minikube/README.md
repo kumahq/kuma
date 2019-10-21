@@ -58,6 +58,30 @@ where
 * `envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}` is a number of `inbound` requests
 * `envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}` is a number of `outbound` requests
 
+### Enable mTLS
+
+```bash
+make apply/example/minikube/mtls -C ../..
+```
+
+### Wait until Envoy is configured for mTLS
+
+```bash
+make wait/example/minikube/mtls -C ../..
+```
+
+### Make test requests via Envoy with mTLS
+
+```bash
+make curl/example/minikube -C ../..
+```
+
+### Verify Envoy mTLS stats
+
+```bash
+make verify/example/minikube/mtls -C ../..
+```
+
 ### Verify kumactl workflow
 
 ```bash

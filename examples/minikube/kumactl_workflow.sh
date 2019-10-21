@@ -48,7 +48,7 @@ function workflow() {
     run kumactl inspect dataplanes -oyaml
     run kumactl inspect dataplanes -ojson
 
-    run test $(run kumactl inspect dataplanes | tail +4 | grep -v '<<<<<' | grep -v -e '^$' | wc -l) -eq 2
+    run test $(run kumactl inspect dataplanes | tail +4 | grep -v '<<<<<' | grep -v -e '^$' | wc -l) -eq 3
 }
 
 # Killing the kubectl port-forward at the end of the script -- regardless of exit status

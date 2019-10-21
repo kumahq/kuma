@@ -420,6 +420,18 @@ jobs:
         name: Verify Envoy stats
         command: make verify/example/minikube
     - run:
+        name: Enable mTLS
+        command: make apply/example/minikube/mtls
+    - run:
+        name: Wait until Envoy is configured for mTLS
+        command: make wait/example/minikube/mtls
+    - run:
+        name: Make test requests via Envoy with mTLS
+        command: make curl/example/minikube
+    - run:
+        name: Verify Envoy mTLS stats
+        command: make verify/example/minikube/mtls
+    - run:
         name: Verify kumactl workflow
         command: make kumactl/example/minikube
 
