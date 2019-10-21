@@ -49,17 +49,7 @@ redis-master-6d4cf995c5-nsghm   1/1     Running   0          13m
 
 In the following steps, we will be using the pod name of the `kuma-demo-app-*************` pod. Please replace any `${KUMA_DEMO_APP_POD_NAME}` variables with your pod name.
 
-4. Deploy the logstash service.
-
-```
-$ kubectl apply -f kuma-demo-log.yaml
-namespace/logging created
-service/logstash created
-configmap/logstash-config created
-deployment.apps/logstash created
-```
-
-5. Port-forward the sample application to access the front-end UI at http://localhost:8080
+4. Port-forward the sample application to access the front-end UI at http://localhost:8080
 
 <pre><code>$ kubectl port-forward <b>${KUMA_DEMO_APP_POD_NAME}</b> -n kuma-demo 8080 3001
 Forwarding from 127.0.0.1:8080 -> 8080
@@ -73,7 +63,7 @@ Now you can access the marketplace application through your web browser at http:
 The items on the front page are pulled from the Elasticsearch service. While the reviews for each item sit within the Redis service. You    can query for individual items and look at their reviews. 
 
 
-6. Download the latest version of Kuma
+5. Download the latest version of Kuma
 
 ```
 $ wget https://kong.bintray.com/kuma/kuma-0.2.2-darwin-amd64.tar.gz
@@ -94,7 +84,7 @@ kuma-0.2.2-darwin-amd64.tar.g 100%[=============================================
 2019-10-13 05:54:08 (2.09 MB/s) - ‘kuma-0.2.2-darwin-amd64.tar.gz’ saved [42892462/42892462]
 ```
 
-7. Unbundle the files to get the following components:
+6. Unbundle the files to get the following components:
 
 ```
 $ tar xvzf kuma-0.2.2-darwin-amd64.tar.gz
@@ -111,14 +101,14 @@ x ./README
 x ./LICENSE
 ```
 
-8. Go into the ./bin directory where the kuma components will be:
+7. Go into the ./bin directory where the kuma components will be:
 
 ```
 $ cd bin && ls
 envoy   kuma-cp   kuma-dp   kuma-tcp-echo kumactl
 ```
 
-7. Install the control plane using `kumactl`
+8. Install the control plane using `kumactl`
 
 ```
 $ ./kumactl install control-plane | kubectl apply -f -
@@ -157,7 +147,7 @@ kuma-injector-9c96cddc8-745r7         1/1     Running   0          70s
 
 In the following steps, we will be using the pod name of the `kuma-control-plane-*************` pod. Please replace any `${KUMA_CP_POD_NAME}` with your pod name.
 
-8. Delete the existing kuma-demo pods so they restart:
+9. Delete the existing kuma-demo pods so they restart:
 
 ```
 $ kubectl delete pods --all -n kuma-demo
@@ -214,7 +204,7 @@ default   redis-master-6d4cf995c5-jxjjm   app=redis pod-template-hash=6d4cf995c5
 default   kuma-demo-app-8fc49ddbf-k5z5q   app=kuma-demo-api pod-template-hash=8fc49ddbf service=kuma-demo-api.kuma-demo.svc:3001                    Online   9m8s                 9m7s               3               0
 ```
 
-13. You can also use `kumactl` to look at the mesh. As shown below, our default mesh does not have mTLS enabled.
+14. You can also use `kumactl` to look at the mesh. As shown below, our default mesh does not have mTLS enabled.
 
 ```
 $ ./kumactl get meshes
@@ -222,7 +212,7 @@ NAME      mTLS   DP ACCESS LOGS
 default   off    off
 ```
 
-14.  Let's enable mTLS.
+15.  Let's enable mTLS.
 
 ```
 $ cat <<EOF | kubectl apply -f - 
@@ -247,7 +237,7 @@ NAME      mTLS   DP ACCESS LOGS
 default   on     off
 ```
 
-15.  Now let's enable traffic-permission for all services so our application will work like it use to:
+16.  Now let's enable traffic-permission for all services so our application will work like it use to:
 
 ```
 $ cat <<EOF | kubectl apply -f - 
@@ -277,7 +267,17 @@ default   everything
 
 Now that we have traffic permission that allows any source to talk to any destination, our application should work like it use to. 
 
-16. Let's add logging for traffic between all services and send them to logstash: 
+17. Deploy the logstash service.
+
+```
+$ kubectl apply -f kuma-demo-log.yaml
+namespace/logging created
+service/logstash created
+configmap/logstash-config created
+deployment.apps/logstash created
+```
+
+18. Let's add logging for traffic between all services and send them to logstash: 
 ```
 $ cat <<EOF | kubectl apply -f - 
 apiVersion: kuma.io/v1alpha1
@@ -325,7 +325,7 @@ EOF
 ```
 Logs will be sent to https://kumademo.loggly.com/
 
-17. Now let's take down our Redis service because someone is spamming fake reviews. We can easily accomplish that by changing our traffic-permissions:
+19. Now let's take down our Redis service because someone is spamming fake reviews. We can easily accomplish that by changing our traffic-permissions:
 ```
 $ cat <<EOF | kubectl apply -f - 
 apiVersion: kuma.io/v1alpha1
@@ -347,7 +347,7 @@ EOF
 
 This traffic-permission will only allow traffic from the kuma-demo-api service to the Elasticsearch service. Now try to access the reviews on each item. They will not load because of the traffic-permissions you described in the the policy above.
 
-18. If we wanted to enable the Redis service again in the future, just change the traffic-permission back like this:
+20. If we wanted to enable the Redis service again in the future, just change the traffic-permission back like this:
 ```
 $ cat <<EOF | kubectl apply -f - 
 apiVersion: kuma.io/v1alpha1
