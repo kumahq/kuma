@@ -130,14 +130,19 @@ jobs:
     - checkout
     - restore_cache:
         keys:
-        - go.mod/{{ checksum "go.sum" }}
+        # prefer the exact match
+        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        # otherwise, fallback to the most recently generated cache on that branch
+        - go.mod-{{ .Branch }}-
+        # otherwise, fallback to the most recently generated cache on any branch
+        - go.mod-
     - run:
         name: "Download Go modules"
         command: |
           go mod download
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
-        key: go.mod/{{ checksum "go.sum" }}
+        key: go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
         paths:
           - "/go/pkg/mod"
     - run:
@@ -177,14 +182,19 @@ jobs:
     - checkout
     - restore_cache:
         keys:
-        - api/go.mod/{{ checksum "api/go.sum" }}
+        # prefer the exact match
+        - api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
+        # otherwise, fallback to the most recently generated cache on that branch
+        - api-go.mod-{{ .Branch }}-
+        # otherwise, fallback to the most recently generated cache on any branch
+        - api-go.mod-
     - run:
         name: "Download Go modules"
         command: |
           cd api && go mod download
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
-        key: api/go.mod/{{ checksum "api/go.sum" }}
+        key: api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
         paths:
           - "/go/pkg/mod"
     - run:
@@ -205,7 +215,12 @@ jobs:
     - checkout
     - restore_cache:
         keys:
-        - go.mod/{{ checksum "go.sum" }}
+        # prefer the exact match
+        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        # otherwise, fallback to the most recently generated cache on that branch
+        - go.mod-{{ .Branch }}-
+        # otherwise, fallback to the most recently generated cache on any branch
+        - go.mod-
     - run:
         name: "Install pre-requirements"
         # `unzip` is necessary to install `protoc`
@@ -236,7 +251,12 @@ jobs:
           curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - restore_cache:
         keys:
-        - vm-executor/go.mod/{{ checksum "go.sum" }}
+        # prefer the exact match
+        - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        # otherwise, fallback to the most recently generated cache on that branch
+        - vm-executor-go.mod-{{ .Branch }}-
+        # otherwise, fallback to the most recently generated cache on any branch
+        - vm-executor-go.mod-
     - run:
         name: "Download Go modules"
         command: |
@@ -244,7 +264,7 @@ jobs:
           go mod download
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
-        key: vm-executor/go.mod/{{ checksum "go.sum" }}
+        key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
         paths:
           - "/home/circleci/.go"
     - run:
@@ -267,7 +287,12 @@ jobs:
     - checkout
     - restore_cache:
         keys:
-        - go.mod/{{ checksum "go.sum" }}
+        # prefer the exact match
+        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        # otherwise, fallback to the most recently generated cache on that branch
+        - go.mod-{{ .Branch }}-
+        # otherwise, fallback to the most recently generated cache on any branch
+        - go.mod-
     - run: make build
 
   images:
@@ -332,7 +357,12 @@ jobs:
     - setup_remote_docker
     - restore_cache:
         keys:
-        - go.mod/{{ checksum "go.sum" }}
+        # prefer the exact match
+        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        # otherwise, fallback to the most recently generated cache on that branch
+        - go.mod-{{ .Branch }}-
+        # otherwise, fallback to the most recently generated cache on any branch
+        - go.mod-
     - run:
         name: "Install Docker client"
         command: |
