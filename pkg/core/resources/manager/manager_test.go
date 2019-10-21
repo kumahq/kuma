@@ -5,6 +5,7 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
@@ -74,6 +75,14 @@ var _ = Describe("Resource Manager", func() {
 			_, err = createSampleResource("mesh-2")
 			Expect(err).ToNot(HaveOccurred())
 
+			tlKey := model.ResourceKey{
+				Mesh:      "mesh-1",
+				Namespace: "default",
+				Name:      "tl-1",
+			}
+			err = resManager.Create(context.Background(), &mesh.TrafficLogResource{}, store.CreateBy(tlKey))
+			Expect(err).ToNot(HaveOccurred())
+
 			// when
 			err = resManager.DeleteAll(context.Background(), &sample.TrafficRouteResourceList{}, store.DeleteAllByMesh("mesh-1"))
 
@@ -85,10 +94,14 @@ var _ = Describe("Resource Manager", func() {
 			err = resManager.Get(context.Background(), &res1, store.GetByKey("default", "tr-1", "mesh-1"))
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
+			// and only TrafficRoutes are deleted
+			Expect(resManager.Get(context.Background(), &mesh.TrafficLogResource{}, store.GetBy(tlKey))).To(Succeed())
+
 			// and resource from mesh-2 is retained
 			res2 := sample.TrafficRouteResource{}
 			err = resManager.Get(context.Background(), &res2, store.GetByKey("default", "tr-1", "mesh-2"))
 			Expect(err).ToNot(HaveOccurred())
+
 		})
 	})
 })

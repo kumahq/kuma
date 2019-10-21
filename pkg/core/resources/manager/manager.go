@@ -70,7 +70,7 @@ func (r *resourcesManager) DeleteAll(ctx context.Context, list model.ResourceLis
 		return err
 	}
 	for _, obj := range list.GetItems() {
-		if err := r.Delete(ctx, obj, store.DeleteBy(model.MetaToResourceKey(obj.GetMeta()))); err != nil {
+		if err := r.Delete(ctx, obj, store.DeleteBy(model.MetaToResourceKey(obj.GetMeta()))); err != nil && !store.IsResourceNotFound(err) {
 			return err
 		}
 	}

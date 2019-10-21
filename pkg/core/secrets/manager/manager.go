@@ -77,7 +77,7 @@ func (s *secretManager) DeleteAll(ctx context.Context, fs ...core_store.DeleteAl
 		return err
 	}
 	for _, item := range list.Items {
-		if err := s.Delete(ctx, item, core_store.DeleteBy(model.MetaToResourceKey(item.Meta))); err != nil {
+		if err := s.Delete(ctx, item, core_store.DeleteBy(model.MetaToResourceKey(item.Meta))); err != nil && !core_store.IsResourceNotFound(err) {
 			return err
 		}
 	}

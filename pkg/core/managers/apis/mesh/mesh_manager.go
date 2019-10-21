@@ -95,15 +95,18 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	}
 	// delete Mesh first to avoid a state where a Mesh could exist without a Built-in CA.
 	// even if removal of Built-in CA fails later on, delete opration can be safely tried again.
+	var notFoundErr error
 	if err := m.store.Delete(ctx, mesh, fs...); err != nil {
-		if !core_store.IsResourceNotFound(err) { // ignore other errors so we can retry removing other resources
+		if core_store.IsResourceNotFound(err) {
+			notFoundErr = err
+		} else { // ignore other errors so we can retry removing other resources
 			return err
 		}
 	}
 	opts := core_store.NewDeleteOptions(fs...)
 	// delete CA
 	name := core_store.NewDeleteOptions(fs...).Mesh
-	if err := m.builtinCaManager.Delete(ctx, name); err != nil {
+	if err := m.builtinCaManager.Delete(ctx, name); err != nil && !core_store.IsResourceNotFound(err) {
 		return errors.Wrapf(err, "failed to delete Builtin CA for a given mesh")
 	}
 	// delete all other secrets
@@ -120,7 +123,7 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 			return errors.Wrap(err, "could not delete associated resources")
 		}
 	}
-	return nil
+	return notFoundErr
 }
 
 func (m *meshManager) DeleteAll(ctx context.Context, list core_model.ResourceList, fs ...core_store.DeleteAllOptionsFunc) error {
@@ -133,7 +136,7 @@ func (m *meshManager) DeleteAll(ctx context.Context, list core_model.ResourceLis
 		return err
 	}
 	for _, item := range meshes.Items {
-		if err := m.Delete(ctx, item, core_store.DeleteBy(core_model.MetaToResourceKey(item.Meta))); err != nil {
+		if err := m.Delete(ctx, item, core_store.DeleteBy(core_model.MetaToResourceKey(item.Meta))); err != nil && !core_store.IsResourceNotFound(err) {
 			return err
 		}
 	}
