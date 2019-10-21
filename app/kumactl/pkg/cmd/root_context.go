@@ -122,6 +122,9 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 		return nil, err
 	}
 	host, _, err := net.SplitHostPort(apiServerUrl.Host)
+	if err != nil {
+		return nil, err
+	}
 	const defaultDpTokenPort = 5679
 	return rc.Runtime.NewDataplaneTokenClient(fmt.Sprintf("http://%s:%d", host, defaultDpTokenPort))
 }

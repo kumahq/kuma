@@ -10,8 +10,8 @@ type generateDataplaneTokenContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
-		name string
-		mesh string
+		dataplane string
+		mesh      string
 	}
 }
 
@@ -27,7 +27,7 @@ func NewGenerateDataplaneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 				return errors.Wrap(err, "failed to create dataplane token client")
 			}
 
-			token, err := client.Generate(ctx.args.name, pctx.Args.Mesh)
+			token, err := client.Generate(ctx.args.dataplane, pctx.Args.Mesh)
 			if err != nil {
 				return errors.Wrap(err, "failed to generate a dataplane token")
 			}
@@ -35,7 +35,7 @@ func NewGenerateDataplaneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			return err
 		},
 	}
-	cmd.Flags().StringVar(&ctx.args.name, "name", "", "name of the Dataplane")
-	_ = cmd.MarkFlagRequired("name")
+	cmd.Flags().StringVar(&ctx.args.dataplane, "dataplane", "", "name of the Dataplane")
+	_ = cmd.MarkFlagRequired("dataplane")
 	return cmd
 }
