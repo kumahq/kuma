@@ -509,23 +509,20 @@ workflows:
 #        requires:
 #        - build
 
-    # TODO(yskopets): Bring back tests for versions of Kubernetes prior to v1.15.0
-    # once issue with mTLS is fixed (ServiceAccount token is not injected into Kuma sidecar container)
-    #
-    # - example_minikube:
-    #     name: minikube_v1_13_0
-    #     requires:
-    #     - images
-    #     # custom parameters
-    #     kubernetes_version: v1.13.0
-    #     use_local_kuma_images: "yes"
-    # - example_minikube:
-    #     name: minikube_v1_14_0
-    #     requires:
-    #     - images
-    #     # custom parameters
-    #     kubernetes_version: v1.14.0
-    #     use_local_kuma_images: "yes"
+    - example_minikube:
+        name: minikube_v1_13_0
+        requires:
+        - images
+        # custom parameters
+        kubernetes_version: v1.13.0
+        use_local_kuma_images: "yes"
+    - example_minikube:
+        name: minikube_v1_14_0
+        requires:
+        - images
+        # custom parameters
+        kubernetes_version: v1.14.0
+        use_local_kuma_images: "yes"
     - example_minikube:
         name: minikube_v1_15_0
         requires:
@@ -567,23 +564,20 @@ workflows:
         requires:
         - test
         - integration
-    # TODO(yskopets): Bring back tests for versions of Kubernetes prior to v1.15.0
-    # once issue with mTLS is fixed (ServiceAccount token is not injected into Kuma sidecar container)
-    #
-    # - example_minikube:
-    #     <<: *release_workflow_filters
-    #     name: minikube_v1_13_0
-    #     requires:
-    #     - release
-    #     # custom parameters
-    #     kubernetes_version: v1.13.0
-    # - example_minikube:
-    #     <<: *release_workflow_filters
-    #     name: minikube_v1_14_0
-    #     requires:
-    #     - release
-    #     # custom parameters
-    #     kubernetes_version: v1.14.0
+    - example_minikube:
+        <<: *release_workflow_filters
+        name: minikube_v1_13_0
+        requires:
+        - release
+        # custom parameters
+        kubernetes_version: v1.13.0
+    - example_minikube:
+        <<: *release_workflow_filters
+        name: minikube_v1_14_0
+        requires:
+        - release
+        # custom parameters
+        kubernetes_version: v1.14.0
     - example_minikube:
         <<: *release_workflow_filters
         name: minikube_v1_15_0
