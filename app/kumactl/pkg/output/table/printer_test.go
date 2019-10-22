@@ -2,15 +2,17 @@ package table_test
 
 import (
 	"bytes"
-	"strings"
+	"io/ioutil"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 )
 
-var _ = Describe("Printer", func() {
+var _ = Describe("printer", func() {
 
 	var printer table.Printer
 	var buf *bytes.Buffer
@@ -20,96 +22,73 @@ var _ = Describe("Printer", func() {
 		buf = &bytes.Buffer{}
 	})
 
-	It("should not fail on empty Table object", func() {
-		// given
-		data := table.Table{}
+	type testCase struct {
+		data       table.Table
+		goldenFile string
+	}
 
-		// when
-		err := printer.Print(data, buf)
+	DescribeTable("should produce formatted output",
+		func(given testCase) {
+			// when
+			err := printer.Print(given.data, buf)
+			// then
+			Expect(err).ToNot(HaveOccurred())
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(buf.String()).To(Equal(``))
-	})
+			// when
+			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+			// then
+			Expect(err).ToNot(HaveOccurred())
 
-	It("should support Table with no rows", func() {
-		// given
-		data := table.Table{
-			Headers: []string{"NAMESPACE", "NAME"},
-		}
-
-		// when
-		err := printer.Print(data, buf)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(`
-NAMESPACE   NAME
-`)))
-	})
-
-	It("should support Table with 1 row", func() {
-		// given
-		data := table.Table{
-			Headers: []string{"NAMESPACE", "NAME"},
-			NextRow: func() func() []string {
-				i := 0
-				return func() []string {
-					defer func() { i++ }()
-					switch i {
-					case 0:
-						return []string{"default", "example"}
-					default:
-						return nil
+			// and
+			Expect(buf.String()).To(Equal(string(expected)))
+		},
+		Entry("empty Table", testCase{
+			data:       table.Table{},
+			goldenFile: "empty.golden.txt",
+		}),
+		Entry("Table with a header but no rows", testCase{
+			data: table.Table{
+				Headers: []string{"MESH", "NAME"},
+			},
+			goldenFile: "header.golden.txt",
+		}),
+		Entry("Table with a header and 1 row", testCase{
+			data: table.Table{
+				Headers: []string{"MESH", "NAME"},
+				NextRow: func() func() []string {
+					i := 0
+					return func() []string {
+						defer func() { i++ }()
+						switch i {
+						case 0:
+							return []string{"default", "example"}
+						default:
+							return nil
+						}
 					}
-				}
-			}(),
-		}
-
-		// when
-		err := printer.Print(data, buf)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(`
-NAMESPACE   NAME
-default     example
-`)))
-	})
-
-	It("should support Table with 2 rows", func() {
-		// given
-		data := table.Table{
-			Headers: []string{"NAMESPACE", "NAME"},
-			NextRow: func() func() []string {
-				i := 0
-				return func() []string {
-					defer func() { i++ }()
-					switch i {
-					case 0:
-						return []string{"default", "example"}
-					case 1:
-						return []string{"playground", "demo"}
-					default:
-						return nil
+				}(),
+			},
+			goldenFile: "header-and-1-row.golden.txt",
+		}),
+		Entry("Table with a header and 2 rows", testCase{
+			data: table.Table{
+				Headers: []string{"MESH", "NAME"},
+				NextRow: func() func() []string {
+					i := 0
+					return func() []string {
+						defer func() { i++ }()
+						switch i {
+						case 0:
+							return []string{"default", "example"}
+						case 1:
+							return []string{"playground", "demo"}
+						default:
+							return nil
+						}
 					}
-				}
-			}(),
-		}
-
-		// when
-		err := printer.Print(data, buf)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(`
-NAMESPACE    NAME
-default      example
-playground   demo
-`)))
-	})
+				}(),
+			},
+			goldenFile: "header-and-2-rows.golden.txt",
+		}),
+	)
 })
