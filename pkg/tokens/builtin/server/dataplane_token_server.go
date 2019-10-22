@@ -87,7 +87,7 @@ func (a *DataplaneTokenServer) startHttpServer() (*http.Server, chan error) {
 	mux.HandleFunc("/tokens", a.handleIdentityRequest)
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", a.Config.Port),
+		Addr:    fmt.Sprintf("127.0.0.1:%d", a.Config.Local.Port),
 		Handler: mux,
 	}
 
@@ -104,7 +104,7 @@ func (a *DataplaneTokenServer) startHttpServer() (*http.Server, chan error) {
 		}
 		log.Info("http server terminated normally")
 	}()
-	log.Info("starting server", "port", a.Config.Port)
+	log.Info("starting server", "port", a.Config.Local.Port)
 	return server, errChan
 }
 
@@ -114,24 +114,24 @@ func (a *DataplaneTokenServer) startHttpsServer() (*http.Server, chan error) {
 
 	errChan := make(chan error)
 
-	tlsConfig, err := requireClientCerts(a.Config.ClientCertFiles)
+	tlsConfig, err := requireClientCerts(a.Config.Public.ClientCertFiles)
 	if err != nil {
 		errChan <- err
 	}
 
-	port := a.Config.PublicPort
+	port := a.Config.Public.Port
 	if port == 0 {
-		port = a.Config.Port
+		port = a.Config.Local.Port
 	}
 	server := &http.Server{
-		Addr:      fmt.Sprintf("%s:%d", a.Config.PublicInterface, port),
+		Addr:      fmt.Sprintf("%s:%d", a.Config.Public.Interface, port),
 		Handler:   mux,
 		TLSConfig: tlsConfig,
 	}
 
 	go func() {
 		defer close(errChan)
-		if err := server.ListenAndServeTLS(a.Config.TlsCertFile, a.Config.TlsKeyFile); err != nil {
+		if err := server.ListenAndServeTLS(a.Config.Public.TlsCertFile, a.Config.Public.TlsKeyFile); err != nil {
 			if err != http.ErrServerClosed {
 				log.Error(err, "https server terminated with an error")
 				errChan <- err
@@ -140,7 +140,7 @@ func (a *DataplaneTokenServer) startHttpsServer() (*http.Server, chan error) {
 		}
 		log.Info("https server terminated normally")
 	}()
-	log.Info("starting server", "interface", a.Config.PublicInterface, "port", port, "tls", true)
+	log.Info("starting server", "interface", a.Config.Public.Interface, "port", port, "tls", true)
 	return server, errChan
 }
 

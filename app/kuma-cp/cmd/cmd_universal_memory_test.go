@@ -16,7 +16,8 @@ apiServer:
 sdsServer:
   grpcPort: 0
 dataplaneTokenServer:
-  port: 0
+  local:
+    port: 0
 environment: universal
 store:
   type: memory

@@ -81,12 +81,12 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Port).To(Equal(9090))
 			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 
-			Expect(cfg.DataplaneTokenServer.Port).To(Equal(uint32(1111)))
-			Expect(cfg.DataplaneTokenServer.PublicInterface).To(Equal("192.168.0.1"))
-			Expect(cfg.DataplaneTokenServer.PublicPort).To(Equal(uint32(2222)))
-			Expect(cfg.DataplaneTokenServer.TlsKeyFile).To(Equal("/tmp/key"))
-			Expect(cfg.DataplaneTokenServer.TlsCertFile).To(Equal("/tmp/cert"))
-			Expect(cfg.DataplaneTokenServer.ClientCertFiles).To(Equal([]string{"/tmp/cert1", "/tmp/cert2"}))
+			Expect(cfg.DataplaneTokenServer.Local.Port).To(Equal(uint32(1111)))
+			Expect(cfg.DataplaneTokenServer.Public.Port).To(Equal(uint32(2222)))
+			Expect(cfg.DataplaneTokenServer.Public.Interface).To(Equal("192.168.0.1"))
+			Expect(cfg.DataplaneTokenServer.Public.TlsKeyFile).To(Equal("/tmp/key"))
+			Expect(cfg.DataplaneTokenServer.Public.TlsCertFile).To(Equal("/tmp/cert"))
+			Expect(cfg.DataplaneTokenServer.Public.ClientCertFiles).To(Equal([]string{"/tmp/cert1", "/tmp/cert2"}))
 
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -120,14 +120,16 @@ apiServer:
   port: 9090
   readOnly: true
 dataplaneTokenServer:
-  port: 1111
-  publicInterface: 192.168.0.1
-  publicPort: 2222
-  tlsCertFile: /tmp/cert
-  tlsKeyFile: /tmp/key
-  clientCertFiles:
-  - /tmp/cert1
-  - /tmp/cert2
+  local:
+    port: 1111
+  public:
+    interface: 192.168.0.1
+    port: 2222
+    tlsCertFile: /tmp/cert
+    tlsKeyFile: /tmp/key
+    clientCertFiles:
+    - /tmp/cert1
+    - /tmp/cert2
 runtime:
   kubernetes:
     admissionServer:
@@ -140,32 +142,32 @@ reports:
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
-				"KUMA_XDS_SERVER_GRPC_PORT":                     "5000",
-				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":              "5003",
-				"KUMA_BOOTSTRAP_SERVER_PORT":                    "5004",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":       "1234",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":         "kuma-control-plane",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":         "4321",
-				"KUMA_ENVIRONMENT":                              "kubernetes",
-				"KUMA_STORE_TYPE":                               "postgres",
-				"KUMA_STORE_POSTGRES_HOST":                      "postgres.host",
-				"KUMA_STORE_POSTGRES_PORT":                      "5432",
-				"KUMA_STORE_POSTGRES_USER":                      "kuma",
-				"KUMA_STORE_POSTGRES_PASSWORD":                  "kuma",
-				"KUMA_STORE_POSTGRES_DB_NAME":                   "kuma",
-				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":        "10",
-				"KUMA_API_SERVER_READ_ONLY":                     "true",
-				"KUMA_API_SERVER_PORT":                          "9090",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PORT":              "1111",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE":  "192.168.0.1",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT":       "2222",
-				"KUMA_DATAPLANE_TOKEN_SERVER_TLS_KEY_FILE":      "/tmp/key",
-				"KUMA_DATAPLANE_TOKEN_SERVER_TLS_CERT_FILE":     "/tmp/cert",
-				"KUMA_DATAPLANE_TOKEN_SERVER_CLIENT_CERT_FILES": "/tmp/cert1,/tmp/cert2",
-				"KUMA_REPORTS_ENABLED":                          "false",
-				"KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS":      "127.0.0.2",
-				"KUMA_KUBERNETES_ADMISSION_SERVER_PORT":         "9443",
-				"KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR":     "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
+				"KUMA_XDS_SERVER_GRPC_PORT":                            "5000",
+				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                     "5003",
+				"KUMA_BOOTSTRAP_SERVER_PORT":                           "5004",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":              "1234",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                "kuma-control-plane",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                "4321",
+				"KUMA_ENVIRONMENT":                                     "kubernetes",
+				"KUMA_STORE_TYPE":                                      "postgres",
+				"KUMA_STORE_POSTGRES_HOST":                             "postgres.host",
+				"KUMA_STORE_POSTGRES_PORT":                             "5432",
+				"KUMA_STORE_POSTGRES_USER":                             "kuma",
+				"KUMA_STORE_POSTGRES_PASSWORD":                         "kuma",
+				"KUMA_STORE_POSTGRES_DB_NAME":                          "kuma",
+				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":               "10",
+				"KUMA_API_SERVER_READ_ONLY":                            "true",
+				"KUMA_API_SERVER_PORT":                                 "9090",
+				"KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT":               "1111",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE":         "192.168.0.1",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT":              "2222",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE":      "/tmp/key",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE":     "/tmp/cert",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERT_FILES": "/tmp/cert1,/tmp/cert2",
+				"KUMA_REPORTS_ENABLED":                                 "false",
+				"KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS":             "127.0.0.2",
+				"KUMA_KUBERNETES_ADMISSION_SERVER_PORT":                "9443",
+				"KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR":            "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
 			},
 			yamlFileConfig: "",
 		}),

@@ -76,12 +76,16 @@ var _ = Describe("Dataplane Token Server", func() {
 		srv := server.DataplaneTokenServer{
 			Issuer: &staticTokenIssuer{credentials},
 			Config: &token_server.DataplaneTokenServerConfig{
-				Port:            uint32(port),
-				PublicPort:      uint32(publicPort),
-				PublicInterface: "localhost",
-				TlsCertFile:     filepath.Join("testdata", "server-cert.pem"),
-				TlsKeyFile:      filepath.Join("testdata", "server-key.pem"),
-				ClientCertFiles: []string{filepath.Join("testdata", "authorized-client-cert.pem")},
+				Local: &token_server.LocalDataplaneTokenServerConfig{
+					Port: uint32(port),
+				},
+				Public: &token_server.PublicDataplaneTokenServerConfig{
+					Port:            uint32(publicPort),
+					Interface:       "localhost",
+					TlsCertFile:     filepath.Join("testdata", "server-cert.pem"),
+					TlsKeyFile:      filepath.Join("testdata", "server-key.pem"),
+					ClientCertFiles: []string{filepath.Join("testdata", "authorized-client-cert.pem")},
+				},
 			},
 		}
 
@@ -94,7 +98,7 @@ var _ = Describe("Dataplane Token Server", func() {
 
 		// wait for the http server to be started
 		Eventually(func() error {
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/tokens", port), nil)
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/tokens", port), nil)
 			Expect(err).ToNot(HaveOccurred())
 			_, err = http.DefaultClient.Do(req)
 			return err
@@ -102,7 +106,7 @@ var _ = Describe("Dataplane Token Server", func() {
 
 		// wait for the https server to be started
 		Eventually(func() error {
-			req, err := http.NewRequest("GET", fmt.Sprintf("https://localhost:%d/tokens", publicPort), nil)
+			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%d/tokens", publicPort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			_, err = httpsClient("authorized-client").Do(req)
 			return err
