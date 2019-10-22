@@ -123,7 +123,7 @@ CI_KIND_VERSION ?= v0.5.1
 CI_MINIKUBE_VERSION ?= v1.4.0
 CI_KUBERNETES_VERSION ?= v1.15.3
 CI_KUBECTL_VERSION ?= v1.14.0
-CI_TOOLS_IMAGE ?= circleci/golang:1.12.9
+CI_TOOLS_IMAGE ?= circleci/golang:1.12.12
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
