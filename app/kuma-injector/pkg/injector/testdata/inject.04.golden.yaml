@@ -83,6 +83,10 @@ spec:
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678
+    volumeMounts:
+    - name: default-token-w7dxf
+      readOnly: true
+      mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
   initContainers:
   - args:
     - -p

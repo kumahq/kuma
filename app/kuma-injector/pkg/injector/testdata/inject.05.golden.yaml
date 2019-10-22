@@ -11,14 +11,11 @@ metadata:
     run: busybox
   name: busybox
 spec:
+  automountServiceAccountToken: false
   containers:
   - image: busybox
     name: busybox
     resources: {}
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   - args:
     - run
     - --log-level=info
@@ -83,10 +80,6 @@ spec:
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   initContainers:
   - args:
     - -p
@@ -115,8 +108,4 @@ spec:
       capabilities:
         add:
         - NET_ADMIN
-  volumes:
-  - name: default-token-w7dxf
-    secret:
-      secretName: default-token-w7dxf
 status: {}

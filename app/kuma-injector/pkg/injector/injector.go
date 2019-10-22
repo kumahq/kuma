@@ -15,6 +15,11 @@ const (
 	KumaInitContainerName    = "kuma-init"
 )
 
+const (
+	// serviceAccountTokenMountPath is a well-known location where Kubernetes mounts a ServiceAccount token.
+	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
+)
+
 func New(cfg config.Injector) *KumaInjector {
 	return &KumaInjector{
 		cfg: cfg,
@@ -155,7 +160,34 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 				kube_core.ResourceMemory: kube_api.MustParse(i.cfg.SidecarContainer.Resources.Limits.Memory),
 			},
 		},
+		// On versions of Kubernetes prior to v1.15.0
+		// ServiceAccount admission plugin is called only once, prior to any mutating web hook.
+		// That's why it is a responsibility of every mutating web hook to copy
+		// ServiceAccount volume mount into containers it creates.
+		VolumeMounts: i.NewVolumeMounts(pod),
 	}
+}
+
+func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) []kube_core.VolumeMount {
+	if tokenVolumeMount := i.FindServiceAccountToken(pod); tokenVolumeMount != nil {
+		return []kube_core.VolumeMount{*tokenVolumeMount}
+	}
+	return nil
+}
+
+func (i *KumaInjector) FindServiceAccountToken(pod *kube_core.Pod) *kube_core.VolumeMount {
+	for i := range pod.Spec.Containers {
+		for j := range pod.Spec.Containers[i].VolumeMounts {
+			if pod.Spec.Containers[i].VolumeMounts[j].MountPath == serviceAccountTokenMountPath {
+				return &pod.Spec.Containers[i].VolumeMounts[j]
+			}
+		}
+	}
+	// Notice that we consider valid a use case where a ServiceAccount token
+	// is not mounted into Pod, e.g. due to Pod.Spec.AutomountServiceAccountToken == false
+	// or ServiceAccount.Spec.AutomountServiceAccountToken == false.
+	// In that case a side car should still be able to start and join a mesh with disabled mTLS.
+	return nil
 }
 
 func (i *KumaInjector) NewInitContainer() kube_core.Container {
