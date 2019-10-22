@@ -70,7 +70,7 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(NewDataplaneWatchdogFunc(func(dataplaneId core_model.ResourceKey) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(NewDataplaneWatchdogFunc(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					watchdogCh <- dataplaneId
 					<-stop

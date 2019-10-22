@@ -89,13 +89,14 @@ var _ = Describe("Envoy", func() {
 
 		type testCase struct {
 			ctx      xds_context.Context
+			metadata xds.DataplaneMetadata
 			expected string
 		}
 
 		DescribeTable("should generate 'EDS' Cluster",
 			func(given testCase) {
 				// when
-				resource := envoy.CreateEdsCluster(given.ctx, "192.168.0.1:8080")
+				resource := envoy.CreateEdsCluster(given.ctx, "192.168.0.1:8080", &given.metadata)
 
 				// then
 				actual, err := util_proto.ToYAML(resource)
@@ -110,6 +111,7 @@ var _ = Describe("Envoy", func() {
 						TlsEnabled: false,
 					},
 				},
+				metadata: xds.DataplaneMetadata{},
 				expected: `
                 connectTimeout: 5s
                 edsClusterConfig:
@@ -122,62 +124,14 @@ var _ = Describe("Envoy", func() {
 			Entry("with mTLS", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation:        "kuma-control-plane:5677",
-						SdsTlsCert:         []byte("CERTIFICATE"),
-						DataplaneTokenFile: "",
+						SdsLocation: "kuma-control-plane:5677",
+						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
 						TlsEnabled: true,
 					},
 				},
-				expected: `
-                connectTimeout: 5s
-                edsClusterConfig:
-                  edsConfig:
-                    ads: {}
-                name: 192.168.0.1:8080
-                tlsContext:
-                  commonTlsContext:
-                    tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_identity_cert
-                              targetUri: kuma-control-plane:5677
-                    validationContextSdsSecretConfig:
-                      name: mesh_ca
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
-                type: EDS
-`,
-			}),
-			Entry("with mTLS", testCase{
-				ctx: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation:        "kuma-control-plane:5677",
-						SdsTlsCert:         []byte("CERTIFICATE"),
-						DataplaneTokenFile: "",
-					},
-					Mesh: xds_context.MeshContext{
-						TlsEnabled: true,
-					},
-				},
+				metadata: xds.DataplaneMetadata{},
 				expected: `
                 connectTimeout: 5s
                 edsClusterConfig:
@@ -218,13 +172,15 @@ var _ = Describe("Envoy", func() {
 			Entry("with mTLS and Dataplane credentials", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation:        "kuma-control-plane:5677",
-						SdsTlsCert:         []byte("CERTIFICATE"),
-						DataplaneTokenFile: "/var/secret/token",
+						SdsLocation: "kuma-control-plane:5677",
+						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
 						TlsEnabled: true,
 					},
+				},
+				metadata: xds.DataplaneMetadata{
+					DataplaneTokenPath: "/var/secret/token",
 				},
 				expected: `
                 connectTimeout: 5s
@@ -319,6 +275,7 @@ var _ = Describe("Envoy", func() {
 			ctx      xds_context.Context
 			virtual  bool
 			expected string
+			metadata xds.DataplaneMetadata
 		}
 
 		DescribeTable("should generate 'inbound' Listener",
@@ -359,7 +316,7 @@ var _ = Describe("Envoy", func() {
 				}
 
 				// when
-				resource := envoy.CreateInboundListener(given.ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", given.virtual, permissions)
+				resource := envoy.CreateInboundListener(given.ctx, "inbound:192.168.0.1:8080", "192.168.0.1", 8080, "localhost:8080", given.virtual, permissions, &given.metadata)
 
 				// then
 				actual, err := util_proto.ToYAML(resource)
@@ -450,9 +407,8 @@ name: inbound:192.168.0.1:8080
 			Entry("with mTLS", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation:        "kuma-control-plane:5677",
-						SdsTlsCert:         []byte("CERTIFICATE"),
-						DataplaneTokenFile: "",
+						SdsLocation: "kuma-control-plane:5677",
+						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
 						TlsEnabled: true,
@@ -519,15 +475,17 @@ name: inbound:192.168.0.1:8080
 			Entry("with mTLS and Dataplane credentials", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation:        "kuma-control-plane:5677",
-						SdsTlsCert:         []byte("CERTIFICATE"),
-						DataplaneTokenFile: "/var/secret/token",
+						SdsLocation: "kuma-control-plane:5677",
+						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
 						TlsEnabled: true,
 					},
 				},
 				virtual: false,
+				metadata: xds.DataplaneMetadata{
+					DataplaneTokenPath: "/var/secret/token",
+				},
 				expected: `
           address:
             socketAddress:
@@ -700,9 +658,8 @@ name: inbound:192.168.0.1:8080
 			Entry("with mTLS", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation:        "kuma-control-plane:5677",
-						SdsTlsCert:         []byte("CERTIFICATE"),
-						DataplaneTokenFile: "",
+						SdsLocation: "kuma-control-plane:5677",
+						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
 						TlsEnabled: true,
@@ -727,9 +684,8 @@ name: inbound:192.168.0.1:8080
 			Entry("with mTLS and Dataplane credentials", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation:        "kuma-control-plane:5677",
-						SdsTlsCert:         []byte("CERTIFICATE"),
-						DataplaneTokenFile: "/var/secret/token",
+						SdsLocation: "kuma-control-plane:5677",
+						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
 						TlsEnabled: true,

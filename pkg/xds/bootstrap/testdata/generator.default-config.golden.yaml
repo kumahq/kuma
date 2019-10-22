@@ -1,3 +1,9 @@
+admin:
+  accessLogPath: /dev/null
+  address:
+    socketAddress:
+      address: 127.0.0.1
+      portValue: 1234
 dynamicResources:
   adsConfig:
     apiType: GRPC
@@ -11,6 +17,8 @@ dynamicResources:
 node:
   cluster: backend
   id: mesh.name.namespace
+  metadata:
+    dataplaneTokenPath: /tmp/token
 staticResources:
   clusters:
     - connectTimeout: 1s

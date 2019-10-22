@@ -92,7 +92,8 @@ var _ = Describe("Reconcile", func() {
 						},
 					},
 				},
-				Logs: logs.NewMatchedLogs(),
+				Logs:     logs.NewMatchedLogs(),
+				Metadata: &model.DataplaneMetadata{},
 			}
 
 			// when

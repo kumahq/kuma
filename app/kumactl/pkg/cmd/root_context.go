@@ -11,6 +11,7 @@ import (
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	util_files "github.com/Kong/kuma/pkg/util/files"
 	"github.com/pkg/errors"
 
 	kumactl_resources "github.com/Kong/kuma/app/kumactl/pkg/resources"
@@ -130,5 +131,5 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {
-	return rc.Args.ConfigFile == "" && !config.FileExists(config.DefaultConfigFile)
+	return rc.Args.ConfigFile == "" && !util_files.FileExists(config.DefaultConfigFile)
 }

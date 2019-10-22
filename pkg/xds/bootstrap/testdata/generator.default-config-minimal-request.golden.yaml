@@ -1,9 +1,3 @@
-admin:
-  accessLogPath: /dev/null
-  address:
-    socketAddress:
-      address: 127.0.0.1
-      portValue: 1234
 dynamicResources:
   adsConfig:
     apiType: GRPC
@@ -16,9 +10,7 @@ dynamicResources:
     ads: {}
 node:
   cluster: backend
-  id: default.dp-1.default
-  metadata:
-    dataplaneTokenPath: /tmp/token
+  id: mesh.name.namespace
 staticResources:
   clusters:
     - connectTimeout: 1s
@@ -45,7 +37,7 @@ staticResources:
               - endpoint:
                   address:
                     pipe:
-                      path: /tmp/kuma-access-logs-dp-1.default-default.sock
+                      path: /tmp/kuma-access-logs-name.namespace-mesh.sock
       name: access_log_sink
       type: STATIC
       upstreamConnectionOptions:

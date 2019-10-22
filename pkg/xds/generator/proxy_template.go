@@ -130,7 +130,7 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			resources = append(resources, &Resource{
 				Name:     inboundListenerName,
 				Version:  "",
-				Resource: envoy.CreateInboundListener(ctx, inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual, proxy.TrafficPermissions.Get(endpoint.String())),
+				Resource: envoy.CreateInboundListener(ctx, inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual, proxy.TrafficPermissions.Get(endpoint.String()), proxy.Metadata),
 			})
 			names[inboundListenerName] = true
 		}
@@ -161,7 +161,7 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		if used := names[edsClusterName]; !used {
 			resources = append(resources, &Resource{
 				Name:     edsClusterName,
-				Resource: envoy.CreateEdsCluster(ctx, edsClusterName),
+				Resource: envoy.CreateEdsCluster(ctx, edsClusterName, proxy.Metadata),
 			})
 			resources = append(resources, &Resource{
 				Name:     edsClusterName,

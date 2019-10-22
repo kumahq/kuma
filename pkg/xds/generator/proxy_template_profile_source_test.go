@@ -59,6 +59,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					Spec: dataplane,
 				},
 				TrafficPermissions: permissions.MatchedPermissions{},
+				Metadata:           &model.DataplaneMetadata{},
 			}
 
 			// when

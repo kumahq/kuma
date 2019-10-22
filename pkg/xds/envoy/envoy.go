@@ -93,7 +93,7 @@ func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Clu
 	}
 }
 
-func CreateEdsCluster(ctx xds_context.Context, clusterName string) *v2.Cluster {
+func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *core_xds.DataplaneMetadata) *v2.Cluster {
 	connectTimeout := defaultConnectTimeout
 	return &v2.Cluster{
 		Name:                 clusterName,
@@ -106,7 +106,7 @@ func CreateEdsCluster(ctx xds_context.Context, clusterName string) *v2.Cluster {
 				},
 			},
 		},
-		TlsContext: CreateUpstreamTlsContext(ctx),
+		TlsContext: CreateUpstreamTlsContext(ctx, metadata),
 	}
 }
 
@@ -165,7 +165,7 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 	return listener, nil
 }
 
-func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, permissions *mesh_core.TrafficPermissionResourceList) *v2.Listener {
+func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, permissions *mesh_core.TrafficPermissionResourceList, metadata *core_xds.DataplaneMetadata) *v2.Listener {
 	config := &tcp.TcpProxy{
 		StatPrefix: clusterName,
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
@@ -189,7 +189,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 			},
 		},
 		FilterChains: []*envoy_listener.FilterChain{{
-			TlsContext: CreateDownstreamTlsContext(ctx),
+			TlsContext: CreateDownstreamTlsContext(ctx, metadata),
 			Filters: []*envoy_listener.Filter{{
 				Name: util.TCPProxy,
 				ConfigType: &envoy_listener.Filter_TypedConfig{
@@ -235,47 +235,46 @@ func accessLog(ctx xds_context.Context) []*filter_accesslog.AccessLog {
 	return []*filter_accesslog.AccessLog{logs}
 }
 
-func CreateDownstreamTlsContext(ctx xds_context.Context) *auth.DownstreamTlsContext {
+func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *auth.DownstreamTlsContext {
 	if !ctx.Mesh.TlsEnabled {
 		return nil
 	}
 	return &auth.DownstreamTlsContext{
-		CommonTlsContext:         CreateCommonTlsContext(ctx),
+		CommonTlsContext:         CreateCommonTlsContext(ctx, metadata),
 		RequireClientCertificate: &types.BoolValue{Value: true},
 	}
 }
 
-func CreateUpstreamTlsContext(ctx xds_context.Context) *auth.UpstreamTlsContext {
+func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *auth.UpstreamTlsContext {
 	if !ctx.Mesh.TlsEnabled {
 		return nil
 	}
 	return &auth.UpstreamTlsContext{
-		CommonTlsContext: CreateCommonTlsContext(ctx),
+		CommonTlsContext: CreateCommonTlsContext(ctx, metadata),
 	}
 }
 
-func CreateCommonTlsContext(ctx xds_context.Context) *auth.CommonTlsContext {
+func CreateCommonTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *auth.CommonTlsContext {
 	return &auth.CommonTlsContext{
 		ValidationContextType: &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
-			ValidationContextSdsSecretConfig: sdsSecretConfig(ctx, server.MeshCaResource),
+			ValidationContextSdsSecretConfig: sdsSecretConfig(ctx, server.MeshCaResource, metadata),
 		},
 		TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
-			sdsSecretConfig(ctx, server.IdentityCertResource),
+			sdsSecretConfig(ctx, server.IdentityCertResource, metadata),
 		},
 	}
 }
 
-func sdsSecretConfig(context xds_context.Context, name string) *auth.SdsSecretConfig {
+func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) *auth.SdsSecretConfig {
 	withCallCredentials := func(grpc *core.GrpcService_GoogleGrpc) *core.GrpcService_GoogleGrpc {
-		// TODO(yskopets): credentials should be determined based on properties of a Dataplane rather than global Control Plane settings
-		if context.ControlPlane.DataplaneTokenFile == "" {
+		if metadata.DataplaneTokenPath == "" {
 			return grpc
 		}
 
 		config := &grpc_credential.FileBasedMetadataConfig{
 			SecretData: &core.DataSource{
 				Specifier: &core.DataSource_Filename{
-					Filename: context.ControlPlane.DataplaneTokenFile,
+					Filename: metadata.DataplaneTokenPath,
 				},
 			},
 		}

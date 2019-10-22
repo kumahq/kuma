@@ -108,6 +108,8 @@ spec:
       value: "9901"
     - name: KUMA_DATAPLANE_DRAIN_TIME
       value: 31s
+    - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+      value: /var/run/secrets/kubernetes.io/serviceaccount/token
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:

@@ -73,7 +73,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						{Target: "192.168.0.3", Port: 5432},
 					},
 				},
-				Logs: logs.NewMatchedLogs(),
+				Logs:     logs.NewMatchedLogs(),
+				Metadata: &model.DataplaneMetadata{},
 			}
 
 			// when

@@ -113,6 +113,10 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 				Name:  "KUMA_DATAPLANE_DRAIN_TIME",
 				Value: fmt.Sprintf("%s", i.cfg.SidecarContainer.DrainTime),
 			},
+			{
+				Name:  "KUMA_DATAPLANE_RUNTIME_TOKEN_PATH",
+				Value: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+			},
 		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,

@@ -28,7 +28,8 @@ var _ = Describe("Remote Bootstrap", func() {
 			{
 				"mesh": "demo",
 				"name": "sample",
-				"adminPort": 4321
+				"adminPort": 4321,
+				"dataplaneTokenPath": "/tmp/token"
 			}
 			`))
 
@@ -47,6 +48,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		cfg.Dataplane.Mesh = "demo"
 		cfg.Dataplane.Name = "sample"
 		cfg.Dataplane.AdminPort = 4321
+		cfg.DataplaneRuntime.TokenPath = "/tmp/token"
 		cfg.ControlPlane.BootstrapServer.URL = fmt.Sprintf("http://localhost:%d", port)
 
 		// when

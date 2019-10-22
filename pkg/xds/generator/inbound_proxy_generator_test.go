@@ -87,6 +87,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 						},
 					},
 				},
+				Metadata: &model.DataplaneMetadata{},
 			}
 
 			// when
