@@ -1,0 +1,26 @@
+---
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+  namespace: kuma-system
+spec:
+  mtls:
+    ca:
+      builtin: {}
+    enabled: true
+---
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+metadata:
+  namespace: kuma-demo
+  name: everyone-to-everyone
+mesh: default
+spec:
+  rules:
+  - sources:
+    - match:
+        service: '*'
+    destinations:
+    - match:
+        service: '*'

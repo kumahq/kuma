@@ -99,3 +99,66 @@ spec:
       - name: demo-app-config
         configMap:
           name: demo-app-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-client
+  namespace: kuma-demo
+spec:
+  ports:
+  - port: 3000
+    name: http
+  selector:
+    app: demo-client
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: demo-client-service-account
+  namespace: kuma-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-client
+  namespace: kuma-demo
+  labels:
+    app: demo-client
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: demo-client
+  template:
+    metadata:
+      labels:
+        app: demo-client
+    spec:
+      serviceAccountName: demo-client-service-account
+      containers:
+      - name: demo-client
+        image: kong-docker-kuma-ci-docker.bintray.io/curl
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        command:
+        - nc
+        - -lk
+        - -p
+        - "3000"
+        - -e
+        - curl
+        - --silent
+        - --show-error
+        - --include
+        - --fail
+        - http://demo-app.kuma-demo:8000/request
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
