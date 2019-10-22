@@ -143,6 +143,10 @@ spec:
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678
+    volumeMounts:
+    - name: coredns-token-9gmrh
+      readOnly: true
+      mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
   dnsPolicy: Default
   enableServiceLinks: true
   initContainers:

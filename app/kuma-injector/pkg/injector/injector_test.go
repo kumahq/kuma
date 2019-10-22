@@ -82,5 +82,8 @@ var _ = Describe("Injector", func() {
 		Entry("04. Pod with explicitly selected Mesh", testCase{
 			num: "04",
 		}),
+		Entry("05. Pod without ServiceAccount token", testCase{
+			num: "05",
+		}),
 	)
 })
