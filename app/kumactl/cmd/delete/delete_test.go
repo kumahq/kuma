@@ -68,9 +68,9 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown resource type: some-type. Allowed types: mesh, dataplane, proxytemplate, traffic-log, traffic-permission"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown resource type: some-type. Allowed types: mesh, dataplane, proxytemplate, traffic-log, traffic-permission`))
+			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission`))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
