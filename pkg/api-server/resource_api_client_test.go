@@ -5,7 +5,7 @@ import (
 	"context"
 	"github.com/Kong/kuma/pkg/api-server"
 	"github.com/Kong/kuma/pkg/api-server/definitions"
-	config "github.com/Kong/kuma/pkg/config/api-server"
+	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/test"
@@ -91,12 +91,12 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createTestApiServer(store store.ResourceStore, config config.ApiServerConfig) *api_server.ApiServer {
+func createTestApiServer(store store.ResourceStore, config kuma_cp.Config) *api_server.ApiServer {
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
 	Expect(err).NotTo(HaveOccurred())
-	config.Port = port
+	config.ApiServer.Port = port
 	defs := []definitions.ResourceWsDefinition{
 		TrafficRouteWsDefinition,
 		definitions.MeshWsDefinition,

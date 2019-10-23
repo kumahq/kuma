@@ -120,3 +120,6 @@ defaults:
 reports:
   # If true then usage stats will be reported
   enabled: true # ENV: KUMA_REPORTS_ENABLED
+
+# Hostname on which Kuma is exposed
+hostname: localhost # ENV: KUMA_HOSTNAME

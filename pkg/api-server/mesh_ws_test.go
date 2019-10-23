@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/api-server"
-	config "github.com/Kong/kuma/pkg/config/api-server"
+	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -25,7 +25,7 @@ var _ = Describe("Resource WS", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, *config.DefaultApiServerConfig())
+		apiServer = createTestApiServer(resourceStore, kuma_cp.DefaultConfig())
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes",

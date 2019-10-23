@@ -3,6 +3,7 @@ package api_server
 import (
 	"context"
 	"fmt"
+	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"net/http"
 
@@ -25,10 +26,10 @@ func (a *ApiServer) Address() string {
 	return a.server.Addr
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, config config.ApiServerConfig) *ApiServer {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, config kuma_cp.Config) *ApiServer {
 	container := restful.NewContainer()
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", config.Port),
+		Addr:    fmt.Sprintf(":%d", config.ApiServer.Port),
 		Handler: container.ServeMux,
 	}
 
@@ -38,16 +39,17 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addToWs(ws, defs, resManager, config)
+	addToWs(ws, defs, resManager, config.ApiServer)
 	container.Add(ws)
 	container.Add(indexWs())
+	container.Add(componentsWs(config))
 
 	return &ApiServer{
 		server: srv,
 	}
 }
 
-func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config config.ApiServerConfig) {
+func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *config.ApiServerConfig) {
 	overviewWs := overviewWs{
 		resManager: resManager,
 	}
@@ -88,6 +90,6 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 }
 
 func SetupServer(rt runtime.Runtime) error {
-	apiServer := NewApiServer(rt.ResourceManager(), definitions.All, *rt.Config().ApiServer)
+	apiServer := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config())
 	return rt.Add(apiServer)
 }

@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
-	"net"
-	"net/url"
+	"github.com/Kong/kuma/pkg/coordinates"
 	"time"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/config"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
+	coordinates_client "github.com/Kong/kuma/pkg/coordinates/client"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	util_files "github.com/Kong/kuma/pkg/util/files"
@@ -28,6 +27,7 @@ type RootRuntime struct {
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string) (tokens.DataplaneTokenClient, error)
+	NewCoordinatesClient       func(string) (coordinates_client.CoordinatesClient, error)
 }
 
 type RootContext struct {
@@ -42,6 +42,7 @@ func DefaultRootContext() *RootContext {
 			NewResourceStore:           kumactl_resources.NewResourceStore,
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
+			NewCoordinatesClient:       coordinates_client.NewCoordinatesClient,
 		},
 	}
 }
@@ -112,22 +113,24 @@ func (rc *RootContext) CurrentDataplaneOverviewClient() (kumactl_resources.Datap
 	return rc.Runtime.NewDataplaneOverviewClient(controlPlane.Coordinates.ApiServer)
 }
 
-func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {
+func (rc *RootContext) coordinates() (coordinates.Coordinates, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {
-		return nil, err
+		return coordinates.Coordinates{}, err
 	}
-	// todo(jakubdyszkiewicz) this will be replaced by inferring addresses https://github.com/Kong/kuma/issues/315
-	apiServerUrl, err := url.Parse(controlPlane.Coordinates.ApiServer.Url)
+	client, err := rc.Runtime.NewCoordinatesClient(controlPlane.Coordinates.ApiServer.Url)
+	if err != nil {
+		return coordinates.Coordinates{}, errors.Wrap(err, "could not create components client")
+	}
+	return client.Coordinates()
+}
+
+func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {
+	components, err := rc.coordinates()
 	if err != nil {
 		return nil, err
 	}
-	host, _, err := net.SplitHostPort(apiServerUrl.Host)
-	if err != nil {
-		return nil, err
-	}
-	const defaultDpTokenPort = 5679
-	return rc.Runtime.NewDataplaneTokenClient(fmt.Sprintf("http://%s:%d", host, defaultDpTokenPort))
+	return rc.Runtime.NewDataplaneTokenClient(components.Apis.DataplaneToken.LocalUrl)
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {

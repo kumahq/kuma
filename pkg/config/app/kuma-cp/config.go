@@ -74,6 +74,8 @@ type Config struct {
 	Defaults *Defaults `yaml:"defaults"`
 	// Reports configuration
 	Reports *Reports `yaml:"reports"`
+	// Hostname on which Kuma is exposed
+	Hostname string `yaml:"hostname" envconfig:"kuma_hostname"`
 }
 
 func DefaultConfig() Config {
@@ -98,6 +100,7 @@ mtls:
 		Reports: &Reports{
 			Enabled: true,
 		},
+		Hostname: "localhost",
 	}
 }
 

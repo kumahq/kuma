@@ -7,6 +7,8 @@ import (
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
+	"github.com/Kong/kuma/pkg/coordinates"
+	"github.com/Kong/kuma/pkg/coordinates/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
@@ -25,6 +27,16 @@ func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string) (stri
 	return fmt.Sprintf("token-for-%s-%s", name, mesh), nil
 }
 
+type staticCoordinatesClient struct {
+	resp coordinates.Coordinates
+}
+
+var _ client.CoordinatesClient = &staticCoordinatesClient{}
+
+func (s *staticCoordinatesClient) Coordinates() (coordinates.Coordinates, error) {
+	return s.resp, nil
+}
+
 var _ = Describe("kumactl generate dataplane-token", func() {
 
 	var rootCmd *cobra.Command
@@ -37,6 +49,11 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			Runtime: kumactl_cmd.RootRuntime{
 				NewDataplaneTokenClient: func(string) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
+				},
+				NewCoordinatesClient: func(s string) (client.CoordinatesClient, error) {
+					return &staticCoordinatesClient{
+						resp: coordinates.Coordinates{},
+					}, nil
 				},
 			},
 		}

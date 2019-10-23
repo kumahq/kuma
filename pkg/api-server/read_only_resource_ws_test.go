@@ -2,7 +2,7 @@ package api_server_test
 
 import (
 	"github.com/Kong/kuma/pkg/api-server"
-	config "github.com/Kong/kuma/pkg/config/api-server"
+	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
@@ -23,8 +23,8 @@ var _ = Describe("Read only Resource WS", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		cfg := *config.DefaultApiServerConfig()
-		cfg.ReadOnly = true
+		cfg := kuma_cp.DefaultConfig()
+		cfg.ApiServer.ReadOnly = true
 		apiServer = createTestApiServer(resourceStore, cfg)
 		client = resourceApiClient{
 			address: apiServer.Address(),

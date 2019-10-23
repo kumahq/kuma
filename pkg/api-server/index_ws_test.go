@@ -1,7 +1,7 @@
 package api_server_test
 
 import (
-	api_server "github.com/Kong/kuma/pkg/config/api-server"
+	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -32,7 +32,7 @@ var _ = Describe("Index WS", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, *api_server.DefaultApiServerConfig())
+		apiServer := createTestApiServer(resourceStore, kuma_cp.DefaultConfig())
 
 		stop := make(chan struct{})
 		go func() {
