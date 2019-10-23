@@ -2,6 +2,7 @@ package json
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
@@ -16,10 +17,13 @@ var _ output.Printer = &printer{}
 type printer struct{}
 
 func (p *printer) Print(obj interface{}, out io.Writer) error {
-	b, err := json.Marshal(obj)
+	b, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return err
 	}
-	_, err = out.Write(b)
+	if _, err := out.Write(b); err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(out)
 	return err
 }

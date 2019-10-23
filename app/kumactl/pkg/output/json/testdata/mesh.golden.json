@@ -1,1 +1,10 @@
-{"mtls":{"ca":{"builtin":{}},"enabled":true},"name":"demo","type":"Mesh"}
+{
+  "mtls": {
+    "ca": {
+      "builtin": {}
+    },
+    "enabled": true
+  },
+  "name": "demo",
+  "type": "Mesh"
+}
