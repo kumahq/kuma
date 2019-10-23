@@ -9,6 +9,7 @@ import (
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
 	"github.com/Kong/kuma/pkg/catalogue"
 	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
+	config_kumactl "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
@@ -47,7 +48,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		generator = &staticDataplaneTokenGenerator{}
 		ctx := kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewDataplaneTokenClient: func(string) (tokens.DataplaneTokenClient, error) {
+				NewDataplaneTokenClient: func(string, *config_kumactl.DataplaneToken) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
 				},
 				NewCatalogueClient: func(s string) (catalogue_client.CatalogueClient, error) {

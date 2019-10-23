@@ -11,6 +11,7 @@ import (
 	"github.com/Kong/kuma/pkg/catalogue"
 	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
+	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	util_files "github.com/Kong/kuma/pkg/util/files"
@@ -26,7 +27,7 @@ type RootRuntime struct {
 	Now                        func() time.Time
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
-	NewDataplaneTokenClient    func(string) (tokens.DataplaneTokenClient, error)
+	NewDataplaneTokenClient    func(string, *kumactl_config.DataplaneToken) (tokens.DataplaneTokenClient, error)
 	NewCatalogueClient         func(string) (catalogue_client.CatalogueClient, error)
 }
 
@@ -130,7 +131,21 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewDataplaneTokenClient(components.Apis.DataplaneToken.LocalUrl)
+	cp, err := rc.CurrentControlPlane()
+	if err != nil {
+		return nil, err
+	}
+
+	var url string
+	if cp.DataplaneToken.TlsEnabled() {
+		if components.Apis.DataplaneToken.PublicUrl == "" {
+			return nil, errors.New("dataplane token server is not configured with TLS. Either configure kuma-cp to start server with tls or configure kumactl without certificates")
+		}
+		url = components.Apis.DataplaneToken.PublicUrl
+	} else {
+		url = components.Apis.DataplaneToken.LocalUrl
+	}
+	return rc.Runtime.NewDataplaneTokenClient(url, cp.DataplaneToken)
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {

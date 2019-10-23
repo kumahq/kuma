@@ -119,12 +119,8 @@ func (a *DataplaneTokenServer) startHttpsServer() (*http.Server, chan error) {
 		errChan <- err
 	}
 
-	port := a.Config.Public.Port
-	if port == 0 {
-		port = a.Config.Local.Port
-	}
 	server := &http.Server{
-		Addr:      fmt.Sprintf("%s:%d", a.Config.Public.Interface, port),
+		Addr:      fmt.Sprintf("%s:%d", a.Config.Public.Interface, a.Config.Public.Port),
 		Handler:   mux,
 		TLSConfig: tlsConfig,
 	}
@@ -140,7 +136,7 @@ func (a *DataplaneTokenServer) startHttpsServer() (*http.Server, chan error) {
 		}
 		log.Info("https server terminated normally")
 	}()
-	log.Info("starting server", "interface", a.Config.Public.Interface, "port", port, "tls", true)
+	log.Info("starting server", "interface", a.Config.Public.Interface, "port", a.Config.Public.Port, "tls", true)
 	return server, errChan
 }
 

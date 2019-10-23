@@ -22,4 +22,8 @@ controlPlanes:
     apiServer:
       url: http://placeholder-address
   name: example
+  dataplaneToken:
+    serverCert: /tmp/server.pem
+    clientCert: /tmp/client.pem
+    clientKey: /tmp/client.key.pem
 currentContext: example

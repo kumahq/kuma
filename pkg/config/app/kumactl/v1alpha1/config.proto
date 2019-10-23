@@ -28,6 +28,9 @@ message ControlPlane {
   // Coordinates defines coordinates of a given Control Plane.
   ControlPlaneCoordinates coordinates = 2
       [ (validate.rules).message.required = true ];
+
+  // DataplaneToken defines configuration of dataplane token client
+  DataplaneToken dataplane_token = 3;
 }
 
 // ControlPlaneCoordinates defines coordinates of a Control Plane.
@@ -39,6 +42,21 @@ message ControlPlaneCoordinates {
   }
 
   ApiServer api_server = 1 [ (validate.rules).message.required = true ];
+}
+
+// DataplaneToken defines configuration of dataplane token client
+message DataplaneToken {
+
+  // ServerCert defines certificate of dataplane token server that kumactl
+  // connects to
+  string server_cert = 1;
+
+  // ClientCert defines certificate of authorized client of dataplane token
+  // server
+  string client_cert = 2;
+
+  // ClientKey defines key of authorized client of dataplane token server
+  string client_key = 3;
 }
 
 // Context defines a context in which individual `kumactl` commands run.

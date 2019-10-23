@@ -2,8 +2,6 @@ package server_test
 
 import (
 	"bytes"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +12,7 @@ import (
 	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 	"github.com/Kong/kuma/pkg/tokens/builtin/server"
 	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
+	http2 "github.com/Kong/kuma/pkg/util/http"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -44,26 +43,15 @@ var _ = Describe("Dataplane Token Server", func() {
 	const credentials = "test"
 
 	httpsClient := func(name string) *http.Client {
-		caCert, err := ioutil.ReadFile(filepath.Join("testdata", "server-cert.pem"))
-		Expect(err).ToNot(HaveOccurred())
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-
-		cert, err := tls.LoadX509KeyPair(
+		httpClient := &http.Client{}
+		err := http2.ConfigureTls(
+			httpClient,
+			filepath.Join("testdata", "server-cert.pem"),
 			filepath.Join("testdata", fmt.Sprintf("%s-cert.pem", name)),
 			filepath.Join("testdata", fmt.Sprintf("%s-key.pem", name)),
 		)
 		Expect(err).ToNot(HaveOccurred())
-
-		client := &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs:      caCertPool,
-					Certificates: []tls.Certificate{cert},
-				},
-			},
-		}
-		return client
+		return httpClient
 	}
 
 	BeforeEach(func() {
