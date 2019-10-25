@@ -159,7 +159,13 @@ var _ = Describe("Dataplane Token Server", func() {
 
 	DescribeTable("should return bad request on invalid json",
 		func(json string) {
+			// when
 			req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/tokens", port), strings.NewReader(json))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
 			resp, err := http.DefaultClient.Do(req)
 
 			// then
