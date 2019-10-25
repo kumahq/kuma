@@ -74,8 +74,9 @@ type Config struct {
 	Defaults *Defaults `yaml:"defaults"`
 	// Reports configuration
 	Reports *Reports `yaml:"reports"`
-	// Hostname on which Kuma is exposed
-	Hostname string `yaml:"hostname" envconfig:"kuma_hostname"`
+	// Hostname that other components should use in order to connect to the Control Plane.
+	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
+	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_advertised_hostname"`
 }
 
 func DefaultConfig() Config {
@@ -100,7 +101,7 @@ mtls:
 		Reports: &Reports{
 			Enabled: true,
 		},
-		Hostname: "localhost",
+		AdvertisedHostname: "localhost",
 	}
 }
 

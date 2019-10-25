@@ -3,7 +3,6 @@ package api_server
 import (
 	"context"
 	"fmt"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"net/http"
 
@@ -26,10 +25,10 @@ func (a *ApiServer) Address() string {
 	return a.server.Addr
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, config kuma_cp.Config) *ApiServer {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, serverConfig *config.ApiServerConfig) *ApiServer {
 	container := restful.NewContainer()
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", config.ApiServer.Port),
+		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
 		Handler: container.ServeMux,
 	}
 
@@ -39,10 +38,10 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addToWs(ws, defs, resManager, config.ApiServer)
+	addToWs(ws, defs, resManager, serverConfig)
 	container.Add(ws)
 	container.Add(indexWs())
-	container.Add(componentsWs(config))
+	container.Add(catalogueWs(*serverConfig.Catalogue))
 
 	return &ApiServer{
 		server: srv,
@@ -90,6 +89,6 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 }
 
 func SetupServer(rt runtime.Runtime) error {
-	apiServer := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config())
+	apiServer := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config().ApiServer)
 	return rt.Add(apiServer)
 }

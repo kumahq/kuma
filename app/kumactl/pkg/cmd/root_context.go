@@ -1,19 +1,19 @@
 package cmd
 
 import (
-	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
-	"github.com/Kong/kuma/pkg/coordinates"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/app/kumactl/pkg/config"
+	kumactl_resources "github.com/Kong/kuma/app/kumactl/pkg/resources"
+	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
+	"github.com/Kong/kuma/pkg/catalogue"
+	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	coordinates_client "github.com/Kong/kuma/pkg/coordinates/client"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	util_files "github.com/Kong/kuma/pkg/util/files"
-	"github.com/pkg/errors"
-
-	kumactl_resources "github.com/Kong/kuma/app/kumactl/pkg/resources"
 )
 
 type RootArgs struct {
@@ -27,7 +27,7 @@ type RootRuntime struct {
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string) (tokens.DataplaneTokenClient, error)
-	NewCoordinatesClient       func(string) (coordinates_client.CoordinatesClient, error)
+	NewCatalogueClient         func(string) (catalogue_client.CatalogueClient, error)
 }
 
 type RootContext struct {
@@ -42,7 +42,7 @@ func DefaultRootContext() *RootContext {
 			NewResourceStore:           kumactl_resources.NewResourceStore,
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
-			NewCoordinatesClient:       coordinates_client.NewCoordinatesClient,
+			NewCatalogueClient:         catalogue_client.NewCatalogueClient,
 		},
 	}
 }
@@ -113,20 +113,20 @@ func (rc *RootContext) CurrentDataplaneOverviewClient() (kumactl_resources.Datap
 	return rc.Runtime.NewDataplaneOverviewClient(controlPlane.Coordinates.ApiServer)
 }
 
-func (rc *RootContext) coordinates() (coordinates.Coordinates, error) {
+func (rc *RootContext) catalogue() (catalogue.Catalogue, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {
-		return coordinates.Coordinates{}, err
+		return catalogue.Catalogue{}, err
 	}
-	client, err := rc.Runtime.NewCoordinatesClient(controlPlane.Coordinates.ApiServer.Url)
+	client, err := rc.Runtime.NewCatalogueClient(controlPlane.Coordinates.ApiServer.Url)
 	if err != nil {
-		return coordinates.Coordinates{}, errors.Wrap(err, "could not create components client")
+		return catalogue.Catalogue{}, errors.Wrap(err, "could not create components client")
 	}
-	return client.Coordinates()
+	return client.Catalogue()
 }
 
 func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {
-	components, err := rc.coordinates()
+	components, err := rc.catalogue()
 	if err != nil {
 		return nil, err
 	}

@@ -2,7 +2,7 @@ package client
 
 import (
 	"encoding/json"
-	"github.com/Kong/kuma/pkg/coordinates"
+	"github.com/Kong/kuma/pkg/catalogue"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
@@ -16,28 +16,28 @@ const (
 	timeout = 10 * time.Second
 )
 
-type CoordinatesClient interface {
-	Coordinates() (coordinates.Coordinates, error)
+type CatalogueClient interface {
+	Catalogue() (catalogue.Catalogue, error)
 }
 
-func NewCoordinatesClient(address string) (CoordinatesClient, error) {
+func NewCatalogueClient(address string) (CatalogueClient, error) {
 	baseURL, err := url.Parse(address)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
 	}
 	client := util_http.ClientWithTimeout(util_http.ClientWithBaseURL(&http.Client{}, baseURL), timeout)
-	return &httpCoordinatesClient{
+	return &httpCatalogueClient{
 		client: client,
 	}, nil
 }
 
-type httpCoordinatesClient struct {
+type httpCatalogueClient struct {
 	client util_http.Client
 }
 
-func (h *httpCoordinatesClient) Coordinates() (coordinates.Coordinates, error) {
-	result := coordinates.Coordinates{}
-	req, err := http.NewRequest("GET", "/coordinates", nil)
+func (h *httpCatalogueClient) Catalogue() (catalogue.Catalogue, error) {
+	result := catalogue.Catalogue{}
+	req, err := http.NewRequest("GET", "/catalogue", nil)
 	if err != nil {
 		return result, errors.Wrap(err, "could not construct the request")
 	}
@@ -49,11 +49,11 @@ func (h *httpCoordinatesClient) Coordinates() (coordinates.Coordinates, error) {
 		return result, errors.Errorf("unexpected status code %d. Expected 200", resp.StatusCode)
 	}
 
-	coordinatesBytes, err := ioutil.ReadAll(resp.Body)
+	catalogueBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return result, errors.Wrap(err, "could not read a body of the request")
 	}
-	if err := json.Unmarshal(coordinatesBytes, &result); err != nil {
+	if err := json.Unmarshal(catalogueBytes, &result); err != nil {
 		return result, errors.Wrap(err, "could not unmarshal bytes to component")
 	}
 	return result, nil

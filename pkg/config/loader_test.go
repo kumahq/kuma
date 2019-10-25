@@ -94,7 +94,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
-			Expect(cfg.Hostname).To(Equal("kuma.internal"))
+			Expect(cfg.AdvertisedHostname).To(Equal("kuma.internal"))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -140,7 +140,7 @@ runtime:
       certDir: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
 reports:
   enabled: false
-hostname: kuma.internal
+advertisedHostname: kuma.internal
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -171,7 +171,7 @@ hostname: kuma.internal
 				"KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS":             "127.0.0.2",
 				"KUMA_KUBERNETES_ADMISSION_SERVER_PORT":                "9443",
 				"KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR":            "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
-				"KUMA_HOSTNAME":                                        "kuma.internal",
+				"KUMA_ADVERTISED_HOSTNAME":                             "kuma.internal",
 			},
 			yamlFileConfig: "",
 		}),

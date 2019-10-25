@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/api-server"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	config "github.com/Kong/kuma/pkg/config/api-server"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
@@ -25,7 +25,7 @@ var _ = Describe("Dataplane Overview WS", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, kuma_cp.DefaultConfig())
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
 		client := resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes",

@@ -1,4 +1,4 @@
-package coordinates_test
+package catalogue_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCoordinates(t *testing.T) {
+func TestCatalogue(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Coordinates")
+	RunSpecs(t, "Catalogue")
 }
