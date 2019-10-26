@@ -111,6 +111,8 @@ spec:
           value: "5443"
         - name: KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR
           value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
+        - name: KUMA_API_SERVER_READ_ONLY
+          value: "true"
         args:
         - run
         - --log-level=info
