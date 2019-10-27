@@ -14,35 +14,35 @@ Kuma Control Plane inside Minikube
 minikube start
 ```
 
-### Build Control Plane image
+### Build Control Plane images
 
 ```bash
-make build/example/minikube -C ../..
+make build/example/minikube -C ../../../..
 ```
 
 ### Deploy demo setup into Minikube
 
 ```bash
-make deploy/example/minikube -C ../..
+make deploy/example/minikube -C ../../../..
 ```
 
 ### Make test requests
 
 ```bash
-make wait/example/minikube -C ../..
-make curl/example/minikube -C ../..
+make wait/example/minikube -C ../../../..
+make curl/example/minikube -C ../../../..
 ```
 
 ### Verify Envoy stats
 
 ```bash
-make verify/example/minikube -C ../..
+make verify/example/minikube -C ../../../..
 ```
 
 ### Observe Envoy stats
 
 ```bash
-make stats/example/minikube -C ../..
+make stats/example/minikube -C ../../../..
 ```
 
 E.g.,
@@ -61,29 +61,29 @@ where
 ### Enable mTLS
 
 ```bash
-make apply/example/minikube/mtls -C ../..
+make apply/example/minikube/mtls -C ../../../..
 ```
 
 ### Wait until Envoy is configured for mTLS
 
 ```bash
-make wait/example/minikube/mtls -C ../..
+make wait/example/minikube/mtls -C ../../../..
 ```
 
 ### Make test requests via Envoy with mTLS
 
 ```bash
-make curl/example/minikube -C ../..
+make curl/example/minikube -C ../../../..
 ```
 
 ### Verify Envoy mTLS stats
 
 ```bash
-make verify/example/minikube/mtls -C ../..
+make verify/example/minikube/mtls -C ../../../..
 ```
 
 ### Verify kumactl workflow
 
 ```bash
-make kumactl/example/minikube -C ../..
+make kumactl/example/minikube -C ../../../..
 ```

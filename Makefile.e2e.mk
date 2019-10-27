@@ -96,14 +96,14 @@ deploy/example/minikube: ## Minikube: Deploy example setup
 	docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
-	kubectl apply -f examples/minikube/kuma-demo/
+	kubectl apply -f tools/e2e/examples/minikube/kuma-demo/
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-app
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-client
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-client
 
 apply/example/minikube/mtls: ## Minikube: enable mTLS
-	kubectl apply -f examples/minikube/policies/mtls.yaml
+	kubectl apply -f tools/e2e/examples/minikube/policies/mtls.yaml
 
 wait/example/minikube: ## Minikube: Wait for demo setup to get ready
 	kubectl -n kuma-demo exec -ti $$( kubectl -n kuma-demo get pods -l app=demo-client -o=jsonpath='{.items[0].metadata.name}' ) -c demo-client -- $(call wait_for_example_client)
@@ -134,4 +134,4 @@ verify/example/minikube/mtls/outbound:
 	@echo "Check passed!"
 
 kumactl/example/minikube:
-	cat examples/minikube/kumactl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KUMACTL_DOCKER_IMAGE)
+	cat tools/e2e/examples/minikube/kumactl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KUMACTL_DOCKER_IMAGE)
