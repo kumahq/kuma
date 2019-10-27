@@ -71,15 +71,15 @@ EXAMPLE_ENVOY_IP ?= $(LOCAL_IP)
 EXAMPLE_ENVOY_PORT ?= 8080
 ENVOY_ADMIN_PORT ?= 9901
 
-EXAMPLE_NAMESPACE ?= kuma-demo
+EXAMPLE_NAMESPACE ?= kuma-example
 
 KIND_KUBECONFIG = $(shell kind get kubeconfig-path --name=kuma)
 
 define KIND_EXAMPLE_DATAPLANE_MESH
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
 endef
 define KIND_EXAMPLE_DATAPLANE_NAME
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
+$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
@@ -292,9 +292,9 @@ start/kind:
 deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl label namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f examples/local/demo-app.yaml
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=120s --for=condition=Available -n $(EXAMPLE_NAMESPACE) deployment/demo-app
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=demo-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=120s --for=condition=Available -n $(EXAMPLE_NAMESPACE) deployment/example-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
 
 kind/load/control-plane: image/kuma-cp
 	kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=kuma
@@ -310,8 +310,8 @@ deploy/control-plane/k8s: build/kumactl
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n kuma-system pod -l app=kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=demo-app
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=demo-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
 
 start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
