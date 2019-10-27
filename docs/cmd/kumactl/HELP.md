@@ -139,6 +139,7 @@ Flags:
       --address string   URL of the Control Plane API Server (required)
   -h, --help             help for add
       --name string      reference name for the Control Plane (required)
+      --overwrite        Overwrite existing Control Plane config with the same reference name
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -218,7 +219,7 @@ Flags:
       --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
       --control-plane-image string          image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io/kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
-      --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
+      --control-plane-version string        version shared by all components of the Kuma Control Plane (default "0.2.2-48-ga7b73e9")
       --dataplane-image string              image of the Kuma Dataplane component (default "kong-docker-kuma-docker.bintray.io/kuma-dp")
       --dataplane-init-image string         init image of the Kuma Dataplane component (default "docker.io/istio/proxy_init")
       --dataplane-init-version string       version of the init image of the Kuma Dataplane component (default "1.1.2")
