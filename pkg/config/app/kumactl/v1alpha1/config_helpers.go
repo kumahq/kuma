@@ -56,12 +56,18 @@ func (cfg *Configuration) GetControlPlane(name string) (int, *ControlPlane) {
 	return -1, nil
 }
 
-func (cfg *Configuration) AddControlPlane(cp *ControlPlane) bool {
-	_, old := cfg.GetControlPlane(cp.Name)
+func (cfg *Configuration) AddControlPlane(cp *ControlPlane, force bool) bool {
+	idx, old := cfg.GetControlPlane(cp.Name)
 	if old != nil {
-		return false
+		if !force {
+			return false
+		}
+		cfg.ControlPlanes[idx] = cp
+
+	} else {
+		cfg.ControlPlanes = append(cfg.ControlPlanes, cp)
 	}
-	cfg.ControlPlanes = append(cfg.ControlPlanes, cp)
+
 	return true
 }
 

@@ -13,6 +13,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	args := struct {
 		name         string
 		apiServerURL string
+		overwrite    bool
 	}{}
 	cmd := &cobra.Command{
 		Use:   "add",
@@ -35,7 +36,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			if err := config.ValidateCpCoordinates(cp); err != nil {
 				return err
 			}
-			if !cfg.AddControlPlane(cp) {
+			if !cfg.AddControlPlane(cp, args.overwrite) {
 				return errors.Errorf("Control Plane with name %q already exists", cp.Name)
 			}
 			ctx := &config_proto.Context{
@@ -62,5 +63,6 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	_ = cmd.MarkFlagRequired("name")
 	cmd.Flags().StringVar(&args.apiServerURL, "address", "", "URL of the Control Plane API Server (required)")
 	_ = cmd.MarkFlagRequired("address")
+	cmd.Flags().BoolVar(&args.overwrite, "overwrite", false, "Overwrite existing Control Plane config with the same reference name")
 	return cmd
 }
