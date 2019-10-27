@@ -17,8 +17,6 @@
 		build/kuma-cp/linux-amd64 build/kuma-dp/linux-amd64 build/kumactl/linux-amd64 build/kuma-injector/linux-amd64 build/kuma-tcp-echo/linux-amd64 \
 		docs _docs_ docs/kumactl \
 		run/example/envoy config_dump/example/envoy \
-		run/example/docker-compose wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
-		verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
 		build/example/minikube load/example/minikube deploy/example/minikube wait/example/minikube apply/example/minikube/mtls wait/example/minikube/mtls curl/example/minikube stats/example/minikube \
 		verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		verify/example/minikube/mtls/outbound verify/example/minikube/mtls \
@@ -174,8 +172,6 @@ CLANG_FORMAT_PATH ?= clang-format
 export TEST_ASSET_KUBE_APISERVER=$(KUBE_APISERVER_PATH)
 export TEST_ASSET_ETCD=$(ETCD_PATH)
 export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
-
-DOCKER_COMPOSE_OPTIONS ?=
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z0-9_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -420,7 +416,7 @@ run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mod
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 start/postgres: ## Boostrap: start Postgres for Control Plane with initial schema
-	docker-compose -f tools/postgres/docker-compose.yaml up $(DOCKER_COMPOSE_OPTIONS) -d
+	docker-compose -f tools/postgres/docker-compose.yaml up -d
 	tools/postgres/wait-for-postgres.sh 15432
 
 run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
@@ -573,32 +569,6 @@ print/kubebuilder/test_assets: ## Dev: Print Kubebuilder Environment variables
 	@echo export TEST_ASSET_KUBE_APISERVER=$(TEST_ASSET_KUBE_APISERVER)
 	@echo export TEST_ASSET_ETCD=$(TEST_ASSET_ETCD)
 	@echo export TEST_ASSET_KUBECTL=$(TEST_ASSET_KUBECTL)
-
-run/example/docker-compose: ## Docker Compose: Run demo setup
-	docker-compose -f examples/docker-compose/docker-compose.yaml pull
-	docker-compose -f examples/docker-compose/docker-compose.yaml up --build --no-start
-	docker-compose -f examples/docker-compose/docker-compose.yaml up $(DOCKER_COMPOSE_OPTIONS)
-
-wait/example/docker-compose: ## Docker Compose: Wait for demo setup to get ready
-	docker run --network docker-compose_envoymesh --rm -ti $(CI_TOOLS_IMAGE) dockerize -wait http://demo-app:8080 -timeout 1m
-
-curl/example/docker-compose: ## Docker Compose: Make sample requests to demo setup
-	docker run --network docker-compose_envoymesh --rm -ti $(CI_TOOLS_IMAGE) sh -c 'set -e ; for i in `seq 1 10`; do test $$(curl -s http://demo-app:8080 | jq -r .url) = "http://mockbin.org/request" && echo "request #$$i successful" ; sleep 1 ; done'
-
-stats/example/docker-compose: ## Docker Compose: Observe Envoy metrics from demo setup
-	docker-compose -f examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep upstream_rq_total
-
-verify/example/docker-compose/inbound:
-	@echo "Checking number of Inbound requests via Envoy ..."
-	test $$( docker-compose --file examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8080"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 10
-	@echo "Check passed!"
-
-verify/example/docker-compose/outbound:
-	@echo "Checking number of Outbound requests via Envoy ..."
-	test $$( docker-compose --file examples/docker-compose/docker-compose.yaml exec envoy curl -s localhost:9901/stats/prometheus | grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 10
-	@echo "Check passed!"
-
-verify/example/docker-compose: verify/example/docker-compose/inbound verify/example/docker-compose/outbound ## Docker Compose: Verify Envoy stats (after sample requests)
 
 build/example/minikube: ## Minikube: build Docker images inside Minikube
 	eval $$(minikube docker-env) && $(MAKE) images
