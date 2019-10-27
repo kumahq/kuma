@@ -1,0 +1,195 @@
+version: '3.5'
+
+services:
+
+  #
+  # Kuma Control Plane in "universal" mode with "in-memory" configuration store.
+  #
+  kuma-control-plane:
+    # image name must be provided via environment variable KUMA_CP_DOCKER_IMAGE
+    image: ${KUMA_CP_DOCKER_IMAGE:-kuma/kuma-cp:latest}
+    command:
+    - run
+    - --log-level=info
+    environment:
+    # DNS name of the Kuma xDS server
+    - KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST=kuma-control-plane
+    expose:
+    - "5678"
+    - "5679"
+    - "5680"
+    - "5681"
+    - "5682"
+    ports:
+    - "5678:5678"
+    - "5679:5679"
+    - "5680:5680"
+    - "5681:5681"
+    - "5682:5682"
+    networks:
+      kuma-example:
+        aliases:
+        - kuma-control-plane
+    restart: on-failure
+
+  #
+  # Installation script for Kuma example.
+  #
+  # Uses `kumactl` to create Dataplane resources, generate dataplane tokens, etc.
+  #
+  kuma-example-installer:
+    # image name must be provided via environment variable KUMACTL_DOCKER_IMAGE
+    image: ${KUMACTL_DOCKER_IMAGE:-kuma/kumactl:latest}
+    volumes:
+    - ./kuma-example-installer.sh:/kuma-example/kuma-example-installer.sh
+    command:
+      - /kuma-example/kuma-example-installer.sh
+    networks:
+      kuma-example: {}
+    depends_on:
+      - kuma-control-plane
+    restart: on-failure
+
+  #
+  # Auxiliary service (container) for sharing Linux network namespace
+  # between Example Application and Kuma Sidecar.
+  #
+  kuma-example-app-namespace:
+    image: busybox:1.31.0
+    command: ["sleep", "infinity"]
+    # The following `expose` configuration was originally a part of `kuma-example-app` service.
+    # However, `expose` settings are incompatible with `network_mode: service:...`
+    # and had to be moved here.
+    expose:
+    - "8000"
+    # The following `ports` configuration was originally a part of `kuma-example-app` service.
+    # However, `ports` settings are incompatible with `network_mode: service:...`
+    # and had to be moved here.
+    ports:
+    - "8000:8000"
+    networks:
+      kuma-example:
+        aliases:
+        - kuma-example-app
+    depends_on:
+    - kuma-control-plane
+    restart: on-failure
+
+  #
+  # Example application deployed into Kuma mesh.
+  #
+  # Notice that we're using Kong (API Gateway) as an example application
+  # since it's a perfect example of a (micro-)service that is both
+  # source and destination for network requests.
+  #
+  kuma-example-app:
+    image: kong:1.1.2-alpine
+    volumes:
+    - ./kong.yaml:/etc/kong/kong.yaml
+    environment:
+    - KONG_PROXY_LISTEN=127.0.0.1:8000
+    - KONG_ADMIN_LISTEN=off
+    - KONG_DATABASE=off
+    - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yaml
+    # the following setting instructs Docker Compose to add `kuma-example-app` container
+    # to the network namespace of `kuma-example-app-namespace` container
+    network_mode: service:kuma-example-app-namespace
+    depends_on:
+    - kuma-example-app-namespace
+    restart: on-failure
+
+  #
+  # Kuma sidecar for the example application.
+  #
+  kuma-example-app-sidecar:
+    # image name must be provided via environment variable KUMA_DP_DOCKER_IMAGE
+    image: ${KUMA_DP_DOCKER_IMAGE:-kuma/kuma-dp:latest}
+    command:
+    - run
+    - --log-level=info
+    environment:
+    - KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://kuma-control-plane:5682
+    - KUMA_DATAPLANE_MESH=default
+    - KUMA_DATAPLANE_NAME=kuma-example-app
+    - KUMA_DATAPLANE_ADMIN_PORT=9901
+    # the following setting instructs Docker Compose to add `kuma-example-app-sidecar` container
+    # to the network namespace of `kuma-example-app-namespace` container
+    network_mode: service:kuma-example-app-namespace
+    depends_on:
+    - kuma-example-app-namespace
+    restart: on-failure
+
+  #
+  # Auxiliary service (container) for sharing Linux network namespace
+  # between Example Client and Kuma Sidecar.
+  #
+  kuma-example-client-namespace:
+    image: busybox:1.31.0
+    command: ["sleep", "infinity"]
+    # The following `expose` configuration was originally a part of `kuma-example-client` service.
+    # However, `expose` settings are incompatible with `network_mode: service:...`
+    # and had to be moved here.
+    expose:
+    - "3000"
+    # The following `ports` configuration was originally a part of `kuma-example-client` service.
+    # However, `ports` settings are incompatible with `network_mode: service:...`
+    # and had to be moved here.
+    ports:
+    - "3000:3000"
+    networks:
+      kuma-example:
+        aliases:
+        - kuma-example-client
+    depends_on:
+    - kuma-control-plane
+    restart: on-failure
+
+  #
+  # Example client deployed into Kuma mesh.
+  #
+  kuma-example-client:
+    image: kong-docker-kuma-ci-docker.bintray.io/curl
+    command:
+    - nc
+    - -lk
+    - -s
+    - 127.0.0.1
+    - -p
+    - "3000"
+    - -e
+    - curl
+    - --silent
+    - --show-error
+    - --include
+    - --fail
+    - http://kuma-example-app:8000/request
+    # the following setting instructs Docker Compose to add `kuma-example-client` container
+    # to the network namespace of `kuma-example-client-namespace` container
+    network_mode: service:kuma-example-client-namespace
+    depends_on:
+    - kuma-example-client-namespace
+    restart: on-failure
+
+  #
+  # Kuma sidecar for the example client.
+  #
+  kuma-example-client-sidecar:
+    # image name must be provided via environment variable KUMA_DP_DOCKER_IMAGE
+    image: ${KUMA_DP_DOCKER_IMAGE:-kuma/kuma-dp:latest}
+    command:
+    - run
+    - --log-level=info
+    environment:
+    - KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://kuma-control-plane:5682
+    - KUMA_DATAPLANE_MESH=default
+    - KUMA_DATAPLANE_NAME=kuma-example-client
+    - KUMA_DATAPLANE_ADMIN_PORT=9901
+    # the following setting instructs Docker Compose to add `kuma-example-app-sidecar` container
+    # to the network namespace of `kuma-example-app-namespace` container
+    network_mode: service:kuma-example-client-namespace
+    depends_on:
+    - kuma-example-client-namespace
+    restart: on-failure
+
+networks:
+  kuma-example: {}
