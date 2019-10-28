@@ -64,13 +64,16 @@ func (r *resourcesManager) Delete(ctx context.Context, resource model.Resource, 
 }
 
 func (r *resourcesManager) DeleteAll(ctx context.Context, list model.ResourceList, fs ...store.DeleteAllOptionsFunc) error {
-	opts := store.NewDeleteAllOptions(fs...)
+	return DeleteAllResources(r, ctx, list, fs...)
+}
 
-	if err := r.List(ctx, list, store.ListByMesh(opts.Mesh)); err != nil {
+func DeleteAllResources(manager ResourceManager, ctx context.Context, list model.ResourceList, fs ...store.DeleteAllOptionsFunc) error {
+	opts := store.NewDeleteAllOptions(fs...)
+	if err := manager.List(ctx, list, store.ListByMesh(opts.Mesh)); err != nil {
 		return err
 	}
-	for _, obj := range list.GetItems() {
-		if err := r.Delete(ctx, obj, store.DeleteBy(model.MetaToResourceKey(obj.GetMeta()))); err != nil && !store.IsResourceNotFound(err) {
+	for _, item := range list.GetItems() {
+		if err := manager.Delete(ctx, item, store.DeleteBy(model.MetaToResourceKey(item.GetMeta()))); err != nil && !store.IsResourceNotFound(err) {
 			return err
 		}
 	}

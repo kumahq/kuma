@@ -127,20 +127,10 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 }
 
 func (m *meshManager) DeleteAll(ctx context.Context, list core_model.ResourceList, fs ...core_store.DeleteAllOptionsFunc) error {
-	meshes, err := m.meshes(list)
-	if err != nil {
+	if _, err := m.meshes(list); err != nil {
 		return err
 	}
-	opts := core_store.NewDeleteAllOptions(fs...)
-	if err := m.List(ctx, list, core_store.ListByMesh(opts.Mesh)); err != nil {
-		return err
-	}
-	for _, item := range meshes.Items {
-		if err := m.Delete(ctx, item, core_store.DeleteBy(core_model.MetaToResourceKey(item.Meta))); err != nil && !core_store.IsResourceNotFound(err) {
-			return err
-		}
-	}
-	return nil
+	return core_manager.DeleteAllResources(m, ctx, list, fs...)
 }
 
 func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {

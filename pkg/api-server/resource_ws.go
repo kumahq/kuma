@@ -10,6 +10,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/emicklei/go-restful"
 	"github.com/pkg/errors"
 )
@@ -160,6 +161,8 @@ func (r *resourceWs) createResource(ctx context.Context, name string, meshName s
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(namespace, name, meshName)); err != nil {
 		if manager.IsMeshNotFound(err) {
 			writeError(response, 400, fmt.Sprintf("Mesh of name %v is not found", meshName))
+		} else if validators.IsValidationError(err) {
+			writeError(response, 400, err.Error())
 		} else {
 			core.Log.Error(err, "Could not create a resource")
 			writeError(response, 500, "Could not create a resource")
@@ -172,8 +175,12 @@ func (r *resourceWs) createResource(ctx context.Context, name string, meshName s
 func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, restRes rest.Resource, response *restful.Response) {
 	_ = res.SetSpec(restRes.Spec)
 	if err := r.resManager.Update(ctx, res); err != nil {
-		core.Log.Error(err, "Could not update a resource")
-		writeError(response, 500, "Could not update a resource")
+		if validators.IsValidationError(err) {
+			writeError(response, 400, err.Error())
+		} else {
+			core.Log.Error(err, "Could not update a resource")
+			writeError(response, 500, "Could not update a resource")
+		}
 	} else {
 		response.WriteHeader(200)
 	}

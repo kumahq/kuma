@@ -214,6 +214,10 @@ var _ = Describe("Resource WS", func() {
 			// then
 			Expect(response.StatusCode).To(Equal(400))
 		})
+
+		It("should return 400 on validation error", func() {
+
+		})
 	})
 
 	Describe("On DELETE", func() {

@@ -58,5 +58,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.ResourceMana
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), customizableManager, builder.SecretManager(), registry.Global())
 	customManagers[core_mesh.MeshType] = meshManager
+	dataplaneManager := mesh_managers.NewDataplaneManager(builder.ResourceStore())
+	customManagers[core_mesh.DataplaneType] = dataplaneManager
 	return customizableManager
 }
