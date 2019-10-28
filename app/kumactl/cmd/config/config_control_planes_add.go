@@ -63,6 +63,6 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	_ = cmd.MarkFlagRequired("name")
 	cmd.Flags().StringVar(&args.apiServerURL, "address", "", "URL of the Control Plane API Server (required)")
 	_ = cmd.MarkFlagRequired("address")
-	cmd.Flags().BoolVar(&args.overwrite, "overwrite", false, "Overwrite existing Control Plane config with the same reference name")
+	cmd.Flags().BoolVar(&args.overwrite, "overwrite", false, "overwrite existing Control Plane with the same reference name")
 	return cmd
 }
