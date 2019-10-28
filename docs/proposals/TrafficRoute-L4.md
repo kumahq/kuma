@@ -127,7 +127,7 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
 * When deciding which `TrafficRoute`s apply to a given `Dataplane`, control plane will ignore the `namespace` a `TrafficRoute` belongs to
   * which means that users constraint by RBAC to `namespace A` will still be able to affect routing to/from service in `namespace B`
 
-## Open questions:
+## Considered corner cases
 
 1. How to order/prioritize multiple `TrafficRoute`s that match the same *outbound* interface ?
 
@@ -169,6 +169,11 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
           region: eu-west-3 # <<< subset 2
     ```
 
+    **Answer:**
+
+    1. the most recently created rule wins
+    2. don't allow this to happen by denying a CREATE/UPDATE that introduces a new rule for exactly the same selectors
+
    B. Does match by 2 tags have higher priority than match by 1 tag ? E.g.,
 
    ```yaml
@@ -207,6 +212,8 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
          service: backend
          region: eu-west-3 # <<< subset 2
    ```
+
+   **Answer:** yes, a more specifc selector (i.e., by 2 tags instead of just 1) is considered a better match
    
    C. Does match by exact value have higher priority than match by '*' ? E.g.,
  
@@ -245,6 +252,8 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
          service: backend
          region: eu-west-3 # <<< subset 2
    ```
+
+   **Answer:** yes, a match by the exact value has more weight than match by '*'
 
    D. How to order matches by differnt tags ? E.g.,
 
@@ -286,6 +295,8 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
          region: eu-west-3 # <<< subset 2
    ```
 
+   **Answer:** the most recently created rule wins
+
    E. If 2 rules inside a single `TrafficRoute` match, should we take into account their position in the list ? E.g.,
 
    ```yaml
@@ -316,9 +327,24 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
          region: eu-west-3 # <<< subset 2
    ```
 
+   **Answer:** prevent this situation from happening by simplifying `TrafficRoute` - there should be only 1 `rule` per `TrafficRoute`
+
+   F. What if a new `TrafficRoute` doesn't cause collisions at the moment when it's created, but it starts causing collisions later when a new `Dataplane` is added or an existing `Dataplane` definition is updated with extra `tags` ?
+
+   **Answer:**
+   1. the most recently created rule wins
+   2. Control Plane should expose metrics that make this situation noticeable
+   3. either incorporate information about collisions into the existing `DataplaneInsights` resource or introduce a new `Alert` resource
+   4. distinguish different levels of alerts: `warnings` vs `errors`
+
 2. Naming of "ad-hoc" clusters
    * What naming scheme to use ?
+
+     **Answer:** concatenate all labeles
+
    * How will it affect per `Cluster` metrics ?
+
+     **Answer:** it is possible to aggregate (inside `Envoy`) metrics of an "ad-hoc" cluster into the metrics of the cluster per `service`
 
 ## Out of scope
 
