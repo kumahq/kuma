@@ -66,6 +66,8 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, err
 	}
 
+	r.Log.WithValues("req", req).V(1).Info("other dataplanes", "others", others)
+
 	if err := r.createOrUpdateDataplane(pod, services, others); err != nil {
 		return kube_ctrl.Result{}, err
 	}
@@ -193,9 +195,28 @@ func (m *DataplaneToSameMeshDataplanesMapper) Map(obj kube_handler.MapObject) []
 		return nil
 	}
 
+	ctx := context.Background()
+
+	// Fetch the Dataplane instance
+	if err := m.Client.Get(ctx, kube_types.NamespacedName{Namespace: cause.Namespace, Name: cause.Name}, &mesh_k8s.Dataplane{}); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			// a Dataplane object might be deleted by a user.
+			// in that case we need to trigger reconciliation of a parent Pod.
+			ownerRef := kube_meta.GetControllerOf(cause)
+			if ownerRef == nil || ownerRef.Kind != "Pod" {
+				return nil
+			}
+			return []kube_reconile.Request{
+				{NamespacedName: kube_types.NamespacedName{Namespace: cause.Namespace, Name: ownerRef.Name}},
+			}
+		}
+		m.Log.WithValues("dataplane", cause).Error(err, "failed to fetch Dataplane")
+		return nil
+	}
+
 	// List Dataplanes in the same Mesh as the original
 	dataplanes := &mesh_k8s.DataplaneList{}
-	if err := m.Client.List(context.Background(), dataplanes); err != nil {
+	if err := m.Client.List(ctx, dataplanes); err != nil {
 		m.Log.WithValues("dataplane", obj.Meta).Error(err, "failed to fetch Dataplanes")
 		return nil
 	}

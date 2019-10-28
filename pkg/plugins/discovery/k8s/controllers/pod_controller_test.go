@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/Kong/kuma/pkg/plugins/discovery/k8s/controllers"
@@ -15,7 +16,9 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +55,7 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "pod-with-kuma-sidecar-and-ip",
 					Annotations: map[string]string{
-						"kuma.io/mesh":             "pilot",
+						"kuma.io/mesh":             "poc",
 						"kuma.io/sidecar-injected": "true",
 					},
 				},
@@ -226,7 +229,7 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(actual).To(MatchYAML(`
-        mesh: pilot
+        mesh: poc
         metadata:
           creationTimestamp: null
           name: pod-with-kuma-sidecar-and-ip
@@ -290,7 +293,7 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(actual).To(MatchYAML(`
-        mesh: pilot
+        mesh: poc
         metadata:
           creationTimestamp: null
           name: pod-with-kuma-sidecar-and-ip
@@ -313,4 +316,180 @@ var _ = Describe("PodReconciler", func() {
                 service: example.demo.svc:6061
 `))
 	})
+})
+
+var _ = Describe("DataplaneToSameMeshDataplanesMapper", func() {
+
+	isController := true
+	blockOwnerDeletion := true
+
+	var kubeClient kube_client.Client
+
+	BeforeEach(func() {
+		kubeClient = kube_client_fake.NewFakeClientWithScheme(
+			k8sClientScheme,
+			&mesh_k8s.Dataplane{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "existing-app-without-other-dataplanes-in-that-mesh",
+				},
+				Mesh: "poc",
+			},
+			&mesh_k8s.Dataplane{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "client-app",
+					Name:      "existing-app-with-other-dataplanes-in-that-mesh",
+				},
+				Mesh: "default",
+			},
+			&mesh_k8s.Dataplane{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "service1-app",
+					Name:      "other-app-in-that-mesh",
+					OwnerReferences: []kube_meta.OwnerReference{
+						{
+							APIVersion:         "",
+							Kind:               "Pod",
+							Name:               "other-app-in-that-mesh",
+							UID:                kube_types.UID("abcdefgh"),
+							Controller:         &isController,
+							BlockOwnerDeletion: &blockOwnerDeletion,
+						},
+					},
+				},
+				Mesh: "default",
+			},
+			&mesh_k8s.Dataplane{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "service2-app",
+					Name:      "yet-another-app-in-that-mesh",
+					// should be ignored because it has no owner reference to a Pod
+				},
+				Mesh: "default",
+			},
+		)
+	})
+
+	type testCase struct {
+		obj      kube_handler.MapObject
+		expected []kube_reconile.Request
+	}
+
+	DescribeTable("should map a Dataplane to its peers",
+		func(given testCase) {
+			// setup
+			mapper := &DataplaneToSameMeshDataplanesMapper{
+				Client: kubeClient,
+				Log:    core.Log.WithName("dataplane-to-dataplanes-mapper"),
+			}
+
+			// when
+			requests := mapper.Map(given.obj)
+
+			// then
+			Expect(requests).To(Equal(given.expected))
+		},
+		Entry("nil object", testCase{
+			obj:      kube_handler.MapObject{},
+			expected: nil,
+		}),
+		Entry("non-Dataplane object", testCase{
+			obj: kube_handler.MapObject{
+				Meta:   &kube_meta.ObjectMeta{},
+				Object: &kube_core.Pod{},
+			},
+			expected: nil,
+		}),
+		Entry("deleted Dataplane object with no owner", testCase{
+			obj: kube_handler.MapObject{
+				Meta: &kube_meta.ObjectMeta{},
+				Object: &mesh_k8s.Dataplane{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Name:      "deleted-app",
+						Namespace: "demo",
+					},
+				},
+			},
+			expected: nil,
+		}),
+		Entry("deleted Dataplane object with owner other than Pod", testCase{
+			obj: kube_handler.MapObject{
+				Meta: &kube_meta.ObjectMeta{},
+				Object: &mesh_k8s.Dataplane{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Name:      "deleted-app",
+						Namespace: "demo",
+						OwnerReferences: []kube_meta.OwnerReference{
+							{
+								APIVersion:         "apps/v1",
+								Kind:               "Deployment",
+								Name:               "example-deployment",
+								UID:                kube_types.UID("abcdefgh"),
+								Controller:         &isController,
+								BlockOwnerDeletion: &blockOwnerDeletion,
+							},
+						},
+					},
+				},
+			},
+			expected: nil,
+		}),
+		Entry("deleted Dataplane object with owner Pod", testCase{
+			obj: kube_handler.MapObject{
+				Meta: &kube_meta.ObjectMeta{},
+				Object: &mesh_k8s.Dataplane{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Name:      "deleted-app",
+						Namespace: "demo",
+						OwnerReferences: []kube_meta.OwnerReference{
+							{
+								APIVersion:         "v1",
+								Kind:               "Pod",
+								Name:               "deleted-app",
+								UID:                kube_types.UID("abcdefgh"),
+								Controller:         &isController,
+								BlockOwnerDeletion: &blockOwnerDeletion,
+							},
+						},
+					},
+				},
+			},
+			expected: []kube_reconile.Request{
+				{
+					NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "deleted-app"},
+				},
+			},
+		}),
+		Entry("existing Dataplane object with no other dataplanes in that mesh", testCase{
+			obj: kube_handler.MapObject{
+				Meta: &kube_meta.ObjectMeta{},
+				Object: &mesh_k8s.Dataplane{
+					Mesh: "poc",
+					ObjectMeta: kube_meta.ObjectMeta{
+						Name:      "existing-app-without-other-dataplanes-in-that-mesh",
+						Namespace: "demo",
+					},
+				},
+			},
+			expected: nil, // should not return Dataplane itself unles it was deleted
+		}),
+		Entry("existing Dataplane object with other dataplanes in that mesh", testCase{
+			obj: kube_handler.MapObject{
+				Meta: &kube_meta.ObjectMeta{},
+				Object: &mesh_k8s.Dataplane{
+					Mesh: "default",
+					ObjectMeta: kube_meta.ObjectMeta{
+						Name:      "existing-app-with-other-dataplanes-in-that-mesh",
+						Namespace: "client-app",
+					},
+				},
+			},
+			expected: []kube_reconile.Request{
+				{
+					NamespacedName: kube_types.NamespacedName{Namespace: "service1-app", Name: "other-app-in-that-mesh"},
+				},
+			},
+		}),
+	)
+
 })
