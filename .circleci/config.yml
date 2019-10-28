@@ -84,6 +84,9 @@ jobs:
       GO_VERSION: *go_version
       GO111MODULE: "on"
       CLANG_FORMAT_PATH: clang-format-6.0
+      # if GOPATH is not set, `golang-ci` fails with an obscure message
+      # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+      GOPATH: /root/.go-kuma-go
     steps:
     - checkout
     - run:
@@ -125,6 +128,10 @@ jobs:
 
   dev_mac:
     executor: mac
+    environment:
+      # if GOPATH is not set, `golang-ci` fails with an obscure message
+      # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+      GOPATH: /Users/distiller/.go-kuma-go
     steps:
     - checkout
     - run:
@@ -278,7 +285,7 @@ jobs:
   integration:
     executor: vm
     environment:
-      GOPATH: /home/circleci/.go
+      GOPATH: /home/circleci/.go-kuma-go
     steps:
     - checkout
     - run:
@@ -304,7 +311,7 @@ jobs:
     - save_cache:
         key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
         paths:
-          - "/home/circleci/.go"
+          - "/home/circleci/.go-kuma-go"
     - run:
         name: "Install all development tools"
         command: |

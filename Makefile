@@ -107,6 +107,7 @@ endif
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.1.0
 GOGO_PROTOBUF_VERSION := v1.2.1
+GOLANGCI_LINT_VERSION := v1.21.0
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0
 CI_KIND_VERSION ?= v0.5.1
@@ -130,6 +131,7 @@ MINIKUBE_PATH := $(CI_TOOLS_DIR)/minikube
 KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
 KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
 ETCD_PATH := $(CI_TOOLS_DIR)/etcd
+GOLANGCI_LINT_DIR := $(CI_TOOLS_DIR)
 
 PROTO_DIR := ./pkg/config
 
@@ -240,7 +242,10 @@ vet: ## Dev: Run go vet
 	@# for consistency with `fmt`
 	make vet -C pkg/plugins/resources/k8s/native
 
-check: generate fmt vet docs ## Dev: Run code checks (go fmt, go vet, ...)
+golangci-lint: ## Dev: Runs golangci-lint linter
+	$(GOLANGCI_LINT_DIR)/golangci-lint run -v
+
+check: generate fmt vet docs golangci-lint ## Dev: Run code checks (go fmt, go vet, ...)
 	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
