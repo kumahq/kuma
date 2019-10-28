@@ -28,7 +28,9 @@ var _ = Describe("Sync", func() {
 
 			By("simulating Envoy connecting to the Control Plane")
 			// when
-			tracker.OnStreamOpen(ctx, streamID, typ)
+			err := tracker.OnStreamOpen(ctx, streamID, typ)
+			// then
+			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating Envoy disconnecting from the Control Plane prior to any DiscoveryRequest")
 			// and
@@ -50,11 +52,13 @@ var _ = Describe("Sync", func() {
 
 			By("simulating Envoy connecting to the Control Plane")
 			// when
-			tracker.OnStreamOpen(ctx, streamID, typ)
+			err := tracker.OnStreamOpen(ctx, streamID, typ)
+			// then
+			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating DiscoveryRequest")
 			// when
-			err := tracker.OnStreamRequest(streamID, req)
+			err = tracker.OnStreamRequest(streamID, req)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -90,11 +94,13 @@ var _ = Describe("Sync", func() {
 
 			By("simulating Envoy connecting to the Control Plane")
 			// when
-			tracker.OnStreamOpen(ctx, streamID, typ)
+			err := tracker.OnStreamOpen(ctx, streamID, typ)
+			// then
+			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating DiscoveryRequest")
 			// when
-			err := tracker.OnStreamRequest(streamID, req)
+			err = tracker.OnStreamRequest(streamID, req)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

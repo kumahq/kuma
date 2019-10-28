@@ -26,7 +26,7 @@ var _ = Describe("Default config", func() {
 		}
 	})
 
-	It("should be check agains the kuma-cp.defaults.yaml file", func() {
+	It("should be check against the kuma-cp.defaults.yaml file", func() {
 		// given
 		cfg := Config{
 			Discovery: &discovery.DiscoveryConfig{

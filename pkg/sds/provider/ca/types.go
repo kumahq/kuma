@@ -22,7 +22,7 @@ func (s *MeshCaSecret) ToResource(name string) *envoy_auth.Secret {
 			ValidationContext: &envoy_auth.CertificateValidationContext{
 				TrustedCa: &envoy_core.DataSource{
 					Specifier: &envoy_core.DataSource_InlineBytes{
-						InlineBytes: []byte(bytes.Join(s.PemCerts, []byte("\n"))),
+						InlineBytes: bytes.Join(s.PemCerts, []byte("\n")),
 					},
 				},
 			},

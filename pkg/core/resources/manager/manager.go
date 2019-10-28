@@ -41,14 +41,14 @@ func (r *resourcesManager) List(ctx context.Context, list model.ResourceList, fs
 func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 	if resource.GetType() != mesh.MeshType {
-		if err := r.ensureMeshExists(ctx, opts.Mesh, opts.Namespace); err != nil {
+		if err := r.ensureMeshExists(ctx, opts.Mesh); err != nil {
 			return err
 		}
 	}
 	return r.Store.Create(ctx, resource, fs...)
 }
 
-func (r *resourcesManager) ensureMeshExists(ctx context.Context, meshName string, namespace string) error {
+func (r *resourcesManager) ensureMeshExists(ctx context.Context, meshName string) error {
 	list := mesh.MeshResourceList{}
 	if err := r.Store.List(ctx, &list, store.ListByMesh(meshName)); err != nil {
 		return err

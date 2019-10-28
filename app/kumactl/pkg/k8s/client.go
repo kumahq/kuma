@@ -18,7 +18,9 @@ type Client interface {
 
 func NewClient(cfg *kube_rest.Config) (Client, error) {
 	scheme := kube_scheme.Scheme
-	mesh_v1alpha1.AddToScheme(scheme)
+	if err := mesh_v1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
 	kubeClient, err := kube_client.New(cfg, kube_client.Options{Scheme: scheme})
 	if err != nil {
 		return nil, err

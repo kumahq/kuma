@@ -109,7 +109,7 @@ func OutboundInterfacesFor(others []*mesh_k8s.Dataplane, serviceGetter kube_clie
 		dataplane := &mesh_proto.Dataplane{}
 		if err := util_proto.FromMap(other.Spec, dataplane); err != nil {
 			converterLog.Error(err, "failed to parse Dataplane", "dataplane", other.Spec)
-			continue // one invalid Dataplane defintion should not break the entire mesh
+			continue // one invalid Dataplane definition should not break the entire mesh
 		}
 		for _, inbound := range dataplane.Networking.GetInbound() {
 			svc, ok := inbound.GetTags()[mesh_proto.ServiceTag]
@@ -123,18 +123,18 @@ func OutboundInterfacesFor(others []*mesh_k8s.Dataplane, serviceGetter kube_clie
 		host, port, err := mesh_proto.ServiceTagValue(serviceTag).HostAndPort()
 		if err != nil {
 			converterLog.Error(err, "failed to parse `service` tag value", "value", serviceTag)
-			continue // one invalid Dataplane defintion should not break the entire mesh
+			continue // one invalid Dataplane definition should not break the entire mesh
 		}
 		name, ns, err := ParseServiceFQDN(host)
 		if err != nil {
 			converterLog.Error(err, "failed to parse `service` host as FQDN", "host", host)
-			continue // one invalid Dataplane defintion should not break the entire mesh
+			continue // one invalid Dataplane definition should not break the entire mesh
 		}
 
 		svc := &kube_core.Service{}
 		if err := serviceGetter.Get(context.Background(), kube_client.ObjectKey{Namespace: ns, Name: name}, svc); err != nil {
 			converterLog.Error(err, "failed to get Service", "namespace", ns, "name", name)
-			continue // one invalid Dataplane defintion should not break the entire mesh
+			continue // one invalid Dataplane definition should not break the entire mesh
 		}
 
 		dataplaneIP := svc.Spec.ClusterIP

@@ -16,7 +16,6 @@ func SplitYAML(file File) []File {
 	bigFileTmp := strings.TrimSpace(bigFile)
 	docs := sep.Split(bigFileTmp, -1)
 	for _, doc := range docs {
-
 		if doc == "" {
 			continue
 		}

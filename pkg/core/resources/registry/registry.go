@@ -65,7 +65,7 @@ func (t *typeRegistry) RegisterListType(resList model.ResourceList) error {
 
 func (t *typeRegistry) NewObject(resType model.ResourceType) (model.Resource, error) {
 	typ, ok := t.objectTypes[resType]
-	if ok != true {
+	if !ok {
 		return nil, errors.New("invalid type of resource type")
 	}
 	return reflect.New(typ).Interface().(model.Resource), nil
@@ -73,7 +73,7 @@ func (t *typeRegistry) NewObject(resType model.ResourceType) (model.Resource, er
 
 func (t *typeRegistry) NewList(resType model.ResourceType) (model.ResourceList, error) {
 	typ, ok := t.objectListTypes[resType]
-	if ok != true {
+	if !ok {
 		return nil, errors.New("invalid type of resource type")
 	}
 	return reflect.New(typ).Interface().(model.ResourceList), nil

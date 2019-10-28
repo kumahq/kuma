@@ -69,8 +69,10 @@ var _ = Describe("Proxy", func() {
 
 			// setup
 			handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				defer GinkgoRecover()
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("hi there!"))
+				_, err := w.Write([]byte("hi there!"))
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			// when

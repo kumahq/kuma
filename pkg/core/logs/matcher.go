@@ -57,7 +57,7 @@ func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.Dat
 	}
 	matchedLog := NewMatchedLogs()
 	for outbound, backendsNames := range matchBackends(&dataplane.Spec, logs) {
-		for backendName, _ := range backendsNames {
+		for backendName := range backendsNames {
 			backend, found := backends[backendName]
 			if !found {
 				logger.Info("Logging backend is not found. Ignoring.", "name", backendName)

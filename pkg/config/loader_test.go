@@ -72,7 +72,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
 			Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
-			Expect(int(cfg.Store.Postgres.Port)).To(Equal(5432))
+			Expect(cfg.Store.Postgres.Port).To(Equal(5432))
 			Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.Password).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
@@ -180,7 +180,7 @@ reports:
 		_, err = file.WriteString("environment: kubernetes")
 		Expect(err).ToNot(HaveOccurred())
 
-		// and overriden config
+		// and overridden config
 		setEnv("KUMA_ENVIRONMENT", "universal")
 
 		// when

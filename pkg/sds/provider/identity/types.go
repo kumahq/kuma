@@ -23,12 +23,12 @@ func (s *IdentityCertSecret) ToResource(name string) *envoy_auth.Secret {
 			TlsCertificate: &envoy_auth.TlsCertificate{
 				CertificateChain: &envoy_core.DataSource{
 					Specifier: &envoy_core.DataSource_InlineBytes{
-						InlineBytes: []byte(bytes.Join(s.PemCerts, []byte("\n"))),
+						InlineBytes: bytes.Join(s.PemCerts, []byte("\n")),
 					},
 				},
 				PrivateKey: &envoy_core.DataSource{
 					Specifier: &envoy_core.DataSource_InlineBytes{
-						InlineBytes: []byte(s.PemKey),
+						InlineBytes: s.PemKey,
 					},
 				},
 			},

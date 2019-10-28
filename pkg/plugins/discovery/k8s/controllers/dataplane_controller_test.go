@@ -47,7 +47,8 @@ var _ = Describe("DataplaneController", func() {
 
 			// setup
 			scheme := runtime.NewScheme()
-			mesh_k8s.AddToScheme(scheme)
+			err := mesh_k8s.AddToScheme(scheme)
+			Expect(err).ToNot(HaveOccurred())
 			mapper := &ProxyTemplateToDataplanesMapper{
 				Client: client_fake.NewFakeClientWithScheme(scheme, dataplane1, dataplane2),
 			}

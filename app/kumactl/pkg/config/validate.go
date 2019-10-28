@@ -25,6 +25,7 @@ func ValidateCpCoordinates(cp *kumactl_config.ControlPlane) error {
 	if err != nil {
 		return errors.Wrap(err, "could not connect to the Control Plane API Server")
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return errors.New("Control Plane API Server is not responding")
 	}

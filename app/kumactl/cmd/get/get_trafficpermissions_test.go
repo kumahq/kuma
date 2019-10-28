@@ -98,7 +98,7 @@ var _ = Describe("kumactl get traffic-permissions", func() {
 			// setup
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return time.Now() },
+					Now: time.Now,
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},

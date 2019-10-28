@@ -165,10 +165,8 @@ var _ = Describe("run", func() {
 			close(stopCh)
 
 			// then
-			select {
-			case err := <-errCh:
-				Expect(err).ToNot(HaveOccurred())
-			}
+			err = <-errCh
+			Expect(err).ToNot(HaveOccurred())
 
 			By("waiting for dataplane (Envoy) to get stopped")
 			Eventually(func() bool {

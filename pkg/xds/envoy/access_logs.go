@@ -47,13 +47,13 @@ func convertLoggingBackend(sourceService string, destinationService string, back
 	if file, ok := backend.GetType().(*v1alpha1.LoggingBackend_File_); ok {
 		return fileAccessLog(format, file)
 	} else if tcp, ok := backend.GetType().(*v1alpha1.LoggingBackend_Tcp_); ok {
-		return tcpAccessLog(format, tcp, proxy.Id)
+		return tcpAccessLog(format, tcp)
 	} else {
 		return nil, errors.Errorf("could not convert LoggingBackend of type %T to AccessLog", backend.GetType())
 	}
 }
 
-func tcpAccessLog(format string, tcp *v1alpha1.LoggingBackend_Tcp_, id core_xds.ProxyId) (*filter_accesslog.AccessLog, error) {
+func tcpAccessLog(format string, tcp *v1alpha1.LoggingBackend_Tcp_) (*filter_accesslog.AccessLog, error) {
 	fileAccessLog := &accesslog.HttpGrpcAccessLogConfig{
 		CommonConfig: &accesslog.CommonGrpcAccessLogConfig{
 			LogName: fmt.Sprintf("%s;%s", tcp.Tcp.Address, format),

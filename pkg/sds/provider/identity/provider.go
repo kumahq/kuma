@@ -53,7 +53,7 @@ func (s *identityCertProvider) Get(ctx context.Context, name string, requestor s
 		}
 		return &IdentityCertSecret{
 			PemCerts: [][]byte{workloadCert.CertPEM},
-			PemKey:   []byte(workloadCert.KeyPEM),
+			PemKey:   workloadCert.KeyPEM,
 		}, nil
 	default:
 		return nil, errors.Errorf("Mesh %q has unsupported CA type", meshName)

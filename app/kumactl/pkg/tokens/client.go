@@ -55,6 +55,7 @@ func (h *httpDataplaneTokenClient) Generate(name string, mesh string) (string, e
 	if err != nil {
 		return "", errors.Wrap(err, "could not execute the request")
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return "", errors.Errorf("unexpected status code %d. Expected 200", resp.StatusCode)
 	}

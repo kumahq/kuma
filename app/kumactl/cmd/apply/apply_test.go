@@ -38,7 +38,7 @@ var _ = Describe("kumactl apply", func() {
 		rootCmd = cmd.NewRootCmd(rootCtx)
 	})
 
-	ValidatePersistedResource := func() error {
+	ValidatePersistedResource := func() {
 		resource := mesh.DataplaneResource{}
 		err := store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", "default"))
 		Expect(err).ToNot(HaveOccurred())
@@ -58,8 +58,6 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Spec.Networking.Outbound[0].Interface).To(Equal(":30000"))
 		Expect(resource.Spec.Networking.Outbound[0].Service).To(Equal("postgres"))
 		Expect(resource.Spec.Networking.Outbound[0].ServicePort).To(Equal(uint32(5432)))
-
-		return nil
 	}
 
 	It("should read configuration from stdin (no -f arg)", func() {
@@ -80,7 +78,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(ValidatePersistedResource()).To(Succeed())
+		ValidatePersistedResource()
 	})
 
 	It("should read configuration from stdin (-f - arg)", func() {
@@ -101,7 +99,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(ValidatePersistedResource()).To(Succeed())
+		ValidatePersistedResource()
 	})
 
 	It("should apply a new Dataplane resource", func() {
@@ -117,7 +115,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(ValidatePersistedResource()).To(Succeed())
+		ValidatePersistedResource()
 	})
 
 	It("should apply an updated Dataplane resource", func() {
@@ -153,7 +151,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(ValidatePersistedResource()).To(Succeed())
+		ValidatePersistedResource()
 	})
 
 	It("should apply a Mesh resource", func() {

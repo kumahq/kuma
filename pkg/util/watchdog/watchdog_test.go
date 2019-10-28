@@ -55,27 +55,21 @@ var _ = Describe("SimpleWatchdog", func() {
 		timeTicks <- time.Time{}
 
 		// then
-		select {
-		case <-onTickCalls:
-		}
+		<-onTickCalls
 
 		By("simulating 2nd tick")
 		// when
 		timeTicks <- time.Time{}
 
 		// then
-		select {
-		case <-onTickCalls:
-		}
+		<-onTickCalls
 
 		By("simulating Dataplane disconnect")
 		// when
 		close(stopCh)
 
 		// then
-		select {
-		case <-doneCh:
-		}
+		<-doneCh
 
 		close(done)
 	}, 5)
@@ -110,19 +104,15 @@ var _ = Describe("SimpleWatchdog", func() {
 		timeTicks <- time.Time{}
 
 		// then
-		select {
-		case actualErr := <-onErrorCalls:
-			Expect(actualErr).To(MatchError(expectedErr))
-		}
+		actualErr := <-onErrorCalls
+		Expect(actualErr).To(MatchError(expectedErr))
 
 		By("simulating Dataplane disconnect")
 		// when
 		close(stopCh)
 
 		// then
-		select {
-		case <-doneCh:
-		}
+		<-doneCh
 
 		close(done)
 	}, 5)

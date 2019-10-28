@@ -94,7 +94,7 @@ var _ = Describe("Components", func() {
 			// then
 			Expect(nextEvent.Delete).To(Equal(core_model.ResourceKey{Mesh: "pilot", Namespace: "demo", Name: "example"}))
 
-			By("creating Dataplane defintion")
+			By("creating Dataplane definition")
 			// when
 			err = runtime.ResourceManager().Create(ctx, &mesh_core.DataplaneResource{}, core_store.CreateBy(core_model.ResourceKey{Mesh: "pilot", Namespace: "demo", Name: "example"}))
 			// then

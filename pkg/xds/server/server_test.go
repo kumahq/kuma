@@ -474,7 +474,10 @@ func TestAggregatedHandlers(t *testing.T) {
 
 func TestClusterWarming(t *testing.T) {
 	config := cache.NewSnapshotCache(true, hasher{}, nil)
-	config.SetSnapshot(node.Id, cache.NewSnapshot("1", []cache.Resource{endpoint}, nil, nil, nil))
+	err := config.SetSnapshot(node.Id, cache.NewSnapshot("1", []cache.Resource{endpoint}, nil, nil, nil))
+	if err != nil {
+		t.Fatalf("got %v, want no error", err)
+	}
 	resp := makeMockStream(t)
 
 	s := server.NewServer(config, &callbacks{})

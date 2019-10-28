@@ -111,7 +111,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 			},
 			{
 				Name:  "KUMA_DATAPLANE_DRAIN_TIME",
-				Value: fmt.Sprintf("%s", i.cfg.SidecarContainer.DrainTime),
+				Value: i.cfg.SidecarContainer.DrainTime.String(),
 			},
 			{
 				Name:  "KUMA_DATAPLANE_RUNTIME_TOKEN_PATH",
