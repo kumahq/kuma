@@ -121,6 +121,8 @@ reports:
   # If true then usage stats will be reported
   enabled: true # ENV: KUMA_REPORTS_ENABLED
 
-# Hostname that other components should use in order to connect to the Control Plane.
-# Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
-advertisedHostname: localhost # ENV: KUMA_ADVERTISED_HOSTNAME
+# General configuration
+general:
+  # Hostname that other components should use in order to connect to the Control Plane.
+  # Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
+  advertisedHostname: localhost # ENV: KUMA_GENERAL_ADVERTISED_HOSTNAME

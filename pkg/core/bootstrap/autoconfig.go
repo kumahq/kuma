@@ -24,14 +24,14 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 func autoconfigureCatalogue(cfg *kuma_cp.Config) {
 	cat := &catalogue.CatalogueConfig{
 		Bootstrap: catalogue.BootstrapApiConfig{
-			Url: fmt.Sprintf("http://%s:%d", cfg.AdvertisedHostname, cfg.BootstrapServer.Port),
+			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port),
 		},
 		DataplaneToken: catalogue.DataplaneTokenApiConfig{
 			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.DataplaneTokenServer.Local.Port),
 		},
 	}
 	if cfg.DataplaneTokenServer.TlsEnabled() {
-		cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.AdvertisedHostname, cfg.DataplaneTokenServer.Public.Port)
+		cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.DataplaneTokenServer.Public.Port)
 	}
 	cfg.ApiServer.Catalogue = cat
 }

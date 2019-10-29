@@ -12,7 +12,7 @@ var _ = Describe("Auto configuration", func() {
 	It("should auto configure catalogue with public settings for dataplane token server", func() {
 		// given
 		cfg := kuma_cp.DefaultConfig()
-		cfg.AdvertisedHostname = "kuma.internal"
+		cfg.General.AdvertisedHostname = "kuma.internal"
 		cfg.DataplaneTokenServer.Local.Port = 1111
 		cfg.DataplaneTokenServer.Public.Interface = "192.168.0.1"
 		cfg.DataplaneTokenServer.Public.Port = 2222
@@ -40,7 +40,7 @@ var _ = Describe("Auto configuration", func() {
 	It("should auto configure catalogue without public settings for dataplane token server", func() {
 		// given
 		cfg := kuma_cp.DefaultConfig()
-		cfg.AdvertisedHostname = "kuma.internal"
+		cfg.General.AdvertisedHostname = "kuma.internal"
 		cfg.DataplaneTokenServer.Local.Port = 1111
 		cfg.BootstrapServer.Port = 3333
 

@@ -52,6 +52,8 @@ type Reports struct {
 }
 
 type Config struct {
+	// General configuration
+	General *GeneralConfig `yaml:"general"`
 	// Environment Type, can be either "kubernetes" or "universal"
 	Environment core.EnvironmentType `yaml:"environment" envconfig:"kuma_environment"`
 	// Resource Store configuration
@@ -74,9 +76,6 @@ type Config struct {
 	Defaults *Defaults `yaml:"defaults"`
 	// Reports configuration
 	Reports *Reports `yaml:"reports"`
-	// Hostname that other components should use in order to connect to the Control Plane.
-	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
-	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_advertised_hostname"`
 }
 
 func DefaultConfig() Config {
@@ -101,7 +100,7 @@ mtls:
 		Reports: &Reports{
 			Enabled: true,
 		},
-		AdvertisedHostname: "localhost",
+		General: DefaultGeneralConfig(),
 	}
 }
 
@@ -137,4 +136,22 @@ func (c *Config) Validate() error {
 		return errors.Wrap(err, "Defaults validation failed")
 	}
 	return nil
+}
+
+type GeneralConfig struct {
+	// Hostname that other components should use in order to connect to the Control Plane.
+	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
+	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_general_advertised_hostname"`
+}
+
+var _ config.Config = &GeneralConfig{}
+
+func (g *GeneralConfig) Validate() error {
+	return nil
+}
+
+func DefaultGeneralConfig() *GeneralConfig {
+	return &GeneralConfig{
+		AdvertisedHostname: "localhost",
+	}
 }
