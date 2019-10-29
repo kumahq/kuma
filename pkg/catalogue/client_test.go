@@ -58,6 +58,7 @@ var _ = Describe("Catalogue client", func() {
 		catalogue, err := client.Catalogue()
 
 		// then
+		Expect(err).ToNot(HaveOccurred())
 		Expect(catalogue).To(Equal(expected))
 	})
 
