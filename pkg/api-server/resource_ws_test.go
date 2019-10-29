@@ -27,7 +27,7 @@ var _ = Describe("Resource WS", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, *config.DefaultApiServerConfig())
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/traffic-routes",

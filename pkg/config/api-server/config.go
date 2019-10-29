@@ -2,6 +2,7 @@ package api_server
 
 import (
 	"errors"
+	"github.com/Kong/kuma/pkg/config/api-server/catalogue"
 
 	"github.com/Kong/kuma/pkg/config"
 )
@@ -14,6 +15,8 @@ type ApiServerConfig struct {
 	Port int `yaml:"port" envconfig:"kuma_api_server_port"`
 	// If true, then API Server will operate in read only mode (serving GET requests)
 	ReadOnly bool `yaml:"readOnly" envconfig:"kuma_api_server_read_only"`
+	// API Catalogue
+	Catalogue *catalogue.CatalogueConfig
 }
 
 func (a *ApiServerConfig) Validate() error {
@@ -25,7 +28,8 @@ func (a *ApiServerConfig) Validate() error {
 
 func DefaultApiServerConfig() *ApiServerConfig {
 	return &ApiServerConfig{
-		Port:     5681,
-		ReadOnly: false,
+		Port:      5681,
+		ReadOnly:  false,
+		Catalogue: &catalogue.CatalogueConfig{},
 	}
 }

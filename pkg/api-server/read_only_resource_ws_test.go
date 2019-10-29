@@ -23,7 +23,7 @@ var _ = Describe("Read only Resource WS", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		cfg := *config.DefaultApiServerConfig()
+		cfg := config.DefaultApiServerConfig()
 		cfg.ReadOnly = true
 		apiServer = createTestApiServer(resourceStore, cfg)
 		client = resourceApiClient{

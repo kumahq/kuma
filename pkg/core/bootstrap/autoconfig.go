@@ -1,6 +1,8 @@
 package bootstrap
 
 import (
+	"fmt"
+	"github.com/Kong/kuma/pkg/config/api-server/catalogue"
 	"io/ioutil"
 	"os"
 
@@ -15,7 +17,23 @@ import (
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
+	autoconfigureCatalogue(cfg)
 	return autoconfigureSds(cfg)
+}
+
+func autoconfigureCatalogue(cfg *kuma_cp.Config) {
+	cat := &catalogue.CatalogueConfig{
+		Bootstrap: catalogue.BootstrapApiConfig{
+			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port),
+		},
+		DataplaneToken: catalogue.DataplaneTokenApiConfig{
+			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.DataplaneTokenServer.Local.Port),
+		},
+	}
+	if cfg.DataplaneTokenServer.TlsEnabled() {
+		cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.DataplaneTokenServer.Public.Port)
+	}
+	cfg.ApiServer.Catalogue = cat
 }
 
 func autoconfigureSds(cfg *kuma_cp.Config) error {
