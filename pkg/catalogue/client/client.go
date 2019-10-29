@@ -45,6 +45,7 @@ func (h *httpCatalogueClient) Catalogue() (catalogue.Catalogue, error) {
 	if err != nil {
 		return result, errors.Wrap(err, "could not execute the request")
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return result, errors.Errorf("unexpected status code %d. Expected 200", resp.StatusCode)
 	}

@@ -10,7 +10,8 @@ dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 dev/tools/all: dev/install/protoc dev/install/protoc-gen-gogofast dev/install/protoc-gen-validate \
 	dev/install/ginkgo \
 	dev/install/kubebuilder dev/install/kustomize \
-	dev/install/kubectl dev/install/kind dev/install/minikube
+	dev/install/kubectl dev/install/kind dev/install/minikube \
+	dev/install/golangci-lint
 
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 	@if [ -e $(PROTOC_PATH) ]; then echo "Protoc $$( $(PROTOC_PATH) --version ) is already installed at $(PROTOC_PATH)" ; fi

@@ -3,7 +3,7 @@
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector \
 		generate protoc/pkg/config/app/kumactl/v1alpha1 generate/kumactl/install/control-plane \
-		fmt fmt/go fmt/proto vet check test integration build run/k8s run/universal/memory run/universal/postgres \
+		fmt fmt/go fmt/proto vet golangci-lint check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-tcp-echo \
 		docker/save docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-injector docker/save/kuma-tcp-echo \
