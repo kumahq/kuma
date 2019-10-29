@@ -46,7 +46,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			if err := ctx.Validate(); err != nil {
 				return errors.Wrapf(err, "Context configuration is not valid")
 			}
-			if !cfg.AddContext(ctx) {
+			if !cfg.AddContext(ctx, args.overwrite) {
 				return errors.Errorf("Context with name %q already exists", ctx.Name)
 			}
 			cfg.CurrentContext = ctx.Name

@@ -14,12 +14,16 @@ func (cfg *Configuration) GetContext(name string) (int, *Context) {
 	return -1, nil
 }
 
-func (cfg *Configuration) AddContext(c *Context) bool {
-	_, old := cfg.GetContext(c.Name)
+func (cfg *Configuration) AddContext(c *Context, force bool) bool {
+	idx, old := cfg.GetContext(c.Name)
 	if old != nil {
-		return false
+		if !force {
+			return false
+		}
+		cfg.Contexts[idx] = c
+	} else {
+		cfg.Contexts = append(cfg.Contexts, c)
 	}
-	cfg.Contexts = append(cfg.Contexts, c)
 	return true
 }
 
