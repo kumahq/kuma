@@ -1,6 +1,12 @@
-.PHONY: build/example/minikube load/example/minikube deploy/example/minikube wait/example/minikube apply/example/minikube/mtls wait/example/minikube/mtls curl/example/minikube stats/example/minikube \
+.PHONY: build/example/docker-compose load/example/docker-compose \
+		deploy/example/docker-compose undeploy/example/docker-compose \
+		wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
+		verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
+		build/example/minikube load/example/minikube deploy/example/minikube wait/example/minikube apply/example/minikube/mtls wait/example/minikube/mtls curl/example/minikube stats/example/minikube \
 		verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		verify/example/minikube/mtls/outbound verify/example/minikube/mtls
+
+DOCKER_COMPOSE_OPTIONS ?=
 
 #
 # Re-usable snippets
@@ -81,6 +87,47 @@ define verify_example_outbound
 	) -ge 1
 	@echo "Check passed!"
 endef
+
+#
+# Docker Compose setup
+#
+
+build/example/docker-compose: images ## Docker Compose: Build Docker images of the Control Plane
+
+load/example/docker-compose: docker/load ## Docker Compose: Load Docker images
+
+deploy/example/docker-compose: ## Docker Compose: Run example setup
+	KUMA_CP_DOCKER_IMAGE=$(KUMA_CP_DOCKER_IMAGE) KUMA_DP_DOCKER_IMAGE=$(KUMA_DP_DOCKER_IMAGE) KUMACTL_DOCKER_IMAGE=$(KUMACTL_DOCKER_IMAGE) \
+		docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
+			up $(DOCKER_COMPOSE_OPTIONS)
+
+undeploy/example/docker-compose: ## Docker Compose: Remove example setup
+	KUMA_CP_DOCKER_IMAGE=$(KUMA_CP_DOCKER_IMAGE) KUMA_DP_DOCKER_IMAGE=$(KUMA_DP_DOCKER_IMAGE) KUMACTL_DOCKER_IMAGE=$(KUMACTL_DOCKER_IMAGE) \
+		docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
+			down
+
+wait/example/docker-compose: ## Docker Compose: Wait for example setup to get ready
+	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
+		exec kuma-example-client $(call wait_for_example_client)
+
+curl/example/docker-compose: ## Docker Compose: Make sample requests to the example setup
+	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
+		exec kuma-example-client $(call curl_example_client)
+
+verify/example/docker-compose/inbound:
+	$(call verify_example_inbound,\
+		docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml exec kuma-example-app\
+	)
+
+verify/example/docker-compose/outbound:
+	@echo "Checking number of Outbound requests via Envoy ..."
+	@echo "Not implemented"
+
+verify/example/docker-compose: verify/example/docker-compose/inbound verify/example/docker-compose/outbound ## Docker Compose: Verify Envoy stats (after sample requests)
+
+stats/example/docker-compose: ## Docker Compose: Observe Envoy metrics from the example setup
+	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
+		exec kuma-example-app curl -s localhost:9901/stats/prometheus | grep upstream_rq_total
 
 #
 # Minikube setup

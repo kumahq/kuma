@@ -363,11 +363,22 @@ jobs:
 
   example_docker-compose:
     executor: vm
+    parameters:
+      docker_images:
+        description: Docker images to use
+        type: string
+        default: ""
     steps:
     - checkout
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: build
+    - run:
+        name: Load Docker images
+        command: make load/example/docker-compose
     - run:
         name: Start Docker Compose setup
-        command: make run/example/docker-compose DOCKER_COMPOSE_OPTIONS=--detach
+        command: make deploy/example/docker-compose DOCKER_COMPOSE_OPTIONS=--detach << parameters.docker_images >>
     - run:
         name: Wait until Envoy listener gets configured
         command: make wait/example/docker-compose
@@ -504,11 +515,10 @@ workflows:
     - images:
         requires:
         - build
-#    TODO(yskopets): Bring back support for Docker Compose
-#    - example_docker-compose:
-#        requires:
-#        - build
-
+    - example_docker-compose:
+        name: docker-compose
+        requires:
+        - images
     - example_minikube:
         name: minikube_v1_13_0
         requires:
@@ -564,6 +574,13 @@ workflows:
         requires:
         - test
         - integration
+    - example_docker-compose:
+        <<: *release_workflow_filters
+        name: docker-compose
+        requires:
+        - release
+        # custom parameters
+        docker_images: KUMA_CP_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kuma-cp KUMA_DP_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kuma-dp
     - example_minikube:
         <<: *release_workflow_filters
         name: minikube_v1_13_0
