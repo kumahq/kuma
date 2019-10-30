@@ -12,27 +12,26 @@ metadata:
   name: rule-name
   namespace: demo-app
 spec:
-  rules:
-  - sources:
-    - match:
-        service: mobile.mobile-app.svc:8080
-        region: us-east-1
-        version: 10
-    destinations:
-    - match:
-        # NOTE: only `service` tag can be used here (on `k8s` all TCP connections will have the same Virtual IP as destination => it's not enough info to infer any other destination tags)
-        service: backend.backend-app.svc:8080
-    conf:
-    - weight: 90
-      destination:
-        service: backend
-        region: us-east-1
-        version: 2
-    - weight: 10
-      destination:
-        service: backend.backend-app.svc:8080
-        region: eu-west-3
-        version: 3
+  sources:
+  - match:
+      service: mobile.mobile-app.svc:8080
+      region: us-east-1
+      version: 10
+  destinations:
+  - match:
+      # NOTE: only `service` tag can be used here (on `k8s` all TCP connections will have the same Virtual IP as destination => it's not enough info to infer any other destination tags)
+      service: backend.backend-app.svc:8080
+  conf:
+  - weight: 90
+    destination:
+      service: backend
+      region: us-east-1
+      version: 2
+  - weight: 10
+    destination:
+      service: backend.backend-app.svc:8080
+      region: eu-west-3
+      version: 3
 ```
 
 NOTE:
@@ -47,26 +46,25 @@ NOTE:
 type: TrafficRoute
 name: rule-name
 mesh: default
-rules:
-- sources:
-  - match:
-      service: mobile
-      region: us-east-1
-      version: 10
-  destinations:
-  - match:
-        # NOTE: only `service` tag can be used here (in `universal` all TCP connections will have `127.0.0.1` as destination => it's not enough info to infer any other destination tags)
-      service: backend
-  conf:
-  - weight: 90
-    destination:
-      service: backend
-      region: us-east-1
-      version: 2
-  - weight: 10
-    destination:
-      service: backend
-      version: 3
+sources:
+- match:
+    service: mobile
+    region: us-east-1
+    version: 10
+destinations:
+- match:
+      # NOTE: only `service` tag can be used here (in `universal` all TCP connections will have `127.0.0.1` as destination => it's not enough info to infer any other destination tags)
+    service: backend
+conf:
+- weight: 90
+  destination:
+    service: backend
+    region: us-east-1
+    version: 2
+- weight: 10
+  destination:
+    service: backend
+    version: 3
 ```
 
 NOTE:
@@ -136,18 +134,17 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
     ```yaml
     type: TrafficRoute
     name: rule-1
-    rules:
-    - sources:
-      - match:
-          service: mobile   # <<< same selector
-      destinations:
-      - match:
-          service: backend
-      conf:
-      - weight: 100
-        destination:
-          service: backend
-          region: us-east-1 # <<< subset 1
+    sources:
+    - match:
+        service: mobile   # <<< same selector
+    destinations:
+    - match:
+        service: backend
+    conf:
+    - weight: 100
+      destination:
+        service: backend
+        region: us-east-1 # <<< subset 1
     ```
     
     and
@@ -155,18 +152,17 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
     ```yaml
     type: TrafficRoute
     name: rule-2
-    rules:
-    - sources:
-      - match:
-          service: mobile   # <<< same selector
-      destinations:
-      - match:
-          service: backend
-      conf:
-      - weight: 100
-        destination:
-          service: backend
-          region: eu-west-3 # <<< subset 2
+    sources:
+    - match:
+        service: mobile   # <<< same selector
+    destinations:
+    - match:
+        service: backend
+    conf:
+    - weight: 100
+      destination:
+        service: backend
+        region: eu-west-3 # <<< subset 2
     ```
 
     **Answer:**
@@ -179,18 +175,17 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
    ```yaml
    type: TrafficRoute
    name: rule-1
-   rules:
-   - sources:
-     - match:
-         service: mobile   # <<< match by 1 tag
-     destinations:
-     - match:
-         service: backend
-     conf:
-     - weight: 100
-       destination:
-         service: backend
-         region: us-east-1 # <<< subset 1
+   sources:
+   - match:
+       service: mobile   # <<< match by 1 tag
+   destinations:
+   - match:
+       service: backend
+   conf:
+   - weight: 100
+     destination:
+       service: backend
+       region: us-east-1 # <<< subset 1
    ```
    
    and
@@ -198,19 +193,18 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
    ```yaml
    type: TrafficRoute
    name: rule-2
-   rules:
-   - sources:
-     - match:
-         service: mobile   # <<< match by 2 tags
-         version: 2        #
-     destinations:
-     - match:
-         service: backend
-     conf:
-     - weight: 100
-       destination:
-         service: backend
-         region: eu-west-3 # <<< subset 2
+   sources:
+   - match:
+       service: mobile   # <<< match by 2 tags
+       version: 2        #
+   destinations:
+   - match:
+       service: backend
+   conf:
+   - weight: 100
+     destination:
+       service: backend
+       region: eu-west-3 # <<< subset 2
    ```
 
    **Answer:** yes, a more specifc selector (i.e., by 2 tags instead of just 1) is considered a better match
@@ -220,18 +214,17 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
    ```yaml
    type: TrafficRoute
    name: rule-1
-   rules:
-   - sources:
-     - match:
-         service: mobile   # <<< match by 1 tag
-     destinations:
-     - match:
-         service: backend
-     conf:
-     - weight: 100
-       destination:
-         service: backend
-         region: us-east-1 # <<< subset 1
+   sources:
+   - match:
+       service: mobile   # <<< match by 1 tag
+   destinations:
+   - match:
+       service: backend
+   conf:
+   - weight: 100
+     destination:
+       service: backend
+       region: us-east-1 # <<< subset 1
    ```
    
    and
@@ -239,18 +232,17 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
    ```yaml
    type: TrafficRoute
    name: rule-2
-   rules:
-   - sources:
-     - match:
-         service: '*'      # <<< match by '*'
-     destinations:
-     - match:
-         service: backend
-     conf:
-     - weight: 100
-       destination:
-         service: backend
-         region: eu-west-3 # <<< subset 2
+   sources:
+   - match:
+       service: '*'      # <<< match by '*'
+   destinations:
+   - match:
+       service: backend
+   conf:
+   - weight: 100
+     destination:
+       service: backend
+       region: eu-west-3 # <<< subset 2
    ```
 
    **Answer:** yes, a match by the exact value has more weight than match by '*'
@@ -260,19 +252,18 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
    ```yaml
    type: TrafficRoute
    name: rule-1
-   rules:
-   - sources:
-     - match:
-         service: mobile
-         version: 2        # <<< match by `version`
-     destinations:
-     - match:
-         service: backend
-     conf:
-     - weight: 100
-       destination:
-         service: backend
-         region: us-east-1 # <<< subset 1
+   sources:
+   - match:
+       service: mobile
+       version: 2        # <<< match by `version`
+   destinations:
+   - match:
+       service: backend
+   conf:
+   - weight: 100
+     destination:
+       service: backend
+       region: us-east-1 # <<< subset 1
    ```
    
    and
@@ -280,19 +271,18 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
    ```yaml
    type: TrafficRoute
    name: rule-2
-   rules:
-   - sources:
-     - match:
-         service: mobile
-         region: eu-east-2 # <<< match by `region`
-     destinations:
-     - match:
-         service: backend
-     conf:
-     - weight: 100
-       destination:
-         service: backend
-         region: eu-west-3 # <<< subset 2
+   sources:
+   - match:
+       service: mobile
+       region: eu-east-2 # <<< match by `region`
+   destinations:
+   - match:
+       service: backend
+   conf:
+   - weight: 100
+     destination:
+       service: backend
+       region: eu-west-3 # <<< subset 2
    ```
 
    **Answer:** the most recently created rule wins
