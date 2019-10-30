@@ -2,6 +2,9 @@ package delete_test
 
 import (
 	"bytes"
+	"path/filepath"
+	"time"
+
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -9,8 +12,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
-	"path/filepath"
-	"time"
 )
 
 var _ = Describe("kumactl delete ", func() {
@@ -68,9 +69,9 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission, traffic-route"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission`))
+			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission, traffic-route`))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
