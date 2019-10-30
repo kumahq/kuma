@@ -71,7 +71,7 @@ var _ = Describe("Tokens Client", func() {
 
 	type testCase struct {
 		url    func() string
-		config *config_kumactl.DataplaneToken
+		config *config_kumactl.Context_DataplaneTokenApiCredentials
 	}
 	DescribeTable("should return a token",
 		func(given testCase) {
@@ -102,8 +102,7 @@ var _ = Describe("Tokens Client", func() {
 			url: func() string {
 				return fmt.Sprintf("https://localhost:%d", publicPort)
 			},
-			config: &config_kumactl.DataplaneToken{
-				ServerCert: filepath.Join("..", "..", "..", "..", "pkg", "tokens", "builtin", "server", "testdata", "server-cert.pem"),
+			config: &config_kumactl.Context_DataplaneTokenApiCredentials{
 				ClientCert: filepath.Join("..", "..", "..", "..", "pkg", "tokens", "builtin", "server", "testdata", "authorized-client-cert.pem"),
 				ClientKey:  filepath.Join("..", "..", "..", "..", "pkg", "tokens", "builtin", "server", "testdata", "authorized-client-key.pem"),
 			},

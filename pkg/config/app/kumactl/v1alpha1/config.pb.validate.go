@@ -177,21 +177,6 @@ func (m *ControlPlane) Validate() error {
 		}
 	}
 
-	{
-		tmp := m.GetDataplaneToken()
-
-		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-			if err := v.Validate(); err != nil {
-				return ControlPlaneValidationError{
-					field:  "DataplaneToken",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -338,77 +323,6 @@ var _ interface {
 	ErrorName() string
 } = ControlPlaneCoordinatesValidationError{}
 
-// Validate checks the field values on DataplaneToken with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
-func (m *DataplaneToken) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	// no validation rules for ServerCert
-
-	// no validation rules for ClientCert
-
-	// no validation rules for ClientKey
-
-	return nil
-}
-
-// DataplaneTokenValidationError is the validation error returned by
-// DataplaneToken.Validate if the designated constraints aren't met.
-type DataplaneTokenValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DataplaneTokenValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DataplaneTokenValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DataplaneTokenValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DataplaneTokenValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DataplaneTokenValidationError) ErrorName() string { return "DataplaneTokenValidationError" }
-
-// Error satisfies the builtin error interface
-func (e DataplaneTokenValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDataplaneToken.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DataplaneTokenValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DataplaneTokenValidationError{}
-
 // Validate checks the field values on Context with the rules defined in the
 // proto definition for this message. If any rules are violated, an error is returned.
 func (m *Context) Validate() error {
@@ -438,6 +352,21 @@ func (m *Context) Validate() error {
 			if err := v.Validate(); err != nil {
 				return ContextValidationError{
 					field:  "Defaults",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+	}
+
+	{
+		tmp := m.GetDataplaneTokenApiCredentials()
+
+		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
+
+			if err := v.Validate(); err != nil {
+				return ContextValidationError{
+					field:  "DataplaneTokenApiCredentials",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -649,3 +578,75 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Context_DefaultsValidationError{}
+
+// Validate checks the field values on Context_DataplaneTokenApiCredentials
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, an error is returned.
+func (m *Context_DataplaneTokenApiCredentials) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for ClientCert
+
+	// no validation rules for ClientKey
+
+	return nil
+}
+
+// Context_DataplaneTokenApiCredentialsValidationError is the validation error
+// returned by Context_DataplaneTokenApiCredentials.Validate if the designated
+// constraints aren't met.
+type Context_DataplaneTokenApiCredentialsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Context_DataplaneTokenApiCredentialsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Context_DataplaneTokenApiCredentialsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Context_DataplaneTokenApiCredentialsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Context_DataplaneTokenApiCredentialsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Context_DataplaneTokenApiCredentialsValidationError) ErrorName() string {
+	return "Context_DataplaneTokenApiCredentialsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Context_DataplaneTokenApiCredentialsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sContext_DataplaneTokenApiCredentials.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Context_DataplaneTokenApiCredentialsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Context_DataplaneTokenApiCredentialsValidationError{}

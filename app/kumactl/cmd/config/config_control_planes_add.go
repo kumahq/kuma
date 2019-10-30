@@ -14,7 +14,6 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		name         string
 		apiServerURL string
 		overwrite    bool
-		dataplaneTokenServerCert string
 		dataplaneTokenClientCert string
 		dataplaneTokenClientKey  string
 	}{}
@@ -29,11 +28,6 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 					ApiServer: &config_proto.ControlPlaneCoordinates_ApiServer{
 						Url: args.apiServerURL,
 					},
-				},
-				DataplaneToken: &config_proto.DataplaneToken{
-					ServerCert: args.dataplaneTokenServerCert,
-					ClientCert: args.dataplaneTokenClientCert,
-					ClientKey:  args.dataplaneTokenClientKey,
 				},
 			}
 
@@ -50,6 +44,10 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			ctx := &config_proto.Context{
 				Name:         cp.Name,
 				ControlPlane: cp.Name,
+				DataplaneTokenApiCredentials: &config_proto.Context_DataplaneTokenApiCredentials{
+					ClientCert: args.dataplaneTokenClientCert,
+					ClientKey:  args.dataplaneTokenClientKey,
+				},
 			}
 			if err := ctx.Validate(); err != nil {
 				return errors.Wrapf(err, "Context configuration is not valid")
@@ -72,7 +70,6 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	cmd.Flags().StringVar(&args.apiServerURL, "address", "", "URL of the Control Plane API Server (required)")
 	_ = cmd.MarkFlagRequired("address")
 	cmd.Flags().BoolVar(&args.overwrite, "overwrite", false, "overwrite existing Control Plane with the same reference name")
-	cmd.Flags().StringVar(&args.dataplaneTokenServerCert, "dataplane-token-server-cert", "", "Path to certificate of Dataplane Token Server")
 	cmd.Flags().StringVar(&args.dataplaneTokenClientCert, "dataplane-token-client-cert", "", "Path to certificate of a client that is authorized to use Dataplane Token Server")
 	cmd.Flags().StringVar(&args.dataplaneTokenClientKey, "dataplane-token-client-key", "", "Path to certificate key of a client that is authorized to use Dataplane Token Server")
 	return cmd

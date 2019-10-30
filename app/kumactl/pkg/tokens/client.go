@@ -17,14 +17,14 @@ const (
 	timeout = 10 * time.Second
 )
 
-func NewDataplaneTokenClient(address string, config *kumactl_config.DataplaneToken) (DataplaneTokenClient, error) {
+func NewDataplaneTokenClient(address string, config *kumactl_config.Context_DataplaneTokenApiCredentials) (DataplaneTokenClient, error) {
 	baseURL, err := url.Parse(address)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse API Server URL")
 	}
 	httpClient := &http.Client{}
 	if config.TlsEnabled() {
-		if err := util_http.ConfigureTls(httpClient, config.ServerCert, config.ClientCert, config.ClientKey); err != nil {
+		if err := util_http.ConfigureTlsWithoutServerVerification(httpClient, config.ClientCert, config.ClientKey); err != nil {
 			return nil, errors.Wrap(err, "could not configure tls for dataplane token client")
 		}
 	}

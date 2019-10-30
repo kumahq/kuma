@@ -94,12 +94,10 @@ type ControlPlane struct {
 	// Name defines a reference name for a given Control Plane.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Coordinates defines coordinates of a given Control Plane.
-	Coordinates *ControlPlaneCoordinates `protobuf:"bytes,2,opt,name=coordinates,proto3" json:"coordinates,omitempty"`
-	// DataplaneToken defines configuration of dataplane token client
-	DataplaneToken       *DataplaneToken `protobuf:"bytes,3,opt,name=dataplane_token,json=dataplaneToken,proto3" json:"dataplane_token,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	Coordinates          *ControlPlaneCoordinates `protobuf:"bytes,2,opt,name=coordinates,proto3" json:"coordinates,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
+	XXX_unrecognized     []byte                   `json:"-"`
+	XXX_sizecache        int32                    `json:"-"`
 }
 
 func (m *ControlPlane) Reset()         { *m = ControlPlane{} }
@@ -145,13 +143,6 @@ func (m *ControlPlane) GetName() string {
 func (m *ControlPlane) GetCoordinates() *ControlPlaneCoordinates {
 	if m != nil {
 		return m.Coordinates
-	}
-	return nil
-}
-
-func (m *ControlPlane) GetDataplaneToken() *DataplaneToken {
-	if m != nil {
-		return m.DataplaneToken
 	}
 	return nil
 }
@@ -252,75 +243,6 @@ func (m *ControlPlaneCoordinates_ApiServer) GetUrl() string {
 	return ""
 }
 
-// DataplaneToken defines configuration of dataplane token client
-type DataplaneToken struct {
-	// ServerCert defines certificate of dataplane token server that kumactl
-	// connects to
-	ServerCert string `protobuf:"bytes,1,opt,name=server_cert,json=serverCert,proto3" json:"server_cert,omitempty"`
-	// ClientCert defines certificate of authorized client of dataplane token
-	// server
-	ClientCert string `protobuf:"bytes,2,opt,name=client_cert,json=clientCert,proto3" json:"client_cert,omitempty"`
-	// ClientKey defines key of authorized client of dataplane token server
-	ClientKey            string   `protobuf:"bytes,3,opt,name=client_key,json=clientKey,proto3" json:"client_key,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *DataplaneToken) Reset()         { *m = DataplaneToken{} }
-func (m *DataplaneToken) String() string { return proto.CompactTextString(m) }
-func (*DataplaneToken) ProtoMessage()    {}
-func (*DataplaneToken) Descriptor() ([]byte, []int) {
-	return fileDescriptor_18c2b02c7dd453f4, []int{3}
-}
-func (m *DataplaneToken) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *DataplaneToken) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DataplaneToken.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *DataplaneToken) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DataplaneToken.Merge(m, src)
-}
-func (m *DataplaneToken) XXX_Size() int {
-	return m.Size()
-}
-func (m *DataplaneToken) XXX_DiscardUnknown() {
-	xxx_messageInfo_DataplaneToken.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DataplaneToken proto.InternalMessageInfo
-
-func (m *DataplaneToken) GetServerCert() string {
-	if m != nil {
-		return m.ServerCert
-	}
-	return ""
-}
-
-func (m *DataplaneToken) GetClientCert() string {
-	if m != nil {
-		return m.ClientCert
-	}
-	return ""
-}
-
-func (m *DataplaneToken) GetClientKey() string {
-	if m != nil {
-		return m.ClientKey
-	}
-	return ""
-}
-
 // Context defines a context in which individual `kumactl` commands run.
 type Context struct {
 	// Name defines a reference name for a given context.
@@ -328,17 +250,20 @@ type Context struct {
 	// ControlPlane defines a reference to a known Control Plane.
 	ControlPlane string `protobuf:"bytes,2,opt,name=control_plane,json=controlPlane,proto3" json:"control_plane,omitempty"`
 	// Defaults defines default settings for a given context.
-	Defaults             *Context_Defaults `protobuf:"bytes,3,opt,name=defaults,proto3" json:"defaults,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	Defaults *Context_Defaults `protobuf:"bytes,3,opt,name=defaults,proto3" json:"defaults,omitempty"`
+	// DataplaneTokenApiCredentials defines credential configuration of dataplane
+	// token client
+	DataplaneTokenApiCredentials *Context_DataplaneTokenApiCredentials `protobuf:"bytes,4,opt,name=dataplaneTokenApiCredentials,proto3" json:"dataplaneTokenApiCredentials,omitempty"`
+	XXX_NoUnkeyedLiteral         struct{}                              `json:"-"`
+	XXX_unrecognized             []byte                                `json:"-"`
+	XXX_sizecache                int32                                 `json:"-"`
 }
 
 func (m *Context) Reset()         { *m = Context{} }
 func (m *Context) String() string { return proto.CompactTextString(m) }
 func (*Context) ProtoMessage()    {}
 func (*Context) Descriptor() ([]byte, []int) {
-	return fileDescriptor_18c2b02c7dd453f4, []int{4}
+	return fileDescriptor_18c2b02c7dd453f4, []int{3}
 }
 func (m *Context) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -388,6 +313,13 @@ func (m *Context) GetDefaults() *Context_Defaults {
 	return nil
 }
 
+func (m *Context) GetDataplaneTokenApiCredentials() *Context_DataplaneTokenApiCredentials {
+	if m != nil {
+		return m.DataplaneTokenApiCredentials
+	}
+	return nil
+}
+
 // Defaults defines default settings for a context.
 type Context_Defaults struct {
 	// Mesh defines a Mesh to use in requests if one is not provided explicitly.
@@ -401,7 +333,7 @@ func (m *Context_Defaults) Reset()         { *m = Context_Defaults{} }
 func (m *Context_Defaults) String() string { return proto.CompactTextString(m) }
 func (*Context_Defaults) ProtoMessage()    {}
 func (*Context_Defaults) Descriptor() ([]byte, []int) {
-	return fileDescriptor_18c2b02c7dd453f4, []int{4, 0}
+	return fileDescriptor_18c2b02c7dd453f4, []int{3, 0}
 }
 func (m *Context_Defaults) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -437,14 +369,74 @@ func (m *Context_Defaults) GetMesh() string {
 	return ""
 }
 
+// DataplaneTokenApiCredentials defines credential configuration of dataplane
+// token client
+type Context_DataplaneTokenApiCredentials struct {
+	// ClientCert defines certificate of authorized client of dataplane token
+	// server
+	ClientCert string `protobuf:"bytes,2,opt,name=client_cert,json=clientCert,proto3" json:"client_cert,omitempty"`
+	// ClientKey defines key of authorized client of dataplane token server
+	ClientKey            string   `protobuf:"bytes,3,opt,name=client_key,json=clientKey,proto3" json:"client_key,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Context_DataplaneTokenApiCredentials) Reset()         { *m = Context_DataplaneTokenApiCredentials{} }
+func (m *Context_DataplaneTokenApiCredentials) String() string { return proto.CompactTextString(m) }
+func (*Context_DataplaneTokenApiCredentials) ProtoMessage()    {}
+func (*Context_DataplaneTokenApiCredentials) Descriptor() ([]byte, []int) {
+	return fileDescriptor_18c2b02c7dd453f4, []int{3, 1}
+}
+func (m *Context_DataplaneTokenApiCredentials) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Context_DataplaneTokenApiCredentials) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Context_DataplaneTokenApiCredentials.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Context_DataplaneTokenApiCredentials) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Context_DataplaneTokenApiCredentials.Merge(m, src)
+}
+func (m *Context_DataplaneTokenApiCredentials) XXX_Size() int {
+	return m.Size()
+}
+func (m *Context_DataplaneTokenApiCredentials) XXX_DiscardUnknown() {
+	xxx_messageInfo_Context_DataplaneTokenApiCredentials.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Context_DataplaneTokenApiCredentials proto.InternalMessageInfo
+
+func (m *Context_DataplaneTokenApiCredentials) GetClientCert() string {
+	if m != nil {
+		return m.ClientCert
+	}
+	return ""
+}
+
+func (m *Context_DataplaneTokenApiCredentials) GetClientKey() string {
+	if m != nil {
+		return m.ClientKey
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*Configuration)(nil), "kumactl.config.v1alpha1.Configuration")
 	proto.RegisterType((*ControlPlane)(nil), "kumactl.config.v1alpha1.ControlPlane")
 	proto.RegisterType((*ControlPlaneCoordinates)(nil), "kumactl.config.v1alpha1.ControlPlaneCoordinates")
 	proto.RegisterType((*ControlPlaneCoordinates_ApiServer)(nil), "kumactl.config.v1alpha1.ControlPlaneCoordinates.ApiServer")
-	proto.RegisterType((*DataplaneToken)(nil), "kumactl.config.v1alpha1.DataplaneToken")
 	proto.RegisterType((*Context)(nil), "kumactl.config.v1alpha1.Context")
 	proto.RegisterType((*Context_Defaults)(nil), "kumactl.config.v1alpha1.Context.Defaults")
+	proto.RegisterType((*Context_DataplaneTokenApiCredentials)(nil), "kumactl.config.v1alpha1.Context.DataplaneTokenApiCredentials")
 }
 
 func init() {
@@ -452,38 +444,38 @@ func init() {
 }
 
 var fileDescriptor_18c2b02c7dd453f4 = []byte{
-	// 496 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x93, 0x3f, 0x8e, 0xd3, 0x40,
-	0x14, 0xc6, 0x35, 0x71, 0x80, 0xf8, 0x79, 0x93, 0x45, 0x53, 0x90, 0x28, 0x62, 0x43, 0x64, 0x09,
-	0x6d, 0x56, 0x42, 0x36, 0x1b, 0x3a, 0x44, 0x43, 0xb2, 0x54, 0x50, 0xac, 0x0c, 0x15, 0x05, 0xd6,
-	0x60, 0xbf, 0xdd, 0xb5, 0xe2, 0xd8, 0x66, 0x3c, 0x8e, 0x76, 0x6f, 0x80, 0xb8, 0x0a, 0x37, 0xa0,
-	0x81, 0x82, 0x82, 0x92, 0x1b, 0x80, 0xd2, 0x71, 0x0b, 0x34, 0x7f, 0x1c, 0x9c, 0x22, 0x2c, 0x74,
-	0x9e, 0x6f, 0x7e, 0xdf, 0x37, 0xef, 0xcd, 0x3c, 0xc3, 0x83, 0x62, 0x71, 0xee, 0x47, 0x79, 0x76,
-	0x96, 0x9c, 0xfb, 0xac, 0x28, 0xfc, 0x45, 0xb5, 0x64, 0x91, 0x48, 0xfd, 0xd5, 0x31, 0x4b, 0x8b,
-	0x0b, 0x76, 0x6c, 0xf6, 0xbc, 0x82, 0xe7, 0x22, 0xa7, 0x7d, 0xb3, 0xed, 0x19, 0xb5, 0xa6, 0x86,
-	0xfd, 0x15, 0x4b, 0x93, 0x98, 0x09, 0xf4, 0xeb, 0x0f, 0xed, 0x70, 0xbf, 0x12, 0xe8, 0xce, 0x15,
-	0x5c, 0x71, 0x26, 0x92, 0x3c, 0xa3, 0x2f, 0xa0, 0x17, 0xe5, 0x99, 0xe0, 0x79, 0x1a, 0x16, 0x29,
-	0xcb, 0xb0, 0x1c, 0x90, 0xb1, 0x35, 0x71, 0xa6, 0xf7, 0xbd, 0x1d, 0xe1, 0xde, 0x5c, 0xe3, 0xa7,
-	0x92, 0x0e, 0xba, 0x51, 0x63, 0x55, 0xd2, 0x27, 0xd0, 0x91, 0x02, 0x5e, 0x8a, 0x72, 0xd0, 0x52,
-	0x39, 0xe3, 0xbf, 0xe6, 0xe0, 0xa5, 0x08, 0x36, 0x0e, 0x7a, 0x08, 0xfb, 0x51, 0xc5, 0x39, 0x66,
-	0x22, 0x34, 0xda, 0xc0, 0x1a, 0x93, 0x89, 0x1d, 0xf4, 0x8c, 0x6c, 0x2c, 0xee, 0x0f, 0x02, 0x7b,
-	0xcd, 0x32, 0xe8, 0x01, 0xb4, 0x33, 0xb6, 0xc4, 0x01, 0x91, 0xf8, 0xcc, 0xfe, 0xf4, 0xeb, 0x8b,
-	0xd5, 0xe6, 0xad, 0xdb, 0x24, 0x50, 0x32, 0x7d, 0x03, 0x4e, 0x94, 0xe7, 0x3c, 0x4e, 0x32, 0x26,
-	0x50, 0x56, 0x46, 0x26, 0xce, 0xf4, 0xe1, 0x3f, 0x75, 0x38, 0xff, 0xe3, 0x9b, 0x81, 0xcc, 0xbd,
-	0xf1, 0x81, 0xc8, 0xe0, 0x66, 0x20, 0x3d, 0x85, 0xfd, 0x98, 0x09, 0xa6, 0x2e, 0x30, 0x14, 0xf9,
-	0x02, 0x33, 0x55, 0xb8, 0x33, 0x3d, 0xdc, 0x79, 0xc6, 0x49, 0xcd, 0xbf, 0x92, 0x78, 0xd0, 0x8b,
-	0xb7, 0xd6, 0xee, 0x47, 0x02, 0xfd, 0x1d, 0x65, 0x50, 0x04, 0x60, 0x45, 0x12, 0x96, 0xc8, 0x57,
-	0xc8, 0x55, 0xcb, 0xce, 0xf4, 0xf1, 0xff, 0x36, 0xe3, 0x3d, 0x2d, 0x92, 0x97, 0x2a, 0x61, 0xab,
-	0x2d, 0x9b, 0xd5, 0xf2, 0xf0, 0x08, 0xec, 0x0d, 0x43, 0xef, 0x82, 0x55, 0xf1, 0xd4, 0xdc, 0xaf,
-	0x36, 0x70, 0xeb, 0x3d, 0x21, 0x81, 0x94, 0xdd, 0x77, 0xd0, 0xdb, 0xee, 0x87, 0xde, 0x03, 0x47,
-	0xd7, 0x17, 0x46, 0xc8, 0x85, 0xf6, 0x05, 0xa0, 0xa5, 0x39, 0x72, 0x21, 0x81, 0x28, 0x4d, 0xd4,
-	0x53, 0x4b, 0xa0, 0xa5, 0x01, 0x2d, 0x29, 0xe0, 0x00, 0xcc, 0x2a, 0x5c, 0xe0, 0x95, 0x99, 0x03,
-	0x5b, 0x2b, 0xcf, 0xf1, 0xca, 0xfd, 0x4c, 0xe0, 0x96, 0x19, 0x87, 0xeb, 0x5e, 0xdf, 0x83, 0xee,
-	0xd6, 0x88, 0xeb, 0xc3, 0x9a, 0xdc, 0x5e, 0x73, 0x8a, 0xe9, 0x33, 0xe8, 0xc4, 0x78, 0xc6, 0xaa,
-	0x54, 0x94, 0xe6, 0x19, 0x8f, 0xae, 0x1b, 0x62, 0xef, 0xc4, 0x18, 0x82, 0x8d, 0x75, 0x38, 0x82,
-	0x4e, 0xad, 0x52, 0x0a, 0xed, 0x25, 0x96, 0x17, 0xe6, 0x1e, 0xd4, 0xf7, 0xec, 0xce, 0xb7, 0xf5,
-	0x88, 0x7c, 0x5f, 0x8f, 0xc8, 0xcf, 0xf5, 0x88, 0xbc, 0xee, 0xd4, 0x91, 0x6f, 0x6f, 0xaa, 0x5f,
-	0xf5, 0xd1, 0xef, 0x00, 0x00, 0x00, 0xff, 0xff, 0x92, 0xfe, 0x56, 0xd8, 0x0c, 0x04, 0x00, 0x00,
+	// 494 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0x31, 0x8f, 0xd3, 0x30,
+	0x14, 0x96, 0x2f, 0x05, 0xda, 0x97, 0xeb, 0x81, 0x3c, 0xd0, 0xa8, 0x2a, 0xa5, 0xaa, 0x84, 0xe8,
+	0x49, 0x28, 0xe1, 0xca, 0x86, 0x60, 0xb8, 0x06, 0x26, 0x18, 0x50, 0x60, 0x62, 0xb8, 0xca, 0x24,
+	0xef, 0xee, 0xa2, 0xa6, 0xb6, 0xe5, 0x38, 0xd5, 0xdd, 0xc8, 0x86, 0x90, 0xf8, 0x15, 0x8c, 0xfc,
+	0x03, 0x26, 0x06, 0x06, 0x46, 0x7e, 0x02, 0xea, 0xc6, 0xbf, 0x40, 0x71, 0x9c, 0xd2, 0x0e, 0xd7,
+	0xc2, 0x66, 0x7f, 0xfe, 0xbe, 0xef, 0x3d, 0x7f, 0x7e, 0x86, 0x07, 0x72, 0x76, 0x16, 0xc4, 0x82,
+	0x9f, 0xa6, 0x67, 0x01, 0x93, 0x32, 0x98, 0x15, 0x73, 0x16, 0xeb, 0x2c, 0x58, 0x1c, 0xb1, 0x4c,
+	0x9e, 0xb3, 0x23, 0x7b, 0xe6, 0x4b, 0x25, 0xb4, 0xa0, 0x1d, 0x7b, 0xec, 0x5b, 0xb4, 0x66, 0x75,
+	0x3b, 0x0b, 0x96, 0xa5, 0x09, 0xd3, 0x18, 0xd4, 0x8b, 0x4a, 0x31, 0xfc, 0x4e, 0xa0, 0x1d, 0x1a,
+	0x72, 0xa1, 0x98, 0x4e, 0x05, 0xa7, 0x2f, 0xe1, 0x20, 0x16, 0x5c, 0x2b, 0x91, 0x4d, 0x65, 0xc6,
+	0x38, 0xe6, 0x1e, 0x19, 0x38, 0x23, 0x77, 0x7c, 0xcf, 0xbf, 0xc2, 0xdc, 0x0f, 0x2b, 0xfa, 0xab,
+	0x92, 0x1d, 0xb5, 0xe3, 0xb5, 0x5d, 0x4e, 0x9f, 0x40, 0xb3, 0x04, 0xf0, 0x42, 0xe7, 0xde, 0x9e,
+	0xf1, 0x19, 0x6c, 0xf5, 0xc1, 0x0b, 0x1d, 0xad, 0x14, 0xf4, 0x3e, 0xdc, 0x8c, 0x0b, 0xa5, 0x90,
+	0xeb, 0xa9, 0xc5, 0x3c, 0x67, 0x40, 0x46, 0xad, 0xe8, 0xc0, 0xc2, 0x56, 0x32, 0xfc, 0x44, 0x60,
+	0x7f, 0xbd, 0x0d, 0x7a, 0x07, 0x1a, 0x9c, 0xcd, 0xd1, 0x23, 0x25, 0x7d, 0xd2, 0xfa, 0xfa, 0xfb,
+	0x9b, 0xd3, 0x50, 0x7b, 0xb7, 0x48, 0x64, 0x60, 0x7a, 0x02, 0x6e, 0x2c, 0x84, 0x4a, 0x52, 0xce,
+	0x34, 0x96, 0x9d, 0x91, 0x91, 0x3b, 0x7e, 0xf8, 0x4f, 0x37, 0x0c, 0xff, 0xea, 0x26, 0x50, 0xfa,
+	0x5e, 0xfb, 0x48, 0x4a, 0xe3, 0x75, 0xc3, 0xe1, 0x17, 0x02, 0x9d, 0x2b, 0x44, 0x14, 0x01, 0x98,
+	0x4c, 0xa7, 0x39, 0xaa, 0x05, 0x2a, 0xd3, 0xa0, 0x3b, 0x7e, 0xfc, 0xbf, 0xa5, 0xfd, 0x63, 0x99,
+	0xbe, 0x36, 0x0e, 0x1b, 0x4d, 0xb4, 0x58, 0x0d, 0x77, 0x0f, 0xa1, 0xb5, 0xe2, 0xd0, 0x1e, 0x38,
+	0x85, 0xca, 0x6c, 0x1a, 0x95, 0x40, 0x39, 0x1f, 0x08, 0x89, 0x4a, 0x78, 0xf8, 0xd9, 0x81, 0x1b,
+	0x36, 0xc9, 0x5d, 0xc1, 0xf9, 0xd0, 0xde, 0x98, 0x0e, 0x13, 0xdd, 0x06, 0x6f, 0x7f, 0x7d, 0x00,
+	0xe8, 0x73, 0x68, 0x26, 0x78, 0xca, 0x8a, 0x4c, 0xe7, 0xe6, 0xe9, 0xdc, 0xf1, 0xe1, 0xae, 0xf7,
+	0xf7, 0x9f, 0x59, 0x41, 0xb4, 0x92, 0xd2, 0xf7, 0x04, 0x7a, 0x09, 0xd3, 0xcc, 0xd4, 0x7c, 0x23,
+	0x66, 0xc8, 0x8f, 0x65, 0x1a, 0x2a, 0x4c, 0x90, 0xeb, 0x94, 0x65, 0xb9, 0xd7, 0x30, 0xde, 0x4f,
+	0x77, 0x7b, 0x6f, 0x31, 0x89, 0xb6, 0x96, 0xe8, 0xf6, 0xa1, 0x59, 0x77, 0x46, 0x29, 0x34, 0xe6,
+	0x98, 0x9f, 0x57, 0x29, 0x45, 0x66, 0xdd, 0x3d, 0x81, 0xde, 0x36, 0x77, 0x7a, 0x17, 0xdc, 0x38,
+	0x4b, 0xcd, 0x2c, 0xa3, 0xd2, 0x55, 0x70, 0x11, 0x54, 0x50, 0x88, 0xaa, 0x8c, 0xde, 0xee, 0xa6,
+	0x33, 0xbc, 0xb4, 0x83, 0xde, 0xaa, 0x90, 0x17, 0x78, 0x39, 0xb9, 0xfd, 0x63, 0xd9, 0x27, 0x3f,
+	0x97, 0x7d, 0xf2, 0x6b, 0xd9, 0x27, 0x6f, 0x9b, 0xf5, 0xd5, 0xde, 0x5d, 0x37, 0x3f, 0xf9, 0xd1,
+	0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x7e, 0x78, 0xc0, 0xc7, 0x2b, 0x04, 0x00, 0x00,
 }
 
 func (m *Configuration) Marshal() (dAtA []byte, err error) {
@@ -568,16 +560,6 @@ func (m *ControlPlane) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i += n1
 	}
-	if m.DataplaneToken != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(m.DataplaneToken.Size()))
-		n2, err := m.DataplaneToken.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -603,11 +585,11 @@ func (m *ControlPlaneCoordinates) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintConfig(dAtA, i, uint64(m.ApiServer.Size()))
-		n3, err := m.ApiServer.MarshalTo(dAtA[i:])
+		n2, err := m.ApiServer.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n2
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -635,45 +617,6 @@ func (m *ControlPlaneCoordinates_ApiServer) MarshalTo(dAtA []byte) (int, error) 
 		i++
 		i = encodeVarintConfig(dAtA, i, uint64(len(m.Url)))
 		i += copy(dAtA[i:], m.Url)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *DataplaneToken) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *DataplaneToken) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.ServerCert) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.ServerCert)))
-		i += copy(dAtA[i:], m.ServerCert)
-	}
-	if len(m.ClientCert) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.ClientCert)))
-		i += copy(dAtA[i:], m.ClientCert)
-	}
-	if len(m.ClientKey) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintConfig(dAtA, i, uint64(len(m.ClientKey)))
-		i += copy(dAtA[i:], m.ClientKey)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -712,7 +655,17 @@ func (m *Context) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintConfig(dAtA, i, uint64(m.Defaults.Size()))
-		n4, err := m.Defaults.MarshalTo(dAtA[i:])
+		n3, err := m.Defaults.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if m.DataplaneTokenApiCredentials != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(m.DataplaneTokenApiCredentials.Size()))
+		n4, err := m.DataplaneTokenApiCredentials.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -744,6 +697,39 @@ func (m *Context_Defaults) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintConfig(dAtA, i, uint64(len(m.Mesh)))
 		i += copy(dAtA[i:], m.Mesh)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Context_DataplaneTokenApiCredentials) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Context_DataplaneTokenApiCredentials) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ClientCert) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.ClientCert)))
+		i += copy(dAtA[i:], m.ClientCert)
+	}
+	if len(m.ClientKey) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintConfig(dAtA, i, uint64(len(m.ClientKey)))
+		i += copy(dAtA[i:], m.ClientKey)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -802,10 +788,6 @@ func (m *ControlPlane) Size() (n int) {
 		l = m.Coordinates.Size()
 		n += 1 + l + sovConfig(uint64(l))
 	}
-	if m.DataplaneToken != nil {
-		l = m.DataplaneToken.Size()
-		n += 1 + l + sovConfig(uint64(l))
-	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -844,30 +826,6 @@ func (m *ControlPlaneCoordinates_ApiServer) Size() (n int) {
 	return n
 }
 
-func (m *DataplaneToken) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ServerCert)
-	if l > 0 {
-		n += 1 + l + sovConfig(uint64(l))
-	}
-	l = len(m.ClientCert)
-	if l > 0 {
-		n += 1 + l + sovConfig(uint64(l))
-	}
-	l = len(m.ClientKey)
-	if l > 0 {
-		n += 1 + l + sovConfig(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
 func (m *Context) Size() (n int) {
 	if m == nil {
 		return 0
@@ -886,6 +844,10 @@ func (m *Context) Size() (n int) {
 		l = m.Defaults.Size()
 		n += 1 + l + sovConfig(uint64(l))
 	}
+	if m.DataplaneTokenApiCredentials != nil {
+		l = m.DataplaneTokenApiCredentials.Size()
+		n += 1 + l + sovConfig(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -899,6 +861,26 @@ func (m *Context_Defaults) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Mesh)
+	if l > 0 {
+		n += 1 + l + sovConfig(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Context_DataplaneTokenApiCredentials) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ClientCert)
+	if l > 0 {
+		n += 1 + l + sovConfig(uint64(l))
+	}
+	l = len(m.ClientKey)
 	if l > 0 {
 		n += 1 + l + sovConfig(uint64(l))
 	}
@@ -1172,42 +1154,6 @@ func (m *ControlPlane) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DataplaneToken", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfig
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthConfig
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.DataplaneToken == nil {
-				m.DataplaneToken = &DataplaneToken{}
-			}
-			if err := m.DataplaneToken.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipConfig(dAtA[iNdEx:])
@@ -1409,156 +1355,6 @@ func (m *ControlPlaneCoordinates_ApiServer) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *DataplaneToken) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowConfig
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: DataplaneToken: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DataplaneToken: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ServerCert", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfig
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthConfig
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ServerCert = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ClientCert", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfig
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthConfig
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ClientCert = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ClientKey", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfig
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthConfig
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ClientKey = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipConfig(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthConfig
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *Context) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1688,6 +1484,42 @@ func (m *Context) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataplaneTokenApiCredentials", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DataplaneTokenApiCredentials == nil {
+				m.DataplaneTokenApiCredentials = &Context_DataplaneTokenApiCredentials{}
+			}
+			if err := m.DataplaneTokenApiCredentials.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipConfig(dAtA[iNdEx:])
@@ -1773,6 +1605,124 @@ func (m *Context_Defaults) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Mesh = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipConfig(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Context_DataplaneTokenApiCredentials) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowConfig
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DataplaneTokenApiCredentials: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DataplaneTokenApiCredentials: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientCert", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ClientCert = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientKey", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConfig
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthConfig
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConfig
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ClientKey = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

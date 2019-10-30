@@ -12,7 +12,7 @@ import (
 	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 	"github.com/Kong/kuma/pkg/tokens/builtin/server"
 	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
-	http2 "github.com/Kong/kuma/pkg/util/http"
+	util_http "github.com/Kong/kuma/pkg/util/http"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -44,7 +44,7 @@ var _ = Describe("Dataplane Token Server", func() {
 
 	httpsClient := func(name string) *http.Client {
 		httpClient := &http.Client{}
-		err := http2.ConfigureTls(
+		err := util_http.ConfigureTls(
 			httpClient,
 			filepath.Join("testdata", "server-cert.pem"),
 			filepath.Join("testdata", fmt.Sprintf("%s-cert.pem", name)),
