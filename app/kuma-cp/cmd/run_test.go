@@ -29,9 +29,7 @@ func (f ConfigFactoryFunc) GenerateConfig() string {
 }
 
 func RunSmokeTest(factory ConfigFactory) {
-
 	Describe("run", func() {
-
 		var stopCh chan struct{}
 		var errCh chan error
 		var configFile *os.File
@@ -105,10 +103,8 @@ func RunSmokeTest(factory ConfigFactory) {
 			close(stopCh)
 
 			// then
-			select {
-			case err := <-errCh:
-				Expect(err).ToNot(HaveOccurred())
-			}
+			err = <-errCh
+			Expect(err).ToNot(HaveOccurred())
 
 			// complete
 			close(done)

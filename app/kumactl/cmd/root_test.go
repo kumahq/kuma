@@ -34,7 +34,7 @@ var _ = Describe("kumactl root cmd", func() {
 		rootCmd := cmd.NewRootCmd(rootCtx)
 
 		// when
-		rootCmd.SetArgs(append([]string{"version"}))
+		rootCmd.SetArgs([]string{"version"})
 		err := rootCmd.Execute()
 
 		// then

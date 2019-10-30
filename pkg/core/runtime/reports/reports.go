@@ -114,7 +114,7 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int)
 		return err
 	}
 
-	_, err = fmt.Fprintf(conn, pingData)
+	_, err = fmt.Fprint(conn, pingData)
 	if err != nil {
 		return err
 	}

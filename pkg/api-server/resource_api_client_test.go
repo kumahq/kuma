@@ -77,7 +77,11 @@ func (r *resourceApiClient) putJson(name string, json []byte) *http.Response {
 func waitForServer(client *resourceApiClient) {
 	Eventually(func() bool {
 		response, err := client.listOrError()
-		return err == nil && response.StatusCode == 200
+		ok := err == nil && response.StatusCode == 200
+		if response != nil {
+			Expect(response.Body.Close()).To(Succeed())
+		}
+		return ok
 	}, "5s", "100ms").Should(BeTrue())
 }
 

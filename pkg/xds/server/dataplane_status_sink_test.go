@@ -119,7 +119,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			ticks <- t0.Add(3 * time.Second)
 			// then
 			select {
-			case _, _ = <-recorder.Upserts:
+			case <-recorder.Upserts:
 				Fail("time tick should not lead to status update")
 			case <-time.After(100 * time.Millisecond):
 				// no update is good

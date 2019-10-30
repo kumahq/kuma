@@ -20,10 +20,6 @@ import (
 	kuma_log "github.com/Kong/kuma/pkg/log"
 )
 
-var (
-	kumactlLog = core.Log.WithName("kumactl")
-)
-
 // newRootCmd represents the base command when called without any subcommands.
 func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	args := struct {

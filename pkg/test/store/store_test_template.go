@@ -18,7 +18,7 @@ func ExecuteStoreTests(
 	var s store.ClosableResourceStore
 
 	BeforeEach(func() {
-		namespace = string(uuid.New())
+		namespace = uuid.New()
 		s = store.NewStrictResourceStore(createStore())
 	})
 

@@ -34,6 +34,6 @@ func newConfigControlPlanesRemoveCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 	}
 	// flags
 	cmd.Flags().StringVar(&args.name, "name", "", "reference name for the Control Plane (required)")
-	cmd.MarkFlagRequired("name")
+	_ = cmd.MarkFlagRequired("name")
 	return cmd
 }

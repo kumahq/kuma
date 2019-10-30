@@ -44,16 +44,16 @@ func Unmarshal(b []byte, res model.Resource) error {
 
 func UnmarshalList(b []byte, rs model.ResourceList) error {
 	rsr := &rest.ResourceListReceiver{
-		NewResource: func() model.Resource {
-			return rs.NewItem()
-		},
+		NewResource: rs.NewItem,
 	}
 	if err := json.Unmarshal(b, rsr); err != nil {
 		return err
 	}
 	for _, ri := range rsr.ResourceList.Items {
 		r := rs.NewItem()
-		r.SetSpec(ri.Spec)
+		if err := r.SetSpec(ri.Spec); err != nil {
+			return err
+		}
 		r.SetMeta(&remoteMeta{
 			Namespace: "",
 			Name:      ri.Meta.Name,

@@ -154,7 +154,7 @@ func (c *SimpleConverter) ToKubernetesObject(r *secret_model.SecretResource) (*k
 	secret := &kube_core.Secret{}
 	secret.Type = "system.kuma.io/secret"
 	secret.Data = map[string][]byte{
-		"value": []byte(r.Spec.Value),
+		"value": r.Spec.Value,
 	}
 	if r.GetMeta() != nil {
 		if adapter, ok := r.GetMeta().(*KubernetesMetaAdapter); ok {

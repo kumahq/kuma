@@ -59,8 +59,8 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	}
 	// flags
 	cmd.Flags().StringVar(&args.name, "name", "", "reference name for the Control Plane (required)")
-	cmd.MarkFlagRequired("name")
+	_ = cmd.MarkFlagRequired("name")
 	cmd.Flags().StringVar(&args.apiServerURL, "address", "", "URL of the Control Plane API Server (required)")
-	cmd.MarkFlagRequired("address")
+	_ = cmd.MarkFlagRequired("address")
 	return cmd
 }

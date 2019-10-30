@@ -90,7 +90,9 @@ func (t *inprocessKubeProxyTransport) RoundTrip(req *http.Request) (*http.Respon
 		}()
 		w := httptest.NewRecorder()
 		t.handler.ServeHTTP(w, req)
-		ch <- result{resp: w.Result(), err: nil}
+		resp := w.Result()
+		defer resp.Body.Close()
+		ch <- result{resp: resp, err: nil}
 	}()
 	res := <-ch
 	return res.resp, res.err

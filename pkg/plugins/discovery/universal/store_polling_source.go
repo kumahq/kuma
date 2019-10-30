@@ -102,7 +102,7 @@ func newOrChangedDataplanes(currentDataplanes dataplanesByKey, newDataplanes dat
 
 func deletedDataplanes(currentDataplanes dataplanesByKey, newDataplanes dataplanesByKey) []model.ResourceKey {
 	var result []model.ResourceKey
-	for key, _ := range currentDataplanes {
+	for key := range currentDataplanes {
 		_, exist := newDataplanes[key]
 		if !exist {
 			result = append(result, key)

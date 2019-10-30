@@ -25,6 +25,6 @@ var _ = Describe("kumactl install database-schema", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(string(stdout.Bytes())).To(Equal(string(expected)))
+		Expect(stdout.String()).To(Equal(string(expected)))
 	})
 })
