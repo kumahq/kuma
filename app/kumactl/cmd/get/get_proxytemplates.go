@@ -46,7 +46,7 @@ func newGetProxyTemplatesCmd(pctx *getContext) *cobra.Command {
 
 func PrintProxyTemplates(proxyTemplates *mesh_core.ProxyTemplateResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME"},
+		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -57,7 +57,8 @@ func PrintProxyTemplates(proxyTemplates *mesh_core.ProxyTemplateResourceList, ou
 				proxyTemplate := proxyTemplates.Items[i]
 
 				return []string{
-					proxyTemplate.Meta.GetName(), // NAME
+					proxyTemplate.GetMeta().GetMesh(), // MESH
+					proxyTemplate.GetMeta().GetName(), // NAME
 				}
 			}
 		}(),
