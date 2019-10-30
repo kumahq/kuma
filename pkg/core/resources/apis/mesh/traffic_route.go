@@ -1,23 +1,22 @@
-package sample
+package mesh
 
 import (
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
-	"github.com/Kong/kuma/pkg/core/validators"
-	proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
 const (
-	TrafficRouteType model.ResourceType = "SampleTrafficRoute"
+	TrafficRouteType model.ResourceType = "TrafficRoute"
 )
 
 var _ model.Resource = &TrafficRouteResource{}
 
 type TrafficRouteResource struct {
 	Meta model.ResourceMeta
-	Spec proto.TrafficRoute
+	Spec mesh_proto.TrafficRoute
 }
 
 func (t *TrafficRouteResource) GetType() model.ResourceType {
@@ -33,20 +32,16 @@ func (t *TrafficRouteResource) GetSpec() model.ResourceSpec {
 	return &t.Spec
 }
 func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
-	route, ok := spec.(*proto.TrafficRoute)
+	template, ok := spec.(*mesh_proto.TrafficRoute)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *route
+		t.Spec = *template
 		return nil
 	}
 }
 func (t *TrafficRouteResource) Validate() error {
-	err := validators.ValidationError{}
-	if t.Spec.Path == "" {
-		err.AddViolation("path", "cannot be empty")
-	}
-	return err.OrNil()
+	return nil
 }
 
 var _ model.ResourceList = &TrafficRouteResourceList{}
@@ -62,7 +57,6 @@ func (l *TrafficRouteResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
-
 func (l *TrafficRouteResourceList) GetItemType() model.ResourceType {
 	return TrafficRouteType
 }

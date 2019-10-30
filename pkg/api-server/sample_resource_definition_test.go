@@ -7,8 +7,8 @@ import (
 )
 
 var TrafficRouteWsDefinition = definitions.ResourceWsDefinition{
-	Name: "Traffic Route",
-	Path: "traffic-routes",
+	Name: "Sample Traffic Route",
+	Path: "sample-traffic-routes",
 	ResourceFactory: func() model.Resource {
 		return &sample_model.TrafficRouteResource{}
 	},

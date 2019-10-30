@@ -7,4 +7,5 @@ var All = []ResourceWsDefinition{
 	ProxyTemplateWsDefinition,
 	TrafficPermissionWsDefinition,
 	TrafficLogWsDefinition,
+	TrafficRouteWsDefinition,
 }

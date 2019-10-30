@@ -1,7 +1,7 @@
 package api_server_test
 
 import (
-	"github.com/Kong/kuma/pkg/api-server"
+	api_server "github.com/Kong/kuma/pkg/api-server"
 	config "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -28,7 +28,7 @@ var _ = Describe("Read only Resource WS", func() {
 		apiServer = createTestApiServer(resourceStore, cfg)
 		client = resourceApiClient{
 			address: apiServer.Address(),
-			path:    "/meshes/" + mesh + "/traffic-routes",
+			path:    "/meshes/" + mesh + "/sample-traffic-routes",
 		}
 		stop = make(chan struct{})
 		go func() {
