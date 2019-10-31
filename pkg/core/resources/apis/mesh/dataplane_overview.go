@@ -43,6 +43,10 @@ func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *DataplaneOverviewResource) Validate() error {
+	return nil
+}
+
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {

@@ -39,6 +39,9 @@ func (r *resourcesManager) List(ctx context.Context, list model.ResourceList, fs
 }
 
 func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
+	if err := resource.Validate(); err != nil {
+		return err
+	}
 	opts := store.NewCreateOptions(fs...)
 	if resource.GetType() != mesh.MeshType {
 		if err := r.ensureMeshExists(ctx, opts.Mesh); err != nil {
@@ -81,6 +84,9 @@ func DeleteAllResources(manager ResourceManager, ctx context.Context, list model
 }
 
 func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
+	if err := resource.Validate(); err != nil {
+		return err
+	}
 	return r.Store.Update(ctx, resource, fs...)
 }
 

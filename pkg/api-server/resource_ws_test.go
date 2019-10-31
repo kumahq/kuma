@@ -216,7 +216,28 @@ var _ = Describe("Resource WS", func() {
 		})
 
 		It("should return 400 on validation error", func() {
+			// given
+			json := `
+			{
+				"type": "TrafficRoute",
+				"name": "tr-1",
+				"mesh": "default",
+				"path": ""
+			}
+			`
 
+			// when
+			response := client.putJson("tr-1", []byte(json))
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+
+			// when
+			respBytes, err := ioutil.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBytes)).To(Equal("validation error: Path cannot be empty"))
 		})
 	})
 

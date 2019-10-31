@@ -159,11 +159,12 @@ func (r *resourceWs) createResource(ctx context.Context, name string, meshName s
 	res := r.ResourceFactory()
 	_ = res.SetSpec(spec)
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(namespace, name, meshName)); err != nil {
-		if manager.IsMeshNotFound(err) {
+		switch {
+		case manager.IsMeshNotFound(err):
 			writeError(response, 400, fmt.Sprintf("Mesh of name %v is not found", meshName))
-		} else if validators.IsValidationError(err) {
+		case validators.IsValidationError(err):
 			writeError(response, 400, err.Error())
-		} else {
+		default:
 			core.Log.Error(err, "Could not create a resource")
 			writeError(response, 500, "Could not create a resource")
 		}

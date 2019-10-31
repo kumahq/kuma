@@ -4,7 +4,6 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/core/validators/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -40,7 +39,7 @@ var _ = Describe("Dataplane", func() {
 
 	It("should pass validation", func() {
 		// when
-		err := mesh.ValidateDataplane(&validDataplane)
+		err := validDataplane.Validate()
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -53,8 +52,8 @@ var _ = Describe("Dataplane", func() {
 	DescribeTable("should catch validation errors",
 		func(given testCase) {
 			// when
-			dp := given.dataplane()
-			err := mesh.ValidateDataplane(&dp)
+			dataplane := given.dataplane()
+			err := dataplane.Validate()
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -66,14 +65,14 @@ var _ = Describe("Dataplane", func() {
 				validDataplane.Spec.Networking.Inbound[0].Interface = ""
 				return validDataplane
 			},
-			err: `validation error: Inbound[0]: Interface: invalid format: expected ^(?P<dataplane_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)):(?P<dataplane_port>[0-9]{1,5}):(?P<workload_port>[0-9]{1,5})$, got ""`,
+			err: `validation error: Inbound[0]: Interface: invalid format: expected format is <DATAPLANE_IP>:<DATAPLANE_PORT>:<WORKLOAD_PORT> ex. 192.168.0.100:9090:8080`,
 		}),
 		Entry("invalid inbound interface", testCase{
 			dataplane: func() core_mesh.DataplaneResource {
 				validDataplane.Spec.Networking.Inbound[0].Interface = "asdf"
 				return validDataplane
 			},
-			err: `validation error: Inbound[0]: Interface: invalid format: expected ^(?P<dataplane_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)):(?P<dataplane_port>[0-9]{1,5}):(?P<workload_port>[0-9]{1,5})$, got "asdf"`,
+			err: `validation error: Inbound[0]: Interface: invalid format: expected format is <DATAPLANE_IP>:<DATAPLANE_PORT>:<WORKLOAD_PORT> ex. 192.168.0.100:9090:8080`,
 		}),
 		Entry("inbound: empty service tag", testCase{
 			dataplane: func() core_mesh.DataplaneResource {
