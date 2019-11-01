@@ -14,6 +14,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"io/ioutil"
+	"strings"
+	"net/http"
 )
 
 type applyContext struct {
@@ -38,7 +40,16 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if ctx.args.file == "" || ctx.args.file == "-" {
 				b, err = ioutil.ReadAll(cmd.InOrStdin())
 			} else {
-				b, err = ioutil.ReadFile(ctx.args.file)
+				if strings.HasPrefix(ctx.args.file, "http") {
+					resp, err := http.Get(ctx.args.file)
+					if err != nil {
+						return errors.Wrap(err, "error parsing body from URL")
+					}
+					defer resp.Body.Close()
+					b, err = ioutil.ReadAll(resp.Body)
+				} else {
+					b, err = ioutil.ReadFile(ctx.args.file)
+				}
 			}
 			if err != nil {
 				return errors.Wrap(err, "error while reading provided file")

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"net/http"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
@@ -25,6 +26,7 @@ var _ = Describe("kumactl apply", func() {
 	var rootCtx *kumactl_cmd.RootContext
 	var rootCmd *cobra.Command
 	var store core_store.ResourceStore
+	var port string = ":3000"
 
 	BeforeEach(func() {
 		rootCtx = &kumactl_cmd.RootContext{
@@ -163,6 +165,56 @@ var _ = Describe("kumactl apply", func() {
 
 		// when
 		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resource := mesh.MeshResource{}
+		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", ""))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(resource.Meta.GetName()).To(Equal("sample"))
+		Expect(resource.Meta.GetMesh()).To(Equal(""))
+		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
+	})
+	
+	It("should apply a new Dataplane resource from URL", func() {
+		// setup http server
+		go func() {
+			defer GinkgoRecover()
+			// when
+			http.Handle("/testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./testdata"))))
+			err := http.ListenAndServe(port, nil)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		}()
+		
+		// given
+		rootCmd.SetArgs([]string{
+			"apply", "-f", "http://localhost:3000/testdata/apply-dataplane.yaml"},
+		)
+
+		// when
+		err := rootCmd.Execute()
+		
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		Expect(ValidatePersistedResource()).To(Succeed())
+	})
+
+	It("should apply a Mesh resource from URL", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"apply", "-f", "http://localhost:3000/testdata/apply-mesh.yaml"},
+		)
+		
+		// when
+		err := rootCmd.Execute()
+
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
