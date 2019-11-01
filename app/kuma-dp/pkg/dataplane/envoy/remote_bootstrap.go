@@ -44,7 +44,7 @@ func (b *remoteBootstrap) Generate(cfg kuma_dp.Config) (proto.Message, error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 404 {
-			return nil, errors.New("status: 404. Did you first applied Dataplane resource?")
+			return nil, errors.New("status: 404. Did you first apply a Dataplane resource?")
 		}
 		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
