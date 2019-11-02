@@ -23,13 +23,44 @@
 
 ### Universal mode
 
-TODO:
+```yaml
+type: HealthCheck
+name: rule-name
+mesh: default
+sources:
+- match:
+    service: '*' # values other than '*' can be set here, but will it be used in practice?
+    # NOTE: other tags can be set here, but will it be ever used in practice?
+destinations:
+- match:
+    # NOTE: only `service` tag can be used here
+    service: backend
+conf:
+  activeChecks: # configuration for a TCP check that only verifies whether a connection can be established
+    timeout: 1s
+    interval: 5s # how often health check requests should be made
+    unhealthy_threshold: 3
+    healthy_threshold: 2
+  passiveChecks:
+    unhealthy_threshold: 3
+    penalty_interval: 10s # for how long endpoint should be considered unhealthy
+```
 
 ## Design
 
 ### Requirement #1: Support `Envoy -> upstream` "health checks"
 
-TODO:
+* In order to generate `Cluster`s for a given `Dataplane`:
+  1. List all `HealthCheck`s in the same `mesh` as `Dataplane`
+  2. For each *outbound* interface of the `Dataplane`
+     * Go through `HealthCheck`s and select those where
+       * `destinations` selector matches `service` tag of that *outbound* interface
+       * `sources` selector matches tags on one of the *inbound* interfaces of that `Dataplane`
+     * Order matched `rule`s and keep only 1 "best match"
+     * If there is no "best match" `rule`
+       * Generate a `Cluster` without "active" and "passive" health checks
+     * If there is a "best match" `rule`
+       * Generate a `Cluster` with "active" and "passive" health checks according to that rule
 
 ### Requirement #2: Support `Envoy -> local app` "health checks"
 
