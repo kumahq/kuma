@@ -67,7 +67,6 @@ func (cfg *Configuration) AddControlPlane(cp *ControlPlane, force bool) bool {
 			return false
 		}
 		cfg.ControlPlanes[idx] = cp
-
 	} else {
 		cfg.ControlPlanes = append(cfg.ControlPlanes, cp)
 	}
