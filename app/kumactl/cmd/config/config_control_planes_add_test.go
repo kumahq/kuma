@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/Kong/kuma/app/kumactl/pkg/config"
-	"github.com/Kong/kuma/pkg/api-server/types"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +13,9 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/Kong/kuma/app/kumactl/pkg/config"
+	"github.com/Kong/kuma/pkg/api-server/types"
 
 	"github.com/Kong/kuma/app/kumactl/cmd"
 
@@ -161,7 +162,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 			configFile  string
 			goldenFile  string
 			expectedOut string
-			overwrite bool
+			overwrite   bool
 		}
 
 		DescribeTable("should add a new Control Plane by name and address",
@@ -215,7 +216,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 added Control Plane "example"
 switched active Control Plane to "example"
 `,
-				overwrite:false,
+				overwrite: false,
 			}),
 			Entry("should add a second Control Plane", testCase{
 				configFile: "config-control-planes-add.02.initial.yaml",
@@ -224,8 +225,8 @@ switched active Control Plane to "example"
 added Control Plane "example"
 switched active Control Plane to "example"
 `,
-				overwrite:false,
-			}), 
+				overwrite: false,
+			}),
 			Entry("should replace the example Control Plane", testCase{
 				configFile: "config-control-planes-add.03.initial.yaml",
 				goldenFile: "config-control-planes-add.03.golden.yaml",
@@ -233,7 +234,7 @@ switched active Control Plane to "example"
 added Control Plane "example"
 switched active Control Plane to "example"
 `,
-				overwrite:true,
+				overwrite: true,
 			}),
 		)
 	})
