@@ -139,6 +139,7 @@ Flags:
       --address string   URL of the Control Plane API Server (required)
   -h, --help             help for add
       --name string      reference name for the Control Plane (required)
+      --overwrite        overwrite existing Control Plane with the same reference name
 
 Global Flags:
       --config-file string   path to the configuration file to use

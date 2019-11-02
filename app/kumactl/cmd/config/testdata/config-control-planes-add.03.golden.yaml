@@ -1,0 +1,17 @@
+contexts:
+  - controlPlane: test1
+    defaults:
+      mesh: pilot
+    name: test1
+  - controlPlane: example
+    name: example
+controlPlanes:
+  - coordinates:
+      apiServer:
+        url: https://test1.internal:5681
+    name: test1
+  - coordinates:
+      apiServer:
+        url: http://placeholder-address
+    name: example
+currentContext: example
