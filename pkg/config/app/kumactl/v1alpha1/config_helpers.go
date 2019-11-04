@@ -88,7 +88,7 @@ func (cfg *Configuration) RemoveControlPlane(name string) bool {
 	return true
 }
 
-func (cfg *Context_DataplaneTokenApiCredentials) TlsEnabled() bool {
+func (cfg *Context_DataplaneTokenApiCredentials) HasClientCert() bool {
 	if cfg == nil {
 		return false
 	}

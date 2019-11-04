@@ -137,7 +137,7 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 	}
 
 	var url string
-	if ctx.DataplaneTokenApiCredentials.TlsEnabled() {
+	if ctx.GetCredentials().GetDataplaneTokenApi().HasClientCert() {
 		if components.Apis.DataplaneToken.PublicUrl == "" {
 			return nil, errors.New("dataplane token server is not configured with TLS. Either configure kuma-cp to start server with tls or configure kumactl without certificates")
 		}
@@ -145,7 +145,7 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 	} else {
 		url = components.Apis.DataplaneToken.LocalUrl
 	}
-	return rc.Runtime.NewDataplaneTokenClient(url, ctx.DataplaneTokenApiCredentials)
+	return rc.Runtime.NewDataplaneTokenClient(url, ctx.GetCredentials().GetDataplaneTokenApi())
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {

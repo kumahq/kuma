@@ -20,10 +20,14 @@ const (
 func NewDataplaneTokenClient(address string, config *kumactl_config.Context_DataplaneTokenApiCredentials) (DataplaneTokenClient, error) {
 	baseURL, err := url.Parse(address)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse API Server URL")
+		return nil, errors.Wrapf(err, "failed to parse Dataplane Token Server URL")
 	}
 	httpClient := &http.Client{}
-	if config.TlsEnabled() {
+	if baseURL.Scheme == "https" {
+		if !config.HasClientCert() {
+			return nil, errors.New("certificates has to be configured to use https destination")
+		}
+		// Since we're not going to pass any secrets to the server, we can skip validating its identity.
 		if err := util_http.ConfigureTlsWithoutServerVerification(httpClient, config.ClientCert, config.ClientKey); err != nil {
 			return nil, errors.Wrap(err, "could not configure tls for dataplane token client")
 		}

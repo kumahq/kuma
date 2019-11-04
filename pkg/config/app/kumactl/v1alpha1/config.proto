@@ -60,9 +60,13 @@ message Context {
   // Defaults defines default settings for a given context.
   Defaults defaults = 3;
 
-  // DataplaneTokenApiCredentials defines credential configuration of dataplane
-  // token client
-  DataplaneTokenApiCredentials dataplaneTokenApiCredentials = 4;
+  Credentials credentials = 4;
+
+  // Credentials defines credentials for various APIs
+  message Credentials {
+    // DataplaneTokenApiCredentials defines credentials for dataplane token api
+    DataplaneTokenApiCredentials dataplaneTokenApi = 1;
+  }
 
   // DataplaneTokenApiCredentials defines credential configuration of dataplane
   // token client

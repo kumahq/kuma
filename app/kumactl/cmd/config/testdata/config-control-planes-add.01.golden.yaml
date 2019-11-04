@@ -1,9 +1,10 @@
 contexts:
 - controlPlane: example
   name: example
-  dataplaneTokenApiCredentials:
-    clientCert: /tmp/client.pem
-    clientKey: /tmp/client.key.pem
+  credentials:
+    dataplaneTokenApi:
+      clientCert: /tmp/client.pem
+      clientKey: /tmp/client.key.pem
 controlPlanes:
 - coordinates:
     apiServer:

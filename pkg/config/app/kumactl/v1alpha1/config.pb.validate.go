@@ -360,13 +360,13 @@ func (m *Context) Validate() error {
 	}
 
 	{
-		tmp := m.GetDataplaneTokenApiCredentials()
+		tmp := m.GetCredentials()
 
 		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
 
 			if err := v.Validate(); err != nil {
 				return ContextValidationError{
-					field:  "DataplaneTokenApiCredentials",
+					field:  "Credentials",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -578,6 +578,88 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Context_DefaultsValidationError{}
+
+// Validate checks the field values on Context_Credentials with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *Context_Credentials) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	{
+		tmp := m.GetDataplaneTokenApi()
+
+		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
+
+			if err := v.Validate(); err != nil {
+				return Context_CredentialsValidationError{
+					field:  "DataplaneTokenApi",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// Context_CredentialsValidationError is the validation error returned by
+// Context_Credentials.Validate if the designated constraints aren't met.
+type Context_CredentialsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Context_CredentialsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Context_CredentialsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Context_CredentialsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Context_CredentialsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Context_CredentialsValidationError) ErrorName() string {
+	return "Context_CredentialsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Context_CredentialsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sContext_Credentials.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Context_CredentialsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Context_CredentialsValidationError{}
 
 // Validate checks the field values on Context_DataplaneTokenApiCredentials
 // with the rules defined in the proto definition for this message. If any

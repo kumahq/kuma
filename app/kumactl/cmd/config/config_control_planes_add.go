@@ -11,9 +11,9 @@ import (
 
 func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := struct {
-		name         string
-		apiServerURL string
-		overwrite    bool
+		name                     string
+		apiServerURL             string
+		overwrite                bool
 		dataplaneTokenClientCert string
 		dataplaneTokenClientKey  string
 	}{}
@@ -44,9 +44,11 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			ctx := &config_proto.Context{
 				Name:         cp.Name,
 				ControlPlane: cp.Name,
-				DataplaneTokenApiCredentials: &config_proto.Context_DataplaneTokenApiCredentials{
-					ClientCert: args.dataplaneTokenClientCert,
-					ClientKey:  args.dataplaneTokenClientKey,
+				Credentials: &config_proto.Context_Credentials{
+					DataplaneTokenApi: &config_proto.Context_DataplaneTokenApiCredentials{
+						ClientCert: args.dataplaneTokenClientCert,
+						ClientKey:  args.dataplaneTokenClientKey,
+					},
 				},
 			}
 			if err := ctx.Validate(); err != nil {
