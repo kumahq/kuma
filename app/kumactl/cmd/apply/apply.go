@@ -15,7 +15,14 @@ import (
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"strings"
+	"time"
 	"net/http"
+
+	util_http "github.com/Kong/kuma/pkg/util/http"
+)
+
+const (
+	timeout = 10 * time.Second
 )
 
 type applyContext struct {
@@ -41,7 +48,10 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				b, err = ioutil.ReadAll(cmd.InOrStdin())
 			} else {
 				if strings.HasPrefix(ctx.args.file, "http") {
-					resp, err := http.Get(ctx.args.file)
+					client := util_http.ClientWithTimeout(&http.Client{}, timeout)
+					req, err := http.NewRequest("GET", ctx.args.file, nil)
+
+					resp, err := client.Do(req)
 					if err != nil {
 						return errors.Wrap(err, "error parsing body from URL")
 					}
