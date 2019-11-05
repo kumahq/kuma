@@ -18,8 +18,8 @@ import (
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
-	autoconfigureCatalogue(cfg)
 	autoconfigureDataplaneTokenServer(cfg.DataplaneTokenServer)
+	autoconfigureCatalogue(cfg)
 	return autoconfigureSds(cfg)
 }
 

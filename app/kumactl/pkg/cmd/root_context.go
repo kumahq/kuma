@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"net"
+	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -136,16 +138,44 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 		return nil, err
 	}
 
+	sameMachine, err := rc.cpOnTheSameMachine()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not determine if cp is on the same machine")
+	}
 	var url string
-	if ctx.GetCredentials().GetDataplaneTokenApi().HasClientCert() {
-		if components.Apis.DataplaneToken.PublicUrl == "" {
-			return nil, errors.New("dataplane token server is not configured with TLS. Either configure kuma-cp to start server with tls or configure kumactl without certificates")
+	if sameMachine {
+		url = components.Apis.DataplaneToken.LocalUrl
+	} else {
+		if !ctx.GetCredentials().GetDataplaneTokenApi().HasClientCert() || components.Apis.DataplaneToken.PublicUrl == "" {
+			msg := `could not access dataplane token server. This can be solved in several ways:
+1) Configure kuma-cp dataplane token server with certificate and then use this certificate to configure kumactl.
+2) Run kumactl generate dataplane-token on the same machine as kuma-cp.
+3) Use SSH port forwarding so that kuma-cp could be accessed on a remote machine with kumactl on a loopback address.`
+			return nil, errors.New(msg)
 		}
 		url = components.Apis.DataplaneToken.PublicUrl
-	} else {
-		url = components.Apis.DataplaneToken.LocalUrl
 	}
 	return rc.Runtime.NewDataplaneTokenClient(url, ctx.GetCredentials().GetDataplaneTokenApi())
+}
+
+func (rc *RootContext) cpOnTheSameMachine() (bool, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return false, err
+	}
+	cpUrl, err := url.Parse(controlPlane.Coordinates.ApiServer.Url)
+	if err != nil {
+		return false, err
+	}
+	host, _, err := net.SplitHostPort(cpUrl.Host)
+	if err != nil {
+		return false, err
+	}
+	ip, err := net.ResolveIPAddr("", host)
+	if err != nil {
+		return false, err
+	}
+	return ip.IP.IsLoopback(), nil
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {
