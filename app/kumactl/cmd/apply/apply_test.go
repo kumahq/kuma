@@ -2,13 +2,14 @@ package apply_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
-	"strings"
+	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
-	"fmt"
+	"strings"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
@@ -181,7 +182,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Meta.GetMesh()).To(Equal(""))
 		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 	})
-	
+
 	It("should apply a new Dataplane resource from URL", func() {
 		// setup http server
 		mux := http.NewServeMux()
@@ -193,11 +194,11 @@ var _ = Describe("kumactl apply", func() {
 			defer GinkgoRecover()
 			// when
 			http.Handle("/testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./testdata"))))
-			http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
+			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		}()
-		
+
 		// given
 		rootCmd.SetArgs([]string{
 			"apply", "-f", fmt.Sprintf("http://localhost:%v/testdata/apply-dataplane.yaml", port)},
@@ -205,7 +206,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// when
 		err = rootCmd.Execute()
-		
+
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
