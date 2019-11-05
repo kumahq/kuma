@@ -2,11 +2,10 @@ package manager
 
 import (
 	"context"
+	"fmt"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/pkg/errors"
-	"strings"
 )
 
 type ResourceManager interface {
@@ -90,10 +89,19 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 	return r.Store.Update(ctx, resource, fs...)
 }
 
+type MeshNotFoundError struct {
+	Mesh string
+}
+
+func (m *MeshNotFoundError) Error() string {
+	return fmt.Sprintf("mesh of name %s is not found", m.Mesh)
+}
+
 func MeshNotFound(meshName string) error {
-	return errors.Errorf("mesh of name %v is not found", meshName)
+	return &MeshNotFoundError{meshName}
 }
 
 func IsMeshNotFound(err error) bool {
-	return err != nil && strings.HasPrefix(err.Error(), "mesh of name") && strings.HasSuffix(err.Error(), "is not found")
+	_, ok := err.(*MeshNotFoundError)
+	return ok
 }

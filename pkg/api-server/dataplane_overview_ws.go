@@ -3,7 +3,6 @@ package api_server
 import (
 	"context"
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
@@ -37,18 +36,13 @@ func (r *overviewWs) inspectDataplane(request *restful.Request, response *restfu
 
 	overview, err := r.fetchOverview(request.Request.Context(), name, meshName)
 	if err != nil {
-		if store.IsResourceNotFound(err) {
-			writeError(response, 404, "")
-		} else {
-			core.Log.Error(err, "Could not retrieve a dataplane overview", "name", name)
-			writeError(response, 500, "Could not retrieve a dataplane overview")
-		}
+		handleError(response, err, "Could not retrieve a dataplane overview")
+		return
 	}
 
 	res := rest.From.Resource(overview)
 	if err := response.WriteAsJson(res); err != nil {
-		core.Log.Error(err, "Could not write the response")
-		writeError(response, 500, "Could not write the response")
+		handleError(response, err, "Could not retrieve a dataplane overview")
 	}
 }
 
@@ -77,8 +71,7 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 	meshName := request.PathParameter("mesh")
 	overviews, err := r.fetchOverviews(request.Request.Context(), meshName)
 	if err != nil {
-		core.Log.Error(err, "Could not retrieve dataplane overviews")
-		writeError(response, 500, "Could not list dataplane overviews")
+		handleError(response, err, "Could not retrieve dataplane overviews")
 		return
 	}
 
@@ -87,8 +80,7 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 
 	restList := rest.From.ResourceList(&overviews)
 	if err := response.WriteAsJson(restList); err != nil {
-		core.Log.Error(err, "Could not write DataplaneOverview as JSON")
-		writeError(response, 500, "Could not list dataplane overviews")
+		handleError(response, err, "Could not list dataplane overviews")
 	}
 }
 

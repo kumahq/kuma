@@ -12,7 +12,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/emicklei/go-restful"
-	"github.com/pkg/errors"
 )
 
 const namespace = "default"
@@ -78,12 +77,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 	resource := r.ResourceFactory()
 	err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName))
 	if err != nil {
-		if err.Error() == store.ErrorResourceNotFound(resource.GetType(), namespace, name, meshName).Error() {
-			writeError(response, 404, "")
-		} else {
-			core.Log.Error(err, "Could not retrieve a resource", "name", name)
-			writeError(response, 500, "Could not retrieve a resource")
-		}
+		handleError(response, err, "Could not retrieve a resource")
 	} else {
 		res := rest.From.Resource(resource)
 		if err := response.WriteAsJson(res); err != nil {
@@ -97,13 +91,11 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 
 	list := r.ResourceListFactory()
 	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName)); err != nil {
-		core.Log.Error(err, "Could not retrieve resources")
-		writeError(response, 500, "Could not list a resource")
+		handleError(response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
 		if err := response.WriteAsJson(restList); err != nil {
-			core.Log.Error(err, "Could not write as JSON", "type", string(list.GetItemType()))
-			writeError(response, 500, "Could not list a resource")
+			handleError(response, err, "Could not list resources")
 		}
 	}
 }
@@ -116,41 +108,43 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 		Spec: r.ResourceFactory().GetSpec(),
 	}
 
-	err := request.ReadEntity(&resourceRes)
-	if err != nil {
-		core.Log.Error(err, "Could not read an entity")
-		writeError(response, 400, "Could not process the resource")
+	if err := request.ReadEntity(&resourceRes); err != nil {
+		handleError(response, err, "Could not process a resource")
 		return
 	}
 
 	if err := r.validateResourceRequest(request, &resourceRes); err != nil {
-		writeError(response, 400, err.Error())
-	} else {
-		resource := r.ResourceFactory()
-		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName)); err != nil {
-			if store.IsResourceNotFound(err) {
-				r.createResource(request.Request.Context(), name, meshName, resourceRes.Spec, response)
-			} else {
-				core.Log.Error(err, "Could get a resource from the store", "namespace", namespace, "name", name, "type", string(resource.GetType()))
-				writeError(response, 500, "Could not create a resource")
-			}
+		handleError(response, err, "Could not process a resource")
+		return
+	}
+
+	resource := r.ResourceFactory()
+	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName)); err != nil {
+		if store.IsResourceNotFound(err) {
+			r.createResource(request.Request.Context(), name, meshName, resourceRes.Spec, response)
 		} else {
-			r.updateResource(request.Request.Context(), resource, resourceRes, response)
+			handleError(response, err, "Could not find a resource")
 		}
+	} else {
+		r.updateResource(request.Request.Context(), resource, resourceRes, response)
 	}
 }
 
 func (r *resourceWs) validateResourceRequest(request *restful.Request, resource *rest.Resource) error {
+	var err validators.ValidationError
 	name := r.nameFromRequest(request)
 	meshName := r.meshFromRequest(request)
 	if name != resource.Meta.Name {
-		return errors.New("Name from the URL has to be the same as in body")
+		err.AddViolation("name", "name from the URL has to be the same as in body")
 	}
 	if string(r.ResourceFactory().GetType()) != resource.Meta.Type {
-		return errors.New("Type from the URL has to be the same as in body")
+		err.AddViolation("type", "type from the URL has to be the same as in body")
 	}
 	if meshName != resource.Meta.Mesh && r.ResourceFactory().GetType() != mesh.MeshType {
-		return errors.New("Mesh from the URL has to be the same as in body")
+		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
+	}
+	if err.HasViolations() {
+		return &err
 	}
 	return nil
 }
@@ -159,15 +153,7 @@ func (r *resourceWs) createResource(ctx context.Context, name string, meshName s
 	res := r.ResourceFactory()
 	_ = res.SetSpec(spec)
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(namespace, name, meshName)); err != nil {
-		switch {
-		case manager.IsMeshNotFound(err):
-			writeError(response, 400, fmt.Sprintf("Mesh of name %v is not found", meshName))
-		case validators.IsValidationError(err):
-			writeError(response, 400, err.Error())
-		default:
-			core.Log.Error(err, "Could not create a resource")
-			writeError(response, 500, "Could not create a resource")
-		}
+		handleError(response, err, "Could not create a resource")
 	} else {
 		response.WriteHeader(201)
 	}
@@ -176,12 +162,7 @@ func (r *resourceWs) createResource(ctx context.Context, name string, meshName s
 func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, restRes rest.Resource, response *restful.Response) {
 	_ = res.SetSpec(restRes.Spec)
 	if err := r.resManager.Update(ctx, res); err != nil {
-		if validators.IsValidationError(err) {
-			writeError(response, 400, err.Error())
-		} else {
-			core.Log.Error(err, "Could not update a resource")
-			writeError(response, 500, "Could not update a resource")
-		}
+		handleError(response, err, "Could not update a resource")
 	} else {
 		response.WriteHeader(200)
 	}
@@ -192,15 +173,7 @@ func (r *resourceWs) deleteResource(request *restful.Request, response *restful.
 	meshName := r.meshFromRequest(request)
 
 	resource := r.ResourceFactory()
-	err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(namespace, name, meshName))
-	if err != nil {
-		writeError(response, 500, "Could not delete a resource")
-		core.Log.Error(err, "Could not delete a resource", "namespace", namespace, "name", name, "type", string(resource.GetType()))
-	}
-}
-
-func writeError(response *restful.Response, httpStatus int, msg string) {
-	if err := response.WriteErrorString(httpStatus, msg); err != nil {
-		core.Log.Error(err, "Could not write the response")
+	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(namespace, name, meshName)); err != nil {
+		handleError(response, err, "Could not delete a resource")
 	}
 }

@@ -61,6 +61,9 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err != nil {
 		return err
 	}
+	if err := resource.Validate(); err != nil {
+		return err
+	}
 	// apply defaults, e.g. Builtin CA
 	mesh.Default()
 	// keep creation of Mesh and Built-in CA in sync
@@ -136,6 +139,9 @@ func (m *meshManager) DeleteAll(ctx context.Context, list core_model.ResourceLis
 func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
 	mesh, err := m.mesh(resource)
 	if err != nil {
+		return err
+	}
+	if err := resource.Validate(); err != nil {
 		return err
 	}
 	// apply defaults, e.g. Builtin CA

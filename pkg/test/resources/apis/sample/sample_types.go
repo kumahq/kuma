@@ -41,10 +41,11 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 func (t *TrafficRouteResource) Validate() error {
+	err := validators.ValidationError{}
 	if t.Spec.Path == "" {
-		return validators.NewValidationError(errors.New("Path cannot be empty"))
+		err.AddViolation("path", "cannot be empty")
 	}
-	return nil
+	return err.ToError()
 }
 
 var _ model.ResourceList = &TrafficRouteResourceList{}

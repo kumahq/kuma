@@ -1,46 +1,56 @@
 package mesh
 
 import (
+	"fmt"
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 )
 
 func (d *DataplaneResource) Validate() error {
-	var errs error
-	for i, inbound := range d.Spec.GetNetworking().GetInbound() {
-		if err := validateInbound(inbound); err != nil {
-			errs = multierr.Combine(errs, errors.Wrapf(err, "Inbound[%d]", i))
-		}
-	}
-	for i, outbound := range d.Spec.GetNetworking().GetOutbound() {
-		if err := validateOutbound(outbound); err != nil {
-			errs = multierr.Combine(errs, errors.Wrapf(err, "Outbound[%d]", i))
-		}
-	}
-	return validators.NewValidationError(errs)
+	var err validators.ValidationError
+	err.AddError("networking", validateNetworking(d.Spec.GetNetworking()))
+	return err.ToError()
 }
 
-func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound) error {
-	var errs error
+func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
+	var err validators.ValidationError
+	if len(networking.GetInbound()) == 0 {
+		err.AddViolation("inbound", "has to contain at least one inbound interface")
+	}
+	for i, inbound := range networking.GetInbound() {
+		result := validateInbound(inbound)
+		err.AddError(fmt.Sprintf("inbound[%d]", i), result)
+	}
+	for i, outbound := range networking.GetOutbound() {
+		result := validateOutbound(outbound)
+		err.AddError(fmt.Sprintf("outbound[%d]", i), result)
+	}
+	return err
+}
+
+func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound) validators.ValidationError {
+	var result validators.ValidationError
 	if _, err := mesh_proto.ParseInboundInterface(inbound.Interface); err != nil {
-		errs = multierr.Combine(errs, errors.New("Interface: invalid format: expected format is <DATAPLANE_IP>:<DATAPLANE_PORT>:<WORKLOAD_PORT> ex. 192.168.0.100:9090:8080"))
+		result.AddViolation("interface", "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT ex. 192.168.0.100:9090:8080")
 	}
-	tag := inbound.Tags[mesh_proto.ServiceTag]
-	if tag == "" {
-		errs = multierr.Combine(errs, errors.New(`"service" tag has to exist and be non empty`))
+	if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
+		result.AddViolation(fmt.Sprintf(`tags["%s"]`, mesh_proto.ServiceTag), `tag has to exist`)
 	}
-	return errs
+	for name, value := range inbound.Tags {
+		if value == "" {
+			result.AddViolation(fmt.Sprintf(`tags["%s"]`, name), `tag value cannot be empty`)
+		}
+	}
+	return result
 }
 
-func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) error {
-	var errs error
+func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) validators.ValidationError {
+	var result validators.ValidationError
 	if _, err := mesh_proto.ParseOutboundInterface(outbound.Interface); err != nil {
-		errs = multierr.Combine(errs, errors.Wrap(err, "Interface"))
+		result.AddViolation("interface", "invalid format: expected format is IP_ADDRESS:PORT where IP_ADDRESS is optional. ex. 192.168.0.100:9090 or :9090")
 	}
 	if outbound.Service == "" {
-		errs = multierr.Combine(errs, errors.New("Service cannot be empty"))
+		result.AddViolation("service", "cannot be empty")
 	}
-	return errs
+	return result
 }
