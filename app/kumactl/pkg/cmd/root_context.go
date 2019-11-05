@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"time"
@@ -142,20 +143,39 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 	if err != nil {
 		return nil, errors.Wrap(err, "could not determine if cp is on the same machine")
 	}
-	var url string
+	var dpTokenUrl string
 	if sameMachine {
-		url = components.Apis.DataplaneToken.LocalUrl
+		dpTokenUrl = components.Apis.DataplaneToken.LocalUrl
 	} else {
-		if !ctx.GetCredentials().GetDataplaneTokenApi().HasClientCert() || components.Apis.DataplaneToken.PublicUrl == "" {
-			msg := `could not access dataplane token server. This can be solved in several ways:
+		if err := validateRemoteDataplaneTokenServerSettings(ctx, components); err != nil {
+			return nil, err
+		}
+		dpTokenUrl = components.Apis.DataplaneToken.PublicUrl
+	}
+	return rc.Runtime.NewDataplaneTokenClient(dpTokenUrl, ctx.GetCredentials().GetDataplaneTokenApi())
+}
+
+func validateRemoteDataplaneTokenServerSettings(ctx *kumactl_config.Context, components catalogue.Catalogue) error {
+	reason := ""
+	clientConfigured := ctx.GetCredentials().GetDataplaneTokenApi().HasClientCert()
+	serverConfigured := components.Apis.DataplaneToken.PublicUrl != ""
+	if !clientConfigured && serverConfigured {
+		reason = "dataplane token server in kuma-cp is configured with TLS and kumactl is not."
+	}
+	if clientConfigured && !serverConfigured {
+		reason = "kumactl is configured with TLS and dataplane token server in kuma-cp is not."
+	}
+	if !clientConfigured && !serverConfigured {
+		reason = "both kumactl and dataplane token server in kuma-cp are not configured with TLS."
+	}
+	if reason != "" { // todo(jakubdyszkiewicz) once docs are in place, put a link to it in 1)
+		msg := fmt.Sprintf(`kumactl is trying to access dataplane token server in remote machine but: %s. This can be solved in several ways:
 1) Configure kuma-cp dataplane token server with certificate and then use this certificate to configure kumactl.
 2) Run kumactl generate dataplane-token on the same machine as kuma-cp.
-3) Use SSH port forwarding so that kuma-cp could be accessed on a remote machine with kumactl on a loopback address.`
-			return nil, errors.New(msg)
-		}
-		url = components.Apis.DataplaneToken.PublicUrl
+3) Use SSH port forwarding so that kuma-cp could be accessed on a remote machine with kumactl on a loopback address.`, reason)
+		return errors.New(msg)
 	}
-	return rc.Runtime.NewDataplaneTokenClient(url, ctx.GetCredentials().GetDataplaneTokenApi())
+	return nil
 }
 
 func (rc *RootContext) cpOnTheSameMachine() (bool, error) {
