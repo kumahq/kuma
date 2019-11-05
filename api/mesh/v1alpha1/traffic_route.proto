@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+import "mesh/v1alpha1/selector.proto";
+import "validate/validate.proto";
+
+// TrafficRoute defines routing rules for L4 traffic.
+message TrafficRoute {
+
+  // List of selectors to match dataplanes that are sources of traffic.
+  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+
+  // List of selectors to match services that are destinations of traffic.
+  //
+  // Notice the difference between sources and destinations.
+  // While the source of traffic is always a dataplane within a mesh,
+  // the destination is a service that could be either within or outside
+  // of a mesh.
+  repeated Selector destinations = 2
+      [ (validate.rules).repeated .min_items = 1 ];
+
+  // WeightedDestination defines a destination with a weight assigned to it.
+  message WeightedDestination {
+
+    // Weight assigned to that destination.
+    uint32 weight = 1 [ (validate.rules).uint32.gte = 0 ];
+
+    // Selector to match individual endpoints that comprise that destination.
+    //
+    // Notice that an endpoint can be either inside or outside the mesh.
+    // In the former case an endpoint corresponds to a dataplane,
+    // in the latter case an endpoint is a black box.
+    map<string, string> destination = 2 [ (validate.rules).map = {
+      min_pairs : 1,
+      keys : {string : {min_len : 1}},
+      values : {string : {min_len : 1}}
+    } ];
+  }
+
+  // List of destinations with weights assigned to them.
+  repeated WeightedDestination conf = 3
+      [ (validate.rules).repeated .min_items = 1 ];
+}
