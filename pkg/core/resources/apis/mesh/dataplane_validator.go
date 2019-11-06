@@ -9,7 +9,7 @@ import (
 func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
 	err.AddError("networking", validateNetworking(d.Spec.GetNetworking()))
-	return err.ToError()
+	return err.OrNil()
 }
 
 func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {

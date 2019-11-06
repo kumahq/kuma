@@ -45,7 +45,7 @@ func (t *TrafficRouteResource) Validate() error {
 	if t.Spec.Path == "" {
 		err.AddViolation("path", "cannot be empty")
 	}
-	return err.ToError()
+	return err.OrNil()
 }
 
 var _ model.ResourceList = &TrafficRouteResourceList{}

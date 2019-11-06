@@ -308,6 +308,50 @@ var _ = Describe("Resource WS", func() {
 			`))
 		})
 
+		It("should return 400 on invalid name and mesh", func() {
+			// given
+			json := `
+			{
+				"type": "TrafficRoute",
+				"name": "invalid@",
+				"mesh": "invalid$",
+				"path": "/path"
+			}
+			`
+
+			// when
+			client = resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/meshes/invalid$/traffic-routes",
+			}
+			response := client.putJson("invalid@", []byte(json))
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+
+			// when
+			respBytes, err := ioutil.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(respBytes).To(MatchJSON(`
+			{
+				"title": "Could not process a resource",
+				"details": "Resource is not valid",
+				"causes": [
+					{
+						"field": "name",
+						"message": "invalid characters. Valid characters are numbers, letters and '-', '_' symbols."
+					},
+					{
+						"field": "mesh",
+						"message": "invalid characters. Valid characters are numbers, letters and '-', '_' symbols."
+					}
+				]
+			}
+			`))
+		})
+
 		It("should return 400 when mesh does not exist", func() {
 			// setup
 			err := resourceStore.Delete(context.Background(), &mesh_res.MeshResource{}, store.DeleteByKey("default", "default", "default"))

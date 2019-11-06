@@ -61,11 +61,11 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err != nil {
 		return err
 	}
+	// apply defaults, e.g. Builtin CA
+	mesh.Default()
 	if err := resource.Validate(); err != nil {
 		return err
 	}
-	// apply defaults, e.g. Builtin CA
-	mesh.Default()
 	// keep creation of Mesh and Built-in CA in sync
 	var rollback func() error
 	defer func() {
@@ -141,11 +141,11 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	if err != nil {
 		return err
 	}
+	// apply defaults, e.g. Builtin CA
+	mesh.Default()
 	if err := resource.Validate(); err != nil {
 		return err
 	}
-	// apply defaults, e.g. Builtin CA
-	mesh.Default()
 	return m.store.Update(ctx, mesh, fs...)
 }
 

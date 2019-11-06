@@ -14,22 +14,22 @@ type Violation struct {
 }
 
 func (v *ValidationError) Error() string {
-	err := ""
+	msg := ""
 	for _, violation := range v.Violations {
-		if err != "" {
-			err = fmt.Sprintf("%s; %s: %s", err, violation.Field, violation.Message)
+		if msg != "" {
+			msg = fmt.Sprintf("%s; %s: %s", msg, violation.Field, violation.Message)
 		} else {
-			err += fmt.Sprintf("%s: %s", violation.Field, violation.Message)
+			msg += fmt.Sprintf("%s: %s", violation.Field, violation.Message)
 		}
 	}
-	return err
+	return msg
 }
 
 func (v *ValidationError) HasViolations() bool {
 	return len(v.Violations) > 0
 }
 
-func (v *ValidationError) ToError() error {
+func (v *ValidationError) OrNil() error {
 	if v.HasViolations() {
 		return v
 	}
@@ -44,12 +44,12 @@ func (v *ValidationError) AddViolation(field string, message string) {
 	v.Violations = append(v.Violations, violation)
 }
 
-func (v *ValidationError) AddError(rootField string, error ValidationError) {
+func (v *ValidationError) AddError(rootField string, validationErr ValidationError) {
 	rootPrefix := ""
 	if rootField != "" {
 		rootPrefix += fmt.Sprintf("%s.", rootField)
 	}
-	for _, violation := range error.Violations {
+	for _, violation := range validationErr.Violations {
 		newViolation := Violation{
 			Field:   fmt.Sprintf("%s%s", rootPrefix, violation.Field),
 			Message: violation.Message,

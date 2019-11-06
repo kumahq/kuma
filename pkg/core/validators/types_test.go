@@ -22,7 +22,7 @@ var _ = Describe("Validation Error", func() {
 		// then
 		Expect(err.HasViolations()).To(BeTrue())
 		Expect(validators.IsValidationError(&err)).To(BeTrue())
-		Expect(err.ToError()).To(MatchError("name: invalid name; address.street: invalid format"))
+		Expect(err.OrNil()).To(MatchError("name: invalid name; address.street: invalid format"))
 	})
 
 	It("should convert to nil error when there are no violations", func() {
@@ -30,7 +30,7 @@ var _ = Describe("Validation Error", func() {
 		validationErr := validators.ValidationError{}
 
 		// when
-		err := validationErr.ToError()
+		err := validationErr.OrNil()
 
 		Expect(err).To(BeNil())
 	})
