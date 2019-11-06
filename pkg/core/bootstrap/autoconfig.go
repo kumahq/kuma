@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"github.com/Kong/kuma/pkg/config/api-server/catalogue"
+	token_server "github.com/Kong/kuma/pkg/config/token-server"
 	"io/ioutil"
 	"os"
 
@@ -17,6 +18,7 @@ import (
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
+	autoconfigureDataplaneTokenServer(cfg.DataplaneTokenServer)
 	autoconfigureCatalogue(cfg)
 	return autoconfigureSds(cfg)
 }
@@ -60,6 +62,12 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 		}
 	}
 	return nil
+}
+
+func autoconfigureDataplaneTokenServer(cfg *token_server.DataplaneTokenServerConfig) {
+	if cfg.TlsEnabled() && cfg.Public.Port == 0 {
+		cfg.Public.Port = cfg.Local.Port
+	}
 }
 
 func saveKeyPair(pair tls.KeyPair) (string, string, error) {

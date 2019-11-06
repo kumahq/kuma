@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"net"
+	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -11,6 +14,7 @@ import (
 	"github.com/Kong/kuma/pkg/catalogue"
 	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
+	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	util_files "github.com/Kong/kuma/pkg/util/files"
@@ -26,7 +30,7 @@ type RootRuntime struct {
 	Now                        func() time.Time
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
-	NewDataplaneTokenClient    func(string) (tokens.DataplaneTokenClient, error)
+	NewDataplaneTokenClient    func(string, *kumactl_config.Context_DataplaneTokenApiCredentials) (tokens.DataplaneTokenClient, error)
 	NewCatalogueClient         func(string) (catalogue_client.CatalogueClient, error)
 }
 
@@ -130,7 +134,68 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewDataplaneTokenClient(components.Apis.DataplaneToken.LocalUrl)
+	ctx, err := rc.CurrentContext()
+	if err != nil {
+		return nil, err
+	}
+
+	sameMachine, err := rc.cpOnTheSameMachine()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not determine if cp is on the same machine")
+	}
+	var dpTokenUrl string
+	if sameMachine {
+		dpTokenUrl = components.Apis.DataplaneToken.LocalUrl
+	} else {
+		if err := validateRemoteDataplaneTokenServerSettings(ctx, components); err != nil {
+			return nil, err
+		}
+		dpTokenUrl = components.Apis.DataplaneToken.PublicUrl
+	}
+	return rc.Runtime.NewDataplaneTokenClient(dpTokenUrl, ctx.GetCredentials().GetDataplaneTokenApi())
+}
+
+func validateRemoteDataplaneTokenServerSettings(ctx *kumactl_config.Context, components catalogue.Catalogue) error {
+	reason := ""
+	clientConfigured := ctx.GetCredentials().GetDataplaneTokenApi().HasClientCert()
+	serverConfigured := components.Apis.DataplaneToken.PublicUrl != ""
+	if !clientConfigured && serverConfigured {
+		reason = "dataplane token server in kuma-cp is configured with TLS and kumactl is not."
+	}
+	if clientConfigured && !serverConfigured {
+		reason = "kumactl is configured with TLS and dataplane token server in kuma-cp is not."
+	}
+	if !clientConfigured && !serverConfigured {
+		reason = "both kumactl and dataplane token server in kuma-cp are not configured with TLS."
+	}
+	if reason != "" { // todo(jakubdyszkiewicz) once docs are in place, put a link to it in 1)
+		msg := fmt.Sprintf(`kumactl is trying to access dataplane token server in remote machine but: %s. This can be solved in several ways:
+1) Configure kuma-cp dataplane token server with certificate and then use this certificate to configure kumactl.
+2) Run kumactl generate dataplane-token on the same machine as kuma-cp.
+3) Use SSH port forwarding so that kuma-cp could be accessed on a remote machine with kumactl on a loopback address.`, reason)
+		return errors.New(msg)
+	}
+	return nil
+}
+
+func (rc *RootContext) cpOnTheSameMachine() (bool, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return false, err
+	}
+	cpUrl, err := url.Parse(controlPlane.Coordinates.ApiServer.Url)
+	if err != nil {
+		return false, err
+	}
+	host, _, err := net.SplitHostPort(cpUrl.Host)
+	if err != nil {
+		return false, err
+	}
+	ip, err := net.ResolveIPAddr("", host)
+	if err != nil {
+		return false, err
+	}
+	return ip.IP.IsLoopback(), nil
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {

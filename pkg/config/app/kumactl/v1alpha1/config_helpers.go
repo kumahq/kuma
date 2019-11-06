@@ -87,3 +87,10 @@ func (cfg *Configuration) RemoveControlPlane(name string) bool {
 	cfg.ControlPlanes = append(cfg.ControlPlanes[:i], cfg.ControlPlanes[i+1:]...)
 	return true
 }
+
+func (cfg *Context_DataplaneTokenApiCredentials) HasClientCert() bool {
+	if cfg == nil {
+		return false
+	}
+	return cfg.ClientCert != "" && cfg.ClientKey != ""
+}

@@ -179,7 +179,9 @@ var _ = Describe("kumactl config control-planes add", func() {
 				args := []string{"--config-file", configFile.Name(),
 					"config", "control-planes", "add",
 					"--name", "example",
-					"--address", fmt.Sprintf("http://localhost:%d", port)}
+					"--address", fmt.Sprintf("http://localhost:%d", port),
+					"--dataplane-token-client-cert", "/tmp/client.pem",
+					"--dataplane-token-client-key", "/tmp/client.key.pem"}
 				if given.overwrite {
 					args = append(args, "--overwrite")
 				}

@@ -3,6 +3,7 @@ package tokens
 import (
 	"bytes"
 	"encoding/json"
+	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
 	util_http "github.com/Kong/kuma/pkg/util/http"
 	"github.com/pkg/errors"
@@ -16,12 +17,22 @@ const (
 	timeout = 10 * time.Second
 )
 
-func NewDataplaneTokenClient(address string) (DataplaneTokenClient, error) {
+func NewDataplaneTokenClient(address string, config *kumactl_config.Context_DataplaneTokenApiCredentials) (DataplaneTokenClient, error) {
 	baseURL, err := url.Parse(address)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
+		return nil, errors.Wrapf(err, "failed to parse Dataplane Token Server URL")
 	}
-	client := util_http.ClientWithTimeout(util_http.ClientWithBaseURL(&http.Client{}, baseURL), timeout)
+	httpClient := &http.Client{}
+	if baseURL.Scheme == "https" {
+		if !config.HasClientCert() {
+			return nil, errors.New("certificates has to be configured to use https destination")
+		}
+		// Since we're not going to pass any secrets to the server, we can skip validating its identity.
+		if err := util_http.ConfigureTlsWithoutServerVerification(httpClient, config.ClientCert, config.ClientKey); err != nil {
+			return nil, errors.Wrap(err, "could not configure tls for dataplane token client")
+		}
+	}
+	client := util_http.ClientWithTimeout(util_http.ClientWithBaseURL(httpClient, baseURL), timeout)
 	return &httpDataplaneTokenClient{
 		client: client,
 	}, nil
