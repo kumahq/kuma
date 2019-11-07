@@ -3,7 +3,7 @@ package server_test
 import (
 	"context"
 	"github.com/Kong/kuma/pkg/core/xds"
-	context2 "github.com/Kong/kuma/pkg/xds/context"
+	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -11,6 +11,7 @@ import (
 
 	. "github.com/Kong/kuma/pkg/xds/server"
 
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -31,7 +32,7 @@ type eventSnapshotReconciler struct {
 	events chan event
 }
 
-func (e *eventSnapshotReconciler) Reconcile(ctx context2.Context, proxy *xds.Proxy) error {
+func (e *eventSnapshotReconciler) Reconcile(ctx xds_context.Context, proxy *xds.Proxy) error {
 	e.events <- event{Update: proxy.Dataplane}
 	return nil
 }
@@ -96,7 +97,21 @@ var _ = Describe("Components", func() {
 
 			By("creating Dataplane definition")
 			// when
-			err = runtime.ResourceManager().Create(ctx, &mesh_core.DataplaneResource{}, core_store.CreateBy(core_model.ResourceKey{Mesh: "pilot", Namespace: "demo", Name: "example"}))
+			resource := &mesh_core.DataplaneResource{
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Interface: "127.0.0.1:9090:8080",
+								Tags: map[string]string{
+									"service": "backend",
+								},
+							},
+						},
+					},
+				},
+			}
+			err = runtime.ResourceManager().Create(ctx, resource, core_store.CreateBy(core_model.ResourceKey{Mesh: "pilot", Namespace: "demo", Name: "example"}))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
+	"github.com/Kong/kuma/pkg/core/validators"
 	proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
@@ -38,6 +39,13 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 		t.Spec = *route
 		return nil
 	}
+}
+func (t *TrafficRouteResource) Validate() error {
+	err := validators.ValidationError{}
+	if t.Spec.Path == "" {
+		err.AddViolation("path", "cannot be empty")
+	}
+	return err.OrNil()
 }
 
 var _ model.ResourceList = &TrafficRouteResourceList{}

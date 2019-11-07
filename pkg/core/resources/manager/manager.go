@@ -2,11 +2,10 @@ package manager
 
 import (
 	"context"
+	"fmt"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/pkg/errors"
-	"strings"
 )
 
 type ResourceManager interface {
@@ -39,6 +38,9 @@ func (r *resourcesManager) List(ctx context.Context, list model.ResourceList, fs
 }
 
 func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
+	if err := resource.Validate(); err != nil {
+		return err
+	}
 	opts := store.NewCreateOptions(fs...)
 	if resource.GetType() != mesh.MeshType {
 		if err := r.ensureMeshExists(ctx, opts.Mesh); err != nil {
@@ -64,13 +66,16 @@ func (r *resourcesManager) Delete(ctx context.Context, resource model.Resource, 
 }
 
 func (r *resourcesManager) DeleteAll(ctx context.Context, list model.ResourceList, fs ...store.DeleteAllOptionsFunc) error {
-	opts := store.NewDeleteAllOptions(fs...)
+	return DeleteAllResources(r, ctx, list, fs...)
+}
 
-	if err := r.List(ctx, list, store.ListByMesh(opts.Mesh)); err != nil {
+func DeleteAllResources(manager ResourceManager, ctx context.Context, list model.ResourceList, fs ...store.DeleteAllOptionsFunc) error {
+	opts := store.NewDeleteAllOptions(fs...)
+	if err := manager.List(ctx, list, store.ListByMesh(opts.Mesh)); err != nil {
 		return err
 	}
-	for _, obj := range list.GetItems() {
-		if err := r.Delete(ctx, obj, store.DeleteBy(model.MetaToResourceKey(obj.GetMeta()))); err != nil && !store.IsResourceNotFound(err) {
+	for _, item := range list.GetItems() {
+		if err := manager.Delete(ctx, item, store.DeleteBy(model.MetaToResourceKey(item.GetMeta()))); err != nil && !store.IsResourceNotFound(err) {
 			return err
 		}
 	}
@@ -78,13 +83,25 @@ func (r *resourcesManager) DeleteAll(ctx context.Context, list model.ResourceLis
 }
 
 func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
+	if err := resource.Validate(); err != nil {
+		return err
+	}
 	return r.Store.Update(ctx, resource, fs...)
 }
 
+type MeshNotFoundError struct {
+	Mesh string
+}
+
+func (m *MeshNotFoundError) Error() string {
+	return fmt.Sprintf("mesh of name %s is not found", m.Mesh)
+}
+
 func MeshNotFound(meshName string) error {
-	return errors.Errorf("mesh of name %v is not found", meshName)
+	return &MeshNotFoundError{meshName}
 }
 
 func IsMeshNotFound(err error) bool {
-	return err != nil && strings.HasPrefix(err.Error(), "mesh of name") && strings.HasSuffix(err.Error(), "is not found")
+	_, ok := err.(*MeshNotFoundError)
+	return ok
 }

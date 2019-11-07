@@ -151,7 +151,7 @@ var _ = Describe("Resource WS", func() {
 			json := `
 			{
 				"type": "Mesh-1",
-				"name": "tr-1",
+				"name": "tr-1"
 			}
 			`
 
@@ -167,7 +167,7 @@ var _ = Describe("Resource WS", func() {
 			json := `
 			{
 				"type": "Mesh",
-				"name": "different-name",
+				"name": "different-name"
 			}
 			`
 
@@ -183,7 +183,7 @@ var _ = Describe("Resource WS", func() {
 			json := `
 			{
 				"type": "Mesh",
-				"name": "different-mesh",
+				"name": "different-mesh"
 			}
 			`
 

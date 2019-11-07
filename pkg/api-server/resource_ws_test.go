@@ -79,6 +79,16 @@ var _ = Describe("Resource WS", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(404))
+
+			// and
+			bytes, err := ioutil.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(MatchJSON(`
+			{
+				"title": "Could not retrieve a resource",
+				"details": "Not found"
+			}
+			`))
 		})
 
 		It("should list resources", func() {
@@ -177,6 +187,22 @@ var _ = Describe("Resource WS", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(400))
+
+			// and
+			bytes, err := ioutil.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(MatchJSON(`
+			{
+				"title": "Could not process a resource",
+				"details": "Resource is not valid",
+				"causes": [
+					{
+						"field": "type",
+						"message": "type from the URL has to be the same as in body"
+					}
+				]
+			}
+			`))
 		})
 
 		It("should return 400 on the name that is different from request", func() {
@@ -195,6 +221,22 @@ var _ = Describe("Resource WS", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(400))
+
+			// and
+			bytes, err := ioutil.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(MatchJSON(`
+			{
+				"title": "Could not process a resource",
+				"details": "Resource is not valid",
+				"causes": [
+					{
+						"field": "name",
+						"message": "name from the URL has to be the same as in body"
+					}
+				]
+			}
+			`))
 		})
 
 		It("should return 400 on the mesh that is different from request", func() {
@@ -213,6 +255,140 @@ var _ = Describe("Resource WS", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(400))
+
+			// and
+			bytes, err := ioutil.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(MatchJSON(`
+			{
+				"title": "Could not process a resource",
+				"details": "Resource is not valid",
+				"causes": [
+					{
+						"field": "mesh",
+						"message": "mesh from the URL has to be the same as in body"
+					}
+				]
+			}`))
+		})
+
+		It("should return 400 on validation error", func() {
+			// given
+			json := `
+			{
+				"type": "TrafficRoute",
+				"name": "tr-1",
+				"mesh": "default",
+				"path": ""
+			}
+			`
+
+			// when
+			response := client.putJson("tr-1", []byte(json))
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+
+			// when
+			respBytes, err := ioutil.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(respBytes).To(MatchJSON(`
+			{
+				"title": "Could not create a resource",
+				"details": "Resource is not valid",
+				"causes": [
+					{
+						"field": "path",
+						"message": "cannot be empty"
+					}
+				]
+			}
+			`))
+		})
+
+		It("should return 400 on invalid name and mesh", func() {
+			// given
+			json := `
+			{
+				"type": "TrafficRoute",
+				"name": "invalid@",
+				"mesh": "invalid$",
+				"path": "/path"
+			}
+			`
+
+			// when
+			client = resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/meshes/invalid$/traffic-routes",
+			}
+			response := client.putJson("invalid@", []byte(json))
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+
+			// when
+			respBytes, err := ioutil.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(respBytes).To(MatchJSON(`
+			{
+				"title": "Could not process a resource",
+				"details": "Resource is not valid",
+				"causes": [
+					{
+						"field": "name",
+						"message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+					},
+					{
+						"field": "mesh",
+						"message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+					}
+				]
+			}
+			`))
+		})
+
+		It("should return 400 when mesh does not exist", func() {
+			// setup
+			err := resourceStore.Delete(context.Background(), &mesh_res.MeshResource{}, store.DeleteByKey("default", "default", "default"))
+			Expect(err).ToNot(HaveOccurred())
+
+			// given
+			res := rest.Resource{
+				Meta: rest.ResourceMeta{
+					Name: "new-resource",
+					Mesh: "default",
+					Type: string(sample_model.TrafficRouteType),
+				},
+				Spec: &sample_proto.TrafficRoute{
+					Path: "/sample-path",
+				},
+			}
+
+			// when
+			response := client.put(res)
+
+			// when
+			respBytes, err := ioutil.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(respBytes).To(MatchJSON(`
+			{
+				"title": "Could not create a resource",
+				"details": "Mesh is not found",
+				"causes": [
+					{
+						"field": "mesh",
+						"message": "mesh of name default is not found"
+					}
+          		]
+			}
+			`))
 		})
 	})
 

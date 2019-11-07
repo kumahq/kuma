@@ -24,6 +24,7 @@ type Resource interface {
 	SetMeta(ResourceMeta)
 	GetSpec() ResourceSpec
 	SetSpec(ResourceSpec) error
+	Validate() error
 }
 
 type ResourceType string

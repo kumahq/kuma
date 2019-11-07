@@ -39,6 +39,9 @@ func (t *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+func (t *TrafficLogResource) Validate() error {
+	return nil
+}
 
 var _ model.ResourceList = &TrafficLogResourceList{}
 
