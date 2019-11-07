@@ -3,7 +3,6 @@ package apply_test
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -190,14 +189,9 @@ var _ = Describe("kumactl apply", func() {
 		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
 		Expect(err).ToNot(HaveOccurred())
 
-		go func() {
-			defer GinkgoRecover()
-			// when
-			http.Handle("/testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./testdata"))))
-			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
-			// then
-			Expect(err).ToNot(HaveOccurred())
-		}()
+		mux.Handle("/testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./testdata"))))
+		// then
+		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		rootCmd.SetArgs([]string{
