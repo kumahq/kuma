@@ -6,6 +6,7 @@ import (
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/bootstrap"
+	"github.com/Kong/kuma/pkg/gui"
 	sds_server "github.com/Kong/kuma/pkg/sds/server"
 	token_server "github.com/Kong/kuma/pkg/tokens/builtin/server"
 	xds_server "github.com/Kong/kuma/pkg/xds/server"
@@ -60,6 +61,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := api_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up API server")
+				return err
+			}
+			if err := gui.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up GUI server")
 				return err
 			}
 

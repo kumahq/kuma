@@ -3010,6 +3010,8 @@ spec:
     name: http-api-server
   - port: 5682
     name: http-bootstrap-server
+  - port: 5683
+    name: gui-server
   selector:
     app: kuma-control-plane
 ---
@@ -3080,6 +3082,7 @@ spec:
         - containerPort: 5679
         - containerPort: 5681
         - containerPort: 5682
+        - containerPort: 5683
         livenessProbe:
           httpGet:
             path: /healthy

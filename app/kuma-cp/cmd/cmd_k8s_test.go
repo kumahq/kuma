@@ -70,6 +70,8 @@ runtime:
     admissionServer:
       port: %d
       certDir: %s
+guiServer:
+  port: 0
 `,
 			admissionServerPort,
 			filepath.Join("..", "..", "kuma-injector", "cmd", "testdata"))
