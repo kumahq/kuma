@@ -1,6 +1,7 @@
 package apply_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -13,7 +14,9 @@ import (
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	test_store "github.com/Kong/kuma/pkg/test/store"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -240,6 +243,50 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Meta.GetName()).To(Equal("meshinit"))
 		Expect(resource.Meta.GetMesh()).To(Equal(""))
 		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
+	})
+
+	It("should return kuma api server error", func() {
+		// setup
+		rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
+			kumaErr := &types.Error{
+				Title:   "Could not process resource",
+				Details: "Resource is not valid",
+				Causes: []types.Cause{
+					{
+						Field:   "path",
+						Message: "cannot be empty",
+					},
+					{
+						Field:   "mesh",
+						Message: "cannot be empty",
+					},
+				},
+			}
+			store := test_store.FailingStore{
+				Err: kumaErr,
+			}
+			return &store, nil
+		}
+
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-mesh.yaml")},
+		)
+		buf := &bytes.Buffer{}
+		rootCmd.SetOut(buf)
+
+		// when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).To(HaveOccurred())
+
+		// then
+		Expect(buf.String()).To(Equal(
+			`Error: Could not process resource (Resource is not valid)
+* path: cannot be empty
+* mesh: cannot be empty
+`))
 	})
 
 	type testCase struct {

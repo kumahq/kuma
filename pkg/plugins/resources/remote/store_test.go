@@ -300,6 +300,39 @@ var _ = Describe("RemoteStore", func() {
 			Expect(err).To(MatchError("(400): some error from the server"))
 		})
 	})
+
+	It("should parse kuma api server error", func() {
+		json := `
+		{
+			"title": "Could not process resource",
+			"details": "Resource is not valid",
+			"causes": [
+				{
+					"field": "path",
+					"message": "cannot be empty"
+				},
+				{
+					"field": "mesh",
+					"message": "cannot be empty"
+				}
+			]
+		}
+		`
+		store := setupErrorStore(json)
+
+		// when
+		meshes := mesh.MeshResourceList{}
+		err := store.List(context.Background(), &meshes)
+
+		// then
+		Expect(err).To(HaveOccurred())
+
+		expectedMsg :=
+			`Could not process resource (Resource is not valid)
+* path: cannot be empty
+* mesh: cannot be empty`
+		Expect(err.Error()).To(Equal(expectedMsg))
+	})
 })
 
 type RoundTripperFunc func(*http.Request) (*http.Response, error)
