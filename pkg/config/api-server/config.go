@@ -17,6 +17,8 @@ type ApiServerConfig struct {
 	ReadOnly bool `yaml:"readOnly" envconfig:"kuma_api_server_read_only"`
 	// API Catalogue
 	Catalogue *catalogue.CatalogueConfig
+	// Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
+	CorsAllowedDomains []string `yaml:"corsAllowedDomains" envconfig:"kuma_api_server_cors_allowed_domains"`
 }
 
 func (a *ApiServerConfig) Validate() error {
@@ -28,8 +30,9 @@ func (a *ApiServerConfig) Validate() error {
 
 func DefaultApiServerConfig() *ApiServerConfig {
 	return &ApiServerConfig{
-		Port:      5681,
-		ReadOnly:  false,
-		Catalogue: &catalogue.CatalogueConfig{},
+		Port:               5681,
+		ReadOnly:           false,
+		Catalogue:          &catalogue.CatalogueConfig{},
+		CorsAllowedDomains: []string{".*"},
 	}
 }

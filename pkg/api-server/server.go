@@ -32,6 +32,12 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		Handler: container.ServeMux,
 	}
 
+	cors := restful.CrossOriginResourceSharing{
+		ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
+		AllowedDomains: serverConfig.CorsAllowedDomains,
+		Container:      container,
+	}
+
 	ws := new(restful.WebService)
 	ws.
 		Path("/meshes").
@@ -43,6 +49,7 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	container.Add(indexWs())
 	container.Add(catalogueWs(*serverConfig.Catalogue))
 
+	ws.Filter(cors.Filter)
 	return &ApiServer{
 		server: srv,
 	}

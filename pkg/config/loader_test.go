@@ -80,6 +80,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.ApiServer.Port).To(Equal(9090))
 			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
+			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
 			Expect(cfg.DataplaneTokenServer.Local.Port).To(Equal(uint32(1111)))
 			Expect(cfg.DataplaneTokenServer.Public.Port).To(Equal(uint32(2222)))
@@ -121,6 +122,9 @@ bootstrapServer:
 apiServer:
   port: 9090
   readOnly: true
+  corsAllowedDomains:
+    - https://kuma
+    - https://someapi
 dataplaneTokenServer:
   local:
     port: 1111
@@ -173,6 +177,7 @@ general:
 				"KUMA_KUBERNETES_ADMISSION_SERVER_PORT":                "9443",
 				"KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR":            "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
 				"KUMA_GENERAL_ADVERTISED_HOSTNAME":                     "kuma.internal",
+				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                 "https://kuma,https://someapi",
 			},
 			yamlFileConfig: "",
 		}),

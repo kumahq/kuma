@@ -11,9 +11,11 @@ import (
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
+	"github.com/emicklei/go-restful"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"io/ioutil"
+	"net/http"
 )
 
 var _ = Describe("Resource WS", func() {
@@ -417,5 +419,24 @@ var _ = Describe("Resource WS", func() {
 			// then
 			Expect(response.StatusCode).To(Equal(200))
 		})
+	})
+
+	It("should support CORS", func() {
+		// when
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/traffic-routes", apiServer.Address(), mesh), nil)
+		Expect(err).NotTo(HaveOccurred())
+		req.Header.Add(restful.HEADER_Origin, "test")
+
+		// when
+		response, err := http.DefaultClient.Do(req)
+
+		// then
+		Expect(err).NotTo(HaveOccurred())
+
+		// when
+		value := response.Header.Get(restful.HEADER_AccessControlAllowOrigin)
+
+		// then server returns that the domain is allowed
+		Expect(value).To(Equal("test"))
 	})
 })
