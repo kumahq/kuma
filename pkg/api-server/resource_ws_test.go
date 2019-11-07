@@ -341,11 +341,11 @@ var _ = Describe("Resource WS", func() {
 				"causes": [
 					{
 						"field": "name",
-						"message": "invalid characters. Valid characters are numbers, letters and '-', '_' symbols."
+						"message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
 					},
 					{
 						"field": "mesh",
-						"message": "invalid characters. Valid characters are numbers, letters and '-', '_' symbols."
+						"message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
 					}
 				]
 			}

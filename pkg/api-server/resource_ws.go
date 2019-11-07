@@ -12,7 +12,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/emicklei/go-restful"
-	"regexp"
 )
 
 const namespace = "default"
@@ -131,8 +130,6 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 	}
 }
 
-var nameMeshRegexp = regexp.MustCompile("^[0-9a-z-_]*$")
-
 func (r *resourceWs) validateResourceRequest(request *restful.Request, resource *rest.Resource) error {
 	var err validators.ValidationError
 	name := r.nameFromRequest(request)
@@ -140,18 +137,13 @@ func (r *resourceWs) validateResourceRequest(request *restful.Request, resource 
 	if name != resource.Meta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
 	}
-	if !nameMeshRegexp.MatchString(name) {
-		err.AddViolation("name", "invalid characters. Valid characters are numbers, letters and '-', '_' symbols.")
-	}
 	if string(r.ResourceFactory().GetType()) != resource.Meta.Type {
 		err.AddViolation("type", "type from the URL has to be the same as in body")
 	}
 	if meshName != resource.Meta.Mesh && r.ResourceFactory().GetType() != mesh.MeshType {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
-	if !nameMeshRegexp.MatchString(meshName) {
-		err.AddViolation("mesh", "invalid characters. Valid characters are numbers, letters and '-', '_' symbols.")
-	}
+	err.AddError("", mesh.ValidateMeta(name, meshName))
 	return err.OrNil()
 }
 
