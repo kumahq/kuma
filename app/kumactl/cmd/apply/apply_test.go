@@ -187,15 +187,23 @@ var _ = Describe("kumactl apply", func() {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
 		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
+		testurl := fmt.Sprintf("http://localhost:%v/testdata/apply-dataplane.yaml", port)
 		Expect(err).ToNot(HaveOccurred())
 
-		mux.Handle("/testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./testdata"))))
 		// then
-		Expect(err).ToNot(HaveOccurred())
+		mux.Handle("/testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./testdata"))))
+		Eventually(func() bool {
+			resp, err := http.Get(testurl)
+			if err != nil {
+				return false
+			}
+			Expect(resp.Body.Close()).To(Succeed())
+			return true
+		}).Should(BeTrue())
 
 		// given
 		rootCmd.SetArgs([]string{
-			"apply", "-f", fmt.Sprintf("http://localhost:%v/testdata/apply-dataplane.yaml", port)},
+			"apply", "-f", testurl},
 		)
 
 		// when
