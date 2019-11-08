@@ -67,8 +67,8 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func deleteResource(name string, currentMesh string, resource model.Resource, resourceType model.ResourceType, rs store.ResourceStore) error {
-	getOptions := store.GetByKey(model.DefaultNamespace, name, currentMesh)
+func deleteResource(name string, mesh string, resource model.Resource, resourceType model.ResourceType, rs store.ResourceStore) error {
+	getOptions := store.GetBy(model.ResourceKey{Mesh: mesh, Name: name})
 	if err := rs.Get(context.Background(), resource, getOptions); err != nil {
 		if store.IsResourceNotFound(err) {
 			return errors.Errorf("there is no %s with name %q", resourceType, name)
@@ -76,7 +76,7 @@ func deleteResource(name string, currentMesh string, resource model.Resource, re
 		return errors.Wrapf(err, "failed to get %s with the name %q", resourceType, name)
 	}
 
-	deleteOptions := store.DeleteByKey(model.DefaultNamespace, name, currentMesh)
+	deleteOptions := store.DeleteBy(model.ResourceKey{Mesh: mesh, Name: name})
 	if err := rs.Delete(context.Background(), resource, deleteOptions); err != nil {
 		return errors.Wrapf(err, "failed to delete %s with the name %q", resourceType, name)
 	}
