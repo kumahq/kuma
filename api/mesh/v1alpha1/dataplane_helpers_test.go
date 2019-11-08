@@ -58,7 +58,7 @@ var _ = Describe("ServiceTagValue", func() {
 				}
 			},
 			Entry("name and port", testCase{
-				value:       "web.default.svc:80",
+				value:        "web.default.svc:80",
 				expectedHost: "web.default.svc",
 				expectedPort: 80,
 				expectedErr:  "",
@@ -308,15 +308,16 @@ var _ = Describe("Dataplane_Networking", func() {
 
 var _ = Describe("Dataplane_Networking_Outbound", func() {
 	type testCase struct {
-		serviceTag string
-		selector TagSelector
+		serviceTag    string
+		selector      TagSelector
 		expectedMatch bool
 	}
-	DescribeTable("MatchTags()", func(given testCase) {
+	DescribeTable("MatchTags()",
+		func(given testCase) {
 			//given
 			outbound := Dataplane_Networking_Outbound{
 				Interface: "sdf",
-				Service: given.serviceTag,
+				Service:   given.serviceTag,
 			}
 
 			// when
@@ -466,9 +467,114 @@ var _ = Describe("Tags", func() {
 		}
 
 		// when
-		result := Tags(tags).String()
+		result := MultiValueTagSet(tags).String()
 
 		// then
 		Expect(result).To(Equal("service=backend-admin,backend-api version=v1"))
+	})
+})
+
+var _ = Describe("TagSelectorRank", func() {
+
+	Describe("CompareTo()", func() {
+		type testCase struct {
+			rank1    TagSelectorRank
+			rank2    TagSelectorRank
+			expected int
+		}
+		DescribeTable("should correctly compare two ranks",
+			func(given testCase) {
+				// expect
+				Expect(given.rank1.CompareTo(given.rank2)).To(Equal(given.expected))
+			},
+			Entry("0 ranks are equal", testCase{
+				rank1:    TagSelectorRank{},
+				rank2:    TagSelectorRank{},
+				expected: 0,
+			}),
+			Entry("matches by the same number of exact values (1) are equal", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 1},
+				rank2:    TagSelectorRank{ExactMatches: 1},
+				expected: 0,
+			}),
+			Entry("matches by the same number of wildcard values (2) are equal", testCase{
+				rank1:    TagSelectorRank{WildcardMatches: 2},
+				rank2:    TagSelectorRank{WildcardMatches: 2},
+				expected: 0,
+			}),
+			Entry("equal ranks by non-0 ExactMatches and WildcardMatches", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 1, WildcardMatches: 2},
+				rank2:    TagSelectorRank{ExactMatches: 1, WildcardMatches: 2},
+				expected: 0,
+			}),
+			Entry("match by an exact value (1) is more specific than match by a wildcard", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 1, WildcardMatches: 0},
+				rank2:    TagSelectorRank{ExactMatches: 0, WildcardMatches: 1},
+				expected: 1,
+			}),
+			Entry("match by a wildcard is less specific than match by an exact value (1)", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 0, WildcardMatches: 1},
+				rank2:    TagSelectorRank{ExactMatches: 1, WildcardMatches: 0},
+				expected: -1,
+			}),
+			Entry("match by an exact value (2) is more specific than match by a wildcard", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 2, WildcardMatches: 0},
+				rank2:    TagSelectorRank{ExactMatches: 0, WildcardMatches: 2},
+				expected: 2,
+			}),
+			Entry("match by a wildcard is less specific than match by an exact value (2)", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 0, WildcardMatches: 2},
+				rank2:    TagSelectorRank{ExactMatches: 2, WildcardMatches: 0},
+				expected: -2,
+			}),
+			Entry("match by an exact value (3) is more specific than match by a wildcard", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 3, WildcardMatches: 0},
+				rank2:    TagSelectorRank{ExactMatches: 0, WildcardMatches: 3},
+				expected: 3,
+			}),
+			Entry("match by a wildcard is less specific than match by an exact value (3)", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 0, WildcardMatches: 3},
+				rank2:    TagSelectorRank{ExactMatches: 3, WildcardMatches: 0},
+				expected: -3,
+			}),
+			Entry("match by an exact value is more specific than match by a wildcard", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 2, WildcardMatches: 1},
+				rank2:    TagSelectorRank{ExactMatches: 1, WildcardMatches: 1},
+				expected: 1,
+			}),
+			Entry("match by a wildcard is less specific than match by an exact value", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 2, WildcardMatches: 1},
+				rank2:    TagSelectorRank{ExactMatches: 1, WildcardMatches: 1},
+				expected: 1,
+			}),
+		)
+	})
+	Describe("CombinedWith()", func() {
+		type testCase struct {
+			rank1    TagSelectorRank
+			rank2    TagSelectorRank
+			expected TagSelectorRank
+		}
+		DescribeTable("should correctly aggregate two ranks",
+			func(given testCase) {
+				// expect
+				Expect(given.rank1.CombinedWith(given.rank2)).To(Equal(given.expected))
+			},
+			Entry("combination of two 0 ranks is zero rank", testCase{
+				rank1:    TagSelectorRank{},
+				rank2:    TagSelectorRank{},
+				expected: TagSelectorRank{},
+			}),
+			Entry("cobination of a match by an exact value with a match by a wildcard", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 1},
+				rank2:    TagSelectorRank{WildcardMatches: 2},
+				expected: TagSelectorRank{ExactMatches: 1, WildcardMatches: 2},
+			}),
+			Entry("cobination of two mixed matches", testCase{
+				rank1:    TagSelectorRank{ExactMatches: 1, WildcardMatches: 2},
+				rank2:    TagSelectorRank{ExactMatches: 10, WildcardMatches: 20},
+				expected: TagSelectorRank{ExactMatches: 11, WildcardMatches: 22},
+			}),
+		)
 	})
 })
