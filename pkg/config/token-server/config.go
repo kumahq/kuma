@@ -8,8 +8,8 @@ import (
 func DefaultDataplaneTokenServerConfig() *DataplaneTokenServerConfig {
 	return &DataplaneTokenServerConfig{
 		Enabled: true,
-		Local:  DefaultLocalDataplaneTokenServerConfig(),
-		Public: DefaultPublicDataplaneTokenServerConfig(),
+		Local:   DefaultLocalDataplaneTokenServerConfig(),
+		Public:  DefaultPublicDataplaneTokenServerConfig(),
 	}
 }
 
@@ -71,19 +71,19 @@ type PublicDataplaneTokenServerConfig struct {
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_dataplane_token_server_public_tls_cert_file"`
 	// Path to TLS key file
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_dataplane_token_server_public_tls_key_file"`
-	// Paths to authorized client certificates
-	ClientCertFiles []string `yaml:"clientCertFiles" envconfig:"kuma_dataplane_token_server_public_client_cert_files"`
+	// Directory of authorized client certificates
+	ClientCertsDir string `yaml:"clientCertsDir" envconfig:"kuma_dataplane_token_server_public_client_certs_dir"`
 }
 
 var _ config.Config = &PublicDataplaneTokenServerConfig{}
 
 func DefaultPublicDataplaneTokenServerConfig() *PublicDataplaneTokenServerConfig {
 	return &PublicDataplaneTokenServerConfig{
-		Interface:       "",
-		Port:            0,
-		TlsCertFile:     "",
-		TlsKeyFile:      "",
-		ClientCertFiles: nil,
+		Interface:      "",
+		Port:           0,
+		TlsCertFile:    "",
+		TlsKeyFile:     "",
+		ClientCertsDir: "",
 	}
 }
 
@@ -103,8 +103,4 @@ func (p *PublicDataplaneTokenServerConfig) Validate() error {
 		}
 	}
 	return nil
-}
-
-func (i *DataplaneTokenServerConfig) TlsEnabled() bool {
-	return i.Public.Interface != ""
 }

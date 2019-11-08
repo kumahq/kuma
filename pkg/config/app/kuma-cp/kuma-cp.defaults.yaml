@@ -74,8 +74,8 @@ dataplaneTokenServer:
     tlsCertFile: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE
     # Path to TLS key file
     tlsKeyFile: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE
-    # Paths to authorized client certificates
-    clientCertFiles: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERT_FILES
+    # Directory of authorized client certificates
+    clientCertsDir: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR"`
 
 # Envoy XDS server configuration
 xdsServer:

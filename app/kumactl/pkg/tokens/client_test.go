@@ -47,15 +47,17 @@ var _ = Describe("Tokens Client", func() {
 
 		srv := server.DataplaneTokenServer{
 			Config: &token_server.DataplaneTokenServerConfig{
+				Enabled: true,
 				Local: &token_server.LocalDataplaneTokenServerConfig{
 					Port: uint32(port),
 				},
 				Public: &token_server.PublicDataplaneTokenServerConfig{
-					Port:            uint32(publicPort),
-					Interface:       "localhost",
-					TlsCertFile:     filepath.Join("..", "..", "..", "..", "pkg", "tokens", "builtin", "server", "testdata", "server-cert.pem"),
-					TlsKeyFile:      filepath.Join("..", "..", "..", "..", "pkg", "tokens", "builtin", "server", "testdata", "server-key.pem"),
-					ClientCertFiles: []string{filepath.Join("..", "..", "..", "..", "pkg", "tokens", "builtin", "server", "testdata", "authorized-client-cert.pem")},
+					Enabled:        true,
+					Port:           uint32(publicPort),
+					Interface:      "localhost",
+					TlsCertFile:    filepath.Join("..", "..", "..", "..", "pkg", "tokens", "builtin", "server", "testdata", "server-cert.pem"),
+					TlsKeyFile:     filepath.Join("..", "..", "..", "..", "pkg", "tokens", "builtin", "server", "testdata", "server-key.pem"),
+					ClientCertsDir: filepath.Join("..", "..", "..", "..", "pkg", "tokens", "builtin", "server", "testdata", "authorized-clients"),
 				},
 			},
 			Issuer: &staticTokenIssuer{},

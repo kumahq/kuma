@@ -33,6 +33,7 @@ var _ = Describe("Auto configuration", func() {
 				cfg := kuma_cp.DefaultConfig()
 				cfg.General.AdvertisedHostname = "kuma.internal"
 				cfg.DataplaneTokenServer.Local.Port = 1111
+				cfg.DataplaneTokenServer.Public.Enabled = true
 				cfg.DataplaneTokenServer.Public.Interface = "192.168.0.1"
 				cfg.DataplaneTokenServer.Public.Port = 2222
 				cfg.BootstrapServer.Port = 3333
@@ -53,6 +54,7 @@ var _ = Describe("Auto configuration", func() {
 				cfg := kuma_cp.DefaultConfig()
 				cfg.General.AdvertisedHostname = "kuma.internal"
 				cfg.DataplaneTokenServer.Local.Port = 1111
+				cfg.DataplaneTokenServer.Public.Enabled = true
 				cfg.DataplaneTokenServer.Public.Interface = "192.168.0.1"
 				cfg.BootstrapServer.Port = 3333
 				return cfg
@@ -81,6 +83,22 @@ var _ = Describe("Auto configuration", func() {
 				},
 				DataplaneToken: catalogue.DataplaneTokenApiConfig{
 					LocalUrl:  "http://localhost:1111",
+					PublicUrl: "",
+				},
+			},
+		}),
+		Entry("without dataplane token server", testCase{
+			cpConfig: func() kuma_cp.Config {
+				cfg := kuma_cp.DefaultConfig()
+				cfg.DataplaneTokenServer.Enabled = false
+				return cfg
+			},
+			expectedCatalogueConfig: catalogue.CatalogueConfig{
+				Bootstrap: catalogue.BootstrapApiConfig{
+					Url: "http://localhost:5682",
+				},
+				DataplaneToken: catalogue.DataplaneTokenApiConfig{
+					LocalUrl:  "",
 					PublicUrl: "",
 				},
 			},

@@ -28,12 +28,13 @@ func autoconfigureCatalogue(cfg *kuma_cp.Config) {
 		Bootstrap: catalogue.BootstrapApiConfig{
 			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port),
 		},
-		DataplaneToken: catalogue.DataplaneTokenApiConfig{
-			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.DataplaneTokenServer.Local.Port),
-		},
+		DataplaneToken: catalogue.DataplaneTokenApiConfig{},
 	}
-	if cfg.DataplaneTokenServer.TlsEnabled() {
-		cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.DataplaneTokenServer.Public.Port)
+	if cfg.DataplaneTokenServer.Enabled {
+		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.DataplaneTokenServer.Local.Port)
+		if cfg.DataplaneTokenServer.Public.Enabled {
+			cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.DataplaneTokenServer.Public.Port)
+		}
 	}
 	cfg.ApiServer.Catalogue = cat
 }
@@ -65,7 +66,7 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 }
 
 func autoconfigureDataplaneTokenServer(cfg *token_server.DataplaneTokenServerConfig) {
-	if cfg.TlsEnabled() && cfg.Public.Port == 0 {
+	if cfg.Public.Enabled && cfg.Public.Port == 0 {
 		cfg.Public.Port = cfg.Local.Port
 	}
 }
