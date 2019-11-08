@@ -24,7 +24,7 @@ import (
 var log = core.Log.WithName("dataplane-token-server")
 
 func SetupServer(rt core_runtime.Runtime) error {
-	if rt.Config().DataplaneTokenServer.Enabled {
+	if !rt.Config().DataplaneTokenServer.Enabled {
 		log.Info("server disabled")
 		return nil
 	}

@@ -79,6 +79,7 @@ var _ config.Config = &PublicDataplaneTokenServerConfig{}
 
 func DefaultPublicDataplaneTokenServerConfig() *PublicDataplaneTokenServerConfig {
 	return &PublicDataplaneTokenServerConfig{
+		Enabled:        false,
 		Interface:      "",
 		Port:           0,
 		TlsCertFile:    "",
