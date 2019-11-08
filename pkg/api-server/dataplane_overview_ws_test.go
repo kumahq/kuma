@@ -3,8 +3,12 @@ package api_server_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"time"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/api-server"
+	api_server "github.com/Kong/kuma/pkg/api-server"
 	config "github.com/Kong/kuma/pkg/config/api-server"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -13,9 +17,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"net/http"
-	"time"
 )
 
 var _ = Describe("Dataplane Overview WS", func() {
@@ -76,7 +77,7 @@ var _ = Describe("Dataplane Overview WS", func() {
 						Id:                     "stream-id-1",
 						ControlPlaneInstanceId: "cp-1",
 						ConnectTime:            proto.MustTimestampProto(sampleTime),
-						Status:                 v1alpha1.DiscoverySubscriptionStatus{},
+						Status:                 v1alpha1.NewSubscriptionStatus(),
 					},
 				},
 			},

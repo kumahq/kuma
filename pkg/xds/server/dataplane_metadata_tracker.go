@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/xds"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	go_cp_server "github.com/envoyproxy/go-control-plane/pkg/server"
 	"sync"
+
+	"github.com/Kong/kuma/pkg/core/xds"
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	go_cp_server "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
 type DataplaneMetadataTracker struct {
@@ -43,7 +44,7 @@ func (d *DataplaneMetadataTracker) OnStreamClosed(stream int64) {
 	delete(d.metadataForStream, stream)
 }
 
-func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req *v2.DiscoveryRequest) error {
+func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req *envoy.DiscoveryRequest) error {
 	if req.Node == nil {
 		// from https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#ack-nack-and-versioning:
 		// Only the first request on a stream is guaranteed to carry the node identifier.
@@ -60,12 +61,12 @@ func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req *v2.Discove
 	return nil
 }
 
-func (d *DataplaneMetadataTracker) OnStreamResponse(int64, *v2.DiscoveryRequest, *v2.DiscoveryResponse) {
+func (d *DataplaneMetadataTracker) OnStreamResponse(int64, *envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {
 }
 
-func (d *DataplaneMetadataTracker) OnFetchRequest(context.Context, *v2.DiscoveryRequest) error {
+func (d *DataplaneMetadataTracker) OnFetchRequest(context.Context, *envoy.DiscoveryRequest) error {
 	return nil
 }
 
-func (d *DataplaneMetadataTracker) OnFetchResponse(*v2.DiscoveryRequest, *v2.DiscoveryResponse) {
+func (d *DataplaneMetadataTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {
 }

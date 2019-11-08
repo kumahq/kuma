@@ -74,16 +74,16 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 
 				lastSubscription, lastConnected := dataplaneInsight.GetLatestSubscription()
 				totalResponsesSent := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
-					return s.Status.Total.ResponsesSent
+					return s.GetStatus().GetTotal().GetResponsesSent()
 				})
 				totalResponsesRejected := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
-					return s.Status.Total.ResponsesRejected
+					return s.GetStatus().GetTotal().GetResponsesRejected()
 				})
 				onlineStatus := "Offline"
 				if dataplaneInsight.IsOnline() {
 					onlineStatus = "Online"
 				}
-				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().LastUpdateTime)
+				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
 				return []string{
 					meta.GetMesh(),                       // MESH

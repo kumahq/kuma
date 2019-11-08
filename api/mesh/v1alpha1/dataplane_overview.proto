@@ -6,12 +6,12 @@ option go_package = "v1alpha1";
 
 import "mesh/v1alpha1/dataplane.proto";
 import "mesh/v1alpha1/dataplane_insight.proto";
-import "gogoproto/gogo.proto";
+import "validate/validate.proto";
 
 // DataplaneOverview defines the projected state of a Dataplane.
 message DataplaneOverview {
 
-  Dataplane dataplane = 1 [ (gogoproto.nullable) = false ];
+  Dataplane dataplane = 1 [ (validate.rules).message.required = true ];
 
-  DataplaneInsight dataplane_insight = 2 [ (gogoproto.nullable) = false ];
+  DataplaneInsight dataplane_insight = 2;
 }

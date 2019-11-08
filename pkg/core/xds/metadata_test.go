@@ -2,14 +2,15 @@ package xds_test
 
 import (
 	"github.com/Kong/kuma/pkg/core/xds"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/gogo/protobuf/types"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	pstruct "github.com/golang/protobuf/ptypes/struct"
+
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
 type testCase struct {
-	node     core.Node
+	node     envoy_core.Node
 	expected xds.DataplaneMetadata
 }
 
@@ -22,15 +23,15 @@ var _ = DescribeTable("DataplaneMetadataFromNode",
 		Expect(*metadata).To(Equal(given.expected))
 	},
 	Entry("should parse metadata from empty node", testCase{
-		node:     core.Node{},
+		node:     envoy_core.Node{},
 		expected: xds.DataplaneMetadata{},
 	}),
 	Entry("should parse metadata", testCase{
-		node: core.Node{
-			Metadata: &types.Struct{
-				Fields: map[string]*types.Value{
-					"dataplaneTokenPath": &types.Value{
-						Kind: &types.Value_StringValue{
+		node: envoy_core.Node{
+			Metadata: &pstruct.Struct{
+				Fields: map[string]*pstruct.Value{
+					"dataplaneTokenPath": &pstruct.Value{
+						Kind: &pstruct.Value_StringValue{
 							StringValue: "/tmp/token",
 						},
 					},

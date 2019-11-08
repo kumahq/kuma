@@ -5,10 +5,7 @@ package kuma.mesh.v1alpha1;
 option go_package = "v1alpha1";
 
 import "google/protobuf/timestamp.proto";
-import "gogoproto/gogo.proto";
 import "validate/validate.proto";
-
-option (gogoproto.equal_all) = true;
 
 // DataplaneInsight defines the observed state of a Dataplane.
 message DataplaneInsight {
@@ -42,7 +39,8 @@ message DiscoverySubscription {
   google.protobuf.Timestamp disconnect_time = 4;
 
   // Status of the ADS subscription.
-  DiscoverySubscriptionStatus status = 5 [ (gogoproto.nullable) = false ];
+  DiscoverySubscriptionStatus status = 5
+      [ (validate.rules).message.required = true ];
 }
 
 // DiscoverySubscriptionStatus defines status of an ADS subscription.
@@ -52,19 +50,19 @@ message DiscoverySubscriptionStatus {
   google.protobuf.Timestamp last_update_time = 1;
 
   // Total defines an aggregate over individual xDS stats.
-  DiscoveryServiceStats total = 2 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats total = 2;
 
   // CDS defines all CDS stats.
-  DiscoveryServiceStats cds = 3 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats cds = 3;
 
   // EDS defines all EDS stats.
-  DiscoveryServiceStats eds = 4 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats eds = 4;
 
   // LDS defines all LDS stats.
-  DiscoveryServiceStats lds = 5 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats lds = 5;
 
   // RDS defines all RDS stats.
-  DiscoveryServiceStats rds = 6 [ (gogoproto.nullable) = false ];
+  DiscoveryServiceStats rds = 6;
 }
 
 // DiscoveryServiceStats defines all stats over a single xDS service.

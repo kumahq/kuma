@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	rpc "istio.io/gogo-genproto/googleapis/google/rpc"
+	status "google.golang.org/genproto/googleapis/rpc/status"
 
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
@@ -256,7 +256,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			discoveryRequest = &envoy.DiscoveryRequest{
 				TypeUrl:       given.TypeUrl,
 				ResponseNonce: "1",
-				ErrorDetail: &rpc.Status{
+				ErrorDetail: &status.Status{
 					Message: "failed to apply LDS response",
 				},
 			}

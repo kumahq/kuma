@@ -1,6 +1,8 @@
 package server
 
 import (
+	"github.com/golang/protobuf/proto"
+
 	"github.com/Kong/kuma/pkg/core"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
@@ -81,7 +83,7 @@ func equalSnapshots(old, new map[string]envoy_cache.Resource) bool {
 		return false
 	}
 	for key, newValue := range new {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !newValue.Equal(oldValue) {
+		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
 			return false
 		}
 	}

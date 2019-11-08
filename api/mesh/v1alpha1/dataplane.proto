@@ -4,10 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "v1alpha1";
 
-import "gogoproto/gogo.proto";
 import "validate/validate.proto";
-
-option (gogoproto.equal_all) = true;
 
 // Dataplane defines configuration of a side-car proxy.
 message Dataplane {

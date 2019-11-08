@@ -2,13 +2,14 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"time"
+
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -46,6 +47,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",
 				ConnectTime:            util_proto.MustTimestampProto(t0),
+				Status:                 mesh_proto.NewSubscriptionStatus(),
 			}
 			accessor := &SubscriptionStatusHolder{key, subscription}
 			ticks := make(chan time.Time)
@@ -144,6 +146,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",
 				ConnectTime:            util_proto.MustTimestampProto(t0),
+				Status:                 mesh_proto.NewSubscriptionStatus(),
 			}
 			dataplaneInsight := &mesh_core.DataplaneInsightResource{}
 			lastSeenVersion := ""
