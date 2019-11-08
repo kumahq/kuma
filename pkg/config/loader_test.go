@@ -82,7 +82,9 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
+			Expect(cfg.DataplaneTokenServer.Enabled).To(BeTrue())
 			Expect(cfg.DataplaneTokenServer.Local.Port).To(Equal(uint32(1111)))
+			Expect(cfg.DataplaneTokenServer.Public.Enabled).To(BeTrue())
 			Expect(cfg.DataplaneTokenServer.Public.Port).To(Equal(uint32(2222)))
 			Expect(cfg.DataplaneTokenServer.Public.Interface).To(Equal("192.168.0.1"))
 			Expect(cfg.DataplaneTokenServer.Public.TlsKeyFile).To(Equal("/tmp/key"))
@@ -126,9 +128,11 @@ apiServer:
     - https://kuma
     - https://someapi
 dataplaneTokenServer:
+  enabled: true
   local:
     port: 1111
   public:
+    enabled: true
     interface: 192.168.0.1
     port: 2222
     tlsCertFile: /tmp/cert
@@ -166,7 +170,9 @@ general:
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":               "10",
 				"KUMA_API_SERVER_READ_ONLY":                            "true",
 				"KUMA_API_SERVER_PORT":                                 "9090",
+				"KUMA_DATAPLANE_TOKEN_SERVER_ENABLED":                  "true",
 				"KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT":               "1111",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_ENABLED":           "true",
 				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE":         "192.168.0.1",
 				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT":              "2222",
 				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE":      "/tmp/key",
