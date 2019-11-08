@@ -3,7 +3,10 @@ package api_server_test
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/api-server"
+	"io/ioutil"
+	"net/http"
+
+	api_server "github.com/Kong/kuma/pkg/api-server"
 	config "github.com/Kong/kuma/pkg/config/api-server"
 	mesh_res "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
@@ -14,8 +17,6 @@ import (
 	"github.com/emicklei/go-restful"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"net/http"
 )
 
 var _ = Describe("Resource WS", func() {
@@ -32,7 +33,7 @@ var _ = Describe("Resource WS", func() {
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
 		client = resourceApiClient{
 			address: apiServer.Address(),
-			path:    "/meshes/" + mesh + "/traffic-routes",
+			path:    "/meshes/" + mesh + "/sample-traffic-routes",
 		}
 		stop = make(chan struct{})
 		go func() {
@@ -67,7 +68,7 @@ var _ = Describe("Resource WS", func() {
 			Expect(err).ToNot(HaveOccurred())
 			json := `
 			{
-				"type": "TrafficRoute",
+				"type": "SampleTrafficRoute",
 				"name": "tr-1",
 				"mesh": "default",
 				"path": "/sample-path"
@@ -105,14 +106,14 @@ var _ = Describe("Resource WS", func() {
 			Expect(response.StatusCode).To(Equal(200))
 			json1 := `
 			{
-				"type": "TrafficRoute",
+				"type": "SampleTrafficRoute",
 				"name": "tr-1",
 				"mesh": "default",
 				"path": "/sample-path"
 			}`
 			json2 := `
 			{
-				"type": "TrafficRoute",
+				"type": "SampleTrafficRoute",
 				"name": "tr-2",
 				"mesh": "default",
 				"path": "/sample-path"
@@ -211,7 +212,7 @@ var _ = Describe("Resource WS", func() {
 			// given
 			json := `
 			{
-				"type": "TrafficRoute",
+				"type": "SampleTrafficRoute",
 				"name": "different-name",
 				"mesh": "default",
 				"path": "/sample-path"
@@ -245,7 +246,7 @@ var _ = Describe("Resource WS", func() {
 			// given
 			json := `
 			{
-				"type": "TrafficRoute",
+				"type": "SampleTrafficRoute",
 				"name": "tr-1",
 				"mesh": "different-mesh",
 				"path": "/sample-path"
@@ -278,7 +279,7 @@ var _ = Describe("Resource WS", func() {
 			// given
 			json := `
 			{
-				"type": "TrafficRoute",
+				"type": "SampleTrafficRoute",
 				"name": "tr-1",
 				"mesh": "default",
 				"path": ""
@@ -314,7 +315,7 @@ var _ = Describe("Resource WS", func() {
 			// given
 			json := `
 			{
-				"type": "TrafficRoute",
+				"type": "SampleTrafficRoute",
 				"name": "invalid@",
 				"mesh": "invalid$",
 				"path": "/path"
@@ -324,7 +325,7 @@ var _ = Describe("Resource WS", func() {
 			// when
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/meshes/invalid$/traffic-routes",
+				path:    "/meshes/invalid$/sample-traffic-routes",
 			}
 			response := client.putJson("invalid@", []byte(json))
 
@@ -423,7 +424,7 @@ var _ = Describe("Resource WS", func() {
 
 	It("should support CORS", func() {
 		// when
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/traffic-routes", apiServer.Address(), mesh), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/sample-traffic-routes", apiServer.Address(), mesh), nil)
 		Expect(err).NotTo(HaveOccurred())
 		req.Header.Add(restful.HEADER_Origin, "test")
 

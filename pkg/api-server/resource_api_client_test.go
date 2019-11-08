@@ -3,7 +3,8 @@ package api_server_test
 import (
 	"bytes"
 	"context"
-	"github.com/Kong/kuma/pkg/api-server"
+
+	api_server "github.com/Kong/kuma/pkg/api-server"
 	"github.com/Kong/kuma/pkg/api-server/definitions"
 	config_api_server "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
@@ -12,8 +13,9 @@ import (
 	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
 
-	. "github.com/onsi/gomega"
 	"net/http"
+
+	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 )
@@ -101,10 +103,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	port, err := test.GetFreePort()
 	Expect(err).NotTo(HaveOccurred())
 	config.Port = port
-	defs := []definitions.ResourceWsDefinition{
-		TrafficRouteWsDefinition,
-		definitions.MeshWsDefinition,
-	}
+	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
 	resources := manager.NewResourceManager(store)
 	return api_server.NewApiServer(resources, defs, config)
 }

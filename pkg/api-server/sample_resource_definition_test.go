@@ -6,9 +6,9 @@ import (
 	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
 )
 
-var TrafficRouteWsDefinition = definitions.ResourceWsDefinition{
-	Name: "Traffic Route",
-	Path: "traffic-routes",
+var SampleTrafficRouteWsDefinition = definitions.ResourceWsDefinition{
+	Name: "Sample Traffic Route",
+	Path: "sample-traffic-routes",
 	ResourceFactory: func() model.Resource {
 		return &sample_model.TrafficRouteResource{}
 	},
