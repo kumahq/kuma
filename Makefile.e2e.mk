@@ -31,7 +31,7 @@ define curl_example_client
 	sh -c ' \
 		set -e ; \
 		for i in `seq 1 5`; do \
-			if [[ $$(curl -s http://localhost:3000 | jq -r ".headers[\"kong-client-id\"]" ) = "mockbin" ]]; then \
+			if [[ $$(curl -s http://localhost:3000 | jq -r ".headers[\"host\"]" ) = "mockbin.org" ]]; then \
 				echo "request #$$i successful" ; \
 			else \
 				echo "request #$$i failed" ; \
