@@ -11,7 +11,6 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	api_server "github.com/Kong/kuma/pkg/api-server"
-	"github.com/Kong/kuma/pkg/api-server/definitions"
 	config "github.com/Kong/kuma/pkg/config/api-server"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
@@ -27,7 +26,7 @@ var _ = Describe("TrafficRoute WS", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), definitions.TrafficRouteWsDefinition)
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes/default/traffic-routes",

@@ -97,16 +97,13 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, defs ...definitions.ResourceWsDefinition) *api_server.ApiServer {
+func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig) *api_server.ApiServer {
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
 	Expect(err).NotTo(HaveOccurred())
 	config.Port = port
-	defs = append([]definitions.ResourceWsDefinition{
-		TrafficRouteWsDefinition,
-		definitions.MeshWsDefinition,
-	}, defs...)
+	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
 	resources := manager.NewResourceManager(store)
 	return api_server.NewApiServer(resources, defs, config)
 }
