@@ -26,10 +26,7 @@ func DefaultConfig() Config {
 		Injector: Injector{
 			ControlPlane: ControlPlane{
 				ApiServer: ApiServer{
-					URL: "https://kuma-control-plane.kuma-system:5681",
-				},
-				BootstrapServer: BootstrapServer{
-					URL: "http://kuma-control-plane.kuma-system:5682",
+					URL: "http://kuma-control-plane.kuma-system:5681",
 				},
 			},
 			SidecarContainer: SidecarContainer{
@@ -105,13 +102,6 @@ type Injector struct {
 type ControlPlane struct {
 	// ApiServer defines coordinates of the Control Plane API Server.
 	ApiServer ApiServer `yaml:"apiServer,omitempty"`
-	// XdsServer defines coordinates of the Control Plane Bootstrap Server.
-	BootstrapServer BootstrapServer `yaml:"bootstrapServer,omitempty"`
-}
-
-type BootstrapServer struct {
-	// URL defines URL of the Control Plane API Server.
-	URL string `yaml:"url,omitempty" envconfig:"kuma_injector_control_plane_bootstrap_server_url"`
 }
 
 // ApiServer defines coordinates of the Control Plane API Server.
@@ -243,9 +233,6 @@ func (i *Injector) Validate() (errs error) {
 var _ config.Config = &ControlPlane{}
 
 func (c *ControlPlane) Validate() (errs error) {
-	if err := c.BootstrapServer.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".BootstrapServer is not valid"))
-	}
 	if err := c.ApiServer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ApiServer is not valid"))
 	}
@@ -255,20 +242,6 @@ func (c *ControlPlane) Validate() (errs error) {
 var _ config.Config = &ApiServer{}
 
 func (s *ApiServer) Validate() (errs error) {
-	if s.URL == "" {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
-	}
-	if url, err := url.Parse(s.URL); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".URL must be a valid absolute URI"))
-	} else if !url.IsAbs() {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
-	}
-	return
-}
-
-var _ config.Config = &BootstrapServer{}
-
-func (s *BootstrapServer) Validate() (errs error) {
 	if s.URL == "" {
 		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
 	}

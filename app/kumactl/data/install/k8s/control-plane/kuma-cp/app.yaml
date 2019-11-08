@@ -91,6 +91,8 @@ spec:
           value: "kubernetes"
         - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
           value: {{ .Namespace }}
+        - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
+          value: {{ .ControlPlaneServiceName }}.{{ .Namespace }}
         - name: KUMA_SDS_SERVER_GRPC_PORT
           value: "5677"
         - name: KUMA_XDS_SERVER_GRPC_PORT

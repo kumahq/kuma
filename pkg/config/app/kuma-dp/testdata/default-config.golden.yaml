@@ -1,3 +1,6 @@
+controlPlane:
+  apiServer:
+    url: http://localhost:5681
 dataplane:
   mesh: default
   drainTime: 30s

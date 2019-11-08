@@ -337,7 +337,6 @@ run/example/envoy/universal: run/example/envoy
 
 run/example/envoy: build/kuma-dp build/kumactl ## Dev: Run Envoy configured against local Control Plane
 	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --dataplane=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
-	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
@@ -483,7 +482,6 @@ run/kuma-injector: ## Dev: Run Kuma Injector locally
 	$(GO_RUN) ./app/kuma-injector/main.go run --log-level=debug
 
 run/kuma-dp: ## Dev: Run `kuma-dp` locally
-	KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://localhost:5682 \
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \

@@ -6,8 +6,6 @@ injector:
   controlPlane:
     apiServer:
       url: https://api-server:8765
-    bootstrapServer:
-      url: https://bootstrap-server:8765
   sidecarContainer:
     image: kuma-sidecar:latest
     redirectPort: 1234

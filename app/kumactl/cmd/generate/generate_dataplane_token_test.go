@@ -10,6 +10,7 @@ import (
 	"github.com/Kong/kuma/pkg/catalogue"
 	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
 	config_kumactl "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
+	test_catalogue "github.com/Kong/kuma/pkg/test/catalogue"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
@@ -28,38 +29,35 @@ func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string) (stri
 	return fmt.Sprintf("token-for-%s-%s", name, mesh), nil
 }
 
-type staticCatalogueClient struct {
-	resp catalogue.Catalogue
-}
-
-var _ catalogue_client.CatalogueClient = &staticCatalogueClient{}
-
-func (s *staticCatalogueClient) Catalogue() (catalogue.Catalogue, error) {
-	return s.resp, nil
-}
-
 var _ = Describe("kumactl generate dataplane-token", func() {
 
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
 	var generator *staticDataplaneTokenGenerator
+	var ctx *kumactl_cmd.RootContext
 
 	BeforeEach(func() {
 		generator = &staticDataplaneTokenGenerator{}
-		ctx := kumactl_cmd.RootContext{
+		ctx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
 				NewDataplaneTokenClient: func(string, *config_kumactl.Context_DataplaneTokenApiCredentials) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
 				},
 				NewCatalogueClient: func(s string) (catalogue_client.CatalogueClient, error) {
-					return &staticCatalogueClient{
-						resp: catalogue.Catalogue{},
+					return &test_catalogue.StaticCatalogueClient{
+						Resp: catalogue.Catalogue{
+							Apis: catalogue.Apis{
+								DataplaneToken: catalogue.DataplaneTokenApi{
+									LocalUrl: "http://localhost:1234",
+								},
+							},
+						},
 					}, nil
 				},
 			},
 		}
 
-		rootCmd = cmd.NewRootCmd(&ctx)
+		rootCmd = cmd.NewRootCmd(ctx)
 		buf = &bytes.Buffer{}
 		rootCmd.SetOut(buf)
 	})

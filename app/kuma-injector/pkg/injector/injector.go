@@ -92,8 +92,8 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 				},
 			},
 			{
-				Name:  "KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL",
-				Value: i.cfg.ControlPlane.BootstrapServer.URL,
+				Name:  "KUMA_CONTROL_PLANE_API_SERVER_URL",
+				Value: i.cfg.ControlPlane.ApiServer.URL,
 			},
 			{
 				Name:  "KUMA_DATAPLANE_MESH",

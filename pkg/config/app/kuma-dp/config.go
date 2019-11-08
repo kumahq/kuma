@@ -12,8 +12,8 @@ import (
 func DefaultConfig() Config {
 	return Config{
 		ControlPlane: ControlPlane{
-			BootstrapServer: BootstrapServer{
-				URL: "", // Address of the Bootstrap Server must be set explicitly
+			ApiServer: ApiServer{
+				URL: "http://localhost:5681",
 			},
 		},
 		Dataplane: Dataplane{
@@ -41,13 +41,13 @@ type Config struct {
 
 // ControlPlane defines coordinates of the Control Plane.
 type ControlPlane struct {
-	// BootstrapServer defines coordinates of the Control Plane Bootstrap Server.
-	BootstrapServer BootstrapServer `yaml:"bootstrapServer,omitempty"`
+	// ApiServer defines coordinates of the Control Plane API Server
+	ApiServer ApiServer `yaml:"apiServer,omitempty"`
 }
 
-type BootstrapServer struct {
-	// Address defines the address of Bootstrap configuration server.
-	URL string `yaml:"url,omitempty" envconfig:"kuma_control_plane_bootstrap_server_url"`
+type ApiServer struct {
+	// Address defines the address of Control Plane API server.
+	URL string `yaml:"url,omitempty" envconfig:"kuma_control_plane_api_server_url"`
 }
 
 // Dataplane defines bootstrap configuration of the dataplane (Envoy).
@@ -90,7 +90,7 @@ func (c *Config) Validate() (errs error) {
 var _ config.Config = &ControlPlane{}
 
 func (c *ControlPlane) Validate() (errs error) {
-	if err := c.BootstrapServer.Validate(); err != nil {
+	if err := c.ApiServer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".BootstrapServer is not valid"))
 	}
 	return
@@ -123,7 +123,7 @@ func (d *DataplaneRuntime) Validate() (errs error) {
 	return
 }
 
-func (d *BootstrapServer) Validate() (errs error) {
+func (d *ApiServer) Validate() (errs error) {
 	if d.URL == "" {
 		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
 	}
