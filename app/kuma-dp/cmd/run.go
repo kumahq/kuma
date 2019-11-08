@@ -54,8 +54,14 @@ func newRunCmd() *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "could retrieve catalogue")
 			}
-			if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-				return err
+			if catalogue.Apis.DataplaneToken.Enabled() {
+				if cfg.DataplaneRuntime.TokenPath == "" {
+					return errors.New("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. " +
+						"Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
+				}
+				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
+					return err
+				}
 			}
 
 			if cfg.DataplaneRuntime.ConfigDir == "" {
@@ -124,6 +130,6 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.ApiServer.URL, "cp-address", cfg.ControlPlane.ApiServer.URL, "URL of the Control Plane API Server")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
-	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	return cmd
 }
