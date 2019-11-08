@@ -1,10 +1,10 @@
 package generator_test
 
 import (
-	"github.com/Kong/kuma/pkg/core/logs"
 	"io/ioutil"
-	"net"
 	"path/filepath"
+
+	"github.com/Kong/kuma/pkg/core/logs"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -64,12 +64,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				OutboundTargets: map[string][]net.SRV{
-					"backend": []net.SRV{
+				OutboundTargets: map[string][]model.Endpoint{
+					"backend": []model.Endpoint{
 						{Target: "192.168.0.1", Port: 8081},
 						{Target: "192.168.0.2", Port: 8082},
 					},
-					"db": []net.SRV{
+					"db": []model.Endpoint{
 						{Target: "192.168.0.3", Port: 5432},
 					},
 				},

@@ -1,8 +1,6 @@
 package envoy_test
 
 import (
-	"net"
-
 	"github.com/Kong/kuma/pkg/core/xds"
 
 	. "github.com/onsi/ginkgo"
@@ -257,7 +255,7 @@ var _ = Describe("Envoy", func() {
 `
 		// when
 		resource := envoy.CreateClusterLoadAssignment("127.0.0.1:8080",
-			[]net.SRV{
+			[]xds.Endpoint{
 				{Target: "192.168.0.1", Port: 8081},
 				{Target: "192.168.0.2", Port: 8082},
 			})
