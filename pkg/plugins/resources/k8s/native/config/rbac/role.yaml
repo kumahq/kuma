@@ -66,3 +66,11 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - kuma.io
+  resources:
+  - trafficroutes
+  verbs:
+  - get
+  - list
+  - watch

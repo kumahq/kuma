@@ -64,6 +64,11 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &TrafficLog{},
 				expectedKind: "TrafficLog",
 			}),
+			Entry("TrafficRoute", testCase{
+				inputType:    &proto.TrafficRoute{},
+				expectedType: &TrafficRoute{},
+				expectedKind: "TrafficRoute",
+			}),
 		)
 	})
 
@@ -115,6 +120,11 @@ var _ = Describe("global TypeRegistry", func() {
 				inputType:    &proto.TrafficLog{},
 				expectedType: &TrafficLogList{},
 				expectedKind: "TrafficLogList",
+			}),
+			Entry("TrafficRouteList", testCase{
+				inputType:    &proto.TrafficRoute{},
+				expectedType: &TrafficRouteList{},
+				expectedKind: "TrafficRouteList",
 			}),
 		)
 	})
