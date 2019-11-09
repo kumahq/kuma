@@ -1,4 +1,0 @@
-networking:
-  outbound:
-  - interface: :18080
-    service: backend
