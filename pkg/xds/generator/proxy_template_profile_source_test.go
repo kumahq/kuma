@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"github.com/Kong/kuma/pkg/core/permissions"
 	"io/ioutil"
 	"path/filepath"
 
@@ -10,6 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/logs"
+	"github.com/Kong/kuma/pkg/core/permissions"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
@@ -22,14 +23,14 @@ import (
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 
-	type testCaseFile struct {
-		dataplaneFile   string
+	type testCase struct {
+		dataplane       string
 		profile         string
 		envoyConfigFile string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
-		func(given testCaseFile) {
+		func(given testCase) {
 			// setup
 			gen := &generator.ProxyTemplateProfileSource{
 				ProfileName: given.profile,
@@ -47,9 +48,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 
 			dataplane := mesh_proto.Dataplane{}
-			dpBytes, err := ioutil.ReadFile(filepath.Join("testdata", "profile-source", given.dataplaneFile))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
+			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 			proxy := &model.Proxy{
 				Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 				Dataplane: &mesh_core.DataplaneResource{
@@ -58,6 +57,12 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 					Spec: dataplane,
 				},
+				OutboundTargets: model.EndpointMap{
+					"db": []model.Endpoint{
+						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
+					},
+				},
+				Logs:               logs.NewMatchedLogs(),
 				TrafficPermissions: permissions.MatchedPermissions{},
 				Metadata:           &model.DataplaneMetadata{},
 			}
@@ -77,13 +82,29 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(expected))
 		},
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCaseFile{
-			dataplaneFile:   "1-dataplane.input.yaml",
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCase{
+			dataplane: `
+            networking:
+              inbound:
+                - interface: 192.168.0.1:80:8080
+              outbound:
+              - interface: :54321
+                service: db
+`,
 			profile:         template.ProfileDefaultProxy,
 			envoyConfigFile: "1-envoy-config.golden.yaml",
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCaseFile{
-			dataplaneFile:   "2-dataplane.input.yaml",
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCase{
+			dataplane: `
+            networking:
+              inbound:
+                - interface: 192.168.0.1:80:8080
+              outbound:
+              - interface: :54321
+                service: db
+              transparentProxying:
+                redirectPort: 15001
+`,
 			profile:         template.ProfileDefaultProxy,
 			envoyConfigFile: "2-envoy-config.golden.yaml",
 		}),
