@@ -1,9 +1,10 @@
 package generator_test
 
 import (
-	"github.com/Kong/kuma/pkg/core/permissions"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/Kong/kuma/pkg/core/permissions"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -87,7 +88,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 	Context("Happy case", func() {
 
 		type testCase struct {
-			dataplaneFile     string
+			dataplane         string
 			proxyTemplateFile string
 			envoyConfigFile   string
 		}
@@ -115,9 +116,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				}
 
 				dataplane := mesh_proto.Dataplane{}
-				dpBytes, err := ioutil.ReadFile(filepath.Join("testdata", "template-proxy", given.dataplaneFile))
-				Expect(err).ToNot(HaveOccurred())
-				Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
+				Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 				proxy := &model.Proxy{
 					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
 					Dataplane: &mesh_core.DataplaneResource{
@@ -146,7 +145,13 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				Expect(actual).To(MatchYAML(expected))
 			},
 			Entry("should support a combination of pre-defined profiles and raw xDS resources", testCase{
-				dataplaneFile:     "1-dataplane.input.yaml",
+				dataplane: `
+                networking:
+                  transparentProxying:
+                    redirectPort: 15001
+                  inbound:
+                    - interface: 192.168.0.1:80:8080
+`,
 				proxyTemplateFile: "1-proxy-template.input.yaml",
 				envoyConfigFile:   "1-envoy-config.golden.yaml",
 			}),

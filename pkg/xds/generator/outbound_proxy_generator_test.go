@@ -50,11 +50,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			// setup
 			gen := &generator.OutboundProxyGenerator{}
 
-			data, err := ioutil.ReadFile(filepath.Join("testdata", "outbound-proxy", given.dataplane))
-			Expect(err).ToNot(HaveOccurred())
-
 			dataplane := mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML(data, &dataplane)).To(Succeed())
+			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 
 			proxy := &model.Proxy{
 				Id: model.ProxyId{Name: "side-car", Namespace: "default", Mesh: "default"},
@@ -64,13 +61,13 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				OutboundTargets: map[string][]model.Endpoint{
+				OutboundTargets: model.EndpointMap{
 					"backend": []model.Endpoint{
-						{Target: "192.168.0.1", Port: 8081},
+						{Target: "192.168.0.1", Port: 8081, Tags: map[string]string{"service": "backend", "region": "us"}},
 						{Target: "192.168.0.2", Port: 8082},
 					},
 					"db": []model.Endpoint{
-						{Target: "192.168.0.3", Port: 5432},
+						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
 					},
 				},
 				Logs:     logs.NewMatchedLogs(),
@@ -94,43 +91,87 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		},
 		Entry("01. transparent_proxying=false, mtls=false, outbound=0", testCase{
 			ctx:       plainCtx,
-			dataplane: "dataplane.0.non-transparent.input.yaml",
+			dataplane: ``,
 			expected:  "01.envoy.golden.yaml",
 		}),
 		Entry("02. transparent_proxying=true, mtls=false, outbound=0", testCase{
-			ctx:       mtlsCtx,
-			dataplane: "dataplane.0.transparent.input.yaml",
-			expected:  "02.envoy.golden.yaml",
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              transparentProxying:
+                redirectPort: 15001
+`,
+			expected: "02.envoy.golden.yaml",
 		}),
 		Entry("03. transparent_proxying=false, mtls=false, outbound=1", testCase{
-			ctx:       plainCtx,
-			dataplane: "dataplane.1.non-transparent.input.yaml",
-			expected:  "03.envoy.golden.yaml",
+			ctx: plainCtx,
+			dataplane: `
+            networking:
+              outbound:
+              - interface: :18080
+                service: backend
+`,
+			expected: "03.envoy.golden.yaml",
 		}),
 		Entry("04. transparent_proxying=true, mtls=false, outbound=1", testCase{
-			ctx:       mtlsCtx,
-			dataplane: "dataplane.1.transparent.input.yaml",
-			expected:  "04.envoy.golden.yaml",
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              outbound:
+              - interface: :18080
+                service: backend
+              transparentProxying:
+                redirectPort: 15001
+`,
+			expected: "04.envoy.golden.yaml",
 		}),
 		Entry("05. transparent_proxying=false, mtls=true, outbound=1", testCase{
-			ctx:       plainCtx,
-			dataplane: "dataplane.1.non-transparent.input.yaml",
-			expected:  "05.envoy.golden.yaml",
+			ctx: plainCtx,
+			dataplane: `
+            networking:
+              outbound:
+              - interface: :18080
+                service: backend
+`,
+			expected: "05.envoy.golden.yaml",
 		}),
 		Entry("06. transparent_proxying=true, mtls=true, outbound=1", testCase{
-			ctx:       mtlsCtx,
-			dataplane: "dataplane.1.transparent.input.yaml",
-			expected:  "06.envoy.golden.yaml",
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              outbound:
+              - interface: :18080
+                service: backend
+              transparentProxying:
+                redirectPort: 15001
+`,
+			expected: "06.envoy.golden.yaml",
 		}),
 		Entry("07. transparent_proxying=false, mtls=false, outbound=2", testCase{
-			ctx:       plainCtx,
-			dataplane: "dataplane.2.non-transparent.input.yaml",
-			expected:  "07.envoy.golden.yaml",
+			ctx: plainCtx,
+			dataplane: `
+            networking:
+              outbound:
+              - interface: :18080
+                service: backend
+              - interface: :54321
+                service: db
+`,
+			expected: "07.envoy.golden.yaml",
 		}),
 		Entry("08. transparent_proxying=true, mtls=true, outbound=2", testCase{
-			ctx:       mtlsCtx,
-			dataplane: "dataplane.2.transparent.input.yaml",
-			expected:  "08.envoy.golden.yaml",
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              outbound:
+              - interface: :18080
+                service: backend
+              - interface: :54321
+                service: db
+              transparentProxying:
+                redirectPort: 15001
+`,
+			expected: "08.envoy.golden.yaml",
 		}),
 	)
 })
