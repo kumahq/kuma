@@ -14,6 +14,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
+
+	util_http "github.com/Kong/kuma/pkg/util/http"
+)
+
+const (
+	timeout = 10 * time.Second
 )
 
 type applyContext struct {
@@ -37,8 +46,28 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
 			if ctx.args.file == "" || ctx.args.file == "-" {
 				b, err = ioutil.ReadAll(cmd.InOrStdin())
+				if err != nil {
+					return err
+				}
 			} else {
-				b, err = ioutil.ReadFile(ctx.args.file)
+				if strings.HasPrefix(ctx.args.file, "http://") || strings.HasPrefix(ctx.args.file, "https://") {
+					client := util_http.ClientWithTimeout(&http.Client{}, timeout)
+					req, err := http.NewRequest("GET", ctx.args.file, nil)
+					if err != nil {
+						return errors.Wrap(err, "error creating new http request")
+					}
+					resp, err := client.Do(req)
+					if err != nil {
+						return errors.Wrap(err, "error with GET http request")
+					}
+					defer resp.Body.Close()
+					b, err = ioutil.ReadAll(resp.Body)
+					if err != nil {
+						return errors.Wrap(err, "error with reading GET response")
+					}
+				} else {
+					b, err = ioutil.ReadFile(ctx.args.file)
+				}
 			}
 			if err != nil {
 				return errors.Wrap(err, "error while reading provided file")

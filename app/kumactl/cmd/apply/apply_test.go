@@ -2,8 +2,12 @@ package apply_test
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -176,6 +180,40 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
 		Expect(resource.Meta.GetMesh()).To(Equal(""))
 		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
+	})
+
+	It("should apply a new Dataplane resource from URL", func() {
+		// setup http server
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
+		testurl := fmt.Sprintf("http://localhost:%v/testdata/apply-dataplane.yaml", port)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		mux.Handle("/testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./testdata"))))
+		Eventually(func() bool {
+			resp, err := http.Get(testurl)
+			if err != nil {
+				return false
+			}
+			Expect(resp.Body.Close()).To(Succeed())
+			return true
+		}, "5s", "100ms").Should(BeTrue())
+
+		// given
+		rootCmd.SetArgs([]string{
+			"apply", "-f", testurl},
+		)
+
+		// when
+		err = rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		ValidatePersistedResource()
 	})
 
 	It("should fill in template (multiple variables)", func() {
