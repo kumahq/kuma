@@ -50,7 +50,7 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					return err
 				}
 			} else {
-				if strings.HasPrefix(ctx.args.file, "http") {
+				if strings.HasPrefix(ctx.args.file, "http://") || strings.HasPrefix(ctx.args.file, "https://") {
 					client := util_http.ClientWithTimeout(&http.Client{}, timeout)
 					req, err := http.NewRequest("GET", ctx.args.file, nil)
 					if err != nil {

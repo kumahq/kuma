@@ -199,7 +199,7 @@ var _ = Describe("kumactl apply", func() {
 			}
 			Expect(resp.Body.Close()).To(Succeed())
 			return true
-		}).Should(BeTrue())
+		}, "5s", "100ms").Should(BeTrue())
 
 		// given
 		rootCmd.SetArgs([]string{
