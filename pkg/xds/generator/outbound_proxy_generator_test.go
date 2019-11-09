@@ -61,6 +61,24 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
+				TrafficRoutes: model.RouteMap{
+					"backend": &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      100,
+								Destination: mesh_proto.MatchService("backend"),
+							}},
+						},
+					},
+					"db": &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      100,
+								Destination: mesh_proto.MatchService("db"),
+							}},
+						},
+					},
+				},
 				OutboundTargets: model.EndpointMap{
 					"backend": []model.Endpoint{
 						{Target: "192.168.0.1", Port: 8081, Tags: map[string]string{"service": "backend", "region": "us"}},

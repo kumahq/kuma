@@ -151,10 +151,15 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	resources := make([]*Resource, 0, len(ofaces))
 	names := make(map[string]bool)
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
-	for _, oface := range ofaces {
+	for i, oface := range ofaces {
 		endpoint, err := kuma_mesh.ParseOutboundInterface(oface.Interface)
 		if err != nil {
 			return nil, err
+		}
+
+		route := proxy.TrafficRoutes[oface.Service]
+		if route == nil {
+			return nil, errors.Errorf("outbound interface [%d]{service=%q} has no TrafficRoute", i, oface.Service)
 		}
 
 		serviceTag := kuma_mesh.ServiceTagValue(oface.Service)
