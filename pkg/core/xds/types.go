@@ -31,8 +31,11 @@ type ServiceName = string
 // RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
 type RouteMap map[ServiceName]*mesh_core.TrafficRouteResource
 
-// DestinationMap holds selectors for all reachable Dataplanes grouped by service name.
-type DestinationMap map[ServiceName][]mesh_proto.TagSelector
+// TagSelectorSet is a set of unique TagSelectors.
+type TagSelectorSet []mesh_proto.TagSelector
+
+// DestinationMap holds a set of selectors for all reachable Dataplanes grouped by service name.
+type DestinationMap map[ServiceName]TagSelectorSet
 
 // Endpoint holds routing-related information about a single endpoint.
 type Endpoint struct {
@@ -50,8 +53,18 @@ type Proxy struct {
 	TrafficPermissions permissions.MatchedPermissions
 	Logs               *logs.MatchedLogs
 	TrafficRoutes      RouteMap
+	OutboundSelectors  DestinationMap
 	OutboundTargets    EndpointMap
 	Metadata           *DataplaneMetadata
+}
+
+func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
+	for _, old := range s {
+		if new.Equal(old) {
+			return s
+		}
+	}
+	return append(s, new)
 }
 
 func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {
