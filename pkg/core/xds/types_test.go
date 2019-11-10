@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
@@ -110,6 +111,40 @@ var _ = Describe("xDS", func() {
 			Expect(key.Namespace).To(Equal("pilot"))
 			Expect(key.Mesh).To(Equal("default"))
 			Expect(key.Name).To(Equal("demo"))
+		})
+	})
+
+	Describe("TagSelectorSet", func() {
+		Describe("Add()", func() {
+			It("should be possible to add the first element to the set", func() {
+				// given
+				var set core_xds.TagSelectorSet
+				// when
+				actual := set.Add(mesh_proto.TagSelector{"service": "redis"})
+				// then
+				Expect(actual).To(HaveLen(1))
+				Expect(actual).To(ConsistOf(mesh_proto.TagSelector{"service": "redis"}))
+			})
+
+			It("should be possible to add the second element to the set", func() {
+				// given
+				set := core_xds.TagSelectorSet{mesh_proto.TagSelector{"service": "redis"}}
+				// when
+				actual := set.Add(mesh_proto.TagSelector{"service": "elastic"})
+				// then
+				Expect(actual).To(HaveLen(2))
+				Expect(actual).To(ConsistOf(mesh_proto.TagSelector{"service": "redis"}, mesh_proto.TagSelector{"service": "elastic"}))
+			})
+
+			It("should not be possible to add the second identical element", func() {
+				// given
+				set := core_xds.TagSelectorSet{mesh_proto.TagSelector{"service": "redis"}}
+				// when
+				actual := set.Add(mesh_proto.TagSelector{"service": "redis"})
+				// then
+				Expect(actual).To(HaveLen(1))
+				Expect(actual).To(ConsistOf(mesh_proto.TagSelector{"service": "redis"}))
+			})
 		})
 	})
 })

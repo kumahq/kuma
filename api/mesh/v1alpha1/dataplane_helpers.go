@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"net"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -217,6 +218,10 @@ func (s TagSelector) Rank() (r TagSelectorRank) {
 		}
 	}
 	return
+}
+
+func (s TagSelector) Equal(other TagSelector) bool {
+	return len(s) == 0 && len(other) == 0 || len(s) == len(other) && reflect.DeepEqual(s, other)
 }
 
 func MatchAll() TagSelector {

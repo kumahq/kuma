@@ -407,50 +407,110 @@ var _ = Describe("Dataplane", func() {
 	})
 })
 
-var _ = Describe("TagSelector()", func() {
-	type testCase struct {
-		tags  map[string]string
-		match bool
-	}
-	DescribeTable("should Match tags", func(given testCase) {
-		// given
-		dpTags := map[string]string{
-			"service": "mobile",
-			"version": "v1",
+var _ = Describe("TagSelector", func() {
+
+	Describe("Matches()", func() {
+		type testCase struct {
+			tags  map[string]string
+			match bool
+		}
+		DescribeTable("should Match tags",
+			func(given testCase) {
+				// given
+				dpTags := map[string]string{
+					"service": "mobile",
+					"version": "v1",
+				}
+
+				// when
+				match := TagSelector(given.tags).Matches(dpTags)
+
+				//then
+				Expect(match).To(Equal(given.match))
+			},
+			Entry("should match 0 tags", testCase{
+				tags:  map[string]string{},
+				match: true,
+			}),
+			Entry("should match 1 tag", testCase{
+				tags:  map[string]string{"service": "mobile"},
+				match: true,
+			}),
+			Entry("should match all tags", testCase{
+				tags: map[string]string{
+					"service": "mobile",
+					"version": "v1",
+				},
+				match: true,
+			}),
+			Entry("should match * tag", testCase{
+				tags:  map[string]string{"service": "*"},
+				match: true,
+			}),
+			Entry("should not match on one mismatch", testCase{
+				tags: map[string]string{
+					"service": "backend",
+					"version": "v1",
+				},
+				match: false,
+			}),
+		)
+	})
+
+	Describe("Equal()", func() {
+		type testCase struct {
+			one      TagSelector
+			another  TagSelector
+			expected bool
 		}
 
-		// when
-		match := TagSelector(given.tags).Matches(dpTags)
-
-		//then
-		Expect(match).To(Equal(given.match))
-	},
-		Entry("should match 0 tags", testCase{
-			tags:  map[string]string{},
-			match: true,
-		}),
-		Entry("should match 1 tag", testCase{
-			tags:  map[string]string{"service": "mobile"},
-			match: true,
-		}),
-		Entry("should match all tags", testCase{
-			tags: map[string]string{
-				"service": "mobile",
-				"version": "v1",
+		DescribeTable("should correctly determine if two selectors are equal",
+			func(given testCase) {
+				// expect
+				Expect(given.one.Equal(given.another)).To(Equal(given.expected))
 			},
-			match: true,
-		}),
-		Entry("should match * tag", testCase{
-			tags:  map[string]string{"service": "*"},
-			match: true,
-		}),
-		Entry("should not match on one mismatch", testCase{
-			tags: map[string]string{
-				"service": "backend",
-				"version": "v1",
-			},
-			match: false,
-		}))
+			Entry("two nil selectors", testCase{
+				one:      nil,
+				another:  nil,
+				expected: true,
+			}),
+			Entry("nil selector and empty selector", testCase{
+				one:      nil,
+				another:  TagSelector{},
+				expected: true,
+			}),
+			Entry("empty selector and nil selector", testCase{
+				one:      TagSelector{},
+				another:  nil,
+				expected: true,
+			}),
+			Entry("two empty selectors", testCase{
+				one:      TagSelector{},
+				another:  TagSelector{},
+				expected: true,
+			}),
+			Entry("equal selectors of 1 tag", testCase{
+				one:      TagSelector{"service": "backend"},
+				another:  TagSelector{"service": "backend"},
+				expected: true,
+			}),
+			Entry("equal selectors of 2 tag", testCase{
+				one:      TagSelector{"service": "backend", "version": "v1"},
+				another:  TagSelector{"service": "backend", "version": "v1"},
+				expected: true,
+			}),
+			Entry("unequal selectors of 1 tag", testCase{
+				one:      TagSelector{"service": "backend"},
+				another:  TagSelector{"service": "redis"},
+				expected: false,
+			}),
+			Entry("one 1 tag selector and one 2 tags selector", testCase{
+				one:      TagSelector{"service": "backend"},
+				another:  TagSelector{"service": "redis", "version": "v1"},
+				expected: false,
+			}),
+		)
+	})
 })
 
 var _ = Describe("Tags", func() {
