@@ -143,6 +143,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					Dataplane:          dataplane,
 					TrafficPermissions: matchedPermissions,
 					TrafficRoutes:      routes,
+					OutboundSelectors:  destinations,
 					OutboundTargets:    outbound,
 					Logs:               matchedLogs,
 					Metadata:           metadataTracker.Metadata(streamId),
