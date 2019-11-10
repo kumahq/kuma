@@ -44,6 +44,9 @@ type Endpoint struct {
 	Tags   map[string]string
 }
 
+// EndpointList is a list of Endpoints with convenience methods.
+type EndpointList []Endpoint
+
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
 
@@ -65,6 +68,16 @@ func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
 		}
 	}
 	return append(s, new)
+}
+
+func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
+	var endpoints EndpointList
+	for _, endpoint := range l {
+		if selector.Matches(endpoint.Tags) {
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+	return endpoints
 }
 
 func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {

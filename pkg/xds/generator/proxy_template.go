@@ -3,6 +3,8 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -162,24 +164,43 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			return nil, errors.Errorf("outbound interface [%d]{service=%q} has no TrafficRoute", i, oface.Service)
 		}
 
-		serviceTag := kuma_mesh.ServiceTagValue(oface.Service)
-		edsClusterName := outboundClusterName(serviceTag, oface.ServicePort)
-		if used := names[edsClusterName]; !used {
-			resources = append(resources, &Resource{
-				Name:     edsClusterName,
-				Resource: envoy.CreateEdsCluster(ctx, edsClusterName, proxy.Metadata),
+		var clusters []envoy.ClusterInfo
+		for _, destination := range route.Spec.Conf {
+			service, ok := destination.Destination[kuma_mesh.ServiceTag]
+			if !ok {
+				// all destinations must have `service` tag
+				continue
+			}
+			if destination.Weight == 0 {
+				// Envoy doesn't support 0 weight
+				continue
+			}
+			clusters = append(clusters, envoy.ClusterInfo{
+				Name:   destinationClusterName(service, destination.Destination),
+				Weight: destination.Weight,
+				Tags:   destination.Destination,
 			})
-			resources = append(resources, &Resource{
-				Name:     edsClusterName,
-				Resource: envoy.CreateClusterLoadAssignment(edsClusterName, proxy.OutboundTargets[oface.Service]),
-			})
-			names[edsClusterName] = true
+		}
+
+		for _, cluster := range clusters {
+			if used := names[cluster.Name]; !used {
+				resources = append(resources, &Resource{
+					Name:     cluster.Name,
+					Resource: envoy.CreateEdsCluster(ctx, cluster.Name, proxy.Metadata),
+				})
+				endpoints := model.EndpointList(proxy.OutboundTargets[cluster.Tags[kuma_mesh.ServiceTag]]).Filter(kuma_mesh.MatchTags(cluster.Tags))
+				resources = append(resources, &Resource{
+					Name:     cluster.Name,
+					Resource: envoy.CreateClusterLoadAssignment(cluster.Name, endpoints),
+				})
+				names[cluster.Name] = true
+			}
 		}
 
 		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
 		if used := names[outboundListenerName]; !used {
 			destinationService := oface.Service
-			listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, edsClusterName, virtual, sourceService, destinationService, proxy.Logs.Outbounds[oface.Interface], proxy)
+			listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, oface.Service, clusters, virtual, sourceService, destinationService, proxy.Logs.Outbounds[oface.Interface], proxy)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not generate listener %s", outboundListenerName)
 			}
@@ -215,17 +236,17 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	}, nil
 }
 
-// outboundClusterName generates a proper name for a Cluster,
-// taking into account the value of "service" tag.
-//
-// Notice that on k8s, we automatically generate Dataplane definitions,
-// including "service" tag on inbound interfaces.
-// In order to prevent ambiguity when a k8s service has multiple ports,
-// we include service port into the "service" tag.
-// Which makes explicit servicePort field redundant, we might even consider removing it.
-func outboundClusterName(serviceTag kuma_mesh.ServiceTagValue, servicePort uint32) string {
-	if serviceTag.HasPort() || servicePort == 0 {
-		return string(serviceTag)
+func destinationClusterName(service string, selector map[string]string) string {
+	var pairs []string
+	for key, value := range selector {
+		if key == kuma_mesh.ServiceTag {
+			continue
+		}
+		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
 	}
-	return fmt.Sprintf("%s:%d", serviceTag, servicePort)
+	if len(pairs) == 0 {
+		return service
+	}
+	sort.Strings(pairs)
+	return fmt.Sprintf("%s{%s}", service, strings.Join(pairs, ","))
 }

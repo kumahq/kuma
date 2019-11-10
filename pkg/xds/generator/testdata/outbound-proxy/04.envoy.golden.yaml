@@ -52,11 +52,6 @@ resources:
             envoy.lb:
               region: us
               service: backend
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.2
-              portValue: 8082
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Listener
