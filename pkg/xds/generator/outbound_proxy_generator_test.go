@@ -73,10 +73,26 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					"db": &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("db"),
+								Weight:      10,
+								Destination: mesh_proto.TagSelector{"service": "db", "role": "master"},
+							}, {
+								Weight:      90,
+								Destination: mesh_proto.TagSelector{"service": "db", "role": "replica"},
+							}, {
+								Weight:      0, // should be excluded from Envoy configuration
+								Destination: mesh_proto.TagSelector{"service": "db", "role": "canary"},
 							}},
 						},
+					},
+				},
+				OutboundSelectors: model.DestinationMap{
+					"backend": model.TagSelectorSet{
+						{"service": "backend"},
+					},
+					"db": model.TagSelectorSet{
+						{"service": "db", "role": "master"},
+						{"service": "db", "role": "replica"},
+						{"service": "db", "role": "canary"},
 					},
 				},
 				OutboundTargets: model.EndpointMap{

@@ -147,4 +147,83 @@ var _ = Describe("xDS", func() {
 			})
 		})
 	})
+
+	Describe("EndpointList", func() {
+		Describe("Filter()", func() {
+			type testCase struct {
+				endpoints core_xds.EndpointList
+				filter    mesh_proto.TagSelector
+				expected  core_xds.EndpointList
+			}
+			DescribeTable("should filter out endpoints that don't match a given filter",
+				func(given testCase) {
+					// expect
+					Expect(given.endpoints.Filter(given.filter)).To(Equal(given.expected))
+				},
+				Entry("`nil` filter", testCase{
+					endpoints: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+					filter: nil,
+					expected: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+				}),
+				Entry("empty filter", testCase{
+					endpoints: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+					filter: mesh_proto.TagSelector{},
+					expected: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+				}),
+				Entry("empty filter", testCase{
+					endpoints: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v1",
+						},
+					}, {
+						Target: "192.168.0.2",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v2",
+						},
+					}},
+					filter: mesh_proto.TagSelector{
+						"service": "backend",
+						"version": "v2",
+					},
+					expected: core_xds.EndpointList{{
+						Target: "192.168.0.2",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v2",
+						},
+					}},
+				}),
+			)
+		})
+	})
 })

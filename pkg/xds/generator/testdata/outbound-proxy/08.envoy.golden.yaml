@@ -52,11 +52,6 @@ resources:
             envoy.lb:
               region: us
               service: backend
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.2
-              portValue: 8082
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -74,14 +69,14 @@ resources:
           cluster: backend
           statPrefix: backend
     name: outbound:127.0.0.1:18080
-- name: db
+- name: db{role=master}
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Cluster
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    name: db
+    name: db{role=master}
     tlsContext:
       commonTlsContext:
         tlsCertificateSdsSecretConfigs:
@@ -111,10 +106,10 @@ resources:
                   statPrefix: sds_mesh_ca
                   targetUri: kuma-system:5677
     type: EDS
-- name: db
+- name: db{role=master}
   resource:
     '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-    clusterName: db
+    clusterName: db{role=master}
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -127,6 +122,49 @@ resources:
             envoy.lb:
               role: master
               service: db
+- name: db{role=replica}
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    name: db{role=replica}
+    tlsContext:
+      commonTlsContext:
+        tlsCertificateSdsSecretConfigs:
+        - name: identity_cert
+          sdsConfig:
+            apiConfigSource:
+              apiType: GRPC
+              grpcServices:
+              - googleGrpc:
+                  channelCredentials:
+                    sslCredentials:
+                      rootCerts:
+                        inlineBytes: MTIzNDU=
+                  statPrefix: sds_identity_cert
+                  targetUri: kuma-system:5677
+        validationContextSdsSecretConfig:
+          name: mesh_ca
+          sdsConfig:
+            apiConfigSource:
+              apiType: GRPC
+              grpcServices:
+              - googleGrpc:
+                  channelCredentials:
+                    sslCredentials:
+                      rootCerts:
+                        inlineBytes: MTIzNDU=
+                  statPrefix: sds_mesh_ca
+                  targetUri: kuma-system:5677
+    type: EDS
+- name: db{role=replica}
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: db{role=replica}
+    endpoints:
+    - {}
 - name: outbound:127.0.0.1:54321
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -141,6 +179,11 @@ resources:
       - name: envoy.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-          cluster: db
           statPrefix: db
+          weightedClusters:
+            clusters:
+            - name: db{role=master}
+              weight: 10
+            - name: db{role=replica}
+              weight: 90
     name: outbound:127.0.0.1:54321
