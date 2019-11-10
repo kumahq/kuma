@@ -31,6 +31,12 @@ const (
 	defaultConnectTimeout = 5 * time.Second
 )
 
+type ClusterInfo struct {
+	Name   string
+	Weight uint32
+	Tags   map[string]string
+}
+
 func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.ClusterLoadAssignment {
 	return &v2.ClusterLoadAssignment{
 		ClusterName: clusterName,
@@ -140,17 +146,32 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, sourceService string, destinationService string, backends []*v1alpha1.LoggingBackend, proxy *core_xds.Proxy) (*v2.Listener, error) {
+func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, statsName string, clusters []ClusterInfo, virtual bool, sourceService string, destinationService string, backends []*v1alpha1.LoggingBackend, proxy *core_xds.Proxy) (*v2.Listener, error) {
 	accessLog, err := convertLoggingBackends(sourceService, destinationService, backends, proxy)
 	if err != nil {
 		return nil, err
 	}
 	config := &envoy_tcp.TcpProxy{
-		StatPrefix: clusterName,
-		ClusterSpecifier: &envoy_tcp.TcpProxy_Cluster{
-			Cluster: clusterName,
-		},
-		AccessLog: accessLog,
+		StatPrefix: statsName,
+		AccessLog:  accessLog,
+	}
+	if len(clusters) == 1 {
+		config.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
+			Cluster: clusters[0].Name,
+		}
+	} else {
+		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
+		for _, cluster := range clusters {
+			weightedClusters = append(weightedClusters, &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
+				Name:   cluster.Name,
+				Weight: cluster.Weight,
+			})
+		}
+		config.ClusterSpecifier = &envoy_tcp.TcpProxy_WeightedClusters{
+			WeightedClusters: &envoy_tcp.TcpProxy_WeightedCluster{
+				Clusters: weightedClusters,
+			},
+		}
 	}
 	pbst, err := ptypes.MarshalAny(config)
 	util_error.MustNot(err)
