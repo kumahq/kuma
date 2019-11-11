@@ -17,6 +17,8 @@ limitations under the License.
 package k8s_test
 
 import (
+	"github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path/filepath"
 	"testing"
 
@@ -28,6 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 
 	// +kubebuilder:scaffold:imports
 	sample_v1alpha1 "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
@@ -65,6 +69,21 @@ var _ = BeforeSuite(func(done Done) {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: k8sClientScheme})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
+
+	err = k8s_registry.Global().RegisterObjectType(&v1alpha1.TrafficRoute{}, &sample_v1alpha1.SampleTrafficRoute{
+		TypeMeta: v1.TypeMeta{
+			APIVersion: sample_v1alpha1.GroupVersion.String(),
+			Kind:       "SampleTrafficRoute",
+		},
+	})
+	Expect(err).ToNot(HaveOccurred())
+	err = k8s_registry.Global().RegisterListType(&v1alpha1.TrafficRoute{}, &sample_v1alpha1.SampleTrafficRouteList{
+		TypeMeta: v1.TypeMeta{
+			APIVersion: sample_v1alpha1.GroupVersion.String(),
+			Kind:       "SampleTrafficRouteList",
+		},
+	})
+	Expect(err).ToNot(HaveOccurred())
 
 	close(done)
 }, 60)

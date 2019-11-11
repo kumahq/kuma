@@ -37,10 +37,10 @@ var _ = Describe("Defaulter", func() {
 
 	BeforeEach(func() {
 		kubeTypes := k8s_registry.NewTypeRegistry()
-		err := kubeTypes.RegisterObjectType(&sample_proto.TrafficRoute{}, &sample_k8s.TrafficRoute{
+		err := kubeTypes.RegisterObjectType(&sample_proto.TrafficRoute{}, &sample_k8s.SampleTrafficRoute{
 			TypeMeta: kube_meta.TypeMeta{
 				APIVersion: sample_k8s.GroupVersion.String(),
-				Kind:       "TrafficRoute",
+				Kind:       "SampleTrafficRoute",
 			},
 		})
 		Expect(err).ToNot(HaveOccurred())
@@ -101,7 +101,7 @@ var _ = Describe("Defaulter", func() {
 			inputObject: `
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "SampleTrafficRoute",
               "mesh": "demo",
               "metadata": {
                 "namespace": "example",
@@ -126,7 +126,7 @@ var _ = Describe("Defaulter", func() {
 			inputObject: `
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "SampleTrafficRoute",
               "mesh": "demo",
               "metadata": {
                 "namespace": "example",
@@ -144,7 +144,7 @@ var _ = Describe("Defaulter", func() {
 			inputObject: `
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "SampleTrafficRoute",
               "mesh": "demo",
               "metadata": {
                 "namespace": "example",

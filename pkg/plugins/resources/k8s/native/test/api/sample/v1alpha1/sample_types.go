@@ -20,11 +20,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TrafficRouteSpec defines the desired state of TrafficRoute
+// TrafficRouteSpec defines the desired state of SampleTrafficRoute
 type TrafficRouteSpec = map[string]interface{}
 
-// TrafficRoute is the Schema for the proxytemplates API
-type TrafficRoute struct {
+// SampleTrafficRoute is the Schema for the proxytemplates API
+type SampleTrafficRoute struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh"`
@@ -32,13 +32,13 @@ type TrafficRoute struct {
 	Spec TrafficRouteSpec `json:"spec,omitempty"`
 }
 
-// TrafficRouteList contains a list of TrafficRoute
-type TrafficRouteList struct {
+// SampleTrafficRouteList contains a list of SampleTrafficRoute
+type SampleTrafficRouteList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []TrafficRoute `json:"items"`
+	Items           []SampleTrafficRoute `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&TrafficRoute{}, &TrafficRouteList{})
+	SchemeBuilder.Register(&SampleTrafficRoute{}, &SampleTrafficRouteList{})
 }
