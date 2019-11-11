@@ -12,7 +12,7 @@ import (
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
@@ -71,6 +71,7 @@ func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int6
 		Id:                     newUUID(),
 		ControlPlaneInstanceId: c.runtimeInfo.GetInstanceId(),
 		ConnectTime:            util_proto.MustTimestampProto(now()),
+		Status:                 mesh_proto.NewSubscriptionStatus(),
 	}
 	// initialize state per ADS stream
 	state := &streamState{

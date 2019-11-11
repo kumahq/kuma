@@ -2,6 +2,9 @@ package mesh
 
 import (
 	"errors"
+
+	"github.com/golang/protobuf/proto"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 )
@@ -87,13 +90,13 @@ func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneI
 		overview := DataplaneOverviewResource{
 			Meta: dataplane.Meta,
 			Spec: mesh_proto.DataplaneOverview{
-				Dataplane:        dataplane.Spec,
-				DataplaneInsight: mesh_proto.DataplaneInsight{},
+				Dataplane:        proto.Clone(&dataplane.Spec).(*mesh_proto.Dataplane),
+				DataplaneInsight: nil,
 			},
 		}
 		insight, exists := insightsByKey[model.MetaToResourceKey(overview.Meta)]
 		if exists {
-			overview.Spec.DataplaneInsight = insight.Spec
+			overview.Spec.DataplaneInsight = proto.Clone(&insight.Spec).(*mesh_proto.DataplaneInsight)
 		}
 		items = append(items, &overview)
 	}
@@ -103,7 +106,7 @@ func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneI
 func (d *DataplaneOverviewResourceList) RetainMatchingTags(tags map[string]string) {
 	result := []*DataplaneOverviewResource{}
 	for _, overview := range d.Items {
-		if overview.Spec.Dataplane.MatchTags(tags) {
+		if overview.Spec.GetDataplane().MatchTags(tags) {
 			result = append(result, overview)
 		}
 	}

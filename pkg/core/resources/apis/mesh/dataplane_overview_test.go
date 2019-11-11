@@ -40,10 +40,10 @@ var _ = Describe("DataplaneOverview", func() {
 
 			overviews := NewDataplaneOverviews(dataplanes, insights)
 			Expect(overviews.Items).To(HaveLen(2))
-			Expect(overviews.Items[0].Spec.Dataplane).To(Equal(dataplanes.Items[0].Spec))
-			Expect(overviews.Items[0].Spec.DataplaneInsight).To(Equal(insights.Items[0].Spec))
-			Expect(overviews.Items[1].Spec.Dataplane).To(Equal(dataplanes.Items[1].Spec))
-			Expect(overviews.Items[1].Spec.DataplaneInsight).To(Equal(v1alpha1.DataplaneInsight{}))
+			Expect(overviews.Items[0].Spec.Dataplane).To(Equal(&dataplanes.Items[0].Spec))
+			Expect(overviews.Items[0].Spec.DataplaneInsight).To(Equal(&insights.Items[0].Spec))
+			Expect(overviews.Items[1].Spec.Dataplane).To(Equal(&dataplanes.Items[1].Spec))
+			Expect(overviews.Items[1].Spec.DataplaneInsight).To(BeNil())
 		})
 	})
 
@@ -52,7 +52,7 @@ var _ = Describe("DataplaneOverview", func() {
 			Items: []*DataplaneOverviewResource{
 				{
 					Spec: v1alpha1.DataplaneOverview{
-						Dataplane: v1alpha1.Dataplane{
+						Dataplane: &v1alpha1.Dataplane{
 							Networking: &v1alpha1.Dataplane_Networking{
 								Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 									{

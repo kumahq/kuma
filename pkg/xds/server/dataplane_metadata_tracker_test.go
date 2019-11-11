@@ -4,8 +4,8 @@ import (
 	"github.com/Kong/kuma/pkg/core/xds"
 	"github.com/Kong/kuma/pkg/xds/server"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/gogo/protobuf/types"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	pstruct "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,12 +15,12 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 	tracker := server.NewDataplaneMetadataTracker()
 
 	req := v2.DiscoveryRequest{
-		Node: &core.Node{
+		Node: &envoy_core.Node{
 			Id: "default.example.pilot",
-			Metadata: &types.Struct{
-				Fields: map[string]*types.Value{
-					"dataplaneTokenPath": &types.Value{
-						Kind: &types.Value_StringValue{
+			Metadata: &pstruct.Struct{
+				Fields: map[string]*pstruct.Value{
+					"dataplaneTokenPath": &pstruct.Value{
+						Kind: &pstruct.Value_StringValue{
 							StringValue: "/tmp/token",
 						},
 					},

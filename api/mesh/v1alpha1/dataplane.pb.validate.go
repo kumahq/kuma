@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 )
 
 // ensure the imports are used
@@ -30,7 +30,7 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = types.DynamicAny{}
+	_ = ptypes.DynamicAny{}
 )
 
 // Validate checks the field values on Dataplane with the rules defined in the
@@ -40,17 +40,12 @@ func (m *Dataplane) Validate() error {
 		return nil
 	}
 
-	{
-		tmp := m.GetNetworking()
-
-		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-			if err := v.Validate(); err != nil {
-				return DataplaneValidationError{
-					field:  "Networking",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
+	if v, ok := interface{}(m.GetNetworking()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return DataplaneValidationError{
+				field:  "Networking",
+				reason: "embedded message failed validation",
+				cause:  err,
 			}
 		}
 	}
@@ -123,17 +118,12 @@ func (m *Dataplane_Networking) Validate() error {
 	for idx, item := range m.GetInbound() {
 		_, _ = idx, item
 
-		{
-			tmp := item
-
-			if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-				if err := v.Validate(); err != nil {
-					return Dataplane_NetworkingValidationError{
-						field:  fmt.Sprintf("Inbound[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					}
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return Dataplane_NetworkingValidationError{
+					field:  fmt.Sprintf("Inbound[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
 				}
 			}
 		}
@@ -143,34 +133,24 @@ func (m *Dataplane_Networking) Validate() error {
 	for idx, item := range m.GetOutbound() {
 		_, _ = idx, item
 
-		{
-			tmp := item
-
-			if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-				if err := v.Validate(); err != nil {
-					return Dataplane_NetworkingValidationError{
-						field:  fmt.Sprintf("Outbound[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					}
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return Dataplane_NetworkingValidationError{
+					field:  fmt.Sprintf("Outbound[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
 				}
 			}
 		}
 
 	}
 
-	{
-		tmp := m.GetTransparentProxying()
-
-		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-			if err := v.Validate(); err != nil {
-				return Dataplane_NetworkingValidationError{
-					field:  "TransparentProxying",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
+	if v, ok := interface{}(m.GetTransparentProxying()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return Dataplane_NetworkingValidationError{
+				field:  "TransparentProxying",
+				reason: "embedded message failed validation",
+				cause:  err,
 			}
 		}
 	}

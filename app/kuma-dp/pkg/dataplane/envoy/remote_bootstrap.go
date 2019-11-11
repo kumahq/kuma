@@ -3,14 +3,15 @@ package envoy
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
 
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 )
 

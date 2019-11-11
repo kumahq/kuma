@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 )
 
 const (
@@ -15,7 +15,7 @@ var _ model.Resource = &SecretResource{}
 
 type SecretResource struct {
 	Meta model.ResourceMeta
-	Spec types.BytesValue
+	Spec wrappers.BytesValue
 }
 
 func (t *SecretResource) GetType() model.ResourceType {
@@ -31,7 +31,7 @@ func (t *SecretResource) GetSpec() model.ResourceSpec {
 	return &t.Spec
 }
 func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
-	value, ok := spec.(*types.BytesValue)
+	value, ok := spec.(*wrappers.BytesValue)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {

@@ -113,7 +113,17 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					},
 				}
 
-				outbound, err := xds_topology.GetOutboundTargets(ctx, dataplane, rt.ResourceManager())
+				// pick a single the most specific route for each outbound interface
+				routes, err := xds_topology.GetRoutes(ctx, dataplane, rt.ResourceManager())
+				if err != nil {
+					return err
+				}
+
+				// create creates a map of selectors to match other dataplanes reachable via given routes
+				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
+
+				// resolve all endpoints that match given selectors
+				outbound, err := xds_topology.GetOutboundTargets(ctx, dataplane, destinations, rt.ResourceManager())
 				if err != nil {
 					return err
 				}
@@ -132,6 +142,8 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					Id:                 proxyID,
 					Dataplane:          dataplane,
 					TrafficPermissions: matchedPermissions,
+					TrafficRoutes:      routes,
+					OutboundSelectors:  destinations,
 					OutboundTargets:    outbound,
 					Logs:               matchedLogs,
 					Metadata:           metadataTracker.Metadata(streamId),

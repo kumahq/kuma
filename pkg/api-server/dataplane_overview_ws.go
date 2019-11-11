@@ -2,13 +2,16 @@ package api_server
 
 import (
 	"context"
+	"strings"
+
+	"github.com/golang/protobuf/proto"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/emicklei/go-restful"
-	"strings"
 )
 
 type overviewWs struct {
@@ -61,8 +64,8 @@ func (r *overviewWs) fetchOverview(ctx context.Context, name string, meshName st
 	return &mesh.DataplaneOverviewResource{
 		Meta: dataplane.Meta,
 		Spec: mesh_proto.DataplaneOverview{
-			Dataplane:        dataplane.Spec,
-			DataplaneInsight: insight.Spec,
+			Dataplane:        proto.Clone(&dataplane.Spec).(*mesh_proto.Dataplane),
+			DataplaneInsight: proto.Clone(&insight.Spec).(*mesh_proto.DataplaneInsight),
 		},
 	}, nil
 }

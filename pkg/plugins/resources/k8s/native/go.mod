@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/Kong/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v0.1.0
-	github.com/gogo/protobuf v1.2.2-0.20190730201129-28a6bbf47e48
+	github.com/golang/protobuf v1.3.2
 	github.com/onsi/ginkgo v1.10.2
 	github.com/onsi/gomega v1.7.0
 	github.com/pkg/errors v0.8.1

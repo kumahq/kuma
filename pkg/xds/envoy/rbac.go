@@ -2,24 +2,25 @@ package envoy
 
 import (
 	"fmt"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_error "github.com/Kong/kuma/pkg/util/error"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 
-	"github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoy_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 )
 
-func createRbacFilter(listenerName string, permissions *mesh_core.TrafficPermissionResourceList) listener.Filter {
+func createRbacFilter(listenerName string, permissions *mesh_core.TrafficPermissionResourceList) envoy_listener.Filter {
 	rbacRule := createRbacRule(listenerName, permissions)
-	rbacMarshalled, err := types.MarshalAny(rbacRule)
+	rbacMarshalled, err := ptypes.MarshalAny(rbacRule)
 	util_error.MustNot(err)
-	return listener.Filter{
+	return envoy_listener.Filter{
 		Name: "envoy.filters.network.rbac", // TODO(gszr): Change to util.RoleBasedAccessControl after go-control-plane update
-		ConfigType: &listener.Filter_TypedConfig{
+		ConfigType: &envoy_listener.Filter_TypedConfig{
 			TypedConfig: rbacMarshalled,
 		},
 	}
@@ -55,8 +56,8 @@ func createPolicy(permission *mesh_core.TrafficPermissionResource) *rbac_config.
 			} else {
 				principal.Identifier = &rbac_config.Principal_Authenticated_{
 					Authenticated: &rbac_config.Principal_Authenticated{
-						PrincipalName: &matcher.StringMatcher{
-							MatchPattern: &matcher.StringMatcher_Exact{
+						PrincipalName: &envoy_matcher.StringMatcher{
+							MatchPattern: &envoy_matcher.StringMatcher_Exact{
 								Exact: fmt.Sprintf("spiffe://%s/%s", permission.Meta.GetMesh(), service),
 							},
 						},

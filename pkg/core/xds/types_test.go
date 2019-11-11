@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
@@ -110,6 +111,119 @@ var _ = Describe("xDS", func() {
 			Expect(key.Namespace).To(Equal("pilot"))
 			Expect(key.Mesh).To(Equal("default"))
 			Expect(key.Name).To(Equal("demo"))
+		})
+	})
+
+	Describe("TagSelectorSet", func() {
+		Describe("Add()", func() {
+			It("should be possible to add the first element to the set", func() {
+				// given
+				var set core_xds.TagSelectorSet
+				// when
+				actual := set.Add(mesh_proto.TagSelector{"service": "redis"})
+				// then
+				Expect(actual).To(HaveLen(1))
+				Expect(actual).To(ConsistOf(mesh_proto.TagSelector{"service": "redis"}))
+			})
+
+			It("should be possible to add the second element to the set", func() {
+				// given
+				set := core_xds.TagSelectorSet{mesh_proto.TagSelector{"service": "redis"}}
+				// when
+				actual := set.Add(mesh_proto.TagSelector{"service": "elastic"})
+				// then
+				Expect(actual).To(HaveLen(2))
+				Expect(actual).To(ConsistOf(mesh_proto.TagSelector{"service": "redis"}, mesh_proto.TagSelector{"service": "elastic"}))
+			})
+
+			It("should not be possible to add the second identical element", func() {
+				// given
+				set := core_xds.TagSelectorSet{mesh_proto.TagSelector{"service": "redis"}}
+				// when
+				actual := set.Add(mesh_proto.TagSelector{"service": "redis"})
+				// then
+				Expect(actual).To(HaveLen(1))
+				Expect(actual).To(ConsistOf(mesh_proto.TagSelector{"service": "redis"}))
+			})
+		})
+	})
+
+	Describe("EndpointList", func() {
+		Describe("Filter()", func() {
+			type testCase struct {
+				endpoints core_xds.EndpointList
+				filter    mesh_proto.TagSelector
+				expected  core_xds.EndpointList
+			}
+			DescribeTable("should filter out endpoints that don't match a given filter",
+				func(given testCase) {
+					// expect
+					Expect(given.endpoints.Filter(given.filter)).To(Equal(given.expected))
+				},
+				Entry("`nil` filter", testCase{
+					endpoints: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+					filter: nil,
+					expected: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+				}),
+				Entry("empty filter", testCase{
+					endpoints: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+					filter: mesh_proto.TagSelector{},
+					expected: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+				}),
+				Entry("empty filter", testCase{
+					endpoints: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v1",
+						},
+					}, {
+						Target: "192.168.0.2",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v2",
+						},
+					}},
+					filter: mesh_proto.TagSelector{
+						"service": "backend",
+						"version": "v2",
+					},
+					expected: core_xds.EndpointList{{
+						Target: "192.168.0.2",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v2",
+						},
+					}},
+				}),
+			)
 		})
 	})
 })

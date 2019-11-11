@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 
 	"github.com/pkg/errors"
 )

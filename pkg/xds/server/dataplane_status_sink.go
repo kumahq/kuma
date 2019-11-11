@@ -2,14 +2,15 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/gogo/protobuf/proto"
 )
 
 type DataplaneInsightSink interface {
@@ -43,7 +44,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 
 	flush := func() {
 		dataplaneId, currentState := s.accessor.GetStatus()
-		if currentState.Equal(lastStoredState) {
+		if proto.Equal(currentState, lastStoredState) {
 			return
 		}
 		copy := proto.Clone(currentState).(*mesh_proto.DiscoverySubscription)

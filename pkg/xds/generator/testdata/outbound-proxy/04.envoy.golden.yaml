@@ -47,11 +47,11 @@ resources:
             socketAddress:
               address: 192.168.0.1
               portValue: 8081
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.2
-              portValue: 8082
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              region: us
+              service: backend
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Listener

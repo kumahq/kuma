@@ -5,11 +5,13 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	core_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/pkg/errors"
 )
 
@@ -50,7 +52,7 @@ func createSigningKey() (system.SecretResource, error) {
 	if err != nil {
 		return res, errors.Wrap(err, "failed to generate rsa key")
 	}
-	res.Spec = types.BytesValue{
+	res.Spec = wrappers.BytesValue{
 		Value: x509.MarshalPKCS1PrivateKey(key),
 	}
 	return res, nil
