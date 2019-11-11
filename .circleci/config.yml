@@ -580,16 +580,16 @@ workflows:
     - test:
         <<: *release_workflow_filters
         requires:
-        - api_check
-        - check
+        - go_cache
     - integration:
         <<: *release_workflow_filters
         requires:
-        - api_check
-        - check
+        - go_cache
     - release:
         <<: *release_workflow_filters
         requires:
+        - api_check
+        - check
         - test
         - integration
     - example_docker-compose:
