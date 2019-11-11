@@ -97,8 +97,8 @@ KUMACTL_DOCKER_IMAGE ?= $(KUMACTL_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 KUMA_INJECTOR_DOCKER_IMAGE ?= $(KUMA_INJECTOR_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 KUMA_TCP_ECHO_DOCKER_IMAGE ?= $(KUMA_TCP_ECHO_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 
-KUMACTL_INSTALL_USE_LOCAL_IMAGES ?= yes
-ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),yes)
+KUMACTL_INSTALL_USE_LOCAL_IMAGES?=true
+ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME)
 else
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
@@ -373,7 +373,7 @@ docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
 docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl
-	docker build -t $(KUMACTL_DOCKER_IMAGE) -f tools/ci/dockerfiles/Dockerfile.kumactl .
+	docker build -t $(KUMACTL_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kumactl .
 
 docker/build/kuma-injector: build/artifacts-linux-amd64/kuma-injector/kuma-injector
 	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-injector .
