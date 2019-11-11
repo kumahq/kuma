@@ -15,12 +15,20 @@ import (
 	"go.uber.org/multierr"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 )
 
+var log = core.Log.WithName("dataplane-token-server")
+
 func SetupServer(rt core_runtime.Runtime) error {
+	if !rt.Config().DataplaneTokenServer.Enabled {
+		log.Info("server disabled")
+		return nil
+	}
 	switch env := rt.Config().Environment; env {
 	case config_core.KubernetesEnvironment:
 		return nil
@@ -42,8 +50,6 @@ func SetupServer(rt core_runtime.Runtime) error {
 	return nil
 }
 
-var log = core.Log.WithName("dataplane-token-server")
-
 type DataplaneTokenServer struct {
 	Config *token_server.DataplaneTokenServerConfig
 	Issuer issuer.DataplaneTokenIssuer
@@ -56,7 +62,7 @@ func (a *DataplaneTokenServer) Start(stop <-chan struct{}) error {
 
 	var httpsServer *http.Server
 	var httpsErrChan chan error
-	if a.Config.TlsEnabled() {
+	if a.Config.Public.Enabled {
 		httpsServer, httpsErrChan = a.startHttpsServer()
 	} else {
 		httpsErrChan = make(chan error)
@@ -114,7 +120,7 @@ func (a *DataplaneTokenServer) startHttpsServer() (*http.Server, chan error) {
 
 	errChan := make(chan error)
 
-	tlsConfig, err := requireClientCerts(a.Config.Public.ClientCertFiles)
+	tlsConfig, err := requireClientCerts(a.Config.Public.ClientCertsDir)
 	if err != nil {
 		errChan <- err
 	}
@@ -140,12 +146,23 @@ func (a *DataplaneTokenServer) startHttpsServer() (*http.Server, chan error) {
 	return server, errChan
 }
 
-func requireClientCerts(certFiles []string) (*tls.Config, error) {
+func requireClientCerts(certsDir string) (*tls.Config, error) {
+	files, err := ioutil.ReadDir(certsDir)
+	if err != nil {
+		return nil, err
+	}
 	clientCertPool := x509.NewCertPool()
-	for _, cert := range certFiles {
-		caCert, err := ioutil.ReadFile(cert)
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		if !strings.HasSuffix(file.Name(), ".pem") {
+			continue
+		}
+		path := filepath.Join(certsDir, file.Name())
+		caCert, err := ioutil.ReadFile(path)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not read certificate %s", cert)
+			return nil, errors.Wrapf(err, "could not read certificate %s", path)
 		}
 		clientCertPool.AppendCertsFromPEM(caCert)
 	}

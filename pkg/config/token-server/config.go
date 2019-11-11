@@ -7,8 +7,9 @@ import (
 
 func DefaultDataplaneTokenServerConfig() *DataplaneTokenServerConfig {
 	return &DataplaneTokenServerConfig{
-		Local:  DefaultLocalDataplaneTokenServerConfig(),
-		Public: DefaultPublicDataplaneTokenServerConfig(),
+		Enabled: true,
+		Local:   DefaultLocalDataplaneTokenServerConfig(),
+		Public:  DefaultPublicDataplaneTokenServerConfig(),
 	}
 }
 
@@ -16,6 +17,8 @@ var _ config.Config = &DataplaneTokenServerConfig{}
 
 // Dataplane Token Server configuration
 type DataplaneTokenServerConfig struct {
+	// If true then Dataplane Token Server and token verification is enabled
+	Enabled bool `yaml:"enabled" envconfig:"kuma_dataplane_token_server_enabled"`
 	// Local configuration of server that is available only on localhost
 	Local *LocalDataplaneTokenServerConfig `yaml:"local"`
 	// Public configuration of server that is available on public interface
@@ -28,6 +31,9 @@ func (i *DataplaneTokenServerConfig) Validate() error {
 	}
 	if err := i.Public.Validate(); err != nil {
 		return errors.Wrap(err, "Public validation failed")
+	}
+	if !i.Enabled && i.Public.Enabled {
+		return errors.New("Public.Enabled cannot be true when server is disabled.")
 	}
 	return nil
 }
@@ -55,6 +61,8 @@ func DefaultLocalDataplaneTokenServerConfig() *LocalDataplaneTokenServerConfig {
 
 // Dataplane Token Server configuration of server that is available on public interface
 type PublicDataplaneTokenServerConfig struct {
+	// If true then Dataplane Token Server is exposed on public interface
+	Enabled bool `yaml:"enabled" envconfig:"kuma_dataplane_token_server_public_enabled"`
 	// Interface on which the server will be exposed
 	Interface string `yaml:"interface" envconfig:"kuma_dataplane_token_server_public_interface"`
 	// Port on which the server will be exposed. If not specified (0) then port from local configuration will be used
@@ -63,19 +71,20 @@ type PublicDataplaneTokenServerConfig struct {
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_dataplane_token_server_public_tls_cert_file"`
 	// Path to TLS key file
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_dataplane_token_server_public_tls_key_file"`
-	// Paths to authorized client certificates
-	ClientCertFiles []string `yaml:"clientCertFiles" envconfig:"kuma_dataplane_token_server_public_client_cert_files"`
+	// Directory of authorized client certificates
+	ClientCertsDir string `yaml:"clientCertsDir" envconfig:"kuma_dataplane_token_server_public_client_certs_dir"`
 }
 
 var _ config.Config = &PublicDataplaneTokenServerConfig{}
 
 func DefaultPublicDataplaneTokenServerConfig() *PublicDataplaneTokenServerConfig {
 	return &PublicDataplaneTokenServerConfig{
-		Interface:       "",
-		Port:            0,
-		TlsCertFile:     "",
-		TlsKeyFile:      "",
-		ClientCertFiles: nil,
+		Enabled:        false,
+		Interface:      "",
+		Port:           0,
+		TlsCertFile:    "",
+		TlsKeyFile:     "",
+		ClientCertsDir: "",
 	}
 }
 
@@ -83,18 +92,16 @@ func (p *PublicDataplaneTokenServerConfig) Validate() error {
 	if p.Port > 65535 {
 		return errors.New("Port must be in the range [0, 65535]")
 	}
-	if p.TlsCertFile == "" && p.TlsKeyFile != "" {
-		return errors.New("TlsCertFile cannot be empty if TlsKeyFile has been set")
-	}
-	if p.TlsKeyFile == "" && p.TlsCertFile != "" {
-		return errors.New("TlsKeyFile cannot be empty if TlsCertFile has been set")
-	}
-	if p.Interface != "" && p.TlsCertFile == "" {
-		return errors.New("TlsCertFile and TlsKeyFile have to be set when PublicInterface is specified")
+	if p.Enabled {
+		if p.TlsCertFile == "" {
+			return errors.New("TlsCertFile cannot be empty if server is enabled")
+		}
+		if p.TlsKeyFile == "" {
+			return errors.New("TlsKeyFile cannot be empty if server is enabled")
+		}
+		if p.Interface == "" {
+			return errors.New("Interface cannot be empty if server is enabled")
+		}
 	}
 	return nil
-}
-
-func (i *DataplaneTokenServerConfig) TlsEnabled() bool {
-	return i.Public.Interface != ""
 }

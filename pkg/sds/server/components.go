@@ -42,11 +42,15 @@ func NewKubeAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, erro
 }
 
 func NewUniversalAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, error) {
+	dpResolver := DefaultDataplaneResolver(rt.ResourceManager())
+	if !rt.Config().DataplaneTokenServer.Enabled {
+		return universal_sds_auth.NewNoopAuthenticator(dpResolver), nil
+	}
 	issuer, err := builtin.NewDataplaneTokenIssuer(rt)
 	if err != nil {
 		return nil, err
 	}
-	return universal_sds_auth.NewAuthenticator(issuer, DefaultDataplaneResolver(rt.ResourceManager())), nil
+	return universal_sds_auth.NewAuthenticator(issuer, dpResolver), nil
 }
 
 func DefaultAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, error) {
