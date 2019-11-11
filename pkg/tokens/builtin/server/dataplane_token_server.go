@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
@@ -153,6 +154,9 @@ func requireClientCerts(certsDir string) (*tls.Config, error) {
 	clientCertPool := x509.NewCertPool()
 	for _, file := range files {
 		if file.IsDir() {
+			continue
+		}
+		if !strings.HasSuffix(file.Name(), ".pem") {
 			continue
 		}
 		path := filepath.Join(certsDir, file.Name())
