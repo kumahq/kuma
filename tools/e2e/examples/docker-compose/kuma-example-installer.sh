@@ -53,8 +53,7 @@ echo "'${KUMA_EXAMPLE_CLIENT_HOSTNAME}' has the following IP address: ${KUMA_EXA
 # Configure `kumactl`
 #
 
-kumactl config control-planes remove --name universal 2>/dev/null || true # TODO(yskopets): eventually, replace `remove` command with `add --overwrite`
-kumactl config control-planes add --name universal --address ${KUMA_CONTROL_PLANE_URL}
+kumactl config control-planes add --name universal --address ${KUMA_CONTROL_PLANE_URL} --dataplane-token-client-cert /certs/client/cert.pem --dataplane-token-client-key /certs/client/cert.key --overwrite
 
 #
 # Create Dataplane for `kuma-example-app` service
@@ -71,6 +70,12 @@ networking:
   --var IP=${KUMA_EXAMPLE_APP_IP_ADDRESS} \
   --var PUBLIC_PORT=${KUMA_EXAMPLE_APP_PUBLIC_PORT} \
   --var LOCAL_PORT=${KUMA_EXAMPLE_APP_LOCAL_PORT}
+
+#
+# Create token for `kuma-example-app`
+#
+
+kumactl generate dataplane-token --dataplane=kuma-example-app > /token-example-app/token
 
 #
 # Create Dataplane for `kuma-example-client` service
@@ -90,3 +95,9 @@ networking:
   --var IP=${KUMA_EXAMPLE_CLIENT_IP_ADDRESS} \
   --var PUBLIC_PORT=${KUMA_EXAMPLE_CLIENT_PUBLIC_PORT} \
   --var LOCAL_PORT=${KUMA_EXAMPLE_CLIENT_LOCAL_PORT}
+
+#
+# Create token for `kuma-example-client`
+#
+
+kumactl generate dataplane-token --dataplane=kuma-example-client > /token-example-client/token

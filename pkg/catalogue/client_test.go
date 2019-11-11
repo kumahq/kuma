@@ -39,6 +39,7 @@ var _ = Describe("Catalogue client", func() {
 		// setup
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
+		defer server.Close()
 		mux.HandleFunc("/catalogue", func(writer http.ResponseWriter, req *http.Request) {
 			defer GinkgoRecover()
 			cat := catalogue.FromConfig(catCfg)
@@ -65,6 +66,7 @@ var _ = Describe("Catalogue client", func() {
 	It("should throw an error on invalid status code", func() {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
+		defer server.Close()
 		mux.HandleFunc("/catalogue", func(writer http.ResponseWriter, req *http.Request) {
 			writer.WriteHeader(500)
 		})

@@ -36,6 +36,21 @@ var _ = Describe("run", func() {
 	var backupBootstrapGenerator envoy.BootstrapConfigFactoryFunc
 	var backupCatalogueClientFactory CatalogueClientFactory
 
+	catalogueDataplaneTokenServerEnabledFn := func(address string) (client catalogue_client.CatalogueClient, e error) {
+		return &test_catalogue.StaticCatalogueClient{
+			Resp: catalogue.Catalogue{
+				Apis: catalogue.Apis{
+					Bootstrap: catalogue.BootstrapApi{
+						Url: "http://localhost:5681",
+					},
+					DataplaneToken: catalogue.DataplaneTokenApi{
+						LocalUrl: "http://localhost:5683",
+					},
+				},
+			},
+		}, nil
+	}
+
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
@@ -258,5 +273,42 @@ var _ = Describe("run", func() {
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
 		}),
+		Entry("can be launched with args and dataplane token", func() testCase {
+			catalogueClientFactory = catalogueDataplaneTokenServerEnabledFn
+			return testCase{
+				envVars: map[string]string{},
+				args: []string{
+					"--cp-address", "http://localhost:1234",
+					"--name", "example",
+					"--admin-port", fmt.Sprintf("%d", port),
+					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					"--dataplane-token-file", filepath.Join("testdata", "token"),
+					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
+				},
+				expectedFile: "",
+			}
+		}),
 	)
+
+	It("should fail when dataplane token server is enabled but token is not provided", func() {
+		// setup
+		catalogueClientFactory = catalogueDataplaneTokenServerEnabledFn
+
+		// given
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{
+			"run",
+			"--cp-address", "http://localhost:1234",
+			"--name", "example",
+			"--admin-port", fmt.Sprintf("%d", port),
+			"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+		})
+
+		// when
+		err := cmd.Execute()
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP"))
+	})
 })

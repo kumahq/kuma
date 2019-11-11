@@ -134,6 +134,9 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 	if err != nil {
 		return nil, err
 	}
+	if !components.Apis.DataplaneToken.Enabled() {
+		return nil, errors.New("Enable the server to be able to generate tokens.")
+	}
 	ctx, err := rc.CurrentContext()
 	if err != nil {
 		return nil, err
