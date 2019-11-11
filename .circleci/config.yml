@@ -371,6 +371,10 @@ jobs:
   example_docker-compose:
     executor: vm
     parameters:
+      use_local_kuma_images:
+        description: Use local Docker images from CircleCI workspace instead of downloading ones from bintray.io.
+        type: boolean
+        default: true
       docker_images:
         description: Docker images to use
         type: string
@@ -380,9 +384,12 @@ jobs:
     # Mount files from the upstream jobs
     - attach_workspace:
         at: build
-    - run:
-        name: Load Docker images
-        command: make load/example/docker-compose
+    - when:
+        condition: << parameters.use_local_kuma_images >>
+        steps:
+        - run:
+            name: Load Docker images
+            command: make load/example/docker-compose
     - run:
         name: Start Docker Compose setup
         command: make deploy/example/docker-compose DOCKER_COMPOSE_OPTIONS=--detach << parameters.docker_images >>
@@ -404,10 +411,13 @@ jobs:
         type: string
         default: "v1.15.0"
       use_local_kuma_images:
-        description: Use local Docker images instead of bintray.io. Must be one of "yes", "no".
-        type: enum
-        enum: ["yes", "no"]
-        default: "no"
+        description: Use local Docker images from CircleCI workspace instead of downloading ones from bintray.io.
+        type: boolean
+        default: true
+      docker_images:
+        description: Docker images to use
+        type: string
+        default: ""
     steps:
     - checkout
     # Mount files from the upstream jobs
@@ -422,9 +432,12 @@ jobs:
     - run:
         name: Start Minikube
         command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none --kubernetes-version=<< parameters.kubernetes_version >>
-    - run:
-        name: Load Docker images into Minikube
-        command: make load/example/minikube
+    - when:
+        condition: << parameters.use_local_kuma_images >>
+        steps:
+        - run:
+            name: Load Docker images into Minikube
+            command: make load/example/minikube
     - run:
         name: Deploy Kuma demo
         command: make deploy/example/minikube KUMACTL_INSTALL_USE_LOCAL_IMAGES=<< parameters.use_local_kuma_images >>
@@ -451,7 +464,7 @@ jobs:
         command: make verify/example/minikube/mtls
     - run:
         name: Verify kumactl workflow
-        command: make kumactl/example/minikube
+        command: make kumactl/example/minikube << parameters.docker_images >>
 
   release:
     executor: golang
@@ -526,34 +539,36 @@ workflows:
         name: docker-compose
         requires:
         - images
+        # custom parameters
+        use_local_kuma_images: true
     - example_minikube:
         name: minikube_v1_13_0
         requires:
         - images
         # custom parameters
         kubernetes_version: v1.13.0
-        use_local_kuma_images: "yes"
+        use_local_kuma_images: true
     - example_minikube:
         name: minikube_v1_14_0
         requires:
         - images
         # custom parameters
         kubernetes_version: v1.14.0
-        use_local_kuma_images: "yes"
+        use_local_kuma_images: true
     - example_minikube:
         name: minikube_v1_15_0
         requires:
         - images
         # custom parameters
         kubernetes_version: v1.15.0
-        use_local_kuma_images: "yes"
+        use_local_kuma_images: true
     - example_minikube:
         name: minikube_v1_16_0
         requires:
         - images
         # custom parameters
         kubernetes_version: v1.16.0
-        use_local_kuma_images: "yes"
+        use_local_kuma_images: true
 
   kuma-release:
     jobs:
@@ -587,7 +602,9 @@ workflows:
         requires:
         - release
         # custom parameters
-        docker_images: KUMA_CP_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kuma-cp KUMA_DP_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kuma-dp
+        # docker images for a release build must be downloaded from a public Docker registry
+        use_local_kuma_images: false
+        docker_images: KUMA_CP_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kuma-cp KUMA_DP_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kuma-dp KUMACTL_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kumactl
     - example_minikube:
         <<: *release_workflow_filters
         name: minikube_v1_13_0
@@ -595,6 +612,9 @@ workflows:
         - release
         # custom parameters
         kubernetes_version: v1.13.0
+        # docker images for a release build must be downloaded from a public Docker registry
+        use_local_kuma_images: false
+        docker_images: KUMACTL_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kumactl
     - example_minikube:
         <<: *release_workflow_filters
         name: minikube_v1_14_0
@@ -602,6 +622,9 @@ workflows:
         - release
         # custom parameters
         kubernetes_version: v1.14.0
+        # docker images for a release build must be downloaded from a public Docker registry
+        use_local_kuma_images: false
+        docker_images: KUMACTL_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kumactl
     - example_minikube:
         <<: *release_workflow_filters
         name: minikube_v1_15_0
@@ -609,6 +632,9 @@ workflows:
         - release
         # custom parameters
         kubernetes_version: v1.15.0
+        # docker images for a release build must be downloaded from a public Docker registry
+        use_local_kuma_images: false
+        docker_images: KUMACTL_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kumactl
     - example_minikube:
         <<: *release_workflow_filters
         name: minikube_v1_16_0
@@ -616,3 +642,6 @@ workflows:
         - release
         # custom parameters
         kubernetes_version: v1.16.0
+        # docker images for a release build must be downloaded from a public Docker registry
+        use_local_kuma_images: false
+        docker_images: KUMACTL_DOCKER_IMAGE_NAME=kong-docker-kuma-docker.bintray.io/kumactl
