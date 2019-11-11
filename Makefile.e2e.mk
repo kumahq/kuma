@@ -12,6 +12,20 @@ DOCKER_COMPOSE_OPTIONS ?=
 # Re-usable snippets
 #
 
+define pull_docker_images
+	if [ "$(KUMACTL_INSTALL_USE_LOCAL_IMAGES)" != "true" ]; then \
+		echo "Pulling Docker images ..." \
+		&& set -x \
+		&& docker pull $(KUMA_CP_DOCKER_IMAGE) \
+		&& docker pull $(KUMA_DP_DOCKER_IMAGE) \
+		&& docker pull $(KUMA_INJECTOR_DOCKER_IMAGE) \
+		&& docker pull $(KUMA_TCP_ECHO_DOCKER_IMAGE) \
+		&& docker pull $(KUMACTL_DOCKER_IMAGE) \
+		&& set +x \
+		&& echo "Pulling is now complete" ; \
+	fi
+endef
+
 define wait_for_example_client
 	sh -c ' \
 		for i in `seq 1 60`; do \
@@ -97,14 +111,16 @@ build/example/docker-compose: images ## Docker Compose: Build Docker images of t
 load/example/docker-compose: docker/load ## Docker Compose: Load Docker images
 
 deploy/example/docker-compose: ## Docker Compose: Run example setup
-	KUMA_CP_DOCKER_IMAGE=$(KUMA_CP_DOCKER_IMAGE) KUMA_DP_DOCKER_IMAGE=$(KUMA_DP_DOCKER_IMAGE) KUMACTL_DOCKER_IMAGE=$(KUMACTL_DOCKER_IMAGE) \
-		docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
-			up $(DOCKER_COMPOSE_OPTIONS)
+	$(call pull_docker_images)
+	if [ "$(KUMACTL_INSTALL_USE_LOCAL_IMAGES)" != "true" ]; then \
+		docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml pull ; \
+	fi
+	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
+		up $(DOCKER_COMPOSE_OPTIONS)
 
 undeploy/example/docker-compose: ## Docker Compose: Remove example setup
-	KUMA_CP_DOCKER_IMAGE=$(KUMA_CP_DOCKER_IMAGE) KUMA_DP_DOCKER_IMAGE=$(KUMA_DP_DOCKER_IMAGE) KUMACTL_DOCKER_IMAGE=$(KUMACTL_DOCKER_IMAGE) \
-		docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
-			down
+	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
+		down
 
 wait/example/docker-compose: ## Docker Compose: Wait for example setup to get ready
 	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
@@ -140,7 +156,8 @@ load/example/minikube: ## Minikube: Load Docker images into Minikube
 	eval $$(minikube docker-env) && $(MAKE) docker/load
 
 deploy/example/minikube: ## Minikube: Deploy example setup
-	docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | kubectl apply -f -
+	eval $$(minikube docker-env) && $(call pull_docker_images)
+	eval $$(minikube docker-env) && docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
 	kubectl apply -f tools/e2e/examples/minikube/kuma-demo/
