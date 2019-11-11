@@ -186,6 +186,7 @@ var _ = Describe("kumactl apply", func() {
 		// setup http server
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
+		defer server.Close()
 		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
 		testurl := fmt.Sprintf("http://localhost:%v/testdata/apply-dataplane.yaml", port)
 		Expect(err).ToNot(HaveOccurred())

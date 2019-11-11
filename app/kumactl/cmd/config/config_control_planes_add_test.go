@@ -86,7 +86,8 @@ var _ = Describe("kumactl config control-planes add", func() {
 
 		It("should fail to add a new Control Plane with duplicate name", func() {
 			// setup
-			port := setupCpIndexServer()
+			server, port := setupCpIndexServer()
+			defer server.Close()
 
 			// given
 			rootCmd.SetArgs([]string{"--config-file", filepath.Join("testdata", "config-control-planes-add.01.golden.yaml"),
@@ -112,9 +113,10 @@ var _ = Describe("kumactl config control-planes add", func() {
 				config.DefaultApiServerTimeout = currentTimeout
 			}()
 			timeout := config.DefaultApiServerTimeout * 2 // so we are sure we exceed the timeout
-			port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
+			server, port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
 				time.Sleep(timeout)
 			})
+			defer server.Close()
 
 			// given
 			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
@@ -134,10 +136,11 @@ var _ = Describe("kumactl config control-planes add", func() {
 
 		It("should fail on invalid api server", func() {
 			// setup
-			port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
+			server, port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
 				_, err := writer.Write([]byte("{}"))
 				Expect(err).ToNot(HaveOccurred())
 			})
+			defer server.Close()
 
 			// given
 			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
@@ -174,7 +177,8 @@ var _ = Describe("kumactl config control-planes add", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// setup cp index server for validation to pass
-				port := setupCpIndexServer()
+				server, port := setupCpIndexServer()
+				defer server.Close()
 
 				args := []string{"--config-file", configFile.Name(),
 					"config", "control-planes", "add",
@@ -242,7 +246,7 @@ switched active Control Plane to "example"
 	})
 })
 
-func setupCpIndexServer() int {
+func setupCpIndexServer() (*httptest.Server, int) {
 	return setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
 		response := types.IndexResponse{
 			Tagline: types.TaglineKuma,
@@ -255,7 +259,7 @@ func setupCpIndexServer() int {
 	})
 }
 
-func setupCpServer(fn func(http.ResponseWriter, *http.Request)) int {
+func setupCpServer(fn func(http.ResponseWriter, *http.Request)) (*httptest.Server, int) {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 	mux.HandleFunc("/", func(writer http.ResponseWriter, req *http.Request) {
@@ -264,5 +268,5 @@ func setupCpServer(fn func(http.ResponseWriter, *http.Request)) int {
 	})
 	port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
 	Expect(err).ToNot(HaveOccurred())
-	return port
+	return server, port
 }

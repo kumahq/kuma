@@ -115,6 +115,7 @@ var _ = Describe("Tokens Client", func() {
 		// given
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
+		defer server.Close()
 		mux.HandleFunc("/tokens", func(writer http.ResponseWriter, req *http.Request) {
 			writer.WriteHeader(500)
 		})

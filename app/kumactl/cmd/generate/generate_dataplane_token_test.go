@@ -123,6 +123,6 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		Expect(err).To(HaveOccurred())
 
 		// and
-		Expect(buf.String()).To(Equal("Error: failed to create dataplane token client: Dataplane Token Server in Kuma CP is disabled. Either enable the server or run Kuma DP without token.\n"))
+		Expect(buf.String()).To(Equal("Error: failed to create dataplane token client: Enable the server to be able to generate tokens.\n"))
 	})
 })

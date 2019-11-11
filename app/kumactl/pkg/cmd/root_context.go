@@ -135,7 +135,7 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 		return nil, err
 	}
 	if !components.Apis.DataplaneToken.Enabled() {
-		return nil, errors.New("Dataplane Token Server in Kuma CP is disabled. Either enable the server or run Kuma DP without token.")
+		return nil, errors.New("Enable the server to be able to generate tokens.")
 	}
 	ctx, err := rc.CurrentContext()
 	if err != nil {

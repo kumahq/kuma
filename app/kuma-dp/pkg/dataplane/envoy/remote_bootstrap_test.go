@@ -20,6 +20,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		// given
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
+		defer server.Close()
 		mux.HandleFunc("/bootstrap", func(writer http.ResponseWriter, req *http.Request) {
 			defer GinkgoRecover()
 			body, err := ioutil.ReadAll(req.Body)
