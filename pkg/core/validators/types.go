@@ -2,15 +2,16 @@ package validators
 
 import (
 	"fmt"
+	"strings"
 )
 
 type ValidationError struct {
-	Violations []Violation
+	Violations []Violation `json:"violations"`
 }
 
 type Violation struct {
-	Field   string
-	Message string
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
 func (v *ValidationError) Error() string {
@@ -36,12 +37,20 @@ func (v *ValidationError) OrNil() error {
 	return nil
 }
 
+func (v *ValidationError) AddViolationAt(path PathBuilder, message string) {
+	v.AddViolation(path.String(), message)
+}
+
 func (v *ValidationError) AddViolation(field string, message string) {
 	violation := Violation{
 		Field:   field,
 		Message: message,
 	}
 	v.Violations = append(v.Violations, violation)
+}
+
+func (v *ValidationError) Add(err ValidationError) {
+	v.AddError("", err)
 }
 
 func (v *ValidationError) AddError(rootField string, validationErr ValidationError) {
@@ -61,4 +70,26 @@ func (v *ValidationError) AddError(rootField string, validationErr ValidationErr
 func IsValidationError(err error) bool {
 	_, ok := err.(*ValidationError)
 	return ok
+}
+
+type PathBuilder []string
+
+func RootedAt(name string) PathBuilder {
+	return PathBuilder{name}
+}
+
+func (p PathBuilder) Field(name string) PathBuilder {
+	return append(p, fmt.Sprintf(".%s", name))
+}
+
+func (p PathBuilder) Index(index int) PathBuilder {
+	return append(p, fmt.Sprintf("[%d]", index))
+}
+
+func (p PathBuilder) Key(key string) PathBuilder {
+	return append(p, fmt.Sprintf("[%q]", key))
+}
+
+func (p PathBuilder) String() string {
+	return strings.Join(p, "")
 }

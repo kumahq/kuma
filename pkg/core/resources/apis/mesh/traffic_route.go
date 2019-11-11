@@ -40,9 +40,6 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
-func (t *TrafficRouteResource) Validate() error {
-	return nil
-}
 
 var _ model.ResourceList = &TrafficRouteResourceList{}
 
