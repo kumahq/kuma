@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
@@ -110,10 +112,13 @@ func formatEntry(entry *envoy_data_accesslog_v2.HTTPAccessLogEntry, format strin
 	}
 	connectionTime := int64(0)
 	if entry.GetCommonProperties().GetTimeToLastDownstreamTxByte() != nil {
-		connectionTime = int64(*entry.GetCommonProperties().GetTimeToLastDownstreamTxByte() / time.Millisecond)
+		t, err := ptypes.Duration(entry.GetCommonProperties().GetTimeToLastDownstreamTxByte())
+		if err == nil {
+			connectionTime = int64(t / time.Millisecond)
+		}
 	}
 	placeholders := map[string]string{
-		"%START_TIME%":                entry.GetCommonProperties().GetStartTime().Format(time.RFC3339),
+		"%START_TIME%":                util_proto.TimestampString(entry.GetCommonProperties().GetStartTime(), time.RFC3339),
 		"%DOWNSTREAM_REMOTE_ADDRESS%": addrToString(entry.GetCommonProperties().GetDownstreamRemoteAddress()),
 		"%DOWNSTREAM_LOCAL_ADDRESS%":  addrToString(entry.GetCommonProperties().GetDownstreamLocalAddress()),
 		"%UPSTREAM_HOST%":             addrToString(entry.GetCommonProperties().GetUpstreamRemoteAddress()),

@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/envoyproxy/go-control-plane/pkg/test/resource"
 
@@ -35,7 +35,7 @@ import (
 type hasher struct {
 }
 
-func (h hasher) ID(node *core.Node) string {
+func (h hasher) ID(node *envoy_core.Node) string {
 	if node == nil {
 		return "unknown"
 	}
@@ -172,7 +172,7 @@ const (
 )
 
 var (
-	node = &core.Node{
+	node = &envoy_core.Node{
 		Id:      "test-id",
 		Cluster: "test-cluster",
 	}
@@ -474,7 +474,7 @@ func TestAggregatedHandlers(t *testing.T) {
 
 func TestClusterWarming(t *testing.T) {
 	config := cache.NewSnapshotCache(true, hasher{}, nil)
-	err := config.SetSnapshot(node.Id, cache.NewSnapshot("1", []cache.Resource{endpoint}, nil, nil, nil))
+	err := config.SetSnapshot(node.Id, cache.NewSnapshot("1", []cache.Resource{endpoint}, nil, nil, nil, nil))
 	if err != nil {
 		t.Fatalf("got %v, want no error", err)
 	}

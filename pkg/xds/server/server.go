@@ -21,13 +21,14 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	gcp_server "github.com/envoyproxy/go-control-plane/pkg/server"
@@ -60,18 +61,21 @@ type watches struct {
 	routes    chan cache.Response
 	listeners chan cache.Response
 	secrets   chan cache.Response
+	runtimes  chan cache.Response
 
 	endpointCancel func()
 	clusterCancel  func()
 	routeCancel    func()
 	listenerCancel func()
 	secretCancel   func()
+	runtimeCancel  func()
 
 	endpointNonce string
 	clusterNonce  string
 	routeNonce    string
 	listenerNonce string
 	secretNonce   string
+	runtimeNonce  string
 
 	endpointNonceAcked bool
 }
@@ -93,21 +97,28 @@ func (values watches) Cancel() {
 	if values.secretCancel != nil {
 		values.secretCancel()
 	}
+	if values.runtimeCancel != nil {
+		values.runtimeCancel()
+	}
 }
 
 func createResponse(resp *cache.Response, typeURL string) (*v2.DiscoveryResponse, error) {
 	if resp == nil {
 		return nil, errors.New("missing response")
 	}
-	resources := make([]*types.Any, len(resp.Resources))
+	resources := make([]*any.Any, len(resp.Resources))
 	for i := 0; i < len(resp.Resources); i++ {
-		data, err := proto.Marshal(resp.Resources[i])
+		// Envoy relies on serialized protobuf bytes for detecting changes to the resources.
+		// This requires deterministic serialization.
+		b := proto.NewBuffer(nil)
+		b.SetDeterministic(true)
+		err := b.Marshal(resp.Resources[i])
 		if err != nil {
 			return nil, err
 		}
-		resources[i] = &types.Any{
+		resources[i] = &any.Any{
 			TypeUrl: typeURL,
-			Value:   data,
+			Value:   b.Bytes(),
 		}
 	}
 	out := &v2.DiscoveryResponse{
@@ -183,6 +194,9 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 		return
 	}
 
+	// node may only be set on the first discovery request
+	var node = &envoy_core.Node{}
+
 	for {
 		select {
 		// config watcher can send the requested resources types in any order
@@ -237,6 +251,16 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			}
 			values.secretNonce = nonce
 
+		case resp, more := <-values.runtimes:
+			if !more {
+				return status.Errorf(codes.Unavailable, "runtimes watch failed")
+			}
+			nonce, err := send(resp, cache.RuntimeType)
+			if err != nil {
+				return err
+			}
+			values.runtimeNonce = nonce
+
 		case req, more := <-reqCh:
 			// input stream ended or errored out
 			if !more {
@@ -244,6 +268,13 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			}
 			if req == nil {
 				return status.Errorf(codes.Unavailable, "empty request")
+			}
+
+			// node field in discovery request is delta-compressed
+			if req.Node != nil {
+				node = req.Node
+			} else {
+				req.Node = node
 			}
 
 			// nonces can be reused across streams; we verify nonce only if nonce is not initialized
@@ -303,6 +334,11 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 					values.secretCancel()
 				}
 				values.secrets, values.secretCancel = s.cache.CreateWatch(*req)
+			case req.TypeUrl == cache.RuntimeType && (values.runtimeNonce == "" || values.runtimeNonce == nonce):
+				if values.runtimeCancel != nil {
+					values.runtimeCancel()
+				}
+				values.runtimes, values.runtimeCancel = s.cache.CreateWatch(*req)
 			}
 		}
 	}
@@ -358,6 +394,10 @@ func (s *server) StreamListeners(stream v2.ListenerDiscoveryService_StreamListen
 
 func (s *server) StreamSecrets(stream discovery.SecretDiscoveryService_StreamSecretsServer) error {
 	return s.handler(stream, cache.SecretType)
+}
+
+func (s *server) StreamRuntime(stream discovery.RuntimeDiscoveryService_StreamRuntimeServer) error {
+	return s.handler(stream, cache.RuntimeType)
 }
 
 // Fetch is the universal fetch method.
@@ -418,6 +458,14 @@ func (s *server) FetchSecrets(ctx context.Context, req *v2.DiscoveryRequest) (*v
 	return s.Fetch(ctx, req)
 }
 
+func (s *server) FetchRuntime(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.Unavailable, "empty request")
+	}
+	req.TypeUrl = cache.RuntimeType
+	return s.Fetch(ctx, req)
+}
+
 func (s *server) DeltaAggregatedResources(_ discovery.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
 	return errors.New("not implemented")
 }
@@ -439,5 +487,9 @@ func (s *server) DeltaListeners(_ v2.ListenerDiscoveryService_DeltaListenersServ
 }
 
 func (s *server) DeltaSecrets(_ discovery.SecretDiscoveryService_DeltaSecretsServer) error {
+	return errors.New("not implemented")
+}
+
+func (s *server) DeltaRuntime(_ discovery.RuntimeDiscoveryService_DeltaRuntimeServer) error {
 	return errors.New("not implemented")
 }

@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/pkg/errors"
 
 	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
@@ -73,7 +74,7 @@ func (m *builtinCaManager) Create(ctx context.Context, mesh string) error {
 		return errors.Wrapf(err, "failed to serialize a Root CA cert for Mesh %q", mesh)
 	}
 	builtinCaSecret := &core_system.SecretResource{
-		Spec: types.BytesValue{
+		Spec: wrappers.BytesValue{
 			Value: data,
 		},
 	}

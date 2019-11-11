@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -35,37 +35,37 @@ var _ = Describe("global TypeRegistry", func() {
 				Expect(obj.GetObjectKind().GroupVersionKind()).To(Equal(expectedAPIVersion.WithKind(given.expectedKind)))
 			},
 			Entry("Mesh", testCase{
-				inputType:    &proto.Mesh{},
+				inputType:    &mesh_proto.Mesh{},
 				expectedType: &Mesh{},
 				expectedKind: "Mesh",
 			}),
 			Entry("Dataplane", testCase{
-				inputType:    &proto.Dataplane{},
+				inputType:    &mesh_proto.Dataplane{},
 				expectedType: &Dataplane{},
 				expectedKind: "Dataplane",
 			}),
 			Entry("DataplaneInsight", testCase{
-				inputType:    &proto.DataplaneInsight{},
+				inputType:    &mesh_proto.DataplaneInsight{},
 				expectedType: &DataplaneInsight{},
 				expectedKind: "DataplaneInsight",
 			}),
 			Entry("ProxyTemplate", testCase{
-				inputType:    &proto.ProxyTemplate{},
+				inputType:    &mesh_proto.ProxyTemplate{},
 				expectedType: &ProxyTemplate{},
 				expectedKind: "ProxyTemplate",
 			}),
 			Entry("TrafficPermission", testCase{
-				inputType:    &proto.TrafficPermission{},
+				inputType:    &mesh_proto.TrafficPermission{},
 				expectedType: &TrafficPermission{},
 				expectedKind: "TrafficPermission",
 			}),
 			Entry("TrafficLog", testCase{
-				inputType:    &proto.TrafficLog{},
+				inputType:    &mesh_proto.TrafficLog{},
 				expectedType: &TrafficLog{},
 				expectedKind: "TrafficLog",
 			}),
 			Entry("TrafficRoute", testCase{
-				inputType:    &proto.TrafficRoute{},
+				inputType:    &mesh_proto.TrafficRoute{},
 				expectedType: &TrafficRoute{},
 				expectedKind: "TrafficRoute",
 			}),
@@ -92,37 +92,37 @@ var _ = Describe("global TypeRegistry", func() {
 				Expect(obj.GetObjectKind().GroupVersionKind()).To(Equal(GroupVersion.WithKind(given.expectedKind)))
 			},
 			Entry("MeshList", testCase{
-				inputType:    &proto.Mesh{},
+				inputType:    &mesh_proto.Mesh{},
 				expectedType: &MeshList{},
 				expectedKind: "MeshList",
 			}),
 			Entry("DataplaneList", testCase{
-				inputType:    &proto.Dataplane{},
+				inputType:    &mesh_proto.Dataplane{},
 				expectedType: &DataplaneList{},
 				expectedKind: "DataplaneList",
 			}),
 			Entry("DataplaneInsightList", testCase{
-				inputType:    &proto.DataplaneInsight{},
+				inputType:    &mesh_proto.DataplaneInsight{},
 				expectedType: &DataplaneInsightList{},
 				expectedKind: "DataplaneInsightList",
 			}),
 			Entry("ProxyTemplateList", testCase{
-				inputType:    &proto.ProxyTemplate{},
+				inputType:    &mesh_proto.ProxyTemplate{},
 				expectedType: &ProxyTemplateList{},
 				expectedKind: "ProxyTemplateList",
 			}),
 			Entry("TrafficPermissionList", testCase{
-				inputType:    &proto.TrafficPermission{},
+				inputType:    &mesh_proto.TrafficPermission{},
 				expectedType: &TrafficPermissionList{},
 				expectedKind: "TrafficPermissionList",
 			}),
 			Entry("TrafficLogList", testCase{
-				inputType:    &proto.TrafficLog{},
+				inputType:    &mesh_proto.TrafficLog{},
 				expectedType: &TrafficLogList{},
 				expectedKind: "TrafficLogList",
 			}),
 			Entry("TrafficRouteList", testCase{
-				inputType:    &proto.TrafficRoute{},
+				inputType:    &mesh_proto.TrafficRoute{},
 				expectedType: &TrafficRouteList{},
 				expectedKind: "TrafficRouteList",
 			}),

@@ -3,12 +3,13 @@ package inspect_test
 import (
 	"bytes"
 	"context"
-	"github.com/Kong/kuma/app/kumactl/cmd"
-	"github.com/Kong/kuma/app/kumactl/pkg/resources"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/Kong/kuma/app/kumactl/cmd"
+	"github.com/Kong/kuma/app/kumactl/pkg/resources"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -57,7 +58,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 					Name:      "experiment",
 				},
 				Spec: mesh_proto.DataplaneOverview{
-					Dataplane: mesh_proto.Dataplane{
+					Dataplane: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{
@@ -77,14 +78,14 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							},
 						},
 					},
-					DataplaneInsight: mesh_proto.DataplaneInsight{
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
 								Id:                     "1",
 								ControlPlaneInstanceId: "node-001",
 								ConnectTime:            util_proto.MustTimestampProto(t1),
-								Status: mesh_proto.DiscoverySubscriptionStatus{
-									Total: mesh_proto.DiscoveryServiceStats{
+								Status: &mesh_proto.DiscoverySubscriptionStatus{
+									Total: &mesh_proto.DiscoveryServiceStats{
 										ResponsesSent:     10,
 										ResponsesRejected: 1,
 									},
@@ -94,8 +95,8 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 								Id:                     "2",
 								ControlPlaneInstanceId: "node-002",
 								ConnectTime:            util_proto.MustTimestampProto(t2),
-								Status: mesh_proto.DiscoverySubscriptionStatus{
-									Total: mesh_proto.DiscoveryServiceStats{
+								Status: &mesh_proto.DiscoverySubscriptionStatus{
+									Total: &mesh_proto.DiscoveryServiceStats{
 										ResponsesSent:     20,
 										ResponsesRejected: 2,
 									},
@@ -112,7 +113,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 					Name:      "example",
 				},
 				Spec: mesh_proto.DataplaneOverview{
-					Dataplane: mesh_proto.Dataplane{
+					Dataplane: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{
@@ -124,7 +125,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							},
 						},
 					},
-					DataplaneInsight: mesh_proto.DataplaneInsight{
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
 								Id:                     "1",

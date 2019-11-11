@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 
 	model "github.com/Kong/kuma/pkg/core/xds"
 	util_error "github.com/Kong/kuma/pkg/util/error"
@@ -41,7 +41,7 @@ type ResourceList []*Resource
 func (rs ResourceList) ToDeltaDiscoveryResponse() *envoy.DeltaDiscoveryResponse {
 	resp := &envoy.DeltaDiscoveryResponse{}
 	for _, r := range rs {
-		pbany, err := types.MarshalAny(r.Resource)
+		pbany, err := ptypes.MarshalAny(r.Resource)
 		util_error.MustNot(err)
 		resp.Resources = append(resp.Resources, &envoy.Resource{
 			Name:     r.Name,

@@ -7,23 +7,24 @@ import (
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 
 	"github.com/Kong/kuma/pkg/sds/server"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
-	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
-	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
+	envoy_filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
+	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 )
 
 const (
@@ -33,16 +34,16 @@ const (
 func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.ClusterLoadAssignment {
 	return &v2.ClusterLoadAssignment{
 		ClusterName: clusterName,
-		Endpoints: []*endpoint.LocalityLbEndpoints{{
-			LbEndpoints: []*endpoint.LbEndpoint{{
-				HostIdentifier: &endpoint.LbEndpoint_Endpoint{
-					Endpoint: &endpoint.Endpoint{
-						Address: &core.Address{
-							Address: &core.Address_SocketAddress{
-								SocketAddress: &core.SocketAddress{
-									Protocol: core.TCP,
+		Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
+			LbEndpoints: []*envoy_endpoint.LbEndpoint{{
+				HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
+					Endpoint: &envoy_endpoint.Endpoint{
+						Address: &envoy_core.Address{
+							Address: &envoy_core.Address_SocketAddress{
+								SocketAddress: &envoy_core.SocketAddress{
+									Protocol: envoy_core.SocketAddress_TCP,
 									Address:  address,
-									PortSpecifier: &core.SocketAddress_PortValue{
+									PortSpecifier: &envoy_core.SocketAddress_PortValue{
 										PortValue: port,
 									},
 								},
@@ -56,17 +57,17 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.C
 }
 
 func CreateClusterLoadAssignment(clusterName string, endpoints []net.SRV) *v2.ClusterLoadAssignment {
-	lbEndpoints := make([]*endpoint.LbEndpoint, 0, len(endpoints))
+	lbEndpoints := make([]*envoy_endpoint.LbEndpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
-		lbEndpoints = append(lbEndpoints, &endpoint.LbEndpoint{
-			HostIdentifier: &endpoint.LbEndpoint_Endpoint{
-				Endpoint: &endpoint.Endpoint{
-					Address: &core.Address{
-						Address: &core.Address_SocketAddress{
-							SocketAddress: &core.SocketAddress{
-								Protocol: core.TCP,
+		lbEndpoints = append(lbEndpoints, &envoy_endpoint.LbEndpoint{
+			HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
+				Endpoint: &envoy_endpoint.Endpoint{
+					Address: &envoy_core.Address{
+						Address: &envoy_core.Address_SocketAddress{
+							SocketAddress: &envoy_core.SocketAddress{
+								Protocol: envoy_core.SocketAddress_TCP,
 								Address:  ep.Target,
-								PortSpecifier: &core.SocketAddress_PortValue{
+								PortSpecifier: &envoy_core.SocketAddress_PortValue{
 									PortValue: uint32(ep.Port),
 								},
 							},
@@ -77,32 +78,30 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []net.SRV) *v2.Cl
 	}
 	return &v2.ClusterLoadAssignment{
 		ClusterName: clusterName,
-		Endpoints: []*endpoint.LocalityLbEndpoints{{
+		Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
 			LbEndpoints: lbEndpoints,
 		}},
 	}
 }
 
 func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Cluster {
-	connectTimeout := defaultConnectTimeout
 	return &v2.Cluster{
 		Name:                 clusterName,
-		ConnectTimeout:       &connectTimeout,
+		ConnectTimeout:       ptypes.DurationProto(defaultConnectTimeout),
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_STATIC},
 		LoadAssignment:       CreateStaticEndpoint(clusterName, address, port),
 	}
 }
 
 func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *core_xds.DataplaneMetadata) *v2.Cluster {
-	connectTimeout := defaultConnectTimeout
 	return &v2.Cluster{
 		Name:                 clusterName,
-		ConnectTimeout:       &connectTimeout,
+		ConnectTimeout:       ptypes.DurationProto(defaultConnectTimeout),
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_EDS},
 		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
-			EdsConfig: &core.ConfigSource{
-				ConfigSourceSpecifier: &core.ConfigSource_Ads{
-					Ads: &core.AggregatedConfigSource{},
+			EdsConfig: &envoy_core.ConfigSource{
+				ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{
+					Ads: &envoy_core.AggregatedConfigSource{},
 				},
 			},
 		},
@@ -111,10 +110,9 @@ func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *cor
 }
 
 func CreatePassThroughCluster(clusterName string) *v2.Cluster {
-	connectTimeout := defaultConnectTimeout
 	return &v2.Cluster{
 		Name:                 clusterName,
-		ConnectTimeout:       &connectTimeout,
+		ConnectTimeout:       ptypes.DurationProto(defaultConnectTimeout),
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_ORIGINAL_DST},
 		LbPolicy:             v2.Cluster_ORIGINAL_DST_LB,
 	}
@@ -125,23 +123,23 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 	if err != nil {
 		return nil, err
 	}
-	config := &tcp.TcpProxy{
+	config := &envoy_tcp.TcpProxy{
 		StatPrefix: clusterName,
-		ClusterSpecifier: &tcp.TcpProxy_Cluster{
+		ClusterSpecifier: &envoy_tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
 		AccessLog: accessLog,
 	}
-	pbst, err := types.MarshalAny(config)
+	pbst, err := ptypes.MarshalAny(config)
 	util_error.MustNot(err)
 	listener := &v2.Listener{
 		Name: listenerName,
-		Address: &core.Address{
-			Address: &core.Address_SocketAddress{
-				SocketAddress: &core.SocketAddress{
-					Protocol: core.TCP,
+		Address: &envoy_core.Address{
+			Address: &envoy_core.Address_SocketAddress{
+				SocketAddress: &envoy_core.SocketAddress{
+					Protocol: envoy_core.SocketAddress_TCP,
 					Address:  address,
-					PortSpecifier: &core.SocketAddress_PortValue{
+					PortSpecifier: &envoy_core.SocketAddress_PortValue{
 						PortValue: port,
 					},
 				},
@@ -149,7 +147,7 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 		},
 		FilterChains: []*envoy_listener.FilterChain{{
 			Filters: []*envoy_listener.Filter{{
-				Name: util.TCPProxy,
+				Name: wellknown.TCPProxy,
 				ConfigType: &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,
 				},
@@ -159,30 +157,30 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 	if virtual {
 		// TODO(yskopets): What is the up-to-date alternative ?
 		listener.DeprecatedV1 = &v2.Listener_DeprecatedV1{
-			BindToPort: &types.BoolValue{Value: false},
+			BindToPort: &wrappers.BoolValue{Value: false},
 		}
 	}
 	return listener, nil
 }
 
 func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, permissions *mesh_core.TrafficPermissionResourceList, metadata *core_xds.DataplaneMetadata) *v2.Listener {
-	config := &tcp.TcpProxy{
+	config := &envoy_tcp.TcpProxy{
 		StatPrefix: clusterName,
-		ClusterSpecifier: &tcp.TcpProxy_Cluster{
+		ClusterSpecifier: &envoy_tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
 		AccessLog: accessLog(ctx),
 	}
-	pbst, err := types.MarshalAny(config)
+	pbst, err := ptypes.MarshalAny(config)
 	util_error.MustNot(err)
 	listener := &v2.Listener{
 		Name: listenerName,
-		Address: &core.Address{
-			Address: &core.Address_SocketAddress{
-				SocketAddress: &core.SocketAddress{
-					Protocol: core.TCP,
+		Address: &envoy_core.Address{
+			Address: &envoy_core.Address_SocketAddress{
+				SocketAddress: &envoy_core.SocketAddress{
+					Protocol: envoy_core.SocketAddress_TCP,
 					Address:  address,
-					PortSpecifier: &core.SocketAddress_PortValue{
+					PortSpecifier: &envoy_core.SocketAddress_PortValue{
 						PortValue: port,
 					},
 				},
@@ -191,7 +189,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 		FilterChains: []*envoy_listener.FilterChain{{
 			TlsContext: CreateDownstreamTlsContext(ctx, metadata),
 			Filters: []*envoy_listener.Filter{{
-				Name: util.TCPProxy,
+				Name: wellknown.TCPProxy,
 				ConfigType: &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,
 				},
@@ -208,84 +206,84 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 	if virtual {
 		// TODO(yskopets): What is the up-to-date alternative ?
 		listener.DeprecatedV1 = &v2.Listener_DeprecatedV1{
-			BindToPort: &types.BoolValue{Value: false},
+			BindToPort: &wrappers.BoolValue{Value: false},
 		}
 	}
 	return listener
 }
 
-func accessLog(ctx xds_context.Context) []*filter_accesslog.AccessLog {
+func accessLog(ctx xds_context.Context) []*envoy_filter_accesslog.AccessLog {
 	if !ctx.Mesh.LoggingEnabled {
-		return []*filter_accesslog.AccessLog{}
+		return []*envoy_filter_accesslog.AccessLog{}
 	}
-	fileAccessLog := &accesslog.FileAccessLog{
-		AccessLogFormat: &accesslog.FileAccessLog_Format{
+	fileAccessLog := &envoy_accesslog.FileAccessLog{
+		AccessLogFormat: &envoy_accesslog.FileAccessLog_Format{
 			Format: "[%START_TIME%] %DOWNSTREAM_REMOTE_ADDRESS%->%UPSTREAM_HOST% took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes\n",
 		},
 		Path: ctx.Mesh.LoggingPath,
 	}
-	pbst, err := types.MarshalAny(fileAccessLog)
+	pbst, err := ptypes.MarshalAny(fileAccessLog)
 	util_error.MustNot(err)
-	logs := &filter_accesslog.AccessLog{
-		Name: util.FileAccessLog,
-		ConfigType: &filter_accesslog.AccessLog_TypedConfig{
+	logs := &envoy_filter_accesslog.AccessLog{
+		Name: wellknown.FileAccessLog,
+		ConfigType: &envoy_filter_accesslog.AccessLog_TypedConfig{
 			TypedConfig: pbst,
 		},
 	}
-	return []*filter_accesslog.AccessLog{logs}
+	return []*envoy_filter_accesslog.AccessLog{logs}
 }
 
-func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *auth.DownstreamTlsContext {
+func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *envoy_auth.DownstreamTlsContext {
 	if !ctx.Mesh.TlsEnabled {
 		return nil
 	}
-	return &auth.DownstreamTlsContext{
+	return &envoy_auth.DownstreamTlsContext{
 		CommonTlsContext:         CreateCommonTlsContext(ctx, metadata),
-		RequireClientCertificate: &types.BoolValue{Value: true},
+		RequireClientCertificate: &wrappers.BoolValue{Value: true},
 	}
 }
 
-func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *auth.UpstreamTlsContext {
+func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *envoy_auth.UpstreamTlsContext {
 	if !ctx.Mesh.TlsEnabled {
 		return nil
 	}
-	return &auth.UpstreamTlsContext{
+	return &envoy_auth.UpstreamTlsContext{
 		CommonTlsContext: CreateCommonTlsContext(ctx, metadata),
 	}
 }
 
-func CreateCommonTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *auth.CommonTlsContext {
-	return &auth.CommonTlsContext{
-		ValidationContextType: &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
+func CreateCommonTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *envoy_auth.CommonTlsContext {
+	return &envoy_auth.CommonTlsContext{
+		ValidationContextType: &envoy_auth.CommonTlsContext_ValidationContextSdsSecretConfig{
 			ValidationContextSdsSecretConfig: sdsSecretConfig(ctx, server.MeshCaResource, metadata),
 		},
-		TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
+		TlsCertificateSdsSecretConfigs: []*envoy_auth.SdsSecretConfig{
 			sdsSecretConfig(ctx, server.IdentityCertResource, metadata),
 		},
 	}
 }
 
-func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) *auth.SdsSecretConfig {
-	withCallCredentials := func(grpc *core.GrpcService_GoogleGrpc) *core.GrpcService_GoogleGrpc {
+func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) *envoy_auth.SdsSecretConfig {
+	withCallCredentials := func(grpc *envoy_core.GrpcService_GoogleGrpc) *envoy_core.GrpcService_GoogleGrpc {
 		if metadata.DataplaneTokenPath == "" {
 			return grpc
 		}
 
-		config := &grpc_credential.FileBasedMetadataConfig{
-			SecretData: &core.DataSource{
-				Specifier: &core.DataSource_Filename{
+		config := &envoy_grpc_credential.FileBasedMetadataConfig{
+			SecretData: &envoy_core.DataSource{
+				Specifier: &envoy_core.DataSource_Filename{
 					Filename: metadata.DataplaneTokenPath,
 				},
 			},
 		}
-		typedConfig, err := types.MarshalAny(config)
+		typedConfig, err := ptypes.MarshalAny(config)
 		util_error.MustNot(err)
 
-		grpc.CallCredentials = append(grpc.CallCredentials, &core.GrpcService_GoogleGrpc_CallCredentials{
-			CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
-				FromPlugin: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
+		grpc.CallCredentials = append(grpc.CallCredentials, &envoy_core.GrpcService_GoogleGrpc_CallCredentials{
+			CredentialSpecifier: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
+				FromPlugin: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
 					Name: "envoy.grpc_credentials.file_based_metadata",
-					ConfigType: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
+					ConfigType: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
 						TypedConfig: typedConfig,
 					},
 				},
@@ -295,23 +293,23 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 
 		return grpc
 	}
-	return &auth.SdsSecretConfig{
+	return &envoy_auth.SdsSecretConfig{
 		Name: name,
-		SdsConfig: &core.ConfigSource{
-			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
-				ApiConfigSource: &core.ApiConfigSource{
-					ApiType: core.ApiConfigSource_GRPC,
-					GrpcServices: []*core.GrpcService{
+		SdsConfig: &envoy_core.ConfigSource{
+			ConfigSourceSpecifier: &envoy_core.ConfigSource_ApiConfigSource{
+				ApiConfigSource: &envoy_core.ApiConfigSource{
+					ApiType: envoy_core.ApiConfigSource_GRPC,
+					GrpcServices: []*envoy_core.GrpcService{
 						{
-							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
-								GoogleGrpc: withCallCredentials(&core.GrpcService_GoogleGrpc{
+							TargetSpecifier: &envoy_core.GrpcService_GoogleGrpc_{
+								GoogleGrpc: withCallCredentials(&envoy_core.GrpcService_GoogleGrpc{
 									TargetUri:  context.ControlPlane.SdsLocation,
 									StatPrefix: "sds_" + name,
-									ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
-										CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
-											SslCredentials: &core.GrpcService_GoogleGrpc_SslCredentials{
-												RootCerts: &core.DataSource{
-													Specifier: &core.DataSource_InlineBytes{
+									ChannelCredentials: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials{
+										CredentialSpecifier: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
+											SslCredentials: &envoy_core.GrpcService_GoogleGrpc_SslCredentials{
+												RootCerts: &envoy_core.DataSource{
+													Specifier: &envoy_core.DataSource_InlineBytes{
 														InlineBytes: context.ControlPlane.SdsTlsCert,
 													},
 												},
@@ -329,23 +327,23 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 }
 
 func CreateCatchAllListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string) *v2.Listener {
-	config := &tcp.TcpProxy{
+	config := &envoy_tcp.TcpProxy{
 		StatPrefix: clusterName,
-		ClusterSpecifier: &tcp.TcpProxy_Cluster{
+		ClusterSpecifier: &envoy_tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
 		AccessLog: accessLog(ctx),
 	}
-	pbst, err := types.MarshalAny(config)
+	pbst, err := ptypes.MarshalAny(config)
 	util_error.MustNot(err)
 	return &v2.Listener{
 		Name: listenerName,
-		Address: &core.Address{
-			Address: &core.Address_SocketAddress{
-				SocketAddress: &core.SocketAddress{
-					Protocol: core.TCP,
+		Address: &envoy_core.Address{
+			Address: &envoy_core.Address_SocketAddress{
+				SocketAddress: &envoy_core.SocketAddress{
+					Protocol: envoy_core.SocketAddress_TCP,
 					Address:  address,
-					PortSpecifier: &core.SocketAddress_PortValue{
+					PortSpecifier: &envoy_core.SocketAddress_PortValue{
 						PortValue: port,
 					},
 				},
@@ -353,17 +351,17 @@ func CreateCatchAllListener(ctx xds_context.Context, listenerName string, addres
 		},
 		FilterChains: []*envoy_listener.FilterChain{{
 			Filters: []*envoy_listener.Filter{{
-				Name: util.TCPProxy,
+				Name: wellknown.TCPProxy,
 				ConfigType: &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,
 				},
 			}},
 		}},
 		// TODO(yskopets): What is the up-to-date alternative ?
-		UseOriginalDst: &types.BoolValue{Value: true},
+		UseOriginalDst: &wrappers.BoolValue{Value: true},
 		// TODO(yskopets): Apparently, `envoy.envoy_listener.original_dst` has different effect than `UseOriginalDst`
 		//ListenerFilters: []envoy_listener.ListenerFilter{{
-		//	Name: util.OriginalDestination,
+		//	Name: wellknown.OriginalDestination,
 		//}},
 	}
 }

@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 )
 
 // ensure the imports are used
@@ -30,7 +30,7 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = types.DynamicAny{}
+	_ = ptypes.DynamicAny{}
 )
 
 // Validate checks the field values on Configuration with the rules defined in
@@ -44,17 +44,12 @@ func (m *Configuration) Validate() error {
 	for idx, item := range m.GetControlPlanes() {
 		_, _ = idx, item
 
-		{
-			tmp := item
-
-			if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-				if err := v.Validate(); err != nil {
-					return ConfigurationValidationError{
-						field:  fmt.Sprintf("ControlPlanes[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					}
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ConfigurationValidationError{
+					field:  fmt.Sprintf("ControlPlanes[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
 				}
 			}
 		}
@@ -64,17 +59,12 @@ func (m *Configuration) Validate() error {
 	for idx, item := range m.GetContexts() {
 		_, _ = idx, item
 
-		{
-			tmp := item
-
-			if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-				if err := v.Validate(); err != nil {
-					return ConfigurationValidationError{
-						field:  fmt.Sprintf("Contexts[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					}
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ConfigurationValidationError{
+					field:  fmt.Sprintf("Contexts[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
 				}
 			}
 		}
@@ -162,17 +152,12 @@ func (m *ControlPlane) Validate() error {
 		}
 	}
 
-	{
-		tmp := m.GetCoordinates()
-
-		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-			if err := v.Validate(); err != nil {
-				return ControlPlaneValidationError{
-					field:  "Coordinates",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
+	if v, ok := interface{}(m.GetCoordinates()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ControlPlaneValidationError{
+				field:  "Coordinates",
+				reason: "embedded message failed validation",
+				cause:  err,
 			}
 		}
 	}
@@ -249,17 +234,12 @@ func (m *ControlPlaneCoordinates) Validate() error {
 		}
 	}
 
-	{
-		tmp := m.GetApiServer()
-
-		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-			if err := v.Validate(); err != nil {
-				return ControlPlaneCoordinatesValidationError{
-					field:  "ApiServer",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
+	if v, ok := interface{}(m.GetApiServer()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ControlPlaneCoordinatesValidationError{
+				field:  "ApiServer",
+				reason: "embedded message failed validation",
+				cause:  err,
 			}
 		}
 	}
@@ -344,32 +324,22 @@ func (m *Context) Validate() error {
 		}
 	}
 
-	{
-		tmp := m.GetDefaults()
-
-		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-			if err := v.Validate(); err != nil {
-				return ContextValidationError{
-					field:  "Defaults",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
+	if v, ok := interface{}(m.GetDefaults()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ContextValidationError{
+				field:  "Defaults",
+				reason: "embedded message failed validation",
+				cause:  err,
 			}
 		}
 	}
 
-	{
-		tmp := m.GetCredentials()
-
-		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-			if err := v.Validate(); err != nil {
-				return ContextValidationError{
-					field:  "Credentials",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
+	if v, ok := interface{}(m.GetCredentials()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ContextValidationError{
+				field:  "Credentials",
+				reason: "embedded message failed validation",
+				cause:  err,
 			}
 		}
 	}
@@ -587,17 +557,12 @@ func (m *Context_Credentials) Validate() error {
 		return nil
 	}
 
-	{
-		tmp := m.GetDataplaneTokenApi()
-
-		if v, ok := interface{}(tmp).(interface{ Validate() error }); ok {
-
-			if err := v.Validate(); err != nil {
-				return Context_CredentialsValidationError{
-					field:  "DataplaneTokenApi",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
+	if v, ok := interface{}(m.GetDataplaneTokenApi()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return Context_CredentialsValidationError{
+				field:  "DataplaneTokenApi",
+				reason: "embedded message failed validation",
+				cause:  err,
 			}
 		}
 	}

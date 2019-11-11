@@ -6,11 +6,11 @@ import (
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
-	"github.com/gogo/protobuf/types"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 )
 
@@ -57,21 +57,21 @@ func tcpAccessLog(format string, tcp *v1alpha1.LoggingBackend_Tcp_) (*filter_acc
 	fileAccessLog := &accesslog.HttpGrpcAccessLogConfig{
 		CommonConfig: &accesslog.CommonGrpcAccessLogConfig{
 			LogName: fmt.Sprintf("%s;%s", tcp.Tcp.Address, format),
-			GrpcService: &core.GrpcService{
-				TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
+			GrpcService: &envoy_core.GrpcService{
+				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
 						ClusterName: AccessLogSink,
 					},
 				},
 			},
 		},
 	}
-	marshalled, err := types.MarshalAny(fileAccessLog)
+	marshalled, err := ptypes.MarshalAny(fileAccessLog)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshall FileAccessLog")
 	}
 	return &filter_accesslog.AccessLog{
-		Name: util.HTTPGRPCAccessLog,
+		Name: wellknown.HTTPGRPCAccessLog,
 		ConfigType: &filter_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshalled,
 		},
@@ -85,12 +85,12 @@ func fileAccessLog(format string, file *v1alpha1.LoggingBackend_File_) (*filter_
 		},
 		Path: file.File.Path,
 	}
-	marshalled, err := types.MarshalAny(fileAccessLog)
+	marshalled, err := ptypes.MarshalAny(fileAccessLog)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshall FileAccessLog")
 	}
 	return &filter_accesslog.AccessLog{
-		Name: util.FileAccessLog,
+		Name: wellknown.FileAccessLog,
 		ConfigType: &filter_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshalled,
 		},

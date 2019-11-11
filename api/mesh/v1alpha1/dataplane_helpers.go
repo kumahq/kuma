@@ -203,6 +203,9 @@ func (s TagSelector) Matches(tags map[string]string) bool {
 type Tags map[string]map[string]bool
 
 func (t Tags) Values(key string) []string {
+	if t == nil {
+		return nil
+	}
 	var result []string
 	for value := range t[key] {
 		result = append(result, value)

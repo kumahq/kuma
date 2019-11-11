@@ -1,5 +1,6 @@
 .PHONY: dev/tools dev/tools/all \
-		dev/install/protoc dev/install/protoc-gen-gogofast dev/install/protoc-gen-validate \
+		dev/install/protoc dev/install/protobuf-wellknown-types \
+		dev/install/protoc-gen-go dev/install/protoc-gen-validate \
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
@@ -7,7 +8,8 @@
 
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 
-dev/tools/all: dev/install/protoc dev/install/protoc-gen-gogofast dev/install/protoc-gen-validate \
+dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
+	dev/install/protoc-gen-go dev/install/protoc-gen-validate \
 	dev/install/ginkgo \
 	dev/install/kubebuilder dev/install/kustomize \
 	dev/install/kubectl dev/install/kind dev/install/minikube \
@@ -27,8 +29,22 @@ dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 		&& set +x \
 		&& echo "Protoc $(PROTOC_VERSION) has been installed at $(PROTOC_PATH)" ; fi
 
-dev/install/protoc-gen-gogofast: ## Bootstrap: Install Protoc Go Plugin (protobuf Go generator)
-	go get -u github.com/gogo/protobuf/protoc-gen-gogofast@$(GOGO_PROTOBUF_VERSION)
+dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known types
+	@if [ -e $(PROTOBUF_WKT_DIR) ]; then echo "Protobuf well-known types are already installed at $(PROTOBUF_WKT_DIR)" ; fi
+	@if [ ! -e $(PROTOBUF_WKT_DIR) ]; then \
+		echo "Installing Protobuf well-known types $(PROTOC_VERSION) ..." \
+		&& set -x \
+		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
+		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip 'include/*' -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
+		&& mkdir -p $(PROTOBUF_WKT_DIR) \
+		&& cp -r /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/include $(PROTOBUF_WKT_DIR) \
+		&& rm -rf /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
+		&& rm /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
+		&& set +x \
+		&& echo "Protobuf well-known types $(PROTOC_VERSION) have been installed at $(PROTOBUF_WKT_DIR)" ; fi
+
+dev/install/protoc-gen-go: ## Bootstrap: Install Protoc Go Plugin (protobuf Go generator)
+	go get -u github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
 
 dev/install/protoc-gen-validate: ## Bootstrap: Install Protoc Gen Validate Plugin (protobuf validation code generator)
 	go get -u github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)

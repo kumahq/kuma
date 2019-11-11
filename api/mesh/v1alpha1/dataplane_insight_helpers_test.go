@@ -8,6 +8,7 @@ import (
 
 	util_proto "github.com/Kong/kuma/api/internal/util/proto"
 	. "github.com/Kong/kuma/api/mesh/v1alpha1"
+
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 )
 
@@ -32,6 +33,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				subscription := &DiscoverySubscription{
 					Id:                     "1",
 					ControlPlaneInstanceId: "node-001",
+					Status:                 NewSubscriptionStatus(),
 				}
 
 				// when
@@ -57,10 +59,12 @@ var _ = Describe("DataplaneHelpers", func() {
 					{
 						Id:                     "1",
 						ControlPlaneInstanceId: "node-001",
+						Status:                 NewSubscriptionStatus(),
 					},
 					{
 						Id:                     "2",
 						ControlPlaneInstanceId: "node-002",
+						Status:                 NewSubscriptionStatus(),
 					},
 				}
 
@@ -68,6 +72,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				subscription := &DiscoverySubscription{
 					Id:                     "1",
 					ControlPlaneInstanceId: "node-003",
+					Status:                 NewSubscriptionStatus(),
 				}
 
 				// when
@@ -156,16 +161,16 @@ var _ = Describe("DataplaneHelpers", func() {
 				status.Subscriptions = []*DiscoverySubscription{
 					{
 						Id: "1",
-						Status: DiscoverySubscriptionStatus{
-							Total: DiscoveryServiceStats{
+						Status: &DiscoverySubscriptionStatus{
+							Total: &DiscoveryServiceStats{
 								ResponsesSent: 1,
 							},
 						},
 					},
 					{
 						Id: "2",
-						Status: DiscoverySubscriptionStatus{
-							Total: DiscoveryServiceStats{
+						Status: &DiscoverySubscriptionStatus{
+							Total: &DiscoveryServiceStats{
 								ResponsesSent: 2,
 							},
 						},
@@ -188,7 +193,7 @@ var _ = Describe("DataplaneHelpers", func() {
 		var status *DiscoverySubscriptionStatus
 
 		BeforeEach(func() {
-			status = &DiscoverySubscriptionStatus{}
+			status = NewSubscriptionStatus()
 		})
 
 		Describe("StatsOf()", func() {

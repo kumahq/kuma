@@ -2,7 +2,7 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector \
-		generate protoc/pkg/config/app/kumactl/v1alpha1 generate/kumactl/install/control-plane \
+		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/control-plane \
 		fmt fmt/go fmt/proto vet golangci-lint check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-tcp-echo \
@@ -106,7 +106,7 @@ endif
 
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.1.0
-GOGO_PROTOBUF_VERSION := v1.2.1
+GOLANG_PROTOBUF_VERSION := v1.3.2
 GOLANGCI_LINT_VERSION := v1.21.0
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0
@@ -123,6 +123,7 @@ BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
 export PATH := $(BUILD_KUMACTL_DIR):$(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
 
 PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
+PROTOBUF_WKT_DIR := $(CI_TOOLS_DIR)/protobuf.d
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
 KUBEBUILDER_PATH := $(CI_TOOLS_DIR)/kubebuilder
 KUSTOMIZE_PATH := $(CI_TOOLS_DIR)/kustomize
@@ -136,17 +137,18 @@ GOLANGCI_LINT_DIR := $(CI_TOOLS_DIR)
 PROTO_DIR := ./pkg/config
 
 protoc_search_go_packages := \
-	github.com/gogo/protobuf@$(GOGO_PROTOBUF_VERSION)/protobuf \
+	github.com/golang/protobuf@$(GOLANG_PROTOBUF_VERSION) \
 	github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
 
 protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(GOPATH_DIR)/pkg/mod/$(go_package))
 
 # Protobuf-specifc configuration
 PROTOC_GO := protoc \
+	--proto_path=$(PROTOBUF_WKT_DIR)/include \
 	--proto_path=. \
 	$(protoc_search_go_paths) \
-	--gogofast_out=plugins=grpc:. \
-	--validate_out=lang=gogo:.
+	--go_out=plugins=grpc:. \
+	--validate_out=lang=go:.
 
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)
@@ -217,10 +219,13 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIR) -name '*.pb.go' -delete
 	find $(PROTO_DIR) -name '*.pb.validate.go' -delete
 
-generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 ## Dev: Run code generators
+generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 ## Dev: Run code generators
 
 protoc/pkg/config/app/kumactl/v1alpha1:
 	$(PROTOC_GO) pkg/config/app/kumactl/v1alpha1/*.proto
+
+protoc/pkg/test/apis/sample/v1alpha1:
+	$(PROTOC_GO) pkg/test/apis/sample/v1alpha1/*.proto
 
 # Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
 generate/kumactl/install/control-plane:

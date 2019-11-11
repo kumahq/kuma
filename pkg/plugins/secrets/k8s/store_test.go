@@ -13,7 +13,7 @@ import (
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
-	proto_types "github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -84,7 +84,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should create a new secret", func() {
 			// given
 			secret := &secret_model.SecretResource{
-				Spec: proto_types.BytesValue{
+				Spec: wrappers.BytesValue{
 					Value: []byte("example"),
 				},
 			}

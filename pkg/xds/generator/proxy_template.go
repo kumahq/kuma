@@ -12,8 +12,9 @@ import (
 	"github.com/Kong/kuma/pkg/xds/envoy"
 	"github.com/Kong/kuma/pkg/xds/template"
 	"github.com/ghodss/yaml"
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/ptypes"
+	any "github.com/golang/protobuf/ptypes/any"
 )
 
 type TemplateProxyGenerator struct {
@@ -51,12 +52,12 @@ func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Pr
 			json = []byte(r.Resource)
 		}
 
-		var any types.Any
-		if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), &any); err != nil {
+		var anything any.Any
+		if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), &anything); err != nil {
 			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
 		}
-		var dyn types.DynamicAny
-		if err := types.UnmarshalAny(&any, &dyn); err != nil {
+		var dyn ptypes.DynamicAny
+		if err := ptypes.UnmarshalAny(&anything, &dyn); err != nil {
 			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
 		}
 		p, ok := dyn.Message.(ResourcePayload)

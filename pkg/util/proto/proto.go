@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 
 	"github.com/ghodss/yaml"
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 )
 
 func FromYAML(content []byte, pb proto.Message) error {
