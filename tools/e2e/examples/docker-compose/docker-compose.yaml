@@ -8,6 +8,9 @@ services:
   kuma-control-plane:
     # image name must be provided via environment variable KUMA_CP_DOCKER_IMAGE
     image: ${KUMA_CP_DOCKER_IMAGE:-kuma/kuma-cp:latest}
+    volumes:
+    - ./certs/server:/certs/server
+    - ./certs/client/cert.pem:/certs/client/cert.pem
     command:
     - run
     - --log-level=info
@@ -15,18 +18,26 @@ services:
     # DNS name of the Kuma xDS server
     - KUMA_GENERAL_ADVERTISED_HOSTNAME=kuma-control-plane
     - KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST=kuma-control-plane
+    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_ENABLED=true
+    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE=0.0.0.0
+    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT=5683 # otherwise there would be conflict with local port
+    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE=/certs/server/cert.pem
+    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE=/certs/server/key.pem
+    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR=/certs/client
     expose:
     - "5678"
     - "5679"
     - "5680"
     - "5681"
     - "5682"
+    - "5683"
     ports:
     - "5678:5678"
     - "5679:5679"
     - "5680:5680"
     - "5681:5681"
     - "5682:5682"
+    - "5683:5683"
     networks:
       kuma-example:
         aliases:
@@ -43,6 +54,10 @@ services:
     image: ${KUMACTL_DOCKER_IMAGE:-kuma/kumactl:latest}
     volumes:
     - ./kuma-example-installer.sh:/kuma-example/kuma-example-installer.sh
+    - token-example-app:/token-example-app:rw
+    - token-example-client:/token-example-client:rw
+    - ./certs/client:/certs/client
+    user: root # needed to write the tokens, named volumes are mounted with root permissions
     command:
       - /kuma-example/kuma-example-installer.sh
     networks:
@@ -113,12 +128,15 @@ services:
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-app
     - KUMA_DATAPLANE_ADMIN_PORT=9901
+    - KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/token-example-app/token
     # the following setting instructs Docker Compose to add `kuma-example-app-sidecar` container
     # to the network namespace of `kuma-example-app-namespace` container
     network_mode: service:kuma-example-app-namespace
     depends_on:
     - kuma-example-app-namespace
     restart: on-failure
+    volumes:
+    - token-example-app:/token-example-app
 
   #
   # Auxiliary service (container) for sharing Linux network namespace
@@ -185,12 +203,19 @@ services:
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-client
     - KUMA_DATAPLANE_ADMIN_PORT=9901
+    - KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/token-example-client/token
     # the following setting instructs Docker Compose to add `kuma-example-app-sidecar` container
     # to the network namespace of `kuma-example-app-namespace` container
     network_mode: service:kuma-example-client-namespace
     depends_on:
     - kuma-example-client-namespace
     restart: on-failure
+    volumes:
+      - token-example-client:/token-example-client
 
 networks:
   kuma-example: {}
+
+volumes:
+  token-example-app:
+  token-example-client:
