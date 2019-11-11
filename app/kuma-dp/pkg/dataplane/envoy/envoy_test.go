@@ -72,7 +72,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(kuma_dp.Config) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{
 					Node: &envoy_core.Node{
 						Id: "example",
@@ -143,7 +143,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(kuma_dp.Config) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{}, nil
 			}
 

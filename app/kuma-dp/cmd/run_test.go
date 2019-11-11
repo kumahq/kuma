@@ -5,6 +5,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"github.com/Kong/kuma/pkg/catalogue"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,7 +14,9 @@ import (
 	"syscall"
 
 	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
 	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
+	test_catalogue "github.com/Kong/kuma/pkg/test/catalogue"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
@@ -31,11 +34,13 @@ var _ = Describe("run", func() {
 
 	var backupSetupSignalHandler func() <-chan struct{}
 	var backupBootstrapGenerator envoy.BootstrapConfigFactoryFunc
+	var backupCatalogueClientFactory CatalogueClientFactory
 
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
-		bootstrapGenerator = func(cfg kumadp.Config) (proto.Message, error) {
+		backupCatalogueClientFactory = catalogueClientFactory
+		bootstrapGenerator = func(_ string, cfg kumadp.Config) (proto.Message, error) {
 			bootstrap := envoy_bootstrap.Bootstrap{}
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
@@ -43,10 +48,25 @@ var _ = Describe("run", func() {
 			Expect(err).ToNot(HaveOccurred())
 			return &bootstrap, nil
 		}
+		catalogueClientFactory = func(address string) (client catalogue_client.CatalogueClient, e error) {
+			return &test_catalogue.StaticCatalogueClient{
+				Resp: catalogue.Catalogue{
+					Apis: catalogue.Apis{
+						Bootstrap: catalogue.BootstrapApi{
+							Url: "http://localhost:5681",
+						},
+						DataplaneToken: catalogue.DataplaneTokenApi{
+							LocalUrl: "", // dataplane token is disabled
+						},
+					},
+				},
+			}, nil
+		}
 	})
 	AfterEach(func() {
 		core.SetupSignalHandler = backupSetupSignalHandler
 		bootstrapGenerator = backupBootstrapGenerator
+		catalogueClientFactory = backupCatalogueClientFactory
 	})
 
 	var stopCh chan struct{}
@@ -189,10 +209,10 @@ var _ = Describe("run", func() {
 		Entry("can be launched with env vars", func() testCase {
 			return testCase{
 				envVars: map[string]string{
-					"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "http://localhost:1234",
-					"KUMA_DATAPLANE_NAME":                     "example",
-					"KUMA_DATAPLANE_ADMIN_PORT":               fmt.Sprintf("%d", port),
-					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":      filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
+					"KUMA_DATAPLANE_NAME":                "example",
+					"KUMA_DATAPLANE_ADMIN_PORT":          fmt.Sprintf("%d", port),
+					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
 				},
 				args:         []string{},
@@ -202,11 +222,11 @@ var _ = Describe("run", func() {
 		Entry("can be launched with env vars and given config dir", func() testCase {
 			return testCase{
 				envVars: map[string]string{
-					"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL": "http://localhost:1234",
-					"KUMA_DATAPLANE_NAME":                     "example",
-					"KUMA_DATAPLANE_ADMIN_PORT":               fmt.Sprintf("%d", port),
-					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":      filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":       tmpDir,
+					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
+					"KUMA_DATAPLANE_NAME":                "example",
+					"KUMA_DATAPLANE_ADMIN_PORT":          fmt.Sprintf("%d", port),
+					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":  tmpDir,
 				},
 				args:         []string{},
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),

@@ -1,8 +1,6 @@
 controlPlane:
   apiServer:
-    url: https://kuma-control-plane.kuma-system:5681
-  bootstrapServer:
-    url: http://kuma-control-plane.kuma-system:5682
+    url: http://kuma-control-plane.kuma-system:5681
 sidecarContainer:
   image: kuma/kuma-sidecar:latest
   redirectPort: 15001

@@ -49,10 +49,9 @@ var _ = Describe("Remote Bootstrap", func() {
 		cfg.Dataplane.Name = "sample"
 		cfg.Dataplane.AdminPort = 4321
 		cfg.DataplaneRuntime.TokenPath = "/tmp/token"
-		cfg.ControlPlane.BootstrapServer.URL = fmt.Sprintf("http://localhost:%d", port)
 
 		// when
-		config, err := generator(cfg)
+		config, err := generator(fmt.Sprintf("http://localhost:%d", port), cfg)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

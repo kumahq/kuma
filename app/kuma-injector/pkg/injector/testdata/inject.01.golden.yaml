@@ -38,8 +38,8 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
-    - name: KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
-      value: http://kuma-control-plane.kuma-system:5682
+    - name: KUMA_CONTROL_PLANE_API_SERVER_URL
+      value: http://kuma-control-plane.kuma-system:5681
     - name: KUMA_DATAPLANE_MESH
       value: default
     - name: KUMA_DATAPLANE_NAME

@@ -3,6 +3,7 @@ package envoy
 import (
 	"context"
 	"fmt"
+	"github.com/Kong/kuma/pkg/catalogue"
 	"io"
 	"os"
 	"os/exec"
@@ -27,9 +28,10 @@ var (
 	newConfigFile = GenerateBootstrapFile
 )
 
-type BootstrapConfigFactoryFunc func(cfg kuma_dp.Config) (proto.Message, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config) (proto.Message, error)
 
 type Opts struct {
+	Catalogue catalogue.Catalogue
 	Config    kuma_dp.Config
 	Generator BootstrapConfigFactoryFunc
 	Stdout    io.Writer
@@ -88,7 +90,7 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 }
 
 func (e *Envoy) Run(stop <-chan struct{}) error {
-	bootstrapConfig, err := e.opts.Generator(e.opts.Config)
+	bootstrapConfig, err := e.opts.Generator(e.opts.Catalogue.Apis.Bootstrap.Url, e.opts.Config)
 	if err != nil {
 		return errors.Wrapf(err, "failed to generate Envoy bootstrap config")
 	}

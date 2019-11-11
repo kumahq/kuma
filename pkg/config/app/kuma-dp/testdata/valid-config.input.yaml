@@ -1,5 +1,5 @@
 controlPlane:
-  bootstrapServer:
+  apiServer:
     url: https://kuma-control-plane.internal:5682
 dataplane:
   mesh: pilot

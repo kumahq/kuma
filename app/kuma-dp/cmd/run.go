@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/Kong/kuma/pkg/catalogue/client"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -17,10 +18,13 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 )
 
+type CatalogueClientFactory func(string) (client.CatalogueClient, error)
+
 var (
 	runLog = dataplaneLog.WithName("run")
 	// overridable by tests
-	bootstrapGenerator = envoy.NewRemoteBootstrapGenerator(&http.Client{Timeout: 10 * time.Second})
+	bootstrapGenerator     = envoy.NewRemoteBootstrapGenerator(&http.Client{Timeout: 10 * time.Second})
+	catalogueClientFactory = client.NewCatalogueClient
 )
 
 func newRunCmd() *cobra.Command {
@@ -42,6 +46,14 @@ func newRunCmd() *cobra.Command {
 				return err
 			}
 
+			catalogueClient, err := catalogueClientFactory(cfg.ControlPlane.ApiServer.URL)
+			if err != nil {
+				return errors.Wrap(err, "could not create catalogue client")
+			}
+			catalogue, err := catalogueClient.Catalogue()
+			if err != nil {
+				return errors.Wrap(err, "could retrieve catalogue")
+			}
 			if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
 				return err
 			}
@@ -64,6 +76,7 @@ func newRunCmd() *cobra.Command {
 			runLog.Info("starting Dataplane (Envoy) ...")
 
 			dataplane := envoy.New(envoy.Opts{
+				Catalogue: catalogue,
 				Config:    cfg,
 				Generator: bootstrapGenerator,
 				Stdout:    cmd.OutOrStdout(),
@@ -108,7 +121,7 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
 	cmd.PersistentFlags().Uint32Var(&cfg.Dataplane.AdminPort, "admin-port", cfg.Dataplane.AdminPort, "Port for Envoy Admin")
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
-	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.BootstrapServer.URL, "cp-address", cfg.ControlPlane.BootstrapServer.URL, "Mesh that Dataplane belongs to")
+	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.ApiServer.URL, "cp-address", cfg.ControlPlane.ApiServer.URL, "URL of the Control Plane API Server")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")

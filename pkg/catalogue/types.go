@@ -22,6 +22,10 @@ type DataplaneTokenApi struct {
 	PublicUrl string `json:"publicUrl"`
 }
 
+func (d *DataplaneTokenApi) Enabled() bool {
+	return d.LocalUrl != ""
+}
+
 func FromConfig(cfg catalogue.CatalogueConfig) Catalogue {
 	return Catalogue{
 		Apis: Apis{

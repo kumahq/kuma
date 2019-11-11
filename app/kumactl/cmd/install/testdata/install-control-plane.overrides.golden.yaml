@@ -3045,6 +3045,8 @@ spec:
           value: "kubernetes"
         - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
           value: kuma
+        - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
+          value: kuma-ctrl-plane.kuma
         - name: KUMA_SDS_SERVER_GRPC_PORT
           value: "5677"
         - name: KUMA_XDS_SERVER_GRPC_PORT

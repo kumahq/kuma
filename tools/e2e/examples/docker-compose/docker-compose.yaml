@@ -13,6 +13,7 @@ services:
     - --log-level=info
     environment:
     # DNS name of the Kuma xDS server
+    - KUMA_GENERAL_ADVERTISED_HOSTNAME=kuma-control-plane
     - KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST=kuma-control-plane
     expose:
     - "5678"
@@ -108,7 +109,7 @@ services:
     - run
     - --log-level=info
     environment:
-    - KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://kuma-control-plane:5682
+    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-app
     - KUMA_DATAPLANE_ADMIN_PORT=9901
@@ -180,7 +181,7 @@ services:
     - run
     - --log-level=info
     environment:
-    - KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_URL=http://kuma-control-plane:5682
+    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-client
     - KUMA_DATAPLANE_ADMIN_PORT=9901

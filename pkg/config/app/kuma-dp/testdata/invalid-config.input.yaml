@@ -1,5 +1,5 @@
 controlPlane:
-  bootstrapServer:
+  apiServer:
     url: invalid-url
 dataplane:
   mesh:

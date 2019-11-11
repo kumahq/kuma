@@ -6,8 +6,6 @@ injector:
   controlPlane:
     apiServer:
       url: api-server
-    bootstrapServer:
-      url: bootstrap-server
   sidecarContainer:
     image:
     redirectPort: 423456
