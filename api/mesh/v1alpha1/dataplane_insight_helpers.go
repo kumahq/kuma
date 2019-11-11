@@ -18,22 +18,18 @@ func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
 }
 
 func (ds *DataplaneInsight) IsOnline() bool {
-	if ds != nil {
-		for _, s := range ds.GetSubscriptions() {
-			if s.ConnectTime != nil && s.DisconnectTime == nil {
-				return true
-			}
+	for _, s := range ds.GetSubscriptions() {
+		if s.ConnectTime != nil && s.DisconnectTime == nil {
+			return true
 		}
 	}
 	return false
 }
 
 func (ds *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
-	if ds != nil {
-		for i, s := range ds.GetSubscriptions() {
-			if s.Id == id {
-				return i, s
-			}
+	for i, s := range ds.GetSubscriptions() {
+		if s.Id == id {
+			return i, s
 		}
 	}
 	return -1, nil
