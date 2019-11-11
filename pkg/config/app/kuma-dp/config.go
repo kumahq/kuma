@@ -91,7 +91,7 @@ var _ config.Config = &ControlPlane{}
 
 func (c *ControlPlane) Validate() (errs error) {
 	if err := c.ApiServer.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".BootstrapServer is not valid"))
+		errs = multierr.Append(errs, errors.Wrapf(err, ".ApiServer is not valid"))
 	}
 	return
 }

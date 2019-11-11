@@ -3,9 +3,9 @@ package envoy
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	net_url "net/url"
 
 	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
 
@@ -26,7 +26,11 @@ func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc
 }
 
 func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Message, error) {
-	bootstrapUrl := fmt.Sprintf("%s/bootstrap", url)
+	bootstrapUrl, err := net_url.Parse(url)
+	if err != nil {
+		return nil, err
+	}
+	bootstrapUrl.Path = "/bootstrap"
 	request := types.BootstrapRequest{
 		Mesh: cfg.Dataplane.Mesh,
 		Name: cfg.Dataplane.Name,
@@ -39,7 +43,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Messag
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal request to json")
 	}
-	resp, err := b.client.Post(bootstrapUrl, "application/json", bytes.NewReader(jsonBytes))
+	resp, err := b.client.Post(bootstrapUrl.String(), "application/json", bytes.NewReader(jsonBytes))
 	if err != nil {
 		return nil, errors.Wrap(err, "request to bootstrap server failed")
 	}
