@@ -42,9 +42,8 @@ var _ = Describe("kumactl delete mesh", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "mesh1",
-				Name:      "mesh1",
-				Namespace: "default",
+				Mesh: "mesh1",
+				Name: "mesh1",
 			},
 		},
 		{
@@ -59,9 +58,8 @@ var _ = Describe("kumactl delete mesh", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "mesh2",
-				Name:      "mesh2",
-				Namespace: "default",
+				Mesh: "mesh2",
+				Name: "mesh2",
 			},
 		},
 	}
@@ -138,7 +136,7 @@ var _ = Describe("kumactl delete mesh", func() {
 		})
 
 		It("should delete the mesh if exists", func() {
-
+			By("running delete command")
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
@@ -146,20 +144,25 @@ var _ = Describe("kumactl delete mesh", func() {
 
 			// when
 			err := rootCmd.Execute()
-
 			// then
 			Expect(err).ToNot(HaveOccurred())
-
 			// and
-			list := &mesh.MeshResourceList{}
-			err = store.List(context.Background(), list, core_store.ListByNamespace("default"))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(list.Items).To(HaveLen(1))
 			// and
 			Expect(errbuf.String()).To(BeEmpty())
 			// and
 			Expect(outbuf.String()).To(Equal("deleted Mesh \"mesh2\"\n"))
+
+			By("verifying that resource under test was actually deleted")
+			// when
+			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Mesh: "mesh2", Name: "mesh2"}))
+			// then
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+
+			By("verifying that another mesh wasn't affected")
+			// when
+			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Mesh: "mesh1", Name: "mesh1"}))
+			// then
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
-
 })

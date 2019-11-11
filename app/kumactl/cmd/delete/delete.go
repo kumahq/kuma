@@ -2,6 +2,7 @@ package delete
 
 import (
 	"context"
+
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -38,9 +39,11 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				resourceType = mesh.TrafficLogType
 			case "traffic-permission":
 				resourceType = mesh.TrafficPermissionType
+			case "traffic-route":
+				resourceType = mesh.TrafficRouteType
 
 			default:
-				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission", resourceTypeArg)
+				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission, traffic-route", resourceTypeArg)
 			}
 
 			currentMesh := pctx.CurrentMesh()
@@ -64,8 +67,8 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func deleteResource(name string, currentMesh string, resource model.Resource, resourceType model.ResourceType, rs store.ResourceStore) error {
-	getOptions := store.GetByKey(model.DefaultNamespace, name, currentMesh)
+func deleteResource(name string, mesh string, resource model.Resource, resourceType model.ResourceType, rs store.ResourceStore) error {
+	getOptions := store.GetBy(model.ResourceKey{Mesh: mesh, Name: name})
 	if err := rs.Get(context.Background(), resource, getOptions); err != nil {
 		if store.IsResourceNotFound(err) {
 			return errors.Errorf("there is no %s with name %q", resourceType, name)
@@ -73,7 +76,7 @@ func deleteResource(name string, currentMesh string, resource model.Resource, re
 		return errors.Wrapf(err, "failed to get %s with the name %q", resourceType, name)
 	}
 
-	deleteOptions := store.DeleteByKey(model.DefaultNamespace, name, currentMesh)
+	deleteOptions := store.DeleteBy(model.ResourceKey{Mesh: mesh, Name: name})
 	if err := rs.Delete(context.Background(), resource, deleteOptions); err != nil {
 		return errors.Wrapf(err, "failed to delete %s with the name %q", resourceType, name)
 	}

@@ -1,0 +1,7 @@
+items:
+- mesh: default
+  name: web-to-backend
+  type: TrafficRoute
+- mesh: default
+  name: backend-to-db
+  type: TrafficRoute
