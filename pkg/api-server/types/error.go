@@ -11,7 +11,7 @@ type Error struct {
 func (e *Error) Error() string {
 	msg := fmt.Sprintf("%s (%s)", e.Title, e.Details)
 	for _, cause := range e.Causes {
-		msg += fmt.Sprintf("\n* %s: %s", cause.Field, cause.Message)
+		msg += fmt.Sprintf(";%s=%s ", cause.Field, cause.Message)
 	}
 	return msg
 }

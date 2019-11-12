@@ -2,6 +2,7 @@ package generate
 
 import (
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +21,7 @@ func NewGenerateDataplaneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		Use:   "dataplane-token",
 		Short: "Generate Dataplane Token",
 		Long:  `Generate Dataplane Token that is used to prove Dataplane identity.`,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentDataplaneTokenClient()
 			if err != nil {
 				return errors.Wrap(err, "failed to create dataplane token client")
@@ -32,7 +33,7 @@ func NewGenerateDataplaneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			}
 			_, err = cmd.OutOrStdout().Write([]byte(token))
 			return err
-		},
+		}),
 	}
 	cmd.Flags().StringVar(&ctx.args.dataplane, "dataplane", "", "name of the Dataplane")
 	_ = cmd.MarkFlagRequired("dataplane")

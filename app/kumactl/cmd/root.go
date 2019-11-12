@@ -15,6 +15,7 @@ import (
 	"github.com/Kong/kuma/pkg/cmd/version"
 	"github.com/spf13/cobra"
 
+	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
 	"github.com/Kong/kuma/pkg/core"
 	kuma_log "github.com/Kong/kuma/pkg/log"
@@ -29,7 +30,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "kumactl",
 		Short: "Management tool for Kuma",
 		Long:  `Management tool for Kuma.`,
-		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+		PersistentPreRunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
 				return err
@@ -47,7 +48,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 				}
 			}
 			return root.LoadConfig()
-		},
+		}),
 	}
 	// root flags
 	cmd.PersistentFlags().StringVar(&root.Args.ConfigFile, "config-file", "", "path to the configuration file to use")

@@ -3,6 +3,7 @@ package apply
 import (
 	"context"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
@@ -40,7 +41,7 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "apply",
 		Short: "Create or modify Kuma resources",
 		Long:  `Create or modify Kuma resources.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, args []string) error {
 			var b []byte
 			var err error
 
@@ -91,7 +92,7 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 			return nil
-		},
+		}),
 	}
 	cmd.PersistentFlags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file to apply")
 	cmd.PersistentFlags().StringToStringVarP(&ctx.args.vars, "var", "v", map[string]string{}, "Variable to replace in configuration")

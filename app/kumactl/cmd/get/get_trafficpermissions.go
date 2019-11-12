@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -18,7 +19,7 @@ func newGetTrafficPermissionsCmd(pctx *getContext) *cobra.Command {
 		Use:   "traffic-permissions",
 		Short: "Show TrafficPermissions",
 		Long:  `Show TrafficPermission entities.`,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
@@ -39,7 +40,7 @@ func newGetTrafficPermissionsCmd(pctx *getContext) *cobra.Command {
 				}
 				return printer.Print(rest_types.From.ResourceList(&trafficPermissions), cmd.OutOrStdout())
 			}
-		},
+		}),
 	}
 	return cmd
 }

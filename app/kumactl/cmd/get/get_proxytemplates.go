@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -18,7 +19,7 @@ func newGetProxyTemplatesCmd(pctx *getContext) *cobra.Command {
 		Use:   "proxytemplates",
 		Short: "Show ProxyTemplates",
 		Long:  `Show ProxyTemplates.`,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
@@ -39,7 +40,7 @@ func newGetProxyTemplatesCmd(pctx *getContext) *cobra.Command {
 				}
 				return printer.Print(rest_types.From.ResourceList(proxyTemplates), cmd.OutOrStdout())
 			}
-		},
+		}),
 	}
 	return cmd
 }

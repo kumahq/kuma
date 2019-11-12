@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 )
@@ -13,7 +14,7 @@ func newConfigControlPlanesListCmd(pctx *kumactl_cmd.RootContext) *cobra.Command
 		Use:   "list",
 		Short: "List Control Planes",
 		Long:  `List Control Planes.`,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
 			context, _ := pctx.CurrentContext()
 
 			controlPlanes := pctx.Config().ControlPlanes
@@ -40,6 +41,6 @@ func newConfigControlPlanesListCmd(pctx *kumactl_cmd.RootContext) *cobra.Command
 				}(),
 			}
 			return printers.NewTablePrinter().Print(data, cmd.OutOrStdout())
-		},
+		}),
 	}
 }

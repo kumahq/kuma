@@ -6,6 +6,7 @@ import (
 	"time"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
@@ -32,7 +33,7 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 		Use:   "dataplanes",
 		Short: "Inspect Dataplanes",
 		Long:  `Inspect Dataplanes.`,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentDataplaneOverviewClient()
 			if err != nil {
 				return errors.Wrap(err, "failed to create a dataplane client")
@@ -52,7 +53,7 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 				}
 				return printer.Print(rest_types.From.ResourceList(overviews), cmd.OutOrStdout())
 			}
-		},
+		}),
 	}
 	cmd.PersistentFlags().StringToStringVarP(&ctx.tagsArgs.tags, "tag", "", map[string]string{}, "filter by tag in format of key=value. You can provide many tags")
 	return cmd
