@@ -150,9 +150,12 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 		if ok {
 			for _, destination := range route.Spec.Conf {
 				service, ok := destination.Destination[mesh_proto.ServiceTag]
-				if ok {
-					destinations[service] = append(destinations[service], mesh_proto.MatchTags(destination.Destination))
+				if !ok {
+					// ignore destinations without a `service` tag
+					// TODO(yskopets): consider adding a metric for this
+					continue
 				}
+				destinations[service] = append(destinations[service], mesh_proto.MatchTags(destination.Destination))
 			}
 		} else {
 			destinations[oface.Service] = append(destinations[oface.Service], mesh_proto.MatchService(oface.Service))
