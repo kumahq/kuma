@@ -43,11 +43,11 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 
 	coreRes, err := h.coreRegistry.NewObject(resType)
 	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
+		return admission.Errored(http.StatusBadRequest, err)
 	}
 	obj, err := h.k8sRegistry.NewObject(coreRes.GetSpec())
 	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
+		return admission.Errored(http.StatusBadRequest, err)
 	}
 	// unmarshal k8s object from the request
 	if err := h.decoder.Decode(req, obj); err != nil {
