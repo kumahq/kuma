@@ -3,10 +3,14 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/validators"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
@@ -113,79 +117,106 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		return nil, nil
 	}
 	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
-	resources := make([]*Resource, 0, len(endpoints))
-	names := make(map[string]bool)
+	resources := &ResourceSet{}
 	for _, endpoint := range endpoints {
+		// generate CDS resource
 		localClusterName := fmt.Sprintf("localhost:%d", endpoint.WorkloadPort)
-		if used := names[localClusterName]; !used {
-			resources = append(resources, &Resource{
-				Name:     localClusterName,
-				Version:  "",
-				Resource: envoy.CreateLocalCluster(localClusterName, "127.0.0.1", endpoint.WorkloadPort),
-			})
-			names[localClusterName] = true
-		}
+		resources.Add(&Resource{
+			Name:     localClusterName,
+			Version:  "",
+			Resource: envoy.CreateLocalCluster(localClusterName, "127.0.0.1", endpoint.WorkloadPort),
+		})
 
+		// generate LDS resource
 		inboundListenerName := fmt.Sprintf("inbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
-		if used := names[inboundListenerName]; !used {
-			resources = append(resources, &Resource{
-				Name:     inboundListenerName,
-				Version:  "",
-				Resource: envoy.CreateInboundListener(ctx, inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual, proxy.TrafficPermissions.Get(endpoint.String()), proxy.Metadata),
-			})
-			names[inboundListenerName] = true
-		}
+		resources.Add(&Resource{
+			Name:     inboundListenerName,
+			Version:  "",
+			Resource: envoy.CreateInboundListener(ctx, inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual, proxy.TrafficPermissions.Get(endpoint.String()), proxy.Metadata),
+		})
 	}
-	return resources, nil
+	return resources.List(), nil
 }
 
 type OutboundProxyGenerator struct {
 }
 
-func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
+func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
 	ofaces := proxy.Dataplane.Spec.Networking.GetOutbound()
 	if len(ofaces) == 0 {
 		return nil, nil
 	}
 	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
-	resources := make([]*Resource, 0, len(ofaces))
-	names := make(map[string]bool)
+	resources := &ResourceSet{}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
-	for _, oface := range ofaces {
+	for i, oface := range ofaces {
 		endpoint, err := kuma_mesh.ParseOutboundInterface(oface.Interface)
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s: value is not valid: %q", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i).Field("interface"), oface.Interface)
+		}
+
+		// pick a route
+		route := proxy.TrafficRoutes[oface.Service]
+		if route == nil {
+			return nil, errors.Errorf("%s{service=%q}: has no TrafficRoute", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i), oface.Service)
+		}
+
+		// determine the list of destination clusters
+		clusters, err := g.determineClusters(ctx, proxy, route)
 		if err != nil {
 			return nil, err
 		}
 
-		serviceTag := kuma_mesh.ServiceTagValue(oface.Service)
-		edsClusterName := outboundClusterName(serviceTag, oface.ServicePort)
-		if used := names[edsClusterName]; !used {
-			resources = append(resources, &Resource{
-				Name:     edsClusterName,
-				Resource: envoy.CreateEdsCluster(ctx, edsClusterName, proxy.Metadata),
-			})
-			resources = append(resources, &Resource{
-				Name:     edsClusterName,
-				Resource: envoy.CreateClusterLoadAssignment(edsClusterName, proxy.OutboundTargets[oface.Service]),
-			})
-			names[edsClusterName] = true
-		}
+		// generate CDS and EDS resources
+		resources.Add(g.generateEds(ctx, proxy, clusters)...)
 
+		// generate LDS resource
 		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
-		if used := names[outboundListenerName]; !used {
-			destinationService := oface.Service
-			listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, edsClusterName, virtual, sourceService, destinationService, proxy.Logs.Outbounds[oface.Interface], proxy)
-			if err != nil {
-				return nil, errors.Wrapf(err, "could not generate listener %s", outboundListenerName)
-			}
-			resources = append(resources, &Resource{
-				Name:     outboundListenerName,
-				Resource: listener,
-			})
-			names[outboundListenerName] = true
+		destinationService := oface.Service
+		listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, oface.Service, clusters, virtual, sourceService, destinationService, proxy.Logs.Outbounds[oface.Interface], proxy)
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i), outboundListenerName)
 		}
+		resources.Add(&Resource{
+			Name:     outboundListenerName,
+			Resource: listener,
+		})
 	}
-	return resources, nil
+	return resources.List(), nil
+}
+
+func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy *model.Proxy, route *mesh_core.TrafficRouteResource) (clusters []envoy.ClusterInfo, err error) {
+	for j, destination := range route.Spec.Conf {
+		service, ok := destination.Destination[kuma_mesh.ServiceTag]
+		if !ok {
+			return nil, errors.Errorf("trafficroute{name=%q}.%s: mandatory tag %q is missing: %v", route.GetMeta().GetName(), validators.RootedAt("conf").Index(j).Field("destination"), kuma_mesh.ServiceTag, destination.Destination)
+		}
+		if destination.Weight == 0 {
+			// Envoy doesn't support 0 weight
+			continue
+		}
+		clusters = append(clusters, envoy.ClusterInfo{
+			Name:   destinationClusterName(service, destination.Destination),
+			Weight: destination.Weight,
+			Tags:   destination.Destination,
+		})
+	}
+	return
+}
+
+func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *model.Proxy, clusters []envoy.ClusterInfo) (resources []*Resource) {
+	for _, cluster := range clusters {
+		resources = append(resources, &Resource{
+			Name:     cluster.Name,
+			Resource: envoy.CreateEdsCluster(ctx, cluster.Name, proxy.Metadata),
+		})
+		endpoints := model.EndpointList(proxy.OutboundTargets[cluster.Tags[kuma_mesh.ServiceTag]]).Filter(kuma_mesh.MatchTags(cluster.Tags))
+		resources = append(resources, &Resource{
+			Name:     cluster.Name,
+			Resource: envoy.CreateClusterLoadAssignment(cluster.Name, endpoints),
+		})
+	}
+	return
 }
 
 type TransparentProxyGenerator struct {
@@ -210,17 +241,17 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	}, nil
 }
 
-// outboundClusterName generates a proper name for a Cluster,
-// taking into account the value of "service" tag.
-//
-// Notice that on k8s, we automatically generate Dataplane definitions,
-// including "service" tag on inbound interfaces.
-// In order to prevent ambiguity when a k8s service has multiple ports,
-// we include service port into the "service" tag.
-// Which makes explicit servicePort field redundant, we might even consider removing it.
-func outboundClusterName(serviceTag kuma_mesh.ServiceTagValue, servicePort uint32) string {
-	if serviceTag.HasPort() || servicePort == 0 {
-		return string(serviceTag)
+func destinationClusterName(service string, selector map[string]string) string {
+	var pairs []string
+	for key, value := range selector {
+		if key == kuma_mesh.ServiceTag {
+			continue
+		}
+		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
 	}
-	return fmt.Sprintf("%s:%d", serviceTag, servicePort)
+	if len(pairs) == 0 {
+		return service
+	}
+	sort.Strings(pairs)
+	return fmt.Sprintf("%s{%s}", service, strings.Join(pairs, ","))
 }

@@ -155,10 +155,10 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 					// TODO(yskopets): consider adding a metric for this
 					continue
 				}
-				destinations[service] = append(destinations[service], mesh_proto.MatchTags(destination.Destination))
+				destinations[service] = destinations[service].Add(mesh_proto.MatchTags(destination.Destination))
 			}
 		} else {
-			destinations[oface.Service] = append(destinations[oface.Service], mesh_proto.MatchService(oface.Service))
+			destinations[oface.Service] = destinations[oface.Service].Add(mesh_proto.MatchService(oface.Service))
 		}
 	}
 	return destinations

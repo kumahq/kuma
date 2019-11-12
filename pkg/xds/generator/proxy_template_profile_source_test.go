@@ -57,6 +57,16 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 					Spec: dataplane,
 				},
+				TrafficRoutes: model.RouteMap{
+					"db": &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      100,
+								Destination: mesh_proto.MatchService("db"),
+							}},
+						},
+					},
+				},
 				OutboundTargets: model.EndpointMap{
 					"db": []model.Endpoint{
 						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},

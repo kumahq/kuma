@@ -665,9 +665,16 @@ name: inbound:192.168.0.1:8080
 		type testCase struct {
 			ctx      xds_context.Context
 			virtual  bool
+			clusters []envoy.ClusterInfo
 			expected string
 			logs     []*mesh_proto.LoggingBackend
 		}
+
+		singleCluster := []envoy.ClusterInfo{{
+			Name:   "db",
+			Weight: 100,
+			Tags:   map[string]string{"service": "db"},
+		}}
 
 		DescribeTable("should generate 'outbound' Listener",
 			func(given testCase) {
@@ -680,14 +687,16 @@ name: inbound:192.168.0.1:8080
 					Dataplane: &mesh_core.DataplaneResource{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Interface: "192.168.0.1:1234:8765",
-										Tags: map[string]string{
-											"service": "backend",
-										},
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+									Interface: "192.168.0.1:1234:8765",
+									Tags: map[string]string{
+										"service": "backend",
 									},
-								},
+								}},
+								Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
+									Interface: ":15432",
+									Service:   "db",
+								}},
 							},
 						},
 					},
@@ -696,7 +705,7 @@ name: inbound:192.168.0.1:8080
 				destinationService := "db"
 
 				// when
-				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "outbound:127.0.0.1:18080", given.virtual, sourceService, destinationService, given.logs, &proxy)
+				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "db", given.clusters, given.virtual, sourceService, destinationService, given.logs, &proxy)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -712,7 +721,8 @@ name: inbound:192.168.0.1:8080
 						TlsEnabled: false,
 					},
 				},
-				virtual: false,
+				virtual:  false,
+				clusters: singleCluster,
 				expected: `
                 address:
                   socketAddress:
@@ -723,8 +733,8 @@ name: inbound:192.168.0.1:8080
                   - name: envoy.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                      cluster: outbound:127.0.0.1:18080
-                      statPrefix: outbound:127.0.0.1:18080
+                      cluster: db
+                      statPrefix: db
                 name: outbound:127.0.0.1:18080
 `,
 			}),
@@ -735,7 +745,8 @@ name: inbound:192.168.0.1:8080
 						TlsEnabled: false,
 					},
 				},
-				virtual: true,
+				virtual:  true,
+				clusters: singleCluster,
 				expected: `
                 address:
                   socketAddress:
@@ -748,8 +759,8 @@ name: inbound:192.168.0.1:8080
                   - name: envoy.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                      cluster: outbound:127.0.0.1:18080
-                      statPrefix: outbound:127.0.0.1:18080
+                      cluster: db
+                      statPrefix: db
                 name: outbound:127.0.0.1:18080
 `,
 			}),
@@ -763,7 +774,8 @@ name: inbound:192.168.0.1:8080
 						TlsEnabled: true,
 					},
 				},
-				virtual: false,
+				virtual:  false,
+				clusters: singleCluster,
 				expected: `
                 address:
                   socketAddress:
@@ -774,8 +786,8 @@ name: inbound:192.168.0.1:8080
                   - name: envoy.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                      cluster: outbound:127.0.0.1:18080
-                      statPrefix: outbound:127.0.0.1:18080
+                      cluster: db
+                      statPrefix: db
                 name: outbound:127.0.0.1:18080
 `,
 			}),
@@ -789,7 +801,8 @@ name: inbound:192.168.0.1:8080
 						TlsEnabled: true,
 					},
 				},
-				virtual: false,
+				virtual:  false,
+				clusters: singleCluster,
 				expected: `
                 address:
                   socketAddress:
@@ -800,8 +813,8 @@ name: inbound:192.168.0.1:8080
                   - name: envoy.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                      cluster: outbound:127.0.0.1:18080
-                      statPrefix: outbound:127.0.0.1:18080
+                      cluster: db
+                      statPrefix: db
                 name: outbound:127.0.0.1:18080
 `,
 			}),
@@ -812,6 +825,7 @@ name: inbound:192.168.0.1:8080
 						TlsEnabled: false,
 					},
 				},
+				clusters: singleCluster,
 				logs: []*mesh_proto.LoggingBackend{
 					{
 						Name: "file",
@@ -856,9 +870,46 @@ name: inbound:192.168.0.1:8080
                         envoyGrpc:
                           clusterName: access_log_sink
                       logName: 127.0.0.1:1234;custom format
-                cluster: outbound:127.0.0.1:18080
-                statPrefix: outbound:127.0.0.1:18080
+                cluster: db
+                statPrefix: db
           name: outbound:127.0.0.1:18080
+`,
+			}),
+			Entry("with multiple weighted clusters", testCase{
+				ctx: xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{},
+					Mesh: xds_context.MeshContext{
+						TlsEnabled: false,
+					},
+				},
+				virtual: false,
+				clusters: []envoy.ClusterInfo{{
+					Name:   "db{version=v1}",
+					Weight: 10,
+					Tags:   map[string]string{"service": "db", "version": "v1"},
+				}, {
+					Name:   "db{version=v2}",
+					Weight: 90,
+					Tags:   map[string]string{"service": "db", "version": "v2"},
+				}},
+				expected: `
+                address:
+                  socketAddress:
+                    address: 127.0.0.1
+                    portValue: 18080
+                filterChains:
+                - filters:
+                  - name: envoy.tcp_proxy
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                      statPrefix: db
+                      weightedClusters:
+                        clusters:
+                        - name: db{version=v1}
+                          weight: 10
+                        - name: db{version=v2}
+                          weight: 90
+                name: outbound:127.0.0.1:18080
 `,
 			}),
 		)
