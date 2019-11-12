@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"github.com/Kong/kuma/pkg/config/api-server/catalogue"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	"github.com/Kong/kuma/pkg/config/core"
+	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -104,4 +106,24 @@ var _ = Describe("Auto configuration", func() {
 			},
 		}),
 	)
+
+	It("should autoconfigure gui config", func() {
+		// given
+		cfg := kuma_cp.DefaultConfig()
+		cfg.Environment = core.KubernetesEnvironment
+		cfg.General.AdvertisedHostname = "kuma.internal"
+		cfg.ApiServer.Port = 1234
+
+		// when
+		err := autoconfigure(&cfg)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		Expect(*cfg.GuiServer.GuiConfig).To(Equal(gui_server.GuiConfig{
+			ApiUrl:      "http://kuma.internal:1234",
+			Environment: "kubernetes",
+		}))
+	})
 })

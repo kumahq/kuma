@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/Kong/kuma/app/kuma-ui/pkg/resources"
+	"github.com/Kong/kuma/app/kuma-ui/pkg/server/types"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/core"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
@@ -29,9 +31,13 @@ var _ core_runtime.Component = &Server{}
 func (g *Server) Start(stop <-chan struct{}) error {
 	fileServer := http.FileServer(resources.GuiDir)
 
+	mux := http.NewServeMux()
+	mux.Handle("/", fileServer)
+	mux.HandleFunc("/config", g.configHandler)
+
 	guiServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", g.Config.Port),
-		Handler: fileServer,
+		Handler: mux,
 	}
 
 	errChan := make(chan error)
@@ -55,5 +61,24 @@ func (g *Server) Start(stop <-chan struct{}) error {
 		return guiServer.Shutdown(context.Background())
 	case err := <-errChan:
 		return err
+	}
+}
+
+func (g *Server) configHandler(writer http.ResponseWriter, request *http.Request) {
+	bytes, err := json.Marshal(fromServerConfig(*g.Config.GuiConfig))
+	if err != nil {
+		log.Error(err, "could not marshall config")
+		writer.WriteHeader(500)
+		return
+	}
+	if _, err := writer.Write(bytes); err != nil {
+		log.Error(err, "could not write the response")
+	}
+}
+
+func fromServerConfig(config gui_server.GuiConfig) types.GuiConfig {
+	return types.GuiConfig{
+		ApiUrl:      config.ApiUrl,
+		Environment: config.Environment,
 	}
 }

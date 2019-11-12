@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"github.com/Kong/kuma/pkg/config/api-server/catalogue"
+	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	token_server "github.com/Kong/kuma/pkg/config/token-server"
 	"io/ioutil"
 	"os"
@@ -20,6 +21,7 @@ var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 func autoconfigure(cfg *kuma_cp.Config) error {
 	autoconfigureDataplaneTokenServer(cfg.DataplaneTokenServer)
 	autoconfigureCatalogue(cfg)
+	autoconfigureGui(cfg)
 	return autoconfigureSds(cfg)
 }
 
@@ -68,6 +70,13 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 func autoconfigureDataplaneTokenServer(cfg *token_server.DataplaneTokenServerConfig) {
 	if cfg.Public.Enabled && cfg.Public.Port == 0 {
 		cfg.Public.Port = cfg.Local.Port
+	}
+}
+
+func autoconfigureGui(cfg *kuma_cp.Config) {
+	cfg.GuiServer.GuiConfig = &gui_server.GuiConfig{
+		ApiUrl:      fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.Port),
+		Environment: cfg.Environment,
 	}
 }
 
