@@ -1,7 +1,6 @@
 package envoy
 
 import (
-	"net"
 	"time"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -56,7 +55,7 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.C
 	}
 }
 
-func CreateClusterLoadAssignment(clusterName string, endpoints []net.SRV) *v2.ClusterLoadAssignment {
+func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint) *v2.ClusterLoadAssignment {
 	lbEndpoints := make([]*envoy_endpoint.LbEndpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
 		lbEndpoints = append(lbEndpoints, &envoy_endpoint.LbEndpoint{
@@ -68,7 +67,7 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []net.SRV) *v2.Cl
 								Protocol: envoy_core.SocketAddress_TCP,
 								Address:  ep.Target,
 								PortSpecifier: &envoy_core.SocketAddress_PortValue{
-									PortValue: uint32(ep.Port),
+									PortValue: ep.Port,
 								},
 							},
 						},

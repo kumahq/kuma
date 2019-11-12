@@ -162,6 +162,14 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 	return ifaces, nil
 }
 
+// Matches is simply an alias for MatchTags to make source code more aesthetic.
+func (d *Dataplane) Matches(selector TagSelector) bool {
+	if d != nil {
+		return d.MatchTags(selector)
+	}
+	return false
+}
+
 func (d *Dataplane) MatchTags(selector TagSelector) bool {
 	for _, inbound := range d.GetNetworking().GetInbound() {
 		if inbound.MatchTags(selector) {
@@ -200,9 +208,40 @@ func (s TagSelector) Matches(tags map[string]string) bool {
 	return true
 }
 
-type Tags map[string]map[string]bool
+func (s TagSelector) Rank() (r TagSelectorRank) {
+	for _, value := range s {
+		if value == MatchAllTag {
+			r.WildcardMatches++
+		} else {
+			r.ExactMatches++
+		}
+	}
+	return
+}
 
-func (t Tags) Values(key string) []string {
+func MatchAll() TagSelector {
+	return nil
+}
+
+func MatchAnyService() TagSelector {
+	return MatchService(MatchAllTag)
+}
+
+func MatchService(service string) TagSelector {
+	return TagSelector{ServiceTag: service}
+}
+
+func MatchTags(tags map[string]string) TagSelector {
+	return TagSelector(tags)
+}
+
+// Set of tags that only allows a single value per key.
+type SingleValueTagSet map[string]string
+
+// Set of tags that allows multiple values per key.
+type MultiValueTagSet map[string]map[string]bool
+
+func (t MultiValueTagSet) Values(key string) []string {
 	if t == nil {
 		return nil
 	}
@@ -214,8 +253,8 @@ func (t Tags) Values(key string) []string {
 	return result
 }
 
-func (d *Dataplane) Tags() Tags {
-	tags := Tags{}
+func (d *Dataplane) Tags() MultiValueTagSet {
+	tags := MultiValueTagSet{}
 	for _, inbound := range d.GetNetworking().GetInbound() {
 		for tag, value := range inbound.Tags {
 			_, exists := tags[tag]
@@ -236,11 +275,35 @@ func (d *Dataplane) GetIdentifyingService() string {
 	return ServiceUnknown
 }
 
-func (t Tags) String() string {
+func (t MultiValueTagSet) String() string {
 	var tags []string
 	for tag := range t {
 		tags = append(tags, fmt.Sprintf("%s=%s", tag, strings.Join(t.Values(tag), ",")))
 	}
 	sort.Strings(tags)
 	return strings.Join(tags, " ")
+}
+
+// TagSelectorRank helps to decide which of 2 selectors is more specific.
+type TagSelectorRank struct {
+	// Number of tags that match by the exact value.
+	ExactMatches int
+	// Number of tags that match by a wildcard ('*').
+	WildcardMatches int
+}
+
+func (r TagSelectorRank) CombinedWith(other TagSelectorRank) TagSelectorRank {
+	return TagSelectorRank{
+		ExactMatches:    r.ExactMatches + other.ExactMatches,
+		WildcardMatches: r.WildcardMatches + other.WildcardMatches,
+	}
+}
+
+func (r TagSelectorRank) CompareTo(other TagSelectorRank) int {
+	thisTotal := r.ExactMatches + r.WildcardMatches
+	otherTotal := other.ExactMatches + other.WildcardMatches
+	if thisTotal == otherTotal {
+		return r.ExactMatches - other.ExactMatches
+	}
+	return thisTotal - otherTotal
 }

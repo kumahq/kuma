@@ -2,17 +2,17 @@ package xds
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/pkg/core/logs"
-	"github.com/Kong/kuma/pkg/core/permissions"
-	"net"
 	"strings"
 
+	"github.com/pkg/errors"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/logs"
+	"github.com/Kong/kuma/pkg/core/permissions"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-
-	"github.com/pkg/errors"
 )
 
 type ProxyId struct {
@@ -25,12 +25,32 @@ func (id *ProxyId) String() string {
 	return fmt.Sprintf("%s.%s.%s", id.Mesh, id.Name, id.Namespace)
 }
 
+// ServiceName is a convenience type alias to clarify the meaning of string value.
+type ServiceName = string
+
+// RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
+type RouteMap map[ServiceName]*mesh_core.TrafficRouteResource
+
+// DestinationMap holds selectors for all reachable Dataplanes grouped by service name.
+type DestinationMap map[ServiceName][]mesh_proto.TagSelector
+
+// Endpoint holds routing-related information about a single endpoint.
+type Endpoint struct {
+	Target string
+	Port   uint32
+	Tags   map[string]string
+}
+
+// EndpointMap holds routing-related information about a set of endpoints grouped by service name.
+type EndpointMap map[ServiceName][]Endpoint
+
 type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
 	TrafficPermissions permissions.MatchedPermissions
 	Logs               *logs.MatchedLogs
-	OutboundTargets    map[string][]net.SRV
+	TrafficRoutes      RouteMap
+	OutboundTargets    EndpointMap
 	Metadata           *DataplaneMetadata
 }
 
