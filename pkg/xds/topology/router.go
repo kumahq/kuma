@@ -125,7 +125,7 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 				},
 				Spec: mesh_proto.TrafficRoute{
 					Sources: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchService(mesh_proto.MatchAllTag),
+						Match: mesh_proto.MatchAnyService(),
 					}},
 					Destinations: []*mesh_proto.Selector{{
 						Match: mesh_proto.MatchService(oface.Service),

@@ -223,6 +223,10 @@ func MatchAll() TagSelector {
 	return nil
 }
 
+func MatchAnyService() TagSelector {
+	return MatchService(MatchAllTag)
+}
+
 func MatchService(service string) TagSelector {
 	return TagSelector{ServiceTag: service}
 }
