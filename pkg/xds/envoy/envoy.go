@@ -9,6 +9,7 @@ import (
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 
 	"github.com/golang/protobuf/ptypes"
+	pstruct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -55,10 +56,32 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.C
 	}
 }
 
+func CreateLbMetadata(tags map[string]string) *envoy_core.Metadata {
+	if len(tags) == 0 {
+		return nil
+	}
+	fields := map[string]*pstruct.Value{}
+	for key, value := range tags {
+		fields[key] = &pstruct.Value{
+			Kind: &pstruct.Value_StringValue{
+				StringValue: value,
+			},
+		}
+	}
+	return &envoy_core.Metadata{
+		FilterMetadata: map[string]*pstruct.Struct{
+			"envoy.lb": &pstruct.Struct{
+				Fields: fields,
+			},
+		},
+	}
+}
+
 func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint) *v2.ClusterLoadAssignment {
 	lbEndpoints := make([]*envoy_endpoint.LbEndpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
 		lbEndpoints = append(lbEndpoints, &envoy_endpoint.LbEndpoint{
+			Metadata: CreateLbMetadata(ep.Tags),
 			HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoy_endpoint.Endpoint{
 					Address: &envoy_core.Address{

@@ -83,6 +83,63 @@ var _ = Describe("Envoy", func() {
 		Expect(actual).To(MatchYAML(expected))
 	})
 
+	Describe("CreateLbMetadata()", func() {
+
+		It("should handle `nil` map of tags", func() {
+			// when
+			metadata := envoy.CreateLbMetadata(nil)
+			// then
+			Expect(metadata).To(BeNil())
+		})
+
+		It("should handle empty map of tags", func() {
+			// when
+			metadata := envoy.CreateLbMetadata(map[string]string{})
+			// then
+			Expect(metadata).To(BeNil())
+		})
+
+		type testCase struct {
+			tags     map[string]string
+			expected string
+		}
+		DescribeTable("should generate Envoy metadata",
+			func(given testCase) {
+				// when
+				metadata := envoy.CreateLbMetadata(given.tags)
+				// and
+				actual, err := util_proto.ToYAML(metadata)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(actual).To(MatchYAML(given.expected))
+			},
+			Entry("map with 1 tag", testCase{
+				tags: map[string]string{
+					"service": "redis",
+				},
+				expected: `
+        filterMetadata:
+          envoy.lb:
+            service: redis
+`,
+			}),
+			Entry("map with multiple tags", testCase{
+				tags: map[string]string{
+					"service": "redis",
+					"version": "v1",
+					"region":  "eu",
+				},
+				expected: `
+        filterMetadata:
+          envoy.lb:
+            service: redis
+            version: v1
+            region: eu
+`,
+			}),
+		)
+	})
+
 	Describe("'EDS' Cluster", func() {
 
 		type testCase struct {
@@ -236,9 +293,30 @@ var _ = Describe("Envoy", func() {
 		)
 	})
 
-	It("should generate ClusterLoadAssignment", func() {
-		// given
-		expected := `
+	Describe("ClusterLoadAssignment()", func() {
+		type testCase struct {
+			cluster   string
+			endpoints []xds.Endpoint
+			expected  string
+		}
+		DescribeTable("should generate ClusterLoadAssignment",
+			func(given testCase) {
+				// when
+				resource := envoy.CreateClusterLoadAssignment(given.cluster, given.endpoints)
+
+				// then
+				actual, err := util_proto.ToYAML(resource)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(actual).To(MatchYAML(given.expected))
+			},
+			Entry("without tags", testCase{
+				cluster: "127.0.0.1:8080",
+				endpoints: []xds.Endpoint{
+					{Target: "192.168.0.1", Port: 8081},
+					{Target: "192.168.0.2", Port: 8082},
+				},
+				expected: `
         clusterName: 127.0.0.1:8080
         endpoints:
         - lbEndpoints:
@@ -252,19 +330,41 @@ var _ = Describe("Envoy", func() {
                 socketAddress:
                   address: 192.168.0.2
                   portValue: 8082
-`
-		// when
-		resource := envoy.CreateClusterLoadAssignment("127.0.0.1:8080",
-			[]xds.Endpoint{
-				{Target: "192.168.0.1", Port: 8081},
-				{Target: "192.168.0.2", Port: 8082},
-			})
-
-		// then
-		actual, err := util_proto.ToYAML(resource)
-
-		Expect(err).ToNot(HaveOccurred())
-		Expect(actual).To(MatchYAML(expected))
+`,
+			}),
+			Entry("with tags", testCase{
+				cluster: "127.0.0.1:8080",
+				endpoints: []xds.Endpoint{
+					{Target: "192.168.0.1", Port: 8081, Tags: map[string]string{"service": "backend", "region": "us"}},
+					{Target: "192.168.0.2", Port: 8082, Tags: map[string]string{"service": "backend", "region": "eu"}},
+				},
+				expected: `
+        clusterName: 127.0.0.1:8080
+        endpoints:
+        - lbEndpoints:
+          - endpoint:
+              address:
+                socketAddress:
+                  address: 192.168.0.1
+                  portValue: 8081
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  region: us
+                  service: backend
+          - endpoint:
+              address:
+                socketAddress:
+                  address: 192.168.0.2
+                  portValue: 8082
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  region: eu
+                  service: backend
+`,
+			}),
+		)
 	})
 
 	Describe("'inbound' listener", func() {
