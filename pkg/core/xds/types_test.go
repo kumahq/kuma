@@ -194,7 +194,74 @@ var _ = Describe("xDS", func() {
 						},
 					}},
 				}),
-				Entry("empty filter", testCase{
+				Entry("wildcard filter", testCase{
+					endpoints: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+					filter: mesh_proto.TagSelector{
+						"service": "*",
+					},
+					expected: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+				}),
+				Entry("filter by tag that is missing", testCase{
+					endpoints: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+						},
+					}},
+					filter: mesh_proto.TagSelector{
+						"region": "us",
+					},
+					expected: nil,
+				}),
+				Entry("filter by 1 common tag", testCase{
+					endpoints: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v1",
+						},
+					}, {
+						Target: "192.168.0.2",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v2",
+						},
+					}},
+					filter: mesh_proto.TagSelector{
+						"service": "backend",
+					},
+					expected: core_xds.EndpointList{{
+						Target: "192.168.0.1",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v1",
+						},
+					}, {
+						Target: "192.168.0.2",
+						Port:   8080,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v2",
+						},
+					}},
+				}),
+				Entry("filter by 1 common tag and 1 unique tag", testCase{
 					endpoints: core_xds.EndpointList{{
 						Target: "192.168.0.1",
 						Port:   8080,
