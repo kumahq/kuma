@@ -5,31 +5,31 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (pt *TrafficRoute) GetObjectMeta() *metav1.ObjectMeta {
+func (pt *SampleTrafficRoute) GetObjectMeta() *metav1.ObjectMeta {
 	return &pt.ObjectMeta
 }
 
-func (pt *TrafficRoute) SetObjectMeta(m *metav1.ObjectMeta) {
+func (pt *SampleTrafficRoute) SetObjectMeta(m *metav1.ObjectMeta) {
 	pt.ObjectMeta = *m
 }
 
-func (pt *TrafficRoute) GetMesh() string {
+func (pt *SampleTrafficRoute) GetMesh() string {
 	return pt.Mesh
 }
 
-func (pt *TrafficRoute) SetMesh(mesh string) {
+func (pt *SampleTrafficRoute) SetMesh(mesh string) {
 	pt.Mesh = mesh
 }
 
-func (pt *TrafficRoute) GetSpec() map[string]interface{} {
+func (pt *SampleTrafficRoute) GetSpec() map[string]interface{} {
 	return pt.Spec
 }
 
-func (pt *TrafficRoute) SetSpec(spec map[string]interface{}) {
+func (pt *SampleTrafficRoute) SetSpec(spec map[string]interface{}) {
 	pt.Spec = spec
 }
 
-func (l *TrafficRouteList) GetItems() []model.KubernetesObject {
+func (l *SampleTrafficRouteList) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {
 		result[i] = &l.Items[i]

@@ -10,9 +10,11 @@ import (
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
+	core_registry "github.com/Kong/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	k8s_controllers "github.com/Kong/kuma/pkg/plugins/runtime/k8s/controllers"
 	k8s_webhooks "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
 	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
@@ -40,6 +42,10 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	}
 
 	if err := addControllers(mgr, rt); err != nil {
+		return err
+	}
+
+	if err := addValidators(mgr); err != nil {
 		return err
 	}
 
@@ -100,4 +106,15 @@ func addDefaulter(mgr kube_ctrl.Manager, gvk kube_schema.GroupVersionKind, facto
 
 func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 	return fmt.Sprintf("/default-%s-%s-%s", strings.Replace(gvk.Group, ".", "-", -1), gvk.Version, strings.ToLower(gvk.Kind))
+}
+
+func addValidators(mgr kube_ctrl.Manager) error {
+	handler, err := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global())
+	if err != nil {
+		return err
+	}
+	path := "/validate-kuma-io-v1alpha1"
+	mgr.GetWebhookServer().Register(path, handler)
+	log.Info("Registering a validation webhook", "path", path)
+	return nil
 }
