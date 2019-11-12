@@ -80,10 +80,12 @@ func (d *httpDataplaneOverviewClient) doRequest(ctx context.Context, req *http.R
 	if err != nil {
 		return resp.StatusCode, nil, err
 	}
-	kumaErr := types.Error{}
-	if err := json.Unmarshal(b, &kumaErr); err == nil {
-		if kumaErr.Title != "" && kumaErr.Details != "" {
-			return resp.StatusCode, b, &kumaErr
+	if resp.StatusCode/100 >= 4 {
+		kumaErr := types.Error{}
+		if err := json.Unmarshal(b, &kumaErr); err == nil {
+			if kumaErr.Title != "" && kumaErr.Details != "" {
+				return resp.StatusCode, b, &kumaErr
+			}
 		}
 	}
 	return resp.StatusCode, b, nil

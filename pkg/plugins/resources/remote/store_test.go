@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	api_server_types "github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	sample_api "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	"github.com/Kong/kuma/pkg/test/resources/model"
@@ -110,6 +111,28 @@ var _ = Describe("RemoteStore", func() {
 			Expect(resource.GetMeta().GetMesh()).To(Equal(meshName))
 			Expect(resource.GetMeta().GetNamespace()).To(Equal(""))
 		})
+
+		It("should parse kuma api server error", func() {
+			json := `
+			{
+				"title": "Could not get resource",
+				"details": "Internal Server Error"
+			}
+		`
+			store := setupErrorStore(json)
+
+			// when
+			resource := mesh.MeshResource{}
+			err := store.Get(context.Background(), &resource, core_store.GetByKey("", "test", "test"))
+
+			// then
+			Expect(err).To(HaveOccurred())
+
+			Expect(err).To(Equal(&api_server_types.Error{
+				Title:   "Could not get resource",
+				Details: "Internal Server Error",
+			}))
+		})
 	})
 
 	Describe("Create()", func() {
@@ -153,6 +176,38 @@ var _ = Describe("RemoteStore", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should parse kuma api server error", func() {
+			json := `
+			{
+				"title": "Could not process resource",
+				"details": "Resource is not valid",
+				"causes": [
+					{
+						"field": "mtls",
+						"message": "cannot be empty"
+					}
+				]
+			}
+		`
+			store := setupErrorStore(json)
+
+			// when
+			err := store.Create(context.Background(), &mesh.MeshResource{}, core_store.CreateByKey("", "test", "test"))
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(&api_server_types.Error{
+				Title:   "Could not process resource",
+				Details: "Resource is not valid",
+				Causes: []api_server_types.Cause{
+					{
+						Field:   "mtls",
+						Message: "cannot be empty",
+					},
+				},
+			}))
 		})
 	})
 
@@ -235,6 +290,53 @@ var _ = Describe("RemoteStore", func() {
 			// then
 			Expect(err).To(MatchError("(400): some error from the server"))
 		})
+
+		It("should parse kuma api server error", func() {
+			json := `
+			{
+				"title": "Could not process resource",
+				"details": "Resource is not valid",
+				"causes": [
+					{
+						"field": "mtls",
+						"message": "cannot be empty"
+					},
+					{
+						"field": "mesh",
+						"message": "cannot be empty"
+					}
+				]
+			}
+		`
+			store := setupErrorStore(json)
+
+			// when
+			resource := mesh.MeshResource{
+				Meta: &model.ResourceMeta{
+					Mesh: "test",
+					Name: "test",
+				},
+			}
+			err := store.Update(context.Background(), &resource)
+
+			// then
+			Expect(err).To(HaveOccurred())
+
+			Expect(err).To(Equal(&api_server_types.Error{
+				Title:   "Could not process resource",
+				Details: "Resource is not valid",
+				Causes: []api_server_types.Cause{
+					{
+						Field:   "mtls",
+						Message: "cannot be empty",
+					},
+					{
+						Field:   "mesh",
+						Message: "cannot be empty",
+					},
+				},
+			}))
+		})
 	})
 
 	Describe("List()", func() {
@@ -299,40 +401,30 @@ var _ = Describe("RemoteStore", func() {
 			// then
 			Expect(err).To(MatchError("(400): some error from the server"))
 		})
-	})
 
-	It("should parse kuma api server error", func() {
-		json := `
-		{
-			"title": "Could not process resource",
-			"details": "Resource is not valid",
-			"causes": [
-				{
-					"field": "path",
-					"message": "cannot be empty"
-				},
-				{
-					"field": "mesh",
-					"message": "cannot be empty"
-				}
-			]
-		}
+		It("should parse kuma api server error", func() {
+			json := `
+			{
+				"title": "Could not list resource",
+				"details": "Internal Server Error"
+			}
 		`
-		store := setupErrorStore(json)
+			store := setupErrorStore(json)
 
-		// when
-		meshes := mesh.MeshResourceList{}
-		err := store.List(context.Background(), &meshes)
+			// when
+			meshes := mesh.MeshResourceList{}
+			err := store.List(context.Background(), &meshes)
 
-		// then
-		Expect(err).To(HaveOccurred())
+			// then
+			Expect(err).To(HaveOccurred())
 
-		expectedMsg :=
-			`Could not process resource (Resource is not valid)
-* path: cannot be empty
-* mesh: cannot be empty`
-		Expect(err.Error()).To(Equal(expectedMsg))
+			Expect(err).To(Equal(&api_server_types.Error{
+				Title:   "Could not list resource",
+				Details: "Internal Server Error",
+			}))
+		})
 	})
+
 })
 
 type RoundTripperFunc func(*http.Request) (*http.Response, error)
