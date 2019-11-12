@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/validators"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
@@ -156,20 +157,19 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	for i, oface := range ofaces {
 		endpoint, err := kuma_mesh.ParseOutboundInterface(oface.Interface)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "%s: value is not valid: %q", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i).Field("interface"), oface.Interface)
 		}
 
 		route := proxy.TrafficRoutes[oface.Service]
 		if route == nil {
-			return nil, errors.Errorf("outbound interface [%d]{service=%q} has no TrafficRoute", i, oface.Service)
+			return nil, errors.Errorf("%s{service=%q}: has no TrafficRoute", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i), oface.Service)
 		}
 
 		var clusters []envoy.ClusterInfo
-		for _, destination := range route.Spec.Conf {
+		for j, destination := range route.Spec.Conf {
 			service, ok := destination.Destination[kuma_mesh.ServiceTag]
 			if !ok {
-				// all destinations must have `service` tag
-				continue
+				return nil, errors.Errorf("trafficroute{name=%q}.%s: mandatory tag %q is missing: %v", route.GetMeta().GetName(), validators.RootedAt("conf").Index(j).Field("destination"), kuma_mesh.ServiceTag, destination.Destination)
 			}
 			if destination.Weight == 0 {
 				// Envoy doesn't support 0 weight
@@ -202,7 +202,7 @@ func (_ OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			destinationService := oface.Service
 			listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, oface.Service, clusters, virtual, sourceService, destinationService, proxy.Logs.Outbounds[oface.Interface], proxy)
 			if err != nil {
-				return nil, errors.Wrapf(err, "could not generate listener %s", outboundListenerName)
+				return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i), outboundListenerName)
 			}
 			resources = append(resources, &Resource{
 				Name:     outboundListenerName,
