@@ -138,5 +138,3 @@ general:
 guiServer:
   # Port on which the server is exposed
   port: 5683 # ENV: KUMA_GUI_SERVER_PORT
-  # Directory from which GUI is served. All files in this directory are exposed
-  directory: /path-to-kuma-cp/gui # ENV: KUMA_GUI_SERVER_DIRECTORY

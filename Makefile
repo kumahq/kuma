@@ -238,6 +238,9 @@ generate/kumactl/install/control-plane:
 	go generate ./app/kumactl/pkg/install/k8s/control-plane/...
 	go generate ./app/kumactl/pkg/install/universal/control-plane/postgres/...
 
+generate/gui: ## Generate go files with GUI static files to embed it into binary
+	go generate ./pkg/gui/...
+
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
 fmt/go: ## Dev: Run go fmt

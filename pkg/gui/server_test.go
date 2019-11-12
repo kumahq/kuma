@@ -26,8 +26,7 @@ var _ = Describe("GUI Server", func() {
 
 		server := gui.Server{
 			Config: &gui_server.GuiServerConfig{
-				Port:      uint32(port),
-				Directory: "testdata",
+				Port: uint32(port),
 			},
 		}
 		stop = make(chan struct{})
@@ -70,7 +69,7 @@ var _ = Describe("GUI Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			fileContent, err := ioutil.ReadFile(filepath.Join("testdata", given.expectedFile))
+			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "gui", given.expectedFile))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
