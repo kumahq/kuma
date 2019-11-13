@@ -31,8 +31,7 @@ func ClientWithBaseURL(delegate Client, baseURL *url.URL) Client {
 
 func ClientWithTimeout(delegate Client, timeout time.Duration) Client {
 	return ClientFunc(func(req *nethttp.Request) (*nethttp.Response, error) {
-		ctx, cancel := context.WithTimeout(req.Context(), timeout)
-		defer cancel()
+		ctx, _ := context.WithTimeout(req.Context(), timeout)
 		return delegate.Do(req.WithContext(ctx))
 	})
 }
