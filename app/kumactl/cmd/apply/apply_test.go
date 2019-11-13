@@ -188,17 +188,23 @@ var _ = Describe("kumactl apply", func() {
 	It("should apply a new Dataplane resource from URL", func() {
 		// setup http server
 		mux := http.NewServeMux()
+		mux.Handle("/testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./testdata"))))
+
 		server := httptest.NewServer(mux)
 		defer server.Close()
+
 		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
 		testurl := fmt.Sprintf("http://localhost:%v/testdata/apply-dataplane.yaml", port)
+
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		mux.Handle("/testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./testdata"))))
 		Eventually(func() bool {
 			resp, err := http.Get(testurl)
 			if err != nil {
+				return false
+			}
+			if resp.StatusCode != 200 {
 				return false
 			}
 			Expect(resp.Body.Close()).To(Succeed())

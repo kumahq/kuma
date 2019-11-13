@@ -17,8 +17,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	util_http "github.com/Kong/kuma/pkg/util/http"
 )
 
 const (
@@ -51,7 +49,9 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				}
 			} else {
 				if strings.HasPrefix(ctx.args.file, "http://") || strings.HasPrefix(ctx.args.file, "https://") {
-					client := util_http.ClientWithTimeout(&http.Client{}, timeout)
+					client := &http.Client{
+						Timeout: timeout,
+					}
 					req, err := http.NewRequest("GET", ctx.args.file, nil)
 					if err != nil {
 						return errors.Wrap(err, "error creating new http request")
@@ -60,17 +60,20 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					if err != nil {
 						return errors.Wrap(err, "error with GET http request")
 					}
+					if resp.StatusCode != 200 {
+						return errors.Wrap(err, "errpr while retrieving URL")
+					}
 					defer resp.Body.Close()
 					b, err = ioutil.ReadAll(resp.Body)
 					if err != nil {
-						return errors.Wrap(err, "error with reading GET response")
+						return errors.Wrap(err, "error while reading provided file")
 					}
 				} else {
 					b, err = ioutil.ReadFile(ctx.args.file)
+					if err != nil {
+						return errors.Wrap(err, "error while reading provided file")
+					}
 				}
-			}
-			if err != nil {
-				return errors.Wrap(err, "error while reading provided file")
 			}
 
 			configBytes, err := processConfigTemplate(string(b), ctx.args.vars)
