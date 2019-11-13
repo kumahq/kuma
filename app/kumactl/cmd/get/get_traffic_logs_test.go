@@ -29,28 +29,24 @@ var _ = Describe("kumactl get traffic-logs", func() {
 	trafficLoggingResources := []*mesh.TrafficLogResource{
 		{
 			Spec: v1alpha1.TrafficLog{
-				Rules: []*v1alpha1.TrafficLog_Rule{
+				Sources: []*v1alpha1.Selector{
 					{
-						Sources: []*v1alpha1.Selector{
-							{
-								Match: map[string]string{
-									"service": "web1",
-									"version": "1.0",
-								},
-							},
-						},
-						Destinations: []*v1alpha1.Selector{
-							{
-								Match: map[string]string{
-									"service": "backend1",
-									"env":     "dev",
-								},
-							},
-						},
-						Conf: &v1alpha1.TrafficLog_Rule_Conf{
-							Backend: "file",
+						Match: map[string]string{
+							"service": "web1",
+							"version": "1.0",
 						},
 					},
+				},
+				Destinations: []*v1alpha1.Selector{
+					{
+						Match: map[string]string{
+							"service": "backend1",
+							"env":     "dev",
+						},
+					},
+				},
+				Conf: &v1alpha1.TrafficLog_Conf{
+					Backend: "file",
 				},
 			},
 			Meta: &test_model.ResourceMeta{
@@ -61,28 +57,24 @@ var _ = Describe("kumactl get traffic-logs", func() {
 		},
 		{
 			Spec: v1alpha1.TrafficLog{
-				Rules: []*v1alpha1.TrafficLog_Rule{
+				Sources: []*v1alpha1.Selector{
 					{
-						Sources: []*v1alpha1.Selector{
-							{
-								Match: map[string]string{
-									"service": "web2",
-									"version": "1.0",
-								},
-							},
-						},
-						Destinations: []*v1alpha1.Selector{
-							{
-								Match: map[string]string{
-									"service": "backend2",
-									"env":     "dev",
-								},
-							},
-						},
-						Conf: &v1alpha1.TrafficLog_Rule_Conf{
-							Backend: "logstash",
+						Match: map[string]string{
+							"service": "web2",
+							"version": "1.0",
 						},
 					},
+				},
+				Destinations: []*v1alpha1.Selector{
+					{
+						Match: map[string]string{
+							"service": "backend2",
+							"env":     "dev",
+						},
+					},
+				},
+				Conf: &v1alpha1.TrafficLog_Conf{
+					Backend: "logstash",
 				},
 			},
 			Meta: &test_model.ResourceMeta{
