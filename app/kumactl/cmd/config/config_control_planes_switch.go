@@ -5,7 +5,6 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 )
 
 func newConfigControlPlanesSwitchCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -16,7 +15,7 @@ func newConfigControlPlanesSwitchCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 		Use:   "switch",
 		Short: "Switch active Control Plane",
 		Long:  `Switch active Control Plane.`,
-		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := pctx.Config()
 			if !cfg.SwitchContext(args.name) {
 				return errors.Errorf("there is no Control Plane with name %q", args.name)
@@ -26,7 +25,7 @@ func newConfigControlPlanesSwitchCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 			}
 			cmd.Printf("switched active Control Plane to %q\n", args.name)
 			return nil
-		}),
+		},
 	}
 	// flags
 	cmd.Flags().StringVar(&args.name, "name", "", "reference name for the Control Plane (required)")

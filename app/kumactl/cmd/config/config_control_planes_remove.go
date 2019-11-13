@@ -5,7 +5,6 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 )
 
 func newConfigControlPlanesRemoveCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -16,7 +15,7 @@ func newConfigControlPlanesRemoveCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 		Use:   "remove",
 		Short: "Remove a Control Plane",
 		Long:  `Remove a Control Plane.`,
-		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := pctx.Config()
 			if !cfg.RemoveControlPlane(args.name) {
 				return errors.Errorf("there is no Control Plane with name %q", args.name)
@@ -31,7 +30,7 @@ func newConfigControlPlanesRemoveCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 				cmd.Printf("there is no active Control Plane left. Use `kumactl config control-planes add` to add a Control Plane and make it active\n")
 			}
 			return nil
-		}),
+		},
 	}
 	// flags
 	cmd.Flags().StringVar(&args.name, "name", "", "reference name for the Control Plane (required)")

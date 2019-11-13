@@ -1,7 +1,6 @@
 package install
 
 import (
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 	postgres_schema "github.com/Kong/kuma/app/kumactl/pkg/install/universal/control-plane/postgres"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
@@ -22,7 +21,7 @@ func newInstallDatabaseSchemaCmd() *cobra.Command {
 kumactl install database-schema --target=postgres >$sql_file ; \
 psql --host=localhost --username=postgres --password --file=$sql_file ; \
 rm $sql_file`,
-		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			switch args.target {
 			case "postgres":
 				file, err := data.ReadFile(postgres_schema.Schema, "resource.sql")
@@ -34,7 +33,7 @@ rm $sql_file`,
 			default:
 				return errors.Errorf("unknown target type: %s", args.target)
 			}
-		}),
+		},
 	}
 	cmd.Flags().StringVar(&args.target, "target", "postgres", kuma_cmd.UsageOptions("Database type", "postgres"))
 	return cmd

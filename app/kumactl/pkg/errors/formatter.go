@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func FormatErrorWrapper(fn func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
-	return func(otherCmd *cobra.Command, otherArgs []string) error {
-		if err := fn(otherCmd, otherArgs); err != nil {
+func FormatErrorWrapper(fn func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if err := fn(cmd, args); err != nil {
 			cause := errors.Cause(err)
 			switch typedErr := cause.(type) {
 			case *types.Error:

@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 )
 
@@ -22,7 +21,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		Use:   "add",
 		Short: "Add a Control Plane",
 		Long:  `Add a Control Plane.`,
-		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cp := &config_proto.ControlPlane{
 				Name: args.name,
 				Coordinates: &config_proto.ControlPlaneCoordinates{
@@ -65,7 +64,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			cmd.Printf("added Control Plane %q\n", ctx.Name)
 			cmd.Printf("switched active Control Plane to %q\n", ctx.Name)
 			return nil
-		}),
+		},
 	}
 	// flags
 	cmd.Flags().StringVar(&args.name, "name", "", "reference name for the Control Plane (required)")

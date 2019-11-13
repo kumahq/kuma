@@ -4,7 +4,6 @@ import (
 	"context"
 
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
@@ -19,7 +18,7 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Delete Kuma resources",
 		Long:  `Delete Kuma resources.`,
 		Args:  cobra.ExactArgs(2),
-		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
@@ -62,7 +61,7 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
 			cmd.Printf("deleted %s %q\n", resourceType, name)
 			return nil
-		}),
+		},
 	}
 
 	return cmd

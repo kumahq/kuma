@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -20,7 +19,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 		Use:   "dataplanes",
 		Short: "Show Dataplanes",
 		Long:  `Show Dataplanes.`,
-		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
@@ -41,7 +40,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 				}
 				return printer.Print(rest_types.From.ResourceList(&dataplanes), cmd.OutOrStdout())
 			}
-		}),
+		},
 	}
 	return cmd
 }

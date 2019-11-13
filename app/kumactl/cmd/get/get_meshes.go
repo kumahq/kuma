@@ -6,7 +6,6 @@ import (
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -20,7 +19,7 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 		Use:   "meshes",
 		Short: "Show Meshes",
 		Long:  `Show Meshes.`,
-		RunE: kumactl_errors.FormatErrorWrapper(func(cmd *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
@@ -41,7 +40,7 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 				}
 				return printer.Print(rest_types.From.ResourceList(&meshes), cmd.OutOrStdout())
 			}
-		}),
+		},
 	}
 	return cmd
 }
