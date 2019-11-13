@@ -1,11 +1,9 @@
 package http
 
 import (
-	"context"
 	nethttp "net/http"
 	"net/url"
 	"path"
-	"time"
 )
 
 type Client interface {
@@ -26,12 +24,5 @@ func ClientWithBaseURL(delegate Client, baseURL *url.URL) Client {
 			req.URL.Path = path.Join(baseURL.Path, req.URL.Path)
 		}
 		return delegate.Do(req)
-	})
-}
-
-func ClientWithTimeout(delegate Client, timeout time.Duration) Client {
-	return ClientFunc(func(req *nethttp.Request) (*nethttp.Response, error) {
-		ctx, _ := context.WithTimeout(req.Context(), timeout)
-		return delegate.Do(req.WithContext(ctx))
 	})
 }

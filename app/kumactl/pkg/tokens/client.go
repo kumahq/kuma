@@ -22,7 +22,9 @@ func NewDataplaneTokenClient(address string, config *kumactl_config.Context_Data
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse Dataplane Token Server URL")
 	}
-	httpClient := &http.Client{}
+	httpClient := &http.Client{
+		Timeout: timeout,
+	}
 	if baseURL.Scheme == "https" {
 		if !config.HasClientCert() {
 			return nil, errors.New("certificates has to be configured to use https destination")
@@ -32,7 +34,7 @@ func NewDataplaneTokenClient(address string, config *kumactl_config.Context_Data
 			return nil, errors.Wrap(err, "could not configure tls for dataplane token client")
 		}
 	}
-	client := util_http.ClientWithTimeout(util_http.ClientWithBaseURL(httpClient, baseURL), timeout)
+	client := util_http.ClientWithBaseURL(httpClient, baseURL)
 	return &httpDataplaneTokenClient{
 		client: client,
 	}, nil

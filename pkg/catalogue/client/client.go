@@ -25,9 +25,11 @@ func NewCatalogueClient(address string) (CatalogueClient, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
 	}
-	client := util_http.ClientWithTimeout(util_http.ClientWithBaseURL(&http.Client{}, baseURL), timeout)
+	client := &http.Client{
+		Timeout: timeout,
+	}
 	return &httpCatalogueClient{
-		client: client,
+		client: util_http.ClientWithBaseURL(client, baseURL),
 	}, nil
 }
 
