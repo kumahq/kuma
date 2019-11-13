@@ -60,17 +60,20 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					if err != nil {
 						return errors.Wrap(err, "error with GET http request")
 					}
+					if resp.StatusCode != 200 {
+						return errors.Wrap(err, "errpr while retrieving URL")
+					}
 					defer resp.Body.Close()
 					b, err = ioutil.ReadAll(resp.Body)
 					if err != nil {
-						return errors.Wrap(err, "error with reading GET response")
+						return errors.Wrap(err, "error while reading provided file")
 					}
 				} else {
 					b, err = ioutil.ReadFile(ctx.args.file)
+					if err != nil {
+						return errors.Wrap(err, "error while reading provided file")
+					}
 				}
-			}
-			if err != nil {
-				return errors.Wrap(err, "error while reading provided file")
 			}
 
 			configBytes, err := processConfigTemplate(string(b), ctx.args.vars)
