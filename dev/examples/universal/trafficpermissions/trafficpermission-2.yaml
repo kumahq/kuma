@@ -1,17 +1,10 @@
 type: TrafficPermission
 name: tp2
 mesh: default
-rules:
-  - sources:
-    - match:
-        service: web
-    destinations:
-    - match:
-        service: backend
-        version: "2.0"
-  - destinations:
-    - match:
-        env: production
-    sources:
-    - match:
-        service: s1
+sources:
+- match:
+    service: web
+destinations:
+- match:
+    service: backend
+    version: "2.0"

@@ -38,21 +38,17 @@ var _ = Describe("Matcher", func() {
 						Namespace: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{
-						Rules: []*mesh_proto.TrafficPermission_Rule{
+						Sources: []*mesh_proto.Selector{
 							{
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "mobile",
-										},
-									},
+								Match: map[string]string{
+									"service": "mobile",
 								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "api-gateway",
-										},
-									},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "api-gateway",
 								},
 							},
 						},
@@ -64,38 +60,41 @@ var _ = Describe("Matcher", func() {
 						Mesh:      "default",
 						Namespace: "default",
 					},
-					Spec: mesh_proto.TrafficPermission{
-						Rules: []*mesh_proto.TrafficPermission_Rule{
-							{ // relevant rule
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "mobile",
-										},
-									},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "backend",
-										},
-									},
+					Spec: mesh_proto.TrafficPermission{ // relevant rule
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "mobile",
 								},
 							},
-							{ // not relevant rule
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "mobile",
-										},
-									},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "backend",
 								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "stats",
-										},
-									},
+							},
+						},
+					},
+				},
+				{
+					Meta: &model.ResourceMeta{
+						Name:      "mobile-2",
+						Mesh:      "default",
+						Namespace: "default",
+					},
+					Spec: mesh_proto.TrafficPermission{ // not relevant rule
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "mobile",
+								},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "stats",
 								},
 							},
 						},
@@ -107,38 +106,41 @@ var _ = Describe("Matcher", func() {
 						Mesh:      "default",
 						Namespace: "default",
 					},
-					Spec: mesh_proto.TrafficPermission{
-						Rules: []*mesh_proto.TrafficPermission_Rule{
-							{ // relevant rule
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "load-balancer",
-										},
-									},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "web",
-										},
-									},
+					Spec: mesh_proto.TrafficPermission{ // relevant rule
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "load-balancer",
 								},
 							},
-							{ // not relevant rule
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "load-balancer",
-										},
-									},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "web",
 								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "mobile",
-										},
-									},
+							},
+						},
+					},
+				},
+				{
+					Meta: &model.ResourceMeta{
+						Name:      "load-balancer-2",
+						Mesh:      "default",
+						Namespace: "default",
+					},
+					Spec: mesh_proto.TrafficPermission{ // not relevant rule
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "load-balancer",
+								},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "mobile",
 								},
 							},
 						},
@@ -161,21 +163,17 @@ var _ = Describe("Matcher", func() {
 						Namespace: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{
-						Rules: []*mesh_proto.TrafficPermission_Rule{
-							{ // relevant rule
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "mobile",
-										},
-									},
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "mobile",
 								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "backend",
-										},
-									},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "backend",
 								},
 							},
 						},
@@ -195,21 +193,17 @@ var _ = Describe("Matcher", func() {
 						Namespace: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{
-						Rules: []*mesh_proto.TrafficPermission_Rule{
-							{ // relevant rule
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "load-balancer",
-										},
-									},
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "load-balancer",
 								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"service": "web",
-										},
-									},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "web",
 								},
 							},
 						},

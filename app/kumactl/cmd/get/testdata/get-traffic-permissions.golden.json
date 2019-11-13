@@ -3,24 +3,20 @@
     {
       "mesh": "default",
       "name": "web1-to-backend1",
-      "rules": [
+      "sources": [
         {
-          "sources": [
-            {
-              "match": {
-                "service": "web1",
-                "version": "1.0"
-              }
-            }
-          ],
-          "destinations": [
-            {
-              "match": {
-                "service": "backend1",
-                "env": "dev"
-              }
-            }
-          ]
+          "match": {
+            "service": "web1",
+            "version": "1.0"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "service": "backend1",
+            "env": "dev"
+          }
         }
       ],
       "type": "TrafficPermission"
@@ -28,24 +24,20 @@
     {
       "mesh": "default",
       "name": "web2-to-backend2",
-      "rules": [
+      "sources": [
         {
-          "sources": [
-            {
-              "match": {
-                "service": "web2",
-                "version": "1.0"
-              }
-            }
-          ],
-          "destinations": [
-            {
-              "match": {
-                "service": "backend2",
-                "env": "dev"
-              }
-            }
-          ]
+          "match": {
+            "service": "web2",
+            "version": "1.0"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "service": "backend2",
+            "env": "dev"
+          }
         }
       ],
       "type": "TrafficPermission"

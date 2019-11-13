@@ -45,27 +45,25 @@ func createRbacRule(listenerName string, permissions *mesh_core.TrafficPermissio
 func createPolicy(permission *mesh_core.TrafficPermissionResource) *rbac_config.Policy {
 	principals := []*rbac_config.Principal{}
 	// build principals list: one per sources/destinations rule
-	for _, rule := range permission.Spec.Rules {
-		for _, source := range rule.Sources {
-			service := source.Match["service"]
-			principal := &rbac_config.Principal{}
-			if service == v1alpha1.MatchAllTag {
-				principal.Identifier = &rbac_config.Principal_Any{
-					Any: true,
-				}
-			} else {
-				principal.Identifier = &rbac_config.Principal_Authenticated_{
-					Authenticated: &rbac_config.Principal_Authenticated{
-						PrincipalName: &envoy_matcher.StringMatcher{
-							MatchPattern: &envoy_matcher.StringMatcher_Exact{
-								Exact: fmt.Sprintf("spiffe://%s/%s", permission.Meta.GetMesh(), service),
-							},
+	for _, source := range permission.Spec.Sources {
+		service := source.Match["service"]
+		principal := &rbac_config.Principal{}
+		if service == v1alpha1.MatchAllTag {
+			principal.Identifier = &rbac_config.Principal_Any{
+				Any: true,
+			}
+		} else {
+			principal.Identifier = &rbac_config.Principal_Authenticated_{
+				Authenticated: &rbac_config.Principal_Authenticated{
+					PrincipalName: &envoy_matcher.StringMatcher{
+						MatchPattern: &envoy_matcher.StringMatcher_Exact{
+							Exact: fmt.Sprintf("spiffe://%s/%s", permission.Meta.GetMesh(), service),
 						},
 					},
-				}
+				},
 			}
-			principals = append(principals, principal)
 		}
+		principals = append(principals, principal)
 	}
 
 	return &rbac_config.Policy{
