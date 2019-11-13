@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -60,6 +61,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := api_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up API server")
+				return err
+			}
+			if err := ui_server.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up GUI server")
 				return err
 			}
 

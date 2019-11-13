@@ -21,6 +21,8 @@ sdsServer:
 dataplaneTokenServer:
   local:
     port: 0
+guiServer:
+  port: 0
 environment: universal
 store:
   type: postgres

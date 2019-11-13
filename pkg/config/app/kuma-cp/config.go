@@ -7,6 +7,7 @@ import (
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/discovery"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
+	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
 	"github.com/Kong/kuma/pkg/config/sds"
 	token_server "github.com/Kong/kuma/pkg/config/token-server"
@@ -76,6 +77,8 @@ type Config struct {
 	Defaults *Defaults `yaml:"defaults"`
 	// Reports configuration
 	Reports *Reports `yaml:"reports"`
+	// GUI Server Config
+	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer"`
 }
 
 func DefaultConfig() Config {
@@ -100,7 +103,8 @@ mtls:
 		Reports: &Reports{
 			Enabled: true,
 		},
-		General: DefaultGeneralConfig(),
+		General:   DefaultGeneralConfig(),
+		GuiServer: gui_server.DefaultGuiServerConfig(),
 	}
 }
 
@@ -134,6 +138,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Defaults.Validate(); err != nil {
 		return errors.Wrap(err, "Defaults validation failed")
+	}
+	if err := c.GuiServer.Validate(); err != nil {
+		return errors.Wrap(err, "GuiServer validation failed")
 	}
 	return nil
 }

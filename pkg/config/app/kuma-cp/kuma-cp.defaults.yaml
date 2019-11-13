@@ -133,3 +133,8 @@ general:
   # Hostname that other components should use in order to connect to the Control Plane.
   # Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
   advertisedHostname: localhost # ENV: KUMA_GENERAL_ADVERTISED_HOSTNAME
+
+# Web GUI Server configuration
+guiServer:
+  # Port on which the server is exposed
+  port: 5683 # ENV: KUMA_GUI_SERVER_PORT

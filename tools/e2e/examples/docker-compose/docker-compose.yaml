@@ -20,7 +20,7 @@ services:
     - KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST=kuma-control-plane
     - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_ENABLED=true
     - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE=0.0.0.0
-    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT=5683 # otherwise there would be conflict with local port
+    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT=5684 # otherwise there would be conflict with local port
     - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE=/certs/server/cert.pem
     - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE=/certs/server/key.pem
     - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR=/certs/client
@@ -31,6 +31,7 @@ services:
     - "5681"
     - "5682"
     - "5683"
+    - "5684"
     ports:
     - "5678:5678"
     - "5679:5679"
@@ -38,6 +39,7 @@ services:
     - "5681:5681"
     - "5682:5682"
     - "5683:5683"
+    - "5684:5684"
     networks:
       kuma-example:
         aliases:
