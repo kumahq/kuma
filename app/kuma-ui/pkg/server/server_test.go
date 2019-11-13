@@ -1,9 +1,9 @@
-package gui_test
+package server_test
 
 import (
 	"fmt"
+	"github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
-	"github.com/Kong/kuma/pkg/gui"
 	"github.com/Kong/kuma/pkg/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -24,7 +24,7 @@ var _ = Describe("GUI Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		baseUrl = "http://localhost:" + strconv.Itoa(port)
 
-		server := gui.Server{
+		srv := server.Server{
 			Config: &gui_server.GuiServerConfig{
 				Port: uint32(port),
 			},
@@ -32,7 +32,7 @@ var _ = Describe("GUI Server", func() {
 		stop = make(chan struct{})
 		go func() {
 			defer GinkgoRecover()
-			err := server.Start(stop)
+			err := srv.Start(stop)
 			Expect(err).ToNot(HaveOccurred())
 		}()
 		Eventually(func() bool {
@@ -69,7 +69,7 @@ var _ = Describe("GUI Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "gui", given.expectedFile))
+			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "data", "resources", given.expectedFile))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

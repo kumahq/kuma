@@ -1,8 +1,9 @@
-package gui
+package server
 
 import (
 	"context"
 	"fmt"
+	"github.com/Kong/kuma/app/kuma-ui/pkg/resources"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/core"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
@@ -26,7 +27,7 @@ type Server struct {
 var _ core_runtime.Component = &Server{}
 
 func (g *Server) Start(stop <-chan struct{}) error {
-	fileServer := http.FileServer(GuiDir)
+	fileServer := http.FileServer(resources.GuiDir)
 
 	guiServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", g.Config.Port),

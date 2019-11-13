@@ -1,6 +1,6 @@
 // +build dev
 
-package gui
+package resources
 
 import (
 	"net/http"
@@ -15,5 +15,5 @@ func guiSrcDir() string {
 
 	thisDir := filepath.Dir(thisFile)
 
-	return filepath.Join(thisDir, "..", "..", "gui")
+	return filepath.Join(thisDir, "..", "..", "data", "resources")
 }

@@ -1,7 +1,7 @@
-package gui_test
+package resources_test
 
 import (
-	"github.com/Kong/kuma/pkg/gui"
+	"github.com/Kong/kuma/app/kuma-ui/pkg/resources"
 	"github.com/Kong/kuma/pkg/test/vfsgen"
 	"io/ioutil"
 	"path/filepath"
@@ -13,13 +13,13 @@ import (
 
 var _ = Describe("Gui Dir", func() {
 
-	guiDir := filepath.Join("..", "..", "gui")
+	guiDir := filepath.Join("..", "..", "data", "resources")
 	testEntries := vfsgen.GenerateEntries(guiDir)
 
 	DescribeTable("generated Go code must be in sync with the original GUI dir",
 		func(given vfsgen.FileTestCase) {
 			// given compiled file
-			file, err := gui.GuiDir.Open(given.Filename)
+			file, err := resources.GuiDir.Open(given.Filename)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

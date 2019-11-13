@@ -2,7 +2,7 @@
 
 // +build !dev
 
-package gui
+package resources
 
 import (
 	"bytes"
@@ -21,16 +21,16 @@ var GuiDir = func() http.FileSystem {
 	fs := vfsgen۰FS{
 		"/": &vfsgen۰DirInfo{
 			name:    "/",
-			modTime: time.Date(2019, 11, 12, 11, 2, 53, 352844176, time.UTC),
+			modTime: time.Date(2019, 11, 13, 14, 52, 41, 585787439, time.UTC),
 		},
 		"/data.js": &vfsgen۰FileInfo{
 			name:    "data.js",
-			modTime: time.Date(2019, 11, 12, 11, 2, 53, 352313186, time.UTC),
+			modTime: time.Date(2019, 11, 13, 14, 50, 21, 544411392, time.UTC),
 			content: []byte("\x7b\x7d"),
 		},
 		"/index.html": &vfsgen۰FileInfo{
 			name:    "index.html",
-			modTime: time.Date(2019, 11, 12, 10, 59, 41, 252024741, time.UTC),
+			modTime: time.Date(2019, 11, 13, 14, 50, 21, 544730935, time.UTC),
 			content: []byte("\x74\x65\x73\x74"),
 		},
 	}

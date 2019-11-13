@@ -1,4 +1,4 @@
-package gui_test
+package server_test
 
 import (
 	"testing"
