@@ -8,6 +8,8 @@ const (
 	ProfileDefaultProxy = "default-proxy"
 )
 
+var AvailableProfiles = []string{ProfileDefaultProxy}
+
 var (
 	DefaultProxyTemplate = &kuma_mesh.ProxyTemplate{
 		Imports: []string{
