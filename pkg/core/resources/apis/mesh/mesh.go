@@ -39,9 +39,6 @@ func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
-func (t *MeshResource) Validate() error {
-	return nil
-}
 
 var _ model.ResourceList = &MeshResourceList{}
 
