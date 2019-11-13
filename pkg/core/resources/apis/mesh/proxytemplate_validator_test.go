@@ -126,16 +126,23 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: selectors[0]
                   message: has to contain at least one tag`,
 			}),
-			Entry("invalid tags", testCase{
+			Entry("empty tag", testCase{
 				proxyTemplate: `
                 selectors:
                 - match:
-                    "": asdf
-                    service:`,
+                    "": asdf`,
 				expected: `
                 violations:
                 - field: selectors[0][""]
-                  message: tag cannot be empty
+                  message: tag cannot be empty`,
+			}),
+			Entry("empty tag value", testCase{
+				proxyTemplate: `
+                selectors:
+                - match:
+                    service:`,
+				expected: `
+                violations:
                 - field: 'selectors[0]["service"]'
                   message: value of tag cannot be empty`,
 			}),
