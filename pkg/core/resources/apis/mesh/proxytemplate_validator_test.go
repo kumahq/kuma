@@ -23,7 +23,20 @@ var _ = Describe("ProxyTemplate", func() {
             resources:
             - name: additional
               version: v1
-              resource: test`
+              resource: | 
+                '@type': type.googleapis.com/envoy.api.v2.Cluster
+                connectTimeout: 5s
+                loadAssignment:
+                  clusterName: localhost:8443
+                  endpoints:
+                    - lbEndpoints:
+                        - endpoint:
+                            address:
+                              socketAddress:
+                                address: 127.0.0.1
+                                portValue: 8443
+                name: localhost:8443
+                type: STATIC`
 
 			proxyTemplate := mesh.ProxyTemplateResource{}
 
@@ -125,6 +138,44 @@ var _ = Describe("ProxyTemplate", func() {
                   message: tag cannot be empty
                 - field: 'selectors[0]["service"]'
                   message: value of tag cannot be empty`,
+			}),
+			Entry("validation error from envoy protobuf resource", testCase{
+				proxyTemplate: `
+                selectors:
+                - match:
+                    service: backend
+                resources:
+                - name: additional
+                  version: v1
+                  resource: | 
+                    '@type': type.googleapis.com/envoy.api.v2.Cluster
+                    loadAssignment:
+                      clusterName: localhost:8443
+                      endpoints:
+                        - lbEndpoints:
+                            - endpoint:
+                                address:
+                                  socketAddress:
+                                    address: 127.0.0.1
+                                    portValue: 8443`,
+				expected: `
+                violations:
+                - field: resources[0].resource
+                  message: 'invalid Cluster.Name: value length must be at least 1 bytes'`,
+			}),
+			Entry("invalid envoy resource", testCase{
+				proxyTemplate: `
+                selectors:
+                - match:
+                    service: backend
+                resources:
+                - name: additional
+                  version: v1
+                  resource: not-envoy-resource`,
+				expected: `
+                violations:
+                - field: resources[0].resource
+                  message: 'json: cannot unmarshal string into Go value of type map[string]*json.RawMessage'`,
 			}),
 		)
 	})

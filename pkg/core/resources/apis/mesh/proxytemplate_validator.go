@@ -54,6 +54,8 @@ func validateResources(resources []*v1alpha1.ProxyTemplateRawResource) validator
 		}
 		if resource.Resource == "" {
 			verr.AddViolationAt(validators.RootedAt("resources").Index(i).Field("resource"), "cannot be empty")
+		} else if _, err := template.ResourceFromYaml(resource.Resource); err != nil {
+			verr.AddViolationAt(validators.RootedAt("resources").Index(i).Field("resource"), err.Error())
 		}
 	}
 	return verr
