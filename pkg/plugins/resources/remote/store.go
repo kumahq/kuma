@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -72,11 +73,11 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 	}
 	req.Header.Set("content-type", "application/json")
 	statusCode, b, err := s.doRequest(ctx, req)
-	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
-		return errors.Errorf("(%d): %s", statusCode, string(b))
-	}
 	if err != nil {
 		return err
+	}
+	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
+		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
 	res.SetMeta(remoteMeta{
 		Namespace: "",
@@ -101,10 +102,10 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 	}
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
+		if statusCode == 404 {
+			return store.ErrorResourceNotFound(res.GetType(), opts.Namespace, opts.Name, opts.Mesh)
+		}
 		return err
-	}
-	if statusCode == 404 {
-		return store.ErrorResourceNotFound(res.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 	}
 	if statusCode != 200 {
 		return errors.Errorf("(%d): %s", statusCode, string(b))
@@ -143,6 +144,14 @@ func (s *remoteStore) doRequest(ctx context.Context, req *http.Request) (int, []
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return resp.StatusCode, nil, err
+	}
+	if resp.StatusCode/100 >= 4 {
+		kumaErr := types.Error{}
+		if err := json.Unmarshal(b, &kumaErr); err == nil {
+			if kumaErr.Title != "" && kumaErr.Details != "" {
+				return resp.StatusCode, b, &kumaErr
+			}
+		}
 	}
 	return resp.StatusCode, b, nil
 }

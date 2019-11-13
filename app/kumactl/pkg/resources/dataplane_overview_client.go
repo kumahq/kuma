@@ -2,11 +2,13 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
+	"github.com/Kong/kuma/pkg/api-server/types"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/plugins/resources/remote"
@@ -77,6 +79,14 @@ func (d *httpDataplaneOverviewClient) doRequest(ctx context.Context, req *http.R
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return resp.StatusCode, nil, err
+	}
+	if resp.StatusCode/100 >= 4 {
+		kumaErr := types.Error{}
+		if err := json.Unmarshal(b, &kumaErr); err == nil {
+			if kumaErr.Title != "" && kumaErr.Details != "" {
+				return resp.StatusCode, b, &kumaErr
+			}
+		}
 	}
 	return resp.StatusCode, b, nil
 }
