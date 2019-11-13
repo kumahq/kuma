@@ -86,45 +86,22 @@ var _ = Describe("Matcher", func() {
 		// given
 		logRes1 := core_mesh.TrafficLogResource{
 			Spec: mesh_proto.TrafficLog{
-				Rules: []*mesh_proto.TrafficLog_Rule{
+				Sources: []*mesh_proto.Selector{
 					{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "kong",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "backend",
-								},
-							},
-						},
-						Conf: &mesh_proto.TrafficLog_Rule_Conf{
-							Backend: "file2",
+						Match: map[string]string{
+							"service": "kong",
 						},
 					},
+				},
+				Destinations: []*mesh_proto.Selector{
 					{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "kong-admin",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "web",
-								},
-							},
-						},
-						Conf: &mesh_proto.TrafficLog_Rule_Conf{
-							Backend: "file3",
+						Match: map[string]string{
+							"service": "backend",
 						},
 					},
+				},
+				Conf: &mesh_proto.TrafficLog_Conf{
+					Backend: "file2",
 				},
 			},
 		}
@@ -134,27 +111,48 @@ var _ = Describe("Matcher", func() {
 		// and
 		logRes2 := core_mesh.TrafficLogResource{
 			Spec: mesh_proto.TrafficLog{
-				Rules: []*mesh_proto.TrafficLog_Rule{
+				Sources: []*mesh_proto.Selector{
 					{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "*",
-								},
-							},
+						Match: map[string]string{
+							"service": "kong-admin",
 						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "*",
-								},
-							},
+					},
+				},
+				Destinations: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service": "web",
+						},
+					},
+				},
+				Conf: &mesh_proto.TrafficLog_Conf{
+					Backend: "file3",
+				},
+			},
+		}
+		err = manager.Create(context.Background(), &logRes2, store.CreateByKey("default", "lr-2", "sample"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		logRes3 := core_mesh.TrafficLogResource{
+			Spec: mesh_proto.TrafficLog{
+				Sources: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service": "*",
+						},
+					},
+				},
+				Destinations: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service": "*",
 						},
 					},
 				},
 			},
 		}
-		err = manager.Create(context.Background(), &logRes2, store.CreateByKey("default", "lr-2", "sample"))
+		err = manager.Create(context.Background(), &logRes3, store.CreateByKey("default", "lr-3", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -179,26 +177,22 @@ var _ = Describe("Matcher", func() {
 		// given
 		logRes := core_mesh.TrafficLogResource{
 			Spec: mesh_proto.TrafficLog{
-				Rules: []*mesh_proto.TrafficLog_Rule{
+				Sources: []*mesh_proto.Selector{
 					{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "web",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "backend",
-								},
-							},
-						},
-						Conf: &mesh_proto.TrafficLog_Rule_Conf{
-							Backend: "file2",
+						Match: map[string]string{
+							"service": "web",
 						},
 					},
+				},
+				Destinations: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service": "backend",
+						},
+					},
+				},
+				Conf: &mesh_proto.TrafficLog_Conf{
+					Backend: "file2",
 				},
 			},
 		}
@@ -217,26 +211,22 @@ var _ = Describe("Matcher", func() {
 		// given
 		logRes := core_mesh.TrafficLogResource{
 			Spec: mesh_proto.TrafficLog{
-				Rules: []*mesh_proto.TrafficLog_Rule{
+				Sources: []*mesh_proto.Selector{
 					{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "*",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"service": "*",
-								},
-							},
-						},
-						Conf: &mesh_proto.TrafficLog_Rule_Conf{
-							Backend: "unknown-backend",
+						Match: map[string]string{
+							"service": "*",
 						},
 					},
+				},
+				Destinations: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service": "*",
+						},
+					},
+				},
+				Conf: &mesh_proto.TrafficLog_Conf{
+					Backend: "unknown-backend",
 				},
 			},
 		}

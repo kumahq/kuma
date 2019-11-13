@@ -3,57 +3,49 @@
     {
       "mesh": "default",
       "name": "web1-to-backend1",
-      "rules": [
+      "sources": [
         {
-          "sources": [
-            {
-              "match": {
-                "service": "web1",
-                "version": "1.0"
-              }
-            }
-          ],
-          "destinations": [
-            {
-              "match": {
-                "service": "backend1",
-                "env": "dev"
-              }
-            }
-          ],
-          "conf": {
-            "backend": "file"
+          "match": {
+            "service": "web1",
+            "version": "1.0"
           }
         }
       ],
+      "destinations": [
+        {
+          "match": {
+            "service": "backend1",
+            "env": "dev"
+          }
+        }
+      ],
+      "conf": {
+        "backend": "file"
+      },
       "type": "TrafficLog"
     },
     {
       "mesh": "default",
       "name": "web2-to-backend2",
-      "rules": [
+      "sources": [
         {
-          "sources": [
-            {
-              "match": {
-                "service": "web2",
-                "version": "1.0"
-              }
-            }
-          ],
-          "destinations": [
-            {
-              "match": {
-                "service": "backend2",
-                "env": "dev"
-              }
-            }
-          ],
-          "conf": {
-            "backend": "logstash"
+          "match": {
+            "service": "web2",
+            "version": "1.0"
           }
         }
       ],
+      "destinations": [
+        {
+          "match": {
+            "service": "backend2",
+            "env": "dev"
+          }
+        }
+      ],
+      "conf": {
+        "backend": "logstash"
+      },
       "type": "TrafficLog"
     }
   ]

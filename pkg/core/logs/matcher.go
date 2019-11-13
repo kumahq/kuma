@@ -93,12 +93,10 @@ func matchBackends(dataplane *mesh_proto.Dataplane, logs *mesh_core.TrafficLogRe
 	outboundToBackend := map[string]map[string]bool{}
 	for _, outbound := range dataplane.GetNetworking().GetOutbound() {
 		for _, logRes := range matchOutbound(outbound, dataplane.Networking.Inbound, logs.Items) {
-			for _, rule := range logRes.Spec.Rules {
-				if _, ok := outboundToBackend[outbound.Interface]; !ok {
-					outboundToBackend[outbound.Interface] = map[string]bool{}
-				}
-				outboundToBackend[outbound.Interface][rule.Conf.GetBackend()] = true
+			if _, ok := outboundToBackend[outbound.Interface]; !ok {
+				outboundToBackend[outbound.Interface] = map[string]bool{}
 			}
+			outboundToBackend[outbound.Interface][logRes.Spec.Conf.GetBackend()] = true
 		}
 	}
 	return outboundToBackend
@@ -108,27 +106,14 @@ func matchBackends(dataplane *mesh_proto.Dataplane, logs *mesh_core.TrafficLogRe
 func matchOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound, inbounds []*mesh_proto.Dataplane_Networking_Inbound, logs []*mesh_core.TrafficLogResource) []*mesh_core.TrafficLogResource {
 	matchedLogs := []*mesh_core.TrafficLogResource{}
 	for _, log := range logs {
-		matchedRules := []*mesh_proto.TrafficLog_Rule{}
-
-		for _, rule := range log.Spec.Rules {
-			if !anySelectorMatchAnyInbound(rule.Sources, inbounds) {
-				continue
-			}
-			for _, dest := range rule.Destinations {
-				if outbound.MatchTags(dest.Match) {
-					matchedRules = append(matchedRules, rule)
-				}
-			}
+		if !anySelectorMatchAnyInbound(log.Spec.Sources, inbounds) {
+			continue
 		}
-
-		if len(matchedRules) > 0 {
-			// construct copy of the resource but only with matched rules
-			matchedLogs = append(matchedLogs, &mesh_core.TrafficLogResource{
-				Meta: log.Meta,
-				Spec: mesh_proto.TrafficLog{
-					Rules: matchedRules,
-				},
-			})
+		for _, dest := range log.Spec.Destinations {
+			if outbound.MatchTags(dest.Match) {
+				matchedLogs = append(matchedLogs, log)
+				break
+			}
 		}
 	}
 	return matchedLogs
