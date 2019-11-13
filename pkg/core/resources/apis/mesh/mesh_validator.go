@@ -34,7 +34,7 @@ func validateLogging(logging *mesh_proto.Logging) validators.ValidationError {
 	for i, backend := range logging.Backends {
 		verr.AddError(validators.RootedAt("backends").Index(i).String(), validateBackend(backend))
 		if usedNames[backend.Name] {
-			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%s name is already used for another backend", backend.Name))
+			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
 		}
 		usedNames[backend.Name] = true
 	}
@@ -48,7 +48,6 @@ func validateBackend(backend *mesh_proto.LoggingBackend) validators.ValidationEr
 	var verr validators.ValidationError
 	if backend.Name == "" {
 		verr.AddViolation("name", "cannot be empty")
-		return verr
 	}
 	if file, ok := backend.GetType().(*mesh_proto.LoggingBackend_File_); ok {
 		verr.AddError("file", validateLoggingFile(file))
@@ -58,12 +57,12 @@ func validateBackend(backend *mesh_proto.LoggingBackend) validators.ValidationEr
 	return verr
 }
 
-func validateLoggingTcp(tcp_ *mesh_proto.LoggingBackend_Tcp_) validators.ValidationError {
+func validateLoggingTcp(tcp *mesh_proto.LoggingBackend_Tcp_) validators.ValidationError {
 	var verr validators.ValidationError
-	if tcp_.Tcp.Address == "" {
+	if tcp.Tcp.Address == "" {
 		verr.AddViolation("address", "cannot be empty")
 	} else {
-		host, port, err := net.SplitHostPort(tcp_.Tcp.Address)
+		host, port, err := net.SplitHostPort(tcp.Tcp.Address)
 		if host == "" || port == "" || err != nil {
 			verr.AddViolation("address", "has to be in format of HOST:PORT")
 		}
@@ -71,9 +70,9 @@ func validateLoggingTcp(tcp_ *mesh_proto.LoggingBackend_Tcp_) validators.Validat
 	return verr
 }
 
-func validateLoggingFile(file_ *mesh_proto.LoggingBackend_File_) validators.ValidationError {
+func validateLoggingFile(file *mesh_proto.LoggingBackend_File_) validators.ValidationError {
 	var veer validators.ValidationError
-	if file_.File.Path == "" {
+	if file.File.Path == "" {
 		veer.AddViolation("path", "cannot be empty")
 	}
 	return veer

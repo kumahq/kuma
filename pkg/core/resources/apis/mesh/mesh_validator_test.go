@@ -99,7 +99,7 @@ var _ = Describe("Mesh", func() {
 				expected: `
                 violations:
                 - field: logging.backends[1].name
-                  message: backend-1 name is already used for another backend`,
+                  message: '"backend-1" name is already used for another backend'`,
 			}),
 			Entry("tcp logging address is empty", testCase{
 				mesh: `
@@ -178,7 +178,7 @@ var _ = Describe("Mesh", func() {
                 - field: logging.backends[1].file.path
                   message: cannot be empty
                 - field: logging.backends[2].name
-                  message: tcp-1 name is already used for another backend
+                  message: '"tcp-1" name is already used for another backend'
                 - field: logging.defaultBackend
                   message: has to be set to one of the logging backend in mesh`,
 			}),
