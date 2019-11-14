@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/Kong/kuma/pkg/api-server/types"
 	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -19,9 +18,10 @@ func ValidateCpCoordinates(cp *kumactl_config.ControlPlane) error {
 	if err != nil {
 		return errors.Wrap(err, "could not construct the request")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultApiServerTimeout)
-	defer cancel()
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	client := http.Client{
+		Timeout: DefaultApiServerTimeout,
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "could not connect to the Control Plane API Server")
 	}
