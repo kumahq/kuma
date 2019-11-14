@@ -71,6 +71,7 @@ func (g *Server) configHandler(writer http.ResponseWriter, request *http.Request
 		writer.WriteHeader(500)
 		return
 	}
+	writer.Header().Add("content-type", "application/json")
 	if _, err := writer.Write(bytes); err != nil {
 		log.Error(err, "could not write the response")
 	}

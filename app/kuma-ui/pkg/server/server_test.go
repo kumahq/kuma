@@ -114,6 +114,9 @@ var _ = Describe("GUI Server", func() {
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(err).ToNot(HaveOccurred())
 
+		// and
+		Expect(resp.Header.Get("content-type")).To(Equal("application/json"))
+
 		// when
 		cfg := types.GuiConfig{}
 		Expect(json.Unmarshal(received, &cfg)).To(Succeed())
