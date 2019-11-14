@@ -80,7 +80,25 @@ var _ = Describe("Resource Manager", func() {
 				Namespace: "default",
 				Name:      "tl-1",
 			}
-			err = resManager.Create(context.Background(), &mesh.TrafficLogResource{}, store.CreateBy(tlKey))
+			trafficLog := &mesh.TrafficLogResource{
+				Spec: mesh_proto.TrafficLog{
+					Sources: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"service": "*",
+							},
+						},
+					},
+					Destinations: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"service": "*",
+							},
+						},
+					},
+				},
+			}
+			err = resManager.Create(context.Background(), trafficLog, store.CreateBy(tlKey))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
