@@ -1,8 +1,10 @@
 package server_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Kong/kuma/app/kuma-ui/pkg/server"
+	"github.com/Kong/kuma/app/kuma-ui/pkg/server/types"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/test"
 	. "github.com/onsi/ginkgo"
@@ -19,6 +21,11 @@ var _ = Describe("GUI Server", func() {
 	var stop chan struct{}
 	var baseUrl string
 
+	guiConfig := types.GuiConfig{
+		ApiUrl:      "http://kuma.internal:5681",
+		Environment: "kubernetes",
+	}
+
 	BeforeEach(func() {
 		port, err := test.GetFreePort()
 		Expect(err).ToNot(HaveOccurred())
@@ -27,6 +34,10 @@ var _ = Describe("GUI Server", func() {
 		srv := server.Server{
 			Config: &gui_server.GuiServerConfig{
 				Port: uint32(port),
+				GuiConfig: &gui_server.GuiConfig{
+					ApiUrl:      "http://kuma.internal:5681",
+					Environment: "kubernetes",
+				},
 			},
 		}
 		stop = make(chan struct{})
@@ -88,4 +99,30 @@ var _ = Describe("GUI Server", func() {
 			expectedFile: "data.js",
 		}),
 	)
+
+	It("should serve the gui config", func() {
+		// when
+		resp, err := http.Get(fmt.Sprintf("%s/config", baseUrl))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		received, err := ioutil.ReadAll(resp.Body)
+
+		// then
+		Expect(resp.Body.Close()).To(Succeed())
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		Expect(resp.Header.Get("content-type")).To(Equal("application/json"))
+
+		// when
+		cfg := types.GuiConfig{}
+		Expect(json.Unmarshal(received, &cfg)).To(Succeed())
+
+		// then
+		Expect(cfg).To(Equal(guiConfig))
+	})
+
 })

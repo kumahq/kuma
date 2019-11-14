@@ -9,6 +9,8 @@ import (
 type GuiServerConfig struct {
 	// Port on which the server is exposed
 	Port uint32 `yaml:"port" envconfig:"kuma_gui_server_port"`
+	// Config of the GUI itself
+	GuiConfig *GuiConfig
 }
 
 func (g *GuiServerConfig) Validate() error {
@@ -22,6 +24,13 @@ var _ config.Config = &GuiServerConfig{}
 
 func DefaultGuiServerConfig() *GuiServerConfig {
 	return &GuiServerConfig{
-		Port: 5683,
+		Port:      5683,
+		GuiConfig: &GuiConfig{},
 	}
+}
+
+// Not yet exposed via YAML and env vars on purpose. All of those are autoconfigured
+type GuiConfig struct {
+	ApiUrl      string
+	Environment string
 }
