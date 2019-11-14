@@ -123,8 +123,10 @@ var _ = Describe("ProxyTemplate", func() {
                 - match:`,
 				expected: `
                 violations:
-                - field: selectors[0]
-                  message: has to contain at least one tag`,
+                - field: selectors[0].match
+                  message: must have at least one tag
+                - field: selectors[0].match
+                  message: mandatory tag "service" is missing`,
 			}),
 			Entry("empty tag", testCase{
 				proxyTemplate: `
@@ -133,8 +135,10 @@ var _ = Describe("ProxyTemplate", func() {
                     "": asdf`,
 				expected: `
                 violations:
-                - field: selectors[0][""]
-                  message: tag cannot be empty`,
+                - field: selectors[0].match
+                  message: tag key must be non-empty
+                - field: selectors[0].match
+                  message: mandatory tag "service" is missing`,
 			}),
 			Entry("empty tag value", testCase{
 				proxyTemplate: `
@@ -143,8 +147,8 @@ var _ = Describe("ProxyTemplate", func() {
                     service:`,
 				expected: `
                 violations:
-                - field: 'selectors[0]["service"]'
-                  message: value of tag cannot be empty`,
+                - field: 'selectors[0].match["service"]'
+                  message: tag value must be non-empty`,
 			}),
 			Entry("validation error from envoy protobuf resource", testCase{
 				proxyTemplate: `

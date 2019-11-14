@@ -24,9 +24,9 @@ func init() {
 
 func (t *ProxyTemplateResource) Validate() error {
 	var verr validators.ValidationError
-	verr.AddError("", validateImports(t.Spec.Imports))
-	verr.AddError("", validateResources(t.Spec.Resources))
-	verr.AddError("", validateSelectors(t.Spec.Selectors))
+	verr.Add(validateImports(t.Spec.Imports))
+	verr.Add(validateResources(t.Spec.Resources))
+	verr.Add(validateSelectors(t.Spec.Selectors))
 	return verr.OrNil()
 }
 
@@ -63,19 +63,5 @@ func validateResources(resources []*v1alpha1.ProxyTemplateRawResource) validator
 }
 
 func validateSelectors(selectors []*v1alpha1.Selector) validators.ValidationError {
-	var verr validators.ValidationError
-	for i, selector := range selectors {
-		if len(selector.Match) == 0 {
-			verr.AddViolationAt(validators.RootedAt("selectors").Index(i), "has to contain at least one tag")
-		}
-		for key, value := range selector.Match {
-			if key == "" {
-				verr.AddViolationAt(validators.RootedAt("selectors").Index(i).Key(key), "tag cannot be empty")
-			}
-			if value == "" {
-				verr.AddViolationAt(validators.RootedAt("selectors").Index(i).Key(key), "value of tag cannot be empty")
-			}
-		}
-	}
-	return verr
+	return ValidateSelectors(validators.RootedAt("selectors"), selectors, ValidateSelectorsOpts{})
 }
