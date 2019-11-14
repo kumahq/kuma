@@ -126,9 +126,9 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// when
 			err := rootCmd.Execute()
 			// then
-			Expect(err).To(MatchError(fmt.Sprintf(`could not connect to the Control Plane API Server: Get http://localhost:%d: context deadline exceeded`, port)))
+			Expect(err).To(MatchError(fmt.Sprintf(`could not connect to the Control Plane API Server: Get http://localhost:%d: net/http: request canceled (Client.Timeout exceeded while awaiting headers)`, port)))
 			// and
-			Expect(outbuf.String()).To(Equal(fmt.Sprintf(`Error: could not connect to the Control Plane API Server: Get http://localhost:%d: context deadline exceeded
+			Expect(outbuf.String()).To(Equal(fmt.Sprintf(`Error: could not connect to the Control Plane API Server: Get http://localhost:%d: net/http: request canceled (Client.Timeout exceeded while awaiting headers)
 `, port)))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
