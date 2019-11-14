@@ -13,7 +13,9 @@ func (d *TrafficRouteResource) Validate() error {
 }
 
 func (d *TrafficRouteResource) validateSources() validators.ValidationError {
-	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorOpts{})
+	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
+		RequireAtLeastOneSelector: true,
+	})
 }
 
 func (d *TrafficRouteResource) validateDestinations() (err validators.ValidationError) {

@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
 	"strings"
@@ -12,13 +11,9 @@ import (
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/validators"
 	model "github.com/Kong/kuma/pkg/core/xds"
+	util_envoy "github.com/Kong/kuma/pkg/util/envoy"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
-	"github.com/Kong/kuma/pkg/xds/template"
-	"github.com/ghodss/yaml"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes"
-	any "github.com/golang/protobuf/ptypes/any"
 )
 
 type TemplateProxyGenerator struct {
@@ -51,33 +46,15 @@ type ProxyTemplateRawSource struct {
 func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(s.Resources))
 	for i, r := range s.Resources {
-		json, err := yaml.YAMLToJSON([]byte(r.Resource))
+		res, err := util_envoy.ResourceFromYaml(r.Resource)
 		if err != nil {
-			json = []byte(r.Resource)
-		}
-
-		var anything any.Any
-		if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), &anything); err != nil {
 			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
-		}
-		var dyn ptypes.DynamicAny
-		if err := ptypes.UnmarshalAny(&anything, &dyn); err != nil {
-			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
-		}
-		p, ok := dyn.Message.(ResourcePayload)
-		if !ok {
-			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: xDS resource doesn't implement all required interfaces", i, r.Name)
-		}
-		if v, ok := p.(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
-			}
 		}
 
 		resources = append(resources, &Resource{
 			Name:     r.Name,
 			Version:  r.Version,
-			Resource: p,
+			Resource: res,
 		})
 	}
 	return resources, nil
@@ -90,7 +67,7 @@ func NewDefaultProxyProfile() ResourceGenerator {
 }
 
 func init() {
-	predefinedProfiles[template.ProfileDefaultProxy] = NewDefaultProxyProfile()
+	predefinedProfiles[mesh_core.ProfileDefaultProxy] = NewDefaultProxyProfile()
 }
 
 type ProxyTemplateProfileSource struct {
