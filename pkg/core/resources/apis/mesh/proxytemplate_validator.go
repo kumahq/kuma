@@ -5,7 +5,6 @@ import (
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/util/envoy"
-	"github.com/Kong/kuma/pkg/xds/template"
 	"strings"
 )
 
@@ -15,7 +14,7 @@ var availableProfilesMsg string
 func init() {
 	profiles := []string{}
 	availableProfiles = map[string]bool{}
-	for _, profile := range template.AvailableProfiles {
+	for _, profile := range AvailableProfiles {
 		availableProfiles[profile] = true
 		profiles = append(profiles, profile)
 	}

@@ -14,7 +14,6 @@ import (
 	util_envoy "github.com/Kong/kuma/pkg/util/envoy"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
-	"github.com/Kong/kuma/pkg/xds/template"
 )
 
 type TemplateProxyGenerator struct {
@@ -68,7 +67,7 @@ func NewDefaultProxyProfile() ResourceGenerator {
 }
 
 func init() {
-	predefinedProfiles[template.ProfileDefaultProxy] = NewDefaultProxyProfile()
+	predefinedProfiles[mesh_core.ProfileDefaultProxy] = NewDefaultProxyProfile()
 }
 
 type ProxyTemplateProfileSource struct {

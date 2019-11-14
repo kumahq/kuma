@@ -13,12 +13,10 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/kuma/pkg/core/xds"
+	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/generator"
-	"github.com/Kong/kuma/pkg/xds/template"
-
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("TemplateProxyGenerator", func() {
@@ -72,7 +70,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				},
 				template: &mesh_proto.ProxyTemplate{
 					Imports: []string{
-						template.ProfileDefaultProxy,
+						mesh_core.ProfileDefaultProxy,
 					},
 					Resources: []*mesh_proto.ProxyTemplateRawResource{{
 						Name:     "raw-name",

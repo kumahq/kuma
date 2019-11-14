@@ -13,12 +13,10 @@ import (
 	"github.com/Kong/kuma/pkg/core/permissions"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/kuma/pkg/core/xds"
+	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/generator"
-	"github.com/Kong/kuma/pkg/xds/template"
-
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
@@ -101,7 +99,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - interface: :54321
                 service: db
 `,
-			profile:         template.ProfileDefaultProxy,
+			profile:         mesh_core.ProfileDefaultProxy,
 			envoyConfigFile: "1-envoy-config.golden.yaml",
 		}),
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCase{
@@ -115,7 +113,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               transparentProxying:
                 redirectPort: 15001
 `,
-			profile:         template.ProfileDefaultProxy,
+			profile:         mesh_core.ProfileDefaultProxy,
 			envoyConfigFile: "2-envoy-config.golden.yaml",
 		}),
 	)
