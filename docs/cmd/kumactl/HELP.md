@@ -216,6 +216,13 @@ Install Kuma Control Plane on Kubernetes.
 Usage:
   kumactl install control-plane [flags]
 
+Examples:
+# Install Kuma on Kubernetes
+		kumactl install control-plane | kubectl apply -f -
+	  
+		# Generate installation script for a target platform. At the moment, always generate Kubernetes YAML
+		kumactl install control-plane
+
 Flags:
       --admission-server-tls-cert string    TLS certificate for the admission web hooks implemented by the Kuma Control Plane
       --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
@@ -397,6 +404,9 @@ Show TrafficPermission entities.
 Usage:
   kumactl get traffic-permissions [flags]
 
+Examples:
+kumactl get traffic-permissions -o json | jq '[.items[] |  .name ]'
+
 Flags:
   -h, --help   help for traffic-permissions
 
@@ -472,6 +482,9 @@ Inspect Dataplanes.
 
 Usage:
   kumactl inspect dataplanes [flags]
+
+Examples:
+kumactl inspect dataplanes -o json | jq '.items[0].dataplaneInsight.subscriptions[0].status.total.responsesSent
 
 Flags:
   -h, --help                 help for dataplanes

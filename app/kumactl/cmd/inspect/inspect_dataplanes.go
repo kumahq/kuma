@@ -29,9 +29,10 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 		inspectContext: pctx,
 	}
 	cmd := &cobra.Command{
-		Use:   "dataplanes",
-		Short: "Inspect Dataplanes",
-		Long:  `Inspect Dataplanes.`,
+		Use:     "dataplanes",
+		Short:   "Inspect Dataplanes",
+		Long:    `Inspect Dataplanes.`,
+		Example: `kumactl inspect dataplanes -o json | jq '.items[0].dataplaneInsight.subscriptions[0].status.total.responsesSent`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentDataplaneOverviewClient()
 			if err != nil {

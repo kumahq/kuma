@@ -15,9 +15,10 @@ import (
 
 func newGetTrafficPermissionsCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "traffic-permissions",
-		Short: "Show TrafficPermissions",
-		Long:  `Show TrafficPermission entities.`,
+		Use:     "traffic-permissions",
+		Short:   "Show TrafficPermissions",
+		Long:    `Show TrafficPermission entities.`,
+		Example: `kumactl get traffic-permissions -o json | jq '[.items[] |  .name ]'`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
