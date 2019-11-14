@@ -267,6 +267,26 @@ Global Flags:
       --mesh string          mesh to use (default "default")
 ```
 
+### kumactl generate certificate
+
+```
+Generate self signed key and certificate pair that can be used for example in Dataplane Token Server setup.
+
+Usage:
+  kumactl generate certificate [flags]
+
+Flags:
+      --cert string   path to the generated certificate (default "cert.pem")
+  -h, --help          help for certificate
+      --key string    path to the generated key (default "key.pem")
+      --type string   type of the certificate: one of client|server
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+```
+
 ### kumactl generate dp-token
 
 ```
@@ -276,6 +296,7 @@ Usage:
   kumactl generate [command]
 
 Available Commands:
+  certificate     Generate certificate
   dataplane-token Generate Dataplane Token
 
 Flags:

@@ -25,13 +25,20 @@ type KeyPair struct {
 	KeyPEM  []byte
 }
 
-func NewSelfSignedCert(commonName string, hosts ...string) (KeyPair, error) {
+type CertType string
+
+const (
+	ServerCertType CertType = "server"
+	ClientCertType CertType = "client"
+)
+
+func NewSelfSignedCert(commonName string, certType CertType, hosts ...string) (KeyPair, error) {
 	key, err := rsa.GenerateKey(rand.Reader, DefaultRsaBits)
 	if err != nil {
 		return KeyPair{}, errors.Wrap(err, "failed to generate TLS key")
 	}
 
-	certBytes, err := generateCert(key, commonName, hosts...)
+	certBytes, err := generateCert(key, commonName, certType, hosts...)
 	if err != nil {
 		return KeyPair{}, err
 	}
@@ -47,8 +54,8 @@ func NewSelfSignedCert(commonName string, hosts ...string) (KeyPair, error) {
 	}, nil
 }
 
-func generateCert(signer crypto.Signer, commonName string, hosts ...string) ([]byte, error) {
-	csr, err := newCert(commonName, hosts...)
+func generateCert(signer crypto.Signer, commonName string, certType CertType, hosts ...string) ([]byte, error) {
+	csr, err := newCert(commonName, certType, hosts...)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +70,7 @@ func generateCert(signer crypto.Signer, commonName string, hosts ...string) ([]b
 	return certBuf.Bytes(), nil
 }
 
-func newCert(commonName string, hosts ...string) (x509.Certificate, error) {
+func newCert(commonName string, certType CertType, hosts ...string) (x509.Certificate, error) {
 	notBefore := time.Now()
 	notAfter := notBefore.Add(DefaultValidityPeriod)
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
@@ -82,6 +89,14 @@ func newCert(commonName string, hosts ...string) (x509.Certificate, error) {
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
+	}
+	switch certType {
+	case ServerCertType:
+		csr.ExtKeyUsage = append(csr.ExtKeyUsage, x509.ExtKeyUsageServerAuth)
+	case ClientCertType:
+		csr.ExtKeyUsage = append(csr.ExtKeyUsage, x509.ExtKeyUsageClientAuth)
+	default:
+		return x509.Certificate{}, errors.Errorf("invalid type of CertType: %q. Expected either %q or %q", certType, ServerCertType, ClientCertType)
 	}
 	for _, host := range hosts {
 		if ip := net.ParseIP(host); ip != nil {

@@ -50,7 +50,7 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 				"localhost",
 			}
 			// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server
-			sdsCert, err := tls.NewSelfSignedCert("kuma-sds", hosts...)
+			sdsCert, err := tls.NewSelfSignedCert("kuma-sds", tls.ServerCertType, hosts...)
 			if err != nil {
 				return errors.Wrap(err, "failed to auto-generate TLS certificate for SDS server")
 			}
