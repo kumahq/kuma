@@ -355,7 +355,7 @@ var _ = Describe("Reconcile", func() {
 							Name:      "last",
 						},
 						Spec: mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+							Selectors: []*mesh_proto.Selector{
 								{},
 							},
 						},
@@ -367,7 +367,7 @@ var _ = Describe("Reconcile", func() {
 							Name:      "first",
 						},
 						Spec: mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+							Selectors: []*mesh_proto.Selector{
 								{},
 							},
 						},
@@ -380,7 +380,7 @@ var _ = Describe("Reconcile", func() {
 						Name:      "first",
 					},
 					Spec: mesh_proto.ProxyTemplate{
-						Selectors: []*mesh_proto.ProxyTemplate_Selector{
+						Selectors: []*mesh_proto.Selector{
 							{},
 						},
 					},
@@ -417,7 +417,7 @@ var _ = Describe("Reconcile", func() {
 							Name:      "last",
 						},
 						Spec: mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+							Selectors: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
 										"app":     "example",
@@ -434,7 +434,7 @@ var _ = Describe("Reconcile", func() {
 							Name:      "first",
 						},
 						Spec: mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+							Selectors: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
 										"app": "example",
@@ -458,7 +458,7 @@ var _ = Describe("Reconcile", func() {
 						Name:      "first",
 					},
 					Spec: mesh_proto.ProxyTemplate{
-						Selectors: []*mesh_proto.ProxyTemplate_Selector{
+						Selectors: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
 									"app": "example",
@@ -485,7 +485,7 @@ var _ = Describe("Reconcile", func() {
 							Name:      "last",
 						},
 						Spec: mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.ProxyTemplate_Selector{
+							Selectors: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
 										"app": "example",

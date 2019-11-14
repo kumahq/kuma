@@ -62,7 +62,7 @@ func validateResources(resources []*v1alpha1.ProxyTemplateRawResource) validator
 	return verr
 }
 
-func validateSelectors(selectors []*v1alpha1.ProxyTemplate_Selector) validators.ValidationError {
+func validateSelectors(selectors []*v1alpha1.Selector) validators.ValidationError {
 	var verr validators.ValidationError
 	for i, selector := range selectors {
 		if len(selector.Match) == 0 {
