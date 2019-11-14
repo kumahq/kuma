@@ -63,20 +63,11 @@ message Tracing {
 
 message Logging {
 
-  message AccessLogs {
-
-    bool enabled = 1;
-
-    string filePath = 2;
-  }
-
-  AccessLogs accessLogs = 1;
-
   // Name of the default backend
-  string defaultBackend = 2;
+  string defaultBackend = 1;
 
   // List of available logging backends
-  repeated LoggingBackend backends = 3;
+  repeated LoggingBackend backends = 2;
 }
 
 // LoggingBackend defines logging backend available to mesh. Backends can be

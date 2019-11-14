@@ -107,9 +107,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 				envoyCtx := xds_context.Context{
 					ControlPlane: envoyCpCtx,
 					Mesh: xds_context.MeshContext{
-						TlsEnabled:     meshList.Items[0].Spec.GetMtls().GetEnabled(),
-						LoggingEnabled: meshList.Items[0].Spec.Logging.GetAccessLogs().GetEnabled(),
-						LoggingPath:    meshList.Items[0].Spec.Logging.GetAccessLogs().GetFilePath(),
+						TlsEnabled: meshList.Items[0].Spec.GetMtls().GetEnabled(),
 					},
 				}
 

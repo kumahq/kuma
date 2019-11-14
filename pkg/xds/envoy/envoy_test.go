@@ -441,38 +441,6 @@ var _ = Describe("Envoy", func() {
                       statPrefix: localhost:8080
 `,
 			}),
-			Entry("with access logs", testCase{
-				ctx: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{},
-					Mesh: xds_context.MeshContext{
-						TlsEnabled:     false,
-						LoggingEnabled: true,
-						LoggingPath:    "/tmp/access.logs",
-					},
-				},
-				virtual: false,
-				expected: `
-address:
-  socketAddress:
-    address: 192.168.0.1
-    portValue: 8080
-filterChains:
-- filters:
-  - name: envoy.tcp_proxy
-    typedConfig:
-      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-      accessLog:
-      - name: envoy.file_access_log
-        typedConfig:
-          '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-          format: |
-            [%START_TIME%] %DOWNSTREAM_REMOTE_ADDRESS%->%UPSTREAM_HOST% took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-          path: /tmp/access.logs
-      cluster: localhost:8080
-      statPrefix: localhost:8080
-name: inbound:192.168.0.1:8080
-`,
-			}),
 			Entry("with transparent proxying", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},

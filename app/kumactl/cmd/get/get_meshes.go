@@ -47,7 +47,7 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 
 func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME", "mTLS", "DP ACCESS LOGS"},
+		Headers: []string{"NAME", "mTLS"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -57,14 +57,9 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 				}
 				mesh := meshes.Items[i]
 
-				accessLogs := table.OnOff(mesh.Spec.GetLogging().GetAccessLogs().GetEnabled())
-				if mesh.Spec.GetLogging().GetAccessLogs().GetEnabled() {
-					accessLogs += " (" + mesh.Spec.GetLogging().GetAccessLogs().GetFilePath() + ")"
-				}
 				return []string{
 					mesh.GetMeta().GetName(),                 // NAME
 					table.OnOff(mesh.Spec.Mtls.GetEnabled()), // mTLS
-					accessLogs,                               // DP ACCESS LOGS
 				}
 			}
 		}(),

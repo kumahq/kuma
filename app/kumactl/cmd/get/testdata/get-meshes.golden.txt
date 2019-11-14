@@ -1,3 +1,3 @@
-NAME    mTLS   DP ACCESS LOGS
-mesh1   on     on (/tmp/access.log)
-mesh2   off    off
+NAME    mTLS
+mesh1   on
+mesh2   off
