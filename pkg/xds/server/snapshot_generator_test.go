@@ -67,23 +67,19 @@ var _ = Describe("Reconcile", func() {
 									Namespace: "default",
 								},
 								Spec: mesh_proto.TrafficPermission{
-									Rules: []*mesh_proto.TrafficPermission_Rule{
+									Sources: []*mesh_proto.Selector{
 										{
-											Sources: []*mesh_proto.Selector{
-												{
-													Match: map[string]string{
-														"service": "web1",
-														"version": "1.0",
-													},
-												},
+											Match: map[string]string{
+												"service": "web1",
+												"version": "1.0",
 											},
-											Destinations: []*mesh_proto.Selector{
-												{
-													Match: map[string]string{
-														"service": "backend1",
-														"env":     "dev",
-													},
-												},
+										},
+									},
+									Destinations: []*mesh_proto.Selector{
+										{
+											Match: map[string]string{
+												"service": "backend1",
+												"env":     "dev",
 											},
 										},
 									},

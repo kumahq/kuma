@@ -17,10 +17,9 @@ metadata:
   name: everyone-to-everyone
 mesh: default
 spec:
-  rules:
-  - sources:
-    - match:
-        service: '*'
-    destinations:
-    - match:
-        service: '*'
+  sources:
+  - match:
+      service: '*'
+  destinations:
+  - match:
+      service: '*'

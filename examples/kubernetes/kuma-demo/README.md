@@ -248,13 +248,12 @@ metadata:
   namespace: kuma-demo
   name: everything
 spec:
-  rules:
-  - sources:
-    - match:
-        service: '*'
-    destinations:
-    - match:
-        service: '*'
+  sources:
+  - match:
+      service: '*'
+  destinations:
+  - match:
+      service: '*'
 EOF
 ```
 
@@ -335,13 +334,12 @@ metadata:
   namespace: kuma-demo
   name: everything
 spec:
-  rules:
-  - sources:
-    - match:
-        service: 'kuma-demo-api.kuma-demo.svc:3001'
-    destinations:
-    - match:
-        service: 'elasticsearch.kuma-demo.svc:80'
+  sources:
+  - match:
+      service: 'kuma-demo-api.kuma-demo.svc:3001'
+  destinations:
+  - match:
+      service: 'elasticsearch.kuma-demo.svc:80'
 EOF
 ```
 
@@ -357,12 +355,11 @@ metadata:
   namespace: kuma-demo
   name: everything
 spec:
-  rules:
-  - sources:
-    - match:
-        service: '*'
-    destinations:
-    - match:
-        service: '*'
+  sources:
+  - match:
+      service: '*'
+  destinations:
+  - match:
+      service: '*'
 EOF
 ```
