@@ -57,7 +57,7 @@ func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...stor
 func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.ResourceMeta) error {
 	resourceApi, err := s.api.GetResourceApi(res.GetType())
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", res.GetType())
+		return errors.Wrapf(err, "failed to construct URI to update a %q", res.GetType())
 	}
 	restRes := rest.Resource{
 		Meta: meta,
@@ -87,13 +87,29 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 	})
 	return nil
 }
-func (s *remoteStore) Delete(context.Context, model.Resource, ...store.DeleteOptionsFunc) error {
-	return errors.Errorf("not implemented yet")
+func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...store.DeleteOptionsFunc) error {
+	opts := store.NewDeleteOptions(fs...)
+	resourceApi, err := s.api.GetResourceApi(res.GetType())
+	if err != nil {
+		return errors.Wrapf(err, "failed to construct URI to delete a %q", res.GetType())
+	}
+	req, err := http.NewRequest("DELETE", resourceApi.Item(opts.Mesh, opts.Name), nil)
+	if err != nil {
+		return err
+	}
+	statusCode, b, err := s.doRequest(ctx, req)
+	if err != nil {
+		return err
+	}
+	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
+		return errors.Errorf("(%d): %s", statusCode, string(b))
+	}
+	return nil
 }
 func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
 	resourceApi, err := s.api.GetResourceApi(res.GetType())
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", res.GetType())
+		return errors.Wrapf(err, "failed to construct URI to fetch a %q", res.GetType())
 	}
 	opts := store.NewGetOptions(fs...)
 	req, err := http.NewRequest("GET", resourceApi.Item(opts.Mesh, opts.Name), nil)

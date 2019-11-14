@@ -425,6 +425,57 @@ var _ = Describe("RemoteStore", func() {
 		})
 	})
 
+	Describe("Delete()", func() {
+		It("should delete the resource", func() {
+			// given
+			name := "tr-1"
+			meshName := "mesh-1"
+			store := setupStore("delete.json", func(req *http.Request) {
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s/trafficroutes/%s", meshName, name)))
+			})
+
+			// when
+			resource := sample_core.TrafficRouteResource{}
+			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey("default", name, meshName))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return error from the api server", func() {
+			// given
+			store := setupErrorStore("some error from the server")
+
+			// when
+			resource := sample_core.TrafficRouteResource{}
+			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey("default", "tr-1", "mesh-1"))
+
+			// then
+			Expect(err).To(MatchError("(400): some error from the server"))
+		})
+
+		It("should parse kuma api server error", func() {
+			json := `
+			{
+				"title": "Could not delete resource",
+				"details": "Internal Server Error"
+			}`
+			store := setupErrorStore(json)
+
+			// when
+			resource := sample_core.TrafficRouteResource{}
+			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey("default", "tr-1", "mesh-1"))
+
+			// then
+			Expect(err).To(HaveOccurred())
+
+			Expect(err).To(Equal(&api_server_types.Error{
+				Title:   "Could not delete resource",
+				Details: "Internal Server Error",
+			}))
+		})
+	})
+
 })
 
 type RoundTripperFunc func(*http.Request) (*http.Response, error)
