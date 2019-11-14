@@ -17,7 +17,7 @@ var _ = Describe("TrafficLog", func() {
 			trafficLog string
 			expected   string
 		}
-		DescribeTable("should validate all fields and return as much individual erorrs as possible",
+		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
 				trafficLog := TrafficLogResource{}
