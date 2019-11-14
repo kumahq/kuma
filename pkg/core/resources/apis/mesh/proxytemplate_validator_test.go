@@ -90,7 +90,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("unknown profile", testCase{
 				proxyTemplate: `
                 imports:
-                - unknown-porfile
+                - unknown-profile
                 selectors:
                 - match:
                     service: backend`,
@@ -168,7 +168,7 @@ var _ = Describe("ProxyTemplate", func() {
 				expected: `
                 violations:
                 - field: resources[0].resource
-                  message: 'invalid Cluster.Name: value length must be at least 1 bytes'`,
+                  message: 'native Envoy resource is not valid: invalid Cluster.Name: value length must be at least 1 bytes'`,
 			}),
 			Entry("invalid envoy resource", testCase{
 				proxyTemplate: `
@@ -182,7 +182,7 @@ var _ = Describe("ProxyTemplate", func() {
 				expected: `
                 violations:
                 - field: resources[0].resource
-                  message: 'json: cannot unmarshal string into Go value of type map[string]*json.RawMessage'`,
+                  message: 'native Envoy resource is not valid: json: cannot unmarshal string into Go value of type map[string]*json.RawMessage'`,
 			}),
 		)
 	})

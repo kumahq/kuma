@@ -11,6 +11,7 @@ import (
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/validators"
 	model "github.com/Kong/kuma/pkg/core/xds"
+	util_envoy "github.com/Kong/kuma/pkg/util/envoy"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
 	"github.com/Kong/kuma/pkg/xds/template"
@@ -46,7 +47,7 @@ type ProxyTemplateRawSource struct {
 func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
 	resources := make([]*Resource, 0, len(s.Resources))
 	for i, r := range s.Resources {
-		res, err := template.ResourceFromYaml(r.Resource)
+		res, err := util_envoy.ResourceFromYaml(r.Resource)
 		if err != nil {
 			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
 		}

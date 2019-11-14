@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
+	"github.com/Kong/kuma/pkg/util/envoy"
 	"github.com/Kong/kuma/pkg/xds/template"
 	"strings"
 )
@@ -54,8 +55,8 @@ func validateResources(resources []*v1alpha1.ProxyTemplateRawResource) validator
 		}
 		if resource.Resource == "" {
 			verr.AddViolationAt(validators.RootedAt("resources").Index(i).Field("resource"), "cannot be empty")
-		} else if _, err := template.ResourceFromYaml(resource.Resource); err != nil {
-			verr.AddViolationAt(validators.RootedAt("resources").Index(i).Field("resource"), err.Error())
+		} else if _, err := envoy.ResourceFromYaml(resource.Resource); err != nil {
+			verr.AddViolationAt(validators.RootedAt("resources").Index(i).Field("resource"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	}
 	return verr
