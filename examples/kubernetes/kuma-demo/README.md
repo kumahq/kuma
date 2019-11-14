@@ -21,10 +21,10 @@ $ minikube start --cpus 2 --memory 4096 --kubernetes-version v1.15.4
 $ cd examples/kubernetes/kuma-demo/
 ```
 
-### 3. Deploy Kuma's sample marketplace application
+### 3. Deploy Kuma's sample marketplace application in minikube
 
 ```
-$ kubectl apply -f kuma-demo-aio.yaml
+$ kubectl apply -f kuma-demo-local.yaml
 namespace/kuma-demo created
 serviceaccount/elasticsearch created
 service/elasticsearch created
