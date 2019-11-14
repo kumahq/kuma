@@ -11,24 +11,24 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-var _ = Describe("TrafficRoute", func() {
+var _ = Describe("TrafficPermission", func() {
 	Describe("Validate()", func() {
 		type testCase struct {
-			route    string
-			expected string
+			permission string
+			expected   string
 		}
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				route := TrafficRouteResource{}
+				permission := TrafficPermissionResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.route), &route.Spec)
+				err := util_proto.FromYAML([]byte(given.permission), &permission.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				verr := route.Validate()
+				verr := permission.Validate()
 				// and
 				actual, err := yaml.Marshal(verr)
 
@@ -38,44 +38,36 @@ var _ = Describe("TrafficRoute", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("empty spec", testCase{
-				route: ``,
+				permission: ``,
 				expected: `
                 violations:
                 - field: sources
                   message: must have at least one element
                 - field: destinations
                   message: must have at least one element
-                - field: conf
-                  message: must have at least one element
 `,
 			}),
 			Entry("selectors without tags", testCase{
-				route: `
+				permission: `
                 sources:
                 - match: {}
                 destinations:
                 - match: {}
-                conf:
-                - destination: {}
 `,
 				expected: `
                 violations:
                 - field: sources[0].match
-                  message: must have at least one tag
+                  message: must consist of exactly one tag "service"
                 - field: sources[0].match
                   message: mandatory tag "service" is missing
                 - field: destinations[0].match
                   message: must consist of exactly one tag "service"
                 - field: destinations[0].match
-                  message: mandatory tag "service" is missing
-                - field: conf[0].destination
-                  message: must have at least one tag
-                - field: conf[0].destination
                   message: mandatory tag "service" is missing
 `,
 			}),
 			Entry("selectors with empty tags values", testCase{
-				route: `
+				permission: `
                 sources:
                 - match:
                     service:
@@ -84,13 +76,13 @@ var _ = Describe("TrafficRoute", func() {
                 - match:
                     service:
                     region:
-                conf:
-                - destination:
-                    service:
-                    region:
 `,
 				expected: `
                 violations:
+                - field: sources[0].match
+                  message: must consist of exactly one tag "service"
+                - field: sources[0].match["region"]
+                  message: tag "region" is not allowed
                 - field: sources[0].match["region"]
                   message: tag value must be non-empty
                 - field: sources[0].match["service"]
@@ -102,15 +94,11 @@ var _ = Describe("TrafficRoute", func() {
                 - field: destinations[0].match["region"]
                   message: tag value must be non-empty
                 - field: destinations[0].match["service"]
-                  message: tag value must be non-empty
-                - field: conf[0].destination["region"]
-                  message: tag value must be non-empty
-                - field: conf[0].destination["service"]
                   message: tag value must be non-empty
 `,
 			}),
 			Entry("multiple selectors", testCase{
-				route: `
+				permission: `
                 sources:
                 - match:
                     service:
@@ -121,20 +109,19 @@ var _ = Describe("TrafficRoute", func() {
                     service:
                     region:
                 - match: {}
-                conf:
-                - destination:
-                    service:
-                    region:
-                - destination: {}
 `,
 				expected: `
                 violations:
+                - field: sources[0].match
+                  message: must consist of exactly one tag "service"
+                - field: sources[0].match["region"]
+                  message: tag "region" is not allowed
                 - field: sources[0].match["region"]
                   message: tag value must be non-empty
                 - field: sources[0].match["service"]
                   message: tag value must be non-empty
                 - field: sources[1].match
-                  message: must have at least one tag
+                  message: must consist of exactly one tag "service"
                 - field: sources[1].match
                   message: mandatory tag "service" is missing
                 - field: destinations[0].match
@@ -148,14 +135,6 @@ var _ = Describe("TrafficRoute", func() {
                 - field: destinations[1].match
                   message: must consist of exactly one tag "service"
                 - field: destinations[1].match
-                  message: mandatory tag "service" is missing
-                - field: conf[0].destination["region"]
-                  message: tag value must be non-empty
-                - field: conf[0].destination["service"]
-                  message: tag value must be non-empty
-                - field: conf[1].destination
-                  message: must have at least one tag
-                - field: conf[1].destination
                   message: mandatory tag "service" is missing
 `,
 			}),

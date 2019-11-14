@@ -39,9 +39,6 @@ func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
-func (t *TrafficPermissionResource) Validate() error {
-	return nil
-}
 
 var _ model.ResourceList = &TrafficPermissionResourceList{}
 
