@@ -20,11 +20,9 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
-	envoy_filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
-	wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 )
 
 const (
@@ -212,7 +210,6 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 		ClusterSpecifier: &envoy_tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
-		AccessLog: accessLog(ctx),
 	}
 	pbst, err := ptypes.MarshalAny(config)
 	util_error.MustNot(err)
@@ -253,27 +250,6 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 		}
 	}
 	return listener
-}
-
-func accessLog(ctx xds_context.Context) []*envoy_filter_accesslog.AccessLog {
-	if !ctx.Mesh.LoggingEnabled {
-		return []*envoy_filter_accesslog.AccessLog{}
-	}
-	fileAccessLog := &envoy_accesslog.FileAccessLog{
-		AccessLogFormat: &envoy_accesslog.FileAccessLog_Format{
-			Format: "[%START_TIME%] %DOWNSTREAM_REMOTE_ADDRESS%->%UPSTREAM_HOST% took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes\n",
-		},
-		Path: ctx.Mesh.LoggingPath,
-	}
-	pbst, err := ptypes.MarshalAny(fileAccessLog)
-	util_error.MustNot(err)
-	logs := &envoy_filter_accesslog.AccessLog{
-		Name: wellknown.FileAccessLog,
-		ConfigType: &envoy_filter_accesslog.AccessLog_TypedConfig{
-			TypedConfig: pbst,
-		},
-	}
-	return []*envoy_filter_accesslog.AccessLog{logs}
 }
 
 func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *envoy_auth.DownstreamTlsContext {
@@ -375,7 +351,6 @@ func CreateCatchAllListener(ctx xds_context.Context, listenerName string, addres
 		ClusterSpecifier: &envoy_tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
-		AccessLog: accessLog(ctx),
 	}
 	pbst, err := ptypes.MarshalAny(config)
 	util_error.MustNot(err)
