@@ -12,44 +12,51 @@ import (
 
 var _ = Describe("ProxyTemplate", func() {
 	Describe("Validate()", func() {
-		It("should pass validation", func() {
-			// given
-			spec := `
-            selectors:
-            - match:
-                service: backend
-            imports:
-            - default-proxy
-            resources:
-            - name: additional
-              version: v1
-              resource: | 
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
-                connectTimeout: 5s
-                loadAssignment:
-                  clusterName: localhost:8443
-                  endpoints:
-                    - lbEndpoints:
-                        - endpoint:
-                            address:
-                              socketAddress:
-                                address: 127.0.0.1
-                                portValue: 8443
-                name: localhost:8443
-                type: STATIC`
+		DescribeTable("should pass validation",
+			func(spec string) {
+				proxyTemplate := mesh.ProxyTemplateResource{}
 
-			proxyTemplate := mesh.ProxyTemplateResource{}
+				// when
+				err := util_proto.FromYAML([]byte(spec), &proxyTemplate.Spec)
+				// then
+				Expect(err).ToNot(HaveOccurred())
 
-			// when
-			err := util_proto.FromYAML([]byte(spec), &proxyTemplate.Spec)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = proxyTemplate.Validate()
-			// then
-			Expect(err).ToNot(HaveOccurred())
-		})
+				// when
+				err = proxyTemplate.Validate()
+				// then
+				Expect(err).ToNot(HaveOccurred())
+			},
+			Entry("full example", `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  imports:
+                  - default-proxy
+                  resources:
+                  - name: additional
+                    version: v1
+                    resource: | 
+                      '@type': type.googleapis.com/envoy.api.v2.Cluster
+                      connectTimeout: 5s
+                      loadAssignment:
+                        clusterName: localhost:8443
+                        endpoints:
+                          - lbEndpoints:
+                              - endpoint:
+                                  address:
+                                    socketAddress:
+                                      address: 127.0.0.1
+                                      portValue: 8443
+                      name: localhost:8443
+                      type: STATIC`,
+			),
+			Entry("empty conf", `
+                selectors:
+                - match:
+                    service: backend`,
+			),
+		)
 
 		type testCase struct {
 			proxyTemplate string
@@ -77,26 +84,28 @@ var _ = Describe("ProxyTemplate", func() {
 			},
 			Entry("empty import", testCase{
 				proxyTemplate: `
-                imports:
-                - ""
+                conf:
+                  imports:
+                  - ""
                 selectors:
                 - match:
                     service: backend`,
 				expected: `
                 violations:
-                - field: imports[0]
+                - field: conf.imports[0]
                   message: cannot be empty`,
 			}),
 			Entry("unknown profile", testCase{
 				proxyTemplate: `
-                imports:
-                - unknown-profile
+                conf:
+                  imports:
+                  - unknown-profile
                 selectors:
                 - match:
                     service: backend`,
 				expected: `
                 violations:
-                - field: imports[0]
+                - field: conf.imports[0]
                   message: 'profile not found. Available profiles: default-proxy'`,
 			}),
 			Entry("resources empty fields", testCase{
@@ -104,17 +113,18 @@ var _ = Describe("ProxyTemplate", func() {
                 selectors:
                 - match:
                     service: backend
-                resources:
-                - name:
-                  version:
-                  resource:`,
+                conf:
+                  resources:
+                  - name:
+                    version:
+                    resource:`,
 				expected: `
                 violations:
-                - field: resources[0].name
+                - field: conf.resources[0].name
                   message: cannot be empty
-                - field: resources[0].version
+                - field: conf.resources[0].version
                   message: cannot be empty
-                - field: resources[0].resource
+                - field: conf.resources[0].resource
                   message: cannot be empty`,
 			}),
 			Entry("selector without tags", testCase{
@@ -155,23 +165,24 @@ var _ = Describe("ProxyTemplate", func() {
                 selectors:
                 - match:
                     service: backend
-                resources:
-                - name: additional
-                  version: v1
-                  resource: | 
-                    '@type': type.googleapis.com/envoy.api.v2.Cluster
-                    loadAssignment:
-                      clusterName: localhost:8443
-                      endpoints:
-                        - lbEndpoints:
-                            - endpoint:
-                                address:
-                                  socketAddress:
-                                    address: 127.0.0.1
-                                    portValue: 8443`,
+                conf:
+                  resources:
+                  - name: additional
+                    version: v1
+                    resource: | 
+                      '@type': type.googleapis.com/envoy.api.v2.Cluster
+                      loadAssignment:
+                        clusterName: localhost:8443
+                        endpoints:
+                          - lbEndpoints:
+                              - endpoint:
+                                  address:
+                                    socketAddress:
+                                      address: 127.0.0.1
+                                      portValue: 8443`,
 				expected: `
                 violations:
-                - field: resources[0].resource
+                - field: conf.resources[0].resource
                   message: 'native Envoy resource is not valid: invalid Cluster.Name: value length must be at least 1 bytes'`,
 			}),
 			Entry("invalid envoy resource", testCase{
@@ -179,13 +190,14 @@ var _ = Describe("ProxyTemplate", func() {
                 selectors:
                 - match:
                     service: backend
-                resources:
-                - name: additional
-                  version: v1
-                  resource: not-envoy-resource`,
+                conf:
+                  resources:
+                  - name: additional
+                    version: v1
+                    resource: not-envoy-resource`,
 				expected: `
                 violations:
-                - field: resources[0].resource
+                - field: conf.resources[0].resource
                   message: 'native Envoy resource is not valid: json: cannot unmarshal string into Go value of type map[string]*json.RawMessage'`,
 			}),
 		)

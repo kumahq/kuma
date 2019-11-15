@@ -23,10 +23,16 @@ func init() {
 
 func (t *ProxyTemplateResource) Validate() error {
 	var verr validators.ValidationError
-	verr.Add(validateImports(t.Spec.Imports))
-	verr.Add(validateResources(t.Spec.Resources))
 	verr.Add(validateSelectors(t.Spec.Selectors))
+	verr.AddError("conf", validateConfig(t.Spec.Conf))
 	return verr.OrNil()
+}
+
+func validateConfig(conf *v1alpha1.ProxyTemplate_Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	verr.Add(validateImports(conf.GetImports()))
+	verr.Add(validateResources(conf.GetResources()))
+	return verr
 }
 
 func validateImports(imports []string) validators.ValidationError {

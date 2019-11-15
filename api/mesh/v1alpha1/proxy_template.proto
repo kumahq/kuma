@@ -13,13 +13,18 @@ message ProxyTemplate {
   // +optional
   repeated Selector selectors = 1;
 
-  // List of imported profiles.
-  // +optional
-  repeated string imports = 2;
+  // Configuration for ProxyTemplate
+  Conf conf = 2;
 
-  // List of raw xDS resources.
-  // +optional
-  repeated ProxyTemplateRawResource resources = 3;
+  message Conf {
+    // List of imported profiles.
+    // +optional
+    repeated string imports = 1;
+
+    // List of raw xDS resources.
+    // +optional
+    repeated ProxyTemplateRawResource resources = 2;
+  }
 }
 
 message ProxyTemplateSource {

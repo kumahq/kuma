@@ -3,6 +3,7 @@ mesh: default
 name: profile
 selectors:
 - match:
-    app: backend
-imports:
-- default-proxy
+    service: backend
+conf:
+  imports:
+  - default-proxy

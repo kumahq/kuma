@@ -72,7 +72,9 @@ var _ = Describe("Reconcile", func() {
 					Name:      "expected",
 				},
 				Spec: mesh_proto.ProxyTemplate{
-					Imports: []string{"custom-template"},
+					Conf: &mesh_proto.ProxyTemplate_Conf{
+						Imports: []string{"custom-template"},
+					},
 				},
 			}
 
@@ -83,7 +85,9 @@ var _ = Describe("Reconcile", func() {
 					Name:      "other",
 				},
 				Spec: mesh_proto.ProxyTemplate{
-					Imports: []string{"irrelevant-template"},
+					Conf: &mesh_proto.ProxyTemplate_Conf{
+						Imports: []string{"irrelevant-template"},
+					},
 				},
 			}
 
@@ -104,7 +108,9 @@ var _ = Describe("Reconcile", func() {
 
 			// then
 			Expect(actual).To(Equal(&mesh_proto.ProxyTemplate{
-				Imports: []string{"custom-template"},
+				Conf: &mesh_proto.ProxyTemplate_Conf{
+					Imports: []string{"custom-template"},
+				},
 			}))
 		})
 

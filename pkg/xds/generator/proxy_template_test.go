@@ -69,14 +69,16 @@ var _ = Describe("TemplateProxyGenerator", func() {
 					TrafficPermissions: permissions.MatchedPermissions{},
 				},
 				template: &mesh_proto.ProxyTemplate{
-					Imports: []string{
-						mesh_core.ProfileDefaultProxy,
+					Conf: &mesh_proto.ProxyTemplate_Conf{
+						Imports: []string{
+							mesh_core.ProfileDefaultProxy,
+						},
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
+							Name:     "raw-name",
+							Version:  "raw-version",
+							Resource: `{`,
+						}},
 					},
-					Resources: []*mesh_proto.ProxyTemplateRawResource{{
-						Name:     "raw-name",
-						Version:  "raw-version",
-						Resource: `{`,
-					}},
 				},
 				err: "resources: raw.resources[0]{name=\"raw-name\"}.resource: unexpected EOF",
 			}),

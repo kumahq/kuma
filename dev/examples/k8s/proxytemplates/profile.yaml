@@ -1,8 +1,13 @@
-type: ProxyTemplate
+apiVersion: kuma.io/v1alpha1
+kind: ProxyTemplate
+metadata:
+  namespace: kuma-system
+  name: profile
 mesh: default
-name: profile
-selectors:
-- match:
-    app: backend
-imports:
-- default-proxy
+spec:
+  selectors:
+  - match:
+      service: backend
+  conf:
+    imports:
+    - default-proxy

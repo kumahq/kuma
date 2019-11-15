@@ -7,8 +7,10 @@ import (
 
 var (
 	DefaultProxyTemplate = &kuma_mesh.ProxyTemplate{
-		Imports: []string{
-			core_mesh.ProfileDefaultProxy,
+		Conf: &kuma_mesh.ProxyTemplate_Conf{
+			Imports: []string{
+				core_mesh.ProfileDefaultProxy,
+			},
 		},
 	}
 )
