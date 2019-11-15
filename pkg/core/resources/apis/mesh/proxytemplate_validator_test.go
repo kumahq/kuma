@@ -12,45 +12,51 @@ import (
 
 var _ = Describe("ProxyTemplate", func() {
 	Describe("Validate()", func() {
-		It("should pass validation", func() {
-			// given
-			spec := `
-            selectors:
-            - match:
-                service: backend
-            conf:
-              imports:
-              - default-proxy
-              resources:
-              - name: additional
-                version: v1
-                resource: | 
-                  '@type': type.googleapis.com/envoy.api.v2.Cluster
-                  connectTimeout: 5s
-                  loadAssignment:
-                    clusterName: localhost:8443
-                    endpoints:
-                      - lbEndpoints:
-                          - endpoint:
-                              address:
-                                socketAddress:
-                                  address: 127.0.0.1
-                                  portValue: 8443
-                  name: localhost:8443
-                  type: STATIC`
+		DescribeTable("should pass validation",
+			func(spec string) {
+				proxyTemplate := mesh.ProxyTemplateResource{}
 
-			proxyTemplate := mesh.ProxyTemplateResource{}
+				// when
+				err := util_proto.FromYAML([]byte(spec), &proxyTemplate.Spec)
+				// then
+				Expect(err).ToNot(HaveOccurred())
 
-			// when
-			err := util_proto.FromYAML([]byte(spec), &proxyTemplate.Spec)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = proxyTemplate.Validate()
-			// then
-			Expect(err).ToNot(HaveOccurred())
-		})
+				// when
+				err = proxyTemplate.Validate()
+				// then
+				Expect(err).ToNot(HaveOccurred())
+			},
+			Entry("full example", `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  imports:
+                  - default-proxy
+                  resources:
+                  - name: additional
+                    version: v1
+                    resource: | 
+                      '@type': type.googleapis.com/envoy.api.v2.Cluster
+                      connectTimeout: 5s
+                      loadAssignment:
+                        clusterName: localhost:8443
+                        endpoints:
+                          - lbEndpoints:
+                              - endpoint:
+                                  address:
+                                    socketAddress:
+                                      address: 127.0.0.1
+                                      portValue: 8443
+                      name: localhost:8443
+                      type: STATIC`,
+			),
+			Entry("empty conf", `
+                selectors:
+                - match:
+                    service: backend`,
+			),
+		)
 
 		type testCase struct {
 			proxyTemplate string

@@ -30,10 +30,8 @@ func (t *ProxyTemplateResource) Validate() error {
 
 func validateConfig(conf *v1alpha1.ProxyTemplate_Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	if conf != nil {
-		verr.Add(validateImports(conf.Imports))
-		verr.Add(validateResources(conf.Resources))
-	}
+	verr.Add(validateImports(conf.GetImports()))
+	verr.Add(validateResources(conf.GetResources()))
 	return verr
 }
 
