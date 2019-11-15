@@ -21,8 +21,8 @@ type TemplateProxyGenerator struct {
 }
 
 func (g *TemplateProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
-	resources := make([]*Resource, 0, len(g.ProxyTemplate.Imports)+1)
-	for i, name := range g.ProxyTemplate.Imports {
+	resources := make([]*Resource, 0, len(g.ProxyTemplate.GetConf().GetImports())+1)
+	for i, name := range g.ProxyTemplate.GetConf().GetImports() {
 		generator := &ProxyTemplateProfileSource{ProfileName: name}
 		if rs, err := generator.Generate(ctx, proxy); err != nil {
 			return nil, fmt.Errorf("imports[%d]{name=%q}: %s", i, name, err)
@@ -30,7 +30,7 @@ func (g *TemplateProxyGenerator) Generate(ctx xds_context.Context, proxy *model.
 			resources = append(resources, rs...)
 		}
 	}
-	generator := &ProxyTemplateRawSource{Resources: g.ProxyTemplate.Resources}
+	generator := &ProxyTemplateRawSource{Resources: g.ProxyTemplate.GetConf().GetResources()}
 	if rs, err := generator.Generate(ctx, proxy); err != nil {
 		return nil, fmt.Errorf("resources: %s", err)
 	} else {
