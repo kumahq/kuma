@@ -99,9 +99,12 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 	}
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
+		if statusCode == 404 {
+			return store.ErrorResourceNotFound(res.GetType(), opts.Namespace, opts.Name, opts.Mesh)
+		}
 		return err
 	}
-	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
+	if statusCode != http.StatusOK {
 		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
 	return nil

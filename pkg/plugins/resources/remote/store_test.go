@@ -48,25 +48,25 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "trafficroutes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
 				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
 	}
 
-	setupErrorStore := func(errorMsg string) core_store.ResourceStore {
+	setupErrorStore := func(code int, errorMsg string) core_store.ResourceStore {
 		client := &http.Client{
 			Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 				return &http.Response{
-					StatusCode: http.StatusBadRequest,
+					StatusCode: code,
 					Body:       ioutil.NopCloser(strings.NewReader(errorMsg)),
 				}, nil
 			}),
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "trafficroutes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
 				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
 			},
 		}
@@ -78,7 +78,7 @@ var _ = Describe("RemoteStore", func() {
 			// setup
 			name := "res-1"
 			store := setupStore("get.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/trafficroutes/%s", name)))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
 			})
 
 			// when
@@ -119,7 +119,7 @@ var _ = Describe("RemoteStore", func() {
 				"details": "Internal Server Error"
 			}
 		`
-			store := setupErrorStore(json)
+			store := setupErrorStore(400, json)
 
 			// when
 			resource := mesh.MeshResource{}
@@ -133,6 +133,23 @@ var _ = Describe("RemoteStore", func() {
 				Details: "Internal Server Error",
 			}))
 		})
+
+		It("should map 404 error to ResourceNotFound", func() {
+			// given
+			json := `
+			{
+				"title": "Could not get a resource",
+				"details": "Not found"
+			}`
+			store := setupErrorStore(404, json)
+
+			// when
+			resource := mesh.MeshResource{}
+			err := store.Get(context.Background(), &resource, core_store.GetByKey("", "test", "test"))
+
+			// then
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+		})
 	})
 
 	Describe("Create()", func() {
@@ -140,7 +157,7 @@ var _ = Describe("RemoteStore", func() {
 			// setup
 			name := "res-1"
 			store := setupStore("create_update.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/trafficroutes/%s", name)))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(bytes)).To(Equal(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute"}`))
@@ -191,7 +208,7 @@ var _ = Describe("RemoteStore", func() {
 				]
 			}
 		`
-			store := setupErrorStore(json)
+			store := setupErrorStore(400, json)
 
 			// when
 			err := store.Create(context.Background(), &mesh.MeshResource{}, core_store.CreateByKey("", "test", "test"))
@@ -216,7 +233,7 @@ var _ = Describe("RemoteStore", func() {
 			// setup
 			name := "res-1"
 			store := setupStore("create_update.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/trafficroutes/%s", name)))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(bytes)).To(Equal(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute"}`))
@@ -274,7 +291,7 @@ var _ = Describe("RemoteStore", func() {
 
 		It("should return error from the api server", func() {
 			// given
-			store := setupErrorStore("some error from the server")
+			store := setupErrorStore(400, "some error from the server")
 
 			// when
 			resource := mesh.MeshResource{
@@ -308,7 +325,7 @@ var _ = Describe("RemoteStore", func() {
 				]
 			}
 		`
-			store := setupErrorStore(json)
+			store := setupErrorStore(400, json)
 
 			// when
 			resource := mesh.MeshResource{
@@ -343,7 +360,7 @@ var _ = Describe("RemoteStore", func() {
 		It("should successfully list known resources", func() {
 			// given
 			store := setupStore("list.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/pilot/trafficroutes")))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/pilot/traffic-routes")))
 			})
 
 			// when
@@ -392,7 +409,7 @@ var _ = Describe("RemoteStore", func() {
 
 		It("should return error from the api server", func() {
 			// given
-			store := setupErrorStore("some error from the server")
+			store := setupErrorStore(400, "some error from the server")
 
 			// when
 			meshes := mesh.MeshResourceList{}
@@ -409,7 +426,7 @@ var _ = Describe("RemoteStore", func() {
 				"details": "Internal Server Error"
 			}
 		`
-			store := setupErrorStore(json)
+			store := setupErrorStore(400, json)
 
 			// when
 			meshes := mesh.MeshResourceList{}
@@ -431,7 +448,7 @@ var _ = Describe("RemoteStore", func() {
 			name := "tr-1"
 			meshName := "mesh-1"
 			store := setupStore("delete.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s/trafficroutes/%s", meshName, name)))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s/traffic-routes/%s", meshName, name)))
 			})
 
 			// when
@@ -442,9 +459,24 @@ var _ = Describe("RemoteStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should delete mesh resource", func() {
+			// given
+			meshName := "mesh-1"
+			store := setupStore("delete.json", func(req *http.Request) {
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
+			})
+
+			// when
+			resource := mesh.MeshResource{}
+			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey("default", meshName, meshName))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should return error from the api server", func() {
 			// given
-			store := setupErrorStore("some error from the server")
+			store := setupErrorStore(400, "some error from the server")
 
 			// when
 			resource := sample_core.TrafficRouteResource{}
@@ -454,13 +486,30 @@ var _ = Describe("RemoteStore", func() {
 			Expect(err).To(MatchError("(400): some error from the server"))
 		})
 
+		It("should map 404 error to ResourceNotFound", func() {
+			// given
+			json := `
+			{
+				"title": "Could not get a resource",
+				"details": "Not found"
+			}`
+			store := setupErrorStore(404, json)
+
+			// when
+			resource := sample_core.TrafficRouteResource{}
+			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey("default", "tr-1", "mesh-1"))
+
+			// then
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+		})
+
 		It("should parse kuma api server error", func() {
 			json := `
 			{
 				"title": "Could not delete resource",
 				"details": "Internal Server Error"
 			}`
-			store := setupErrorStore(json)
+			store := setupErrorStore(400, json)
 
 			// when
 			resource := sample_core.TrafficRouteResource{}
