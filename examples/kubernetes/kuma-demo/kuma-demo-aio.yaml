@@ -158,6 +158,35 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: kuma-demo-backend-v0
+  namespace: kuma-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kuma-demo-backend
+      version: v0
+  template:
+    metadata:
+      labels:
+        app: kuma-demo-backend
+        version: v0
+    spec:
+      containers:
+      - image: kvn0218/kuma-demo-be:v1
+        name: kuma-be
+        env:
+        - name: ES_HOST
+          value: http://elasticsearch:80
+        - name: REDIS_HOST
+          value: "redis-master"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: kuma-demo-backend-v1
   namespace: kuma-demo
 spec:
