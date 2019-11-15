@@ -178,6 +178,8 @@ spec:
         env:
         - name: ES_HOST
           value: http://elasticsearch:80
+        - name: ES_SPECIAL_OFFER
+          value: "false"
         - name: REDIS_HOST
           value: "redis-master"
         imagePullPolicy: IfNotPresent
@@ -231,11 +233,13 @@ spec:
         version: v2
     spec:
       containers:
-      - image: kvn0218/kuma-demo-be:v2
+      - image: kvn0218/kuma-demo-be:v1
         name: kuma-be
         env:
         - name: ES_HOST
           value: http://elasticsearch:80
+        - name: ES_TOTAL_OFFER
+          value: "2"
         - name: REDIS_HOST
           value: "redis-master"
         imagePullPolicy: IfNotPresent
