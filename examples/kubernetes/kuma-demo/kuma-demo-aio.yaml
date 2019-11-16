@@ -166,11 +166,13 @@ spec:
     matchLabels:
       app: kuma-demo-backend
       version: v0
+      env: prod
   template:
     metadata:
       labels:
         app: kuma-demo-backend
         version: v0
+        env: prod
     spec:
       containers:
       - image: kvn0218/kuma-demo-be:v1
@@ -197,11 +199,13 @@ spec:
     matchLabels:
       app: kuma-demo-backend
       version: v1
+      env: intg
   template:
     metadata:
       labels:
         app: kuma-demo-backend
         version: v1
+        env: intg
     spec:
       containers:
       - image: kvn0218/kuma-demo-be:v1
@@ -226,11 +230,13 @@ spec:
     matchLabels:
       app: kuma-demo-backend
       version: v2
+      env: dev
   template:
     metadata:
       labels:
         app: kuma-demo-backend
         version: v2
+        env: dev
     spec:
       containers:
       - image: kvn0218/kuma-demo-be:v1
@@ -308,10 +314,14 @@ spec:
   selector:
     matchLabels:
       app: kuma-demo-frontend
+      version: v8
+      env: prod
   template:
     metadata:
       labels:
         app: kuma-demo-frontend
+        version: v8
+        env: prod
     spec:
       containers:
       - image: nginx
