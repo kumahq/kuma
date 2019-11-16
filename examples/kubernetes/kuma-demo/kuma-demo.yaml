@@ -128,7 +128,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-master
+  name: redis
   namespace: kuma-demo
   labels:
     app: redis
@@ -225,7 +225,7 @@ spec:
         - name: ES_HOST
           value: http://elasticsearch:80
         - name: REDIS_HOST
-          value: "redis-master"
+          value: redis
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3001
