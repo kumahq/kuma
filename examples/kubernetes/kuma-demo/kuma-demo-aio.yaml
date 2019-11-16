@@ -128,7 +128,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-master
+  name: redis
   namespace: kuma-demo
   labels:
     app: redis
@@ -146,7 +146,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-demo-backend
+  name: backend
   namespace: kuma-demo
 spec:
   selector:
@@ -183,7 +183,7 @@ spec:
         - name: ES_SPECIAL_OFFER
           value: "false"
         - name: REDIS_HOST
-          value: "redis-master"
+          value: redis
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3001
@@ -194,7 +194,7 @@ metadata:
   name: kuma-demo-backend-v1
   namespace: kuma-demo
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: kuma-demo-backend
@@ -214,7 +214,7 @@ spec:
         - name: ES_HOST
           value: http://elasticsearch:80
         - name: REDIS_HOST
-          value: "redis-master"
+          value: redis
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3001
@@ -225,7 +225,7 @@ metadata:
   name: kuma-demo-backend-v2
   namespace: kuma-demo
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: kuma-demo-backend
@@ -247,7 +247,7 @@ spec:
         - name: ES_TOTAL_OFFER
           value: "2"
         - name: REDIS_HOST
-          value: "redis-master"
+          value: redis
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3001
@@ -277,7 +277,7 @@ data:
             server localhost:8080;
         }
         upstream backend {
-            server kuma-demo-backend:3001;
+            server backend:3001;
             keepalive_timeout 0s;
         }
         server {
@@ -295,7 +295,7 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-demo-frontend
+  name: frontend
   namespace: kuma-demo
 spec:
   selector:
