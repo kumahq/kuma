@@ -94,7 +94,7 @@ Cert was saved in: %s
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "client",
-				"--control-plane-hostname", "kuma1.internal",
+				"--cp-hostname", "kuma1.internal",
 			})
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -103,7 +103,7 @@ Cert was saved in: %s
 			err := rootCmd.Execute()
 
 			// then
-			Expect(err.Error()).To(Equal(`--control-plane-hostname cannot be used with "client" type`))
+			Expect(err).To(MatchError(`--cp-hostname cannot be used with "client" type`))
 		})
 	})
 
@@ -112,8 +112,8 @@ Cert was saved in: %s
 			generate.NewSelfSignedCert = func(commonName string, certType tls.CertType, hosts ...string) (tls.KeyPair, error) {
 				Expect(commonName).To(Equal("kuma"))
 				Expect(certType).To(Equal(tls.ServerCertType))
-				Expect(hosts).To(HaveLen(2))
-				Expect(hosts).To(ConsistOf("kuma1.internal", "kuma2.internal"))
+				Expect(hosts).To(HaveLen(3))
+				Expect(hosts).To(ConsistOf("kuma1.internal", "kuma2.internal", "localhost"))
 				return tls.KeyPair{
 					CertPEM: []byte("CERT"),
 					KeyPEM:  []byte("KEY"),
@@ -128,8 +128,8 @@ Cert was saved in: %s
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
-				"--control-plane-hostname", "kuma1.internal",
-				"--control-plane-hostname", "kuma2.internal",
+				"--cp-hostname", "kuma1.internal",
+				"--cp-hostname", "kuma2.internal",
 			})
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -155,6 +155,24 @@ Cert was saved in: %s
 Key was saved in: %s
 Cert was saved in: %s
 `, keyFile.Name(), certFile.Name())))
+		})
+
+		It("should validate that cp-hostname is present", func() {
+			// given
+			rootCmd := cmd.DefaultRootCmd()
+			rootCmd.SetArgs([]string{"generate", "tls-certificate",
+				"--key-file", keyFile.Name(),
+				"--cert-file", certFile.Name(),
+				"--type", "server",
+			})
+			rootCmd.SetOut(stdout)
+			rootCmd.SetErr(stderr)
+
+			// when
+			err := rootCmd.Execute()
+
+			// then
+			Expect(err).To(MatchError(`--cp-hostname has to be specified with "server" type`))
 		})
 	})
 })

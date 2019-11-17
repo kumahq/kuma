@@ -277,18 +277,18 @@ Usage:
 
 Examples:
 
-# Generate a TLS certificate for use by an HTTPS server, i.e. by the Dataplane Token server
-kumactl generate tls-certificate --type=server
+  # Generate a TLS certificate for use by an HTTPS server, i.e. by the Dataplane Token server
+  kumactl generate tls-certificate --type=server
 
-# Generate a TLS certificate for use by a client of an HTTPS server, i.e. by the 'kumactl generate dataplane-token' command
-kumactl generate tls-certificate --type=client
+  # Generate a TLS certificate for use by a client of an HTTPS server, i.e. by the 'kumactl generate dataplane-token' command
+  kumactl generate tls-certificate --type=client
 
 Flags:
-      --cert-file string                 path to a file with a generated TLS certificate (default "cert.pem")
-      --control-plane-hostname strings   DNS name of the control plane
-  -h, --help                             help for tls-certificate
-      --key-file string                  path to a file with a generated key (default "key.pem")
-      --type string                      type of the certificate: one of client|server
+      --cert-file string      path to a file with a generated TLS certificate (default "cert.pem")
+      --cp-hostname strings   DNS name of the control plane
+  -h, --help                  help for tls-certificate
+      --key-file string       path to a file with a generated private key (default "key.pem")
+      --type string           type of the certificate: one of client|server
 
 Global Flags:
       --config-file string   path to the configuration file to use
