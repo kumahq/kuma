@@ -30,7 +30,7 @@ data:
     }
     output{
       loggly{
-        key => "dbee0a24-abf3-4049-a50a-8c80531a9e11"
+        key => "573944e3-05ff-471a-8d19-8f466594c799"
         tag => "logstash"
       }
     }
