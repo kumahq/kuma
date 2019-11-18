@@ -1,5 +1,140 @@
 # CHANGELOG
 
+## [0.3.0]
+
+> Released on 2019/11/18
+
+Changes:
+
+* fix: fixed discrepancy between `ProxyTemplate` documentation and actual implementation
+  [#422](https://github.com/Kong/kuma/pull/422)
+* chore: dropped support for `Mesh`-wide logging settings
+  [#438](https://github.com/Kong/kuma/pull/438)
+  ⚠️ warning: api breaking change
+* feature: validate `ProxyTemplate` resource on CREATE/UPDATE in universal mode
+  [#431](https://github.com/Kong/kuma/pull/431)
+  ⚠️ warning: api breaking change
+* feature: add `kumactl generate tls-certificate` command
+  [#437](https://github.com/Kong/kuma/pull/437)
+* feature: validate `TrafficLog` resource on CREATE/UPDATE in universal mode
+  [#435](https://github.com/Kong/kuma/pull/435)
+* feature: validate `TrafficPermission` resource on CREATE/UPDATE in universal mode
+  [#436](https://github.com/Kong/kuma/pull/436)
+* feature: dropped support for multiple rules per single `TrafficPermission` resource
+  [#434](https://github.com/Kong/kuma/pull/434)
+  ⚠️ warning: api breaking change
+* feature: added configuration for Kuma UI
+  [#428](https://github.com/Kong/kuma/pull/428)
+* feature: included Kuma UI into `kuma-cp`
+  [#410](https://github.com/Kong/kuma/pull/410)
+* feature: dropped support for multiple rules per single `TrafficLog` resource
+  [#433](https://github.com/Kong/kuma/pull/433)
+  ⚠️ warning: api breaking change
+* feature: validate `Mesh` resource on CREATE/UPDATE in universal mode
+  [#430](https://github.com/Kong/kuma/pull/430)
+* feature: `kumactl` commands now do custom formating of errors returned by the Kuma REST API
+  [#411](https://github.com/Kong/kuma/pull/411)
+* feature: `tcp_proxy` configuration now routes to a list of weighted clusters according to `TrafficRoute`
+  [#423](https://github.com/Kong/kuma/pull/423)
+* feature: included tags of a dataplane into `ClusterLoadAssignment`
+  [#422](https://github.com/Kong/kuma/pull/422)
+* feature: validate Kuma CRDs on Kubernetes
+  [#401](https://github.com/Kong/kuma/pull/401)
+* feature: improved feedback given to a user when `kuma-dp run` is configured with an invalid dataplane token
+  [#418](https://github.com/Kong/kuma/pull/418)
+* release: included Docker image with `kumactl` into release build
+  [#425](https://github.com/Kong/kuma/pull/425)
+* feature: support enabling/disabling DataplaneToken server via a configuration flag
+  [#415](https://github.com/Kong/kuma/pull/415)
+* feature: pick a single the most specific `TrafficRoute` for every outbound interface of a `Dataplane`
+  [#421](https://github.com/Kong/kuma/pull/421)
+* feature: validate `TrafficRoute` resource on CREATE/UPDATE in universal mode
+  [#424](https://github.com/Kong/kuma/pull/424)
+* feature: `kumactl apply` can now download a resource from URL
+  [#402](https://github.com/Kong/kuma/pull/402)
+* chore: migrated to the latest version of `go-control-plane`
+  [#419](https://github.com/Kong/kuma/pull/419)
+* feature: added `kumactl get traffic-routes` command
+  [#400](https://github.com/Kong/kuma/pull/400)
+* feature: added `TrafficRoute` CRD on Kubernetes
+  [#398](https://github.com/Kong/kuma/pull/398)
+* feature: added `TrafficRoute` resource to core model
+  [#397](https://github.com/Kong/kuma/pull/397)
+* feature: added support for CORS to Kuma REST API
+  [#412](https://github.com/Kong/kuma/pull/412)
+* feature: validate `Dataplane` resource on CREATE/UPDATE in universal mode
+  [#388](https://github.com/Kong/kuma/pull/388)
+* feature: added support for client certificate-based authentication to `kumactl generate dataplane-token` command
+  [#372](https://github.com/Kong/kuma/pull/372)
+* feature: added `--overwrite` flag to the `kumactl config control-planes add` command
+  [#381](https://github.com/Kong/kuma/pull/381)
+  👍contributed by @Gabitchov
+* feature: added `MESH` column into the output of `kumactl get proxytemplates`
+  [#399](https://github.com/Kong/kuma/pull/399)
+  👍contributed by @programmer04
+* feature: `kuma-dp run` is now configured with a URL of the API server instead of a former URL of the boostrap config server
+  [#417](https://github.com/Kong/kuma/pull/417)
+  ⚠️ warning: interface breaking change
+* feature: added a REST endpoint to advertize location of various sub-components of the control plane
+  [#369](https://github.com/Kong/kuma/pull/369)
+* feature: added protobuf descriptor for `TrafficRoute` resource
+  [#396](https://github.com/Kong/kuma/pull/396)
+* fix: added reconciliation on Dataplane delete to handle a case where a user manually deletes Dataplane on Kubernetes
+  [#392](https://github.com/Kong/kuma/pull/392)
+* feature: Kuma REST API on Kubernetes is now restricted to READ operations only
+  [#377](https://github.com/Kong/kuma/pull/377)
+  👍contributed by @sterchelen
+* fix: ignored errors in unit tests
+  [#376](https://github.com/Kong/kuma/pull/376)
+  👍contributed by @alrs
+* feature: JSON output of `kumactl` is now pretty-printed
+  [#360](https://github.com/Kong/kuma/pull/360)
+  👍contributed by @sterchelen
+* feature: DataplaneToken server is now exposed for remote access over HTTPS with mandatory client certificate-based authentication
+  [#349](https://github.com/Kong/kuma/pull/349)
+* feature: `kuma-dp` now passes a path to a file with a dataplane token as an argumenent for bootstrap config API
+  [#348](https://github.com/Kong/kuma/pull/348)
+* feature: added support for mTLS on Kubernetes v1.13+
+  [#356](https://github.com/Kong/kuma/pull/356)
+* feature: added `kumactl delete` command
+  [#343](https://github.com/Kong/kuma/pull/343)
+  👍contributed by @pradeepmurugesan
+* feature: added `kumactl gerenerate dataplane-token` command
+  [#342](https://github.com/Kong/kuma/pull/342)
+* feature: added a DataplaneToken server to support dataplane authentication in universal mode
+  [#342](https://github.com/Kong/kuma/pull/342)
+* feature: on removal of a Mesh remove all policies defined in it
+  [#332](https://github.com/Kong/kuma/pull/332)
+* docs: documented release process
+  [#341](https://github.com/Kong/kuma/pull/341)
+* docs: DEVELOPER.md was brought up to date
+  [#346](https://github.com/Kong/kuma/pull/346)
+* docs: added instructions how to deploy `kuma-demo` on Kubernetes
+  [#347](https://github.com/Kong/kuma/pull/347)
+
+Community contributions from:
+
+* 👍@pradeepmurugesan
+* 👍@alrs
+* 👍@sterchelen
+* 👍@programmer04
+* 👍@Gabitchov
+
+Breaking changes:
+
+* ⚠️ fixed discrepancy between `ProxyTemplate` documentation and actual implementation
+  [#422](https://github.com/Kong/kuma/pull/422)
+* ⚠️ `selectors` in `ProxyTemplate` now always require `service` tag
+  [#431](https://github.com/Kong/kuma/pull/431)
+* ⚠️ dropped support for `Mesh`-wide logging settings
+  [#438](https://github.com/Kong/kuma/pull/438)
+* ⚠️ dropped support for multiple rules per single `TrafficPermission` resource
+  [#434](https://github.com/Kong/kuma/pull/434)
+* ⚠️ dropped support for multiple rules per single `TrafficLog` resource
+  [#433](https://github.com/Kong/kuma/pull/433)
+* ⚠️ value of `--cp-address` parameter in `kuma-dp run` is now a URL of the API server instead of a former URL of the boostrap config server
+  [#417](https://github.com/Kong/kuma/pull/417)
+
 ## [0.2.2]
 
 > Released on 2019/10/11
