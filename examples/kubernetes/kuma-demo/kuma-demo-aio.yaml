@@ -128,7 +128,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-master
+  name: redis
   namespace: kuma-demo
   labels:
     app: redis
@@ -146,14 +146,163 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-demo-api
+  name: backend
   namespace: kuma-demo
 spec:
   selector:
-    app: kuma-demo-api
+    app: kuma-demo-backend
   ports:
   - name: api
     port: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-demo-backend-v0
+  namespace: kuma-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kuma-demo-backend
+      version: v0
+      env: prod
+  template:
+    metadata:
+      labels:
+        app: kuma-demo-backend
+        version: v0
+        env: prod
+    spec:
+      containers:
+      - image: kvn0218/kuma-demo-be:v1
+        name: kuma-be
+        env:
+        - name: ES_HOST
+          value: http://elasticsearch:80
+        - name: ES_SPECIAL_OFFER
+          value: "false"
+        - name: REDIS_HOST
+          value: redis
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-demo-backend-v1
+  namespace: kuma-demo
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: kuma-demo-backend
+      version: v1
+      env: intg
+  template:
+    metadata:
+      labels:
+        app: kuma-demo-backend
+        version: v1
+        env: intg
+    spec:
+      containers:
+      - image: kvn0218/kuma-demo-be:v1
+        name: kuma-be
+        env:
+        - name: ES_HOST
+          value: http://elasticsearch:80
+        - name: REDIS_HOST
+          value: redis
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-demo-backend-v2
+  namespace: kuma-demo
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: kuma-demo-backend
+      version: v2
+      env: dev
+  template:
+    metadata:
+      labels:
+        app: kuma-demo-backend
+        version: v2
+        env: dev
+    spec:
+      containers:
+      - image: kvn0218/kuma-demo-be:v1
+        name: kuma-be
+        env:
+        - name: ES_HOST
+          value: http://elasticsearch:80
+        - name: ES_TOTAL_OFFER
+          value: "2"
+        - name: REDIS_HOST
+          value: redis
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3001
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-app-config
+  namespace: kuma-demo
+data:
+  nginx.conf: |
+    user  nginx;
+    worker_processes  1;
+    error_log  /var/log/nginx/error.log warn;
+    pid        /var/run/nginx.pid;
+    events {
+        worker_connections  1024;
+    }
+    http {
+        default_type  application/octet-stream;
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+        access_log  /var/log/nginx/access.log  main;
+        keepalive_timeout  65;
+        upstream frontend {
+            server localhost:8080;
+        }
+        upstream backend {
+            server backend:3001;
+            keepalive_timeout 0s;
+        }
+        server {
+            listen       80;
+            server_name  localhost;
+            location /items {
+                proxy_pass http://backend;
+            }
+            location / {
+                proxy_pass http://frontend;
+            }
+        }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: kuma-demo
+spec:
+  selector:
+    app: kuma-demo-frontend
+  ports:
+  - name: http
+    port: 80
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -164,25 +313,29 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kuma-demo-api
+      app: kuma-demo-frontend
+      version: v8
+      env: prod
   template:
     metadata:
       labels:
-        app: kuma-demo-api
+        app: kuma-demo-frontend
+        version: v8
+        env: prod
     spec:
       containers:
-      - image: kvn0218/kuma-demo-api:latest
-        name: kuma-be
-        env:
-        - name: ES_HOST
-          value: http://elasticsearch:80
-        - name: REDIS_HOST
-          value: "redis-master"
+      - image: nginx
+        name: nginx
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 3001
+        - containerPort: 80
+        volumeMounts:
+        - name: demo-app-config
+          mountPath: /etc/nginx/
       - name: kuma-fe
-        image: kvn0218/kuma-demo-fe:latest
+        image: kvn0218/kuma-demo-fe:kubecon
         imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8080
+      volumes:
+      - name: demo-app-config
+        configMap:
+          name: demo-app-config
