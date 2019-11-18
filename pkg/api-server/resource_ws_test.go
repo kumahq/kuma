@@ -418,7 +418,17 @@ var _ = Describe("Resource WS", func() {
 			response := client.delete("non-existing-resource")
 
 			// then
-			Expect(response.StatusCode).To(Equal(200))
+			Expect(response.StatusCode).To(Equal(404))
+
+			// and
+			bytes, err := ioutil.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(MatchJSON(`
+			{
+				"title": "Could not delete a resource",
+				"details": "Not found"
+			}
+			`))
 		})
 	})
 

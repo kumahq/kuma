@@ -119,9 +119,12 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 	opts := store.NewDeleteOptions(fs...)
 
 	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3 AND mesh=$4`
-	_, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), opts.Mesh)
+	result, err := r.db.Exec(statement, opts.Name, opts.Namespace, resource.GetType(), opts.Mesh)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
+	}
+	if rows, _ := result.RowsAffected(); rows == 0 { // error ignored, postgres supports RowsAffected()
+		return store.ErrorResourceNotFound(resource.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 	}
 
 	return nil

@@ -71,11 +71,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	opts := store.NewDeleteOptions(fs...)
 
 	// get object and validate mesh
-	err := s.Get(ctx, r, store.GetByKey(opts.Namespace, opts.Name, opts.Mesh))
-	if err != nil {
-		if err.Error() == store.ErrorResourceNotFound(r.GetType(), opts.Namespace, opts.Name, opts.Mesh).Error() {
-			return nil // nothing to delete
-		}
+	if err := s.Get(ctx, r, store.GetByKey(opts.Namespace, opts.Name, opts.Mesh)); err != nil {
 		return err
 	}
 

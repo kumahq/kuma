@@ -107,10 +107,11 @@ var _ = Describe("Mesh Manager", func() {
 			mesh := core_mesh.MeshResource{}
 			err = resManager.Delete(context.Background(), &mesh, store.DeleteByKey(namespace, "already-deleted", "already-deleted"))
 
-			// then
-			Expect(err).ToNot(HaveOccurred())
+			// then not found error is thrown
+			Expect(err).To(HaveOccurred())
+			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
-			// and resource is deleted
+			// but the resource in this mesh is deleted anyway
 			err = resStore.Get(context.Background(), &dp, store.GetBy(dpKey))
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 		})
