@@ -1,7 +1,7 @@
-package catalogue
+package catalog
 
 // Not yet exposed via YAML and env vars on purpose
-type CatalogueConfig struct {
+type CatalogConfig struct {
 	Bootstrap      BootstrapApiConfig
 	DataplaneToken DataplaneTokenApiConfig
 }

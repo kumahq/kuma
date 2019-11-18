@@ -11,8 +11,8 @@ import (
 	"github.com/Kong/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/Kong/kuma/app/kumactl/pkg/resources"
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
-	"github.com/Kong/kuma/pkg/catalogue"
-	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
+	"github.com/Kong/kuma/pkg/catalog"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -31,7 +31,7 @@ type RootRuntime struct {
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string, *kumactl_config.Context_DataplaneTokenApiCredentials) (tokens.DataplaneTokenClient, error)
-	NewCatalogueClient         func(string) (catalogue_client.CatalogueClient, error)
+	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
 }
 
 type RootContext struct {
@@ -46,7 +46,7 @@ func DefaultRootContext() *RootContext {
 			NewResourceStore:           kumactl_resources.NewResourceStore,
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
-			NewCatalogueClient:         catalogue_client.NewCatalogueClient,
+			NewCatalogClient:           catalog_client.NewCatalogClient,
 		},
 	}
 }
@@ -117,20 +117,20 @@ func (rc *RootContext) CurrentDataplaneOverviewClient() (kumactl_resources.Datap
 	return rc.Runtime.NewDataplaneOverviewClient(controlPlane.Coordinates.ApiServer)
 }
 
-func (rc *RootContext) catalogue() (catalogue.Catalogue, error) {
+func (rc *RootContext) catalog() (catalog.Catalog, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {
-		return catalogue.Catalogue{}, err
+		return catalog.Catalog{}, err
 	}
-	client, err := rc.Runtime.NewCatalogueClient(controlPlane.Coordinates.ApiServer.Url)
+	client, err := rc.Runtime.NewCatalogClient(controlPlane.Coordinates.ApiServer.Url)
 	if err != nil {
-		return catalogue.Catalogue{}, errors.Wrap(err, "could not create components client")
+		return catalog.Catalog{}, errors.Wrap(err, "could not create components client")
 	}
-	return client.Catalogue()
+	return client.Catalog()
 }
 
 func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {
-	components, err := rc.catalogue()
+	components, err := rc.catalog()
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 	return rc.Runtime.NewDataplaneTokenClient(dpTokenUrl, ctx.GetCredentials().GetDataplaneTokenApi())
 }
 
-func validateRemoteDataplaneTokenServerSettings(ctx *kumactl_config.Context, components catalogue.Catalogue) error {
+func validateRemoteDataplaneTokenServerSettings(ctx *kumactl_config.Context, components catalog.Catalog) error {
 	reason := ""
 	clientConfigured := ctx.GetCredentials().GetDataplaneTokenApi().HasClientCert()
 	serverConfigured := components.Apis.DataplaneToken.PublicUrl != ""

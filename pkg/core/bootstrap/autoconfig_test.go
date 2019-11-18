@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"github.com/Kong/kuma/pkg/config/api-server/catalogue"
+	"github.com/Kong/kuma/pkg/config/api-server/catalog"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/config/core"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
@@ -13,10 +13,10 @@ import (
 var _ = Describe("Auto configuration", func() {
 
 	type testCase struct {
-		cpConfig                func() kuma_cp.Config
-		expectedCatalogueConfig catalogue.CatalogueConfig
+		cpConfig              func() kuma_cp.Config
+		expectedCatalogConfig catalog.CatalogConfig
 	}
-	DescribeTable("should autoconfigure catalogue",
+	DescribeTable("should autoconfigure catalog",
 		func(given testCase) {
 			// given
 			cfg := given.cpConfig()
@@ -28,7 +28,7 @@ var _ = Describe("Auto configuration", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(*cfg.ApiServer.Catalogue).To(Equal(given.expectedCatalogueConfig))
+			Expect(*cfg.ApiServer.Catalog).To(Equal(given.expectedCatalogConfig))
 		},
 		Entry("with public settings for dataplane token server", testCase{
 			cpConfig: func() kuma_cp.Config {
@@ -41,11 +41,11 @@ var _ = Describe("Auto configuration", func() {
 				cfg.BootstrapServer.Port = 3333
 				return cfg
 			},
-			expectedCatalogueConfig: catalogue.CatalogueConfig{
-				Bootstrap: catalogue.BootstrapApiConfig{
+			expectedCatalogConfig: catalog.CatalogConfig{
+				Bootstrap: catalog.BootstrapApiConfig{
 					Url: "http://kuma.internal:3333",
 				},
-				DataplaneToken: catalogue.DataplaneTokenApiConfig{
+				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "https://kuma.internal:2222",
 				},
@@ -61,11 +61,11 @@ var _ = Describe("Auto configuration", func() {
 				cfg.BootstrapServer.Port = 3333
 				return cfg
 			},
-			expectedCatalogueConfig: catalogue.CatalogueConfig{
-				Bootstrap: catalogue.BootstrapApiConfig{
+			expectedCatalogConfig: catalog.CatalogConfig{
+				Bootstrap: catalog.BootstrapApiConfig{
 					Url: "http://kuma.internal:3333",
 				},
-				DataplaneToken: catalogue.DataplaneTokenApiConfig{
+				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "https://kuma.internal:1111", // port is autoconfigured from the local port
 				},
@@ -79,11 +79,11 @@ var _ = Describe("Auto configuration", func() {
 				cfg.BootstrapServer.Port = 3333
 				return cfg
 			},
-			expectedCatalogueConfig: catalogue.CatalogueConfig{
-				Bootstrap: catalogue.BootstrapApiConfig{
+			expectedCatalogConfig: catalog.CatalogConfig{
+				Bootstrap: catalog.BootstrapApiConfig{
 					Url: "http://kuma.internal:3333",
 				},
-				DataplaneToken: catalogue.DataplaneTokenApiConfig{
+				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "",
 				},
@@ -95,11 +95,11 @@ var _ = Describe("Auto configuration", func() {
 				cfg.DataplaneTokenServer.Enabled = false
 				return cfg
 			},
-			expectedCatalogueConfig: catalogue.CatalogueConfig{
-				Bootstrap: catalogue.BootstrapApiConfig{
+			expectedCatalogConfig: catalog.CatalogConfig{
+				Bootstrap: catalog.BootstrapApiConfig{
 					Url: "http://localhost:5682",
 				},
-				DataplaneToken: catalogue.DataplaneTokenApiConfig{
+				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "",
 					PublicUrl: "",
 				},

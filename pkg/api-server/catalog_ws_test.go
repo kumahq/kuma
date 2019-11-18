@@ -10,14 +10,14 @@ import (
 	"net/http"
 )
 
-var _ = Describe("Catalogue WS", func() {
+var _ = Describe("Catalog WS", func() {
 
-	It("should return the api catalogue", func() {
+	It("should return the api catalog", func() {
 		// given
 		cfg := config.DefaultApiServerConfig()
-		cfg.Catalogue.DataplaneToken.LocalUrl = "http://localhost:1111"
-		cfg.Catalogue.DataplaneToken.PublicUrl = "https://kuma.internal:2222"
-		cfg.Catalogue.Bootstrap.Url = "http://kuma.internal:3333"
+		cfg.Catalog.DataplaneToken.LocalUrl = "http://localhost:1111"
+		cfg.Catalog.DataplaneToken.PublicUrl = "https://kuma.internal:2222"
+		cfg.Catalog.Bootstrap.Url = "http://kuma.internal:3333"
 
 		// setup
 		resourceStore := memory.NewStore()
@@ -32,12 +32,12 @@ var _ = Describe("Catalogue WS", func() {
 
 		// wait for the server
 		Eventually(func() error {
-			_, err := http.Get(fmt.Sprintf("http://localhost%s/catalogue", apiServer.Address()))
+			_, err := http.Get(fmt.Sprintf("http://localhost%s/catalog", apiServer.Address()))
 			return err
 		}, "3s").ShouldNot(HaveOccurred())
 
 		// when
-		resp, err := http.Get(fmt.Sprintf("http://localhost%s/catalogue", apiServer.Address()))
+		resp, err := http.Get(fmt.Sprintf("http://localhost%s/catalog", apiServer.Address()))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

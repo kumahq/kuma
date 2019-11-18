@@ -5,7 +5,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/Kong/kuma/pkg/catalogue"
+	"github.com/Kong/kuma/pkg/catalog"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -14,9 +14,9 @@ import (
 	"syscall"
 
 	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
 	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
-	test_catalogue "github.com/Kong/kuma/pkg/test/catalogue"
+	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
@@ -34,16 +34,16 @@ var _ = Describe("run", func() {
 
 	var backupSetupSignalHandler func() <-chan struct{}
 	var backupBootstrapGenerator envoy.BootstrapConfigFactoryFunc
-	var backupCatalogueClientFactory CatalogueClientFactory
+	var backupCatalogClientFactory CatalogClientFactory
 
-	catalogueDataplaneTokenServerEnabledFn := func(address string) (client catalogue_client.CatalogueClient, e error) {
-		return &test_catalogue.StaticCatalogueClient{
-			Resp: catalogue.Catalogue{
-				Apis: catalogue.Apis{
-					Bootstrap: catalogue.BootstrapApi{
+	catalogDataplaneTokenServerEnabledFn := func(address string) (client catalog_client.CatalogClient, e error) {
+		return &test_catalog.StaticCatalogClient{
+			Resp: catalog.Catalog{
+				Apis: catalog.Apis{
+					Bootstrap: catalog.BootstrapApi{
 						Url: "http://localhost:5681",
 					},
-					DataplaneToken: catalogue.DataplaneTokenApi{
+					DataplaneToken: catalog.DataplaneTokenApi{
 						LocalUrl: "http://localhost:5683",
 					},
 				},
@@ -54,7 +54,7 @@ var _ = Describe("run", func() {
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
-		backupCatalogueClientFactory = catalogueClientFactory
+		backupCatalogClientFactory = catalogClientFactory
 		bootstrapGenerator = func(_ string, cfg kumadp.Config) (proto.Message, error) {
 			bootstrap := envoy_bootstrap.Bootstrap{}
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
@@ -63,14 +63,14 @@ var _ = Describe("run", func() {
 			Expect(err).ToNot(HaveOccurred())
 			return &bootstrap, nil
 		}
-		catalogueClientFactory = func(address string) (client catalogue_client.CatalogueClient, e error) {
-			return &test_catalogue.StaticCatalogueClient{
-				Resp: catalogue.Catalogue{
-					Apis: catalogue.Apis{
-						Bootstrap: catalogue.BootstrapApi{
+		catalogClientFactory = func(address string) (client catalog_client.CatalogClient, e error) {
+			return &test_catalog.StaticCatalogClient{
+				Resp: catalog.Catalog{
+					Apis: catalog.Apis{
+						Bootstrap: catalog.BootstrapApi{
 							Url: "http://localhost:5681",
 						},
-						DataplaneToken: catalogue.DataplaneTokenApi{
+						DataplaneToken: catalog.DataplaneTokenApi{
 							LocalUrl: "", // dataplane token is disabled
 						},
 					},
@@ -81,7 +81,7 @@ var _ = Describe("run", func() {
 	AfterEach(func() {
 		core.SetupSignalHandler = backupSetupSignalHandler
 		bootstrapGenerator = backupBootstrapGenerator
-		catalogueClientFactory = backupCatalogueClientFactory
+		catalogClientFactory = backupCatalogClientFactory
 	})
 
 	var stopCh chan struct{}
@@ -274,7 +274,7 @@ var _ = Describe("run", func() {
 			}
 		}),
 		Entry("can be launched with args and dataplane token", func() testCase {
-			catalogueClientFactory = catalogueDataplaneTokenServerEnabledFn
+			catalogClientFactory = catalogDataplaneTokenServerEnabledFn
 			return testCase{
 				envVars: map[string]string{},
 				args: []string{
@@ -292,7 +292,7 @@ var _ = Describe("run", func() {
 
 	It("should fail when dataplane token server is enabled but token is not provided", func() {
 		// setup
-		catalogueClientFactory = catalogueDataplaneTokenServerEnabledFn
+		catalogClientFactory = catalogDataplaneTokenServerEnabledFn
 
 		// given
 		cmd := newRootCmd()

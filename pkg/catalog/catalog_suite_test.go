@@ -1,4 +1,4 @@
-package catalogue_test
+package catalog_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCatalogue(t *testing.T) {
+func TestCatalog(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Catalogue")
+	RunSpecs(t, "Catalog")
 }

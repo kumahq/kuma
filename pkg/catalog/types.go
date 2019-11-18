@@ -1,10 +1,10 @@
-package catalogue
+package catalog
 
 import (
-	"github.com/Kong/kuma/pkg/config/api-server/catalogue"
+	"github.com/Kong/kuma/pkg/config/api-server/catalog"
 )
 
-type Catalogue struct {
+type Catalog struct {
 	Apis Apis `json:"apis"`
 }
 
@@ -26,8 +26,8 @@ func (d *DataplaneTokenApi) Enabled() bool {
 	return d.LocalUrl != ""
 }
 
-func FromConfig(cfg catalogue.CatalogueConfig) Catalogue {
-	return Catalogue{
+func FromConfig(cfg catalog.CatalogConfig) Catalog {
+	return Catalog{
 		Apis: Apis{
 			Bootstrap: BootstrapApi{
 				Url: cfg.Bootstrap.Url,

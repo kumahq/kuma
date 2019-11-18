@@ -1,35 +1,35 @@
-package catalogue_test
+package catalog_test
 
 import (
 	"encoding/json"
-	"github.com/Kong/kuma/pkg/catalogue"
-	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
-	config_catalogue "github.com/Kong/kuma/pkg/config/api-server/catalogue"
+	"github.com/Kong/kuma/pkg/catalog"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
+	config_catalog "github.com/Kong/kuma/pkg/config/api-server/catalog"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"net/http"
 	"net/http/httptest"
 )
 
-var _ = Describe("Catalogue client", func() {
-	It("should return server catalogue", func() {
+var _ = Describe("Catalog client", func() {
+	It("should return server catalog", func() {
 		// given
-		catCfg := config_catalogue.CatalogueConfig{
-			Bootstrap: config_catalogue.BootstrapApiConfig{
+		catCfg := config_catalog.CatalogConfig{
+			Bootstrap: config_catalog.BootstrapApiConfig{
 				Url: "http://kuma.internal:3333",
 			},
-			DataplaneToken: config_catalogue.DataplaneTokenApiConfig{
+			DataplaneToken: config_catalog.DataplaneTokenApiConfig{
 				LocalUrl:  "http://localhost:1111",
 				PublicUrl: "https://kuma.internal:2222",
 			},
 		}
 
-		expected := catalogue.Catalogue{
-			Apis: catalogue.Apis{
-				Bootstrap: catalogue.BootstrapApi{
+		expected := catalog.Catalog{
+			Apis: catalog.Apis{
+				Bootstrap: catalog.BootstrapApi{
 					Url: "http://kuma.internal:3333",
 				},
-				DataplaneToken: catalogue.DataplaneTokenApi{
+				DataplaneToken: catalog.DataplaneTokenApi{
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "https://kuma.internal:2222",
 				},
@@ -40,9 +40,9 @@ var _ = Describe("Catalogue client", func() {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
 		defer server.Close()
-		mux.HandleFunc("/catalogue", func(writer http.ResponseWriter, req *http.Request) {
+		mux.HandleFunc("/catalog", func(writer http.ResponseWriter, req *http.Request) {
 			defer GinkgoRecover()
-			cat := catalogue.FromConfig(catCfg)
+			cat := catalog.FromConfig(catCfg)
 			bytes, err := json.Marshal(cat)
 			Expect(err).ToNot(HaveOccurred())
 			_, err = writer.Write(bytes)
@@ -50,35 +50,35 @@ var _ = Describe("Catalogue client", func() {
 		})
 
 		// when
-		client, err := catalogue_client.NewCatalogueClient(server.URL)
+		client, err := catalog_client.NewCatalogClient(server.URL)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		catalogue, err := client.Catalogue()
+		catalog, err := client.Catalog()
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(catalogue).To(Equal(expected))
+		Expect(catalog).To(Equal(expected))
 	})
 
 	It("should throw an error on invalid status code", func() {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
 		defer server.Close()
-		mux.HandleFunc("/catalogue", func(writer http.ResponseWriter, req *http.Request) {
+		mux.HandleFunc("/catalog", func(writer http.ResponseWriter, req *http.Request) {
 			writer.WriteHeader(500)
 		})
 
 		// when
-		client, err := catalogue_client.NewCatalogueClient(server.URL)
+		client, err := catalog_client.NewCatalogClient(server.URL)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = client.Catalogue()
+		_, err = client.Catalog()
 
 		// then
 		Expect(err).To(MatchError("unexpected status code 500. Expected 200"))
