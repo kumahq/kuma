@@ -30,6 +30,8 @@ var _ = Describe("Bootstrap Server", func() {
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
 		config = bootstrap_config.DefaultBootstrapParamsConfig()
+		config.XdsHost = "127.0.0.1"
+		config.XdsPort = 5678
 
 		port, err := test.GetFreePort()
 		baseUrl = "http://localhost:" + strconv.Itoa(port)

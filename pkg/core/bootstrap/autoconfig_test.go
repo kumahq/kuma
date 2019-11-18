@@ -126,4 +126,21 @@ var _ = Describe("Auto configuration", func() {
 			Environment: "kubernetes",
 		}))
 	})
+
+	It("should autoconfigure xds params", func() {
+		// given
+		cfg := kuma_cp.DefaultConfig()
+		cfg.General.AdvertisedHostname = "kuma.internal"
+		cfg.XdsServer.GrpcPort = 1234
+
+		// when
+		err := autoconfigure(&cfg)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma.internal"))
+		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(1234)))
+	})
 })

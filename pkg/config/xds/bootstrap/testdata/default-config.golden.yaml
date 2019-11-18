@@ -4,5 +4,5 @@ params:
   adminAddress: 127.0.0.1
   adminPort: 0
   xdsConnectTimeout: 1s
-  xdsHost: 127.0.0.1
-  xdsPort: 5678
+  xdsHost: ""
+  xdsPort: 0
