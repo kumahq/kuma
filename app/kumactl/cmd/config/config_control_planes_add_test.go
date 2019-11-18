@@ -261,11 +261,11 @@ func setupCpIndexServer() (*httptest.Server, int) {
 
 func setupCpServer(fn func(http.ResponseWriter, *http.Request)) (*httptest.Server, int) {
 	mux := http.NewServeMux()
-	server := httptest.NewServer(mux)
 	mux.HandleFunc("/", func(writer http.ResponseWriter, req *http.Request) {
 		defer GinkgoRecover()
 		fn(writer, req)
 	})
+	server := httptest.NewServer(mux)
 	port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
 	Expect(err).ToNot(HaveOccurred())
 	return server, port

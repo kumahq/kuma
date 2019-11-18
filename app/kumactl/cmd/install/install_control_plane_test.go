@@ -19,7 +19,7 @@ import (
 
 var _ = Describe("kumactl install control-plane", func() {
 
-	var backupNewSelfSignedCert func(string, ...string) (tls.KeyPair, error)
+	var backupNewSelfSignedCert func(string, tls.CertType, ...string) (tls.KeyPair, error)
 	BeforeEach(func() {
 		backupNewSelfSignedCert = install.NewSelfSignedCert
 	})
@@ -28,7 +28,7 @@ var _ = Describe("kumactl install control-plane", func() {
 	})
 
 	BeforeEach(func() {
-		install.NewSelfSignedCert = func(string, ...string) (tls.KeyPair, error) {
+		install.NewSelfSignedCert = func(string, tls.CertType, ...string) (tls.KeyPair, error) {
 			return tls.KeyPair{
 				CertPEM: []byte("CERT"),
 				KeyPEM:  []byte("KEY"),

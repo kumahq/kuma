@@ -69,7 +69,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
 				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
 				// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
-				admissionCert, err := NewSelfSignedCert(fqdn)
+				admissionCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 				}
@@ -82,7 +82,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if args.InjectorTlsCert == "" && args.InjectorTlsKey == "" {
 				fqdn := fmt.Sprintf("%s.%s.svc", args.InjectorServiceName, args.Namespace)
 				// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
-				injectorCert, err := NewSelfSignedCert(fqdn)
+				injectorCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 				}
@@ -101,7 +101,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					"localhost",
 				}
 				// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server
-				sdsCert, err := NewSelfSignedCert(fqdn, hosts...)
+				sdsCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 				}
