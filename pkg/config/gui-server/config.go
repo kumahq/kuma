@@ -10,7 +10,7 @@ type GuiServerConfig struct {
 	// Port on which the server is exposed
 	Port uint32 `yaml:"port" envconfig:"kuma_gui_server_port"`
 	// Config of the GUI itself
-	GuiConfig *GuiConfig
+	GuiConfig *GuiConfig `yaml:"-"`
 }
 
 func (g *GuiServerConfig) Validate() error {

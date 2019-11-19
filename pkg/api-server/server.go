@@ -3,12 +3,14 @@ package api_server
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/pkg/errors"
 	"net/http"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
 	config "github.com/Kong/kuma/pkg/config/api-server"
+	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/emicklei/go-restful"
 )
@@ -25,16 +27,16 @@ func (a *ApiServer) Address() string {
 	return a.server.Addr
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, serverConfig *config.ApiServerConfig) *ApiServer {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, config kuma_cp.Config) (*ApiServer, error) {
 	container := restful.NewContainer()
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
+		Addr:    fmt.Sprintf(":%d", config.ApiServer.Port),
 		Handler: container.ServeMux,
 	}
 
 	cors := restful.CrossOriginResourceSharing{
 		ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
-		AllowedDomains: serverConfig.CorsAllowedDomains,
+		AllowedDomains: config.ApiServer.CorsAllowedDomains,
 		Container:      container,
 	}
 
@@ -44,15 +46,20 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addToWs(ws, defs, resManager, serverConfig)
+	addToWs(ws, defs, resManager, config.ApiServer)
 	container.Add(ws)
 	container.Add(indexWs())
-	container.Add(catalogWs(*serverConfig.Catalog))
+	container.Add(catalogWs(*config.ApiServer.Catalog))
+	configWs, err := configWs(&config)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create configuration webservice")
+	}
+	container.Add(configWs)
 
-	ws.Filter(cors.Filter)
+	container.Filter(cors.Filter)
 	return &ApiServer{
 		server: srv,
-	}
+	}, nil
 }
 
 func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *config.ApiServerConfig) {
@@ -96,6 +103,9 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 }
 
 func SetupServer(rt runtime.Runtime) error {
-	apiServer := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config().ApiServer)
+	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config())
+	if err != nil {
+		return err
+	}
 	return rt.Add(apiServer)
 }
