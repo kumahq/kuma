@@ -22,6 +22,7 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 	autoconfigureDataplaneTokenServer(cfg.DataplaneTokenServer)
 	autoconfigureCatalogue(cfg)
 	autoconfigureGui(cfg)
+	autoconfigBootstrapXdsParams(cfg)
 	return autoconfigureSds(cfg)
 }
 
@@ -77,6 +78,15 @@ func autoconfigureGui(cfg *kuma_cp.Config) {
 	cfg.GuiServer.GuiConfig = &gui_server.GuiConfig{
 		ApiUrl:      fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.Port),
 		Environment: cfg.Environment,
+	}
+}
+
+func autoconfigBootstrapXdsParams(cfg *kuma_cp.Config) {
+	if cfg.BootstrapServer.Params.XdsHost == "" {
+		cfg.BootstrapServer.Params.XdsHost = cfg.General.AdvertisedHostname
+	}
+	if cfg.BootstrapServer.Params.XdsPort == 0 {
+		cfg.BootstrapServer.Params.XdsPort = uint32(cfg.XdsServer.GrpcPort)
 	}
 }
 

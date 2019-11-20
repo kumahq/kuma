@@ -38,10 +38,10 @@ bootstrapServer:
     adminPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
     # Path to access log file of Envoy Admin
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
-    # Host of XDS Server
-    xdsHost: 127.0.0.1 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
-    # Port of XDS Server
-    xdsPort: 5678 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
+    # Host of XDS Server. By default it is autoconfigured from KUMA_GENERAL_ADVERTISED_HOSTNAME
+    xdsHost: "" # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+    # Port of XDS Server. By default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
+    xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
 
