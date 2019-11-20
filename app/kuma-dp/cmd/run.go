@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/Kong/kuma/pkg/catalogue/client"
+	"github.com/Kong/kuma/pkg/catalog/client"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -18,13 +18,13 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 )
 
-type CatalogueClientFactory func(string) (client.CatalogueClient, error)
+type CatalogClientFactory func(string) (client.CatalogClient, error)
 
 var (
 	runLog = dataplaneLog.WithName("run")
 	// overridable by tests
-	bootstrapGenerator     = envoy.NewRemoteBootstrapGenerator(&http.Client{Timeout: 10 * time.Second})
-	catalogueClientFactory = client.NewCatalogueClient
+	bootstrapGenerator   = envoy.NewRemoteBootstrapGenerator(&http.Client{Timeout: 10 * time.Second})
+	catalogClientFactory = client.NewCatalogClient
 )
 
 func newRunCmd() *cobra.Command {
@@ -46,15 +46,15 @@ func newRunCmd() *cobra.Command {
 				return err
 			}
 
-			catalogueClient, err := catalogueClientFactory(cfg.ControlPlane.ApiServer.URL)
+			catalogClient, err := catalogClientFactory(cfg.ControlPlane.ApiServer.URL)
 			if err != nil {
-				return errors.Wrap(err, "could not create catalogue client")
+				return errors.Wrap(err, "could not create catalog client")
 			}
-			catalogue, err := catalogueClient.Catalogue()
+			catalog, err := catalogClient.Catalog()
 			if err != nil {
-				return errors.Wrap(err, "could retrieve catalogue")
+				return errors.Wrap(err, "could retrieve catalog")
 			}
-			if catalogue.Apis.DataplaneToken.Enabled() {
+			if catalog.Apis.DataplaneToken.Enabled() {
 				if cfg.DataplaneRuntime.TokenPath == "" {
 					return errors.New("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. " +
 						"Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
@@ -82,7 +82,7 @@ func newRunCmd() *cobra.Command {
 			runLog.Info("starting Dataplane (Envoy) ...")
 
 			dataplane := envoy.New(envoy.Opts{
-				Catalogue: catalogue,
+				Catalog:   catalog,
 				Config:    cfg,
 				Generator: bootstrapGenerator,
 				Stdout:    cmd.OutOrStdout(),

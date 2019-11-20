@@ -47,7 +47,7 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	addToWs(ws, defs, resManager, serverConfig)
 	container.Add(ws)
 	container.Add(indexWs())
-	container.Add(catalogueWs(*serverConfig.Catalogue))
+	container.Add(catalogWs(*serverConfig.Catalog))
 
 	ws.Filter(cors.Filter)
 	return &ApiServer{

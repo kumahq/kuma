@@ -2,7 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/pkg/config/api-server/catalogue"
+	"github.com/Kong/kuma/pkg/config/api-server/catalog"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	token_server "github.com/Kong/kuma/pkg/config/token-server"
 	"io/ioutil"
@@ -20,18 +20,18 @@ var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
 	autoconfigureDataplaneTokenServer(cfg.DataplaneTokenServer)
-	autoconfigureCatalogue(cfg)
+	autoconfigureCatalog(cfg)
 	autoconfigureGui(cfg)
 	autoconfigBootstrapXdsParams(cfg)
 	return autoconfigureSds(cfg)
 }
 
-func autoconfigureCatalogue(cfg *kuma_cp.Config) {
-	cat := &catalogue.CatalogueConfig{
-		Bootstrap: catalogue.BootstrapApiConfig{
+func autoconfigureCatalog(cfg *kuma_cp.Config) {
+	cat := &catalog.CatalogConfig{
+		Bootstrap: catalog.BootstrapApiConfig{
 			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port),
 		},
-		DataplaneToken: catalogue.DataplaneTokenApiConfig{},
+		DataplaneToken: catalog.DataplaneTokenApiConfig{},
 	}
 	if cfg.DataplaneTokenServer.Enabled {
 		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.DataplaneTokenServer.Local.Port)
@@ -39,7 +39,7 @@ func autoconfigureCatalogue(cfg *kuma_cp.Config) {
 			cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.DataplaneTokenServer.Public.Port)
 		}
 	}
-	cfg.ApiServer.Catalogue = cat
+	cfg.ApiServer.Catalog = cat
 }
 
 func autoconfigureSds(cfg *kuma_cp.Config) error {

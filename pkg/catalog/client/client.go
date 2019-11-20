@@ -2,7 +2,7 @@ package client
 
 import (
 	"encoding/json"
-	"github.com/Kong/kuma/pkg/catalogue"
+	"github.com/Kong/kuma/pkg/catalog"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
@@ -16,11 +16,11 @@ const (
 	timeout = 10 * time.Second
 )
 
-type CatalogueClient interface {
-	Catalogue() (catalogue.Catalogue, error)
+type CatalogClient interface {
+	Catalog() (catalog.Catalog, error)
 }
 
-func NewCatalogueClient(address string) (CatalogueClient, error) {
+func NewCatalogClient(address string) (CatalogClient, error) {
 	baseURL, err := url.Parse(address)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
@@ -28,18 +28,18 @@ func NewCatalogueClient(address string) (CatalogueClient, error) {
 	client := &http.Client{
 		Timeout: timeout,
 	}
-	return &httpCatalogueClient{
+	return &httpCatalogClient{
 		client: util_http.ClientWithBaseURL(client, baseURL),
 	}, nil
 }
 
-type httpCatalogueClient struct {
+type httpCatalogClient struct {
 	client util_http.Client
 }
 
-func (h *httpCatalogueClient) Catalogue() (catalogue.Catalogue, error) {
-	result := catalogue.Catalogue{}
-	req, err := http.NewRequest("GET", "/catalogue", nil)
+func (h *httpCatalogClient) Catalog() (catalog.Catalog, error) {
+	result := catalog.Catalog{}
+	req, err := http.NewRequest("GET", "/catalog", nil)
 	if err != nil {
 		return result, errors.Wrap(err, "could not construct the request")
 	}
@@ -52,11 +52,11 @@ func (h *httpCatalogueClient) Catalogue() (catalogue.Catalogue, error) {
 		return result, errors.Errorf("unexpected status code %d. Expected 200", resp.StatusCode)
 	}
 
-	catalogueBytes, err := ioutil.ReadAll(resp.Body)
+	catalogBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return result, errors.Wrap(err, "could not read a body of the request")
 	}
-	if err := json.Unmarshal(catalogueBytes, &result); err != nil {
+	if err := json.Unmarshal(catalogBytes, &result); err != nil {
 		return result, errors.Wrap(err, "could not unmarshal bytes to component")
 	}
 	return result, nil
