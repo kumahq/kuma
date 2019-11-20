@@ -23,9 +23,9 @@ $ cd examples/kubernetes/kuma-demo/
 ```
 
 ### 3. Deploy Kuma's sample marketplace application in minikube
-You can deploy the sample marketplace application via the [bit.ly](http://bit.ly/kuma1116) link as shown below or via the `kuma-demo-aio.yaml` file in this directory.
+You can deploy the sample marketplace application via the [bit.ly](http://bit.ly/kuma101) link as shown below or via the `kuma-demo-aio.yaml` file in this directory.
 ```
-$ kubectl apply -f http://bit.ly/kuma1116
+$ kubectl apply -f http://bit.ly/kuma101
 namespace/kuma-demo created
 serviceaccount/elasticsearch created
 service/elasticsearch created
@@ -281,9 +281,9 @@ default   everything
 Now that we have traffic permission that allows any source to talk to any destination, our application should work like it use to. 
 
 ### 17. Deploy the logstash service.
-You can deploy the logtash service via the [bit.ly](http://bit.ly/kumalog) link as shown below or via the `kuma-demo-log.yaml` file in this directory.
+You can deploy the logtash service via the [bit.ly](http://bit.ly/logkuma) link as shown below or via the `kuma-demo-log.yaml` file in this directory.
 ```
-$ kubectl apply -f http://bit.ly/kumalog
+$ kubectl apply -f http://bit.ly/logkuma
 namespace/logging created
 service/logstash created
 configmap/logstash-config created
