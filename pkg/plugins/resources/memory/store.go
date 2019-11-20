@@ -146,9 +146,10 @@ func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.De
 
 	// Namespace and Name must be provided via DeleteOptions
 	idx, record := c.findRecord(string(r.GetType()), opts.Namespace, opts.Name, opts.Mesh)
-	if record != nil {
-		c.records = append(c.records[:idx], c.records[idx+1:]...)
+	if record == nil {
+		return store.ErrorResourceNotFound(r.GetType(), opts.Namespace, opts.Name, opts.Mesh)
 	}
+	c.records = append(c.records[:idx], c.records[idx+1:]...)
 	return nil
 }
 

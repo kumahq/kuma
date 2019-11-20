@@ -218,7 +218,7 @@ var _ = Describe("Resource WS", func() {
 			response := client.delete("non-existing-resource")
 
 			// then
-			Expect(response.StatusCode).To(Equal(200))
+			Expect(response.StatusCode).To(Equal(404))
 		})
 	})
 })

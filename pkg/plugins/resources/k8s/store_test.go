@@ -308,15 +308,17 @@ var _ = Describe("KubernetesStore", func() {
 	})
 
 	Describe("Delete()", func() {
-		It("should succeed if resource is not found", func() {
+		It("should return en error if resource is not found", func() {
 			// setup
 			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
+			resource := sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Delete(context.Background(), &sample_core.TrafficRouteResource{}, store.DeleteByKey(ns, name, mesh))
+			err := s.Delete(context.Background(), &resource, store.DeleteByKey(ns, name, mesh))
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), ns, name, mesh)))
 		})
 
 		It("should delete an existing resource", func() {
