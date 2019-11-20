@@ -51,12 +51,12 @@ func (r *overviewWs) inspectDataplane(request *restful.Request, response *restfu
 
 func (r *overviewWs) fetchOverview(ctx context.Context, name string, meshName string) (*mesh.DataplaneOverviewResource, error) {
 	dataplane := mesh.DataplaneResource{}
-	if err := r.resManager.Get(ctx, &dataplane, store.GetByKey(namespace, name, meshName)); err != nil {
+	if err := r.resManager.Get(ctx, &dataplane, store.GetByKey(name, meshName)); err != nil {
 		return nil, err
 	}
 
 	insight := mesh.DataplaneInsightResource{}
-	err := r.resManager.Get(ctx, &insight, store.GetByKey(namespace, name, meshName))
+	err := r.resManager.Get(ctx, &insight, store.GetByKey(name, meshName))
 	if err != nil && !store.IsResourceNotFound(err) { // It's fine to have dataplane without insight
 		return nil, err
 	}

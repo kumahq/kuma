@@ -104,12 +104,11 @@ var _ = Describe("KubernetesStore", func() {
 `).(*sample_k8s.SampleTrafficRoute)
 
 			// when
-			err := s.Create(context.Background(), tr, store.CreateByKey(ns, name, mesh))
+			err := s.Create(context.Background(), tr, store.CreateByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(tr.Meta.GetNamespace()).To(Equal(ns))
 			Expect(tr.Meta.GetName()).To(Equal(name))
 			Expect(tr.Meta.GetMesh()).To(Equal(mesh))
 			Expect(tr.Meta.GetVersion()).ToNot(Equal(""))
@@ -129,16 +128,16 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
 
 			// when
-			err := s.Create(context.Background(), &sample_core.TrafficRouteResource{}, store.CreateByKey(ns, name, mesh))
+			err := s.Create(context.Background(), &sample_core.TrafficRouteResource{}, store.CreateByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = s.Create(context.Background(), &sample_core.TrafficRouteResource{}, store.CreateByKey(ns, name, mesh))
+			err = s.Create(context.Background(), &sample_core.TrafficRouteResource{}, store.CreateByKey(name, mesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(sample_core.TrafficRouteType, ns, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(sample_core.TrafficRouteType, name, mesh)))
 		})
 	})
 
@@ -169,7 +168,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), tr, store.GetByKey(ns, name, mesh))
+			err := s.Get(context.Background(), tr, store.GetByKey(name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			version := tr.Meta.GetVersion()
@@ -210,7 +209,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), tr, store.GetByKey(ns, name, mesh))
+			err := s.Get(context.Background(), tr, store.GetByKey(name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -220,7 +219,7 @@ var _ = Describe("KubernetesStore", func() {
 			err = s.Update(context.Background(), tr)
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, ns, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, name, mesh)))
 		})
 
 		It("should return an error if resource has changed", func() {
@@ -239,7 +238,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr1 := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), tr1, store.GetByKey(ns, name, mesh))
+			err := s.Get(context.Background(), tr1, store.GetByKey(name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -247,7 +246,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr2 := &sample_core.TrafficRouteResource{}
 
 			// when
-			err = s.Get(context.Background(), tr2, store.GetByKey(ns, name, mesh))
+			err = s.Get(context.Background(), tr2, store.GetByKey(name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -261,7 +260,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr2.Spec.Path = "/another"
 			err = s.Update(context.Background(), tr2)
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, ns, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, name, mesh)))
 		})
 	})
 
@@ -271,10 +270,10 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
 
 			// when
-			err := s.Get(context.Background(), &sample_core.TrafficRouteResource{}, store.GetByKey(ns, name, mesh))
+			err := s.Get(context.Background(), &sample_core.TrafficRouteResource{}, store.GetByKey(name, mesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceNotFound(sample_core.TrafficRouteType, ns, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceNotFound(sample_core.TrafficRouteType, name, mesh)))
 		})
 
 		It("should return an existing resource", func() {
@@ -295,12 +294,11 @@ var _ = Describe("KubernetesStore", func() {
 			actual := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), actual, store.GetByKey(ns, name, mesh))
+			err := s.Get(context.Background(), actual, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(actual.Meta.GetNamespace()).To(Equal(ns))
 			Expect(actual.Meta.GetName()).To(Equal(name))
 			// and
 			Expect(actual.Spec.Path).To(Equal("/example"))
@@ -314,11 +312,11 @@ var _ = Describe("KubernetesStore", func() {
 			resource := sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Delete(context.Background(), &resource, store.DeleteByKey(ns, name, mesh))
+			err := s.Delete(context.Background(), &resource, store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), ns, name, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
 		})
 
 		It("should delete an existing resource", func() {
@@ -334,7 +332,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), &sample_core.TrafficRouteResource{}, store.DeleteByKey(ns, name, mesh))
+			err := s.Delete(context.Background(), &sample_core.TrafficRouteResource{}, store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -349,7 +347,7 @@ var _ = Describe("KubernetesStore", func() {
 			trl := &sample_core.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), trl, store.ListByNamespace(ns), store.ListByMesh(mesh))
+			err := s.List(context.Background(), trl, store.ListByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -387,7 +385,7 @@ var _ = Describe("KubernetesStore", func() {
 			trl := &sample_core.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), trl, store.ListByNamespace(ns), store.ListByMesh(mesh))
+			err := s.List(context.Background(), trl, store.ListByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -400,10 +398,8 @@ var _ = Describe("KubernetesStore", func() {
 				trl.Items[1].Meta.GetName(): trl.Items[1],
 			}
 			// then
-			Expect(items["one"].Meta.GetNamespace()).To(Equal(ns))
 			Expect(items["one"].Spec.Path).To(Equal("/example"))
 			// and
-			Expect(items["two"].Meta.GetNamespace()).To(Equal(ns))
 			Expect(items["two"].Spec.Path).To(Equal("/another"))
 		})
 	})

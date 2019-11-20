@@ -145,9 +145,8 @@ func (m *builtinCaManager) GetSecretName(mesh string) string {
 
 func builtinCaSecretKey(mesh string) core_model.ResourceKey {
 	return core_model.ResourceKey{
-		Mesh:      mesh,
-		Namespace: core_model.DefaultNamespace,
-		Name:      builtinCaSecretName(mesh),
+		Mesh: mesh,
+		Name: builtinCaSecretName(mesh),
 	}
 }
 

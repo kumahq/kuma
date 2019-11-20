@@ -34,9 +34,8 @@ var _ = Describe("Authentication flow", func() {
 	It("should correctly authenticate dataplane", func() {
 		// given
 		id := xds.ProxyId{
-			Mesh:      "example",
-			Namespace: "default",
-			Name:      "dp-1",
+			Mesh: "example",
+			Name: "dp-1",
 		}
 
 		dpRes := core_mesh.DataplaneResource{
@@ -74,9 +73,8 @@ var _ = Describe("Authentication flow", func() {
 	It("should throw an error on invalid token", func() {
 		// when
 		id := xds.ProxyId{
-			Mesh:      "default",
-			Namespace: "default",
-			Name:      "dp1",
+			Mesh: "default",
+			Name: "dp1",
 		}
 		_, err := authenticator.Authenticate(context.Background(), id, "this-is-not-valid-jwt-token")
 
@@ -87,9 +85,8 @@ var _ = Describe("Authentication flow", func() {
 	It("should throw an error on token with different name", func() {
 		// when
 		generateId := xds.ProxyId{
-			Mesh:      "default",
-			Namespace: "default",
-			Name:      "different-name-than-dp1",
+			Mesh: "default",
+			Name: "different-name-than-dp1",
 		}
 		token, err := issuer.Generate(generateId)
 
@@ -98,9 +95,8 @@ var _ = Describe("Authentication flow", func() {
 
 		// when
 		authId := xds.ProxyId{
-			Mesh:      "default",
-			Namespace: "default",
-			Name:      "dp1",
+			Mesh: "default",
+			Name: "dp1",
 		}
 		_, err = authenticator.Authenticate(context.Background(), authId, token)
 
@@ -111,9 +107,8 @@ var _ = Describe("Authentication flow", func() {
 	It("should throw an error on token with different mesh", func() {
 		// when
 		generateId := xds.ProxyId{
-			Mesh:      "different-mesh-than-default",
-			Namespace: "default",
-			Name:      "dp1",
+			Mesh: "different-mesh-than-default",
+			Name: "dp1",
 		}
 		token, err := issuer.Generate(generateId)
 
@@ -122,9 +117,8 @@ var _ = Describe("Authentication flow", func() {
 
 		// when
 		authId := xds.ProxyId{
-			Mesh:      "default",
-			Namespace: "default",
-			Name:      "dp1",
+			Mesh: "default",
+			Name: "dp1",
 		}
 		_, err = authenticator.Authenticate(context.Background(), authId, token)
 
@@ -135,9 +129,8 @@ var _ = Describe("Authentication flow", func() {
 	It("should throw an error when dataplane is not present in CP", func() {
 		// given
 		id := xds.ProxyId{
-			Mesh:      "default",
-			Namespace: "default",
-			Name:      "non-existent-dp",
+			Mesh: "default",
+			Name: "non-existent-dp",
 		}
 
 		// when
@@ -150,6 +143,6 @@ var _ = Describe("Authentication flow", func() {
 		_, err = authenticator.Authenticate(context.Background(), id, token)
 
 		// then
-		Expect(err).To(MatchError(`unable to find Dataplane for proxy {"default" "default" "non-existent-dp"}: Resource not found: type="Dataplane" namespace="default" name="non-existent-dp" mesh="default"`))
+		Expect(err).To(MatchError(`unable to find Dataplane for proxy {"default" "non-existent-dp"}: Resource not found: type="Dataplane" name="non-existent-dp" mesh="default"`))
 	})
 })

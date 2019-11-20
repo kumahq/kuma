@@ -36,8 +36,7 @@ func (r *DataplaneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.Get(ctx, req.NamespacedName, crd); err != nil {
 		if apierrs.IsNotFound(err) {
 			return ctrl.Result{}, r.DiscoverySink.OnDataplaneDelete(core_model.ResourceKey{
-				Namespace: req.NamespacedName.Namespace,
-				Name:      req.NamespacedName.Name,
+				Name: req.NamespacedName.Name, // todo fix namespace
 			})
 		}
 		log.Error(err, "unable to fetch Dataplane")

@@ -36,12 +36,12 @@ var _ = Describe("Bootstrap", func() {
 		// then wait until resource is created
 		resManager := rt.ResourceManager()
 		Eventually(func() error {
-			getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh, core_model.DefaultMesh)
+			getOpts := core_store.GetByKey(core_model.DefaultMesh, core_model.DefaultMesh)
 			return resManager.Get(context.Background(), &mesh.MeshResource{}, getOpts)
 		}, "5s").Should(Succeed())
 
 		// when
-		getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh, core_model.DefaultMesh)
+		getOpts := core_store.GetByKey(core_model.DefaultMesh, core_model.DefaultMesh)
 		defaultMesh := mesh.MeshResource{}
 		err = resManager.Get(context.Background(), &defaultMesh, getOpts)
 		Expect(err).ToNot(HaveOccurred())
@@ -50,7 +50,6 @@ var _ = Describe("Bootstrap", func() {
 		meshMeta := defaultMesh.GetMeta()
 		Expect(meshMeta.GetName()).To(Equal("default"))
 		Expect(meshMeta.GetMesh()).To(Equal("default"))
-		Expect(meshMeta.GetNamespace()).To(Equal("default"))
 	})
 
 	It("should skip creating mesh if one already exist", func() {
@@ -62,15 +61,15 @@ var _ = Describe("Bootstrap", func() {
 		template := runtime.Config().Defaults.MeshProto()
 
 		// when
-		Expect(mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), template, core_model.DefaultNamespace)).To(Succeed())
+		Expect(mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), template)).To(Succeed())
 
 		// then mesh exists
-		getOpts := core_store.GetByKey(core_model.DefaultNamespace, core_model.DefaultMesh, core_model.DefaultMesh)
+		getOpts := core_store.GetByKey(core_model.DefaultMesh, core_model.DefaultMesh)
 		err = runtime.ResourceManager().Get(context.Background(), &mesh.MeshResource{}, getOpts)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when createDefaultMesh is called once mesh already exist
-		err = mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), template, core_model.DefaultNamespace)
+		err = mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), template)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

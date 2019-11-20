@@ -48,7 +48,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			dataplane := mesh_proto.Dataplane{}
 			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+				Id: model.ProxyId{Name: "side-car"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",

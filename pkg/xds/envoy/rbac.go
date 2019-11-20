@@ -29,7 +29,7 @@ func createRbacFilter(listenerName string, permissions *mesh_core.TrafficPermiss
 func createRbacRule(listenerName string, permissions *mesh_core.TrafficPermissionResourceList) *rbac.RBAC {
 	policies := make(map[string]*rbac_config.Policy, len(permissions.Items))
 	for _, permission := range permissions.Items {
-		policyName := fmt.Sprintf("%s.%s", permission.Meta.GetNamespace(), permission.Meta.GetName())
+		policyName := permission.Meta.GetName()
 		policies[policyName] = createPolicy(permission)
 	}
 

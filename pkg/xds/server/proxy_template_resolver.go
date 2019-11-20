@@ -87,11 +87,11 @@ func ScoreMatch(selector map[string]string, target map[string]string) (bool, int
 	return true, len(selector)
 }
 
+// todo fix namespace
 type ProxyTemplatesByNamespacedName []*mesh_core.ProxyTemplateResource
 
 func (a ProxyTemplatesByNamespacedName) Len() int      { return len(a) }
 func (a ProxyTemplatesByNamespacedName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ProxyTemplatesByNamespacedName) Less(i, j int) bool {
-	return a[i].Meta.GetNamespace() < a[j].Meta.GetNamespace() ||
-		(a[i].Meta.GetNamespace() == a[j].Meta.GetNamespace() && a[i].Meta.GetName() < a[j].Meta.GetName())
+	return a[i].Meta.GetName() < a[j].Meta.GetName()
 }

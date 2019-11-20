@@ -35,12 +35,11 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
-	obj.GetObjectMeta().SetNamespace(opts.Namespace)
-	obj.GetObjectMeta().SetName(opts.Name)
+	obj.GetObjectMeta().SetName(opts.Name) // todo fix this
 	obj.SetMesh(opts.Mesh)
 	if err := s.Client.Create(ctx, obj); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
-			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Namespace, opts.Name, opts.Mesh)
+			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh) // todo fix this
 		}
 		return errors.Wrap(err, "failed to create k8s resource")
 	}
@@ -57,7 +56,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetNamespace(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
+			return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh()) // todo fix this
 		}
 		return errors.Wrap(err, "failed to update k8s resource")
 	}
@@ -71,7 +70,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	opts := store.NewDeleteOptions(fs...)
 
 	// get object and validate mesh
-	if err := s.Get(ctx, r, store.GetByKey(opts.Namespace, opts.Name, opts.Mesh)); err != nil {
+	if err := s.Get(ctx, r, store.GetByKey(opts.Name, opts.Mesh)); err != nil {
 		return err
 	}
 
@@ -79,8 +78,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
-	obj.GetObjectMeta().SetNamespace(opts.Namespace)
-	obj.GetObjectMeta().SetName(opts.Name)
+	obj.GetObjectMeta().SetName(opts.Name) // todo fix this
 	if err := s.Client.Delete(ctx, obj); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			return nil
@@ -95,9 +93,9 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
-	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: opts.Namespace, Name: opts.Name}, obj); err != nil {
+	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: "", Name: opts.Name}, obj); err != nil { // todo fix this
 		if kube_apierrs.IsNotFound(err) {
-			return store.ErrorResourceNotFound(r.GetType(), opts.Namespace, opts.Name, opts.Mesh)
+			return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh) // todo fix this
 		}
 		return errors.Wrap(err, "failed to get k8s resource")
 	}
@@ -105,7 +103,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
 	if r.GetMeta().GetMesh() != opts.Mesh {
-		return store.ErrorResourceNotFound(r.GetType(), opts.Namespace, opts.Name, opts.Mesh)
+		return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh) // todo fix this
 	}
 	return nil
 }
@@ -115,7 +113,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
 	}
-	if err := s.Client.List(ctx, obj, kube_client.InNamespace(opts.Namespace)); err != nil {
+	if err := s.Client.List(ctx, obj); err != nil {
 		return errors.Wrap(err, "failed to list k8s resources")
 	}
 	predicate := func(r core_model.Resource) bool {

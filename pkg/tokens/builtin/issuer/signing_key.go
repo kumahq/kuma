@@ -18,9 +18,8 @@ import (
 const defaultRsaBits = 2048
 
 var signingKeyResourceKey = model.ResourceKey{
-	Mesh:      "default",
-	Namespace: "default", // namespace is irrelevant as this is only used in Universal
-	Name:      "dataplane-token-signing-key",
+	Mesh: "default",
+	Name: "dataplane-token-signing-key",
 }
 
 func CreateDefaultSigningKey(manager core_manager.SecretManager) error {

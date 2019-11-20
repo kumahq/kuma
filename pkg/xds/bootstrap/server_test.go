@@ -61,7 +61,7 @@ var _ = Describe("Bootstrap Server", func() {
 	})
 
 	BeforeEach(func() {
-		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default", "default"))
+		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -86,7 +86,7 @@ var _ = Describe("Bootstrap Server", func() {
 					},
 				},
 			}
-			err := resManager.Create(context.Background(), &res, store.CreateByKey("default", "dp-1", "default"))
+			err := resManager.Create(context.Background(), &res, store.CreateByKey("dp-1.default", "default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -105,8 +105,8 @@ var _ = Describe("Bootstrap Server", func() {
 
 			Expect(received).To(MatchYAML(expected))
 		},
-		Entry("minimal data provided (universal)", testCase{
-			body:               `{ "mesh": "default", "name": "dp-1" }`,
+		Entry("minimal data provided (universal)", testCase{ // todo fix namespace
+			body:               `{ "mesh": "default", "name": "dp-1.default" }`,
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{

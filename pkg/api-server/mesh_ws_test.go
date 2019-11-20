@@ -21,8 +21,6 @@ var _ = Describe("Resource WS", func() {
 	var client resourceApiClient
 	var stop chan struct{}
 
-	const namespace = "default"
-
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
@@ -141,7 +139,7 @@ var _ = Describe("Resource WS", func() {
 
 			// then
 			resource := mesh.MeshResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(namespace, name, name))
+			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, name))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Tracing.Type).To(Equal(&v1alpha1.Tracing_Zipkin_{}))
 		})
@@ -209,8 +207,8 @@ var _ = Describe("Resource WS", func() {
 
 			// and
 			resource := mesh.MeshResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(namespace, name, name))
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), namespace, name, name)))
+			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, name))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, name)))
 		})
 
 		It("should delete non-existing resource", func() {
@@ -225,6 +223,6 @@ var _ = Describe("Resource WS", func() {
 
 func putMeshIntoStore(resourceStore store.ResourceStore, name string) {
 	resource := mesh.MeshResource{}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey("default", name, name))
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, name))
 	Expect(err).NotTo(HaveOccurred())
 }

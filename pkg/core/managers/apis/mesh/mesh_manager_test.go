@@ -18,8 +18,6 @@ import (
 
 var _ = Describe("Mesh Manager", func() {
 
-	const namespace = "default"
-
 	var resManager manager.ResourceManager
 	var resStore store.ResourceStore
 	var caManager builtin.BuiltinCaManager
@@ -38,9 +36,8 @@ var _ = Describe("Mesh Manager", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh:      meshName,
-				Namespace: namespace,
-				Name:      meshName,
+				Mesh: meshName,
+				Name: meshName,
 			}
 
 			// when
@@ -64,16 +61,15 @@ var _ = Describe("Mesh Manager", func() {
 
 			mesh := core_mesh.MeshResource{}
 			resKey := model.ResourceKey{
-				Mesh:      meshName,
-				Namespace: namespace,
-				Name:      meshName,
+				Mesh: meshName,
+				Name: meshName,
 			}
 			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
 			Expect(err).ToNot(HaveOccurred())
 
 			// and resource associated with it
 			dp := core_mesh.DataplaneResource{}
-			err = resStore.Create(context.Background(), &dp, store.CreateByKey(namespace, "dp-1", meshName))
+			err = resStore.Create(context.Background(), &dp, store.CreateByKey("dp-1", meshName))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when mesh is deleted
@@ -83,29 +79,28 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and resource is deleted
-			err = resStore.Get(context.Background(), &core_mesh.DataplaneResource{}, store.GetByKey(namespace, "dp-1", meshName))
+			err = resStore.Get(context.Background(), &core_mesh.DataplaneResource{}, store.GetByKey("dp-1", meshName))
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and built-in mesh CA is deleted
 			_, err = caManager.GetRootCerts(context.Background(), meshName)
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("failed to load CA key pair for Mesh \"mesh-1\": Resource not found: type=\"Secret\" namespace=\"default\" name=\"builtinca.mesh-1\" mesh=\"mesh-1\""))
+			Expect(err.Error()).To(Equal("failed to load CA key pair for Mesh \"mesh-1\": Resource not found: type=\"Secret\" name=\"builtinca.mesh-1\" mesh=\"mesh-1\""))
 		})
 
 		It("should delete all associated resources even if mesh is already removed", func() {
 			// given resource that was not deleted with mesh
 			dp := core_mesh.DataplaneResource{}
 			dpKey := model.ResourceKey{
-				Mesh:      "already-deleted",
-				Namespace: namespace,
-				Name:      "dp-1",
+				Mesh: "already-deleted",
+				Name: "dp-1",
 			}
 			err := resStore.Create(context.Background(), &dp, store.CreateBy(dpKey))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
 			mesh := core_mesh.MeshResource{}
-			err = resManager.Delete(context.Background(), &mesh, store.DeleteByKey(namespace, "already-deleted", "already-deleted"))
+			err = resManager.Delete(context.Background(), &mesh, store.DeleteByKey("already-deleted", "already-deleted"))
 
 			// then not found error is thrown
 			Expect(err).To(HaveOccurred())

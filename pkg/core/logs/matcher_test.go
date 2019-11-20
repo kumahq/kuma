@@ -44,7 +44,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &meshRes, store.CreateByKey("default", "sample", "sample"))
+		err := manager.Create(context.Background(), &meshRes, store.CreateByKey("sample", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
@@ -78,7 +78,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err = manager.Create(context.Background(), &dpRes, store.CreateByKey("default", "dp-1", "sample"))
+		err = manager.Create(context.Background(), &dpRes, store.CreateByKey("dp-1", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -105,7 +105,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &logRes1, store.CreateByKey("default", "lr-1", "sample"))
+		err := manager.Create(context.Background(), &logRes1, store.CreateByKey("lr-1", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
@@ -130,7 +130,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err = manager.Create(context.Background(), &logRes2, store.CreateByKey("default", "lr-2", "sample"))
+		err = manager.Create(context.Background(), &logRes2, store.CreateByKey("lr-2", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
@@ -152,7 +152,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err = manager.Create(context.Background(), &logRes3, store.CreateByKey("default", "lr-3", "sample"))
+		err = manager.Create(context.Background(), &logRes3, store.CreateByKey("lr-3", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -196,7 +196,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &logRes, store.CreateByKey("default", "lr-1", "sample"))
+		err := manager.Create(context.Background(), &logRes, store.CreateByKey("lr-1", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -230,7 +230,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &logRes, store.CreateByKey("default", "lr-1", "sample"))
+		err := manager.Create(context.Background(), &logRes, store.CreateByKey("lr-1", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

@@ -7,17 +7,13 @@ import (
 var _ core_model.ResourceMeta = &ResourceMeta{}
 
 type ResourceMeta struct {
-	Mesh      string
-	Namespace string
-	Name      string
-	Version   string
+	Mesh    string
+	Name    string
+	Version string
 }
 
 func (m *ResourceMeta) GetMesh() string {
 	return m.Mesh
-}
-func (m *ResourceMeta) GetNamespace() string {
-	return m.Namespace
 }
 func (m *ResourceMeta) GetName() string {
 	return m.Name

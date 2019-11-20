@@ -16,13 +16,12 @@ import (
 )
 
 type ProxyId struct {
-	Mesh      string
-	Namespace string
-	Name      string
+	Mesh string
+	Name string
 }
 
 func (id *ProxyId) String() string {
-	return fmt.Sprintf("%s.%s.%s", id.Mesh, id.Name, id.Namespace)
+	return fmt.Sprintf("%s.%s", id.Mesh, id.Name)
 }
 
 // ServiceName is a convenience type alias to clarify the meaning of string value.
@@ -101,36 +100,30 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	if len(parts) < 2 {
 		return nil, errors.New("the name should be provided after the dot")
 	}
-	name := parts[1]
+	nameParts := []string{}
+	for i := 1; i < len(parts); i++ {
+		nameParts = append(nameParts, parts[i])
+	}
+	name := strings.Join(nameParts, ".")
 	if name == "" {
 		return nil, errors.New("name must not be empty")
 	}
-	ns := core_model.DefaultNamespace
-	if len(parts) == 3 {
-		ns = parts[2]
-	}
-	if ns == "" {
-		return nil, errors.New("namespace must not be empty")
-	}
 	return &ProxyId{
-		Mesh:      mesh,
-		Namespace: ns,
-		Name:      name,
+		Mesh: mesh,
+		Name: name,
 	}, nil
 }
 
 func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
 	return core_model.ResourceKey{
-		Name:      id.Name,
-		Namespace: id.Namespace,
-		Mesh:      id.Mesh,
+		Name: id.Name,
+		Mesh: id.Mesh,
 	}
 }
 
 func FromResourceKey(key core_model.ResourceKey) ProxyId {
 	return ProxyId{
-		Mesh:      key.Mesh,
-		Namespace: key.Namespace,
-		Name:      key.Name,
+		Mesh: key.Mesh,
+		Name: key.Name,
 	}
 }

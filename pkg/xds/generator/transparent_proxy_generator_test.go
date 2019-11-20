@@ -43,7 +43,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		},
 		Entry("transparent_proxying=false", testCase{
 			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+				Id: model.ProxyId{Name: "side-car"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
@@ -56,7 +56,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		}),
 		Entry("transparent_proxying=true", testCase{
 			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+				Id: model.ProxyId{Name: "side-car"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",

@@ -62,9 +62,10 @@ func (k *kubeAuthenticator) reviewToken(ctx context.Context, proxyId core_xds.Pr
 	if !(userInfo[0] == "system" && userInfo[1] == "serviceaccount") {
 		return errors.Errorf("authentication failed: token must belong to a k8s system account, got %q", tokenReview.Status.User.Username)
 	}
-	namespace := userInfo[2]
-	if namespace != proxyId.Namespace {
-		return errors.Errorf("authentication failed: token belongs to a namespace (%q) different from proxyId (%q)", namespace, proxyId.Namespace)
-	}
+	// todo(jakubydszkiewicz) fix namespace
+	//namespace := userInfo[2]
+	//if namespace != proxyId.Namespace {
+	//	return errors.Errorf("authentication failed: token belongs to a namespace (%q) different from proxyId (%q)", namespace, proxyId.Namespace)
+	//}
 	return nil
 }

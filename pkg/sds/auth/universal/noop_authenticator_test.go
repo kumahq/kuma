@@ -30,9 +30,8 @@ var _ = Describe("Noop Authenticator", func() {
 	It("should allow with any token for existing dataplane", func() {
 		// given
 		id := xds.ProxyId{
-			Mesh:      "example",
-			Namespace: "default",
-			Name:      "dp-1",
+			Mesh: "example",
+			Name: "dp-1",
 		}
 
 		dpRes := core_mesh.DataplaneResource{
@@ -64,9 +63,8 @@ var _ = Describe("Noop Authenticator", func() {
 	It("should throw an error when dataplane is not present in CP", func() {
 		// given
 		id := xds.ProxyId{
-			Mesh:      "example",
-			Namespace: "default",
-			Name:      "dp-1",
+			Mesh: "example",
+			Name: "dp-1",
 		}
 
 		// when
@@ -74,6 +72,6 @@ var _ = Describe("Noop Authenticator", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err).To(MatchError(`unable to find Dataplane for proxy {"example" "default" "dp-1"}: Resource not found: type="Dataplane" namespace="default" name="dp-1" mesh="example"`))
+		Expect(err).To(MatchError(`unable to find Dataplane for proxy {"example" "dp-1"}: Resource not found: type="Dataplane" name="dp-1" mesh="example"`))
 	})
 })

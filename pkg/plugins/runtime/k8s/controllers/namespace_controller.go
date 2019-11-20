@@ -55,7 +55,7 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 	name := kube_types.NamespacedName{Namespace: r.SystemNamespace, Name: core_model.DefaultMesh}
 	if err := r.Get(ctx, name, mesh); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			err := mesh_managers.CreateDefaultMesh(r.ResourceManager, r.DefaultMeshTemplate, r.SystemNamespace)
+			err := mesh_managers.CreateDefaultMesh(r.ResourceManager, r.DefaultMeshTemplate) // todo fix namespace
 			if err != nil {
 				log.Error(err, "unable to create default Mesh")
 			}

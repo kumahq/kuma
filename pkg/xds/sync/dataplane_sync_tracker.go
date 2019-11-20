@@ -68,7 +68,7 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID int64, req *envoy.Discov
 	defer t.mu.Unlock()
 
 	if id, err := core_xds.ParseProxyId(req.Node); err == nil {
-		dataplaneKey := core_model.ResourceKey{Mesh: id.Mesh, Namespace: id.Namespace, Name: id.Name}
+		dataplaneKey := core_model.ResourceKey{Mesh: id.Mesh, Name: id.Name}
 
 		// kick off watchdag for that Dataplane
 		stopCh := make(chan struct{})

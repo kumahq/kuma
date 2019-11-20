@@ -164,11 +164,11 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 	return destinations
 }
 
+// todo fix namespace
 type TrafficRoutesByNamespacedName []*mesh_core.TrafficRouteResource
 
 func (a TrafficRoutesByNamespacedName) Len() int      { return len(a) }
 func (a TrafficRoutesByNamespacedName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a TrafficRoutesByNamespacedName) Less(i, j int) bool {
-	return a[i].Meta.GetNamespace() < a[j].Meta.GetNamespace() ||
-		(a[i].Meta.GetNamespace() == a[j].Meta.GetNamespace() && a[i].Meta.GetName() < a[j].Meta.GetName())
+	return a[i].Meta.GetName() < a[j].Meta.GetName()
 }

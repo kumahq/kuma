@@ -8,14 +8,12 @@ import (
 )
 
 const (
-	DefaultMesh      = "default"
-	DefaultNamespace = "default"
+	DefaultMesh = "default"
 )
 
 type ResourceKey struct {
-	Mesh      string
-	Namespace string
-	Name      string
+	Mesh string
+	Name string
 }
 
 type Resource interface {
@@ -31,7 +29,6 @@ type ResourceType string
 
 type ResourceMeta interface {
 	GetName() string
-	GetNamespace() string
 	GetVersion() string
 	GetMesh() string
 }
@@ -41,9 +38,8 @@ func MetaToResourceKey(meta ResourceMeta) ResourceKey {
 		return ResourceKey{}
 	}
 	return ResourceKey{
-		Mesh:      meta.GetMesh(),
-		Namespace: meta.GetNamespace(),
-		Name:      meta.GetName(),
+		Mesh: meta.GetMesh(),
+		Name: meta.GetName(),
 	}
 }
 

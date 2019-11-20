@@ -67,9 +67,8 @@ var _ = Describe("Reconcile", func() {
 
 			expected := &mesh_core.ProxyTemplateResource{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "pilot",
-					Namespace: "default",
-					Name:      "expected",
+					Mesh: "pilot",
+					Name: "expected",
 				},
 				Spec: mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
@@ -80,9 +79,8 @@ var _ = Describe("Reconcile", func() {
 
 			other := &mesh_core.ProxyTemplateResource{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "default",
-					Namespace: "default",
-					Name:      "other",
+					Mesh: "default",
+					Name: "other",
 				},
 				Spec: mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
@@ -94,7 +92,7 @@ var _ = Describe("Reconcile", func() {
 			// setup
 			memStore := memory.NewStore()
 			for _, template := range []*mesh_core.ProxyTemplateResource{expected, other} {
-				err := memStore.Create(context.Background(), template, store.CreateByKey(template.Meta.GetNamespace(), template.Meta.GetName(), template.Meta.GetMesh()))
+				err := memStore.Create(context.Background(), template, store.CreateByKey(template.Meta.GetName(), template.Meta.GetMesh()))
 				Expect(err).ToNot(HaveOccurred())
 			}
 
@@ -157,32 +155,28 @@ var _ = Describe("Reconcile", func() {
 				input: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "last",
+							Mesh: "pilot",
+							Name: "last",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "first",
+							Mesh: "pilot",
+							Name: "first",
 						},
 					},
 				},
 				expected: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "first",
+							Mesh: "pilot",
+							Name: "first",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "last",
+							Mesh: "pilot",
+							Name: "last",
 						},
 					},
 				},
@@ -191,32 +185,28 @@ var _ = Describe("Reconcile", func() {
 				input: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "pilot",
-							Name:      "a",
+							Mesh: "pilot",
+							Name: "a",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "b",
+							Mesh: "pilot",
+							Name: "b",
 						},
 					},
 				},
 				expected: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "b",
+							Mesh: "pilot",
+							Name: "b",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "pilot",
-							Name:      "a",
+							Mesh: "pilot",
+							Name: "a",
 						},
 					},
 				},
@@ -330,24 +320,21 @@ var _ = Describe("Reconcile", func() {
 				templates: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "last",
+							Mesh: "pilot",
+							Name: "last",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "first",
+							Mesh: "pilot",
+							Name: "first",
 						},
 					},
 				},
 				expected: &mesh_core.ProxyTemplateResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh:      "pilot",
-						Namespace: "default",
-						Name:      "first",
+						Mesh: "pilot",
+						Name: "first",
 					},
 				},
 			}),
@@ -356,9 +343,8 @@ var _ = Describe("Reconcile", func() {
 				templates: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "last",
+							Mesh: "pilot",
+							Name: "last",
 						},
 						Spec: mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
@@ -368,9 +354,8 @@ var _ = Describe("Reconcile", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "first",
+							Mesh: "pilot",
+							Name: "first",
 						},
 						Spec: mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
@@ -381,9 +366,8 @@ var _ = Describe("Reconcile", func() {
 				},
 				expected: &mesh_core.ProxyTemplateResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh:      "pilot",
-						Namespace: "default",
-						Name:      "first",
+						Mesh: "pilot",
+						Name: "first",
 					},
 					Spec: mesh_proto.ProxyTemplate{
 						Selectors: []*mesh_proto.Selector{
@@ -418,9 +402,8 @@ var _ = Describe("Reconcile", func() {
 				templates: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "last",
+							Mesh: "pilot",
+							Name: "last",
 						},
 						Spec: mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
@@ -435,9 +418,8 @@ var _ = Describe("Reconcile", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "first",
+							Mesh: "pilot",
+							Name: "first",
 						},
 						Spec: mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
@@ -459,9 +441,8 @@ var _ = Describe("Reconcile", func() {
 				},
 				expected: &mesh_core.ProxyTemplateResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh:      "pilot",
-						Namespace: "default",
-						Name:      "first",
+						Mesh: "pilot",
+						Name: "first",
 					},
 					Spec: mesh_proto.ProxyTemplate{
 						Selectors: []*mesh_proto.Selector{
@@ -486,9 +467,8 @@ var _ = Describe("Reconcile", func() {
 				templates: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh:      "pilot",
-							Namespace: "default",
-							Name:      "last",
+							Mesh: "pilot",
+							Name: "last",
 						},
 						Spec: mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{

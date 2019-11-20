@@ -114,9 +114,9 @@ func upsert(rs store.ResourceStore, res model.Resource) error {
 		return err
 	}
 	meta := res.GetMeta()
-	if err := rs.Get(context.Background(), newRes, store.GetByKey(meta.GetNamespace(), meta.GetName(), meta.GetMesh())); err != nil {
+	if err := rs.Get(context.Background(), newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
 		if store.IsResourceNotFound(err) {
-			return rs.Create(context.Background(), res, store.CreateByKey(meta.GetNamespace(), meta.GetName(), meta.GetMesh()))
+			return rs.Create(context.Background(), res, store.CreateByKey(meta.GetName(), meta.GetMesh()))
 		} else {
 			return err
 		}
