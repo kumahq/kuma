@@ -3,7 +3,6 @@ package k8s_test
 import (
 	"context"
 	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -25,6 +24,7 @@ var _ = Describe("KubernetesStore", func() {
 	var ks *k8s.KubernetesStore
 	var s store.ResourceStore
 	var ns string // each test should run in a dedicated k8s namespace
+	var coreName string
 	const name = "demo"
 	const mesh = "default"
 
@@ -85,6 +85,12 @@ var _ = Describe("KubernetesStore", func() {
 		}
 		s = store.NewStrictResourceStore(ks)
 		ns = string(uuid.NewUUID())
+		coreName = fmt.Sprintf("%s.%s", name, ns)
+	})
+
+	AfterEach(func() {
+		err := k8sClient.DeleteAllOf(context.Background(), &sample_k8s.SampleTrafficRoute{}, client.InNamespace(ns))
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("Create()", func() {
@@ -104,12 +110,12 @@ var _ = Describe("KubernetesStore", func() {
 `).(*sample_k8s.SampleTrafficRoute)
 
 			// when
-			err := s.Create(context.Background(), tr, store.CreateByKey(name, mesh))
+			err := s.Create(context.Background(), tr, store.CreateByKey(coreName, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(tr.Meta.GetName()).To(Equal(name))
+			Expect(tr.Meta.GetName()).To(Equal(coreName))
 			Expect(tr.Meta.GetMesh()).To(Equal(mesh))
 			Expect(tr.Meta.GetVersion()).ToNot(Equal(""))
 
@@ -128,16 +134,16 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
 
 			// when
-			err := s.Create(context.Background(), &sample_core.TrafficRouteResource{}, store.CreateByKey(name, mesh))
+			err := s.Create(context.Background(), &sample_core.TrafficRouteResource{}, store.CreateByKey(coreName, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = s.Create(context.Background(), &sample_core.TrafficRouteResource{}, store.CreateByKey(name, mesh))
+			err = s.Create(context.Background(), &sample_core.TrafficRouteResource{}, store.CreateByKey(coreName, mesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(sample_core.TrafficRouteType, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(sample_core.TrafficRouteType, coreName, mesh)))
 		})
 	})
 
@@ -168,7 +174,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), tr, store.GetByKey(name, mesh))
+			err := s.Get(context.Background(), tr, store.GetByKey(coreName, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			version := tr.Meta.GetVersion()
@@ -209,7 +215,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), tr, store.GetByKey(name, mesh))
+			err := s.Get(context.Background(), tr, store.GetByKey(coreName, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -219,7 +225,7 @@ var _ = Describe("KubernetesStore", func() {
 			err = s.Update(context.Background(), tr)
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, coreName, mesh)))
 		})
 
 		It("should return an error if resource has changed", func() {
@@ -238,7 +244,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr1 := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), tr1, store.GetByKey(name, mesh))
+			err := s.Get(context.Background(), tr1, store.GetByKey(coreName, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -246,7 +252,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr2 := &sample_core.TrafficRouteResource{}
 
 			// when
-			err = s.Get(context.Background(), tr2, store.GetByKey(name, mesh))
+			err = s.Get(context.Background(), tr2, store.GetByKey(coreName, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -260,7 +266,7 @@ var _ = Describe("KubernetesStore", func() {
 			tr2.Spec.Path = "/another"
 			err = s.Update(context.Background(), tr2)
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, coreName, mesh)))
 		})
 	})
 
@@ -270,10 +276,10 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
 
 			// when
-			err := s.Get(context.Background(), &sample_core.TrafficRouteResource{}, store.GetByKey(name, mesh))
+			err := s.Get(context.Background(), &sample_core.TrafficRouteResource{}, store.GetByKey(coreName, mesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceNotFound(sample_core.TrafficRouteType, name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceNotFound(sample_core.TrafficRouteType, coreName, mesh)))
 		})
 
 		It("should return an existing resource", func() {
@@ -294,12 +300,12 @@ var _ = Describe("KubernetesStore", func() {
 			actual := &sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Get(context.Background(), actual, store.GetByKey(name, mesh))
+			err := s.Get(context.Background(), actual, store.GetByKey(coreName, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(actual.Meta.GetName()).To(Equal(name))
+			Expect(actual.Meta.GetName()).To(Equal(coreName))
 			// and
 			Expect(actual.Spec.Path).To(Equal("/example"))
 		})
@@ -332,7 +338,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), &sample_core.TrafficRouteResource{}, store.DeleteByKey(name, mesh))
+			err := s.Delete(context.Background(), &sample_core.TrafficRouteResource{}, store.DeleteByKey(coreName, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -398,9 +404,9 @@ var _ = Describe("KubernetesStore", func() {
 				trl.Items[1].Meta.GetName(): trl.Items[1],
 			}
 			// then
-			Expect(items["one"].Spec.Path).To(Equal("/example"))
+			Expect(items[fmt.Sprintf("one.%s", ns)].Spec.Path).To(Equal("/example"))
 			// and
-			Expect(items["two"].Spec.Path).To(Equal("/another"))
+			Expect(items[fmt.Sprintf("two.%s", ns)].Spec.Path).To(Equal("/another"))
 		})
 	})
 })

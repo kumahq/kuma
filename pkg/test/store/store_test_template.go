@@ -24,6 +24,16 @@ func ExecuteStoreTests(
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	BeforeEach(func() {
+		list := sample_model.TrafficRouteResourceList{}
+		err := s.List(context.Background(), &list)
+		Expect(err).ToNot(HaveOccurred())
+		for _, item := range list.Items {
+			err := s.Delete(context.Background(), item, store.DeleteByKey(item.Meta.GetName(), item.Meta.GetMesh()))
+			Expect(err).ToNot(HaveOccurred())
+		}
+	})
+
 	createResource := func(name string) *sample_model.TrafficRouteResource {
 		res := sample_model.TrafficRouteResource{
 			Spec: sample_proto.TrafficRoute{
@@ -38,7 +48,7 @@ func ExecuteStoreTests(
 	Describe("Create()", func() {
 		It("should create a new resource", func() {
 			// given
-			name := "resource1"
+			name := "resource1.demo"
 
 			// when
 			created := createResource(name)
@@ -59,7 +69,7 @@ func ExecuteStoreTests(
 
 		It("should not create a duplicate record", func() {
 			// given
-			name := "duplicated-record"
+			name := "duplicated-record.demo"
 			resource := createResource(name)
 
 			// when try to create another one with same name
@@ -74,7 +84,7 @@ func ExecuteStoreTests(
 	Describe("Update()", func() {
 		It("should return an error if resource is not found", func() {
 			// given
-			name := "to-be-updated"
+			name := "to-be-updated.demo"
 			resource := createResource(name)
 
 			// when delete resource
@@ -96,7 +106,7 @@ func ExecuteStoreTests(
 
 		It("should update an existing resource", func() {
 			// given a resources in storage
-			name := "to-be-updated"
+			name := "to-be-updated.demo"
 			resource := createResource(name)
 
 			// when
@@ -126,7 +136,7 @@ func ExecuteStoreTests(
 			resource := sample_model.TrafficRouteResource{}
 
 			// when
-			err := s.Delete(context.TODO(), &resource, store.DeleteByKey("non-existent-name", mesh))
+			err := s.Delete(context.TODO(), &resource, store.DeleteByKey("non-existent-name.demo", mesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -135,7 +145,7 @@ func ExecuteStoreTests(
 
 		It("should not delete resource from another mesh", func() {
 			// given
-			name := "tr-1"
+			name := "tr-1.demo"
 			resource := createResource(name)
 
 			// when
@@ -156,7 +166,7 @@ func ExecuteStoreTests(
 
 		It("should delete an existing resource", func() {
 			// given a resources in storage
-			name := "to-be-deleted"
+			name := "to-be-deleted.demo"
 			createResource(name)
 
 			// when
@@ -178,7 +188,7 @@ func ExecuteStoreTests(
 	Describe("Get()", func() {
 		It("should return an error if resource is not found", func() {
 			// given
-			name := "non-existing-resource"
+			name := "non-existing-resource.demo"
 			resource := sample_model.TrafficRouteResource{}
 
 			// when
@@ -190,7 +200,7 @@ func ExecuteStoreTests(
 
 		It("should return an error if resource is not found in given mesh", func() {
 			// given a resources in mesh "mesh"
-			name := "existing-resource"
+			name := "existing-resource.demo"
 			mesh := "different-mesh"
 			createResource(name)
 
@@ -204,7 +214,7 @@ func ExecuteStoreTests(
 
 		It("should return an existing resource", func() {
 			// given a resources in storage
-			name := "existing-resource"
+			name := "get-existing-resource.demo"
 			createdResource := createResource(name)
 
 			// when
@@ -237,8 +247,8 @@ func ExecuteStoreTests(
 
 		It("should return a list of resources", func() {
 			// given two resources
-			createResource("res-1")
-			createResource("res-2")
+			createResource("res-1.demo")
+			createResource("res-2.demo")
 
 			list := sample_model.TrafficRouteResourceList{}
 
@@ -251,7 +261,7 @@ func ExecuteStoreTests(
 			Expect(list.Items).To(HaveLen(2))
 			// and
 			names := []string{list.Items[0].Meta.GetName(), list.Items[1].Meta.GetName()}
-			Expect(names).To(ConsistOf("res-1", "res-2"))
+			Expect(names).To(ConsistOf("res-1.demo", "res-2.demo"))
 			Expect(list.Items[0].Meta.GetMesh()).To(Equal(mesh))
 			Expect(list.Items[0].Spec.Path).To(Equal("demo"))
 			Expect(list.Items[1].Meta.GetMesh()).To(Equal(mesh))
@@ -260,8 +270,8 @@ func ExecuteStoreTests(
 
 		It("should not return a list of resources in different mesh", func() {
 			// given two resources
-			createResource("res-1")
-			createResource("res-2")
+			createResource("list-res-1.demo")
+			createResource("list-res-2.demo")
 
 			list := sample_model.TrafficRouteResourceList{}
 

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -36,7 +37,7 @@ func (r *DataplaneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.Get(ctx, req.NamespacedName, crd); err != nil {
 		if apierrs.IsNotFound(err) {
 			return ctrl.Result{}, r.DiscoverySink.OnDataplaneDelete(core_model.ResourceKey{
-				Name: req.NamespacedName.Name, // todo fix namespace
+				Name: fmt.Sprintf("%s.%s", req.Name, req.Namespace),
 			})
 		}
 		log.Error(err, "unable to fetch Dataplane")

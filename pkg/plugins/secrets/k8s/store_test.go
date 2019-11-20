@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// todo fix namespace
 var _ = Describe("KubernetesStore", func() {
 
 	var s secret_store.SecretStore

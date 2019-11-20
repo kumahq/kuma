@@ -70,19 +70,15 @@ func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.Dat
 }
 
 func (m *TrafficLogsMatcher) backendsByName(ctx context.Context, dataplane *mesh_core.DataplaneResource) (map[string]*mesh_proto.LoggingBackend, error) {
-	meshes := &mesh_core.MeshResourceList{}
-	// todo(jakubydszkiewicz) simplify to Get after we solve namespace problem
-	if err := m.ResourceManager.List(ctx, meshes, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
-		return nil, errors.Wrap(err, "could not retrieve meshes")
-	}
-	if len(meshes.Items) != 1 {
-		return nil, errors.Errorf("found %d meshes. There should be only one mesh of name %s", len(meshes.Items), dataplane.GetMeta().GetMesh())
+	mesh := mesh_core.MeshResource{}
+	if err := m.ResourceManager.Get(ctx, &mesh, store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
+		return nil, err
 	}
 	backendsByName := map[string]*mesh_proto.LoggingBackend{}
-	for _, backend := range meshes.Items[0].Spec.GetLogging().GetBackends() {
+	for _, backend := range mesh.Spec.GetLogging().GetBackends() {
 		backendsByName[backend.Name] = backend
 	}
-	defaultBackend := meshes.Items[0].Spec.GetLogging().GetDefaultBackend()
+	defaultBackend := mesh.Spec.GetLogging().GetDefaultBackend()
 	if defaultBackend != "" {
 		backendsByName[""] = backendsByName[defaultBackend]
 	}

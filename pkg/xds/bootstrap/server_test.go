@@ -66,6 +66,7 @@ var _ = Describe("Bootstrap Server", func() {
 	})
 
 	type testCase struct {
+		dataplaneName      string
 		body               string
 		expectedConfigFile string
 	}
@@ -86,7 +87,7 @@ var _ = Describe("Bootstrap Server", func() {
 					},
 				},
 			}
-			err := resManager.Create(context.Background(), &res, store.CreateByKey("dp-1.default", "default"))
+			err := resManager.Create(context.Background(), &res, store.CreateByKey(given.dataplaneName, "default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -105,15 +106,18 @@ var _ = Describe("Bootstrap Server", func() {
 
 			Expect(received).To(MatchYAML(expected))
 		},
-		Entry("minimal data provided (universal)", testCase{ // todo fix namespace
-			body:               `{ "mesh": "default", "name": "dp-1.default" }`,
+		Entry("minimal data provided (universal)", testCase{
+			dataplaneName:      "dp-1",
+			body:               `{ "mesh": "default", "name": "dp-1" }`,
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{
+			dataplaneName:      "dp-1.default",
 			body:               `{ "mesh": "default", "name": "dp-1.default" }`,
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
+			dataplaneName:      "dp-1.default",
 			body:               `{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneTokenPath": "/tmp/token" }`,
 			expectedConfigFile: "bootstrap.overridden.golden.yaml",
 		}),

@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -29,17 +30,34 @@ func NewStore(client kube_client.Client) (store.ResourceStore, error) {
 	}, nil
 }
 
+func nameNamespace(coreName string) (string, string, error) {
+	parts := strings.Split(coreName, ".")
+	if len(parts) < 2 {
+		return "", "", errors.New(`name must include namespace after the dot, ex. "name.namespace"`)
+	}
+	namespaceParts := []string{}
+	for i := 1; i < len(parts); i++ {
+		namespaceParts = append(namespaceParts, parts[i])
+	}
+	return parts[0], strings.Join(namespaceParts, "."), nil
+}
+
 func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
-	obj.GetObjectMeta().SetName(opts.Name) // todo fix this
+	name, namespace, err := nameNamespace(opts.Name)
+	if err != nil {
+		return err
+	}
+	obj.GetObjectMeta().SetName(name)
+	obj.GetObjectMeta().SetNamespace(namespace)
 	obj.SetMesh(opts.Mesh)
 	if err := s.Client.Create(ctx, obj); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
-			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh) // todo fix this
+			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to create k8s resource")
 	}
@@ -56,7 +74,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh()) // todo fix this
+			return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
 		}
 		return errors.Wrap(err, "failed to update k8s resource")
 	}
@@ -78,7 +96,12 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
-	obj.GetObjectMeta().SetName(opts.Name) // todo fix this
+	name, namespace, err := nameNamespace(opts.Name)
+	if err != nil {
+		return err
+	}
+	obj.GetObjectMeta().SetName(name)
+	obj.GetObjectMeta().SetNamespace(namespace)
 	if err := s.Client.Delete(ctx, obj); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			return nil
@@ -93,9 +116,13 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
-	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: "", Name: opts.Name}, obj); err != nil { // todo fix this
+	name, namespace, err := nameNamespace(opts.Name)
+	if err != nil {
+		return err
+	}
+	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: namespace, Name: name}, obj); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh) // todo fix this
+			return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to get k8s resource")
 	}
@@ -103,7 +130,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
 	if r.GetMeta().GetMesh() != opts.Mesh {
-		return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh) // todo fix this
+		return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
 	}
 	return nil
 }
@@ -133,6 +160,10 @@ var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
 	Mesh string
+}
+
+func (m *KubernetesMetaAdapter) GetName() string {
+	return fmt.Sprintf("%s.%s", m.ObjectMeta.Name, m.ObjectMeta.Namespace)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {

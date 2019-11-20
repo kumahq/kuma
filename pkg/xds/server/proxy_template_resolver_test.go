@@ -137,21 +137,21 @@ var _ = Describe("Reconcile", func() {
 
 	})
 
-	Describe("ProxyTemplatesByNamespacedName", func() {
+	Describe("ProxyTemplatesByName", func() {
 
 		type testCase struct {
 			input    []*mesh_core.ProxyTemplateResource
 			expected []*mesh_core.ProxyTemplateResource
 		}
 
-		DescribeTable("should sort ProxyTemplates by Namespace and Name",
+		DescribeTable("should sort ProxyTemplates by Name",
 			func(given testCase) {
 				// when
-				sort.Stable(ProxyTemplatesByNamespacedName(given.input))
+				sort.Stable(ProxyTemplatesByName(given.input))
 				// then
 				Expect(given.input).To(ConsistOf(given.expected))
 			},
-			Entry("ProxyTemplates in the same Namespace", testCase{
+			Entry("ProxyTemplates in the same mesh", testCase{
 				input: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
@@ -177,36 +177,6 @@ var _ = Describe("Reconcile", func() {
 						Meta: &test_model.ResourceMeta{
 							Mesh: "pilot",
 							Name: "last",
-						},
-					},
-				},
-			}),
-			Entry("ProxyTemplates in different Namespaces", testCase{
-				input: []*mesh_core.ProxyTemplateResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
-							Name: "a",
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
-							Name: "b",
-						},
-					},
-				},
-				expected: []*mesh_core.ProxyTemplateResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
-							Name: "b",
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
-							Name: "a",
 						},
 					},
 				},

@@ -59,7 +59,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6);`
-	_, err = r.db.Exec(statement, opts.Name, "", opts.Mesh, resource.GetType(), version, string(bytes)) // todo fix namespace
+	_, err = r.db.Exec(statement, opts.Name, "", opts.Mesh, resource.GetType(), version, string(bytes)) // todo(jakubdyszkiewicz) solve db migration
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Name, opts.Mesh)
@@ -132,7 +132,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 	opts := store.NewGetOptions(fs...)
 
 	statement := `SELECT spec, version FROM resources WHERE name=$1 AND namespace=$2 AND mesh=$3 AND type=$4;`
-	row := r.db.QueryRow(statement, opts.Name, "", opts.Mesh, resource.GetType()) // todo fix namespace
+	row := r.db.QueryRow(statement, opts.Name, "", opts.Mesh, resource.GetType()) // todo(jakubdyszkiewicz) solve db migration
 
 	var spec string
 	var version int
