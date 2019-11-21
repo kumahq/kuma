@@ -12,6 +12,7 @@ import (
 	sample_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
 	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_core "github.com/Kong/kuma/pkg/test/resources/apis/sample"
+	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -85,7 +86,7 @@ var _ = Describe("KubernetesStore", func() {
 		}
 		s = store.NewStrictResourceStore(ks)
 		ns = string(uuid.NewUUID())
-		coreName = fmt.Sprintf("%s.%s", name, ns)
+		coreName = util_k8s.K8sNamespacedNameToCoreName(name, ns)
 	})
 
 	AfterEach(func() {

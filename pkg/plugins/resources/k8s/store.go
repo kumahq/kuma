@@ -3,12 +3,11 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	k8s_model "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -30,25 +29,13 @@ func NewStore(client kube_client.Client) (store.ResourceStore, error) {
 	}, nil
 }
 
-func nameNamespace(coreName string) (string, string, error) {
-	parts := strings.Split(coreName, ".")
-	if len(parts) < 2 {
-		return "", "", errors.New(`name must include namespace after the dot, ex. "name.namespace"`)
-	}
-	nameParts := []string{}
-	for i := 0; i < len(parts)-1; i++ {
-		nameParts = append(nameParts, parts[i])
-	}
-	return strings.Join(nameParts, "."), parts[len(parts)-1], nil
-}
-
 func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
-	name, namespace, err := nameNamespace(opts.Name)
+	name, namespace, err := util_k8s.CoreNameToK8sName(opts.Name)
 	if err != nil {
 		return err
 	}
@@ -96,7 +83,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
-	name, namespace, err := nameNamespace(opts.Name)
+	name, namespace, err := util_k8s.CoreNameToK8sName(opts.Name)
 	if err != nil {
 		return err
 	}
@@ -116,7 +103,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
-	name, namespace, err := nameNamespace(opts.Name)
+	name, namespace, err := util_k8s.CoreNameToK8sName(opts.Name)
 	if err != nil {
 		return err
 	}
@@ -163,7 +150,7 @@ type KubernetesMetaAdapter struct {
 }
 
 func (m *KubernetesMetaAdapter) GetName() string {
-	return fmt.Sprintf("%s.%s", m.ObjectMeta.Name, m.ObjectMeta.Namespace)
+	return util_k8s.K8sNamespacedNameToCoreName(m.ObjectMeta.Name, m.ObjectMeta.Namespace)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {

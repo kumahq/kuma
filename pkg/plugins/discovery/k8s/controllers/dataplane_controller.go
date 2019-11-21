@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -18,6 +17,7 @@ import (
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
 )
 
 // DataplaneReconciler reconciles a Dataplane object
@@ -37,7 +37,7 @@ func (r *DataplaneReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.Get(ctx, req.NamespacedName, crd); err != nil {
 		if apierrs.IsNotFound(err) {
 			return ctrl.Result{}, r.DiscoverySink.OnDataplaneDelete(core_model.ResourceKey{
-				Name: fmt.Sprintf("%s.%s", req.Name, req.Namespace),
+				Name: util_k8s.K8sNamespacedNameToCoreName(req.Name, req.Namespace),
 			})
 		}
 		log.Error(err, "unable to fetch Dataplane")

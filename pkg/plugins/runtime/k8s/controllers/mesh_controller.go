@@ -2,13 +2,13 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
@@ -42,7 +42,7 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 
 	// Fetch the Mesh instance
 	mesh := &mesh_k8s.Mesh{}
-	coreName := fmt.Sprintf("%s.%s", req.Name, req.Namespace)
+	coreName := util_k8s.K8sNamespacedNameToCoreName(req.Name, req.Namespace)
 	if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(coreName, coreName))
