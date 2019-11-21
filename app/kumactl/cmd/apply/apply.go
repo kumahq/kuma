@@ -2,6 +2,11 @@ package apply
 
 import (
 	"context"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
+
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -13,10 +18,6 @@ import (
 	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"net/http"
-	"strings"
-	"time"
 )
 
 const (
@@ -38,6 +39,12 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "apply",
 		Short: "Create or modify Kuma resources",
 		Long:  `Create or modify Kuma resources.`,
+		Example: `# Basic
+		kumactl apply my-dataplane.yml
+
+		# Apply a remote configuration
+		kumactl apply https://github.com/Kong/kuma/blob/master/dev/examples/universal/dataplanes/example.yaml
+		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var b []byte
 			var err error

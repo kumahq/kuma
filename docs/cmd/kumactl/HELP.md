@@ -34,6 +34,14 @@ Create or modify Kuma resources.
 Usage:
   kumactl apply [flags]
 
+Examples:
+# Basic
+		kumactl apply my-dataplane.yml
+
+		# Apply a remote configuration
+		kumactl apply https://github.com/Kong/kuma/blob/master/dev/examples/universal/dataplanes/example.yaml
+		
+
 Flags:
   -f, --file string          Path to file to apply
   -h, --help                 help for apply
@@ -385,6 +393,9 @@ Show TrafficLog entities.
 
 Usage:
   kumactl get traffic-logs [flags]
+
+Examples:
+kumactl get traffic-logs -ojson | jq '.items[] | select(.name == "my-log-entity")'
 
 Flags:
   -h, --help   help for traffic-logs
