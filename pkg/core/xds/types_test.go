@@ -32,7 +32,7 @@ var _ = Describe("xDS", func() {
 				},
 				Entry("mesh and name without namespace", testCase{
 					node: &envoy_core.Node{
-						Id: "pilot.example",
+						Id: "pilot;example",
 					},
 					expected: core_xds.ProxyId{
 						Mesh: "pilot", Name: "example",
@@ -40,10 +40,10 @@ var _ = Describe("xDS", func() {
 				}),
 				Entry("name with namespace and mesh", testCase{
 					node: &envoy_core.Node{
-						Id: "pilot.example.demo",
+						Id: "pilot.demo;example.demo",
 					},
 					expected: core_xds.ProxyId{
-						Mesh: "pilot", Name: "example.demo",
+						Mesh: "pilot.demo", Name: "example.demo",
 					},
 				}),
 			)
@@ -77,11 +77,11 @@ var _ = Describe("xDS", func() {
 					node: &envoy_core.Node{
 						Id: "pilot",
 					},
-					expectedErr: "the name should be provided after the dot",
+					expectedErr: "the name should be provided after the semicolon",
 				}),
 				Entry("mesh with empty name", testCase{
 					node: &envoy_core.Node{
-						Id: "pilot.",
+						Id: "pilot;",
 					},
 					expectedErr: "name must not be empty",
 				}),

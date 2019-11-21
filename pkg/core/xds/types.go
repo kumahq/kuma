@@ -21,7 +21,7 @@ type ProxyId struct {
 }
 
 func (id *ProxyId) String() string {
-	return fmt.Sprintf("%s.%s", id.Mesh, id.Name)
+	return fmt.Sprintf("%s;%s", id.Mesh, id.Name)
 }
 
 // ServiceName is a convenience type alias to clarify the meaning of string value.
@@ -80,7 +80,7 @@ func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
 }
 
 func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {
-	id := strings.Join(append([]string{mesh, name}, more...), ".")
+	id := strings.Join(append([]string{mesh, name}, more...), ";")
 	return ParseProxyIdFromString(id)
 }
 
@@ -92,19 +92,15 @@ func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
 }
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
-	parts := strings.Split(id, ".")
+	parts := strings.Split(id, ";")
 	mesh := parts[0]
 	if mesh == "" {
 		return nil, errors.New("mesh must not be empty")
 	}
-	if len(parts) < 2 {
-		return nil, errors.New("the name should be provided after the dot")
+	if len(parts) != 2 {
+		return nil, errors.New("the name should be provided after the semicolon")
 	}
-	nameParts := []string{}
-	for i := 1; i < len(parts); i++ {
-		nameParts = append(nameParts, parts[i])
-	}
-	name := strings.Join(nameParts, ".")
+	name := parts[1]
 	if name == "" {
 		return nil, errors.New("name must not be empty")
 	}

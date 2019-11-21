@@ -35,11 +35,11 @@ func nameNamespace(coreName string) (string, string, error) {
 	if len(parts) < 2 {
 		return "", "", errors.New(`name must include namespace after the dot, ex. "name.namespace"`)
 	}
-	namespaceParts := []string{}
-	for i := 1; i < len(parts); i++ {
-		namespaceParts = append(namespaceParts, parts[i])
+	nameParts := []string{}
+	for i := 0; i < len(parts) - 1; i++ {
+		nameParts = append(nameParts, parts[i])
 	}
-	return parts[0], strings.Join(namespaceParts, "."), nil
+	return strings.Join(nameParts, "."), parts[len(parts) - 1], nil
 }
 
 func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs ...store.CreateOptionsFunc) error {
@@ -52,9 +52,9 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return err
 	}
+	obj.SetMesh(opts.Mesh)
 	obj.GetObjectMeta().SetName(name)
 	obj.GetObjectMeta().SetNamespace(namespace)
-	obj.SetMesh(opts.Mesh)
 	if err := s.Client.Create(ctx, obj); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
 			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
@@ -227,8 +227,8 @@ func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (k8s_model.K
 	obj.SetSpec(spec)
 	if r.GetMeta() != nil {
 		if adapter, ok := r.GetMeta().(*KubernetesMetaAdapter); ok {
-			obj.SetObjectMeta(&adapter.ObjectMeta)
 			obj.SetMesh(adapter.Mesh)
+			obj.SetObjectMeta(&adapter.ObjectMeta)
 		} else {
 			return nil, fmt.Errorf("meta has unexpected type: %#v", r.GetMeta())
 		}
