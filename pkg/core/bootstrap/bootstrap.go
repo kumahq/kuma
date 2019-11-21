@@ -97,7 +97,7 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 		// default Mesh on Kubernetes is managed by a Controller
 		return nil
 	case config_core.UniversalEnvironment:
-		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto())
+		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), core_model.DefaultMesh, runtime.Config().Defaults.MeshProto())
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}

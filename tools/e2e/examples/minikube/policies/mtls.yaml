@@ -15,7 +15,7 @@ kind: TrafficPermission
 metadata:
   namespace: kuma-demo
   name: everyone-to-everyone
-mesh: default
+mesh: default.kuma-system
 spec:
   sources:
   - match:

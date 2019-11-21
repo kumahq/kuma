@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -9,6 +10,7 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 
 	kube_core "k8s.io/api/core/v1"
@@ -51,10 +53,11 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 
 	// Fetch default Mesh instance
 	mesh := &mesh_k8s.Mesh{}
-	name := kube_types.NamespacedName{Namespace: r.SystemNamespace, Name: "default"} // todo fix this
+	name := kube_types.NamespacedName{Namespace: r.SystemNamespace, Name: core_model.DefaultMesh}
 	if err := r.Get(ctx, name, mesh); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			err := mesh_managers.CreateDefaultMesh(r.ResourceManager, r.DefaultMeshTemplate) // todo fix namespace
+			coreMeshName := fmt.Sprintf("%s.%s", core_model.DefaultMesh, r.SystemNamespace)
+			err := mesh_managers.CreateDefaultMesh(r.ResourceManager, coreMeshName, r.DefaultMeshTemplate)
 			if err != nil {
 				log.Error(err, "unable to create default Mesh")
 			}

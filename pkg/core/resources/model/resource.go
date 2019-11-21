@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	DefaultMesh = "default.kuma-system"
+	DefaultMesh = "default"
 )
 
 type ResourceKey struct {

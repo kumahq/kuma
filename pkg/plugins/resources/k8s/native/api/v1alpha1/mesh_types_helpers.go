@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -16,7 +17,7 @@ func (pt *Mesh) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (pt *Mesh) GetMesh() string {
-	return pt.Name
+	return fmt.Sprintf("%s.%s", pt.Name, pt.Namespace)
 }
 
 func (pt *Mesh) SetMesh(mesh string) {

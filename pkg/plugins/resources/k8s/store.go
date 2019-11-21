@@ -36,10 +36,10 @@ func nameNamespace(coreName string) (string, string, error) {
 		return "", "", errors.New(`name must include namespace after the dot, ex. "name.namespace"`)
 	}
 	nameParts := []string{}
-	for i := 0; i < len(parts) - 1; i++ {
+	for i := 0; i < len(parts)-1; i++ {
 		nameParts = append(nameParts, parts[i])
 	}
-	return strings.Join(nameParts, "."), parts[len(parts) - 1], nil
+	return strings.Join(nameParts, "."), parts[len(parts)-1], nil
 }
 
 func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs ...store.CreateOptionsFunc) error {
