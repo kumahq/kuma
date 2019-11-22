@@ -13,6 +13,9 @@ type GuiServerConfig struct {
 	GuiConfig *GuiConfig `yaml:"-"`
 }
 
+func (g *GuiServerConfig) Sanitize() {
+}
+
 func (g *GuiServerConfig) Validate() error {
 	if g.Port > 65535 {
 		return errors.New("Port must be in the range [0, 65535]")

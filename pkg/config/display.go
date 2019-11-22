@@ -14,7 +14,7 @@ func ConfigForDisplay(cfg Config) (Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	// todo(jakubdyszkiewicz) hide secret values
+	newCfg.Sanitize()
 	return newCfg, nil
 }
 

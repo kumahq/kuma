@@ -21,6 +21,9 @@ type ApiServerConfig struct {
 	CorsAllowedDomains []string `yaml:"corsAllowedDomains" envconfig:"kuma_api_server_cors_allowed_domains"`
 }
 
+func (a *ApiServerConfig) Sanitize() {
+}
+
 func (a *ApiServerConfig) Validate() error {
 	if a.Port < 0 {
 		return errors.New("Port cannot be negative")

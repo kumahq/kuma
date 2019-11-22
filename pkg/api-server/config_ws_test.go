@@ -2,14 +2,13 @@ package api_server_test
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/pkg/config"
 	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 var _ = Describe("Config WS", func() {
@@ -28,15 +27,16 @@ var _ = Describe("Config WS", func() {
 			err := apiServer.Start(stop)
 			Expect(err).ToNot(HaveOccurred())
 		}()
+		port := strings.Split(apiServer.Address(), ":")[1]
 
 		// wait for the server
 		Eventually(func() error {
-			_, err := http.Get(fmt.Sprintf("http://localhost%s/config", apiServer.Address()))
+			_, err := http.Get(fmt.Sprintf("http://localhost:%s/config", port))
 			return err
 		}, "3s").ShouldNot(HaveOccurred())
 
 		// when
-		resp, err := http.Get(fmt.Sprintf("http://localhost%s/config", apiServer.Address()))
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%s/config", port))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -44,12 +44,94 @@ var _ = Describe("Config WS", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		expectedConfig := kuma_cp.DefaultConfig()
-		expectedConfig.ApiServer = cfg
-		cfgJson, err := config.ConfigForDisplayJSON(&expectedConfig)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		Expect(cfgJson).To(MatchJSON(body))
+		json := fmt.Sprintf(`
+        {
+          "apiServer": {
+            "corsAllowedDomains": [
+              ".*"
+            ],
+            "port": %s,
+            "readOnly": false
+          },
+          "bootstrapServer": {
+            "params": {
+              "adminAccessLogPath": "/dev/null",
+              "adminAddress": "127.0.0.1",
+              "adminPort": 0,
+              "xdsConnectTimeout": "1s",
+              "xdsHost": "",
+              "xdsPort": 0
+            },
+            "port": 5682
+          },
+          "dataplaneTokenServer": {
+            "enabled": true,
+            "local": {
+              "port": 5679
+            },
+            "public": {
+              "clientCertsDir": "",
+              "enabled": false,
+              "interface": "",
+              "port": 0,
+              "tlsCertFile": "",
+              "tlsKeyFile": ""
+            }
+          },
+          "defaults": {
+            "mesh": "type: Mesh\nname: default\nmtls:\n  ca: {}\n  enabled: false\n"
+          },
+          "discovery": {
+            "universal": {
+              "pollingInterval": "1s"
+            }
+          },
+          "environment": "universal",
+          "general": {
+            "advertisedHostname": "localhost"
+          },
+          "guiServer": {
+            "port": 5683
+          },
+          "reports": {
+            "enabled": true
+          },
+          "runtime": {
+            "kubernetes": {
+              "admissionServer": {
+                "address": "",
+                "certDir": "",
+                "port": 5443
+              }
+            }
+          },
+          "sdsServer": {
+            "grpcPort": 5677,
+            "tlsCertFile": "",
+            "tlsKeyFile": ""
+          },
+          "store": {
+            "kubernetes": {
+              "systemNamespace": "kuma-system"
+            },
+            "postgres": {
+              "connectionTimeout": 5,
+              "dbName": "kuma",
+              "host": "127.0.0.1",
+              "password": "*****",
+              "port": 15432,
+              "user": "kuma"
+            },
+            "type": "memory"
+          },
+          "xdsServer": {
+            "dataplaneConfigurationRefreshInterval": "1s",
+            "dataplaneStatusFlushInterval": "1s",
+            "diagnosticsPort": 5680,
+            "grpcPort": 5678
+          }
+        }
+		`, port)
+		Expect(json).To(MatchJSON(body))
 	})
 })
