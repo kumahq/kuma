@@ -18,7 +18,7 @@ func ConfigForDisplay(cfg Config) (Config, error) {
 	return newCfg, nil
 }
 
-func ConfigForDisplayYaml(cfg Config) ([]byte, error) {
+func ConfigForDisplayYAML(cfg Config) ([]byte, error) {
 	cfgForDisplay, err := ConfigForDisplay(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not prepare config for display")
@@ -26,8 +26,8 @@ func ConfigForDisplayYaml(cfg Config) ([]byte, error) {
 	return yaml.Marshal(&cfgForDisplay)
 }
 
-func ConfigForDisplayJson(cfg Config) ([]byte, error) {
-	yamlBytes, err := ConfigForDisplayYaml(cfg)
+func ConfigForDisplayJSON(cfg Config) ([]byte, error) {
+	yamlBytes, err := ConfigForDisplayYAML(cfg)
 	if err != nil {
 		return nil, err
 	}

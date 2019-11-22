@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
-	config "github.com/Kong/kuma/pkg/config/api-server"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	"github.com/Kong/kuma/pkg/config"
+	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/runtime"
@@ -27,16 +27,16 @@ func (a *ApiServer) Address() string {
 	return a.server.Addr
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, config kuma_cp.Config) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
 	container := restful.NewContainer()
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", config.ApiServer.Port),
+		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
 		Handler: container.ServeMux,
 	}
 
 	cors := restful.CrossOriginResourceSharing{
 		ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
-		AllowedDomains: config.ApiServer.CorsAllowedDomains,
+		AllowedDomains: serverConfig.CorsAllowedDomains,
 		Container:      container,
 	}
 
@@ -46,11 +46,11 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addToWs(ws, defs, resManager, config.ApiServer)
+	addToWs(ws, defs, resManager, serverConfig)
 	container.Add(ws)
 	container.Add(indexWs())
-	container.Add(catalogWs(*config.ApiServer.Catalog))
-	configWs, err := configWs(&config)
+	container.Add(catalogWs(*serverConfig.Catalog))
+	configWs, err := configWs(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
@@ -62,7 +62,7 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	}, nil
 }
 
-func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *config.ApiServerConfig) {
+func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
 	overviewWs := overviewWs{
 		resManager: resManager,
 	}
@@ -103,7 +103,8 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 }
 
 func SetupServer(rt runtime.Runtime) error {
-	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config())
+	cfg := rt.Config()
+	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config().ApiServer, &cfg)
 	if err != nil {
 		return err
 	}

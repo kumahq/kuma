@@ -46,7 +46,7 @@ var _ = Describe("Config WS", func() {
 		// when
 		expectedConfig := kuma_cp.DefaultConfig()
 		expectedConfig.ApiServer = cfg
-		cfgJson, err := config.ConfigForDisplayJson(&expectedConfig)
+		cfgJson, err := config.ConfigForDisplayJSON(&expectedConfig)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

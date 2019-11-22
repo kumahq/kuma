@@ -48,12 +48,12 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
 			}
-			cfgBytes, err := config.ConfigForDisplayYaml(&cfg)
+			cfgBytes, err := config.ConfigForDisplayJSON(&cfg)
 			if err != nil {
 				runLog.Error(err, "unable to prepare config for display")
 				return err
 			}
-			runLog.Info(fmt.Sprintf("Current config: \n%s", string(cfgBytes)))
+			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
 			if err := sds_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up SDS server")
 				return err

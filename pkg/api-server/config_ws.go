@@ -2,12 +2,11 @@ package api_server
 
 import (
 	"github.com/Kong/kuma/pkg/config"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/emicklei/go-restful"
 )
 
-func configWs(cfg *kuma_cp.Config) (*restful.WebService, error) {
-	cfgForDisplay, err := config.ConfigForDisplayJson(cfg)
+func configWs(cfg config.Config) (*restful.WebService, error) {
+	cfgForDisplay, err := config.ConfigForDisplayJSON(cfg)
 	if err != nil {
 		return nil, err
 	}
