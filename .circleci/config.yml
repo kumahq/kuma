@@ -458,9 +458,9 @@ jobs:
     - run:
         name: Verify Envoy mTLS stats
         command: make verify/example/minikube/mtls
-    - run:
-        name: Verify kumactl workflow
-        command: make kumactl/example/minikube
+#    - run:
+#        name: Verify kumactl workflow
+#        command: make kumactl/example/minikube
 
   release:
     executor: golang
