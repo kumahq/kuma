@@ -4,6 +4,7 @@ webHookServer:
   certDir:
 injector:
   controlPlane:
+    namespace:
     apiServer:
       url: api-server
   sidecarContainer:

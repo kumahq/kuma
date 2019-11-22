@@ -24,9 +24,9 @@ var (
 )
 
 func PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane, serviceGetter kube_client.Reader) error {
+	others []*mesh_k8s.Dataplane, serviceGetter kube_client.Reader, systemNamespace string) error {
 	// pick a Mesh
-	dataplane.Mesh = MeshFor(pod)
+	dataplane.Mesh = MeshFor(pod, systemNamespace)
 
 	// auto-generate Dataplane definition
 	dataplaneProto, err := DataplaneFor(pod, services, others, serviceGetter)
@@ -41,8 +41,8 @@ func PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services 
 	return nil
 }
 
-func MeshFor(pod *kube_core.Pod) string {
-	return injector_metadata.GetMesh(pod)
+func MeshFor(pod *kube_core.Pod, systemNamespace string) string {
+	return injector_metadata.GetMesh(pod, systemNamespace)
 }
 
 func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane, serviceGetter kube_client.Reader) (*mesh_proto.Dataplane, error) {

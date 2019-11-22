@@ -28,8 +28,9 @@ import (
 // PodReconciler reconciles a Pod object
 type PodReconciler struct {
 	kube_client.Client
-	Scheme *kube_runtime.Scheme
-	Log    logr.Logger
+	Scheme          *kube_runtime.Scheme
+	Log             logr.Logger
+	SystemNamespace string
 }
 
 func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -104,7 +105,7 @@ func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dat
 	}
 
 	// only consider Dataplanes in the same Mesh as Pod
-	mesh := MeshFor(pod)
+	mesh := MeshFor(pod, r.SystemNamespace)
 	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
 	for i := range allDataplanes.Items {
 		dataplane := allDataplanes.Items[i]
@@ -126,7 +127,7 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := PodToDataplane(dataplane, pod, services, others, r.Client); err != nil {
+		if err := PodToDataplane(dataplane, pod, services, others, r.Client, r.SystemNamespace); err != nil {
 			return errors.Wrap(err, "unable to convert Pod to Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {

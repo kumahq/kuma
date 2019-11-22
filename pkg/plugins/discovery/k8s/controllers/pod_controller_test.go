@@ -104,9 +104,10 @@ var _ = Describe("PodReconciler", func() {
 			})
 
 		reconciler = &PodReconciler{
-			Client: kubeClient,
-			Scheme: k8sClientScheme,
-			Log:    core.Log.WithName("test"),
+			Client:          kubeClient,
+			Scheme:          k8sClientScheme,
+			Log:             core.Log.WithName("test"),
+			SystemNamespace: "kuma-system",
 		}
 	})
 

@@ -9,20 +9,21 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func NewDiscoverySource(mgr kube_ctrl.Manager) (core_discovery.DiscoverySource, error) {
+func NewDiscoverySource(mgr kube_ctrl.Manager, systemNamespace string) (core_discovery.DiscoverySource, error) {
 	// convert Pods into Dataplanes
-	if err := addPodReconciler(mgr); err != nil {
+	if err := addPodReconciler(mgr, systemNamespace); err != nil {
 		return nil, err
 	}
 	// discover Dataplanes
 	return addDataplaneReconciler(mgr)
 }
 
-func addPodReconciler(mgr kube_ctrl.Manager) error {
+func addPodReconciler(mgr kube_ctrl.Manager, systemNamespace string) error {
 	reconciler := &controllers.PodReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		Log:    core.Log.WithName("controllers").WithName("Pod"),
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		Log:             core.Log.WithName("controllers").WithName("Pod"),
+		SystemNamespace: systemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr)
 }

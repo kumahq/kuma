@@ -21,5 +21,5 @@ func (p *plugin) NewDiscoverySource(pc core_plugins.PluginContext, _ core_plugin
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
-	return NewDiscoverySource(mgr)
+	return NewDiscoverySource(mgr, pc.Config().Store.Kubernetes.SystemNamespace)
 }

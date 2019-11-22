@@ -1,4 +1,5 @@
 controlPlane:
+  namespace: kuma-system
   apiServer:
     url: http://kuma-control-plane.kuma-system:5681
 sidecarContainer:

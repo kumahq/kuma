@@ -4,6 +4,7 @@ webHookServer:
   certDir: /var/secret/kuma-injector
 injector:
   controlPlane:
+    namespace: kuma-system
     apiServer:
       url: https://api-server:8765
   sidecarContainer:

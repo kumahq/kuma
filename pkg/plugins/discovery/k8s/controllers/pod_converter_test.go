@@ -84,7 +84,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = PodToDataplane(dataplane, given.pod, given.services, others, given.serviceGetter)
+			err = PodToDataplane(dataplane, given.pod, given.services, others, given.serviceGetter, "kuma-test")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -99,7 +99,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:      pod,
 			services: nil,
 			expected: `
-            mesh: default.kuma-system
+            mesh: default.kuma-test
             metadata:
               creationTimestamp: null
             spec:
@@ -149,7 +149,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				},
 			},
 			expected: `
-            mesh: default.kuma-system
+            mesh: default.kuma-test
             metadata:
               creationTimestamp: null
             spec:
@@ -213,7 +213,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				},
 			},
 			expected: `
-            mesh: default.kuma-system
+            mesh: default.kuma-test
             metadata:
               creationTimestamp: null
             spec:
@@ -266,7 +266,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			others: []string{`
             apiVersion: kuma.io/v1alpha1
             kind: Dataplane
-            mesh: default.kuma-system
+            mesh: default.kuma-test
             metadata:
               name: test-app-8646b8bbc8-5qbl2
               namespace: playground
@@ -314,7 +314,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 `,
 			},
 			expected: `
-            mesh: default.kuma-system
+            mesh: default.kuma-test
             metadata:
               creationTimestamp: null
             spec:
@@ -352,17 +352,17 @@ var _ = Describe("MeshFor(..)", func() {
 			}
 
 			// then
-			Expect(MeshFor(pod)).To(Equal(given.expected))
+			Expect(MeshFor(pod, "kuma-test")).To(Equal(given.expected))
 		},
 		Entry("Pod without annotations", testCase{
 			podAnnotations: nil,
-			expected:       "default.kuma-system",
+			expected:       "default.kuma-test",
 		}),
 		Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
 			podAnnotations: map[string]string{
 				"kuma.io/mesh": "",
 			},
-			expected: "default.kuma-system",
+			expected: "default.kuma-test",
 		}),
 		Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
 			podAnnotations: map[string]string{

@@ -54,7 +54,7 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 }
 
 func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Container {
-	mesh := metadata.GetMesh(pod) // either user-defined value or default
+	mesh := metadata.GetMesh(pod, i.cfg.ControlPlane.Namespace) // either user-defined value or default
 	return kube_core.Container{
 		Name:            KumaSidecarContainerName,
 		Image:           i.cfg.SidecarContainer.Image,
@@ -235,7 +235,7 @@ func (i *KumaInjector) NewInitContainer() kube_core.Container {
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod) map[string]string {
 	return map[string]string{
-		metadata.KumaMeshAnnotation:                    metadata.GetMesh(pod), // either user-defined value or default
+		metadata.KumaMeshAnnotation:                    metadata.GetMesh(pod, i.cfg.ControlPlane.Namespace), // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:         metadata.KumaSidecarInjected,
 		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
 		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),

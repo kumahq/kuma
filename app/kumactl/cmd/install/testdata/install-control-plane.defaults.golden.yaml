@@ -3143,6 +3143,8 @@ spec:
           value: /var/run/secrets/kuma.io/kuma-injector/tls-cert
         - name: KUMA_INJECTOR_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
           value: http://kuma-control-plane.kuma-system:5682
+        - name: KUMA_INJECTOR_CONTROL_PLANE_NAMESPACE
+          value: kuma-system
         - name: KUMA_INJECTOR_CONTROL_PLANE_API_SERVER_URL
           value: http://kuma-control-plane.kuma-system:5681
         - name: KUMA_INJECTOR_SIDECAR_CONTAINER_IMAGE

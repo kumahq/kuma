@@ -9,11 +9,11 @@ import (
 	kube_core "k8s.io/api/core/v1"
 )
 
-func GetMesh(pod *kube_core.Pod) string {
+func GetMesh(pod *kube_core.Pod, namespace string) string {
 	if mesh := pod.Annotations[KumaMeshAnnotation]; mesh != "" {
 		return mesh
 	}
-	return fmt.Sprintf("%s.%s", core_model.DefaultMesh, "kuma-system") // todo drop the hardcode
+	return fmt.Sprintf("%s.%s", core_model.DefaultMesh, namespace)
 }
 
 func HasKumaSidecar(pod *kube_core.Pod) bool {
