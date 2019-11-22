@@ -133,14 +133,15 @@ func ExecuteStoreTests(
 	Describe("Delete()", func() {
 		It("should throw an error if resource is not found", func() {
 			// given
+			name := "non-existent-name.demo"
 			resource := sample_model.TrafficRouteResource{}
 
 			// when
-			err := s.Delete(context.TODO(), &resource, store.DeleteByKey("non-existent-name.demo", mesh))
+			err := s.Delete(context.TODO(), &resource, store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), namespace, "non-existent-name", mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
 		})
 
 		It("should not delete resource from another mesh", func() {

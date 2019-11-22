@@ -319,11 +319,11 @@ var _ = Describe("KubernetesStore", func() {
 			resource := sample_core.TrafficRouteResource{}
 
 			// when
-			err := s.Delete(context.Background(), &resource, store.DeleteByKey(name, mesh))
+			err := s.Delete(context.Background(), &resource, store.DeleteByKey(coreName, mesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), coreName, mesh)))
 		})
 
 		It("should delete an existing resource", func() {
