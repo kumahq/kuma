@@ -73,7 +73,7 @@ var _ = Describe("Components", func() {
 			typ := ""
 			req := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
-					Id: "pilot.example",
+					Id: "pilot;example",
 				},
 			}
 

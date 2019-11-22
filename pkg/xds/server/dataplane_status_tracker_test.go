@@ -184,7 +184,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			// when
 			discoveryRequest := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
-					Id: "default.example-001",
+					Id: "default;example-001",
 				},
 				TypeUrl: given.TypeUrl,
 			}

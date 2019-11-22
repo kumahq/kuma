@@ -99,7 +99,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:      pod,
 			services: nil,
 			expected: `
-            mesh: default
+            mesh: default.kuma-system
             metadata:
               creationTimestamp: null
             spec:
@@ -149,7 +149,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				},
 			},
 			expected: `
-            mesh: default
+            mesh: default.kuma-system
             metadata:
               creationTimestamp: null
             spec:
@@ -213,7 +213,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				},
 			},
 			expected: `
-            mesh: default
+            mesh: default.kuma-system
             metadata:
               creationTimestamp: null
             spec:
@@ -266,7 +266,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			others: []string{`
             apiVersion: kuma.io/v1alpha1
             kind: Dataplane
-            mesh: default
+            mesh: default.kuma-system
             metadata:
               name: test-app-8646b8bbc8-5qbl2
               namespace: playground
@@ -314,7 +314,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 `,
 			},
 			expected: `
-            mesh: default
+            mesh: default.kuma-system
             metadata:
               creationTimestamp: null
             spec:
@@ -356,13 +356,13 @@ var _ = Describe("MeshFor(..)", func() {
 		},
 		Entry("Pod without annotations", testCase{
 			podAnnotations: nil,
-			expected:       "default",
+			expected:       "default.kuma-system",
 		}),
 		Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
 			podAnnotations: map[string]string{
 				"kuma.io/mesh": "",
 			},
-			expected: "default",
+			expected: "default.kuma-system",
 		}),
 		Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
 			podAnnotations: map[string]string{

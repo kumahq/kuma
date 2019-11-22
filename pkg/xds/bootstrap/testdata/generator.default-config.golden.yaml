@@ -16,7 +16,7 @@ dynamicResources:
     ads: {}
 node:
   cluster: backend
-  id: mesh.name.namespace
+  id: mesh;name.namespace
   metadata:
     dataplaneTokenPath: /tmp/token
 staticResources:

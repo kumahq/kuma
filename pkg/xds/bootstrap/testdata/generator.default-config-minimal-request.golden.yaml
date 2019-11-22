@@ -10,7 +10,7 @@ dynamicResources:
     ads: {}
 node:
   cluster: backend
-  id: mesh.name.namespace
+  id: mesh;name.namespace
 staticResources:
   clusters:
     - connectTimeout: 1s
