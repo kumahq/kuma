@@ -18,6 +18,13 @@ func newGetTrafficRoutesCmd(pctx *getContext) *cobra.Command {
 		Use:   "traffic-routes",
 		Short: "Show TrafficRoutes",
 		Long:  `Show TrafficRoutes.`,
+		Example: `
+		# Get all traffic routes name
+		kumactl get traffic-routes -ojson | jq '.items[].name'
+		
+		# Get traffic routes for a specific service Mesh
+		kumactl get traffic-routes -ojson | jq '.items[] | select(.mesh == "my-service-mesh")'
+		`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {

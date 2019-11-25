@@ -340,6 +340,15 @@ Show Meshes.
 Usage:
   kumactl get meshes [flags]
 
+Examples:
+# Get all service meshes
+		kumactl get meshes
+
+		# Get service meshes using mtls
+		kumactl get meshes -ojson | jq '.items[] | select(.mtls.enabled == true) | .name
+
+		
+
 Flags:
   -h, --help   help for meshes
 
@@ -375,6 +384,14 @@ Show ProxyTemplates.
 
 Usage:
   kumactl get proxytemplates [flags]
+
+Examples:
+# Get all proxy template
+		kumactl get proxytemplates
+		
+		# Get all proxy templae of specific Mesh
+		kumactl get proxytemplate -ojson | jq '.items[] | select(.mesh == "my-service-mesh" | .name)'
+		
 
 Flags:
   -h, --help   help for proxytemplates
@@ -435,6 +452,15 @@ Show TrafficRoutes.
 
 Usage:
   kumactl get traffic-routes [flags]
+
+Examples:
+
+		# Get all traffic routes name
+		kumactl get traffic-routes -ojson | jq '.items[].name'
+		
+		# Get traffic routes for a specific service Mesh
+		kumactl get traffic-routes -ojson | jq '.items[] | select(.mesh == "my-service-mesh")'
+		
 
 Flags:
   -h, --help   help for traffic-routes

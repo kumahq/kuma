@@ -19,6 +19,13 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 		Use:   "meshes",
 		Short: "Show Meshes",
 		Long:  `Show Meshes.`,
+		Example: `# Get all service meshes
+		kumactl get meshes
+
+		# Get service meshes using mtls
+		kumactl get meshes -ojson | jq '.items[] | select(.mtls.enabled == true) | .name
+
+		`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {

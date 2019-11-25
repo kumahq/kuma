@@ -18,6 +18,12 @@ func newGetProxyTemplatesCmd(pctx *getContext) *cobra.Command {
 		Use:   "proxytemplates",
 		Short: "Show ProxyTemplates",
 		Long:  `Show ProxyTemplates.`,
+		Example: `# Get all proxy template
+		kumactl get proxytemplates
+		
+		# Get all proxy templae of specific Mesh
+		kumactl get proxytemplate -ojson | jq '.items[] | select(.mesh == "my-service-mesh" | .name)'
+		`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
