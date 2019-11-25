@@ -20,6 +20,8 @@ func NewGenerateDataplaneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		Use:   "dataplane-token",
 		Short: "Generate Dataplane Token",
 		Long:  `Generate Dataplane Token that is used to prove Dataplane identity.`,
+		Example: `Generate the token for a dataplane of a mesh:
+		kumactl generate dataplane-token --dataplane=my-dataplane --mesh=my-mesh`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentDataplaneTokenClient()
 			if err != nil {
