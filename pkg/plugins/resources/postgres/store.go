@@ -160,7 +160,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 func (r *postgresResourceStore) List(_ context.Context, resources model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, namespace, mesh, spec, version FROM resources WHERE type=$1`
+	statement := `SELECT name, mesh, spec, version FROM resources WHERE type=$1`
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
