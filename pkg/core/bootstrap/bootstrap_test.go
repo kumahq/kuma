@@ -61,7 +61,7 @@ var _ = Describe("Bootstrap", func() {
 		template := runtime.Config().Defaults.MeshProto()
 
 		// when
-		Expect(mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), core_model.DefaultMesh, template)).To(Succeed())
+		Expect(mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), template)).To(Succeed())
 
 		// then mesh exists
 		getOpts := core_store.GetByKey(core_model.DefaultMesh, core_model.DefaultMesh)
@@ -69,7 +69,7 @@ var _ = Describe("Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when createDefaultMesh is called once mesh already exist
-		err = mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), core_model.DefaultMesh, template)
+		err = mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), template)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

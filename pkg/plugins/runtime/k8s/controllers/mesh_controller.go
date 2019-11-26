@@ -12,7 +12,6 @@ import (
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -42,10 +41,9 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 
 	// Fetch the Mesh instance
 	mesh := &mesh_k8s.Mesh{}
-	coreName := util_k8s.K8sNamespacedNameToCoreName(req.Name, req.Namespace)
 	if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(coreName, coreName))
+			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Name, req.Name))
 			return kube_ctrl.Result{}, err
 		}
 		log.Error(err, "unable to fetch Mesh")
@@ -62,12 +60,12 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 		return kube_ctrl.Result{}, nil
 	}
 
-	if err := r.BuiltinCaManager.Ensure(ctx, meshResource.Meta.GetName()); err != nil {
+	if err := r.BuiltinCaManager.Ensure(ctx, mesh.Name); err != nil {
 		log.Error(err, "unable to create Builtin CA")
 		return kube_ctrl.Result{}, err
 	}
 
-	secretName := kube_types.NamespacedName{Namespace: r.SystemNamespace, Name: r.BuiltinCaManager.GetSecretName(coreName)}
+	secretName := kube_types.NamespacedName{Namespace: r.SystemNamespace, Name: r.BuiltinCaManager.GetSecretName(mesh.Name)}
 
 	log = log.WithValues("secret", secretName)
 

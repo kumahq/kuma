@@ -10,8 +10,6 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -52,11 +50,10 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 
 	// Fetch default Mesh instance
 	mesh := &mesh_k8s.Mesh{}
-	name := kube_types.NamespacedName{Namespace: r.SystemNamespace, Name: core_model.DefaultMesh}
+	name := kube_types.NamespacedName{Namespace: "", Name: core_model.DefaultMesh}
 	if err := r.Get(ctx, name, mesh); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			coreMeshName := util_k8s.K8sNamespacedNameToCoreName(core_model.DefaultMesh, r.SystemNamespace)
-			err := mesh_managers.CreateDefaultMesh(r.ResourceManager, coreMeshName, r.DefaultMeshTemplate)
+			err := mesh_managers.CreateDefaultMesh(r.ResourceManager, r.DefaultMeshTemplate)
 			if err != nil {
 				log.Error(err, "unable to create default Mesh")
 			}
