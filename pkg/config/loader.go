@@ -2,10 +2,10 @@ package config
 
 import (
 	"github.com/Kong/kuma/pkg/core"
-	//"github.com/ghodss/yaml"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2" // todo(jakubdyszkiewicz) switch to "github.com/ghodss/yaml" when solved problems with loading xdsServer
+	// we use gopkg.in/yaml.v2 because it supports time.Duration
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 )

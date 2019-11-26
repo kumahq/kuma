@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	"github.com/Kong/kuma/pkg/config"
@@ -47,6 +48,17 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
 			}
+			cfgForDisplay, err := config.ConfigForDisplay(&cfg)
+			if err != nil {
+				runLog.Error(err, "unable to prepare config for display")
+				return err
+			}
+			cfgBytes, err := config.ToJson(cfgForDisplay)
+			if err != nil {
+				runLog.Error(err, "unable to convert config to json")
+				return err
+			}
+			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
 			if err := sds_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up SDS server")
 				return err

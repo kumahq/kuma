@@ -18,6 +18,10 @@ type BootstrapServerConfig struct {
 	Params *BootstrapParamsConfig `yaml:"params"`
 }
 
+func (b *BootstrapServerConfig) Sanitize() {
+	b.Params.Sanitize()
+}
+
 func (b *BootstrapServerConfig) Validate() error {
 	if b.Port > 65535 {
 		return errors.New("Port must be in the range [0, 65535]")
@@ -50,6 +54,9 @@ type BootstrapParamsConfig struct {
 	XdsPort uint32 `yaml:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
 	XdsConnectTimeout time.Duration `yaml:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
+}
+
+func (b *BootstrapParamsConfig) Sanitize() {
 }
 
 func (b *BootstrapParamsConfig) Validate() error {
