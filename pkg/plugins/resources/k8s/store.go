@@ -158,7 +158,7 @@ var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 
 type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
-	Mesh string
+	Mesh  string
 	Scope k8s_model.Scope
 }
 

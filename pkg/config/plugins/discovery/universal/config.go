@@ -13,6 +13,9 @@ type UniversalDiscoveryConfig struct {
 	PollingInterval time.Duration `yaml:"pollingInterval" envconfig:"kuma_discovery_universal_polling_interval"`
 }
 
+func (u UniversalDiscoveryConfig) Sanitize() {
+}
+
 func (u UniversalDiscoveryConfig) Validate() error {
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	"github.com/Kong/kuma/pkg/api-server/definitions"
 	config_api_server "github.com/Kong/kuma/pkg/config/api-server"
+	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/test"
@@ -105,5 +106,9 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	config.Port = port
 	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
 	resources := manager.NewResourceManager(store)
-	return api_server.NewApiServer(resources, defs, config)
+	cfg := kuma_cp.DefaultConfig()
+	cfg.ApiServer = config
+	apiServer, err := api_server.NewApiServer(resources, defs, cfg.ApiServer, &cfg)
+	Expect(err).ToNot(HaveOccurred())
+	return apiServer
 }

@@ -8,11 +8,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"

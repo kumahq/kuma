@@ -36,6 +36,11 @@ func DefaultStoreConfig() *StoreConfig {
 	}
 }
 
+func (s *StoreConfig) Sanitize() {
+	s.Kubernetes.Sanitize()
+	s.Postgres.Sanitize()
+}
+
 func (s *StoreConfig) Validate() error {
 	switch s.Type {
 	case PostgresStore:

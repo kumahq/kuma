@@ -447,7 +447,7 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(actual.Spec).To(Equal(mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					Enabled: false,
-					Ca:  &mesh_proto.CertificateAuthority{
+					Ca: &mesh_proto.CertificateAuthority{
 						Type: &mesh_proto.CertificateAuthority_Builtin_{
 							Builtin: &mesh_proto.CertificateAuthority_Builtin{},
 						},

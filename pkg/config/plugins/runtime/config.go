@@ -19,6 +19,10 @@ type RuntimeConfig struct {
 	Kubernetes *k8s.KubernetesRuntimeConfig `yaml:"kubernetes"`
 }
 
+func (c *RuntimeConfig) Sanitize() {
+	c.Kubernetes.Sanitize()
+}
+
 func (c *RuntimeConfig) Validate(env core.EnvironmentType) error {
 	switch env {
 	case core.KubernetesEnvironment:

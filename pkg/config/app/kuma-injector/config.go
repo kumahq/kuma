@@ -88,6 +88,9 @@ type WebHookServer struct {
 	CertDir string `yaml:"certDir,omitempty" envconfig:"kuma_injector_webhook_server_cert_dir"`
 }
 
+func (s *WebHookServer) Sanitize() {
+}
+
 // Injector defines configuration of a Kuma Sidecar Injector.
 type Injector struct {
 	// ControlPlane defines coordinates of the Kuma Control Plane.
@@ -190,6 +193,11 @@ type InitContainer struct {
 
 var _ config.Config = &Config{}
 
+func (c *Config) Sanitize() {
+	c.Injector.Sanitize()
+	c.WebHookServer.Sanitize()
+}
+
 func (c *Config) Validate() (errs error) {
 	if err := c.WebHookServer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".WebHookServer is not valid"))
@@ -217,6 +225,12 @@ func (s *WebHookServer) Validate() (errs error) {
 
 var _ config.Config = &Injector{}
 
+func (i *Injector) Sanitize() {
+	i.ControlPlane.Sanitize()
+	i.InitContainer.Sanitize()
+	i.SidecarContainer.Sanitize()
+}
+
 func (i *Injector) Validate() (errs error) {
 	if err := i.ControlPlane.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ControlPlane is not valid"))
@@ -232,6 +246,10 @@ func (i *Injector) Validate() (errs error) {
 
 var _ config.Config = &ControlPlane{}
 
+func (c *ControlPlane) Sanitize() {
+	c.ApiServer.Sanitize()
+}
+
 func (c *ControlPlane) Validate() (errs error) {
 	if err := c.ApiServer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ApiServer is not valid"))
@@ -240,6 +258,9 @@ func (c *ControlPlane) Validate() (errs error) {
 }
 
 var _ config.Config = &ApiServer{}
+
+func (s *ApiServer) Sanitize() {
+}
 
 func (s *ApiServer) Validate() (errs error) {
 	if s.URL == "" {
@@ -254,6 +275,12 @@ func (s *ApiServer) Validate() (errs error) {
 }
 
 var _ config.Config = &SidecarContainer{}
+
+func (c *SidecarContainer) Sanitize() {
+	c.Resources.Sanitize()
+	c.LivenessProbe.Sanitize()
+	c.ReadinessProbe.Sanitize()
+}
 
 func (c *SidecarContainer) Validate() (errs error) {
 	if c.Image == "" {
@@ -282,6 +309,9 @@ func (c *SidecarContainer) Validate() (errs error) {
 
 var _ config.Config = &InitContainer{}
 
+func (c *InitContainer) Sanitize() {
+}
+
 func (c *InitContainer) Validate() (errs error) {
 	if c.Image == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
@@ -290,6 +320,9 @@ func (c *InitContainer) Validate() (errs error) {
 }
 
 var _ config.Config = &SidecarReadinessProbe{}
+
+func (c *SidecarReadinessProbe) Sanitize() {
+}
 
 func (c *SidecarReadinessProbe) Validate() (errs error) {
 	if c.InitialDelaySeconds < 1 {
@@ -312,6 +345,9 @@ func (c *SidecarReadinessProbe) Validate() (errs error) {
 
 var _ config.Config = &SidecarLivenessProbe{}
 
+func (c *SidecarLivenessProbe) Sanitize() {
+}
+
 func (c *SidecarLivenessProbe) Validate() (errs error) {
 	if c.InitialDelaySeconds < 1 {
 		errs = multierr.Append(errs, errors.Errorf(".InitialDelaySeconds must be >= 1"))
@@ -329,6 +365,14 @@ func (c *SidecarLivenessProbe) Validate() (errs error) {
 }
 
 var _ config.Config = &SidecarResources{}
+
+func (c *SidecarResources) Sanitize() {
+	c.Limits.Sanitize()
+	c.Requests.Sanitize()
+}
+
+func (c *SidecarResourceRequests) Sanitize() {
+}
 
 func (c *SidecarResources) Validate() (errs error) {
 	if err := c.Requests.Validate(); err != nil {
@@ -353,6 +397,9 @@ func (c *SidecarResourceRequests) Validate() (errs error) {
 }
 
 var _ config.Config = &SidecarResourceLimits{}
+
+func (c *SidecarResourceLimits) Sanitize() {
+}
 
 func (c *SidecarResourceLimits) Validate() (errs error) {
 	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
