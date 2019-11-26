@@ -17,7 +17,13 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "delete TYPE NAME",
 		Short: "Delete Kuma resources",
 		Long:  `Delete Kuma resources.`,
-		Args:  cobra.ExactArgs(2),
+		Example: `1. Delete a Mesh:
+:$ kumactl delete mesh my-mesh 
+deleted mesh "my-mesh"
+
+Those resource types can be used: mesh, dataplane, proxytemplate, traffic-log, traffic-permission and traffic-route.
+		`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {

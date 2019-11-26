@@ -84,6 +84,31 @@ Show kumactl config.
 Usage:
   kumactl config view [flags]
 
+Examples:
+:$ kumactl config view
+control_planes:
+    - name: my-first-cp
+        coordinates:
+            api_server:
+            url: https://cp1.internal:5681
+    - name: my-second-cp
+        coordinates:
+            api_server:
+            url: https://cp1.internal:5681
+		
+contexts:
+    - name: stage1
+        control_plane: my-first-cp
+        defaults:
+            mesh: pilot
+    - name: stage2
+        control_plane: test2
+        defaults:
+            mesh: default
+
+current_context: stage1
+		
+
 Flags:
   -h, --help   help for view
 
@@ -182,6 +207,22 @@ Switch active Control Plane.
 
 Usage:
   kumactl config control-planes switch [flags]
+
+Examples:
+If you have in your deployment configuration several contexts, for example:
+contexts:
+    - name: ctx1
+        control_plane: cp1
+        defaults:
+           mesh: pilot
+    - name: ctx2
+        control_plane: cp2
+        defaults:
+        mesh: default
+
+:$ kumactl config control-planes switch ctx2
+switched active Control Plate to "ctx2"
+
 
 Flags:
   -h, --help          help for switch
@@ -485,6 +526,14 @@ Delete Kuma resources.
 
 Usage:
   kumactl delete TYPE NAME [flags]
+
+Examples:
+1. Delete a Mesh:
+:$ kumactl delete mesh my-mesh 
+deleted mesh "my-mesh"
+
+Those resource types can be used: mesh, dataplane, proxytemplate, traffic-log, traffic-permission and traffic-route.
+		
 
 Flags:
   -h, --help   help for delete

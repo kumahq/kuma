@@ -15,6 +15,20 @@ func newConfigControlPlanesSwitchCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 		Use:   "switch",
 		Short: "Switch active Control Plane",
 		Long:  `Switch active Control Plane.`,
+		Example: `If you have in your deployment configuration several contexts, for example:
+contexts:
+    - name: ctx1
+        control_plane: cp1
+        defaults:
+           mesh: pilot
+    - name: ctx2
+        control_plane: cp2
+        defaults:
+        mesh: default
+
+:$ kumactl config control-planes switch ctx2
+switched active Control Plate to "ctx2"
+`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := pctx.Config()
 			if !cfg.SwitchContext(args.name) {
