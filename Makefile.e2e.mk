@@ -3,6 +3,7 @@
 		wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
 		verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
 		build/example/minikube load/example/minikube deploy/example/minikube wait/example/minikube apply/example/minikube/mtls wait/example/minikube/mtls curl/example/minikube stats/example/minikube \
+		deploy/example/traffic-routing/minikube \
 		verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
 		verify/example/minikube/mtls/outbound verify/example/minikube/mtls
 
@@ -165,6 +166,15 @@ deploy/example/minikube: ## Minikube: Deploy example setup
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-client
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-client
+
+deploy/example/traffic-routing/minikube: ## Minikube: Deploy example setup for TrafficRoute
+	kubectl apply -f tools/e2e/examples/minikube/kuma-routing/
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-example deployment/kuma-example-web
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-example pods -l app=kuma-example-web
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-example deployment/kuma-example-backend-v1
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-example pods -l app=kuma-example-backend,version=v1
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-example deployment/kuma-example-backend-v2
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-example pods -l app=kuma-example-backend,version=v2
 
 apply/example/minikube/mtls: ## Minikube: enable mTLS
 	kubectl apply -f tools/e2e/examples/minikube/policies/mtls.yaml
