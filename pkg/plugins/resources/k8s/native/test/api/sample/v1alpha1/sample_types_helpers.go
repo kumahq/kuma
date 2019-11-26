@@ -29,6 +29,10 @@ func (pt *SampleTrafficRoute) SetSpec(spec map[string]interface{}) {
 	pt.Spec = spec
 }
 
+func (pt *SampleTrafficRoute) Scope() model.Scope {
+	return model.ScopeNamespace
+}
+
 func (l *SampleTrafficRouteList) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {

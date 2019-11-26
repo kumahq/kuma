@@ -31,6 +31,10 @@ func (pt *ProxyTemplate) SetSpec(spec map[string]interface{}) {
 	pt.Spec = spec
 }
 
+func (l *ProxyTemplate) Scope() model.Scope {
+	return model.ScopeNamespace
+}
+
 func (l *ProxyTemplateList) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {

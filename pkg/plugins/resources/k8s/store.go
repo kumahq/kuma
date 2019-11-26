@@ -35,7 +35,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
-	name, namespace, err := util_k8s.CoreNameToK8sName(opts.Name)
+	name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
 	if err != nil {
 		return err
 	}
@@ -54,6 +54,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	}
 	return nil
 }
+
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...store.UpdateOptionsFunc) error {
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
@@ -83,7 +84,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
-	name, namespace, err := util_k8s.CoreNameToK8sName(opts.Name)
+	name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
 	if err != nil {
 		return err
 	}
@@ -103,7 +104,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
-	name, namespace, err := util_k8s.CoreNameToK8sName(opts.Name)
+	name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
 	if err != nil {
 		return err
 	}
@@ -142,15 +143,34 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	return nil
 }
 
+func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, error) {
+	switch scope {
+	case k8s_model.ScopeCluster:
+		return coreName, "", nil
+	case k8s_model.ScopeNamespace:
+		return util_k8s.CoreNameToK8sName(coreName)
+	default:
+		return "", "", errors.Errorf("unknown scope %s", scope)
+	}
+}
+
 var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 
 type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
 	Mesh string
+	Scope k8s_model.Scope
 }
 
 func (m *KubernetesMetaAdapter) GetName() string {
-	return util_k8s.K8sNamespacedNameToCoreName(m.ObjectMeta.Name, m.ObjectMeta.Namespace)
+	switch m.Scope {
+	case k8s_model.ScopeCluster:
+		return m.ObjectMeta.Name
+	case k8s_model.ScopeNamespace:
+		return util_k8s.K8sNamespacedNameToCoreName(m.ObjectMeta.Name, m.ObjectMeta.Namespace)
+	default:
+		panic(errors.Errorf("unknown scope %s", m.Scope))
+	}
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {
@@ -228,7 +248,7 @@ func (c *SimpleConverter) ToKubernetesList(rl core_model.ResourceList) (k8s_mode
 }
 
 func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
-	out.SetMeta(&KubernetesMetaAdapter{*obj.GetObjectMeta(), obj.GetMesh()})
+	out.SetMeta(&KubernetesMetaAdapter{*obj.GetObjectMeta(), obj.GetMesh(), obj.Scope()})
 	return util_proto.FromMap(obj.GetSpec(), out.GetSpec())
 }
 

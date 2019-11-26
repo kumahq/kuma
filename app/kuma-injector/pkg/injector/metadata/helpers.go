@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"fmt"
 	"strconv"
 
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -13,7 +12,7 @@ func GetMesh(pod *kube_core.Pod) string {
 	if mesh := pod.Annotations[KumaMeshAnnotation]; mesh != "" {
 		return mesh
 	}
-	return fmt.Sprintf("%s.%s", core_model.DefaultMesh, "kuma-system") // todo drop the hardcode
+	return core_model.DefaultMesh
 }
 
 func HasKumaSidecar(pod *kube_core.Pod) bool {

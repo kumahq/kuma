@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -17,7 +16,7 @@ func (pt *Mesh) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (pt *Mesh) GetMesh() string {
-	return fmt.Sprintf("%s.%s", pt.Name, pt.Namespace)
+	return pt.Name
 }
 
 func (pt *Mesh) SetMesh(mesh string) {
@@ -30,6 +29,10 @@ func (pt *Mesh) GetSpec() map[string]interface{} {
 
 func (pt *Mesh) SetSpec(spec map[string]interface{}) {
 	pt.Spec = spec
+}
+
+func (pt *Mesh) Scope() model.Scope {
+	return model.ScopeCluster
 }
 
 func (l *MeshList) GetItems() []model.KubernetesObject {

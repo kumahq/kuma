@@ -140,7 +140,7 @@ func ExecuteStoreTests(
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), namespace, "non-existent-name", mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), "non-existent-name.demo", mesh)))
 		})
 
 		It("should not delete resource from another mesh", func() {
