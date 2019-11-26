@@ -48,9 +48,14 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
 			}
-			cfgBytes, err := config.ConfigForDisplayJSON(&cfg)
+			cfgForDisplay, err := config.ConfigForDisplay(&cfg)
 			if err != nil {
 				runLog.Error(err, "unable to prepare config for display")
+				return err
+			}
+			cfgBytes, err := config.ToJson(cfgForDisplay)
+			if err != nil {
+				runLog.Error(err, "unable to convert config to json")
 				return err
 			}
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))

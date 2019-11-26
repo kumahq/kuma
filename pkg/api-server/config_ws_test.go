@@ -132,6 +132,6 @@ var _ = Describe("Config WS", func() {
           }
         }
 		`, port)
-		Expect(json).To(MatchJSON(body))
+		Expect(body).To(MatchJSON(json))
 	})
 })
