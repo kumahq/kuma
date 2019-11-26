@@ -12,6 +12,10 @@ type DiscoveryConfig struct {
 	Universal *universal.UniversalDiscoveryConfig `yaml:"universal"`
 }
 
+func (d *DiscoveryConfig) Sanitize() {
+	d.Universal.Sanitize()
+}
+
 func (d *DiscoveryConfig) Validate() error {
 	return errors.Wrap(d.Universal.Validate(), "Discovery validation failed")
 }

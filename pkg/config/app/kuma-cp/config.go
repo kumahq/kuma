@@ -28,6 +28,9 @@ type Defaults struct {
 	Mesh string `yaml:"mesh"`
 }
 
+func (d *Defaults) Sanitize() {
+}
+
 func (d *Defaults) MeshProto() v1alpha1.Mesh {
 	mesh, err := d.parseMesh()
 	util_error.MustNot(err)
@@ -79,6 +82,20 @@ type Config struct {
 	Reports *Reports `yaml:"reports"`
 	// GUI Server Config
 	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer"`
+}
+
+func (c *Config) Sanitize() {
+	c.General.Sanitize()
+	c.Store.Sanitize()
+	c.Discovery.Sanitize()
+	c.BootstrapServer.Sanitize()
+	c.XdsServer.Sanitize()
+	c.SdsServer.Sanitize()
+	c.DataplaneTokenServer.Sanitize()
+	c.ApiServer.Sanitize()
+	c.Runtime.Sanitize()
+	c.Defaults.Sanitize()
+	c.GuiServer.Sanitize()
 }
 
 func DefaultConfig() Config {
@@ -152,6 +169,9 @@ type GeneralConfig struct {
 }
 
 var _ config.Config = &GeneralConfig{}
+
+func (g *GeneralConfig) Sanitize() {
+}
 
 func (g *GeneralConfig) Validate() error {
 	return nil

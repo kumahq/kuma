@@ -25,6 +25,11 @@ type DataplaneTokenServerConfig struct {
 	Public *PublicDataplaneTokenServerConfig `yaml:"public"`
 }
 
+func (i *DataplaneTokenServerConfig) Sanitize() {
+	i.Public.Sanitize()
+	i.Local.Sanitize()
+}
+
 func (i *DataplaneTokenServerConfig) Validate() error {
 	if err := i.Local.Validate(); err != nil {
 		return errors.Wrap(err, "Local validation failed")
@@ -45,6 +50,9 @@ type LocalDataplaneTokenServerConfig struct {
 }
 
 var _ config.Config = &LocalDataplaneTokenServerConfig{}
+
+func (l *LocalDataplaneTokenServerConfig) Sanitize() {
+}
 
 func (l *LocalDataplaneTokenServerConfig) Validate() error {
 	if l.Port > 65535 {
@@ -86,6 +94,9 @@ func DefaultPublicDataplaneTokenServerConfig() *PublicDataplaneTokenServerConfig
 		TlsKeyFile:     "",
 		ClientCertsDir: "",
 	}
+}
+
+func (p *PublicDataplaneTokenServerConfig) Sanitize() {
 }
 
 func (p *PublicDataplaneTokenServerConfig) Validate() error {

@@ -24,6 +24,9 @@ type SdsServerConfig struct {
 
 var _ config.Config = &SdsServerConfig{}
 
+func (c *SdsServerConfig) Sanitize() {
+}
+
 func (c *SdsServerConfig) Validate() error {
 	if c.GrpcPort < 0 {
 		return errors.New("GrpcPort cannot be negative")

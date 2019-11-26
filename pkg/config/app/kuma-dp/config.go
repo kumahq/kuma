@@ -39,6 +39,12 @@ type Config struct {
 	DataplaneRuntime DataplaneRuntime `yaml:"dataplaneRuntime,omitempty"`
 }
 
+func (c *Config) Sanitize() {
+	c.ControlPlane.Sanitize()
+	c.Dataplane.Sanitize()
+	c.DataplaneRuntime.Sanitize()
+}
+
 // ControlPlane defines coordinates of the Control Plane.
 type ControlPlane struct {
 	// ApiServer defines coordinates of the Control Plane API Server
@@ -89,6 +95,10 @@ func (c *Config) Validate() (errs error) {
 
 var _ config.Config = &ControlPlane{}
 
+func (c *ControlPlane) Sanitize() {
+	c.ApiServer.Sanitize()
+}
+
 func (c *ControlPlane) Validate() (errs error) {
 	if err := c.ApiServer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ApiServer is not valid"))
@@ -97,6 +107,9 @@ func (c *ControlPlane) Validate() (errs error) {
 }
 
 var _ config.Config = &Dataplane{}
+
+func (d *Dataplane) Sanitize() {
+}
 
 func (d *Dataplane) Validate() (errs error) {
 	if d.Mesh == "" {
@@ -116,11 +129,19 @@ func (d *Dataplane) Validate() (errs error) {
 
 var _ config.Config = &DataplaneRuntime{}
 
+func (d *DataplaneRuntime) Sanitize() {
+}
+
 func (d *DataplaneRuntime) Validate() (errs error) {
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
 	}
 	return
+}
+
+var _ config.Config = &ApiServer{}
+
+func (d *ApiServer) Sanitize() {
 }
 
 func (d *ApiServer) Validate() (errs error) {
