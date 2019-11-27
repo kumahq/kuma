@@ -112,7 +112,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 			defer func() {
 				config.DefaultApiServerTimeout = currentTimeout
 			}()
-			timeout := config.DefaultApiServerTimeout * 2 // so we are sure we exceed the timeout
+			timeout := config.DefaultApiServerTimeout * 5 // so we are sure we exceed the timeout
 			server, port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
 				time.Sleep(timeout)
 			})
@@ -125,12 +125,12 @@ var _ = Describe("kumactl config control-planes add", func() {
 				"--address", fmt.Sprintf("http://localhost:%d", port)})
 			// when
 			err := rootCmd.Execute()
+
 			// then
-			Expect(err).To(MatchError(fmt.Sprintf(`could not connect to the Control Plane API Server: Get http://localhost:%d: net/http: request canceled (Client.Timeout exceeded while awaiting headers)`, port)))
-			// and
-			Expect(outbuf.String()).To(Equal(fmt.Sprintf(`Error: could not connect to the Control Plane API Server: Get http://localhost:%d: net/http: request canceled (Client.Timeout exceeded while awaiting headers)
-`, port)))
-			// and
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Client.Timeout exceeded"))
+			Expect(outbuf.String()).To(ContainSubstring(`Error: could not connect to the Control Plane API Server`))
+			Expect(outbuf.String()).To(ContainSubstring(`Client.Timeout exceeded`))
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
