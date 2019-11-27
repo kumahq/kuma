@@ -21,6 +21,11 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		Use:   "add",
 		Short: "Add a Control Plane",
 		Long:  `Add a Control Plane.`,
+		Example: `
+		Add a new control plane
+$: kumactl config control-planes add --name my-new --address my-new-cp.my-domain.com --dataplane-token-client-cert 'path/to/cert.pem' --dataplane-token-client-key 'path/to/key.pem'
+added Control Plane "my-new"
+switch active Control Plane to "my-new"`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cp := &config_proto.ControlPlane{
 				Name: args.name,

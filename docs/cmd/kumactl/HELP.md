@@ -168,6 +168,13 @@ Add a Control Plane.
 Usage:
   kumactl config control-planes add [flags]
 
+Examples:
+
+		Add a new control plane
+$: kumactl config control-planes add --name my-new --address my-new-cp.my-domain.com --dataplane-token-client-cert 'path/to/cert.pem' --dataplane-token-client-key 'path/to/key.pem'
+added Control Plane "my-new"
+switch active Control Plane to "my-new"
+
 Flags:
       --address string                       URL of the Control Plane API Server (required)
       --dataplane-token-client-cert string   Path to certificate of a client that is authorized to use Dataplane Token Server
@@ -277,7 +284,7 @@ Flags:
       --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
       --control-plane-image string          image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io/kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
-      --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
+      --control-plane-version string        version shared by all components of the Kuma Control Plane (default "0.2.2-136-g000e670")
       --dataplane-image string              image of the Kuma Dataplane component (default "kong-docker-kuma-docker.bintray.io/kuma-dp")
       --dataplane-init-image string         init image of the Kuma Dataplane component (default "docker.io/istio/proxy_init")
       --dataplane-init-version string       version of the init image of the Kuma Dataplane component (default "1.1.2")
