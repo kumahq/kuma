@@ -42,7 +42,7 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 	for i, route := range routes {
 		policies[i] = route
 	}
-	matchMap := policy.Match(dataplane, policies)
+	matchMap := policy.MatchOutbounds(dataplane, policies)
 
 	routeMap := core_xds.RouteMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {

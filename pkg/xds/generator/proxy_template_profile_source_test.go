@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/logs"
 	"github.com/Kong/kuma/pkg/core/permissions"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/kuma/pkg/core/xds"
@@ -70,7 +69,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
 					},
 				},
-				Logs:               logs.NewMatchedLogs(),
 				TrafficPermissions: permissions.MatchedPermissions{},
 				Metadata:           &model.DataplaneMetadata{},
 			}

@@ -5,11 +5,10 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
 
 // Match picks a single the most specific policy for each outbound interface of a given Dataplane.
-func Match(dataplane *mesh_core.DataplaneResource, policies []ConnectionPolicy) MatchMap {
+func MatchOutbounds(dataplane *mesh_core.DataplaneResource, policies []ConnectionPolicy) MatchMap {
 	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
 
 	// First, select only those ConnectionPolicies that have a `source` selector matching a given Dataplane.
@@ -53,7 +52,7 @@ func Match(dataplane *mesh_core.DataplaneResource, policies []ConnectionPolicy) 
 		bestAggregateRank mesh_proto.TagSelectorRank
 	}
 
-	candidatesByDestination := map[core_xds.ServiceName]candidateByDestination{}
+	candidatesByDestination := map[ServiceName]candidateByDestination{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
 		if _, ok := candidatesByDestination[oface.Service]; ok {
 			// apparently, multiple outbound interfaces of a given Dataplane refer to the same service

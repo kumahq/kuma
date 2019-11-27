@@ -5,6 +5,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
+// ConnectionPolicy is a Policy that is applied on a connection between two data planes that match source and destination.
 type ConnectionPolicy interface {
 	model.Resource
 	Sources() []*v1alpha1.Selector

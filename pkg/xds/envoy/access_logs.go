@@ -18,19 +18,10 @@ const AccessLogDefaultFormat = "[%START_TIME%] %KUMA_SOURCE_ADDRESS%(%KUMA_SOURC
 
 const AccessLogSink = "access_log_sink"
 
-func convertLoggingBackends(sourceService string, destinationService string, backends []*v1alpha1.LoggingBackend, proxy *core_xds.Proxy) ([]*filter_accesslog.AccessLog, error) {
-	var result []*filter_accesslog.AccessLog
-	for _, backend := range backends {
-		log, err := convertLoggingBackend(sourceService, destinationService, backend, proxy)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, log)
-	}
-	return result, nil
-}
-
 func convertLoggingBackend(sourceService string, destinationService string, backend *v1alpha1.LoggingBackend, proxy *core_xds.Proxy) (*filter_accesslog.AccessLog, error) {
+	if backend == nil {
+		return nil, nil
+	}
 	format := AccessLogDefaultFormat
 	if backend.Format != "" {
 		format = backend.Format
