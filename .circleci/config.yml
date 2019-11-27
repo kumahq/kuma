@@ -83,7 +83,7 @@ jobs:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-      CLANG_FORMAT_PATH: clang-format-6.0
+      CLANG_FORMAT_PATH: clang-format-10
       # if GOPATH is not set, `golang-ci` fails with an obscure message
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
@@ -107,9 +107,21 @@ jobs:
           make dev/tools
     - run:
         name: "Install check tools (clang-format, ...)"
-        # `clang-format` is used to format `*.proto` files
         command: |
-          apt update && apt install -y clang-format-6.0
+          apt update && apt install -y wget
+
+          # see https://apt.llvm.org/
+
+          cat  >>/etc/apt/sources.list \<<EOF
+
+          deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
+          deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
+
+          EOF
+
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
+
+          apt update && apt install -y clang-format-10
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
