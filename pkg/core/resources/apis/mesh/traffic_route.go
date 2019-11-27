@@ -73,3 +73,11 @@ func init() {
 	registry.RegisterType(&TrafficRouteResource{})
 	registry.RegistryListType(&TrafficRouteResourceList{})
 }
+
+func (t *TrafficRouteResource) Sources() []*mesh_proto.Selector {
+	return t.Spec.GetSources()
+}
+
+func (t *TrafficRouteResource) Destinations() []*mesh_proto.Selector {
+	return t.Spec.GetDestinations()
+}
