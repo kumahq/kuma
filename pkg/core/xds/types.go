@@ -53,7 +53,7 @@ type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
 	TrafficPermissions permissions.MatchedPermissions
-	Logs               *logs.MatchedLogs
+	Logs               logs.MatchedLog
 	TrafficRoutes      RouteMap
 	OutboundSelectors  DestinationMap
 	OutboundTargets    EndpointMap

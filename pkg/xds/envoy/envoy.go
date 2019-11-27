@@ -20,6 +20,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -144,14 +145,19 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 	}
 }
 
-func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, statsName string, clusters []ClusterInfo, virtual bool, sourceService string, destinationService string, backends []*v1alpha1.LoggingBackend, proxy *core_xds.Proxy) (*v2.Listener, error) {
-	accessLog, err := convertLoggingBackends(sourceService, destinationService, backends, proxy)
-	if err != nil {
-		return nil, err
+func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, statsName string, clusters []ClusterInfo, virtual bool, sourceService string, destinationService string, backend *v1alpha1.LoggingBackend, proxy *core_xds.Proxy) (*v2.Listener, error) {
+	var accessLogs []*filter_accesslog.AccessLog
+	if backend != nil {
+		accessLog, err := convertLoggingBackend(sourceService, destinationService, backend, proxy)
+		if err != nil {
+			return nil, err
+		}
+		accessLogs = append(accessLogs, accessLog)
 	}
+
 	config := &envoy_tcp.TcpProxy{
 		StatPrefix: statsName,
-		AccessLog:  accessLog,
+		AccessLog:  accessLogs,
 	}
 	if len(clusters) == 1 {
 		config.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
