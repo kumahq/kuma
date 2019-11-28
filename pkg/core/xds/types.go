@@ -92,7 +92,7 @@ func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
 }
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
-	parts := strings.Split(id, ".")
+	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
 	if mesh == "" {
 		return nil, errors.New("mesh must not be empty")
@@ -100,11 +100,7 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	if len(parts) < 2 {
 		return nil, errors.New("the name should be provided after the dot")
 	}
-	nameParts := []string{}
-	for i := 1; i < len(parts); i++ {
-		nameParts = append(nameParts, parts[i])
-	}
-	name := strings.Join(nameParts, ".")
+	name := parts[1]
 	if name == "" {
 		return nil, errors.New("name must not be empty")
 	}

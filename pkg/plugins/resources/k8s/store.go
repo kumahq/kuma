@@ -158,19 +158,14 @@ var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 
 type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
-	Mesh  string
-	Scope k8s_model.Scope
+	Mesh string
 }
 
 func (m *KubernetesMetaAdapter) GetName() string {
-	switch m.Scope {
-	case k8s_model.ScopeCluster:
+	if m.Namespace == "" { // it's cluster scoped object
 		return m.ObjectMeta.Name
-	case k8s_model.ScopeNamespace:
-		return util_k8s.K8sNamespacedNameToCoreName(m.ObjectMeta.Name, m.ObjectMeta.Namespace)
-	default:
-		panic(errors.Errorf("unknown scope %s", m.Scope))
 	}
+	return util_k8s.K8sNamespacedNameToCoreName(m.ObjectMeta.Name, m.ObjectMeta.Namespace)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {
@@ -248,7 +243,7 @@ func (c *SimpleConverter) ToKubernetesList(rl core_model.ResourceList) (k8s_mode
 }
 
 func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
-	out.SetMeta(&KubernetesMetaAdapter{*obj.GetObjectMeta(), obj.GetMesh(), obj.Scope()})
+	out.SetMeta(&KubernetesMetaAdapter{*obj.GetObjectMeta(), obj.GetMesh()})
 	return util_proto.FromMap(obj.GetSpec(), out.GetSpec())
 }
 

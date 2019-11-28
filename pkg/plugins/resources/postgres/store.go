@@ -85,13 +85,12 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	if err != nil {
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
-	statement := `UPDATE resources SET spec=$1, version=$2 WHERE name=$3 AND namespace=$4 AND mesh=$5 AND type=$6 AND version=$7;`
+	statement := `UPDATE resources SET spec=$1, version=$2 WHERE name=$3 AND mesh=$4 AND type=$5 AND version=$6;`
 	result, err := r.db.Exec(
 		statement,
 		string(bytes),
 		version+1,
 		resource.GetMeta().GetName(),
-		"",
 		resource.GetMeta().GetMesh(),
 		resource.GetType(),
 		version,
@@ -116,8 +115,8 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
-	statement := `DELETE FROM resources WHERE name=$1 AND namespace=$2 AND type=$3 AND mesh=$4`
-	result, err := r.db.Exec(statement, opts.Name, "", resource.GetType(), opts.Mesh)
+	statement := `DELETE FROM resources WHERE name=$1 AND type=$2 AND mesh=$3`
+	result, err := r.db.Exec(statement, opts.Name, resource.GetType(), opts.Mesh)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -131,8 +130,8 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
-	statement := `SELECT spec, version FROM resources WHERE name=$1 AND namespace=$2 AND mesh=$3 AND type=$4;`
-	row := r.db.QueryRow(statement, opts.Name, "", opts.Mesh, resource.GetType()) // todo(jakubdyszkiewicz) solve db migration
+	statement := `SELECT spec, version FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
+	row := r.db.QueryRow(statement, opts.Name, opts.Mesh, resource.GetType())
 
 	var spec string
 	var version int

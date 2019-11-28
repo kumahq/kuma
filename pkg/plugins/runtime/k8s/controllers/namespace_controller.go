@@ -50,7 +50,7 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 
 	// Fetch default Mesh instance
 	mesh := &mesh_k8s.Mesh{}
-	name := kube_types.NamespacedName{Namespace: "", Name: core_model.DefaultMesh}
+	name := kube_types.NamespacedName{Name: core_model.DefaultMesh}
 	if err := r.Get(ctx, name, mesh); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			err := mesh_managers.CreateDefaultMesh(r.ResourceManager, r.DefaultMeshTemplate)

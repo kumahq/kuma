@@ -48,13 +48,11 @@ var _ = Describe("Mesh", func() {
 		It("should create an object successfully", func() {
 
 			key = types.NamespacedName{
-				Name:      "foo",
-				Namespace: "",
+				Name: "foo",
 			}
 			created = &Mesh{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "",
+					Name: "foo",
 				}}
 
 			By("creating an API obj")
