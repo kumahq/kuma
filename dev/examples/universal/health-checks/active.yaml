@@ -1,0 +1,13 @@
+type: HealthCheck
+name: web-to-backend
+mesh: default
+sources:
+- match:
+    service: web
+destinations:
+- match:
+    service: backend
+conf:
+  passiveChecks:
+    unhealthyThreshold: 3
+    penaltyInterval: 5s
