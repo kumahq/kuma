@@ -39,11 +39,11 @@ conf:
   activeChecks: # configuration for a TCP check that only verifies whether a connection can be established
     timeout: 1s
     interval: 5s # how often health check requests should be made
-    unhealthy_threshold: 3
-    healthy_threshold: 2
+    unhealthyThreshold: 3
+    healthyThreshold: 2
   passiveChecks:
-    unhealthy_threshold: 3
-    penalty_interval: 10s # for how long endpoint should be considered unhealthy
+    unhealthyThreshold: 3
+    penaltyInterval: 10s # for how long endpoint should be considered unhealthy
 ```
 
 ## Design
