@@ -7,16 +7,16 @@ import (
 )
 
 func CoreNameToK8sName(coreName string) (string, string, error) {
-	parts := strings.Split(coreName, ".")
-	if len(parts) < 2 {
+	idx := strings.LastIndex(coreName, ".")
+	if idx == -1 {
 		return "", "", errors.New(`name must include namespace after the dot, ex. "name.namespace"`)
 	}
-	nameParts := []string{}
-	for i := 0; i < len(parts)-1; i++ {
-		nameParts = append(nameParts, parts[i])
-	}
 	// namespace cannot contain "." therefore it's always the last part
-	return strings.Join(nameParts, "."), parts[len(parts)-1], nil
+	namespace := coreName[idx+1:]
+	if namespace == "" {
+		return "", "", errors.New("namespace must be non-empty")
+	}
+	return coreName[:idx], namespace, nil
 }
 
 func K8sNamespacedNameToCoreName(name, namespace string) string {
