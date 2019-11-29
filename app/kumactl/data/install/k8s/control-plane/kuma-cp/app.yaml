@@ -208,5 +208,6 @@ webhooks:
           - trafficpermissions
           - trafficroutes
           - dataplanes
+          - healthchecks
           - meshes
           - proxytemplates

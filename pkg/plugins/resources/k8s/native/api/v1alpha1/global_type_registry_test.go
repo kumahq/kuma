@@ -49,6 +49,11 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &DataplaneInsight{},
 				expectedKind: "DataplaneInsight",
 			}),
+			Entry("HealthCheck", testCase{
+				inputType:    &mesh_proto.HealthCheck{},
+				expectedType: &HealthCheck{},
+				expectedKind: "HealthCheck",
+			}),
 			Entry("ProxyTemplate", testCase{
 				inputType:    &mesh_proto.ProxyTemplate{},
 				expectedType: &ProxyTemplate{},
@@ -105,6 +110,11 @@ var _ = Describe("global TypeRegistry", func() {
 				inputType:    &mesh_proto.DataplaneInsight{},
 				expectedType: &DataplaneInsightList{},
 				expectedKind: "DataplaneInsightList",
+			}),
+			Entry("HealthCheckList", testCase{
+				inputType:    &mesh_proto.HealthCheck{},
+				expectedType: &HealthCheckList{},
+				expectedKind: "HealthCheckList",
 			}),
 			Entry("ProxyTemplateList", testCase{
 				inputType:    &mesh_proto.ProxyTemplate{},
