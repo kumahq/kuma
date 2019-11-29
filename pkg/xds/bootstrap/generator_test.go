@@ -48,12 +48,12 @@ var _ = Describe("bootstrapGenerator", func() {
 		}
 
 		// when
-		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "mesh", "mesh"))
+		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh", "mesh"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = resManager.Create(context.Background(), &dataplane, store.CreateByKey("namespace", "name", "mesh"))
+		err = resManager.Create(context.Background(), &dataplane, store.CreateByKey("name.namespace", "mesh"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})

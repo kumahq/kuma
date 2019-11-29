@@ -39,6 +39,10 @@ func (l *DataplaneList) GetItems() []model.KubernetesObject {
 	return result
 }
 
+func (l *Dataplane) Scope() model.Scope {
+	return model.ScopeNamespace
+}
+
 func init() {
 	registry.RegisterObjectType(&proto.Dataplane{}, &Dataplane{
 		TypeMeta: metav1.TypeMeta{

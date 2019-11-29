@@ -383,9 +383,8 @@ var _ = Describe("Envoy", func() {
 					Items: []*mesh_core.TrafficPermissionResource{
 						&mesh_core.TrafficPermissionResource{
 							Meta: &test_model.ResourceMeta{
-								Name:      "tp-1",
-								Mesh:      "default",
-								Namespace: "default",
+								Name: "tp-1",
+								Mesh: "default",
 							},
 							Spec: mesh_proto.TrafficPermission{
 								Sources: []*mesh_proto.Selector{
@@ -489,7 +488,7 @@ var _ = Describe("Envoy", func() {
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules:
                   policies:
-                    default.tp-1:
+                    tp-1:
                       permissions:
                       - any: true
                       principals:
@@ -560,7 +559,7 @@ var _ = Describe("Envoy", func() {
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules:
                   policies:
-                    default.tp-1:
+                    tp-1:
                       permissions:
                       - any: true
                       principals:
@@ -644,9 +643,8 @@ var _ = Describe("Envoy", func() {
 			func(given testCase) {
 				proxy := xds.Proxy{
 					Id: xds.ProxyId{
-						Name:      "backend",
-						Mesh:      "example",
-						Namespace: "sample",
+						Name: "backend",
+						Mesh: "example",
 					},
 					Dataplane: &mesh_core.DataplaneResource{
 						Spec: mesh_proto.Dataplane{

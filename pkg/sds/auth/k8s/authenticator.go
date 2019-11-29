@@ -9,6 +9,7 @@ import (
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
 	common_auth "github.com/Kong/kuma/pkg/sds/auth/common"
+	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
 
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,9 +63,13 @@ func (k *kubeAuthenticator) reviewToken(ctx context.Context, proxyId core_xds.Pr
 	if !(userInfo[0] == "system" && userInfo[1] == "serviceaccount") {
 		return errors.Errorf("authentication failed: token must belong to a k8s system account, got %q", tokenReview.Status.User.Username)
 	}
+	_, proxyNamespace, err := util_k8s.CoreNameToK8sName(proxyId.Name)
+	if err != nil {
+		return err
+	}
 	namespace := userInfo[2]
-	if namespace != proxyId.Namespace {
-		return errors.Errorf("authentication failed: token belongs to a namespace (%q) different from proxyId (%q)", namespace, proxyId.Namespace)
+	if namespace != proxyNamespace {
+		return errors.Errorf("authentication failed: token belongs to a namespace (%q) different from proxyId (%q)", namespace, proxyNamespace)
 	}
 	return nil
 }

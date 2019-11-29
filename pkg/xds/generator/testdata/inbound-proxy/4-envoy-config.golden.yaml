@@ -31,7 +31,7 @@ resources:
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules:
                   policies:
-                    default.tp-1:
+                    tp-1:
                       permissions:
                       - any: true
                       principals:

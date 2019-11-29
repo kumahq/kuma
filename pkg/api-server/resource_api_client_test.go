@@ -94,7 +94,7 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 			Path: "/sample-path",
 		},
 	}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey("default", name, mesh))
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, mesh))
 	Expect(err).NotTo(HaveOccurred())
 }
 

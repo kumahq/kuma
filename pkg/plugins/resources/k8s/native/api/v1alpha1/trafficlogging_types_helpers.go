@@ -31,6 +31,10 @@ func (tp *TrafficLog) SetSpec(spec map[string]interface{}) {
 	tp.Spec = spec
 }
 
+func (tp *TrafficLog) Scope() model.Scope {
+	return model.ScopeNamespace
+}
+
 func (l *TrafficLogList) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {

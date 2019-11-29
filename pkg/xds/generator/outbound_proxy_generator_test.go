@@ -55,7 +55,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "side-car", Namespace: "default", Mesh: "default"},
+				Id: model.ProxyId{Name: "side-car", Mesh: "default"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",
@@ -230,7 +230,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 
 				proxy := &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default", Mesh: "default"},
+					Id: model.ProxyId{Name: "side-car", Mesh: "default"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "1",

@@ -9,8 +9,7 @@ type DataplaneTokenRequest struct {
 
 func (i DataplaneTokenRequest) ToProxyId() xds.ProxyId {
 	return xds.ProxyId{
-		Mesh:      i.Mesh,
-		Namespace: "default",
-		Name:      i.Name,
+		Mesh: i.Mesh,
+		Name: i.Name,
 	}
 }

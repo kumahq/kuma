@@ -35,7 +35,7 @@ var _ = Describe("xDS", func() {
 						Id: "pilot.example",
 					},
 					expected: core_xds.ProxyId{
-						Mesh: "pilot", Namespace: "default", Name: "example",
+						Mesh: "pilot", Name: "example",
 					},
 				}),
 				Entry("name with namespace and mesh", testCase{
@@ -43,7 +43,7 @@ var _ = Describe("xDS", func() {
 						Id: "pilot.example.demo",
 					},
 					expected: core_xds.ProxyId{
-						Mesh: "pilot", Namespace: "demo", Name: "example",
+						Mesh: "pilot", Name: "example.demo",
 					},
 				}),
 			)
@@ -85,12 +85,6 @@ var _ = Describe("xDS", func() {
 					},
 					expectedErr: "name must not be empty",
 				}),
-				Entry("mesh with empty namespace", testCase{
-					node: &envoy_core.Node{
-						Id: "pilot.default.",
-					},
-					expectedErr: "namespace must not be empty",
-				}),
 			)
 		})
 	})
@@ -99,16 +93,14 @@ var _ = Describe("xDS", func() {
 		It("should convert proxy ID to resource key", func() {
 			// given
 			id := core_xds.ProxyId{
-				Mesh:      "default",
-				Namespace: "pilot",
-				Name:      "demo",
+				Mesh: "default",
+				Name: "demo",
 			}
 
 			// when
 			key := id.ToResourceKey()
 
 			// then
-			Expect(key.Namespace).To(Equal("pilot"))
 			Expect(key.Mesh).To(Equal("default"))
 			Expect(key.Name).To(Equal("demo"))
 		})

@@ -45,7 +45,7 @@ var _ = Describe("Dataplane Overview WS", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "mesh1", "mesh1"))
+		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh1", "mesh1"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -66,7 +66,7 @@ var _ = Describe("Dataplane Overview WS", func() {
 				},
 			},
 		}
-		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("default", "dp1", "mesh1"))
+		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("dp1", "mesh1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
@@ -82,7 +82,7 @@ var _ = Describe("Dataplane Overview WS", func() {
 				},
 			},
 		}
-		err = resourceStore.Create(context.Background(), &insightResource, store.CreateByKey("default", "dp1", "mesh1"))
+		err = resourceStore.Create(context.Background(), &insightResource, store.CreateByKey("dp1", "mesh1"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

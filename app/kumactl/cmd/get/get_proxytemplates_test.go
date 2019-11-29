@@ -34,25 +34,22 @@ var _ = Describe("kumactl get proxytemplates", func() {
 		sampleProxyTemplates = []*mesh_core.ProxyTemplateResource{
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "default",
-					Namespace: "trial",
-					Name:      "custom-template",
+					Mesh: "default",
+					Name: "custom-template",
 				},
 				Spec: mesh_proto.ProxyTemplate{},
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "default",
-					Namespace: "demo",
-					Name:      "another-template",
+					Mesh: "default",
+					Name: "another-template",
 				},
 				Spec: mesh_proto.ProxyTemplate{},
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "pilot",
-					Namespace: "default",
-					Name:      "simple-template",
+					Mesh: "pilot",
+					Name: "simple-template",
 				},
 				Spec: mesh_proto.ProxyTemplate{},
 			},
@@ -81,9 +78,8 @@ var _ = Describe("kumactl get proxytemplates", func() {
 
 			for _, pt := range sampleProxyTemplates {
 				key := core_model.ResourceKey{
-					Mesh:      pt.Meta.GetMesh(),
-					Namespace: pt.Meta.GetNamespace(),
-					Name:      pt.Meta.GetName(),
+					Mesh: pt.Meta.GetMesh(),
+					Name: pt.Meta.GetName(),
 				}
 				err := store.Create(context.Background(), pt, core_store.CreateBy(key))
 				Expect(err).ToNot(HaveOccurred())

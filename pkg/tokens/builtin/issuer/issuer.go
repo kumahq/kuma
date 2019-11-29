@@ -57,9 +57,8 @@ func (i *jwtTokenIssuer) Validate(credential auth.Credential) (xds.ProxyId, erro
 	}
 
 	id := xds.ProxyId{
-		Mesh:      c.Mesh,
-		Namespace: "default", // namespace is irrelevant as this is only used in Universal
-		Name:      c.Name,
+		Mesh: c.Mesh,
+		Name: c.Name,
 	}
 	return id, nil
 }

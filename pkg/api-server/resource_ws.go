@@ -14,8 +14,6 @@ import (
 	"github.com/emicklei/go-restful"
 )
 
-const namespace = "default"
-
 type resourceWs struct {
 	resManager      manager.ResourceManager
 	readOnly        bool
@@ -75,7 +73,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 	meshName := r.meshFromRequest(request)
 
 	resource := r.ResourceFactory()
-	err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName))
+	err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName))
 	if err != nil {
 		handleError(response, err, "Could not retrieve a resource")
 	} else {
@@ -119,7 +117,7 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 	}
 
 	resource := r.ResourceFactory()
-	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(namespace, name, meshName)); err != nil {
+	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
 		if store.IsResourceNotFound(err) {
 			r.createResource(request.Request.Context(), name, meshName, resourceRes.Spec, response)
 		} else {
@@ -150,7 +148,7 @@ func (r *resourceWs) validateResourceRequest(request *restful.Request, resource 
 func (r *resourceWs) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
 	res := r.ResourceFactory()
 	_ = res.SetSpec(spec)
-	if err := r.resManager.Create(ctx, res, store.CreateByKey(namespace, name, meshName)); err != nil {
+	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
 		handleError(response, err, "Could not create a resource")
 	} else {
 		response.WriteHeader(201)
@@ -171,7 +169,7 @@ func (r *resourceWs) deleteResource(request *restful.Request, response *restful.
 	meshName := r.meshFromRequest(request)
 
 	resource := r.ResourceFactory()
-	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(namespace, name, meshName)); err != nil {
+	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		handleError(response, err, "Could not delete a resource")
 	}
 }

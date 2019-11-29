@@ -184,7 +184,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			// when
 			discoveryRequest := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
-					Id: "default.example-001.demo",
+					Id: "default.example-001",
 				},
 				TypeUrl: given.TypeUrl,
 			}
@@ -197,9 +197,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			key, subscription := accessor.GetStatus()
 			// then
 			Expect(key).To(Equal(core_model.ResourceKey{
-				Mesh:      "default",
-				Namespace: "demo",
-				Name:      "example-001",
+				Mesh: "default",
+				Name: "example-001",
 			}))
 			Expect(util_proto.ToYAML(subscription)).To(MatchYAML(`
         connectTime: "2019-07-01T00:00:00Z"
@@ -224,9 +223,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			key, subscription = accessor.GetStatus()
 			// then
 			Expect(key).To(Equal(core_model.ResourceKey{
-				Mesh:      "default",
-				Namespace: "demo",
-				Name:      "example-001",
+				Mesh: "default",
+				Name: "example-001",
 			}))
 			Expect(util_proto.ToYAML(subscription)).To(MatchYAML(given.ExpectedStatsAfterResponse))
 
@@ -245,9 +243,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			key, subscription = accessor.GetStatus()
 			// then
 			Expect(key).To(Equal(core_model.ResourceKey{
-				Mesh:      "default",
-				Namespace: "demo",
-				Name:      "example-001",
+				Mesh: "default",
+				Name: "example-001",
 			}))
 			Expect(util_proto.ToYAML(subscription)).To(MatchYAML(given.ExpectedStatsAfterACK))
 
@@ -269,9 +266,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			key, subscription = accessor.GetStatus()
 			// then
 			Expect(key).To(Equal(core_model.ResourceKey{
-				Mesh:      "default",
-				Namespace: "demo",
-				Name:      "example-001",
+				Mesh: "default",
+				Name: "example-001",
 			}))
 			Expect(util_proto.ToYAML(subscription)).To(MatchYAML(given.ExpectedStatsAfterNACK))
 		},

@@ -43,7 +43,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			},
 			Entry("should fail when `resource` field is empty", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Id: model.ProxyId{Name: "side-car"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
@@ -67,7 +67,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			}),
 			Entry("should fail when `resource` field is neither a YAML nor a JSON", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Id: model.ProxyId{Name: "side-car"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
@@ -90,7 +90,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			}),
 			Entry("should fail when `resource` field has unknown @type", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Id: model.ProxyId{Name: "side-car"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
@@ -115,7 +115,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			}),
 			Entry("should fail when `resource` field is a YAML without '@type' field", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Id: model.ProxyId{Name: "side-car"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
@@ -151,7 +151,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			}),
 			Entry("should fail when `resource` field is an invalid xDS resource", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Id: model.ProxyId{Name: "side-car"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
@@ -218,7 +218,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 		},
 			Entry("should support empty resource list", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Id: model.ProxyId{Name: "side-car"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
@@ -237,7 +237,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			}),
 			Entry("should support Listener resource as YAML", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Id: model.ProxyId{Name: "side-car"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
@@ -294,7 +294,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			}),
 			Entry("should support Cluster resource as YAML", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Id: model.ProxyId{Name: "side-car"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
@@ -349,7 +349,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			}),
 			Entry("should support Cluster resource as JSON", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+					Id: model.ProxyId{Name: "side-car"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",

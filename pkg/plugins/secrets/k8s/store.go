@@ -51,7 +51,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r *secret_model.SecretReso
 
 	if err := s.writer.Create(ctx, secret); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
-			return core_store.ErrorResourceAlreadyExists(r.GetType(), secret.Namespace, secret.Name, noMesh)
+			return core_store.ErrorResourceAlreadyExists(r.GetType(), secret.Name, noMesh)
 		}
 		return errors.Wrap(err, "failed to create k8s Secret")
 	}
@@ -69,7 +69,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r *secret_model.SecretReso
 	secret.Namespace = s.namespace
 	if err := s.writer.Update(ctx, secret); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			return core_store.ErrorResourceConflict(r.GetType(), secret.Namespace, secret.Name, noMesh)
+			return core_store.ErrorResourceConflict(r.GetType(), secret.Name, noMesh)
 		}
 		return errors.Wrap(err, "failed to update k8s Secret")
 	}
@@ -101,7 +101,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.SecretResourc
 	secret := &kube_core.Secret{}
 	if err := s.reader.Get(ctx, kube_client.ObjectKey{Namespace: s.namespace, Name: opts.Name}, secret); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return core_store.ErrorResourceNotFound(r.GetType(), s.namespace, opts.Name, noMesh)
+			return core_store.ErrorResourceNotFound(r.GetType(), opts.Name, noMesh)
 		}
 		return errors.Wrap(err, "failed to get k8s secret")
 	}

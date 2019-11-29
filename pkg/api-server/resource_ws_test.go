@@ -25,7 +25,6 @@ var _ = Describe("Resource WS", func() {
 	var client resourceApiClient
 	var stop chan struct{}
 
-	const namespace = "default"
 	const mesh = "default"
 
 	BeforeEach(func() {
@@ -50,7 +49,7 @@ var _ = Describe("Resource WS", func() {
 
 	BeforeEach(func() {
 		// create default mesh
-		err := resourceStore.Create(context.Background(), &mesh_res.MeshResource{}, store.CreateByKey(namespace, mesh, mesh))
+		err := resourceStore.Create(context.Background(), &mesh_res.MeshResource{}, store.CreateByKey(mesh, mesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -169,7 +168,7 @@ var _ = Describe("Resource WS", func() {
 
 			// then
 			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(namespace, name, mesh))
+			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Path).To(Equal("/update-sample-path"))
 		})
@@ -357,7 +356,7 @@ var _ = Describe("Resource WS", func() {
 
 		It("should return 400 when mesh does not exist", func() {
 			// setup
-			err := resourceStore.Delete(context.Background(), &mesh_res.MeshResource{}, store.DeleteByKey("default", "default", "default"))
+			err := resourceStore.Delete(context.Background(), &mesh_res.MeshResource{}, store.DeleteByKey("default", "default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
@@ -409,8 +408,8 @@ var _ = Describe("Resource WS", func() {
 
 			// and
 			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(namespace, name, mesh))
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), namespace, name, mesh)))
+			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
 		})
 
 		It("should delete non-existing resource", func() {

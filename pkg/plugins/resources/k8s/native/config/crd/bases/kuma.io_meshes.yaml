@@ -10,7 +10,7 @@ spec:
   names:
     kind: Mesh
     plural: meshes
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: Mesh is the Schema for the meshes API

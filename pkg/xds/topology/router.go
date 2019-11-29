@@ -18,9 +18,6 @@ type pseudoMeta struct {
 func (m *pseudoMeta) GetMesh() string {
 	return ""
 }
-func (m *pseudoMeta) GetNamespace() string {
-	return ""
-}
 func (m *pseudoMeta) GetName() string {
 	return m.Name
 }
@@ -42,7 +39,7 @@ func GetRoutes(ctx context.Context, dataplane *mesh_core.DataplaneResource, mana
 
 // BuildRouteMap picks a single the most specific route for each outbound interface of a given Dataplane.
 func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.TrafficRouteResource) core_xds.RouteMap {
-	sort.Stable(TrafficRoutesByNamespacedName(routes)) // sort to avoid flakiness
+	sort.Stable(TrafficRoutesByName(routes)) // sort to avoid flakiness
 
 	// First, select only those TrafficRoutes that have a `source` selector matching a given Dataplane.
 	// If a TrafficRoute has multiple matching `source` selectors, we need to choose the most specific one.
@@ -164,11 +161,10 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 	return destinations
 }
 
-type TrafficRoutesByNamespacedName []*mesh_core.TrafficRouteResource
+type TrafficRoutesByName []*mesh_core.TrafficRouteResource
 
-func (a TrafficRoutesByNamespacedName) Len() int      { return len(a) }
-func (a TrafficRoutesByNamespacedName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a TrafficRoutesByNamespacedName) Less(i, j int) bool {
-	return a[i].Meta.GetNamespace() < a[j].Meta.GetNamespace() ||
-		(a[i].Meta.GetNamespace() == a[j].Meta.GetNamespace() && a[i].Meta.GetName() < a[j].Meta.GetName())
+func (a TrafficRoutesByName) Len() int      { return len(a) }
+func (a TrafficRoutesByName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a TrafficRoutesByName) Less(i, j int) bool {
+	return a[i].Meta.GetName() < a[j].Meta.GetName()
 }

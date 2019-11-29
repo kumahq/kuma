@@ -35,9 +35,8 @@ var _ = Describe("kumactl get dataplanes", func() {
 		dataplanes = []*mesh_core.DataplaneResource{
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "default",
-					Namespace: "trial",
-					Name:      "experiment",
+					Mesh: "default",
+					Name: "experiment",
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
@@ -62,9 +61,8 @@ var _ = Describe("kumactl get dataplanes", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "default",
-					Namespace: "demo",
-					Name:      "example",
+					Mesh: "default",
+					Name: "example",
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
@@ -105,9 +103,8 @@ var _ = Describe("kumactl get dataplanes", func() {
 
 			for _, pt := range dataplanes {
 				key := core_model.ResourceKey{
-					Mesh:      pt.Meta.GetMesh(),
-					Namespace: pt.Meta.GetNamespace(),
-					Name:      pt.Meta.GetName(),
+					Mesh: pt.Meta.GetMesh(),
+					Name: pt.Meta.GetName(),
 				}
 				err := store.Create(context.Background(), pt, core_store.CreateBy(key))
 				Expect(err).ToNot(HaveOccurred())

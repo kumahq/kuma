@@ -42,7 +42,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 
 		It("should periodically flush DataplaneInsight into a store", func() {
 			// setup
-			key := core_model.ResourceKey{Mesh: "default", Namespace: "demo", Name: "example-001"}
+			key := core_model.ResourceKey{Mesh: "default", Name: "example-001"}
 			subscription := &mesh_proto.DiscoverySubscription{
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",
@@ -135,13 +135,13 @@ var _ = Describe("DataplaneInsightSink", func() {
 
 		BeforeEach(func() {
 			store = memory_resources.NewStore()
-			err := store.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("default", "default", "default"))
+			err := store.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("default", "default"))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should create/update DataplaneInsight resource", func() {
 			// setup
-			key := core_model.ResourceKey{Mesh: "default", Namespace: "demo", Name: "example-001"}
+			key := core_model.ResourceKey{Mesh: "default", Name: "example-001"}
 			subscription := &mesh_proto.DiscoverySubscription{
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",

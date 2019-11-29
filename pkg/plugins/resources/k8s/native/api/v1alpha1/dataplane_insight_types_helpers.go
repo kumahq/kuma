@@ -31,6 +31,10 @@ func (pt *DataplaneInsight) SetSpec(spec map[string]interface{}) {
 	pt.Status = spec
 }
 
+func (pt *DataplaneInsight) Scope() model.Scope {
+	return model.ScopeNamespace
+}
+
 func (l *DataplaneInsightList) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {

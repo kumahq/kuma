@@ -13,10 +13,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CreateDefaultMesh(resManager core_manager.ResourceManager, template mesh_proto.Mesh, namespace string) error {
+func CreateDefaultMesh(resManager core_manager.ResourceManager, template mesh_proto.Mesh) error {
 	defaultMesh := mesh_core.MeshResource{}
 
-	key := core_model.ResourceKey{Namespace: namespace, Mesh: core_model.DefaultMesh, Name: core_model.DefaultMesh}
+	key := core_model.ResourceKey{Mesh: core_model.DefaultMesh, Name: core_model.DefaultMesh}
 
 	if err := resManager.Get(context.Background(), &defaultMesh, core_store.GetBy(key)); err != nil {
 		if core_store.IsResourceNotFound(err) {

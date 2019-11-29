@@ -34,25 +34,22 @@ var _ = Describe("kumactl get traffic-routes", func() {
 		sampleTrafficRoutes = []*mesh_core.TrafficRouteResource{
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "default",
-					Namespace: "trial",
-					Name:      "web-to-backend",
+					Mesh: "default",
+					Name: "web-to-backend",
 				},
 				Spec: mesh_proto.TrafficRoute{},
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "default",
-					Namespace: "demo",
-					Name:      "backend-to-db",
+					Mesh: "default",
+					Name: "backend-to-db",
 				},
 				Spec: mesh_proto.TrafficRoute{},
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "pilot",
-					Namespace: "default",
-					Name:      "gateway-to-service",
+					Mesh: "pilot",
+					Name: "gateway-to-service",
 				},
 				Spec: mesh_proto.TrafficRoute{},
 			},
@@ -81,9 +78,8 @@ var _ = Describe("kumactl get traffic-routes", func() {
 
 			for _, pt := range sampleTrafficRoutes {
 				key := core_model.ResourceKey{
-					Mesh:      pt.Meta.GetMesh(),
-					Namespace: pt.Meta.GetNamespace(),
-					Name:      pt.Meta.GetName(),
+					Mesh: pt.Meta.GetMesh(),
+					Name: pt.Meta.GetName(),
 				}
 				err := store.Create(context.Background(), pt, core_store.CreateBy(key))
 				Expect(err).ToNot(HaveOccurred())
