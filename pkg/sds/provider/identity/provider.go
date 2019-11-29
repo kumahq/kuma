@@ -7,15 +7,17 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/Kong/kuma/pkg/tls"
 
 	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
 )
 
-func New(resourceManager core_manager.ResourceManager, builtinCaManager builtin_ca.BuiltinCaManager) sds_provider.SecretProvider {
+func New(resourceManager core_manager.ResourceManager, builtinCaManager builtin_ca.BuiltinCaManager, providedCaManager provided_ca.ProvidedCaManager) sds_provider.SecretProvider {
 	return &identityCertProvider{
 		resourceManager:  resourceManager,
 		builtinCaManager: builtinCaManager,
@@ -23,8 +25,9 @@ func New(resourceManager core_manager.ResourceManager, builtinCaManager builtin_
 }
 
 type identityCertProvider struct {
-	resourceManager  core_manager.ResourceManager
-	builtinCaManager builtin_ca.BuiltinCaManager
+	resourceManager   core_manager.ResourceManager
+	builtinCaManager  builtin_ca.BuiltinCaManager
+	providedCaManager provided_ca.ProvidedCaManager
 }
 
 func (s *identityCertProvider) RequiresIdentity() bool {
@@ -45,17 +48,22 @@ func (s *identityCertProvider) Get(ctx context.Context, name string, requestor s
 	}
 	mesh := list.Items[0]
 
+	var generator func(context.Context, string, string) (*tls.KeyPair, error)
 	switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
 	case *mesh_proto.CertificateAuthority_Builtin_:
-		workloadCert, err := s.builtinCaManager.GenerateWorkloadCert(ctx, mesh.Meta.GetName(), requestor.Service)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate a Workload Identity Certificate for %+v", requestor)
-		}
-		return &IdentityCertSecret{
-			PemCerts: [][]byte{workloadCert.CertPEM},
-			PemKey:   workloadCert.KeyPEM,
-		}, nil
+		generator = s.builtinCaManager.GenerateWorkloadCert
+	case *mesh_proto.CertificateAuthority_Provided_:
+		generator = s.providedCaManager.GenerateWorkloadCert
 	default:
 		return nil, errors.Errorf("Mesh %q has unsupported CA type", meshName)
 	}
+
+	workloadCert, err := generator(ctx, mesh.Meta.GetName(), requestor.Service)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to generate a Workload Identity Certificate for %+v", requestor)
+	}
+	return &IdentityCertSecret{
+		PemCerts: [][]byte{workloadCert.CertPEM},
+		PemKey:   workloadCert.KeyPEM,
+	}, nil
 }

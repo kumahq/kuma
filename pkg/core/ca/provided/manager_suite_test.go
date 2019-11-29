@@ -11,4 +11,3 @@ func TestCaProvided(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "CA Provided Suite")
 }
-

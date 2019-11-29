@@ -18,7 +18,7 @@ var _ = Describe("CA Provided Manager", func() {
 	const meshName = "demo"
 
 	BeforeEach(func() {
-		caManager = provided.NewCaManager(manager.NewSecretManager(store.NewSecretStore(memory.NewStore()), cipher.None()))
+		caManager = provided.NewProvidedCaManager(manager.NewSecretManager(store.NewSecretStore(memory.NewStore()), cipher.None()))
 	})
 
 	Describe("AddCaRoot", func() {

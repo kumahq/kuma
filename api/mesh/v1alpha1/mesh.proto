@@ -37,10 +37,15 @@ message CertificateAuthority {
   // Builtin defines configuration of the builtin CA.
   message Builtin {}
 
+  // Provided defines configuration of the provided CA
+  message Provided {}
+
   oneof type {
 
     // Use builtin CA.
     Builtin builtin = 1;
+
+    Provided provided = 2;
   }
 }
 

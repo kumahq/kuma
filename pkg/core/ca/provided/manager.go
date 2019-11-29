@@ -22,7 +22,7 @@ type CaRootCert struct {
 
 type CaRoot struct {
 	CaRootCert
-	Key  []byte `json:"key"`
+	Key []byte `json:"key"`
 }
 
 type ProvidedCa struct {
@@ -45,7 +45,7 @@ type providedCaManager struct {
 
 var _ ProvidedCaManager = &providedCaManager{}
 
-func NewCaManager(secretManager secret_manager.SecretManager) ProvidedCaManager {
+func NewProvidedCaManager(secretManager secret_manager.SecretManager) ProvidedCaManager {
 	return &providedCaManager{secretManager}
 }
 
@@ -147,7 +147,7 @@ func (p *providedCaManager) GetRootCerts(ctx context.Context, mesh string) ([]Ca
 	caRootCerts := make([]CaRootCert, len(meshCa.Roots))
 	for i, root := range meshCa.Roots {
 		caRootCerts[i] = CaRootCert{
-			Id: root.Id,
+			Id:   root.Id,
 			Cert: root.Cert,
 		}
 	}

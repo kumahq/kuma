@@ -5,6 +5,7 @@ import (
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -38,7 +39,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	initializeBuiltinCaManager(builder)
+	initializeCaManagers(builder)
 
 	initializeResourceManager(builder)
 
@@ -214,8 +215,9 @@ func initializeXds(builder *core_runtime.Builder) {
 	builder.WithXdsContext(core_xds.NewXdsContext())
 }
 
-func initializeBuiltinCaManager(builder *core_runtime.Builder) {
+func initializeCaManagers(builder *core_runtime.Builder) {
 	builder.WithBuiltinCaManager(builtin_ca.NewBuiltinCaManager(builder.SecretManager()))
+	builder.WithProvidedCaManager(provided_ca.NewProvidedCaManager(builder.SecretManager()))
 }
 
 func initializeResourceManager(builder *core_runtime.Builder) {
