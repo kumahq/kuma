@@ -116,7 +116,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
             connectTimeout: 5s
-            lbPolicy: ORIGINAL_DST_LB
+            lbPolicy: CLUSTER_PROVIDED
             name: pass_through
             type: ORIGINAL_DST
           version: v1
@@ -179,7 +179,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
             connectTimeout: 5s
-            lbPolicy: ORIGINAL_DST_LB
+            lbPolicy: CLUSTER_PROVIDED
             name: pass_through
             type: ORIGINAL_DST
           version: v1

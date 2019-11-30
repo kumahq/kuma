@@ -55,7 +55,7 @@ var _ = Describe("Clusters", func() {
 		expected := `
         name: pass_through
         type: ORIGINAL_DST
-        lbPolicy: ORIGINAL_DST_LB
+        lbPolicy: CLUSTER_PROVIDED
         connectTimeout: 5s
 `
 		// when
