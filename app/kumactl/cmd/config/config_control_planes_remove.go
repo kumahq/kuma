@@ -15,6 +15,10 @@ func newConfigControlPlanesRemoveCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 		Use:   "remove",
 		Short: "Remove a Control Plane",
 		Long:  `Remove a Control Plane.`,
+		Example: `To remove a Control Plane named "my-cp":
+$: kumactl config control-planes remove --name my-cp
+> removed Control Plane "my-cp"
+In case if this one is the current Control Plane, you will need to switch manually to a new one.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := pctx.Config()
 			if !cfg.RemoveControlPlane(args.name) {

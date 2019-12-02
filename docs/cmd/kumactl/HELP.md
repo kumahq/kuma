@@ -197,6 +197,12 @@ Remove a Control Plane.
 Usage:
   kumactl config control-planes remove [flags]
 
+Examples:
+To remove a Control Plane named "my-cp":
+$: kumactl config control-planes remove --name my-cp
+> removed Control Plane "my-cp"
+In case if this one is the current Control Plane, you will need to switch manually to a new one.
+
 Flags:
   -h, --help          help for remove
       --name string   reference name for the Control Plane (required)
@@ -284,7 +290,7 @@ Flags:
       --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
       --control-plane-image string          image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io/kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
-      --control-plane-version string        version shared by all components of the Kuma Control Plane (default "0.2.2-136-g000e670")
+      --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
       --dataplane-image string              image of the Kuma Dataplane component (default "kong-docker-kuma-docker.bintray.io/kuma-dp")
       --dataplane-init-image string         init image of the Kuma Dataplane component (default "docker.io/istio/proxy_init")
       --dataplane-init-version string       version of the init image of the Kuma Dataplane component (default "1.1.2")
