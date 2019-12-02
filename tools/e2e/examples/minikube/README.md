@@ -20,7 +20,7 @@ minikube start
 make build/example/minikube -C ../../../..
 ```
 
-### Deploy demo setup into Minikube
+### Deploy example setup into Minikube
 
 ```bash
 make deploy/example/minikube -C ../../../..
@@ -86,4 +86,34 @@ make verify/example/minikube/mtls -C ../../../..
 
 ```bash
 make kumactl/example/minikube -C ../../../..
+```
+
+### Undeploy example setup
+
+```bash
+make undeploy/example/minikube -C ../../../..
+```
+
+### Deploy example setup for traffic routing
+
+```bash
+make deploy/traffic-routing/minikube -C ../../../..
+```
+
+### Verify traffic routing without mTLS
+
+```bash
+make verify/traffic-routing/minikube/without-mtls
+```
+
+### Verify traffic routing with mTLS
+
+```bash
+make verify/traffic-routing/minikube/with-mtls
+```
+
+### Undeploy example setup for traffic routing
+
+```bash
+make undeploy/traffic-routing/minikube -C ../../../..
 ```
