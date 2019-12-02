@@ -2,42 +2,51 @@ package mesh
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_registry "github.com/Kong/kuma/pkg/core/resources/registry"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	secrets_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
+	validators_mesh "github.com/Kong/kuma/pkg/core/validators/apis/mesh"
 )
 
 func NewMeshManager(
 	store core_store.ResourceStore,
 	builtinCaManager builtin_ca.BuiltinCaManager,
+	providedCaManager provided_ca.ProvidedCaManager,
 	otherManagers core_manager.ResourceManager,
 	secretManager secrets_manager.SecretManager,
 	registry core_registry.TypeRegistry,
 ) core_manager.ResourceManager {
+	validator := validators_mesh.MeshValidator{
+		ProvidedCaManager: providedCaManager,
+	}
 	return &meshManager{
-		store:            store,
-		builtinCaManager: builtinCaManager,
-		otherManagers:    otherManagers,
-		secretManager:    secretManager,
-		registry:         registry,
+		store:             store,
+		builtinCaManager:  builtinCaManager,
+		providedCaManager: providedCaManager,
+		otherManagers:     otherManagers,
+		secretManager:     secretManager,
+		registry:          registry,
+		meshValidator:     validator,
 	}
 }
 
 type meshManager struct {
-	store            core_store.ResourceStore
-	builtinCaManager builtin_ca.BuiltinCaManager
-	otherManagers    core_manager.ResourceManager
-	secretManager    secrets_manager.SecretManager
-	registry         core_registry.TypeRegistry
+	store             core_store.ResourceStore
+	builtinCaManager  builtin_ca.BuiltinCaManager
+	providedCaManager provided_ca.ProvidedCaManager
+	otherManagers     core_manager.ResourceManager
+	secretManager     secrets_manager.SecretManager
+	registry          core_registry.TypeRegistry
+	meshValidator     validators_mesh.MeshValidator
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -73,16 +82,19 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 			errs = multierr.Append(errs, rollback())
 		}
 	}()
-	// create Built-in CA
+	opts := core_store.NewCreateOptions(fs...)
 	switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
+	// create Built-in CA
 	case *mesh_proto.CertificateAuthority_Builtin_:
-		opts := core_store.NewCreateOptions(fs...)
 		if err := m.builtinCaManager.Create(ctx, opts.Name); err != nil {
 			return errors.Wrapf(err, "failed to create Builtin CA for a given mesh")
 		}
 		rollback = func() error {
 			return m.builtinCaManager.Delete(ctx, opts.Name)
 		}
+	}
+	if err := m.meshValidator.ValidateCreate(ctx, opts.Name, mesh); err != nil {
+		return err
 	}
 	// persist Mesh
 	if err := m.store.Create(ctx, mesh, fs...); err != nil {
@@ -111,6 +123,9 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	name := core_store.NewDeleteOptions(fs...).Mesh
 	if err := m.builtinCaManager.Delete(ctx, name); err != nil && !core_store.IsResourceNotFound(err) {
 		return errors.Wrapf(err, "failed to delete Builtin CA for a given mesh")
+	}
+	if err := m.providedCaManager.DeleteCa(ctx, name); err != nil && !core_store.IsResourceNotFound(err) {
+		return errors.Wrap(err, "failed to delete Provided CA for a given mesh")
 	}
 	// delete all other secrets
 	if err := m.secretManager.DeleteAll(ctx, core_store.DeleteAllByMesh(opts.Mesh)); err != nil {
@@ -144,6 +159,14 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	// apply defaults, e.g. Builtin CA
 	mesh.Default()
 	if err := resource.Validate(); err != nil {
+		return err
+	}
+
+	currentMesh := &core_mesh.MeshResource{}
+	if err := m.Get(ctx, currentMesh, core_store.GetBy(core_model.MetaToResourceKey(mesh.GetMeta()))); err != nil {
+		return err
+	}
+	if err := m.meshValidator.ValidateUpdate(ctx, currentMesh, mesh); err != nil {
 		return err
 	}
 	return m.store.Update(ctx, mesh, fs...)
