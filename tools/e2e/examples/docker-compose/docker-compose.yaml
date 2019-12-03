@@ -71,6 +71,24 @@ services:
     restart: on-failure
 
   #
+  # Container with `kumactl` to edit Kuma resources as part of e2e workflow.
+  #
+  kumactl:
+    # image name must be provided via environment variable KUMACTL_DOCKER_IMAGE
+    image: ${KUMACTL_DOCKER_IMAGE:-kuma/kumactl:latest}
+    volumes:
+    - ./policies:/kuma-example/policies
+    command:
+    - sh
+    - -c
+    - kumactl config control-planes add --name universal --address http://kuma-control-plane:5681 --overwrite && sleep 31536000
+    networks:
+      kuma-example: {}
+    depends_on:
+      - kuma-control-plane
+    restart: on-failure
+
+  #
   # Auxiliary service (container) for sharing Linux network namespace
   # between Example Application and Kuma Sidecar.
   #
@@ -263,7 +281,7 @@ services:
     - --show-error
     - --include
     - --fail
-    - http://kuma-example-backend:7070/version
+    - http://localhost:5000/version
     # the following setting instructs Docker Compose to add `kuma-example-web` container
     # to the network namespace of `kuma-example-web-namespace` container
     network_mode: service:kuma-example-web-namespace

@@ -1,0 +1,9 @@
+type: TrafficPermission
+name: everyone-to-everyone
+mesh: default
+sources:
+- match:
+    service: '*'
+destinations:
+- match:
+    service: '*'

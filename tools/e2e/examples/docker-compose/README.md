@@ -51,6 +51,18 @@ where
 * `envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8080"}` is a number of `inbound` requests
 * `envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}` is a number of `outbound` requests
 
+### Verify traffic routing without mTLS
+
+```bash
+make verify/traffic-routing/docker-compose/without-mtls -C ../../../..
+```
+
+### Verify traffic routing with mTLS
+
+```bash
+make verify/traffic-routing/docker-compose/with-mtls -C ../../../..
+```
+
 ### Cleanup
 
 ```bash

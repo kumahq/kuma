@@ -400,6 +400,12 @@ jobs:
     - run:
         name: Verify Envoy stats
         command: make verify/example/docker-compose
+    - run:
+        name: Verify traffic routing without mTLS
+        command: make verify/traffic-routing/docker-compose/without-mtls
+    - run:
+        name: Verify traffic routing with mTLS
+        command: make verify/traffic-routing/docker-compose/with-mtls
 
   example_minikube:
     executor: vm
