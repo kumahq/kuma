@@ -25,11 +25,17 @@ store:
     dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
+    # SSL settings
     ssl:
-      mode: disable
-      certPath:
-      keyPath:
-      rootCertPath:
+      # Mode of SSL connection. Available values (disable, require, verify-ca, verify-full)
+      mode: disable # ENV: KUMA_STORE_POSTGRES_SSL_MODE
+      # Path to SSL Certificate of the client. Used in require, verify-ca and verify-full modes
+      certPath: # ENV: KUMA_STORE_POSTGRES_SSL_CERT_PATH
+      # Path to SSL Key of the client. Used in require, verify-ca and verify-full modes
+      keyPath: # ENV: KUMA_STORE_POSTGRES_SSL_KEY_PATH
+      # Path to the root certificate. Used in verify-ca and verify-full modes.
+      rootCertPath: # ENV: KUMA_STORE_POSTGRES_SSL_ROOT_CERT_PATH
+
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
   # Port of Server that provides bootstrap configuration for dataplanes

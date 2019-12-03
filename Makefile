@@ -326,6 +326,18 @@ start/postgres: ## Boostrap: start Postgres for Control Plane with initial schem
 	docker-compose -f tools/postgres/docker-compose.yaml up -d
 	tools/postgres/wait-for-postgres.sh 15432
 
+start/postgres/ssl: ## Boostrap: start Postgres for Control Plane with initial schema and SSL enabled
+	docker-compose -f tools/postgres/ssl/docker-compose.yaml up -d
+	tools/postgres/wait-for-postgres.sh 15432
+
+POSTGRES_SSL_MODE ?= disable
+
+run/universal/postgres/ssl: POSTGRES_SSL_MODE=verify-ca
+run/universal/postgres/ssl: POSTGRES_SSL_CERT_PATH=$(shell pwd)/tools/postgres/ssl/certs/postgres.client.crt
+run/universal/postgres/ssl: POSTGRES_SSL_KEY_PATH=$(shell pwd)/tools/postgres/ssl/certs/postgres.client.key
+run/universal/postgres/ssl: POSTGRES_SSL_ROOT_CERT_PATH=$(shell pwd)/tools/postgres/ssl/certs/rootCA.crt
+run/universal/postgres/ssl: run/universal/postgres ## Dev: Run Control Plane locally in universal mode with Postgres store and SSL enabled
+
 run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
@@ -336,6 +348,10 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KUMA_STORE_POSTGRES_USER=kuma \
 	KUMA_STORE_POSTGRES_PASSWORD=kuma \
 	KUMA_STORE_POSTGRES_DB_NAME=kuma \
+	KUMA_STORE_POSTGRES_SSL_MODE=$(POSTGRES_SSL_MODE) \
+	KUMA_STORE_POSTGRES_SSL_CERT_PATH=$(POSTGRES_SSL_CERT_PATH) \
+	KUMA_STORE_POSTGRES_SSL_KEY_PATH=$(POSTGRES_SSL_KEY_PATH) \
+	KUMA_STORE_POSTGRES_SSL_ROOT_CERT_PATH=$(POSTGRES_SSL_ROOT_CERT_PATH) \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 run/example/envoy/k8s: EXAMPLE_DATAPLANE_MESH=$(KIND_EXAMPLE_DATAPLANE_MESH)
