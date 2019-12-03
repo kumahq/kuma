@@ -33,9 +33,9 @@ func NewStore(config config.PostgresStoreConfig) (store.ResourceStore, error) {
 	}, nil
 }
 
-func connectToDb(config config.PostgresStoreConfig) (*sql.DB, error) {
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable connect_timeout=%d",
-		config.Host, config.Port, config.User, config.Password, config.DbName, config.ConnectionTimeout)
+func connectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s connect_timeout=%d sslmode=%s sslcert=%s sslkey=%s sslrootcert=%s",
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DbName, cfg.ConnectionTimeout, cfg.SSL.Mode, cfg.SSL.CertPath, cfg.SSL.KeyPath, cfg.SSL.RootCertPath)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create connection to DB")

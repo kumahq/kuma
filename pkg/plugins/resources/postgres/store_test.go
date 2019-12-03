@@ -16,18 +16,18 @@ import (
 var _ = Describe("postgresResourceStore", func() {
 
 	createStore := func() store.ResourceStore {
-		cfg := postgres.PostgresStoreConfig{}
-		err := config.Load("", &cfg)
+		cfg := postgres.DefaultPostgresStoreConfig()
+		err := config.Load("", cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		dbName, err := createRandomDb(cfg)
+		dbName, err := createRandomDb(*cfg)
 		Expect(err).ToNot(HaveOccurred())
 		cfg.DbName = dbName
 
-		err = prepareDb(cfg)
+		err = prepareDb(*cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		pStore, err := NewStore(cfg)
+		pStore, err := NewStore(*cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		return pStore

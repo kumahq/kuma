@@ -25,7 +25,11 @@ store:
     dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
-
+    ssl:
+      mode: disable
+      certPath:
+      keyPath:
+      rootCertPath:
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
   # Port of Server that provides bootstrap configuration for dataplanes
