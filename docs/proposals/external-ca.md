@@ -100,7 +100,7 @@ Pros:
 Cons:
 * We need to create yet another server + port
 
-### kuma-cp sub command
+### ~~kuma-cp sub command~~
 
 Right now, you can run the CP with `kuma-cp run`.
 We can introduce new command:
@@ -130,3 +130,8 @@ Then when we apply a mesh with `enabled: true` and `ca: external`, we should val
 ## Securing Postgres
 
 Additionally, we need to support a connection to Postgres over TLS so the CA cert transfer is secured on Kuma CP <-> Postgres connection.
+
+## Summary
+
+We've chosen providing certificates with HTTP + kumactl as this seems to be the most flexible and consistent option.
+We will use the same server as for Dataplane Token for the sake of simplicity for now.
