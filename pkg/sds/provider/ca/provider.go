@@ -56,7 +56,7 @@ func (s *meshCaProvider) Get(ctx context.Context, resource string, requestor sds
 			PemCerts: rootCerts,
 		}, nil
 	case *mesh_proto.CertificateAuthority_Provided_:
-		rootCerts, err := s.providedCaManager.GetRootCerts(ctx, mesh.Meta.GetName())
+		rootCerts, err := s.providedCaManager.GetSigningCerts(ctx, mesh.Meta.GetName())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to retrieve Root Certificates of a given Provided CA")
 		}

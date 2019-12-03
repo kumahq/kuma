@@ -246,7 +246,7 @@ func (m *CertificateAuthority_Builtin) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CertificateAuthority_Builtin proto.InternalMessageInfo
 
-// Provided defines configuration of the provided CA
+// Provided defines configuration of the provided CA.
 type CertificateAuthority_Provided struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

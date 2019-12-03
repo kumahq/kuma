@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/tls"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
@@ -15,27 +15,27 @@ import (
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 )
 
-type CaRootCert struct {
+type SigningCert struct {
 	Id   string `json:"id"`
 	Cert []byte `json:"cert"`
 }
 
-type CaRoot struct {
-	CaRootCert
+type SigningKeyCert struct {
+	SigningCert
 	Key []byte `json:"key"`
 }
 
 type ProvidedCa struct {
-	Roots []CaRoot `json:"roots"`
+	SigningKeyCerts []SigningKeyCert `json:"signingKeyCerts"`
 }
 
 type ProvidedCaManager interface {
-	AddCaRoot(ctx context.Context, mesh string, root tls.KeyPair) error
-	DeleteCaRoot(ctx context.Context, mesh string, id string) error
+	AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) error
+	DeleteSigningCert(ctx context.Context, mesh string, id string) error
 
 	DeleteCa(ctx context.Context, mesh string) error
 
-	GetRootCerts(ctx context.Context, mesh string) ([]CaRootCert, error)
+	GetSigningCerts(ctx context.Context, mesh string) ([]SigningCert, error)
 	GenerateWorkloadCert(ctx context.Context, mesh string, workload string) (*tls.KeyPair, error)
 }
 
@@ -49,7 +49,7 @@ func NewProvidedCaManager(secretManager secret_manager.SecretManager) ProvidedCa
 	return &providedCaManager{secretManager}
 }
 
-func (p *providedCaManager) AddCaRoot(ctx context.Context, mesh string, root tls.KeyPair) error {
+func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) error {
 	providedCaSecret := &core_system.SecretResource{}
 	if err := p.secretManager.Get(ctx, providedCaSecret, core_store.GetBy(providedCaSecretKey(mesh))); err != nil {
 		if core_store.IsResourceNotFound(err) {
@@ -68,18 +68,18 @@ func (p *providedCaManager) AddCaRoot(ctx context.Context, mesh string, root tls
 		}
 	}
 
-	if len(providedCa.Roots) > 0 {
+	if len(providedCa.SigningKeyCerts) > 0 {
 		return errors.New("cannot add more than 1 CA root to provided CA")
 	}
 
-	caRoot := CaRoot{
+	caRoot := SigningKeyCert{
 		Key: root.KeyPEM,
-		CaRootCert: CaRootCert{
-			Id:   uuid.New().String(),
+		SigningCert: SigningCert{
+			Id:   core.NewUUID(),
 			Cert: root.CertPEM,
 		},
 	}
-	providedCa.Roots = append(providedCa.Roots, caRoot)
+	providedCa.SigningKeyCerts = append(providedCa.SigningKeyCerts, caRoot)
 
 	caBytes, err := json.Marshal(providedCa)
 	if err != nil {
@@ -92,33 +92,33 @@ func (p *providedCaManager) AddCaRoot(ctx context.Context, mesh string, root tls
 	return nil
 }
 
-func (p *providedCaManager) DeleteCaRoot(ctx context.Context, mesh string, id string) error {
-	meshCa, err := p.getMeshCa(ctx, mesh)
-	if err != nil {
+func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, id string) error {
+	providedCaSecret := &core_system.SecretResource{}
+	if err := p.secretManager.Get(ctx, providedCaSecret, core_store.GetBy(providedCaSecretKey(mesh))); err != nil {
 		return errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
 	}
+	providedCa := ProvidedCa{}
+	if err := json.Unmarshal(providedCaSecret.Spec.Value, &providedCa); err != nil {
+		return errors.Wrapf(err, "failed to deserialize a provided CA for Mesh %q", mesh)
+	}
 
-	var retainedCaRoots []CaRoot
-	for _, root := range meshCa.Roots {
+	var retainedCaRoots []SigningKeyCert
+	for _, root := range providedCa.SigningKeyCerts {
 		if root.Id != id {
 			retainedCaRoots = append(retainedCaRoots, root)
 		}
 	}
 
-	if len(retainedCaRoots) == len(meshCa.Roots) {
+	if len(retainedCaRoots) == len(providedCa.SigningKeyCerts) {
 		return errors.Errorf("could not find CA Root of id %q for mesh %q", id, mesh)
 	}
 
-	meshCa.Roots = retainedCaRoots
-	newBytes, err := json.Marshal(meshCa)
+	providedCa.SigningKeyCerts = retainedCaRoots
+	newBytes, err := json.Marshal(providedCa)
 	if err != nil {
 		return err
 	}
 
-	providedCaSecret := &core_system.SecretResource{}
-	if err := p.secretManager.Get(ctx, providedCaSecret, core_store.GetBy(providedCaSecretKey(mesh))); err != nil {
-		return errors.Wrapf(err, "failed to load CA for mesh %q", mesh)
-	}
 	// todo(jakubdyszkiewicz) should we delete CA when there are 0 certs?
 	providedCaSecret.Spec.Value = newBytes
 	if err := p.secretManager.Update(ctx, providedCaSecret); err != nil {
@@ -129,24 +129,24 @@ func (p *providedCaManager) DeleteCaRoot(ctx context.Context, mesh string, id st
 
 func (p *providedCaManager) DeleteCa(ctx context.Context, mesh string) error {
 	secretKey := providedCaSecretKey(mesh)
-	builtinCaSecret := &core_system.SecretResource{}
-	if err := p.secretManager.Delete(ctx, builtinCaSecret, core_store.DeleteBy(secretKey)); err != nil {
+	caSecret := &core_system.SecretResource{}
+	if err := p.secretManager.Delete(ctx, caSecret, core_store.DeleteBy(secretKey)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			return nil
 		}
-		return errors.Wrapf(err, "failed to delete Builtin CA for Mesh %q", mesh)
+		return errors.Wrapf(err, "failed to delete Provided CA for Mesh %q", mesh)
 	}
 	return nil
 }
 
-func (p *providedCaManager) GetRootCerts(ctx context.Context, mesh string) ([]CaRootCert, error) {
+func (p *providedCaManager) GetSigningCerts(ctx context.Context, mesh string) ([]SigningCert, error) {
 	meshCa, err := p.getMeshCa(ctx, mesh)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
 	}
-	caRootCerts := make([]CaRootCert, len(meshCa.Roots))
-	for i, root := range meshCa.Roots {
-		caRootCerts[i] = CaRootCert{
+	caRootCerts := make([]SigningCert, len(meshCa.SigningKeyCerts))
+	for i, root := range meshCa.SigningKeyCerts {
+		caRootCerts[i] = SigningCert{
 			Id:   root.Id,
 			Cert: root.Cert,
 		}
@@ -159,10 +159,10 @@ func (p *providedCaManager) GenerateWorkloadCert(ctx context.Context, mesh strin
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
 	}
-	if len(meshCa.Roots) < 1 {
+	if len(meshCa.SigningKeyCerts) < 1 {
 		return nil, errors.Wrapf(err, "CA for Mesh %q has no key pair", mesh)
 	}
-	active := meshCa.Roots[0]
+	active := meshCa.SigningKeyCerts[0]
 	signer := tls.KeyPair{CertPEM: active.Cert, KeyPEM: active.Key}
 	keyPair, err := builtin_issuer.NewWorkloadCert(signer, mesh, workload)
 	if err != nil {

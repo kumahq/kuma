@@ -21,10 +21,10 @@ var _ = Describe("CA Provided Manager", func() {
 		caManager = provided.NewProvidedCaManager(manager.NewSecretManager(store.NewSecretStore(memory.NewStore()), cipher.None()))
 	})
 
-	Describe("AddCaRoot", func() {
+	Describe("AddSigningCert", func() {
 		It("should create CA when adding new CA Root to it", func() {
 			// when
-			_, err := caManager.GetRootCerts(context.Background(), meshName)
+			_, err := caManager.GetSigningCerts(context.Background(), meshName)
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -35,13 +35,13 @@ var _ = Describe("CA Provided Manager", func() {
 				CertPEM: []byte("CERT"),
 				KeyPEM:  []byte("KEY"),
 			}
-			err = caManager.AddCaRoot(context.Background(), meshName, pair)
+			err = caManager.AddSigningCert(context.Background(), meshName, pair)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			rootCerts, err := caManager.GetRootCerts(context.Background(), meshName)
+			rootCerts, err := caManager.GetSigningCerts(context.Background(), meshName)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -56,7 +56,7 @@ var _ = Describe("CA Provided Manager", func() {
 				CertPEM: []byte("CERT"),
 				KeyPEM:  []byte("KEY"),
 			}
-			err := caManager.AddCaRoot(context.Background(), meshName, caRoot)
+			err := caManager.AddSigningCert(context.Background(), meshName, caRoot)
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
@@ -66,7 +66,7 @@ var _ = Describe("CA Provided Manager", func() {
 			}
 
 			// when
-			err = caManager.AddCaRoot(context.Background(), meshName, newRoot)
+			err = caManager.AddSigningCert(context.Background(), meshName, newRoot)
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -74,33 +74,33 @@ var _ = Describe("CA Provided Manager", func() {
 		})
 	})
 
-	Describe("DeleteCaRoot", func() {
+	Describe("DeleteSigningCert", func() {
 		BeforeEach(func() {
 			// setup CA with CA Root
 			caRoot := tls.KeyPair{
 				CertPEM: []byte("CERT"),
 				KeyPEM:  []byte("KEY"),
 			}
-			err := caManager.AddCaRoot(context.Background(), meshName, caRoot)
+			err := caManager.AddSigningCert(context.Background(), meshName, caRoot)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should delete CA root", func() {
 			// when
-			caRootCerts, err := caManager.GetRootCerts(context.Background(), meshName)
+			caRootCerts, err := caManager.GetSigningCerts(context.Background(), meshName)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(caRootCerts).To(HaveLen(1))
 
 			// when
-			err = caManager.DeleteCaRoot(context.Background(), meshName, caRootCerts[0].Id)
+			err = caManager.DeleteSigningCert(context.Background(), meshName, caRootCerts[0].Id)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			caRootCerts, err = caManager.GetRootCerts(context.Background(), meshName)
+			caRootCerts, err = caManager.GetSigningCerts(context.Background(), meshName)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -109,7 +109,7 @@ var _ = Describe("CA Provided Manager", func() {
 
 		It("should throw an error for invalid mesh", func() {
 			// when
-			err := caManager.DeleteCaRoot(context.Background(), "unknown-mesh", "id-1")
+			err := caManager.DeleteSigningCert(context.Background(), "unknown-mesh", "id-1")
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -118,7 +118,7 @@ var _ = Describe("CA Provided Manager", func() {
 
 		It("should throw an error for unknown CA root", func() {
 			// when
-			err := caManager.DeleteCaRoot(context.Background(), meshName, "unknown-id")
+			err := caManager.DeleteSigningCert(context.Background(), meshName, "unknown-id")
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -133,7 +133,7 @@ var _ = Describe("CA Provided Manager", func() {
 				CertPEM: []byte("CERT"),
 				KeyPEM:  []byte("KEY"),
 			}
-			err := caManager.AddCaRoot(context.Background(), meshName, caRoot)
+			err := caManager.AddSigningCert(context.Background(), meshName, caRoot)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -143,7 +143,7 @@ var _ = Describe("CA Provided Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			_, err = caManager.GetRootCerts(context.Background(), meshName)
+			_, err = caManager.GetSigningCerts(context.Background(), meshName)
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -164,7 +164,7 @@ var _ = Describe("CA Provided Manager", func() {
 			// setup CA with CA Root
 			pair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType)
 			Expect(err).ToNot(HaveOccurred())
-			err = caManager.AddCaRoot(context.Background(), meshName, pair)
+			err = caManager.AddSigningCert(context.Background(), meshName, pair)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
