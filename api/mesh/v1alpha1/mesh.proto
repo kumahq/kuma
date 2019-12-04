@@ -37,10 +37,20 @@ message CertificateAuthority {
   // Builtin defines configuration of the builtin CA.
   message Builtin {}
 
+  // Provided defines configuration of the provided CA.
+  message Provided {}
+
   oneof type {
 
     // Use builtin CA.
     Builtin builtin = 1;
+
+    // Use provided CA.
+    //
+    // To be able to use provided CA, a user must first upload CA certificate
+    // and key, e.g. by using `kumactl manage ca provided certificates add`
+    // command.
+    Provided provided = 2;
   }
 }
 

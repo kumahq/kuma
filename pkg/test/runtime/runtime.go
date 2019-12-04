@@ -2,6 +2,7 @@ package runtime
 
 import (
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
@@ -37,6 +38,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	builder.
 		WithSecretManager(newSecretManager(builder)).
 		WithBuiltinCaManager(newBuiltinCaManager(builder)).
+		WithProvidedCaManager(newProvidedCaManager(builder)).
 		WithResourceManager(newResourceManager(builder))
 
 	return builder
@@ -46,6 +48,10 @@ func newSecretManager(builder *core_runtime.Builder) secret_manager.SecretManage
 	secretStore := secret_store.NewSecretStore(builder.ResourceStore())
 	secretManager := secret_manager.NewSecretManager(secretStore, secret_cipher.None())
 	return secretManager
+}
+
+func newProvidedCaManager(builder *core_runtime.Builder) provided_ca.ProvidedCaManager {
+	return provided_ca.NewProvidedCaManager(builder.SecretManager())
 }
 
 func newBuiltinCaManager(builder *core_runtime.Builder) builtin_ca.BuiltinCaManager {
