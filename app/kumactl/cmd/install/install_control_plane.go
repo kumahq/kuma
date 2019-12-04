@@ -65,11 +65,11 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
 		Long:  `Install Kuma Control Plane on Kubernetes.`,
-		Example: `# Install Kuma on Kubernetes
-		kumactl install control-plane | kubectl apply -f -
+		Example: `1. Install Kuma on Kubernetes
+$: kumactl install control-plane | kubectl apply -f -
 	  
-		# Generate installation script for a target platform. At the moment, always generate Kubernetes YAML
-		kumactl install control-plane`,
+2. Generate installation script for a target platform. At the moment, always generate Kubernetes YAML
+$: kumactl install control-plane`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
 				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)

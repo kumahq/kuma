@@ -35,11 +35,11 @@ Usage:
   kumactl apply [flags]
 
 Examples:
-# Basic
-		kumactl apply my-dataplane.yml
+1. Basic
+$: kumactl apply my-dataplane.yml
 
-		# Apply a remote configuration
-		kumactl apply https://github.com/Kong/kuma/blob/master/dev/examples/universal/dataplanes/example.yaml
+2. Apply a remote configuration
+$: kumactl apply https://github.com/Kong/kuma/blob/master/dev/examples/universal/dataplanes/example.yaml
 		
 
 Flags:
@@ -86,7 +86,7 @@ Usage:
 
 Examples:
 :$ kumactl config view
-control_planes:
+> control_planes:
     - name: my-first-cp
         coordinates:
             api_server:
@@ -153,9 +153,9 @@ Usage:
 
 Examples:
 To retrieve all Control Planes from anyone Context:
-		$:kumactl config control-planes list
+$:kumactl config control-planes list
 		
-		This command displays if the Control Plane is active, its url and its name.
+This command displays if the Control Plane is active, its url and its name.
 
 Flags:
   -h, --help   help for list
@@ -285,11 +285,11 @@ Usage:
   kumactl install control-plane [flags]
 
 Examples:
-# Install Kuma on Kubernetes
-		kumactl install control-plane | kubectl apply -f -
+1. Install Kuma on Kubernetes
+$: kumactl install control-plane | kubectl apply -f -
 	  
-		# Generate installation script for a target platform. At the moment, always generate Kubernetes YAML
-		kumactl install control-plane
+2. Generate installation script for a target platform. At the moment, always generate Kubernetes YAML
+$: kumactl install control-plane
 
 Flags:
       --admission-server-tls-cert string    TLS certificate for the admission web hooks implemented by the Kuma Control Plane
@@ -401,12 +401,11 @@ Usage:
   kumactl get meshes [flags]
 
 Examples:
-# Get all service meshes
-		kumactl get meshes
+1. Get all service meshes
+$: kumactl get meshes
 
-		# Get service meshes using mtls
-		kumactl get meshes -ojson | jq '.items[] | select(.mtls.enabled == true) | .name
-
+2. Get service meshes using mtls
+$: kumactl get meshes -ojson | jq '.items[] | select(.mtls.enabled == true) | .name
 		
 
 Flags:
@@ -429,9 +428,10 @@ Usage:
 
 Examples:
 1. Get all dataplane's name:
-		kumactl get dataplanes -ojson | jq '.items[].name'
-		2. Get all dataplanes with inbounds configuration having specific tag:
-		kumactl get dataplane -ojson | jq '.items[] | select(.networking.inbound[].tags.my-tag == "value") | .name'
+$: kumactl get dataplanes -ojson | jq '.items[].name'
+
+2. Get all dataplanes with inbounds configuration having specific tag:
+$: kumactl get dataplane -ojson | jq '.items[] | select(.networking.inbound[].tags.my-tag == "value") | .name'
 
 Flags:
   -h, --help   help for dataplanes
@@ -478,7 +478,8 @@ Usage:
   kumactl get traffic-logs [flags]
 
 Examples:
-kumactl get traffic-logs -ojson | jq '.items[] | select(.name == "my-log-entity")'
+To retrieve name of my entities:
+$: kumactl get traffic-logs -ojson | jq '.items[] | select(.name == "my-log-entity")'
 
 Flags:
   -h, --help   help for traffic-logs
@@ -521,11 +522,11 @@ Usage:
 
 Examples:
 
-		# Get all traffic routes name
-		kumactl get traffic-routes -ojson | jq '.items[].name'
+1.  Get all traffic routes name:
+$: kumactl get traffic-routes -ojson | jq '.items[].name'
 		
-		# Get traffic routes for a specific service Mesh
-		kumactl get traffic-routes -ojson | jq '.items[] | select(.mesh == "my-service-mesh")'
+2.Get traffic routes for a specific service Mesh
+$: kumactl get traffic-routes -ojson | jq '.items[] | select(.mesh == "my-service-mesh")'
 		
 
 Flags:

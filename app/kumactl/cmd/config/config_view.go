@@ -13,7 +13,7 @@ func newConfigViewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Show kumactl config",
 		Long:  `Show kumactl config.`,
 		Example: `:$ kumactl config view
-control_planes:
+> control_planes:
     - name: my-first-cp
         coordinates:
             api_server:

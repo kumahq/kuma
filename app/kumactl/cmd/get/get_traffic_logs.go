@@ -15,10 +15,11 @@ import (
 
 func newGetTrafficLogsCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "traffic-logs",
-		Short:   "Show TrafficLogs",
-		Long:    `Show TrafficLog entities.`,
-		Example: `kumactl get traffic-logs -ojson | jq '.items[] | select(.name == "my-log-entity")'`,
+		Use:   "traffic-logs",
+		Short: "Show TrafficLogs",
+		Long:  `Show TrafficLog entities.`,
+		Example: `To retrieve name of my entities:
+$: kumactl get traffic-logs -ojson | jq '.items[] | select(.name == "my-log-entity")'`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {

@@ -14,9 +14,9 @@ func newConfigControlPlanesListCmd(pctx *kumactl_cmd.RootContext) *cobra.Command
 		Short: "List Control Planes",
 		Long:  `List Control Planes.`,
 		Example: `To retrieve all Control Planes from anyone Context:
-		$:kumactl config control-planes list
+$:kumactl config control-planes list
 		
-		This command displays if the Control Plane is active, its url and its name.`,
+This command displays if the Control Plane is active, its url and its name.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			context, _ := pctx.CurrentContext()
 

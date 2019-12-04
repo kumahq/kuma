@@ -20,9 +20,10 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 		Short: "Show Dataplanes",
 		Long:  `Show Dataplanes.`,
 		Example: `1. Get all dataplane's name:
-		kumactl get dataplanes -ojson | jq '.items[].name'
-		2. Get all dataplanes with inbounds configuration having specific tag:
-		kumactl get dataplane -ojson | jq '.items[] | select(.networking.inbound[].tags.my-tag == "value") | .name'`,
+$: kumactl get dataplanes -ojson | jq '.items[].name'
+
+2. Get all dataplanes with inbounds configuration having specific tag:
+$: kumactl get dataplane -ojson | jq '.items[] | select(.networking.inbound[].tags.my-tag == "value") | .name'`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {

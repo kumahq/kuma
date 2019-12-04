@@ -39,11 +39,11 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "apply",
 		Short: "Create or modify Kuma resources",
 		Long:  `Create or modify Kuma resources.`,
-		Example: `# Basic
-		kumactl apply my-dataplane.yml
+		Example: `1. Basic
+$: kumactl apply my-dataplane.yml
 
-		# Apply a remote configuration
-		kumactl apply https://github.com/Kong/kuma/blob/master/dev/examples/universal/dataplanes/example.yaml
+2. Apply a remote configuration
+$: kumactl apply https://github.com/Kong/kuma/blob/master/dev/examples/universal/dataplanes/example.yaml
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var b []byte
