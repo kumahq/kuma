@@ -151,6 +151,12 @@ List Control Planes.
 Usage:
   kumactl config control-planes list [flags]
 
+Examples:
+To retrieve all Control Planes from anyone Context:
+		$:kumactl config control-planes list
+		
+		This command displays if the Control Plane is active, its url and its name.
+
 Flags:
   -h, --help   help for list
 
