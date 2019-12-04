@@ -41,13 +41,6 @@ func (r *HealthCheckResource) SetSpec(value model.ResourceSpec) error {
 	}
 }
 
-func (r *HealthCheckResource) Validate() error {
-	if r == nil {
-		return nil
-	}
-	return r.Spec.Validate()
-}
-
 var _ model.ResourceList = &HealthCheckResourceList{}
 
 type HealthCheckResourceList struct {
