@@ -17,6 +17,8 @@ function to_abs_path() {
 
 dockerComposeSslDir="$(to_abs_path $(dirname $0)/../postgres/ssl)"
 
+chmod 600 $dockerComposeSslDir/certs/postgres.client.key
+
 export KUMA_STORE_POSTGRES_HOST=localhost
 export KUMA_STORE_POSTGRES_PORT=$(get_unused_port)
 export KUMA_STORE_POSTGRES_USER=kuma
