@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
 	"net"
 	"net/url"
 	"time"
@@ -32,6 +33,7 @@ type RootRuntime struct {
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string, *kumactl_config.Context_DataplaneTokenApiCredentials) (tokens.DataplaneTokenClient, error)
 	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
+	NewProvidedCaClient        func(string) (rest.ProvidedCaClient, error)
 }
 
 type RootContext struct {
@@ -47,6 +49,7 @@ func DefaultRootContext() *RootContext {
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 			NewCatalogClient:           catalog_client.NewCatalogClient,
+			NewProvidedCaClient:        rest.NewProvidedCaClient,
 		},
 	}
 }
@@ -203,4 +206,9 @@ func (rc *RootContext) cpOnTheSameMachine() (bool, error) {
 
 func (rc *RootContext) IsFirstTimeUsage() bool {
 	return rc.Args.ConfigFile == "" && !util_files.FileExists(config.DefaultConfigFile)
+}
+
+func (rc *RootContext) CurrentProvidedCaClient() (rest.ProvidedCaClient, error) {
+	// todo
+	return rc.Runtime.NewProvidedCaClient("http://localhost:5692")
 }
