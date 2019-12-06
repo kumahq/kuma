@@ -75,7 +75,7 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 	resource := r.ResourceFactory()
 	err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName))
 	if err != nil {
-		handleError(response, err, "Could not retrieve a resource")
+		HandleError(response, err, "Could not retrieve a resource")
 	} else {
 		res := rest.From.Resource(resource)
 		if err := response.WriteAsJson(res); err != nil {
@@ -89,11 +89,11 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 
 	list := r.ResourceListFactory()
 	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName)); err != nil {
-		handleError(response, err, "Could not retrieve resources")
+		HandleError(response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
 		if err := response.WriteAsJson(restList); err != nil {
-			handleError(response, err, "Could not list resources")
+			HandleError(response, err, "Could not list resources")
 		}
 	}
 }
@@ -107,12 +107,12 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 	}
 
 	if err := request.ReadEntity(&resourceRes); err != nil {
-		handleError(response, err, "Could not process a resource")
+		HandleError(response, err, "Could not process a resource")
 		return
 	}
 
 	if err := r.validateResourceRequest(request, &resourceRes); err != nil {
-		handleError(response, err, "Could not process a resource")
+		HandleError(response, err, "Could not process a resource")
 		return
 	}
 
@@ -121,7 +121,7 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 		if store.IsResourceNotFound(err) {
 			r.createResource(request.Request.Context(), name, meshName, resourceRes.Spec, response)
 		} else {
-			handleError(response, err, "Could not find a resource")
+			HandleError(response, err, "Could not find a resource")
 		}
 	} else {
 		r.updateResource(request.Request.Context(), resource, resourceRes, response)
@@ -149,7 +149,7 @@ func (r *resourceWs) createResource(ctx context.Context, name string, meshName s
 	res := r.ResourceFactory()
 	_ = res.SetSpec(spec)
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
-		handleError(response, err, "Could not create a resource")
+		HandleError(response, err, "Could not create a resource")
 	} else {
 		response.WriteHeader(201)
 	}
@@ -158,7 +158,7 @@ func (r *resourceWs) createResource(ctx context.Context, name string, meshName s
 func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, restRes rest.Resource, response *restful.Response) {
 	_ = res.SetSpec(restRes.Spec)
 	if err := r.resManager.Update(ctx, res); err != nil {
-		handleError(response, err, "Could not update a resource")
+		HandleError(response, err, "Could not update a resource")
 	} else {
 		response.WriteHeader(200)
 	}
@@ -170,6 +170,6 @@ func (r *resourceWs) deleteResource(request *restful.Request, response *restful.
 
 	resource := r.ResourceFactory()
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
-		handleError(response, err, "Could not delete a resource")
+		HandleError(response, err, "Could not delete a resource")
 	}
 }

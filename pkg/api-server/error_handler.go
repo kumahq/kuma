@@ -10,7 +10,7 @@ import (
 	"github.com/emicklei/go-restful"
 )
 
-func handleError(response *restful.Response, err error, title string) {
+func HandleError(response *restful.Response, err error, title string) {
 	switch {
 	case store.IsResourceNotFound(err):
 		handleNotFound(title, response)

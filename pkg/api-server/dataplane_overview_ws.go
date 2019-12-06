@@ -39,13 +39,13 @@ func (r *overviewWs) inspectDataplane(request *restful.Request, response *restfu
 
 	overview, err := r.fetchOverview(request.Request.Context(), name, meshName)
 	if err != nil {
-		handleError(response, err, "Could not retrieve a dataplane overview")
+		HandleError(response, err, "Could not retrieve a dataplane overview")
 		return
 	}
 
 	res := rest.From.Resource(overview)
 	if err := response.WriteAsJson(res); err != nil {
-		handleError(response, err, "Could not retrieve a dataplane overview")
+		HandleError(response, err, "Could not retrieve a dataplane overview")
 	}
 }
 
@@ -74,7 +74,7 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 	meshName := request.PathParameter("mesh")
 	overviews, err := r.fetchOverviews(request.Request.Context(), meshName)
 	if err != nil {
-		handleError(response, err, "Could not retrieve dataplane overviews")
+		HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
 	}
 
@@ -83,7 +83,7 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 
 	restList := rest.From.ResourceList(&overviews)
 	if err := response.WriteAsJson(restList); err != nil {
-		handleError(response, err, "Could not list dataplane overviews")
+		HandleError(response, err, "Could not list dataplane overviews")
 	}
 }
 
