@@ -49,6 +49,9 @@ type EndpointList []Endpoint
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
 
+// HealthCheckMap holds health-checking configuration for each reachable service.
+type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
+
 type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
@@ -57,6 +60,7 @@ type Proxy struct {
 	TrafficRoutes      RouteMap
 	OutboundSelectors  DestinationMap
 	OutboundTargets    EndpointMap
+	HealthChecks       HealthCheckMap
 	Metadata           *DataplaneMetadata
 }
 

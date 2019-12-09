@@ -30,6 +30,26 @@ func ToOutboundServicesOf(dataplane *mesh_core.DataplaneResource) ServiceIterato
 	})
 }
 
+func ToServicesOf(destinations core_xds.DestinationMap) ServiceIteratorFunc {
+	services := make([]core_xds.ServiceName, 0, len(destinations))
+	for service := range destinations {
+		services = append(services, service)
+	}
+	return ToServices(services)
+}
+
+func ToServices(services []core_xds.ServiceName) ServiceIteratorFunc {
+	idx := 0
+	return ServiceIteratorFunc(func() (core_xds.ServiceName, bool) {
+		if len(services) <= idx {
+			return "", false
+		}
+		service := services[idx]
+		idx++
+		return service, true
+	})
+}
+
 // SelectOutboundConnectionPolicies picks a single the most specific policy for each outbound interface of a given Dataplane.
 func SelectOutboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, policies []ConnectionPolicy) ConnectionPolicyMap {
 	return SelectConnectionPolicies(dataplane, ToOutboundServicesOf(dataplane), policies)
