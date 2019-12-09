@@ -49,6 +49,14 @@ rules:
 - apiGroups:
   - kuma.io
   resources:
+  - healthchecks
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kuma.io
+  resources:
   - proxytemplates
   verbs:
   - create
