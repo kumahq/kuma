@@ -19,33 +19,33 @@ type HealthCheckResource struct {
 	Spec mesh_proto.HealthCheck
 }
 
-func (t *HealthCheckResource) GetType() model.ResourceType {
+func (r *HealthCheckResource) GetType() model.ResourceType {
 	return HealthCheckType
 }
-func (t *HealthCheckResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *HealthCheckResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
-func (t *HealthCheckResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *HealthCheckResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
-func (t *HealthCheckResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+func (r *HealthCheckResource) GetSpec() model.ResourceSpec {
+	return &r.Spec
 }
-func (t *HealthCheckResource) SetSpec(spec model.ResourceSpec) error {
-	template, ok := spec.(*mesh_proto.HealthCheck)
+func (r *HealthCheckResource) SetSpec(value model.ResourceSpec) error {
+	spec, ok := value.(*mesh_proto.HealthCheck)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *template
+		r.Spec = *spec
 		return nil
 	}
 }
 
-func (t *HealthCheckResource) Validate() error {
-	if t == nil {
+func (r *HealthCheckResource) Validate() error {
+	if r == nil {
 		return nil
 	}
-	return t.Spec.Validate()
+	return r.Spec.Validate()
 }
 
 var _ model.ResourceList = &HealthCheckResourceList{}
@@ -68,8 +68,8 @@ func (l *HealthCheckResourceList) NewItem() model.Resource {
 	return &HealthCheckResource{}
 }
 func (l *HealthCheckResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*HealthCheckResource); ok {
-		l.Items = append(l.Items, trr)
+	if item, ok := r.(*HealthCheckResource); ok {
+		l.Items = append(l.Items, item)
 		return nil
 	} else {
 		return model.ErrorInvalidItemType((*HealthCheckResource)(nil), r)
