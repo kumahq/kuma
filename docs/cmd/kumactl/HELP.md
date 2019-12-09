@@ -329,6 +329,7 @@ Usage:
 
 Available Commands:
   dataplanes          Show Dataplanes
+  healthchecks        Show HealthChecks
   meshes              Show Meshes
   proxytemplates      Show ProxyTemplates
   traffic-logs        Show TrafficLogs
@@ -375,6 +376,24 @@ Usage:
 
 Flags:
   -h, --help   help for dataplanes
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get healthchecks
+
+```
+Show HealthChecks.
+
+Usage:
+  kumactl get healthchecks [flags]
+
+Flags:
+  -h, --help   help for healthchecks
 
 Global Flags:
       --config-file string   path to the configuration file to use
