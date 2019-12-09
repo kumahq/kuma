@@ -40,6 +40,12 @@ func (r *HealthCheckResource) SetSpec(value model.ResourceSpec) error {
 		return nil
 	}
 }
+func (t *HealthCheckResource) Sources() []*mesh_proto.Selector {
+	return t.Spec.GetSources()
+}
+func (t *HealthCheckResource) Destinations() []*mesh_proto.Selector {
+	return t.Spec.GetDestinations()
+}
 
 var _ model.ResourceList = &HealthCheckResourceList{}
 
