@@ -17,6 +17,7 @@ import (
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -134,6 +135,32 @@ func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *cor
 		},
 		TlsContext: CreateUpstreamTlsContext(ctx, metadata),
 	}
+}
+
+func ClusterWithHealthChecks(cluster *v2.Cluster, healthCheck *mesh_core.HealthCheckResource) *v2.Cluster {
+	if healthCheck == nil {
+		return cluster
+	}
+	if healthCheck.HasActiveChecks() {
+		activeChecks := healthCheck.Spec.Conf.GetActiveChecks()
+		cluster.HealthChecks = append(cluster.HealthChecks, &envoy_core.HealthCheck{
+			HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
+				TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
+			},
+			Interval:           activeChecks.Interval,
+			Timeout:            activeChecks.Timeout,
+			UnhealthyThreshold: &wrappers.UInt32Value{Value: activeChecks.UnhealthyThreshold},
+			HealthyThreshold:   &wrappers.UInt32Value{Value: activeChecks.HealthyThreshold},
+		})
+	}
+	if healthCheck.HasPassiveChecks() {
+		passiveChecks := healthCheck.Spec.Conf.GetPassiveChecks()
+		cluster.OutlierDetection = &envoy_cluster.OutlierDetection{
+			Interval:        passiveChecks.PenaltyInterval,
+			Consecutive_5Xx: &wrappers.UInt32Value{Value: passiveChecks.UnhealthyThreshold},
+		}
+	}
+	return cluster
 }
 
 func CreatePassThroughCluster(clusterName string) *v2.Cluster {

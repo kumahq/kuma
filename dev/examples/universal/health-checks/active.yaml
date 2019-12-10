@@ -8,6 +8,8 @@ destinations:
 - match:
     service: backend
 conf:
-  passiveChecks:
+  activeChecks:
+    interval: 10s
+    timeout: 2s
     unhealthyThreshold: 3
-    penaltyInterval: 5s
+    healthyThreshold: 1

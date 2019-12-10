@@ -160,3 +160,78 @@ resources:
             cluster: db
             statPrefix: db
       name: outbound:127.0.0.1:54321
+  - name: elastic
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+      healthChecks:
+      - healthyThreshold: 2
+        interval: 5s
+        tcpHealthCheck: {}
+        timeout: 4s
+        unhealthyThreshold: 3
+      name: elastic
+      tlsContext:
+        commonTlsContext:
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - googleGrpc:
+                    channelCredentials:
+                      sslCredentials:
+                        rootCerts:
+                          inlineBytes: MTIzNDU=
+                    statPrefix: sds_identity_cert
+                    targetUri: kuma-system:5677
+          validationContextSdsSecretConfig:
+            name: mesh_ca
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - googleGrpc:
+                    channelCredentials:
+                      sslCredentials:
+                        rootCerts:
+                          inlineBytes: MTIzNDU=
+                    statPrefix: sds_mesh_ca
+                    targetUri: kuma-system:5677
+      type: EDS
+  - name: elastic
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+      clusterName: elastic
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.4
+                portValue: 9200
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                service: elastic
+  - name: outbound:127.0.0.1:59200
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 127.0.0.1
+          portValue: 59200
+      deprecatedV1:
+        bindToPort: false
+      filterChains:
+      - filters:
+        - name: envoy.tcp_proxy
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+            cluster: elastic
+            statPrefix: elastic
+      name: outbound:127.0.0.1:59200
