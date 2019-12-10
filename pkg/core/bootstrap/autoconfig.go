@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
+	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	"github.com/Kong/kuma/pkg/config/api-server/catalog"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	token_server "github.com/Kong/kuma/pkg/config/token-server"
@@ -20,6 +21,7 @@ var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
 	autoconfigureDataplaneTokenServer(cfg.DataplaneTokenServer)
+	autoconfigureAdminServer(cfg.AdminServer)
 	autoconfigureCatalog(cfg)
 	autoconfigureGui(cfg)
 	autoconfigBootstrapXdsParams(cfg)
@@ -66,6 +68,12 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 		}
 	}
 	return nil
+}
+
+func autoconfigureAdminServer(cfg *admin_server.AdminServerConfig) {
+	if cfg.Public.Enabled && cfg.Public.Port == 0 {
+		cfg.Public.Port = cfg.Local.Port
+	}
 }
 
 func autoconfigureDataplaneTokenServer(cfg *token_server.DataplaneTokenServerConfig) {

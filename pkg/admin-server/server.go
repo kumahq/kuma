@@ -3,6 +3,7 @@ package admin_server
 import (
 	"context"
 	"fmt"
+	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
 	"github.com/Kong/kuma/pkg/core/runtime"
@@ -15,18 +16,20 @@ var (
 	log = core.Log.WithName("admin-server")
 )
 
-const port = 5692
-
 type AdminServer struct {
+	cfg       admin_server.AdminServerConfig
 	container *restful.Container
 }
 
-func NewAdminServer(services ...*restful.WebService) *AdminServer {
+func NewAdminServer(cfg admin_server.AdminServerConfig, services ...*restful.WebService) *AdminServer {
 	container := restful.NewContainer()
 	for _, service := range services {
 		container.Add(service)
 	}
-	return &AdminServer{container}
+	return &AdminServer{
+		cfg:       cfg,
+		container: container,
+	}
 }
 
 func (a *AdminServer) Start(stop <-chan struct{}) error {
@@ -47,7 +50,7 @@ func (a *AdminServer) Start(stop <-chan struct{}) error {
 
 func (a *AdminServer) startHttpServer() (*http.Server, chan error) {
 	server := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
+		Addr:    fmt.Sprintf("127.0.0.1:%d", a.cfg.Local.Port),
 		Handler: a.container,
 	}
 
@@ -64,12 +67,12 @@ func (a *AdminServer) startHttpServer() (*http.Server, chan error) {
 		}
 		log.Info("http server terminated normally")
 	}()
-	log.Info("starting server", "port", port)
+	log.Info("starting server", "port", a.cfg.Local.Port)
 	return server, errChan
 }
 
 func SetupServer(rt runtime.Runtime) error {
 	ws := rest.NewWebservice(rt.ProvidedCaManager())
-	srv := NewAdminServer(ws)
+	srv := NewAdminServer(*rt.Config().AdminServer, ws)
 	return rt.Add(srv)
 }

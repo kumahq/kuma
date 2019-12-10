@@ -54,14 +54,14 @@ sdsServer:
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
   tlsKeyFile: # ENV: KUMA_SDS_SERVER_TLS_KEY_FILE
 
-# Dataplane Token server configuration
+# Dataplane Token server configuration (DEPRECATED: use adminServer)
 dataplaneTokenServer:
   # If true then Dataplane Token Server and token verification is enabled
   enabled: true
   # Local configuration of server that is available only on localhost
   local:
     # Port on which the server will be exposed
-    port: 5679 # ENV: KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT
+    port: 5689 # ENV: KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT
   # Public configuration of server that is available on public interface
   public:
     # If true then Dataplane Token Server is exposed on public interface
@@ -76,6 +76,29 @@ dataplaneTokenServer:
     tlsKeyFile: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE
     # Directory of authorized client certificates
     clientCertsDir: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR"`
+
+# Admin server configuration
+adminServer:
+  # If true then Admin Server and token verification is enabled
+  enabled: true
+  # Local configuration of server that is available only on localhost
+  local:
+    # Port on which the server will be exposed
+    port: 5679 # ENV: KUMA_ADMIN_SERVER_LOCAL_PORT
+  # Public configuration of server that is available on public interface
+  public:
+    # If true then Admin Server is exposed on public interface
+    enabled: false
+    # Port on which the server will be exposed. If not specified (0) then port from local configuration will be used
+    port: 0 # ENV: KUMA_ADMIN_SERVER_PUBLIC_PORT
+    # Public interface on which the server will be exposed
+    interface: # ENV: KUMA_ADMIN_SERVER_PUBLIC_INTERFACE
+    # Path to TLS certificate file
+    tlsCertFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE
+    # Path to TLS key file
+    tlsKeyFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE
+    # Directory of authorized client certificates
+    clientCertsDir: # ENV: KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR"`
 
 # Envoy XDS server configuration
 xdsServer:
