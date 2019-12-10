@@ -2,9 +2,9 @@ package rest_test
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
+	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/Kong/kuma/pkg/core/secrets/cipher"
 	"github.com/Kong/kuma/pkg/core/secrets/manager"
 	"github.com/Kong/kuma/pkg/core/secrets/store"

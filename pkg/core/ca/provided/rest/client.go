@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	types2 "github.com/Kong/kuma/pkg/api-server/types"
+
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
+	error_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/Kong/kuma/pkg/tls"
 	util_http "github.com/Kong/kuma/pkg/util/http"
 	"github.com/pkg/errors"
@@ -121,7 +122,7 @@ func (h *httpProvidedCaClient) doRequest(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 	if resp.StatusCode/100 >= 4 {
-		kumaErr := types2.Error{}
+		kumaErr := error_types.Error{}
 		if err := json.Unmarshal(b, &kumaErr); err == nil {
 			if kumaErr.Title != "" && kumaErr.Details != "" {
 				return nil, &kumaErr

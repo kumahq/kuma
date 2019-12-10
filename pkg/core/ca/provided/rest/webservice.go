@@ -1,11 +1,11 @@
 package rest
 
 import (
-	api_server "github.com/Kong/kuma/pkg/api-server"
-	api_server_types "github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
+	rest_errors "github.com/Kong/kuma/pkg/core/rest/errors"
+	errors_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/tls"
 	"github.com/emicklei/go-restful"
@@ -111,7 +111,7 @@ func (p *providedCAWebservice) signingCertificates(request *restful.Request, res
 func handleError(response *restful.Response, err error, title string) {
 	switch err.(type) {
 	case *provided.SigningCertNotFound:
-		kumaErr := api_server_types.Error{
+		kumaErr := errors_types.Error{
 			Title:   title,
 			Details: "Not found",
 		}
@@ -119,6 +119,6 @@ func handleError(response *restful.Response, err error, title string) {
 			logger.Error(err, "Could not write the error response")
 		}
 	default:
-		api_server.HandleError(response, err, title)
+		rest_errors.HandleError(response, err, title)
 	}
 }

@@ -1,11 +1,11 @@
-package api_server
+package errors
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/emicklei/go-restful"
 )
