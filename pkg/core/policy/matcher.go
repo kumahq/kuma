@@ -5,10 +5,38 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
+
+type ServiceIterator interface {
+	Next() (core_xds.ServiceName, bool)
+}
+
+type ServiceIteratorFunc func() (string, bool)
+
+func (f ServiceIteratorFunc) Next() (core_xds.ServiceName, bool) {
+	return f()
+}
+
+func ToOutboundServicesOf(dataplane *mesh_core.DataplaneResource) ServiceIteratorFunc {
+	idx := 0
+	return ServiceIteratorFunc(func() (core_xds.ServiceName, bool) {
+		if len(dataplane.Spec.Networking.GetOutbound()) <= idx {
+			return "", false
+		}
+		oface := dataplane.Spec.Networking.GetOutbound()[idx]
+		idx++
+		return oface.Service, true
+	})
+}
 
 // SelectOutboundConnectionPolicies picks a single the most specific policy for each outbound interface of a given Dataplane.
 func SelectOutboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, policies []ConnectionPolicy) ConnectionPolicyMap {
+	return SelectConnectionPolicies(dataplane, ToOutboundServicesOf(dataplane), policies)
+}
+
+// SelectConnectionPolicies picks a single the most specific policy applicable to a connection between a given dataplane and given destination services.
+func SelectConnectionPolicies(dataplane *mesh_core.DataplaneResource, destinations ServiceIterator, policies []ConnectionPolicy) ConnectionPolicyMap {
 	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
 
 	// First, select only those ConnectionPolicies that have a `source` selector matching a given Dataplane.
@@ -52,27 +80,27 @@ func SelectOutboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, po
 		bestAggregateRank mesh_proto.TagSelectorRank
 	}
 
-	candidatesByDestination := map[ServiceName]candidateByDestination{}
-	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
-		if _, ok := candidatesByDestination[oface.Service]; ok {
+	candidatesByDestination := map[core_xds.ServiceName]candidateByDestination{}
+	for service, ok := destinations.Next(); ok; service, ok = destinations.Next() {
+		if _, ok := candidatesByDestination[service]; ok {
 			// apparently, multiple outbound interfaces of a given Dataplane refer to the same service
 			continue
 		}
-		outboundTags := mesh_proto.SingleValueTagSet{mesh_proto.ServiceTag: oface.Service}
+		outboundTags := mesh_proto.SingleValueTagSet{mesh_proto.ServiceTag: service}
 		for _, candidateBySource := range candidatesBySource {
 			for _, destination := range candidateBySource.policy.Destinations() {
 				destinationSelector := mesh_proto.TagSelector(destination.Match)
 				if destinationSelector.Matches(outboundTags) {
 					aggregateRank := destinationSelector.Rank().CombinedWith(candidateBySource.bestSourceRank)
 
-					candidateByDestination, exists := candidatesByDestination[oface.Service]
+					candidateByDestination, exists := candidatesByDestination[service]
 
 					if !exists || aggregateRank.CompareTo(candidateByDestination.bestAggregateRank) > 0 {
 						// TODO(yskopets): use CreationDate to resolve a conflict between 2 equal ranks
 						candidateByDestination.candidateBySource = candidateBySource
 						candidateByDestination.bestAggregateRank = aggregateRank
 
-						candidatesByDestination[oface.Service] = candidateByDestination
+						candidatesByDestination[service] = candidateByDestination
 					}
 				}
 			}
@@ -80,11 +108,8 @@ func SelectOutboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, po
 	}
 
 	policyMap := ConnectionPolicyMap{}
-	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
-		candidate, exists := candidatesByDestination[oface.Service]
-		if exists {
-			policyMap[oface.Service] = candidate.policy
-		}
+	for service, candidate := range candidatesByDestination {
+		policyMap[service] = candidate.policy
 	}
 	return policyMap
 }
