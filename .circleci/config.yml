@@ -412,6 +412,12 @@ jobs:
     - run:
         name: Verify Envoy stats
         command: make verify/example/docker-compose
+    - run:
+        name: Verify traffic routing without mTLS
+        command: make verify/traffic-routing/docker-compose/without-mtls
+    - run:
+        name: Verify traffic routing with mTLS
+        command: make verify/traffic-routing/docker-compose/with-mtls
 
   example_minikube:
     executor: vm
@@ -447,7 +453,7 @@ jobs:
             name: Load Docker images into Minikube
             command: make load/example/minikube
     - run:
-        name: Deploy Kuma demo
+        name: Deploy example setup
         command: make deploy/example/minikube
     - run:
         name: Wait until Envoy listener gets configured
@@ -473,6 +479,18 @@ jobs:
     - run:
         name: Verify kumactl workflow
         command: make kumactl/example/minikube
+    - run:
+        name: Undeploy example setup
+        command: make undeploy/example/minikube
+    - run:
+        name: Deploy example setup for traffic routing
+        command: make deploy/traffic-routing/minikube
+    - run:
+        name: Verify traffic routing without mTLS
+        command: make verify/traffic-routing/minikube/without-mtls
+    - run:
+        name: Verify traffic routing with mTLS
+        command: make verify/traffic-routing/minikube/with-mtls
 
   release:
     executor: golang

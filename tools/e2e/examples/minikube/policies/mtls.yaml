@@ -3,7 +3,6 @@ apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: default
-  namespace: kuma-system
 spec:
   mtls:
     ca:
@@ -13,7 +12,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: TrafficPermission
 metadata:
-  namespace: kuma-demo
+  namespace: kuma-system
   name: everyone-to-everyone
 mesh: default
 spec:

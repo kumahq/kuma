@@ -2,9 +2,36 @@
 		deploy/example/docker-compose undeploy/example/docker-compose \
 		wait/example/docker-compose curl/example/docker-compose stats/example/docker-compose \
 		verify/example/docker-compose/inbound verify/example/docker-compose/outbound verify/example/docker-compose \
-		build/example/minikube load/example/minikube deploy/example/minikube wait/example/minikube apply/example/minikube/mtls wait/example/minikube/mtls curl/example/minikube stats/example/minikube \
+		verify/traffic-routing/docker-compose/without-mtls verify/traffic-routing/docker-compose/with-mtls \
+		apply/traffic-routing/docker-compose/mtls wait/traffic-routing/docker-compose/mtls \
+		apply/traffic-routing/docker-compose/no-mtls wait/traffic-routing/docker-compose/no-mtls \
+		verify/traffic-routing/docker-compose/workflow \
+		wait/traffic-routing/docker-compose \
+		verify/traffic-routing/docker-compose/default-route \
+		apply/traffic-routing/docker-compose/web-to-backend-route \
+		wait/traffic-routing/docker-compose/web-to-backend-route \
+		verify/traffic-routing/docker-compose/web-to-backend-route \
+		delete/traffic-routing/docker-compose/web-to-backend-route \
+		wait/traffic-routing/docker-compose/no-web-to-backend-route \
+		build/example/minikube load/example/minikube \
+		deploy/example/minikube wait/example/minikube \
+		undeploy/example/minikube \
+		apply/example/minikube/mtls wait/example/minikube/mtls \
+		curl/example/minikube stats/example/minikube \
 		verify/example/minikube/inbound verify/example/minikube/outbound verify/example/minikube \
-		verify/example/minikube/mtls/outbound verify/example/minikube/mtls
+		verify/example/minikube/mtls/outbound verify/example/minikube/mtls \
+		undeploy/example/minikube \
+		deploy/traffic-routing/minikube \
+		verify/traffic-routing/minikube/without-mtls verify/traffic-routing/minikube/with-mtls \
+		verify/traffic-routing/minikube/workflow \
+		apply/traffic-routing/minikube/mtls wait/traffic-routing/minikube/mtls \
+		apply/traffic-routing/minikube/no-mtls wait/traffic-routing/minikube/no-mtls \
+		wait/traffic-routing/minikube \
+		verify/traffic-routing/minikube/default-route \
+		apply/traffic-routing/minikube/web-to-backend-route wait/traffic-routing/minikube/web-to-backend-route \
+		verify/traffic-routing/minikube/web-to-backend-route \
+		delete/traffic-routing/minikube/web-to-backend-route wait/traffic-routing/minikube/no-web-to-backend-route \
+		undeploy/traffic-routing/minikube
 
 DOCKER_COMPOSE_OPTIONS ?=
 
@@ -26,11 +53,19 @@ define pull_docker_images
 	fi
 endef
 
-define wait_for_example_client
+define docker_compose
+	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml
+endef
+
+define kubectl_exec
+	kubectl -n $(1) exec -ti $$( kubectl -n $(1) get pods -l app=$(2) -o=jsonpath='{.items[0].metadata.name}' ) -c $(3) -- 
+endef
+
+define wait_for_client_service
 	sh -c ' \
 		for i in `seq 1 60`; do \
 			echo -n "try #$$i: " ; \
-			curl --silent --show-error --fail --include http://localhost:3000 ; \
+			curl --silent --show-error --fail --include http://localhost:$(1) ; \
 			if [[ $$? -eq 0 ]]; then \
 				exit 0; \
 			fi; \
@@ -64,9 +99,11 @@ define envoy_active_mtls_listeners_count
 	| select(.listener.name | startswith(\"$(1)\")) \
 	| select(.listener.address.socket_address.port_value == $(2)) \
 	| select(.listener.filter_chains[] \
-		| (.tls_context.common_tls_context.tls_certificate_sds_secret_configs[] .name == \"identity_cert\") \
-		  and (.tls_context.common_tls_context.validation_context_sds_secret_config.name == \"mesh_ca\") \
-		  and (.tls_context.require_client_certificate == true) ) " \
+		| (.tls_context.common_tls_context \
+			and .tls_context.common_tls_context.tls_certificate_sds_secret_configs[] .name == \"identity_cert\") \
+			and (.tls_context.common_tls_context.validation_context_sds_secret_config.name == \"mesh_ca\") \
+			and (.tls_context.require_client_certificate == true) \
+	  ) " \
 	| jq -s ". | length"
 endef
 
@@ -76,6 +113,7 @@ define envoy_active_mtls_clusters_count
     | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ClustersConfigDump\") \
 	| .dynamic_active_clusters[] \
 	| select(.cluster.name == \"$(1)\") \
+	| select(.cluster.tls_context.common_tls_context) \
 	| select(.cluster.tls_context.common_tls_context | \
 		 (.tls_certificate_sds_secret_configs[] | .name == \"identity_cert\") and (.validation_context_sds_secret_config.name == \"mesh_ca\") \
 	  ) " \
@@ -102,6 +140,38 @@ define verify_example_outbound
 	@echo "Check passed!"
 endef
 
+define curl_web_to_backend
+	sh -c ' \
+		set -e ; \
+		for i in `seq 1 100`; do \
+			curl --silent --show-error --fail http://localhost:6060 ; \
+		done; \
+	'
+endef
+
+define envoy_active_routing_listeners_count
+	curl -s localhost:9901/config_dump \
+	| jq ".configs[] \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ListenersConfigDump\") \
+	| .dynamic_active_listeners[] \
+	| select(.listener.name | startswith(\"$(1)\")) \
+	| select(.listener.address.socket_address.port_value == $(2)) \
+	| select(.listener.filter_chains[] | .filters[] \
+		 | select((.name = \"envoy.tcp_proxy\") \
+			and (.typed_config.cluster == \"$(3)\")) \
+	  ) " \
+	| jq -s ". | length"
+endef
+
+define envoy_active_routing_clusters_count
+	curl -s localhost:9901/config_dump \
+	| jq ".configs[] \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ClustersConfigDump\") \
+	| .dynamic_active_clusters[] \
+	| select(.cluster.name == \"$(1)\")" \
+	| jq -s ". | length"
+endef
+
 #
 # Docker Compose setup
 #
@@ -113,27 +183,21 @@ load/example/docker-compose: docker/load ## Docker Compose: Load Docker images
 deploy/example/docker-compose: ## Docker Compose: Run example setup
 	$(call pull_docker_images)
 	if [ "$(KUMACTL_INSTALL_USE_LOCAL_IMAGES)" != "true" ]; then \
-		docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml pull ; \
+		$(call docker_compose) pull ; \
 	fi
-	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
-		up $(DOCKER_COMPOSE_OPTIONS)
+	$(call docker_compose) up $(DOCKER_COMPOSE_OPTIONS)
 
 undeploy/example/docker-compose: ## Docker Compose: Remove example setup
-	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
-		down
+	$(call docker_compose) down
 
 wait/example/docker-compose: ## Docker Compose: Wait for example setup to get ready
-	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
-		exec kuma-example-client $(call wait_for_example_client)
+	$(call docker_compose) exec kuma-example-client $(call wait_for_client_service,3000)
 
 curl/example/docker-compose: ## Docker Compose: Make sample requests to the example setup
-	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
-		exec kuma-example-client $(call curl_example_client)
+	$(call docker_compose) exec kuma-example-client $(call curl_example_client)
 
 verify/example/docker-compose/inbound:
-	$(call verify_example_inbound,\
-		docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml exec kuma-example-app\
-	)
+	$(call verify_example_inbound,$(call docker_compose) exec kuma-example-app)
 
 verify/example/docker-compose/outbound:
 	@echo "Checking number of Outbound requests via Envoy ..."
@@ -142,8 +206,100 @@ verify/example/docker-compose/outbound:
 verify/example/docker-compose: verify/example/docker-compose/inbound verify/example/docker-compose/outbound ## Docker Compose: Verify Envoy stats (after sample requests)
 
 stats/example/docker-compose: ## Docker Compose: Observe Envoy metrics from the example setup
-	docker-compose -f tools/e2e/examples/docker-compose/docker-compose.yaml \
-		exec kuma-example-app curl -s localhost:9901/stats/prometheus | grep upstream_rq_total
+	$(call docker_compose) exec kuma-example-app curl -s localhost:9901/stats/prometheus | grep upstream_rq_total
+
+verify/traffic-routing/docker-compose/without-mtls: \
+	apply/traffic-routing/docker-compose/no-mtls \
+	wait/traffic-routing/docker-compose/no-mtls \
+	verify/traffic-routing/docker-compose/workflow
+
+verify/traffic-routing/docker-compose/with-mtls: \
+	apply/traffic-routing/docker-compose/mtls \
+	wait/traffic-routing/docker-compose/mtls \
+	verify/traffic-routing/docker-compose/workflow
+
+verify/traffic-routing/docker-compose/workflow: \
+	wait/traffic-routing/docker-compose \
+	verify/traffic-routing/docker-compose/default-route \
+	apply/traffic-routing/docker-compose/web-to-backend-route \
+	wait/traffic-routing/docker-compose/web-to-backend-route \
+	verify/traffic-routing/docker-compose/web-to-backend-route \
+	delete/traffic-routing/docker-compose/web-to-backend-route \
+	wait/traffic-routing/docker-compose/no-web-to-backend-route \
+	verify/traffic-routing/docker-compose/default-route
+
+apply/traffic-routing/docker-compose/mtls: ## Docker Compose: enable mTLS
+	@echo
+	@echo "Enabling mTLS ..."
+	@echo
+	$(call docker_compose) exec kumactl kumactl apply -f /kuma-example/policies/mtls.yaml
+	$(call docker_compose) exec kumactl kumactl apply -f /kuma-example/policies/everyone-to-everyone.traffic-permission.yaml
+
+wait/traffic-routing/docker-compose/mtls: ## Docker Compose: Wait until incoming Listener and outgoing Cluster have been configured for mTLS
+	@echo
+	@echo "Waiting until incoming Listener and outgoing Cluster have been configured for mTLS ..."
+	@echo
+	$(call docker_compose) exec kuma-example-web sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,6060) ) -eq 1 ]]; then echo "listener has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for mTLS" ; exit 1'
+	$(call docker_compose) exec kuma-example-web sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
+
+apply/traffic-routing/docker-compose/no-mtls: ## Docker Compose: disable mTLS
+	@echo
+	@echo "Disabling mTLS ..."
+	@echo
+	$(call docker_compose) exec kumactl kumactl apply -f /kuma-example/policies/no-mtls.yaml
+
+wait/traffic-routing/docker-compose/no-mtls: ## Docker Compose: Wait until mTLS has been disabled on incoming Listener and outgoing Cluster
+	@echo
+	@echo "Waiting until mTLS has been disabled on incoming Listener and outgoing Cluster ..."
+	@echo
+	$(call docker_compose) exec kuma-example-web sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,6060) ) -eq 0 ]]; then echo "listener is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener is still configured for mTLS" ; exit 1'
+	$(call docker_compose) exec kuma-example-web sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend) ) -eq 0 ]]; then echo "cluster is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for mTLS" ; exit 1'
+
+wait/traffic-routing/docker-compose: ## Docker Compose: Wait for example setup for TrafficRoute to get ready
+	@echo
+	@echo "Waiting for example setup for TrafficRoute to get ready ..."
+	@echo
+	$(call docker_compose) exec kuma-example-web $(call wait_for_client_service,6060)
+
+verify/traffic-routing/docker-compose/default-route: ## Docker Compose: Make sample requests to example setup for TrafficRoute
+	@echo
+	@echo "Checking default traffic routing policy (round robin) ..."
+	@echo
+	test $$( $(call docker_compose) exec kuma-example-web $(call curl_web_to_backend) | sort | uniq | wc -l ) -eq 2
+	@echo "Check passed!"
+
+apply/traffic-routing/docker-compose/web-to-backend-route: ## Docker Compose: create "web-to-backend" route
+	@echo
+	@echo "Creating 'web-to-backend' route ..."
+	@echo
+	$(call docker_compose) exec kumactl kumactl apply -f /kuma-example/policies/web-to-backend.traffic-route.yaml
+
+wait/traffic-routing/docker-compose/web-to-backend-route: ## Docker Compose: Wait until custom "web-to-backend" TrafficRoute is applied
+	@echo
+	@echo "Waiting until custom 'web-to-backend' TrafficRoute is applied ..."
+	@echo
+	$(call docker_compose) exec kuma-example-web sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_listeners_count,outbound,5000,kuma-example-backend{version=v2}) ) -eq 1 ]]; then echo "listener is now configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for subset routing" ; exit 1'
+	$(call docker_compose) exec kuma-example-web sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_clusters_count,kuma-example-backend{version=v2}) ) -eq 1 ]]; then echo "cluster is now configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for subset routing" ; exit 1'
+
+verify/traffic-routing/docker-compose/web-to-backend-route: ## Docker Compose: Make sample requests to example setup for TrafficRoute
+	@echo
+	@echo "Checking custom traffic routing policy (100% to v2) ..."
+	@echo
+	test $$( $(call docker_compose) exec kuma-example-web $(call curl_web_to_backend) | sort | uniq | tr -d '\r\n' ) = '{"version":"v2"}'
+	@echo "Check passed!"
+
+delete/traffic-routing/docker-compose/web-to-backend-route: ## Docker Compose: delete "web-to-backend" route
+	@echo
+	@echo "Deleting 'web-to-backend' route ..."
+	@echo
+	$(call docker_compose) exec kumactl kumactl delete traffic-route web-to-backend
+
+wait/traffic-routing/docker-compose/no-web-to-backend-route: ## Docker Compose: Wait until custom "web-to-backend" TrafficRoute is removed
+	@echo
+	@echo "Waiting until custom 'web-to-backend' TrafficRoute is removed ..."
+	@echo
+	$(call docker_compose) exec kuma-example-web sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_listeners_count,outbound,5000,kuma-example-backend{version=v2}) ) -eq 0 ]]; then echo "listener is no longer configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: listener is still configured for subset routing" ; exit 1'
+	$(call docker_compose) exec kuma-example-web sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_clusters_count,kuma-example-backend{version=v2}) ) -eq 0 ]]; then echo "cluster is no longer configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for subset routing" ; exit 1'
 
 #
 # Minikube setup
@@ -170,23 +326,23 @@ apply/example/minikube/mtls: ## Minikube: enable mTLS
 	kubectl apply -f tools/e2e/examples/minikube/policies/mtls.yaml
 
 wait/example/minikube: ## Minikube: Wait for demo setup to get ready
-	kubectl -n kuma-demo exec -ti $$( kubectl -n kuma-demo get pods -l app=demo-client -o=jsonpath='{.items[0].metadata.name}' ) -c demo-client -- $(call wait_for_example_client)
+	$(call kubectl_exec,kuma-demo,demo-client,demo-client) $(call wait_for_client_service,3000)
 
 wait/example/minikube/mtls: ## Minikube: Wait until incoming Listener and outgoing Cluster have been configured for mTLS
-	kubectl -n kuma-demo exec -ti $$( kubectl -n kuma-demo get pods -l app=demo-client -o=jsonpath='{.items[0].metadata.name}' ) -c demo-client -- sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,3000) ) -eq 1 ]]; then echo "listener has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for mTLS" ; exit 1'
-	kubectl -n kuma-demo exec -ti $$( kubectl -n kuma-demo get pods -l app=demo-client -o=jsonpath='{.items[0].metadata.name}' ) -c demo-client -- sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,demo-app.kuma-demo.svc:8000) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-demo,demo-client,demo-client) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,3000) ) -eq 1 ]]; then echo "listener has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-demo,demo-client,demo-client) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,demo-app.kuma-demo.svc:8000) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
 
 curl/example/minikube: ## Minikube: Make sample requests to demo setup
-	kubectl -n kuma-demo exec -ti $$( kubectl -n kuma-demo get pods -l app=demo-client -o=jsonpath='{.items[0].metadata.name}' ) -c demo-client -- $(call curl_example_client)
+	$(call kubectl_exec,kuma-demo,demo-client,demo-client) $(call curl_example_client)
 
 stats/example/minikube: ## Minikube: Observe Envoy metrics from demo setup
-	kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
+	$(call kubectl_exec,kuma-demo,demo-app,kuma-sidecar) wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
 
 verify/example/minikube/inbound:
-	$(call verify_example_inbound,kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar -- )
+	$(call verify_example_inbound,$(call kubectl_exec,kuma-demo,demo-app,kuma-sidecar))
 
 verify/example/minikube/outbound:
-	$(call verify_example_outbound,kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar -- )
+	$(call verify_example_outbound,$(call kubectl_exec,kuma-demo,demo-app,kuma-sidecar))
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
 
@@ -194,8 +350,121 @@ verify/example/minikube/mtls: verify/example/minikube/mtls/outbound ## Minikube:
 
 verify/example/minikube/mtls/outbound:
 	@echo "Checking number of Outbound mTLS requests via Envoy ..."
-	test $$( kubectl -n kuma-demo exec $$(kubectl -n kuma-demo get pods -l app=demo-client -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar -- wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_kuma_demo_svc_8000_ssl_handshake{envoy_cluster_name="demo-app"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 5
+	test $$( $(call kubectl_exec,kuma-demo,demo-client,kuma-sidecar) wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_kuma_demo_svc_8000_ssl_handshake{envoy_cluster_name="demo-app"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 5
 	@echo "Check passed!"
 
 kumactl/example/minikube:
 	cat tools/e2e/examples/minikube/kumactl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KUMACTL_DOCKER_IMAGE)
+
+undeploy/example/minikube: ## Minikube: Undeploy example setup
+	kubectl delete -f tools/e2e/examples/minikube/kuma-demo/
+
+deploy/traffic-routing/minikube: ## Minikube: Deploy example setup for TrafficRoute
+	@echo
+	@echo "Deploying example setup for TrafficRoute ..."
+	@echo
+	kubectl apply -f tools/e2e/examples/minikube/kuma-routing/
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-example deployment/kuma-example-web
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-example pods -l app=kuma-example-web
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-example deployment/kuma-example-backend-v1
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-example pods -l app=kuma-example-backend,version=v1
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-example deployment/kuma-example-backend-v2
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-example pods -l app=kuma-example-backend,version=v2
+
+verify/traffic-routing/minikube/without-mtls: \
+	apply/traffic-routing/minikube/no-mtls \
+	wait/traffic-routing/minikube/no-mtls \
+	verify/traffic-routing/minikube/workflow
+
+verify/traffic-routing/minikube/with-mtls: \
+	apply/traffic-routing/minikube/mtls \
+	wait/traffic-routing/minikube/mtls \
+	verify/traffic-routing/minikube/workflow
+
+verify/traffic-routing/minikube/workflow: \
+	wait/traffic-routing/minikube \
+	verify/traffic-routing/minikube/default-route \
+	apply/traffic-routing/minikube/web-to-backend-route \
+	wait/traffic-routing/minikube/web-to-backend-route \
+	verify/traffic-routing/minikube/web-to-backend-route \
+	delete/traffic-routing/minikube/web-to-backend-route \
+	wait/traffic-routing/minikube/no-web-to-backend-route \
+	verify/traffic-routing/minikube/default-route
+
+apply/traffic-routing/minikube/mtls: ## Minikube: enable mTLS
+	@echo
+	@echo "Enabling mTLS ..."
+	@echo
+	kubectl apply -f tools/e2e/examples/minikube/policies/mtls.yaml
+
+wait/traffic-routing/minikube/mtls: ## Minikube: Wait until incoming Listener and outgoing Cluster have been configured for mTLS
+	@echo
+	@echo "Waiting until incoming Listener and outgoing Cluster have been configured for mTLS ..."
+	@echo
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,6060) ) -eq 1 ]]; then echo "listener has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend.kuma-example.svc:7070) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
+
+apply/traffic-routing/minikube/no-mtls: ## Minikube: disable mTLS
+	@echo
+	@echo "Disabling mTLS ..."
+	@echo
+	kubectl apply -f tools/e2e/examples/minikube/policies/no-mtls.yaml
+
+wait/traffic-routing/minikube/no-mtls: ## Minikube: Wait until mTLS has been disabled on incoming Listener and outgoing Cluster
+	@echo
+	@echo "Waiting until mTLS has been disabled on incoming Listener and outgoing Cluster ..."
+	@echo
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,6060) ) -eq 0 ]]; then echo "listener is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener is still configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend.kuma-example.svc:7070) ) -eq 0 ]]; then echo "cluster is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for mTLS" ; exit 1'
+
+wait/traffic-routing/minikube: ## Minikube: Wait for example setup for TrafficRoute to get ready
+	@echo
+	@echo "Waiting for example setup for TrafficRoute to get ready ..."
+	@echo
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) $(call wait_for_client_service,6060)
+
+verify/traffic-routing/minikube/default-route: ## Minikube: Make sample requests to example setup for TrafficRoute
+	@echo
+	@echo "Checking default traffic routing policy (round robin) ..."
+	@echo
+	test $$( $(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) $(call curl_web_to_backend) | sort | uniq | wc -l ) -eq 2
+	@echo "Check passed!"
+
+apply/traffic-routing/minikube/web-to-backend-route: ## Minikube: create "web-to-backend" route
+	@echo
+	@echo "Creating 'web-to-backend' route ..."
+	@echo
+	kubectl apply -f tools/e2e/examples/minikube/policies/web-to-backend.traffic-route.yaml
+
+wait/traffic-routing/minikube/web-to-backend-route: ## Minikube: Wait until custom "web-to-backend" TrafficRoute is applied
+	@echo
+	@echo "Waiting until custom 'web-to-backend' TrafficRoute is applied ..."
+	@echo
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_listeners_count,outbound,7070,kuma-example-backend.kuma-example.svc:7070{version=v2}) ) -eq 1 ]]; then echo "listener is now configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for subset routing" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_clusters_count,kuma-example-backend.kuma-example.svc:7070{version=v2}) ) -eq 1 ]]; then echo "cluster is now configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for subset routing" ; exit 1'
+
+verify/traffic-routing/minikube/web-to-backend-route: ## Minikube: Make sample requests to example setup for TrafficRoute
+	@echo
+	@echo "Checking custom traffic routing policy (100% to v2) ..."
+	@echo
+	test $$( $(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) $(call curl_web_to_backend) | sort | uniq | tr -d '\r\n' ) = '{"version":"v2"}'
+	@echo "Check passed!"
+
+delete/traffic-routing/minikube/web-to-backend-route: ## Minikube: delete "web-to-backend" route
+	@echo
+	@echo "Deleting 'web-to-backend' route ..."
+	@echo
+	kubectl delete -f tools/e2e/examples/minikube/policies/web-to-backend.traffic-route.yaml
+
+wait/traffic-routing/minikube/no-web-to-backend-route: ## Minikube: Wait until custom "web-to-backend" TrafficRoute is removed
+	@echo
+	@echo "Waiting until custom 'web-to-backend' TrafficRoute is removed ..."
+	@echo
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_listeners_count,outbound,7070,kuma-example-backend.kuma-example.svc:7070{version=v2}) ) -eq 0 ]]; then echo "listener is no longer configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: listener is still configured for subset routing" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_clusters_count,kuma-example-backend.kuma-example.svc:7070{version=v2}) ) -eq 0 ]]; then echo "cluster is no longer configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for subset routing" ; exit 1'
+
+undeploy/traffic-routing/minikube: ## Minikube: Undeploy example setup for TrafficRoute
+	@echo
+	@echo "Undeploying example setup for TrafficRoute ..."
+	@echo
+	kubectl delete -f tools/e2e/examples/minikube/kuma-routing/
