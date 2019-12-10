@@ -42,11 +42,11 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 	for i, route := range routes {
 		policies[i] = route
 	}
-	matchMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
+	policyMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
 
 	routeMap := core_xds.RouteMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
-		policy, exists := matchMap[oface.Service]
+		policy, exists := policyMap[oface.Service]
 		if exists {
 			routeMap[oface.Service] = policy.(*mesh_core.TrafficRouteResource)
 		} else {

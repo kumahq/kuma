@@ -79,14 +79,14 @@ func SelectOutboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, po
 		}
 	}
 
-	matchMap := ConnectionPolicyMap{}
+	policyMap := ConnectionPolicyMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
 		candidate, exists := candidatesByDestination[oface.Service]
 		if exists {
-			matchMap[oface.Service] = candidate.policy
+			policyMap[oface.Service] = candidate.policy
 		}
 	}
-	return matchMap
+	return policyMap
 }
 
 type ConnectionPolicyByName []ConnectionPolicy
