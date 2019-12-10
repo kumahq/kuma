@@ -78,9 +78,9 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission, traffic-route"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission, traffic-route`))
+			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route`))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
@@ -147,6 +147,12 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return &mesh_core.DataplaneResource{} },
 					expectedMessage: "deleted Dataplane \"web\"\n",
 				}),
+				Entry("healthchecks", testCase{
+					typ:             "healthcheck",
+					name:            "web-to-backend",
+					resource:        func() core_model.Resource { return &mesh_core.HealthCheckResource{} },
+					expectedMessage: "deleted HealthCheck \"web-to-backend\"\n",
+				}),
 				Entry("traffic-permissions", testCase{
 					typ:             "traffic-permission",
 					name:            "everyone-to-everyone",
@@ -189,6 +195,12 @@ var _ = Describe("kumactl delete ", func() {
 					name:            "web",
 					resource:        func() core_model.Resource { return &mesh_core.DataplaneResource{} },
 					expectedMessage: "Error: there is no Dataplane with name \"web\"\n",
+				}),
+				Entry("healthchecks", testCase{
+					typ:             "healthcheck",
+					name:            "web-to-backend",
+					resource:        func() core_model.Resource { return &mesh_core.HealthCheckResource{} },
+					expectedMessage: "Error: there is no HealthCheck with name \"web-to-backend\"\n",
 				}),
 				Entry("traffic-permissions", testCase{
 					typ:             "traffic-permission",

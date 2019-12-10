@@ -41,6 +41,7 @@ gen_help kumactl generate dp-token
 gen_help kumactl get
 gen_help kumactl get meshes
 gen_help kumactl get dataplanes
+gen_help kumactl get healthchecks
 gen_help kumactl get proxytemplates
 gen_help kumactl get traffic-logs
 gen_help kumactl get traffic-permissions

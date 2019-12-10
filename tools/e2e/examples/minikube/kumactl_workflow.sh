@@ -28,6 +28,11 @@ function workflow() {
     run kumactl get dataplanes -oyaml
     run kumactl get dataplanes -ojson
 
+    run kumactl get healthchecks
+    run kumactl get healthchecks -otable
+    run kumactl get healthchecks -oyaml
+    run kumactl get healthchecks -ojson
+
     run kumactl get proxytemplates
     run kumactl get proxytemplates -otable
     run kumactl get proxytemplates -oyaml
@@ -42,6 +47,11 @@ function workflow() {
     run kumactl get traffic-permissions -otable
     run kumactl get traffic-permissions -oyaml
     run kumactl get traffic-permissions -ojson
+
+    run kumactl get traffic-routes
+    run kumactl get traffic-routes -otable
+    run kumactl get traffic-routes -oyaml
+    run kumactl get traffic-routes -ojson
 
     run kumactl inspect dataplanes
     run kumactl inspect dataplanes -otable

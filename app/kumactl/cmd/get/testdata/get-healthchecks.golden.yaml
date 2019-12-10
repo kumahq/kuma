@@ -1,0 +1,7 @@
+items:
+- mesh: default
+  name: web-to-backend
+  type: HealthCheck
+- mesh: default
+  name: backend-to-db
+  type: HealthCheck
