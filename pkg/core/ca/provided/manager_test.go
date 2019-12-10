@@ -47,7 +47,7 @@ var _ = Describe("CA Provided Manager", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(rootCerts).To(HaveLen(1))
-			Expect(rootCerts[0]).To(Equal(signingCert))
+			Expect(rootCerts[0]).To(Equal(*signingCert))
 		})
 
 		It("should not allow to add another CA Root to existing CA", func() {

@@ -30,7 +30,7 @@ type ProvidedCa struct {
 }
 
 type ProvidedCaManager interface {
-	AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) (SigningCert, error)
+	AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) (*SigningCert, error)
 	DeleteSigningCert(ctx context.Context, mesh string, id string) error
 
 	DeleteCa(ctx context.Context, mesh string) error
@@ -49,27 +49,27 @@ func NewProvidedCaManager(secretManager secret_manager.SecretManager) ProvidedCa
 	return &providedCaManager{secretManager}
 }
 
-func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) (SigningCert, error) {
+func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) (*SigningCert, error) {
 	providedCaSecret := &core_system.SecretResource{}
 	if err := p.secretManager.Get(ctx, providedCaSecret, core_store.GetBy(providedCaSecretKey(mesh))); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			if err := p.secretManager.Create(ctx, providedCaSecret, core_store.CreateBy(providedCaSecretKey(mesh))); err != nil {
-				return SigningCert{}, errors.Wrapf(err, "could not create CA for mesh %q", mesh)
+				return nil, errors.Wrapf(err, "could not create CA for mesh %q", mesh)
 			}
 		} else {
-			return SigningCert{}, errors.Wrapf(err, "failed to load CA for mesh %q", mesh)
+			return nil, errors.Wrapf(err, "failed to load CA for mesh %q", mesh)
 		}
 	}
 
 	providedCa := ProvidedCa{}
 	if len(providedCaSecret.Spec.Value) > 0 {
 		if err := json.Unmarshal(providedCaSecret.Spec.Value, &providedCa); err != nil {
-			return SigningCert{}, errors.Wrapf(err, "failed to deserialize a Root CA cert for Mesh %q", mesh)
+			return nil, errors.Wrapf(err, "failed to deserialize a Root CA cert for Mesh %q", mesh)
 		}
 	}
 
 	if len(providedCa.SigningKeyCerts) > 0 {
-		return SigningCert{}, errors.New("cannot add more than 1 CA root to provided CA")
+		return nil, errors.New("cannot add more than 1 CA root to provided CA")
 	}
 
 	signingCert := SigningCert{
@@ -84,14 +84,14 @@ func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, roo
 
 	caBytes, err := json.Marshal(providedCa)
 	if err != nil {
-		return SigningCert{}, errors.Wrap(err, "failed to marshal CA")
+		return nil, errors.Wrap(err, "failed to marshal CA")
 	}
 
 	providedCaSecret.Spec.Value = caBytes
 	if err := p.secretManager.Update(ctx, providedCaSecret); err != nil {
-		return SigningCert{}, errors.Wrapf(err, "failed to update CA for mesh %q", mesh)
+		return nil, errors.Wrapf(err, "failed to update CA for mesh %q", mesh)
 	}
-	return signingCert, nil
+	return &signingCert, nil
 }
 
 func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, id string) error {
