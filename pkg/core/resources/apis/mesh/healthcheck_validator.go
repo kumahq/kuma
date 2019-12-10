@@ -7,6 +7,16 @@ import (
 	"github.com/Kong/kuma/pkg/core/validators"
 )
 
+func (r *HealthCheckResource) HasActiveChecks() bool {
+	activeChecks := r.Spec.Conf.GetActiveChecks()
+	return activeChecks != nil && !reflect.DeepEqual(*activeChecks, mesh_proto.HealthCheck_Conf_Active{})
+}
+
+func (r *HealthCheckResource) HasPassiveChecks() bool {
+	passiveChecks := r.Spec.Conf.GetPassiveChecks()
+	return passiveChecks != nil && !reflect.DeepEqual(*passiveChecks, mesh_proto.HealthCheck_Conf_Passive{})
+}
+
 func (d *HealthCheckResource) Validate() error {
 	var err validators.ValidationError
 	err.Add(d.validateSources())
@@ -27,24 +37,22 @@ func (d *HealthCheckResource) validateDestinations() (err validators.ValidationE
 
 func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
 	root := validators.RootedAt("conf")
-	activeChecks := d.Spec.Conf.GetActiveChecks()
-	passiveChecks := d.Spec.Conf.GetPassiveChecks()
-	hasActiveChecks := activeChecks != nil && !reflect.DeepEqual(*activeChecks, mesh_proto.HealthCheck_Conf_Active{})
-	hasPassiveChecks := passiveChecks != nil && !reflect.DeepEqual(*passiveChecks, mesh_proto.HealthCheck_Conf_Passive{})
-	if !hasActiveChecks && !hasPassiveChecks {
+	if !d.HasActiveChecks() && !d.HasPassiveChecks() {
 		err.AddViolationAt(root, "must have either active or passive checks configured")
 	}
-	if hasActiveChecks {
+	if d.HasActiveChecks() {
 		path := root.Field("activeChecks")
-		err.Add(ValidateDuration(path.Field("interval"), activeChecks.GetInterval()))
-		err.Add(ValidateDuration(path.Field("timeout"), activeChecks.GetTimeout()))
+		activeChecks := d.Spec.Conf.GetActiveChecks()
+		err.Add(ValidateDuration(path.Field("interval"), activeChecks.Interval))
+		err.Add(ValidateDuration(path.Field("timeout"), activeChecks.Timeout))
 		err.Add(ValidateThreshold(path.Field("unhealthyThreshold"), activeChecks.UnhealthyThreshold))
 		err.Add(ValidateThreshold(path.Field("healthyThreshold"), activeChecks.HealthyThreshold))
 	}
-	if hasPassiveChecks {
+	if d.HasPassiveChecks() {
 		path := root.Field("passiveChecks")
+		passiveChecks := d.Spec.Conf.GetPassiveChecks()
 		err.Add(ValidateThreshold(path.Field("unhealthyThreshold"), passiveChecks.UnhealthyThreshold))
-		err.Add(ValidateDuration(path.Field("penaltyInterval"), passiveChecks.GetPenaltyInterval()))
+		err.Add(ValidateDuration(path.Field("penaltyInterval"), passiveChecks.PenaltyInterval))
 	}
 	return
 }

@@ -3,7 +3,9 @@ package generator_test
 import (
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -64,10 +66,41 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							}},
 						},
 					},
+					"elastic": &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      100,
+								Destination: mesh_proto.MatchService("elastic"),
+							}},
+						},
+					},
 				},
 				OutboundTargets: model.EndpointMap{
 					"db": []model.Endpoint{
 						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
+					},
+					"elastic": []model.Endpoint{
+						{Target: "192.168.0.4", Port: 9200, Tags: map[string]string{"service": "elastic"}},
+					},
+				},
+				HealthChecks: model.HealthCheckMap{
+					"elastic": &mesh_core.HealthCheckResource{
+						Spec: mesh_proto.HealthCheck{
+							Sources: []*mesh_proto.Selector{
+								{Match: mesh_proto.TagSelector{"service": "*"}},
+							},
+							Destinations: []*mesh_proto.Selector{
+								{Match: mesh_proto.TagSelector{"service": "elastic"}},
+							},
+							Conf: &mesh_proto.HealthCheck_Conf{
+								ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
+									Interval:           ptypes.DurationProto(5 * time.Second),
+									Timeout:            ptypes.DurationProto(4 * time.Second),
+									UnhealthyThreshold: 3,
+									HealthyThreshold:   2,
+								},
+							},
+						},
 					},
 				},
 				Logs:               logs.NewMatchedLogs(),
@@ -98,6 +131,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               outbound:
               - interface: :54321
                 service: db
+              - interface: :59200
+                service: elastic
 `,
 			profile:         mesh_core.ProfileDefaultProxy,
 			envoyConfigFile: "1-envoy-config.golden.yaml",
@@ -110,6 +145,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               outbound:
               - interface: :54321
                 service: db
+              - interface: :59200
+                service: elastic
               transparentProxying:
                 redirectPort: 15001
 `,

@@ -183,11 +183,13 @@ func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy
 
 func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *model.Proxy, clusters []envoy.ClusterInfo) (resources []*Resource) {
 	for _, cluster := range clusters {
+		serviceName := cluster.Tags[kuma_mesh.ServiceTag]
+		healthCheck := proxy.HealthChecks[serviceName]
 		resources = append(resources, &Resource{
 			Name:     cluster.Name,
-			Resource: envoy.CreateEdsCluster(ctx, cluster.Name, proxy.Metadata),
+			Resource: envoy.ClusterWithHealthChecks(envoy.CreateEdsCluster(ctx, cluster.Name, proxy.Metadata), healthCheck),
 		})
-		endpoints := model.EndpointList(proxy.OutboundTargets[cluster.Tags[kuma_mesh.ServiceTag]]).Filter(kuma_mesh.MatchTags(cluster.Tags))
+		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName]).Filter(kuma_mesh.MatchTags(cluster.Tags))
 		resources = append(resources, &Resource{
 			Name:     cluster.Name,
 			Resource: envoy.CreateClusterLoadAssignment(cluster.Name, endpoints),
