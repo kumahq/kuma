@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/logs"
 	"github.com/Kong/kuma/pkg/core/permissions"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -49,11 +48,14 @@ type EndpointList []Endpoint
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
 
+// LogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
+type LogMap map[ServiceName]*mesh_proto.LoggingBackend
+
 type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
 	TrafficPermissions permissions.MatchedPermissions
-	Logs               logs.LogMap
+	Logs               LogMap
 	TrafficRoutes      RouteMap
 	OutboundSelectors  DestinationMap
 	OutboundTargets    EndpointMap
