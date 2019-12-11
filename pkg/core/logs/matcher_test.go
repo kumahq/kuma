@@ -109,31 +109,6 @@ var _ = Describe("Matcher", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		logRes2 := core_mesh.TrafficLogResource{
-			Spec: mesh_proto.TrafficLog{
-				Sources: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"service": "kong-admin",
-						},
-					},
-				},
-				Destinations: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"service": "web",
-						},
-					},
-				},
-				Conf: &mesh_proto.TrafficLog_Conf{
-					Backend: "file3",
-				},
-			},
-		}
-		err = manager.Create(context.Background(), &logRes2, store.CreateByKey("lr-2", "sample"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// and
 		logRes3 := core_mesh.TrafficLogResource{
 			Spec: mesh_proto.TrafficLog{
 				Sources: []*mesh_proto.Selector{
@@ -160,17 +135,10 @@ var _ = Describe("Matcher", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(log.Outbounds[":9091"]).To(HaveLen(2))
-		// should match because *->* rule with file-1 logging backend as default
-		Expect(log.Outbounds[":9091"]).To(ContainElement(backendFile1))
 		// should match because kong->backend rule
-		Expect(log.Outbounds[":9091"]).To(ContainElement(backendFile2))
-
-		Expect(log.Outbounds[":9092"]).To(HaveLen(2))
-		// should match because *->* rule with file-1 logging backend as default
-		Expect(log.Outbounds[":9092"]).To(ContainElement(backendFile1))
-		// should match because kong-admin->web rule
-		Expect(log.Outbounds[":9092"]).To(ContainElement(backendFile3))
+		Expect(log["backend"]).To(Equal(backendFile2))
+		// should match because *->* rule and default backend file1
+		Expect(log["web"]).To(Equal(backendFile1))
 	})
 
 	It("should not match services", func() {
@@ -204,7 +172,7 @@ var _ = Describe("Matcher", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(log.Outbounds).To(HaveLen(0))
+		Expect(log).To(HaveLen(0))
 	})
 
 	It("should skip unknown backends", func() {
@@ -238,6 +206,6 @@ var _ = Describe("Matcher", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(log.Outbounds).To(HaveLen(0))
+		Expect(log).To(HaveLen(0))
 	})
 })

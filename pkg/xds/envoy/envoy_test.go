@@ -630,7 +630,7 @@ var _ = Describe("Envoy", func() {
 			virtual  bool
 			clusters []envoy.ClusterInfo
 			expected string
-			logs     []*mesh_proto.LoggingBackend
+			log      *mesh_proto.LoggingBackend
 		}
 
 		singleCluster := []envoy.ClusterInfo{{
@@ -667,7 +667,7 @@ var _ = Describe("Envoy", func() {
 				destinationService := "db"
 
 				// when
-				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "db", given.clusters, given.virtual, sourceService, destinationService, given.logs, &proxy)
+				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "db", given.clusters, given.virtual, sourceService, destinationService, given.log, &proxy)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -780,7 +780,7 @@ var _ = Describe("Envoy", func() {
                 name: outbound:127.0.0.1:18080
 `,
 			}),
-			Entry("with traffic logs", testCase{
+			Entry("with file traffic logs", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
@@ -788,22 +788,11 @@ var _ = Describe("Envoy", func() {
 					},
 				},
 				clusters: singleCluster,
-				logs: []*mesh_proto.LoggingBackend{
-					{
-						Name: "file",
-						Type: &mesh_proto.LoggingBackend_File_{
-							File: &mesh_proto.LoggingBackend_File{
-								Path: "/tmp/log",
-							},
-						},
-					},
-					{
-						Name:   "tcp",
-						Format: "custom format",
-						Type: &mesh_proto.LoggingBackend_Tcp_{
-							Tcp: &mesh_proto.LoggingBackend_Tcp{
-								Address: "127.0.0.1:1234",
-							},
+				log: &mesh_proto.LoggingBackend{
+					Name: "file",
+					Type: &mesh_proto.LoggingBackend_File_{
+						File: &mesh_proto.LoggingBackend_File{
+							Path: "/tmp/log",
 						},
 					},
 				},
@@ -824,6 +813,39 @@ var _ = Describe("Envoy", func() {
                     format: |
                       [%START_TIME%] 192.168.0.1:0(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                     path: /tmp/log
+                cluster: db
+                statPrefix: db
+          name: outbound:127.0.0.1:18080
+`,
+			}),
+			Entry("with tcp traffic logs", testCase{
+				ctx: xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{},
+					Mesh: xds_context.MeshContext{
+						TlsEnabled: false,
+					},
+				},
+				clusters: singleCluster,
+				log: &mesh_proto.LoggingBackend{
+					Name:   "tcp",
+					Format: "custom format",
+					Type: &mesh_proto.LoggingBackend_Tcp_{
+						Tcp: &mesh_proto.LoggingBackend_Tcp{
+							Address: "127.0.0.1:1234",
+						},
+					},
+				},
+				expected: `
+          address:
+            socketAddress:
+              address: 127.0.0.1
+              portValue: 18080
+          filterChains:
+          - filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                accessLog:
                 - name: envoy.http_grpc_access_log
                   typedConfig:
                     '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig

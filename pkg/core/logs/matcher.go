@@ -4,11 +4,11 @@ import (
 	"context"
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/policy"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/pkg/errors"
-	"sort"
 )
 
 var logger = core.Log.WithName("logs")
@@ -25,28 +25,9 @@ type TrafficLogsMatcher struct {
 	ResourceManager manager.ResourceManager
 }
 
-type MatchedLogs struct {
-	Outbounds map[string][]*mesh_proto.LoggingBackend
-}
+type LogMap map[string]*mesh_proto.LoggingBackend
 
-func NewMatchedLogs() *MatchedLogs {
-	return &MatchedLogs{
-		Outbounds: map[string][]*mesh_proto.LoggingBackend{},
-	}
-}
-
-func (m *MatchedLogs) AddForOutbound(outbound string, backend *mesh_proto.LoggingBackend) {
-	if _, ok := m.Outbounds[outbound]; !ok {
-		m.Outbounds[outbound] = []*mesh_proto.LoggingBackend{}
-	}
-	m.Outbounds[outbound] = append(m.Outbounds[outbound], backend)
-	// sort the slice for stability of envoy configuration
-	sort.Slice(m.Outbounds[outbound], func(i, j int) bool {
-		return m.Outbounds[outbound][i].Name > m.Outbounds[outbound][j].Name
-	})
-}
-
-func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (*MatchedLogs, error) {
+func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (LogMap, error) {
 	logs := &mesh_core.TrafficLogResourceList{}
 	if err := m.ResourceManager.List(ctx, logs, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve traffic logs")
@@ -55,16 +36,22 @@ func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.Dat
 	if err != nil {
 		return nil, err
 	}
-	matchedLog := NewMatchedLogs()
-	for outbound, backendsNames := range matchBackends(&dataplane.Spec, logs) {
-		for backendName := range backendsNames {
-			backend, found := backends[backendName]
-			if !found {
-				logger.Info("Logging backend is not found. Ignoring.", "name", backendName)
-				continue
-			}
-			matchedLog.AddForOutbound(outbound, backend)
+
+	policies := make([]policy.ConnectionPolicy, len(logs.Items))
+	for i, log := range logs.Items {
+		policies[i] = log
+	}
+	matchMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
+
+	matchedLog := LogMap{}
+	for service, policy := range matchMap {
+		log := policy.(*mesh_core.TrafficLogResource)
+		backend, found := backends[log.Spec.GetConf().GetBackend()]
+		if !found {
+			logger.Info("Logging backend is not found. Ignoring.", "name", log.Spec.GetConf().GetBackend(), "trafficLog", log.GetMeta())
+			continue
 		}
+		matchedLog[service] = backend
 	}
 	return matchedLog, nil
 }
@@ -83,45 +70,4 @@ func (m *TrafficLogsMatcher) backendsByName(ctx context.Context, dataplane *mesh
 		backendsByName[""] = backendsByName[defaultBackend]
 	}
 	return backendsByName, nil
-}
-
-func matchBackends(dataplane *mesh_proto.Dataplane, logs *mesh_core.TrafficLogResourceList) map[string]map[string]bool {
-	outboundToBackend := map[string]map[string]bool{}
-	for _, outbound := range dataplane.GetNetworking().GetOutbound() {
-		for _, logRes := range matchOutbound(outbound, dataplane.Networking.Inbound, logs.Items) {
-			if _, ok := outboundToBackend[outbound.Interface]; !ok {
-				outboundToBackend[outbound.Interface] = map[string]bool{}
-			}
-			outboundToBackend[outbound.Interface][logRes.Spec.Conf.GetBackend()] = true
-		}
-	}
-	return outboundToBackend
-}
-
-// To Match outbound, we need to match service tag of outbound and all tags of any inbound interface
-func matchOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound, inbounds []*mesh_proto.Dataplane_Networking_Inbound, logs []*mesh_core.TrafficLogResource) []*mesh_core.TrafficLogResource {
-	matchedLogs := []*mesh_core.TrafficLogResource{}
-	for _, log := range logs {
-		if !anySelectorMatchAnyInbound(log.Spec.Sources, inbounds) {
-			continue
-		}
-		for _, dest := range log.Spec.Destinations {
-			if outbound.MatchTags(dest.Match) {
-				matchedLogs = append(matchedLogs, log)
-				break
-			}
-		}
-	}
-	return matchedLogs
-}
-
-func anySelectorMatchAnyInbound(selectors []*mesh_proto.Selector, inbounds []*mesh_proto.Dataplane_Networking_Inbound) bool {
-	for _, inbound := range inbounds {
-		for _, selector := range selectors {
-			if inbound.MatchTags(selector.Match) {
-				return true
-			}
-		}
-	}
-	return false
 }
