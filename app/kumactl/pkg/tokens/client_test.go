@@ -47,8 +47,10 @@ var _ = Describe("Tokens Client", func() {
 		publicPort = p
 
 		adminCfg := admin_server_config.AdminServerConfig{
-			DataplaneTokenWs: &admin_server_config.DataplaneTokenWsConfig{
-				Enabled: true,
+			Apis: &admin_server_config.AdminServerApisConfig{
+				DataplaneToken: &admin_server_config.DataplaneTokenApiConfig{
+					Enabled: true,
+				},
 			},
 			Local: &admin_server_config.LocalAdminServerConfig{
 				Port: uint32(port),

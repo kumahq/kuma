@@ -171,7 +171,7 @@ func SetupServer(rt runtime.Runtime) error {
 }
 
 func dataplaneTokenWs(rt runtime.Runtime) (*restful.WebService, error) {
-	if !rt.Config().AdminServer.DataplaneTokenWs.Enabled {
+	if !rt.Config().AdminServer.Apis.DataplaneToken.Enabled {
 		log.Info("Dataplane Token Webservice is disabled. Dataplane Tokens won't be verified.")
 		return nil, nil
 	}
@@ -182,7 +182,7 @@ func dataplaneTokenWs(rt runtime.Runtime) (*restful.WebService, error) {
 	case config_core.UniversalEnvironment:
 		generator, err := builtin.NewDataplaneTokenIssuer(rt)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		return tokens_server.NewWebservice(generator), nil
 	default:

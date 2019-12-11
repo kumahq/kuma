@@ -7,9 +7,9 @@ import (
 
 func DefaultAdminServerConfig() *AdminServerConfig {
 	return &AdminServerConfig{
-		DataplaneTokenWs: DefaultDataplaneTokenWsConfig(),
-		Local:            DefaultLocalAdminServerConfig(),
-		Public:           DefaultPublicAdminServerConfig(),
+		Apis:   DefaultAdminServerApisConfig(),
+		Local:  DefaultLocalAdminServerConfig(),
+		Public: DefaultPublicAdminServerConfig(),
 	}
 }
 
@@ -17,43 +17,69 @@ var _ config.Config = &AdminServerConfig{}
 
 // Admin Server configuration
 type AdminServerConfig struct {
-	// Configuration for Dataplane Token Webservice
-	DataplaneTokenWs *DataplaneTokenWsConfig `yaml:"dataplaneTokenWs"`
+	// Admin Server APIs configuration
+	Apis *AdminServerApisConfig `yaml:"apis"`
 	// Local configuration of server that is available only on localhost
 	Local *LocalAdminServerConfig `yaml:"local"`
 	// Public configuration of server that is available on public interface
 	Public *PublicAdminServerConfig `yaml:"public"`
 }
 
-var _ config.Config = &DataplaneTokenWsConfig{}
+var _ config.Config = &AdminServerApisConfig{}
 
-func DefaultDataplaneTokenWsConfig() *DataplaneTokenWsConfig {
-	return &DataplaneTokenWsConfig{
+// Admin Server APIs configuration
+type AdminServerApisConfig struct {
+	// Dataplane Token API configuration
+	DataplaneToken *DataplaneTokenApiConfig `yaml:"dataplaneToken"`
+}
+
+func DefaultAdminServerApisConfig() *AdminServerApisConfig {
+	return &AdminServerApisConfig{
+		DataplaneToken: DefaultDataplaneTokenWsConfig(),
+	}
+}
+
+func (a *AdminServerApisConfig) Sanitize() {
+	a.DataplaneToken.Sanitize()
+}
+
+func (a *AdminServerApisConfig) Validate() error {
+	if err := a.DataplaneToken.Validate(); err != nil {
+		return errors.Wrap(err, "DataplaneToken validation failed")
+	}
+	return nil
+}
+
+var _ config.Config = &DataplaneTokenApiConfig{}
+
+func DefaultDataplaneTokenWsConfig() *DataplaneTokenApiConfig {
+	return &DataplaneTokenApiConfig{
 		Enabled: true,
 	}
 }
 
-type DataplaneTokenWsConfig struct {
+// Dataplane Token API configuration
+type DataplaneTokenApiConfig struct {
 	// If true then Dataplane Token WS and token verification is enabled
-	Enabled bool `yaml:"enabled" envconfig:"kuma_admin_server_dataplane_token_ws_enabled"`
+	Enabled bool `yaml:"enabled" envconfig:"kuma_admin_server_apis_dataplane_token_enabled"`
 }
 
-func (d *DataplaneTokenWsConfig) Sanitize() {
+func (d *DataplaneTokenApiConfig) Sanitize() {
 }
 
-func (d *DataplaneTokenWsConfig) Validate() error {
+func (d *DataplaneTokenApiConfig) Validate() error {
 	return nil
 }
 
 func (i *AdminServerConfig) Sanitize() {
-	i.DataplaneTokenWs.Sanitize()
+	i.Apis.Sanitize()
 	i.Public.Sanitize()
 	i.Local.Sanitize()
 }
 
 func (i *AdminServerConfig) Validate() error {
-	if err := i.DataplaneTokenWs.Validate(); err != nil {
-		return errors.Wrap(err, "Dataplane Token Ws validation failed")
+	if err := i.Apis.Validate(); err != nil {
+		return errors.Wrap(err, "Apis validation failed")
 	}
 	if err := i.Local.Validate(); err != nil {
 		return errors.Wrap(err, "Local validation failed")

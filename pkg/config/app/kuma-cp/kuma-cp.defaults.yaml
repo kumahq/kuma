@@ -97,10 +97,12 @@ adminServer:
     tlsKeyFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE
     # Directory of authorized client certificates
     clientCertsDir: # ENV: KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR"
-  # Configuration for Dataplane Token Webservice
-  dataplaneTokenWs:
-    # If true then Dataplane Token WS and token verification is enabled
-    enabled: true # ENV: KUMA_ADMIN_SERVER_DATAPLANE_TOKEN_WS_ENABLED
+  # Admin Server APIs configuration
+  apis:
+    # Dataplane Token API configuration
+    dataplaneToken:
+      # If true then Dataplane Token WS and token verification is enabled
+      enabled: true # ENV: KUMA_ADMIN_SERVER_DATAPLANE_TOKEN_WS_ENABLED
 
 # Envoy XDS server configuration
 xdsServer:

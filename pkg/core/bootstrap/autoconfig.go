@@ -35,7 +35,7 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 		},
 		DataplaneToken: catalog.DataplaneTokenApiConfig{},
 	}
-	if cfg.AdminServer.DataplaneTokenWs.Enabled {
+	if cfg.AdminServer.Apis.DataplaneToken.Enabled {
 		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port)
 		if cfg.AdminServer.Public.Enabled {
 			cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.AdminServer.Public.Port)
@@ -75,8 +75,10 @@ func autoconfigureAdminServer(cfg *kuma_cp.Config) {
 	if !reflect.DeepEqual(cfg.DataplaneTokenServer, token_server.DefaultDataplaneTokenServerConfig()) {
 		autoconfigureLog.Info("Deprecated DataplaneTokenServer config is used. It will be removed in the next major version of Kuma - use AdminServer config instead.")
 		cfg.AdminServer = &admin_server.AdminServerConfig{
-			DataplaneTokenWs: &admin_server.DataplaneTokenWsConfig{
-				Enabled: cfg.DataplaneTokenServer.Enabled,
+			Apis: &admin_server.AdminServerApisConfig{
+				DataplaneToken: &admin_server.DataplaneTokenApiConfig{
+					Enabled: cfg.DataplaneTokenServer.Enabled,
+				},
 			},
 			Local: &admin_server.LocalAdminServerConfig{
 				Port: cfg.DataplaneTokenServer.Local.Port,

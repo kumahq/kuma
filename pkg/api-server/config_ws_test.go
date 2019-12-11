@@ -90,8 +90,10 @@ var _ = Describe("Config WS", func() {
               "tlsCertFile": "",
               "tlsKeyFile": ""
             },
-            "dataplaneTokenWs": {
-              "enabled": true
+            "apis": {
+              "dataplaneToken": {
+                "enabled": true
+              }
             }
           },
           "defaults": {

@@ -91,7 +91,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DataplaneTokenServer.Public.TlsCertFile).To(Equal("/tmp/cert"))
 			Expect(cfg.DataplaneTokenServer.Public.ClientCertsDir).To(Equal("/tmp/certs"))
 
-			Expect(cfg.AdminServer.DataplaneTokenWs.Enabled).To(BeTrue())
+			Expect(cfg.AdminServer.Apis.DataplaneToken.Enabled).To(BeTrue())
 			Expect(cfg.AdminServer.Local.Port).To(Equal(uint32(1111)))
 			Expect(cfg.AdminServer.Public.Enabled).To(BeTrue())
 			Expect(cfg.AdminServer.Public.Port).To(Equal(uint32(2222)))
@@ -159,8 +159,9 @@ adminServer:
     tlsCertFile: /tmp/cert
     tlsKeyFile: /tmp/key
     clientCertsDir: /tmp/certs
-  dataplaneTokenWs:
-    enabled: true
+  apis:
+    dataplaneToken:
+      enabled: true
 runtime:
   kubernetes:
     admissionServer:
@@ -201,7 +202,7 @@ guiServer:
 				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE":     "/tmp/key",
 				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE":    "/tmp/cert",
 				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR": "/tmp/certs",
-				"KUMA_ADMIN_SERVER_DATAPLANE_TOKEN_WS_ENABLED":        "true",
+				"KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED":      "true",
 				"KUMA_ADMIN_SERVER_LOCAL_PORT":                        "1111",
 				"KUMA_ADMIN_SERVER_PUBLIC_ENABLED":                    "true",
 				"KUMA_ADMIN_SERVER_PUBLIC_INTERFACE":                  "192.168.0.1",
