@@ -2,12 +2,15 @@ package logs
 
 import (
 	"context"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/policy"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
+	core_xds "github.com/Kong/kuma/pkg/core/xds"
+
 	"github.com/pkg/errors"
 )
 
@@ -25,9 +28,7 @@ type TrafficLogsMatcher struct {
 	ResourceManager manager.ResourceManager
 }
 
-type LogMap map[string]*mesh_proto.LoggingBackend
-
-func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (LogMap, error) {
+func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (core_xds.LogMap, error) {
 	logs := &mesh_core.TrafficLogResourceList{}
 	if err := m.ResourceManager.List(ctx, logs, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve traffic logs")
@@ -41,19 +42,19 @@ func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.Dat
 	for i, log := range logs.Items {
 		policies[i] = log
 	}
-	matchMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
+	policyMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
 
-	matchedLog := LogMap{}
-	for service, policy := range matchMap {
+	logMap := core_xds.LogMap{}
+	for service, policy := range policyMap {
 		log := policy.(*mesh_core.TrafficLogResource)
 		backend, found := backends[log.Spec.GetConf().GetBackend()]
 		if !found {
 			logger.Info("Logging backend is not found. Ignoring.", "name", log.Spec.GetConf().GetBackend(), "trafficLog", log.GetMeta())
 			continue
 		}
-		matchedLog[service] = backend
+		logMap[service] = backend
 	}
-	return matchedLog, nil
+	return logMap, nil
 }
 
 func (m *TrafficLogsMatcher) backendsByName(ctx context.Context, dataplane *mesh_core.DataplaneResource) (map[string]*mesh_proto.LoggingBackend, error) {

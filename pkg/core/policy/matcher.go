@@ -12,7 +12,7 @@ type ServiceIterator interface {
 	Next() (core_xds.ServiceName, bool)
 }
 
-type ServiceIteratorFunc func() (string, bool)
+type ServiceIteratorFunc func() (core_xds.ServiceName, bool)
 
 func (f ServiceIteratorFunc) Next() (core_xds.ServiceName, bool) {
 	return f()
