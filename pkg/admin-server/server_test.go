@@ -141,6 +141,6 @@ func pingWs() *restful.WebService {
 		Route(ws.GET("/ping").To(func(request *restful.Request, response *restful.Response) {
 			_, _ = response.Write([]byte(`pong`))
 		}),
-	)
+		)
 	return ws
 }
