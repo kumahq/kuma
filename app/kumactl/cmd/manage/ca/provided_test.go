@@ -2,14 +2,17 @@ package ca_test
 
 import (
 	"bytes"
-	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
-	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
-	"github.com/Kong/kuma/pkg/tls"
 	"io/ioutil"
 	"path/filepath"
 
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	"github.com/Kong/kuma/pkg/catalog"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
+	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
+	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
+	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
+	"github.com/Kong/kuma/pkg/tls"
 	"github.com/spf13/cobra"
 
 	. "github.com/onsi/ginkgo"
@@ -68,6 +71,17 @@ var _ = Describe("kumactl manage provided ca", func() {
 			Runtime: kumactl_cmd.RootRuntime{
 				NewProvidedCaClient: func(_ string) (rest.ProvidedCaClient, error) {
 					return client, nil
+				},
+				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
+					return &test_catalog.StaticCatalogClient{
+						Resp: catalog.Catalog{
+							Apis: catalog.Apis{
+								Admin: catalog.AdminApi{
+									LocalUrl: "http://localhost:1234",
+								},
+							},
+						},
+					}, nil
 				},
 			},
 		}

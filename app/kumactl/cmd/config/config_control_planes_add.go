@@ -11,9 +11,9 @@ import (
 
 func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := struct {
-		name                     string
-		apiServerURL             string
-		overwrite                bool
+		name            string
+		apiServerURL    string
+		overwrite       bool
 		adminClientCert string
 		adminClientKey  string
 	}{}
