@@ -17,6 +17,8 @@ var _ = Describe("Catalog WS", func() {
 		cfg := config.DefaultApiServerConfig()
 		cfg.Catalog.Admin.LocalUrl = "http://localhost:1111"
 		cfg.Catalog.Admin.PublicUrl = "https://kuma.internal:2222"
+		cfg.Catalog.DataplaneToken.LocalUrl = "http://localhost:1111"
+		cfg.Catalog.DataplaneToken.PublicUrl = "https://kuma.internal:2222"
 		cfg.Catalog.Bootstrap.Url = "http://kuma.internal:3333"
 
 		// setup
@@ -53,7 +55,7 @@ var _ = Describe("Catalog WS", func() {
 				"dataplaneToken": {
 					"localUrl": "http://localhost:1111",
 					"publicUrl": "https://kuma.internal:2222"
-				}
+				},
 				"admin": {
 					"localUrl": "http://localhost:1111",
 					"publicUrl": "https://kuma.internal:2222"

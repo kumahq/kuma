@@ -40,7 +40,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		generator = &staticDataplaneTokenGenerator{}
 		ctx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewDataplaneTokenClient: func(string, *config_kumactl.Context_DataplaneTokenApiCredentials) (tokens.DataplaneTokenClient, error) {
+				NewDataplaneTokenClient: func(string, *config_kumactl.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
 				},
 				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {

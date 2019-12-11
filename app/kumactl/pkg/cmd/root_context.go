@@ -31,7 +31,7 @@ type RootRuntime struct {
 	Now                        func() time.Time
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
-	NewDataplaneTokenClient    func(string, *kumactl_config.Context_DataplaneTokenApiCredentials) (tokens.DataplaneTokenClient, error)
+	NewDataplaneTokenClient    func(string, *kumactl_config.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error)
 	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
 	NewProvidedCaClient        func(string) (rest.ProvidedCaClient, error)
 }
@@ -158,12 +158,12 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 		}
 		dpTokenUrl = components.Apis.DataplaneToken.PublicUrl
 	}
-	return rc.Runtime.NewDataplaneTokenClient(dpTokenUrl, ctx.GetCredentials().GetDataplaneTokenApi())
+	return rc.Runtime.NewDataplaneTokenClient(dpTokenUrl, ctx.GetCredentials().GetAdminApi())
 }
 
 func validateRemoteDataplaneTokenServerSettings(ctx *kumactl_config.Context, components catalog.Catalog) error {
 	reason := ""
-	clientConfigured := ctx.GetCredentials().GetDataplaneTokenApi().HasClientCert()
+	clientConfigured := ctx.GetCredentials().GetAdminApi().HasClientCert()
 	serverConfigured := components.Apis.DataplaneToken.PublicUrl != ""
 	if !clientConfigured && serverConfigured {
 		reason = "dataplane token server in kuma-cp is configured with TLS and kumactl is not."

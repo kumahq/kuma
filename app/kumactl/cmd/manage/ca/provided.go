@@ -153,12 +153,12 @@ func printListCertificates(certs []types.SigningCert, out io.Writer) error {
 				cert := certs[i]
 				x509Cert := x509Certs[i]
 				return []string{
-					cert.Id, // ID
-					x509Cert.Subject.CommonName, // COMMON NAME
-					x509Cert.SerialNumber.String(), // SERIAL NUMBER
-					x509Cert.NotBefore.String(), // NOT VALID BEFORE
-					x509Cert.NotAfter.String(), // NOT VALID AFTER
-					fmt.Sprintf("%x", sha1.Sum(x509Cert.Raw)), // SHA-1 FINGERPRINT
+					cert.Id,                                           // ID
+					x509Cert.Subject.CommonName,                       // COMMON NAME
+					x509Cert.SerialNumber.String(),                    // SERIAL NUMBER
+					x509Cert.NotBefore.String(),                       // NOT VALID BEFORE
+					x509Cert.NotAfter.String(),                        // NOT VALID AFTER
+					fmt.Sprintf("%x", sha1.Sum(x509Cert.Raw)),         // SHA-1 FINGERPRINT
 					fmt.Sprintf("%x", sha256.New().Sum(x509Cert.Raw)), // SHA-256 FINGERPRINT
 				}
 			}
