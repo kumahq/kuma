@@ -25,9 +25,9 @@ type TrafficLogsMatcher struct {
 	ResourceManager manager.ResourceManager
 }
 
-type MatchedLog map[string]*mesh_proto.LoggingBackend
+type LogMap map[string]*mesh_proto.LoggingBackend
 
-func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (MatchedLog, error) {
+func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (LogMap, error) {
 	logs := &mesh_core.TrafficLogResourceList{}
 	if err := m.ResourceManager.List(ctx, logs, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve traffic logs")
@@ -38,12 +38,12 @@ func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.Dat
 	}
 
 	policies := make([]policy.ConnectionPolicy, len(logs.Items))
-	for i, route := range logs.Items {
-		policies[i] = route
+	for i, log := range logs.Items {
+		policies[i] = log
 	}
 	matchMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
 
-	matchedLog := MatchedLog{}
+	matchedLog := LogMap{}
 	for service, policy := range matchMap {
 		log := policy.(*mesh_core.TrafficLogResource)
 		backend, found := backends[log.Spec.GetConf().GetBackend()]
