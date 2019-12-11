@@ -33,7 +33,7 @@ type RootRuntime struct {
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string, *kumactl_config.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error)
 	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
-	NewProvidedCaClient        func(string) (rest.ProvidedCaClient, error)
+	NewProvidedCaClient        func(string, *kumactl_config.Context_AdminApiCredentials) (rest.ProvidedCaClient, error)
 }
 
 type RootContext struct {
@@ -133,7 +133,15 @@ func (rc *RootContext) catalog() (catalog.Catalog, error) {
 }
 
 func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {
-	// todo check enable/disable by checking cp config
+	// todo(jakubdyszkiewicz) check enable/disable by checking cp config
+	components, err := rc.catalog()
+	if err != nil {
+		return nil, err
+	}
+	if !components.Apis.DataplaneToken.Enabled() {
+		return nil, errors.New("Enable the server to be able to generate tokens.")
+	}
+
 	ctx, err := rc.CurrentContext()
 	if err != nil {
 		return nil, err
@@ -219,10 +227,14 @@ func (rc *RootContext) IsFirstTimeUsage() bool {
 }
 
 func (rc *RootContext) CurrentProvidedCaClient() (rest.ProvidedCaClient, error) {
-	// todo provided cert tls
+	ctx, err := rc.CurrentContext()
+	if err != nil {
+		return nil, err
+	}
+
 	adminServerUrl, err := rc.adminServerUrl()
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewProvidedCaClient(adminServerUrl)
+	return rc.Runtime.NewProvidedCaClient(adminServerUrl, ctx.GetCredentials().GetAdminApi())
 }

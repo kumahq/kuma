@@ -137,12 +137,12 @@ Usage:
   kumactl config control-planes add [flags]
 
 Flags:
-      --address string                       URL of the Control Plane API Server (required)
-      --dataplane-token-client-cert string   Path to certificate of a client that is authorized to use Dataplane Token Server
-      --dataplane-token-client-key string    Path to certificate key of a client that is authorized to use Dataplane Token Server
-  -h, --help                                 help for add
-      --name string                          reference name for the Control Plane (required)
-      --overwrite                            overwrite existing Control Plane with the same reference name
+      --address string             URL of the Control Plane API Server (required)
+      --admin-client-cert string   Path to certificate of a client that is authorized to use Admin Server
+      --admin-client-key string    Path to certificate key of a client that is authorized to use Admin Server
+  -h, --help                       help for add
+      --name string                reference name for the Control Plane (required)
+      --overwrite                  overwrite existing Control Plane with the same reference name
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -565,7 +565,7 @@ Usage:
   kumactl manage ca [command]
 
 Available Commands:
-  provided    Manage certificate provided authorities
+  provided    Manage "provided" certificate authorities
 
 Flags:
   -h, --help   help for ca
@@ -581,14 +581,14 @@ Use "kumactl manage ca [command] --help" for more information about a command.
 #### kumactl manage ca provided
 
 ```
-Manage certificate provided authorities.
+Manage "provided" certificate authorities.
 
 Usage:
   kumactl manage ca provided [command]
 
 Available Commands:
-  certificates Manage certificates
-  delete       Delete certificate authority
+  certificates Manage signing certificates used by a "provided" certificate authority
+  delete       Delete "provided" certificate authority
 
 Flags:
   -h, --help   help for provided
@@ -604,7 +604,7 @@ Use "kumactl manage ca provided [command] --help" for more information about a c
 ##### kumactl manage ca provided delete
 
 ```
-Delete certificate authority.
+Delete "provided" certificate authority.
 
 Usage:
   kumactl manage ca provided delete [flags]
@@ -621,7 +621,7 @@ Global Flags:
 ##### kumactl manage ca provided certificates
 
 ```
-Manage certificate.
+Manage signing certificates used by a "provided" certificate authority.
 
 Usage:
   kumactl manage ca provided certificates [command]
@@ -686,7 +686,7 @@ Usage:
   kumactl manage ca provided certificates add [flags]
 
 Flags:
-      --cert-file string   path to a file with a TLS certificate
+      --cert-file string   path to a file with a CA certificate
   -h, --help               help for add
       --key-file string    path to a file with a private key
 

@@ -9,6 +9,7 @@ import (
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/pkg/catalog"
 	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
+	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
 	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
@@ -69,7 +70,7 @@ var _ = Describe("kumactl manage provided ca", func() {
 		client = &staticProvidedCaClient{}
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewProvidedCaClient: func(_ string) (rest.ProvidedCaClient, error) {
+				NewProvidedCaClient: func(_ string, _ *kumactl_config.Context_AdminApiCredentials) (rest.ProvidedCaClient, error) {
 					return client, nil
 				},
 				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {

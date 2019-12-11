@@ -36,7 +36,7 @@ var _ = Describe("Provided CA WS", func() {
 			return err
 		}).ShouldNot(HaveOccurred())
 
-		c, err := rest.NewProvidedCaClient(srv.URL)
+		c, err := rest.NewProvidedCaClient(srv.URL, nil)
 		Expect(err).ToNot(HaveOccurred())
 		client = c
 	})
