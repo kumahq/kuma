@@ -10,7 +10,6 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/bootstrap"
 	sds_server "github.com/Kong/kuma/pkg/sds/server"
-	token_server "github.com/Kong/kuma/pkg/tokens/builtin/server"
 	xds_server "github.com/Kong/kuma/pkg/xds/server"
 	"github.com/spf13/cobra"
 )
@@ -62,10 +61,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
 			if err := sds_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up SDS server")
-				return err
-			}
-			if err := token_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up Dataplane Token server")
 				return err
 			}
 			if err := xds_server.SetupServer(rt); err != nil {

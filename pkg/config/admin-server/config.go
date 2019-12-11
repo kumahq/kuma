@@ -84,7 +84,7 @@ func (l *LocalAdminServerConfig) Validate() error {
 
 func DefaultLocalAdminServerConfig() *LocalAdminServerConfig {
 	return &LocalAdminServerConfig{
-		Port: 5689, // todo(jakubdyszkiewicz) change to 5679 after merging servers
+		Port: 5679,
 	}
 }
 

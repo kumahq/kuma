@@ -61,7 +61,7 @@ dataplaneTokenServer:
   # Local configuration of server that is available only on localhost
   local:
     # Port on which the server will be exposed
-    port: 5689 # ENV: KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT
+    port: 5679 # ENV: KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT
   # Public configuration of server that is available on public interface
   public:
     # If true then Dataplane Token Server is exposed on public interface
@@ -98,7 +98,11 @@ adminServer:
     # Path to TLS key file
     tlsKeyFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE
     # Directory of authorized client certificates
-    clientCertsDir: # ENV: KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR"`
+    clientCertsDir: # ENV: KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR"
+  # Configuration for Dataplane Token Webservice
+  dataplaneTokenWs:
+    # If true then Dataplane Token WS and token verification is enabled
+    enabled: true # ENV: KUMA_ADMIN_SERVER_DATAPLANE_TOKEN_WS_ENABLED
 
 # Envoy XDS server configuration
 xdsServer:
