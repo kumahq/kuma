@@ -2,11 +2,13 @@ package bootstrap
 
 import (
 	"fmt"
+	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	"github.com/Kong/kuma/pkg/config/api-server/catalog"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	token_server "github.com/Kong/kuma/pkg/config/token-server"
 	"io/ioutil"
 	"os"
+	"reflect"
 
 	"github.com/pkg/errors"
 
@@ -19,7 +21,7 @@ import (
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
-	autoconfigureDataplaneTokenServer(cfg.DataplaneTokenServer)
+	autoconfigureAdminServer(cfg)
 	autoconfigureCatalog(cfg)
 	autoconfigureGui(cfg)
 	autoconfigBootstrapXdsParams(cfg)
@@ -33,10 +35,10 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 		},
 		DataplaneToken: catalog.DataplaneTokenApiConfig{},
 	}
-	if cfg.DataplaneTokenServer.Enabled {
-		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.DataplaneTokenServer.Local.Port)
-		if cfg.DataplaneTokenServer.Public.Enabled {
-			cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.DataplaneTokenServer.Public.Port)
+	if cfg.AdminServer.Apis.DataplaneToken.Enabled {
+		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port)
+		if cfg.AdminServer.Public.Enabled {
+			cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.AdminServer.Public.Port)
 		}
 	}
 	cfg.ApiServer.Catalog = cat
@@ -68,9 +70,32 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 	return nil
 }
 
-func autoconfigureDataplaneTokenServer(cfg *token_server.DataplaneTokenServerConfig) {
-	if cfg.Public.Enabled && cfg.Public.Port == 0 {
-		cfg.Public.Port = cfg.Local.Port
+func autoconfigureAdminServer(cfg *kuma_cp.Config) {
+	// use old dataplane token server config values for admin server
+	if !reflect.DeepEqual(cfg.DataplaneTokenServer, token_server.DefaultDataplaneTokenServerConfig()) {
+		autoconfigureLog.Info("Deprecated DataplaneTokenServer config is used. It will be removed in the next major version of Kuma - use AdminServer config instead.")
+		cfg.AdminServer = &admin_server.AdminServerConfig{
+			Apis: &admin_server.AdminServerApisConfig{
+				DataplaneToken: &admin_server.DataplaneTokenApiConfig{
+					Enabled: cfg.DataplaneTokenServer.Enabled,
+				},
+			},
+			Local: &admin_server.LocalAdminServerConfig{
+				Port: cfg.DataplaneTokenServer.Local.Port,
+			},
+			Public: &admin_server.PublicAdminServerConfig{
+				Enabled:        cfg.DataplaneTokenServer.Public.Enabled,
+				Interface:      cfg.DataplaneTokenServer.Public.Interface,
+				Port:           cfg.DataplaneTokenServer.Public.Port,
+				TlsCertFile:    cfg.DataplaneTokenServer.Public.TlsCertFile,
+				TlsKeyFile:     cfg.DataplaneTokenServer.Public.TlsKeyFile,
+				ClientCertsDir: cfg.DataplaneTokenServer.Public.ClientCertsDir,
+			},
+		}
+	}
+
+	if cfg.AdminServer.Public.Enabled && cfg.AdminServer.Public.Port == 0 {
+		cfg.AdminServer.Public.Port = cfg.AdminServer.Local.Port
 	}
 }
 

@@ -19,8 +19,9 @@ import (
 
 func New(resourceManager core_manager.ResourceManager, builtinCaManager builtin_ca.BuiltinCaManager, providedCaManager provided_ca.ProvidedCaManager) sds_provider.SecretProvider {
 	return &identityCertProvider{
-		resourceManager:  resourceManager,
-		builtinCaManager: builtinCaManager,
+		resourceManager:   resourceManager,
+		builtinCaManager:  builtinCaManager,
+		providedCaManager: providedCaManager,
 	}
 }
 

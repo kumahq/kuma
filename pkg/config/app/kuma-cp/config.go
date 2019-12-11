@@ -3,6 +3,7 @@ package kuma_cp
 import (
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/config"
+	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	api_server "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/discovery"
@@ -70,8 +71,10 @@ type Config struct {
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
 	// Envoy SDS server configuration
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer"`
-	// Dataplane Token server configuration
+	// Dataplane Token server configuration (DEPRECATED: use adminServer)
 	DataplaneTokenServer *token_server.DataplaneTokenServerConfig `yaml:"dataplaneTokenServer"`
+	// Admin server configuration
+	AdminServer *admin_server.AdminServerConfig `yaml:"adminServer"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
 	// Environment-specific configuration
@@ -92,6 +95,7 @@ func (c *Config) Sanitize() {
 	c.XdsServer.Sanitize()
 	c.SdsServer.Sanitize()
 	c.DataplaneTokenServer.Sanitize()
+	c.AdminServer.Sanitize()
 	c.ApiServer.Sanitize()
 	c.Runtime.Sanitize()
 	c.Defaults.Sanitize()
@@ -105,6 +109,7 @@ func DefaultConfig() Config {
 		XdsServer:            xds.DefaultXdsServerConfig(),
 		SdsServer:            sds.DefaultSdsServerConfig(),
 		DataplaneTokenServer: token_server.DefaultDataplaneTokenServerConfig(),
+		AdminServer:          admin_server.DefaultAdminServerConfig(),
 		ApiServer:            api_server.DefaultApiServerConfig(),
 		BootstrapServer:      bootstrap.DefaultBootstrapServerConfig(),
 		Discovery:            discovery.DefaultDiscoveryConfig(),
@@ -137,6 +142,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.DataplaneTokenServer.Validate(); err != nil {
 		return errors.Wrap(err, "Dataplane Token Server validation failed")
+	}
+	if err := c.AdminServer.Validate(); err != nil {
+		return errors.Wrap(err, "Admin Server validation failed")
 	}
 	if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
 		return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)

@@ -143,4 +143,46 @@ var _ = Describe("Auto configuration", func() {
 		Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma.internal"))
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(1234)))
 	})
+
+	It("should autoconfigure admin server from old dataplane token server config", func() {
+		// given
+		cfg := kuma_cp.DefaultConfig()
+		cfg.DataplaneTokenServer.Local.Port = 1111
+		cfg.DataplaneTokenServer.Public.Enabled = true
+		cfg.DataplaneTokenServer.Public.Interface = "192.168.0.1"
+		cfg.DataplaneTokenServer.Public.Port = 2222
+
+		// when
+		err := autoconfigure(&cfg)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		Expect(cfg.AdminServer.Public.Interface).To(Equal("192.168.0.1"))
+		Expect(cfg.AdminServer.Public.Enabled).To(BeTrue())
+		Expect(cfg.AdminServer.Public.Port).To(Equal(uint32(2222)))
+		Expect(cfg.AdminServer.Local.Port).To(Equal(uint32(1111)))
+	})
+
+	It("should not rewrite values of admin server when old dataplane token server config was not changed", func() {
+		// given
+		cfg := kuma_cp.DefaultConfig()
+		cfg.AdminServer.Local.Port = 1111
+		cfg.AdminServer.Public.Enabled = true
+		cfg.AdminServer.Public.Interface = "192.168.0.1"
+		cfg.AdminServer.Public.Port = 2222
+
+		// when
+		err := autoconfigure(&cfg)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		Expect(cfg.AdminServer.Public.Interface).To(Equal("192.168.0.1"))
+		Expect(cfg.AdminServer.Public.Enabled).To(BeTrue())
+		Expect(cfg.AdminServer.Public.Port).To(Equal(uint32(2222)))
+		Expect(cfg.AdminServer.Local.Port).To(Equal(uint32(1111)))
+	})
 })

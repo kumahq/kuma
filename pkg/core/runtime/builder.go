@@ -127,6 +127,7 @@ func (b *Builder) Build() (Runtime, error) {
 			rm:  b.rm,
 			sm:  b.sm,
 			bcm: b.bcm,
+			pcm: b.pcm,
 			dss: b.dss,
 			xds: b.xds,
 			ext: b.ext,

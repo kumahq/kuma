@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	api_server_types "github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	errors_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
 	sample_api "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	"github.com/Kong/kuma/pkg/test/resources/model"
 
@@ -126,7 +126,7 @@ var _ = Describe("RemoteStore", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 
-			Expect(err).To(Equal(&api_server_types.Error{
+			Expect(err).To(Equal(&errors_types.Error{
 				Title:   "Could not get resource",
 				Details: "Internal Server Error",
 			}))
@@ -213,10 +213,10 @@ var _ = Describe("RemoteStore", func() {
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(&api_server_types.Error{
+			Expect(err).To(Equal(&errors_types.Error{
 				Title:   "Could not process resource",
 				Details: "Resource is not valid",
-				Causes: []api_server_types.Cause{
+				Causes: []errors_types.Cause{
 					{
 						Field:   "mtls",
 						Message: "cannot be empty",
@@ -334,10 +334,10 @@ var _ = Describe("RemoteStore", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 
-			Expect(err).To(Equal(&api_server_types.Error{
+			Expect(err).To(Equal(&errors_types.Error{
 				Title:   "Could not process resource",
 				Details: "Resource is not valid",
-				Causes: []api_server_types.Cause{
+				Causes: []errors_types.Cause{
 					{
 						Field:   "mtls",
 						Message: "cannot be empty",
@@ -426,7 +426,7 @@ var _ = Describe("RemoteStore", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 
-			Expect(err).To(Equal(&api_server_types.Error{
+			Expect(err).To(Equal(&errors_types.Error{
 				Title:   "Could not list resource",
 				Details: "Internal Server Error",
 			}))
@@ -509,7 +509,7 @@ var _ = Describe("RemoteStore", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 
-			Expect(err).To(Equal(&api_server_types.Error{
+			Expect(err).To(Equal(&errors_types.Error{
 				Title:   "Could not delete resource",
 				Details: "Internal Server Error",
 			}))

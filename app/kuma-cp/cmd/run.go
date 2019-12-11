@@ -3,13 +3,13 @@ package cmd
 import (
 	"fmt"
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
+	admin_server "github.com/Kong/kuma/pkg/admin-server"
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/bootstrap"
 	sds_server "github.com/Kong/kuma/pkg/sds/server"
-	token_server "github.com/Kong/kuma/pkg/tokens/builtin/server"
 	xds_server "github.com/Kong/kuma/pkg/xds/server"
 	"github.com/spf13/cobra"
 )
@@ -63,16 +63,16 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up SDS server")
 				return err
 			}
-			if err := token_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up Dataplane Token server")
-				return err
-			}
 			if err := xds_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up xDS server")
 				return err
 			}
 			if err := api_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up API server")
+				return err
+			}
+			if err := admin_server.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up Admin server")
 				return err
 			}
 			if err := ui_server.SetupServer(rt); err != nil {

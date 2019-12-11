@@ -78,6 +78,24 @@ var _ = Describe("Config WS", func() {
               "tlsKeyFile": ""
             }
           },
+          "adminServer": {
+            "local": {
+              "port": 5679
+            },
+            "public": {
+              "clientCertsDir": "",
+              "enabled": false,
+              "interface": "",
+              "port": 0,
+              "tlsCertFile": "",
+              "tlsKeyFile": ""
+            },
+            "apis": {
+              "dataplaneToken": {
+                "enabled": true
+              }
+            }
+          },
           "defaults": {
             "mesh": "type: Mesh\nname: default\nmtls:\n  ca: {}\n  enabled: false\n"
           },

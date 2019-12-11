@@ -56,14 +56,20 @@ func (s *secretManager) Create(ctx context.Context, secret *secret_model.SecretR
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
-	return s.secretStore.Create(ctx, secret, fs...)
+	if err := s.secretStore.Create(ctx, secret, fs...); err != nil {
+		return err
+	}
+	return s.decrypt(secret)
 }
 
 func (s *secretManager) Update(ctx context.Context, secret *secret_model.SecretResource, fs ...core_store.UpdateOptionsFunc) error {
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
-	return s.secretStore.Update(ctx, secret, fs...)
+	if err := s.secretStore.Update(ctx, secret, fs...); err != nil {
+		return err
+	}
+	return s.decrypt(secret)
 }
 
 func (s *secretManager) Delete(ctx context.Context, secret *secret_model.SecretResource, fs ...core_store.DeleteOptionsFunc) error {

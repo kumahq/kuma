@@ -30,7 +30,7 @@ type ProvidedCa struct {
 }
 
 type ProvidedCaManager interface {
-	AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) error
+	AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) (*SigningCert, error)
 	DeleteSigningCert(ctx context.Context, mesh string, id string) error
 
 	DeleteCa(ctx context.Context, mesh string) error
@@ -49,47 +49,49 @@ func NewProvidedCaManager(secretManager secret_manager.SecretManager) ProvidedCa
 	return &providedCaManager{secretManager}
 }
 
-func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) error {
+func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) (*SigningCert, error) {
 	providedCaSecret := &core_system.SecretResource{}
 	if err := p.secretManager.Get(ctx, providedCaSecret, core_store.GetBy(providedCaSecretKey(mesh))); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			if err := p.secretManager.Create(ctx, providedCaSecret, core_store.CreateBy(providedCaSecretKey(mesh))); err != nil {
-				return errors.Wrapf(err, "could not create CA for mesh %q", mesh)
+				return nil, errors.Wrapf(err, "could not create CA for mesh %q", mesh)
 			}
 		} else {
-			return errors.Wrapf(err, "failed to load CA for mesh %q", mesh)
+			return nil, errors.Wrapf(err, "failed to load CA for mesh %q", mesh)
 		}
 	}
 
 	providedCa := ProvidedCa{}
 	if len(providedCaSecret.Spec.Value) > 0 {
 		if err := json.Unmarshal(providedCaSecret.Spec.Value, &providedCa); err != nil {
-			return errors.Wrapf(err, "failed to deserialize a Root CA cert for Mesh %q", mesh)
+			return nil, errors.Wrapf(err, "failed to deserialize a Root CA cert for Mesh %q", mesh)
 		}
 	}
 
 	if len(providedCa.SigningKeyCerts) > 0 {
-		return errors.New("cannot add more than 1 CA root to provided CA")
+		return nil, errors.New("cannot add more than 1 CA root to provided CA")
 	}
 
+	signingCert := SigningCert{
+		Id:   core.NewUUID(),
+		Cert: root.CertPEM,
+	}
 	caRoot := SigningKeyCert{
-		Key: root.KeyPEM,
-		SigningCert: SigningCert{
-			Id:   core.NewUUID(),
-			Cert: root.CertPEM,
-		},
+		Key:         root.KeyPEM,
+		SigningCert: signingCert,
 	}
 	providedCa.SigningKeyCerts = append(providedCa.SigningKeyCerts, caRoot)
 
 	caBytes, err := json.Marshal(providedCa)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal CA")
+		return nil, errors.Wrap(err, "failed to marshal CA")
 	}
+
 	providedCaSecret.Spec.Value = caBytes
 	if err := p.secretManager.Update(ctx, providedCaSecret); err != nil {
-		return errors.Wrapf(err, "failed to update CA for mesh %q", mesh)
+		return nil, errors.Wrapf(err, "failed to update CA for mesh %q", mesh)
 	}
-	return nil
+	return &signingCert, nil
 }
 
 func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, id string) error {
@@ -110,9 +112,13 @@ func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, 
 	}
 
 	if len(retainedCaRoots) == len(providedCa.SigningKeyCerts) {
-		return errors.Errorf("could not find CA Root of id %q for mesh %q", id, mesh)
+		return &SigningCertNotFound{
+			Id:   id,
+			Mesh: mesh,
+		}
 	}
 
+	// todo(jakubdyszkiewicz) validate that retained ca roots cannot be 0 if mtls mesh is enabled and the type is provided
 	providedCa.SigningKeyCerts = retainedCaRoots
 	newBytes, err := json.Marshal(providedCa)
 	if err != nil {
@@ -127,12 +133,22 @@ func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, 
 	return nil
 }
 
+type SigningCertNotFound struct {
+	Id   string
+	Mesh string
+}
+
+func (s *SigningCertNotFound) Error() string {
+	return fmt.Sprintf("could not find CA Root of id %q for mesh %q", s.Id, s.Mesh)
+}
+
 func (p *providedCaManager) DeleteCa(ctx context.Context, mesh string) error {
+	// todo(jakubdyszkiewicz) validate that mesh is disabled or the type is other than provided
 	secretKey := providedCaSecretKey(mesh)
 	caSecret := &core_system.SecretResource{}
 	if err := p.secretManager.Delete(ctx, caSecret, core_store.DeleteBy(secretKey)); err != nil {
 		if core_store.IsResourceNotFound(err) {
-			return nil
+			return err
 		}
 		return errors.Wrapf(err, "failed to delete Provided CA for Mesh %q", mesh)
 	}
@@ -142,6 +158,9 @@ func (p *providedCaManager) DeleteCa(ctx context.Context, mesh string) error {
 func (p *providedCaManager) GetSigningCerts(ctx context.Context, mesh string) ([]SigningCert, error) {
 	meshCa, err := p.getMeshCa(ctx, mesh)
 	if err != nil {
+		if core_store.IsResourceNotFound(err) {
+			return nil, err
+		}
 		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
 	}
 	caRootCerts := make([]SigningCert, len(meshCa.SigningKeyCerts))
