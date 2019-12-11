@@ -49,6 +49,10 @@ var _ = Describe("Auto configuration", func() {
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "https://kuma.internal:2222",
 				},
+				Admin: catalog.AdminApiConfig{
+					LocalUrl:  "http://localhost:1111",
+					PublicUrl: "https://kuma.internal:2222",
+				},
 			},
 		}),
 		Entry("without public port explicitly defined", testCase{
@@ -66,6 +70,10 @@ var _ = Describe("Auto configuration", func() {
 					Url: "http://kuma.internal:3333",
 				},
 				DataplaneToken: catalog.DataplaneTokenApiConfig{
+					LocalUrl:  "http://localhost:1111",
+					PublicUrl: "https://kuma.internal:1111", // port is autoconfigured from the local port
+				},
+				Admin: catalog.AdminApiConfig{
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "https://kuma.internal:1111", // port is autoconfigured from the local port
 				},
@@ -87,6 +95,10 @@ var _ = Describe("Auto configuration", func() {
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "",
 				},
+				Admin: catalog.AdminApiConfig{
+					LocalUrl:  "http://localhost:1111",
+					PublicUrl: "",
+				},
 			},
 		}),
 		Entry("without dataplane token server", testCase{
@@ -101,6 +113,10 @@ var _ = Describe("Auto configuration", func() {
 				},
 				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "",
+					PublicUrl: "",
+				},
+				Admin: catalog.AdminApiConfig{
+					LocalUrl:  "http://localhost:5679",
 					PublicUrl: "",
 				},
 			},

@@ -18,7 +18,7 @@ var _ = Describe("Catalog client", func() {
 			Bootstrap: config_catalog.BootstrapApiConfig{
 				Url: "http://kuma.internal:3333",
 			},
-			DataplaneToken: config_catalog.DataplaneTokenApiConfig{
+			Admin: config_catalog.AdminApiConfig{
 				LocalUrl:  "http://localhost:1111",
 				PublicUrl: "https://kuma.internal:2222",
 			},
@@ -29,7 +29,7 @@ var _ = Describe("Catalog client", func() {
 				Bootstrap: catalog.BootstrapApi{
 					Url: "http://kuma.internal:3333",
 				},
-				DataplaneToken: catalog.DataplaneTokenApi{
+				Admin: catalog.AdminApi{
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "https://kuma.internal:2222",
 				},

@@ -33,7 +33,12 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 		Bootstrap: catalog.BootstrapApiConfig{
 			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port),
 		},
-		DataplaneToken: catalog.DataplaneTokenApiConfig{},
+		Admin: catalog.AdminApiConfig{
+			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port),
+		},
+	}
+	if cfg.AdminServer.Public.Enabled {
+		cat.Admin.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.AdminServer.Public.Port)
 	}
 	if cfg.AdminServer.Apis.DataplaneToken.Enabled {
 		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port)

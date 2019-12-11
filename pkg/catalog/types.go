@@ -11,6 +11,12 @@ type Catalog struct {
 type Apis struct {
 	Bootstrap      BootstrapApi      `json:"bootstrap"`
 	DataplaneToken DataplaneTokenApi `json:"dataplaneToken"`
+	Admin          AdminApi          `json:"admin"`
+}
+
+type AdminApi struct {
+	LocalUrl  string `json:"localUrl"`
+	PublicUrl string `json:"publicUrl"`
 }
 
 type BootstrapApi struct {
@@ -35,6 +41,10 @@ func FromConfig(cfg catalog.CatalogConfig) Catalog {
 			DataplaneToken: DataplaneTokenApi{
 				LocalUrl:  cfg.DataplaneToken.LocalUrl,
 				PublicUrl: cfg.DataplaneToken.PublicUrl,
+			},
+			Admin: AdminApi{
+				LocalUrl:  cfg.Admin.LocalUrl,
+				PublicUrl: cfg.Admin.PublicUrl,
 			},
 		},
 	}
