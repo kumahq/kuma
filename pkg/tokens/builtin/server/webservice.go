@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/rest/errors"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
@@ -9,18 +10,20 @@ import (
 	"net/http"
 )
 
-type DataplaneTokenWebService struct {
-	Issuer issuer.DataplaneTokenIssuer
+var log = core.Log.WithName("dataplane-token-ws")
+
+type dataplaneTokenWebService struct {
+	issuer issuer.DataplaneTokenIssuer
 }
 
 func NewWebservice(issuer issuer.DataplaneTokenIssuer) *restful.WebService {
-	ws := DataplaneTokenWebService{
-		Issuer: issuer,
+	ws := dataplaneTokenWebService{
+		issuer: issuer,
 	}
 	return ws.createWs()
 }
 
-func (d *DataplaneTokenWebService) createWs() *restful.WebService {
+func (d *dataplaneTokenWebService) createWs() *restful.WebService {
 	ws := new(restful.WebService).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
@@ -29,11 +32,11 @@ func (d *DataplaneTokenWebService) createWs() *restful.WebService {
 	return ws
 }
 
-func (d *DataplaneTokenWebService) handleIdentityRequest(request *restful.Request, response *restful.Response) {
+func (d *dataplaneTokenWebService) handleIdentityRequest(request *restful.Request, response *restful.Response) {
 	idReq := types.DataplaneTokenRequest{}
 	if err := request.ReadEntity(&idReq); err != nil {
 		log.Error(err, "Could not read a request")
-		response.WriteHeader(http.StatusInternalServerError)
+		response.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	verr := validators.ValidationError{}
@@ -48,7 +51,7 @@ func (d *DataplaneTokenWebService) handleIdentityRequest(request *restful.Reques
 		return
 	}
 
-	token, err := d.Issuer.Generate(idReq.ToProxyId())
+	token, err := d.issuer.Generate(idReq.ToProxyId())
 	if err != nil {
 		errors.HandleError(response, err, "Could not issue a token")
 		return

@@ -79,8 +79,6 @@ dataplaneTokenServer:
 
 # Admin server configuration
 adminServer:
-  # If true then Admin Server and token verification is enabled
-  enabled: true
   # Local configuration of server that is available only on localhost
   local:
     # Port on which the server will be exposed

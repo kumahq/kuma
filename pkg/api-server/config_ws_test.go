@@ -79,7 +79,6 @@ var _ = Describe("Config WS", func() {
             }
           },
           "adminServer": {
-            "enabled": true,
             "local": {
               "port": 5679
             },
@@ -91,7 +90,7 @@ var _ = Describe("Config WS", func() {
               "tlsCertFile": "",
               "tlsKeyFile": ""
             },
-			"dataplaneTokenWs": {
+            "dataplaneTokenWs": {
               "enabled": true
             }
           },

@@ -73,7 +73,7 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 func autoconfigureAdminServer(cfg *kuma_cp.Config) {
 	// use old dataplane token server config values for admin server
 	if !reflect.DeepEqual(cfg.DataplaneTokenServer, token_server.DefaultDataplaneTokenServerConfig()) {
-		autoconfigureLog.Info("Deprecated config DataplaneTokenServer is used. Use AdminServer config instead.")
+		autoconfigureLog.Info("Deprecated DataplaneTokenServer config is used. It will be removed in the next major version of Kuma - use AdminServer config instead.")
 		cfg.AdminServer = &admin_server.AdminServerConfig{
 			DataplaneTokenWs: &admin_server.DataplaneTokenWsConfig{
 				Enabled: cfg.DataplaneTokenServer.Enabled,
