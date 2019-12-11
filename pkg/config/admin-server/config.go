@@ -7,9 +7,9 @@ import (
 
 func DefaultAdminServerConfig() *AdminServerConfig {
 	return &AdminServerConfig{
-		Enabled: true,
-		Local:   DefaultLocalAdminServerConfig(),
-		Public:  DefaultPublicAdminServerConfig(),
+		DataplaneTokenWs: DefaultDataplaneTokenWsConfig(),
+		Local:            DefaultLocalAdminServerConfig(),
+		Public:           DefaultPublicAdminServerConfig(),
 	}
 }
 
@@ -17,28 +17,49 @@ var _ config.Config = &AdminServerConfig{}
 
 // Admin Server configuration
 type AdminServerConfig struct {
-	// If true then Admin Server and token verification is enabled
-	Enabled bool `yaml:"enabled" envconfig:"kuma_admin_server_enabled"`
+	// Configuration for Dataplane Token Webservice
+	DataplaneTokenWs *DataplaneTokenWsConfig `yaml:"dataplaneTokenWs"`
 	// Local configuration of server that is available only on localhost
 	Local *LocalAdminServerConfig `yaml:"local"`
 	// Public configuration of server that is available on public interface
 	Public *PublicAdminServerConfig `yaml:"public"`
 }
 
+var _ config.Config = &DataplaneTokenWsConfig{}
+
+func DefaultDataplaneTokenWsConfig() *DataplaneTokenWsConfig {
+	return &DataplaneTokenWsConfig{
+		Enabled: true,
+	}
+}
+
+type DataplaneTokenWsConfig struct {
+	// If true then Dataplane Token WS and token verification is enabled
+	Enabled bool `yaml:"enabled" envconfig:"kuma_admin_server_dataplane_token_ws_enabled"`
+}
+
+func (d *DataplaneTokenWsConfig) Sanitize() {
+}
+
+func (d *DataplaneTokenWsConfig) Validate() error {
+	return nil
+}
+
 func (i *AdminServerConfig) Sanitize() {
+	i.DataplaneTokenWs.Sanitize()
 	i.Public.Sanitize()
 	i.Local.Sanitize()
 }
 
 func (i *AdminServerConfig) Validate() error {
+	if err := i.DataplaneTokenWs.Validate(); err != nil {
+		return errors.Wrap(err, "Dataplane Token Ws validation failed")
+	}
 	if err := i.Local.Validate(); err != nil {
 		return errors.Wrap(err, "Local validation failed")
 	}
 	if err := i.Public.Validate(); err != nil {
 		return errors.Wrap(err, "Public validation failed")
-	}
-	if !i.Enabled && i.Public.Enabled {
-		return errors.New("Public.Enabled cannot be true when server is disabled.")
 	}
 	return nil
 }

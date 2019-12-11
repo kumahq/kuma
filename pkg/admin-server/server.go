@@ -4,10 +4,14 @@ import (
 	"context"
 	"fmt"
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
+	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
+	ca_provided_rest "github.com/Kong/kuma/pkg/core/ca/provided/rest"
 	"github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/Kong/kuma/pkg/tokens/builtin"
+	tokens_server "github.com/Kong/kuma/pkg/tokens/builtin/server"
 	"github.com/emicklei/go-restful"
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"net/http"
 )
@@ -72,7 +76,39 @@ func (a *AdminServer) startHttpServer() (*http.Server, chan error) {
 }
 
 func SetupServer(rt runtime.Runtime) error {
-	ws := rest.NewWebservice(rt.ProvidedCaManager())
-	srv := NewAdminServer(*rt.Config().AdminServer, ws)
+	var webservices []*restful.WebService
+
+	ws := ca_provided_rest.NewWebservice(rt.ProvidedCaManager())
+	webservices = append(webservices, ws)
+
+	ws, err := dataplaneTokenWs(rt)
+	if err != nil {
+		return err
+	}
+	if ws != nil {
+		webservices = append(webservices, ws)
+	}
+
+	srv := NewAdminServer(*rt.Config().AdminServer, webservices...)
 	return rt.Add(srv)
+}
+
+func dataplaneTokenWs(rt runtime.Runtime) (*restful.WebService, error) {
+	if !rt.Config().AdminServer.DataplaneTokenWs.Enabled {
+		log.Info("Dataplane Token Webservice disabled")
+		return nil, nil
+	}
+
+	switch env := rt.Config().Environment; env {
+	case config_core.KubernetesEnvironment:
+		return nil, nil
+	case config_core.UniversalEnvironment:
+		generator, err := builtin.NewDataplaneTokenIssuer(rt)
+		if err != nil {
+			return nil, nil
+		}
+		return tokens_server.NewWebservice(generator), nil
+	default:
+		return nil, errors.Errorf("unknown environment type %s", env)
+	}
 }
