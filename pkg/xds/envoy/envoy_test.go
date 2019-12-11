@@ -1,6 +1,8 @@
 package envoy_test
 
 import (
+	"time"
+
 	"github.com/Kong/kuma/pkg/core/xds"
 
 	. "github.com/onsi/ginkgo"
@@ -13,6 +15,9 @@ import (
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
+
+	envoy_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/golang/protobuf/ptypes"
 )
 
 var _ = Describe("Envoy", func() {
@@ -362,6 +367,130 @@ var _ = Describe("Envoy", func() {
                 envoy.lb:
                   region: eu
                   service: backend
+`,
+			}),
+		)
+	})
+
+	Describe("ClusterWithHealthChecks()", func() {
+
+		type testCase struct {
+			healthCheck *mesh_core.HealthCheckResource
+			expected    string
+		}
+		DescribeTable("should add health checks to a given Cluster",
+			func(given testCase) {
+				// given
+				cluster := &envoy_v2.Cluster{
+					Name: "example",
+				}
+				// when
+				metadata := envoy.ClusterWithHealthChecks(cluster, given.healthCheck)
+				// and
+				actual, err := util_proto.ToYAML(metadata)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(actual).To(MatchYAML(given.expected))
+			},
+			Entry("`nil` HealthCheck", testCase{
+				healthCheck: nil,
+				expected: `
+                name: example
+`,
+			}),
+			Entry("HealthCheck with neither active nor passive checks", testCase{
+				healthCheck: &mesh_core.HealthCheckResource{},
+				expected: `
+                name: example
+`,
+			}),
+			Entry("HealthCheck with active checks", testCase{
+				healthCheck: &mesh_core.HealthCheckResource{
+					Spec: mesh_proto.HealthCheck{
+						Sources: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "backend"}},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "redis"}},
+						},
+						Conf: &mesh_proto.HealthCheck_Conf{
+							ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
+							},
+						},
+					},
+				},
+				expected: `
+                healthChecks:
+                - healthyThreshold: 2
+                  interval: 5s
+                  tcpHealthCheck: {}
+                  timeout: 4s
+                  unhealthyThreshold: 3
+                name: example
+`,
+			}),
+			Entry("HealthCheck with passive checks", testCase{
+				healthCheck: &mesh_core.HealthCheckResource{
+					Spec: mesh_proto.HealthCheck{
+						Sources: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "backend"}},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "redis"}},
+						},
+						Conf: &mesh_proto.HealthCheck_Conf{
+							PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
+								UnhealthyThreshold: 20,
+								PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
+							},
+						},
+					},
+				},
+				expected: `
+                name: example
+                outlierDetection:
+                  consecutive5xx: 20
+                  interval: 30s
+`,
+			}),
+			Entry("HealthCheck with both active and passive checks", testCase{
+				healthCheck: &mesh_core.HealthCheckResource{
+					Spec: mesh_proto.HealthCheck{
+						Sources: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "backend"}},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "redis"}},
+						},
+						Conf: &mesh_proto.HealthCheck_Conf{
+							ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
+							},
+							PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
+								UnhealthyThreshold: 20,
+								PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
+							},
+						},
+					},
+				},
+				expected: `
+                healthChecks:
+                - healthyThreshold: 2
+                  interval: 5s
+                  tcpHealthCheck: {}
+                  timeout: 4s
+                  unhealthyThreshold: 3
+                name: example
+                outlierDetection:
+                  consecutive5xx: 20
+                  interval: 30s
 `,
 			}),
 		)
