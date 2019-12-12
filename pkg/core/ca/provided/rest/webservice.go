@@ -29,8 +29,7 @@ func (p *providedCAWebservice) createWs() *restful.WebService {
 	ws.Path("/meshes/{mesh}/ca/provided").
 		Route(ws.POST("/certificates").To(p.addSigningCertificate)).
 		Route(ws.GET("/certificates").To(p.signingCertificates)).
-		Route(ws.DELETE("/certificates/{id}").To(p.deleteSigningCertificate)).
-		Route(ws.DELETE("").To(p.deleteCa))
+		Route(ws.DELETE("/certificates/{id}").To(p.deleteSigningCertificate))
 	return ws
 }
 
@@ -77,14 +76,6 @@ func (p *providedCAWebservice) deleteSigningCertificate(request *restful.Request
 	id := request.PathParameter("id")
 	if err := p.manager.DeleteSigningCert(request.Request.Context(), mesh, id); err != nil {
 		handleError(response, err, "Could not delete signing cert")
-		return
-	}
-}
-
-func (p *providedCAWebservice) deleteCa(request *restful.Request, response *restful.Response) {
-	mesh := request.PathParameter("mesh")
-	if err := p.manager.DeleteCa(request.Request.Context(), mesh); err != nil {
-		handleError(response, err, "Could not delete CA")
 		return
 	}
 }

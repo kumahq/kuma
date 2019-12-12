@@ -23,27 +23,6 @@ func newProvidedCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	}
 	// sub-commands
 	cmd.AddCommand(newCertificatesCmd(pctx))
-	cmd.AddCommand(newDeleteCaCmd(pctx))
-	return cmd
-}
-
-func newDeleteCaCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: `Delete "provided" certificate authority`,
-		Long:  `Delete "provided" certificate authority.`,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			client, err := pctx.CurrentProvidedCaClient()
-			if err != nil {
-				return err
-			}
-			if err := client.DeleteCa(pctx.CurrentMesh()); err != nil {
-				return errors.Wrap(err, "could not delete certificate authority")
-			}
-			cmd.Printf("deleted certificate authority for mesh %q", pctx.CurrentMesh())
-			return nil
-		},
-	}
 	return cmd
 }
 

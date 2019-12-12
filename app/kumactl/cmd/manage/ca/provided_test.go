@@ -2,6 +2,7 @@ package ca_test
 
 import (
 	"bytes"
+	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 	"io/ioutil"
 	"path/filepath"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/Kong/kuma/pkg/catalog"
 	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
 	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
 	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
 	"github.com/Kong/kuma/pkg/tls"
@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ rest.ProvidedCaClient = &staticProvidedCaClient{}
+var _ ca.ProvidedCaClient = &staticProvidedCaClient{}
 
 type staticProvidedCaClient struct {
 	addMesh string
@@ -70,7 +70,7 @@ var _ = Describe("kumactl manage provided ca", func() {
 		client = &staticProvidedCaClient{}
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewProvidedCaClient: func(_ string, _ *kumactl_config.Context_AdminApiCredentials) (rest.ProvidedCaClient, error) {
+				NewProvidedCaClient: func(_ string, _ *kumactl_config.Context_AdminApiCredentials) (ca.ProvidedCaClient, error) {
 					return client, nil
 				},
 				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
@@ -172,22 +172,5 @@ var _ = Describe("kumactl manage provided ca", func() {
 1234   default       0               2019-12-04 17:34:55 +0000 UTC   2029-12-01 17:35:05 +0000 UTC   e85e054b40e4c88cb45a7ae8018aaeb9f1c21be6
 4321   default       0               2019-12-04 17:34:55 +0000 UTC   2029-12-01 17:35:05 +0000 UTC   e85e054b40e4c88cb45a7ae8018aaeb9f1c21be6
 `))
-	})
-
-	It("should delete certificate authority", func() {
-		// given
-		rootCmd.SetArgs([]string{
-			"manage", "ca", "provided", "delete",
-			"--mesh", "demo",
-		})
-
-		// when
-		err := rootCmd.Execute()
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// and
-		Expect(client.deleteCaMesh).To(Equal("demo"))
-		Expect(buf.String()).To(Equal(`deleted certificate authority for mesh "demo"`))
 	})
 })

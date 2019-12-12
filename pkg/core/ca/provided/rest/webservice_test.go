@@ -175,40 +175,4 @@ var _ = Describe("Provided CA WS", func() {
 			}))
 		})
 	})
-
-	Describe("Delete CA", func() {
-		It("should delete existing CA", func() {
-			// given
-			_, err := client.AddSigningCertificate("demo", pair)
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = client.DeleteCa("demo")
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			_, err = client.SigningCertificates("demo")
-
-			// then
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(&types.Error{
-				Title:   "Could not retrieve signing certs",
-				Details: "Not found",
-			}))
-		})
-
-		It("should throw an error on deleting non existing CA", func() {
-			// when
-			err := client.DeleteCa("non-existing-mesh")
-
-			// then
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(&types.Error{
-				Title:   "Could not delete CA",
-				Details: "Not found",
-			}))
-		})
-	})
 })

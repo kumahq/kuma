@@ -52,7 +52,6 @@ gen_help kumactl inspect dataplanes
 gen_help kumactl manage
 gen_help kumactl manage ca
 gen_help kumactl manage ca provided
-gen_help kumactl manage ca provided delete
 gen_help kumactl manage ca provided certificates
 gen_help kumactl manage ca provided certificates list
 gen_help kumactl manage ca provided certificates delete

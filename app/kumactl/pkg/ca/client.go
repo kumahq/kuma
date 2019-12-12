@@ -24,7 +24,6 @@ const (
 type ProvidedCaClient interface {
 	AddSigningCertificate(mesh string, pair tls.KeyPair) (types.SigningCert, error)
 	DeleteSigningCertificate(mesh string, id string) error
-	DeleteCa(mesh string) error
 	SigningCertificates(mesh string) ([]types.SigningCert, error)
 }
 
@@ -102,16 +101,6 @@ func (h *httpProvidedCaClient) SigningCertificates(mesh string) ([]types.Signing
 
 func (h *httpProvidedCaClient) DeleteSigningCertificate(mesh string, id string) error {
 	urlCerts := fmt.Sprintf("/meshes/%s/ca/provided/certificates/%s", mesh, id)
-	req, err := http.NewRequest("DELETE", urlCerts, nil)
-	if err != nil {
-		return err
-	}
-	_, err = h.doRequest(req)
-	return err
-}
-
-func (h *httpProvidedCaClient) DeleteCa(mesh string) error {
-	urlCerts := fmt.Sprintf("/meshes/%s/ca/provided", mesh)
 	req, err := http.NewRequest("DELETE", urlCerts, nil)
 	if err != nil {
 		return err

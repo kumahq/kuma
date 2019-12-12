@@ -588,7 +588,6 @@ Usage:
 
 Available Commands:
   certificates Manage signing certificates used by a "provided" certificate authority
-  delete       Delete "provided" certificate authority
 
 Flags:
   -h, --help   help for provided
@@ -599,23 +598,6 @@ Global Flags:
       --mesh string          mesh to use (default "default")
 
 Use "kumactl manage ca provided [command] --help" for more information about a command.
-```
-
-##### kumactl manage ca provided delete
-
-```
-Delete "provided" certificate authority.
-
-Usage:
-  kumactl manage ca provided delete [flags]
-
-Flags:
-  -h, --help   help for delete
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use (default "default")
 ```
 
 ##### kumactl manage ca provided certificates
