@@ -26,14 +26,9 @@ func (m *MeshValidator) ValidateCreate(ctx context.Context, name string, resourc
 
 func (m *MeshValidator) validateProvidedCaRoot(ctx context.Context, mesh string) error {
 	certs, err := m.ProvidedCaManager.GetSigningCerts(ctx, mesh)
-	if err != nil {
+	if err != nil || len(certs) == 0 {
 		verr := validators.ValidationError{}
-		verr.AddViolation("mtls.ca.provided", "There are no provided CA for a given mesh")
-		return verr.OrNil()
-	}
-	if len(certs) == 0 {
-		verr := validators.ValidationError{}
-		verr.AddViolation("mtls.ca.provided", "There are no signing certificate in provided CA for a given mesh")
+		verr.AddViolation("mtls.ca.provided", "There is no signing certificate in provided CA for a given mesh. Add certificate via 'kumactl manage ca provided certificates add' command.")
 		return verr.OrNil()
 	}
 	return nil

@@ -14,7 +14,6 @@ import (
 	core_registry "github.com/Kong/kuma/pkg/core/resources/registry"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	secrets_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	validators_mesh "github.com/Kong/kuma/pkg/core/validators/apis/mesh"
 )
 
 func NewMeshManager(
@@ -25,7 +24,7 @@ func NewMeshManager(
 	secretManager secrets_manager.SecretManager,
 	registry core_registry.TypeRegistry,
 ) core_manager.ResourceManager {
-	validator := validators_mesh.MeshValidator{
+	validator := MeshValidator{
 		ProvidedCaManager: providedCaManager,
 	}
 	return &meshManager{
@@ -46,7 +45,7 @@ type meshManager struct {
 	otherManagers     core_manager.ResourceManager
 	secretManager     secrets_manager.SecretManager
 	registry          core_registry.TypeRegistry
-	meshValidator     validators_mesh.MeshValidator
+	meshValidator     MeshValidator
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {

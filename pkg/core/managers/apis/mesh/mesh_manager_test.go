@@ -100,7 +100,7 @@ var _ = Describe("Mesh Manager", func() {
 					Violations: []validators.Violation{
 						{
 							Field:   "mtls.ca.provided",
-							Message: "There are no provided CA for a given mesh",
+							Message: "There is no signing certificate in provided CA for a given mesh. Add certificate via 'kumactl manage ca provided certificates add' command.",
 						},
 					},
 				}))
@@ -121,7 +121,7 @@ var _ = Describe("Mesh Manager", func() {
 					Violations: []validators.Violation{
 						{
 							Field:   "mtls.ca.provided",
-							Message: "There are no signing certificate in provided CA for a given mesh",
+							Message: "There is no signing certificate in provided CA for a given mesh. Add certificate via 'kumactl manage ca provided certificates add' command.",
 						},
 					},
 				}))
@@ -272,7 +272,7 @@ var _ = Describe("Mesh Manager", func() {
 			// and built-in mesh CA is deleted
 			_, err = builtinCaManager.GetRootCerts(context.Background(), meshName)
 			Expect(err).ToNot(BeNil())
-			Expect(err).To(MatchError("failed to load CA key pair for Mesh \"mesh-1\": Resource not found: type=\"Secret\" name=\"builtinca.mesh-1\" mesh=\"mesh-1\""))
+			Expect(err).To(MatchError("failed to load CA key pair for Mesh \"mesh-1\": Resource not found: type=\"Secret\" name=\"builtinca.mesh-1\" mesh=\"mesh-1\"")) // todo(jakubdyszkiewicz) make error msg consistent
 
 			// and provided mesh CA is deleted
 			_, err = providedCaManager.GetSigningCerts(context.Background(), meshName)
