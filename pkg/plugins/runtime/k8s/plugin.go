@@ -110,19 +110,17 @@ func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 }
 
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	composite := k8s_webhooks.CompositeValidator{}
+
 	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global())
-	path := "/validate-kuma-io-v1alpha1"
-	mgr.GetWebhookServer().Register(path, handler)
-	log.Info("Registering a validation webhook", "path", path)
+	composite.AddValidator(handler)
 
-	addMeshValidator(rt, mgr)
-	return nil
-}
-
-func addMeshValidator(rt core_runtime.Runtime, mgr kube_ctrl.Manager) {
 	coreMeshValidator := managers_mesh.MeshValidator{ProvidedCaManager: rt.ProvidedCaManager()}
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, k8s_resources.DefaultConverter())
-	path := "/validate-kuma-io-v1alpha1-mesh"
-	mgr.GetWebhookServer().Register(path, k8sMeshValidator)
-	log.Info("Registering a mesh validation webhook", "path", path)
+	composite.AddValidator(k8sMeshValidator)
+
+	path := "/validate-kuma-io-v1alpha1"
+	mgr.GetWebhookServer().Register(path, composite.WebHook())
+	log.Info("Registering a validation composite webhook", "path", path)
+	return nil
 }

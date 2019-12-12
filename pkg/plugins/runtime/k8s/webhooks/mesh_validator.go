@@ -7,17 +7,16 @@ import (
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"k8s.io/api/admission/v1beta1"
 	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s.Converter) *admission.Webhook {
-	return &admission.Webhook{
-		Handler: &MeshValidator{
-			validator: validator,
-			converter: converter,
-		},
+func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s.Converter) AdmissionValidator {
+	return &MeshValidator{
+		validator: validator,
+		converter: converter,
 	}
 }
 
@@ -86,4 +85,9 @@ func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Reques
 		return admission.Denied(err.Error())
 	}
 	return admission.Allowed("")
+}
+
+func (h *MeshValidator) Supports(req admission.Request) bool {
+	gvk := mesh_k8s.GroupVersion.WithKind("Mesh")
+	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }
