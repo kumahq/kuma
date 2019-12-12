@@ -2,6 +2,7 @@ package rest_test
 
 import (
 	"fmt"
+	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
 	"github.com/Kong/kuma/pkg/core/rest/errors/types"
@@ -21,7 +22,7 @@ import (
 
 var _ = Describe("Provided CA WS", func() {
 
-	var client rest.ProvidedCaClient
+	var client ca.ProvidedCaClient
 	var srv *httptest.Server
 
 	BeforeEach(func() {
@@ -36,7 +37,7 @@ var _ = Describe("Provided CA WS", func() {
 			return err
 		}).ShouldNot(HaveOccurred())
 
-		c, err := rest.NewProvidedCaClient(srv.URL, nil)
+		c, err := ca.NewProvidedCaClient(srv.URL, nil)
 		Expect(err).ToNot(HaveOccurred())
 		client = c
 	})

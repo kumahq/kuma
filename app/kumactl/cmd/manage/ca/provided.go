@@ -2,7 +2,6 @@ package ca
 
 import (
 	"crypto/sha1"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -142,7 +141,7 @@ func printListCertificates(certs []types.SigningCert, out io.Writer) error {
 		x509Certs[i] = x509Cert
 	}
 	data := printers.Table{
-		Headers: []string{"ID", "COMMON NAME", "SERIAL NUMBER", "NOT VALID BEFORE", "NOT VALID AFTER", "SHA-1 FINGERPRINT", "SHA-256 FINGERPRINT"},
+		Headers: []string{"ID", "COMMON NAME", "SERIAL NUMBER", "NOT VALID BEFORE", "NOT VALID AFTER", "SHA-1 FINGERPRINT"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -153,13 +152,12 @@ func printListCertificates(certs []types.SigningCert, out io.Writer) error {
 				cert := certs[i]
 				x509Cert := x509Certs[i]
 				return []string{
-					cert.Id,                                           // ID
-					x509Cert.Subject.CommonName,                       // COMMON NAME
-					x509Cert.SerialNumber.String(),                    // SERIAL NUMBER
-					x509Cert.NotBefore.String(),                       // NOT VALID BEFORE
-					x509Cert.NotAfter.String(),                        // NOT VALID AFTER
-					fmt.Sprintf("%x", sha1.Sum(x509Cert.Raw)),         // SHA-1 FINGERPRINT
-					fmt.Sprintf("%x", sha256.New().Sum(x509Cert.Raw)), // SHA-256 FINGERPRINT
+					cert.Id,                                   // ID
+					x509Cert.Subject.CommonName,               // COMMON NAME
+					x509Cert.SerialNumber.String(),            // SERIAL NUMBER
+					x509Cert.NotBefore.String(),               // NOT VALID BEFORE
+					x509Cert.NotAfter.String(),                // NOT VALID AFTER
+					fmt.Sprintf("%x", sha1.Sum(x509Cert.Raw)), // SHA-1 FINGERPRINT
 				}
 			}
 		}(),

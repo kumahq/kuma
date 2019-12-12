@@ -10,7 +10,7 @@ type Catalog struct {
 
 type Apis struct {
 	Bootstrap      BootstrapApi      `json:"bootstrap"`
-	DataplaneToken DataplaneTokenApi `json:"dataplaneToken"`
+	DataplaneToken DataplaneTokenApi `json:"dataplaneToken"` // DEPRECATED: remove in next major version of Kuma
 	Admin          AdminApi          `json:"admin"`
 }
 
