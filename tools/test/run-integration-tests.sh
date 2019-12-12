@@ -24,10 +24,10 @@ export KUMA_STORE_POSTGRES_PORT=$(get_unused_port)
 export KUMA_STORE_POSTGRES_USER=kuma
 export KUMA_STORE_POSTGRES_PASSWORD=kuma
 export KUMA_STORE_POSTGRES_DB_NAME=kuma
-export KUMA_STORE_POSTGRES_SSL_MODE=verify-ca
-export KUMA_STORE_POSTGRES_SSL_CERT_PATH=$dockerComposeSslDir/certs/postgres.client.crt
-export KUMA_STORE_POSTGRES_SSL_KEY_PATH=$dockerComposeSslDir/certs/postgres.client.key
-export KUMA_STORE_POSTGRES_SSL_ROOT_CERT_PATH=$dockerComposeSslDir/certs/rootCA.crt
+export KUMA_STORE_POSTGRES_TLS_MODE=verifyCa
+export KUMA_STORE_POSTGRES_TLS_CERT_PATH=$dockerComposeSslDir/certs/postgres.client.crt
+export KUMA_STORE_POSTGRES_TLS_KEY_PATH=$dockerComposeSslDir/certs/postgres.client.key
+export KUMA_STORE_POSTGRES_TLS_CA_PATH=$dockerComposeSslDir/certs/rootCA.crt
 
 dockerCompose="$dockerComposeSslDir/docker-compose.yaml"
 

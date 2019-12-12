@@ -25,9 +25,9 @@ store:
     dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
-    # SSL settings
-    ssl:
-      # Mode of SSL connection. Available values (disable, require, verify-ca, verify-full)
+    # TLS settings
+    tls:
+      # Mode of TLS connection. Available values (disable, require, verify-ca, verify-full)
       mode: disable # ENV: KUMA_STORE_POSTGRES_SSL_MODE
       # Path to SSL Certificate of the client. Used in require, verify-ca and verify-full modes
       certPath: # ENV: KUMA_STORE_POSTGRES_SSL_CERT_PATH

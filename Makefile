@@ -332,7 +332,7 @@ start/postgres/ssl: ## Boostrap: start Postgres for Control Plane with initial s
 
 POSTGRES_SSL_MODE ?= disable
 
-run/universal/postgres/ssl: POSTGRES_SSL_MODE=verify-ca
+run/universal/postgres/ssl: POSTGRES_SSL_MODE=verifyCa
 run/universal/postgres/ssl: POSTGRES_SSL_CERT_PATH=$(shell pwd)/tools/postgres/ssl/certs/postgres.client.crt
 run/universal/postgres/ssl: POSTGRES_SSL_KEY_PATH=$(shell pwd)/tools/postgres/ssl/certs/postgres.client.key
 run/universal/postgres/ssl: POSTGRES_SSL_ROOT_CERT_PATH=$(shell pwd)/tools/postgres/ssl/certs/rootCA.crt
@@ -348,10 +348,10 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KUMA_STORE_POSTGRES_USER=kuma \
 	KUMA_STORE_POSTGRES_PASSWORD=kuma \
 	KUMA_STORE_POSTGRES_DB_NAME=kuma \
-	KUMA_STORE_POSTGRES_SSL_MODE=$(POSTGRES_SSL_MODE) \
-	KUMA_STORE_POSTGRES_SSL_CERT_PATH=$(POSTGRES_SSL_CERT_PATH) \
-	KUMA_STORE_POSTGRES_SSL_KEY_PATH=$(POSTGRES_SSL_KEY_PATH) \
-	KUMA_STORE_POSTGRES_SSL_ROOT_CERT_PATH=$(POSTGRES_SSL_ROOT_CERT_PATH) \
+	KUMA_STORE_POSTGRES_TLS_MODE=$(POSTGRES_SSL_MODE) \
+	KUMA_STORE_POSTGRES_TLS_CERT_PATH=$(POSTGRES_SSL_CERT_PATH) \
+	KUMA_STORE_POSTGRES_TLS_KEY_PATH=$(POSTGRES_SSL_KEY_PATH) \
+	KUMA_STORE_POSTGRES_TLS_CA_PATH=$(POSTGRES_SSL_ROOT_CERT_PATH) \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 run/example/envoy/k8s: EXAMPLE_DATAPLANE_MESH=$(KIND_EXAMPLE_DATAPLANE_MESH)

@@ -79,10 +79,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 
-			Expect(cfg.Store.Postgres.SSL.Mode).To(Equal(postgres.VerifyFull))
-			Expect(cfg.Store.Postgres.SSL.CertPath).To(Equal("/path/to/cert"))
-			Expect(cfg.Store.Postgres.SSL.KeyPath).To(Equal("/path/to/key"))
-			Expect(cfg.Store.Postgres.SSL.RootCertPath).To(Equal("/path/to/rootCert"))
+			Expect(cfg.Store.Postgres.TLS.Mode).To(Equal(postgres.VerifyFull))
+			Expect(cfg.Store.Postgres.TLS.CertPath).To(Equal("/path/to/cert"))
+			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
+			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 
 			Expect(cfg.ApiServer.Port).To(Equal(9090))
 			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
@@ -120,11 +120,11 @@ store:
     password: kuma
     dbName: kuma
     connectionTimeout: 10
-    ssl:
-      mode: verify-full
+    tls:
+      mode: verifyFull
       certPath: /path/to/cert
       keyPath: /path/to/key
-      rootCertPath: /path/to/rootCert
+      caPath: /path/to/rootCert
 xdsServer:
   grpcPort: 5000
   diagnosticsPort: 5003
@@ -181,10 +181,10 @@ guiServer:
 				"KUMA_STORE_POSTGRES_PASSWORD":                        "kuma",
 				"KUMA_STORE_POSTGRES_DB_NAME":                         "kuma",
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":              "10",
-				"KUMA_STORE_POSTGRES_SSL_MODE":                        "verify-full",
-				"KUMA_STORE_POSTGRES_SSL_CERT_PATH":                   "/path/to/cert",
-				"KUMA_STORE_POSTGRES_SSL_KEY_PATH":                    "/path/to/key",
-				"KUMA_STORE_POSTGRES_SSL_ROOT_CERT_PATH":              "/path/to/rootCert",
+				"KUMA_STORE_POSTGRES_TLS_MODE":                        "verifyFull",
+				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                   "/path/to/cert",
+				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                    "/path/to/key",
+				"KUMA_STORE_POSTGRES_TLS_CA_PATH":                     "/path/to/rootCert",
 				"KUMA_API_SERVER_READ_ONLY":                           "true",
 				"KUMA_API_SERVER_PORT":                                "9090",
 				"KUMA_DATAPLANE_TOKEN_SERVER_ENABLED":                 "true",

@@ -7,10 +7,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("SSLPostgresStoreConfig", func() {
+var _ = Describe("TLSPostgresStoreConfig", func() {
 
 	type testCase struct {
-		config postgres.SSLPostgresStoreConfig
+		config postgres.TLSPostgresStoreConfig
 		error  string
 	}
 	DescribeTable("should validate invalid config",
@@ -21,93 +21,93 @@ var _ = Describe("SSLPostgresStoreConfig", func() {
 			// then
 			Expect(err).To(MatchError(given.error))
 		},
-		Entry("Require without certPath", testCase{
-			config: postgres.SSLPostgresStoreConfig{
-				Mode:    postgres.Require,
+		Entry("VerifyNone without certPath", testCase{
+			config: postgres.TLSPostgresStoreConfig{
+				Mode:    postgres.VerifyNone,
 				KeyPath: "/path",
 			},
 			error: "CertPath cannot be empty",
 		}),
-		Entry("Require without keyPath", testCase{
-			config: postgres.SSLPostgresStoreConfig{
-				Mode:     postgres.Require,
+		Entry("VerifyNone without keyPath", testCase{
+			config: postgres.TLSPostgresStoreConfig{
+				Mode:     postgres.VerifyNone,
 				CertPath: "/path",
 			},
 			error: "KeyPath cannot be empty",
 		}),
-		Entry("VerifyCA without RootCertPath", testCase{
-			config: postgres.SSLPostgresStoreConfig{
+		Entry("VerifyCA without CAPath", testCase{
+			config: postgres.TLSPostgresStoreConfig{
 				Mode:     postgres.VerifyCa,
 				KeyPath:  "/path",
 				CertPath: "/path",
 			},
-			error: "RootCertPath cannot be empty",
+			error: "CAPath cannot be empty",
 		}),
 		Entry("VerifyCA without CertPath", testCase{
-			config: postgres.SSLPostgresStoreConfig{
-				Mode:         postgres.VerifyCa,
-				RootCertPath: "/path",
-				KeyPath:      "/path",
+			config: postgres.TLSPostgresStoreConfig{
+				Mode:    postgres.VerifyCa,
+				CAPath:  "/path",
+				KeyPath: "/path",
 			},
 			error: "CertPath cannot be empty",
 		}),
 		Entry("VerifyCA without KeyPath", testCase{
-			config: postgres.SSLPostgresStoreConfig{
-				Mode:         postgres.VerifyCa,
-				RootCertPath: "/path",
-				CertPath:     "/path",
+			config: postgres.TLSPostgresStoreConfig{
+				Mode:     postgres.VerifyCa,
+				CAPath:   "/path",
+				CertPath: "/path",
 			},
 			error: "KeyPath cannot be empty",
 		}),
-		Entry("VerifyFull without RootCertPath", testCase{
-			config: postgres.SSLPostgresStoreConfig{
+		Entry("VerifyFull without CAPath", testCase{
+			config: postgres.TLSPostgresStoreConfig{
 				Mode:     postgres.VerifyFull,
 				KeyPath:  "/path",
 				CertPath: "/path",
 			},
-			error: "RootCertPath cannot be empty",
+			error: "CAPath cannot be empty",
 		}),
 		Entry("VerifyFull without CertPath", testCase{
-			config: postgres.SSLPostgresStoreConfig{
-				Mode:         postgres.VerifyFull,
-				RootCertPath: "/path",
-				KeyPath:      "/path",
+			config: postgres.TLSPostgresStoreConfig{
+				Mode:    postgres.VerifyFull,
+				CAPath:  "/path",
+				KeyPath: "/path",
 			},
 			error: "CertPath cannot be empty",
 		}),
 		Entry("VerifyFull without KeyPath", testCase{
-			config: postgres.SSLPostgresStoreConfig{
-				Mode:         postgres.VerifyFull,
-				RootCertPath: "/path",
-				CertPath:     "/path",
+			config: postgres.TLSPostgresStoreConfig{
+				Mode:     postgres.VerifyFull,
+				CAPath:   "/path",
+				CertPath: "/path",
 			},
 			error: "KeyPath cannot be empty",
 		}),
 	)
 
 	DescribeTable("should validate valid config",
-		func(cfg postgres.SSLPostgresStoreConfig) {
+		func(cfg postgres.TLSPostgresStoreConfig) {
 			Expect(cfg.Validate()).To(Succeed())
 		},
-		Entry("mode Disable", postgres.SSLPostgresStoreConfig{
+		Entry("mode Disable", postgres.TLSPostgresStoreConfig{
 			Mode: postgres.Disable,
 		}),
-		Entry("mode Require", postgres.SSLPostgresStoreConfig{
-			Mode:     postgres.Require,
+		Entry("mode VerifyNone", postgres.TLSPostgresStoreConfig{
+			Mode:     postgres.VerifyNone,
 			KeyPath:  "/path",
 			CertPath: "/path",
 		}),
-		Entry("mode VerifyCA", postgres.SSLPostgresStoreConfig{
-			Mode:         postgres.VerifyCa,
-			RootCertPath: "/path",
-			KeyPath:      "/path",
-			CertPath:     "/path",
+		Entry("mode VerifyCA", postgres.TLSPostgresStoreConfig{
+			Mode:     postgres.VerifyCa,
+			CAPath:   "/path",
+			KeyPath:  "/path",
+			CertPath: "/path",
 		}),
-		Entry("mode VerifyFull", postgres.SSLPostgresStoreConfig{
-			Mode:         postgres.VerifyFull,
-			RootCertPath: "/path",
-			KeyPath:      "/path",
-			CertPath:     "/path",
+		Entry("mode VerifyFull", postgres.TLSPostgresStoreConfig{
+			Mode:     postgres.VerifyFull,
+			CAPath:   "/path",
+			KeyPath:  "/path",
+			CertPath: "/path",
 		}),
 	)
 })

@@ -120,11 +120,11 @@ var _ = Describe("Config WS", func() {
               "host": "127.0.0.1",
               "password": "*****",
               "port": 15432,
-              "ssl": {
+              "tls": {
                 "certPath": "",
                 "keyPath": "",
                 "mode": "disable",
-                "rootCertPath": ""
+                "caPath": ""
               },
               "user": "kuma"
             },
