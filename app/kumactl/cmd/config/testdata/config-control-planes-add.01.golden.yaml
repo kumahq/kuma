@@ -2,7 +2,7 @@ contexts:
 - controlPlane: example
   name: example
   credentials:
-    dataplaneTokenApi:
+    adminApi:
       clientCert: /tmp/client.pem
       clientKey: /tmp/client.key.pem
 controlPlanes:

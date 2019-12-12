@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased
+
+Breaking changes:
+* kumactl: `dataplane-token-client-cert` and `dataplane-token-client-key` arguments in `config control-planes add` command
+are renamed to `admin-client-cert` and `admin-client-key`. 
+
 ## [0.3.0]
 
 > Released on 2019/11/18

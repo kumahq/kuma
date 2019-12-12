@@ -1,10 +1,11 @@
-package rest
+package ca
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 
+	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
 	error_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/Kong/kuma/pkg/tls"
@@ -23,7 +24,6 @@ const (
 type ProvidedCaClient interface {
 	AddSigningCertificate(mesh string, pair tls.KeyPair) (types.SigningCert, error)
 	DeleteSigningCertificate(mesh string, id string) error
-	DeleteCa(mesh string) error
 	SigningCertificates(mesh string) ([]types.SigningCert, error)
 }
 
@@ -31,13 +31,22 @@ type httpProvidedCaClient struct {
 	client util_http.Client
 }
 
-func NewProvidedCaClient(address string) (ProvidedCaClient, error) {
+func NewProvidedCaClient(address string, config *kumactl_config.Context_AdminApiCredentials) (ProvidedCaClient, error) {
 	baseURL, err := url.Parse(address)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse the server URL")
 	}
 	httpClient := &http.Client{
 		Timeout: timeout,
+	}
+	if baseURL.Scheme == "https" {
+		if !config.HasClientCert() {
+			return nil, errors.New("certificates has to be configured to use https destination")
+		}
+		// Since we're not going to pass any secrets to the server, we can skip validating its identity.
+		if err := util_http.ConfigureTlsWithoutServerVerification(httpClient, config.ClientCert, config.ClientKey); err != nil {
+			return nil, errors.Wrap(err, "could not configure tls for provided ca client")
+		}
 	}
 	client := util_http.ClientWithBaseURL(httpClient, baseURL)
 	return &httpProvidedCaClient{
@@ -92,16 +101,6 @@ func (h *httpProvidedCaClient) SigningCertificates(mesh string) ([]types.Signing
 
 func (h *httpProvidedCaClient) DeleteSigningCertificate(mesh string, id string) error {
 	urlCerts := fmt.Sprintf("/meshes/%s/ca/provided/certificates/%s", mesh, id)
-	req, err := http.NewRequest("DELETE", urlCerts, nil)
-	if err != nil {
-		return err
-	}
-	_, err = h.doRequest(req)
-	return err
-}
-
-func (h *httpProvidedCaClient) DeleteCa(mesh string) error {
-	urlCerts := fmt.Sprintf("/meshes/%s/ca/provided", mesh)
 	req, err := http.NewRequest("DELETE", urlCerts, nil)
 	if err != nil {
 		return err

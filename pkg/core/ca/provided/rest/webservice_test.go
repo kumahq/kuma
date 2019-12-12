@@ -2,6 +2,7 @@ package rest_test
 
 import (
 	"fmt"
+	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
 	"github.com/Kong/kuma/pkg/core/rest/errors/types"
@@ -21,7 +22,7 @@ import (
 
 var _ = Describe("Provided CA WS", func() {
 
-	var client rest.ProvidedCaClient
+	var client ca.ProvidedCaClient
 	var srv *httptest.Server
 
 	BeforeEach(func() {
@@ -36,7 +37,7 @@ var _ = Describe("Provided CA WS", func() {
 			return err
 		}).ShouldNot(HaveOccurred())
 
-		c, err := rest.NewProvidedCaClient(srv.URL)
+		c, err := ca.NewProvidedCaClient(srv.URL, nil)
 		Expect(err).ToNot(HaveOccurred())
 		client = c
 	})
@@ -170,42 +171,6 @@ var _ = Describe("Provided CA WS", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(&types.Error{
 				Title:   "Could not delete signing cert",
-				Details: "Not found",
-			}))
-		})
-	})
-
-	Describe("Delete CA", func() {
-		It("should delete existing CA", func() {
-			// given
-			_, err := client.AddSigningCertificate("demo", pair)
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = client.DeleteCa("demo")
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			_, err = client.SigningCertificates("demo")
-
-			// then
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(&types.Error{
-				Title:   "Could not retrieve signing certs",
-				Details: "Not found",
-			}))
-		})
-
-		It("should throw an error on deleting non existing CA", func() {
-			// when
-			err := client.DeleteCa("non-existing-mesh")
-
-			// then
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(&types.Error{
-				Title:   "Could not delete CA",
 				Details: "Not found",
 			}))
 		})

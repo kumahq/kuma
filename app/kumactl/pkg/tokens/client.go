@@ -17,7 +17,7 @@ const (
 	timeout = 10 * time.Second
 )
 
-func NewDataplaneTokenClient(address string, config *kumactl_config.Context_DataplaneTokenApiCredentials) (DataplaneTokenClient, error) {
+func NewDataplaneTokenClient(address string, config *kumactl_config.Context_AdminApiCredentials) (DataplaneTokenClient, error) {
 	baseURL, err := url.Parse(address)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse Dataplane Token Server URL")
