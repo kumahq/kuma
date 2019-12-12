@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/pkg/core"
+	managers_mesh "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -45,7 +46,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	if err := addValidators(mgr); err != nil {
+	if err := addValidators(mgr, rt); err != nil {
 		return err
 	}
 
@@ -108,13 +109,20 @@ func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 	return fmt.Sprintf("/default-%s-%s-%s", strings.Replace(gvk.Group, ".", "-", -1), gvk.Version, strings.ToLower(gvk.Kind))
 }
 
-func addValidators(mgr kube_ctrl.Manager) error {
-	handler, err := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global())
-	if err != nil {
-		return err
-	}
+func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global())
 	path := "/validate-kuma-io-v1alpha1"
 	mgr.GetWebhookServer().Register(path, handler)
 	log.Info("Registering a validation webhook", "path", path)
+
+	addMeshValidator(rt, mgr)
 	return nil
+}
+
+func addMeshValidator(rt core_runtime.Runtime, mgr kube_ctrl.Manager) {
+	coreMeshValidator := managers_mesh.MeshValidator{ProvidedCaManager: rt.ProvidedCaManager()}
+	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, k8s_resources.DefaultConverter())
+	path := "/validate-kuma-io-v1alpha1-mesh"
+	mgr.GetWebhookServer().Register(path, k8sMeshValidator)
+	log.Info("Registering a mesh validation webhook", "path", path)
 }

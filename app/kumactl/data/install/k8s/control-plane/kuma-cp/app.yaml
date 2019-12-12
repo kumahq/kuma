@@ -211,3 +211,27 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: kuma-validating-webhook-mesh-configuration
+webhooks:
+  - name: mesh.validator.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: {{ .AdmissionServerTlsCert | b64enc }}
+      service:
+        namespace: {{ .Namespace }}
+        name: {{ .ControlPlaneServiceName }}
+        path: /validate-kuma-io-v1alpha1-mesh
+    rules:
+      - apiGroups:
+          - kuma.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - meshes

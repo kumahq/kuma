@@ -48,8 +48,7 @@ var _ = Describe("Validation", func() {
 		err = types.RegisterType(&sample_core.TrafficRouteResource{})
 		Expect(err).ToNot(HaveOccurred())
 
-		webhook, err := webhooks.NewValidatingWebhook(converter, types, kubeTypes)
-		Expect(err).ToNot(HaveOccurred())
+		webhook := webhooks.NewValidatingWebhook(converter, types, kubeTypes)
 
 		scheme := kube_runtime.NewScheme()
 		Expect(sample_k8s.AddToScheme(scheme)).To(Succeed())

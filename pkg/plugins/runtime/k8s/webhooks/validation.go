@@ -16,14 +16,14 @@ import (
 	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry) (*admission.Webhook, error) {
+func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry) *admission.Webhook {
 	return &admission.Webhook{
 		Handler: &validatingHandler{
 			coreRegistry: coreRegistry,
 			k8sRegistry:  k8sRegistry,
 			converter:    converter,
 		},
-	}, nil
+	}
 }
 
 type validatingHandler struct {
