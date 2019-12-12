@@ -38,7 +38,13 @@ func (m *MeshValidator) ValidateUpdate(ctx context.Context, previousMesh *core_m
 	if err := m.validateCaChange(previousMesh, newMesh); err != nil {
 		return err
 	}
-	return m.validateProvidedCaRoot(ctx, newMesh.Meta.GetName())
+	switch newMesh.Spec.GetMtls().GetCa().GetType().(type) {
+	case *mesh_proto.CertificateAuthority_Provided_:
+		if err := m.validateProvidedCaRoot(ctx, newMesh.Meta.GetName()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (m *MeshValidator) validateCaChange(previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {

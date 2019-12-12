@@ -65,6 +65,7 @@ func (m *meshManager) List(ctx context.Context, list core_model.ResourceList, fs
 }
 
 func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) (errs error) {
+	opts := core_store.NewCreateOptions(fs...)
 	mesh, err := m.mesh(resource)
 	if err != nil {
 		return err
@@ -74,6 +75,9 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := resource.Validate(); err != nil {
 		return err
 	}
+	if err := m.meshValidator.ValidateCreate(ctx, opts.Name, mesh); err != nil {
+		return err
+	}
 	// keep creation of Mesh and Built-in CA in sync
 	var rollback func() error
 	defer func() {
@@ -81,7 +85,6 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 			errs = multierr.Append(errs, rollback())
 		}
 	}()
-	opts := core_store.NewCreateOptions(fs...)
 	switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
 	// create Built-in CA
 	case *mesh_proto.CertificateAuthority_Builtin_:
@@ -91,9 +94,6 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 		rollback = func() error {
 			return m.builtinCaManager.Delete(ctx, opts.Name)
 		}
-	}
-	if err := m.meshValidator.ValidateCreate(ctx, opts.Name, mesh); err != nil {
-		return err
 	}
 	// persist Mesh
 	if err := m.store.Create(ctx, mesh, fs...); err != nil {
