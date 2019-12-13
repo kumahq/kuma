@@ -1,10 +1,68 @@
 # CHANGELOG
 
-## Unreleased
+## [0.3.1]
+
+> Released on 2019/12/13
+
+Changes:
+
+* feature: added Kuma UI
+  [#461](https://github.com/Kong/kuma/pull/461)
+* feature: support TLS in Postgres-based storage backend
+  [#472](https://github.com/Kong/kuma/pull/472)
+* feature: prevent removal of a signing certificate from a "provided" CA in use
+  [#490](https://github.com/Kong/kuma/pull/490)
+* feature: validate consistency of changes to "provided" CA on `k8s`
+  [#485](https://github.com/Kong/kuma/pull/485)
+* feature: validate consistency of changes to "provided" CA on `universal`
+  [#475](https://github.com/Kong/kuma/pull/475)
+* feature: add `kumactl manage ca` commands to support "provided" CA
+  [#474](https://github.com/Kong/kuma/pull/474)
+  ⚠️ warning: api breaking change
+* feature: include health checks into generated Envoy configuration (#483)
+  [#483](https://github.com/Kong/kuma/pull/483)
+* feature: pick a single the most specific `HealthCheck` for every service reachable from a given `Dataplane`
+  [#481](https://github.com/Kong/kuma/pull/481)
+* feature: add REST API for managing "provided" CA
+  [#473](https://github.com/Kong/kuma/pull/473)
+* feature: reuse policy matching logic for `TrafficLog` resource
+  [#482](https://github.com/Kong/kuma/pull/482)
+  ⚠️ warning: backwards-incompatible change of behaviour
+* feature: refactor policy matching logic into reusable function
+  [#479](https://github.com/Kong/kuma/pull/479)
+* feature: add `kumactl get healthchecks` command
+  [#477](https://github.com/Kong/kuma/pull/477)
+* feature: validate `HealthCheck` resource
+  [#476](https://github.com/Kong/kuma/pull/476)
+* feature: add `HealthCheck` CRD on kubernetes
+  [#471](https://github.com/Kong/kuma/pull/471)
+* feature: add `HealthCheck` to core model
+  [#470](https://github.com/Kong/kuma/pull/470)
+* feature: add proto definition for `HealthCheck` resource
+  [#446](https://github.com/Kong/kuma/pull/446)
+* feature: ground work for "provided" CA support
+  [#467](https://github.com/Kong/kuma/pull/467)
+* feature: remove "namespace" from core model
+  [#458](https://github.com/Kong/kuma/pull/458)
+  ⚠️ warning: api breaking change
+* feature: expose effective configuration of `kuma-cp` as part of REST API
+  [#454](https://github.com/Kong/kuma/pull/454)
+* feature: improve error messages in `kumactl config control-planes add`
+  [#455](https://github.com/Kong/kuma/pull/455)
+* feature: delete resource operation should return 404 if resource is not found
+  [#450](https://github.com/Kong/kuma/pull/450)
+* feature: autoconfigure bootstrap server on `kuma-cp` startup
+  [#449](https://github.com/Kong/kuma/pull/449)
+* feature: update envoy to v1.12.1
+  [#448](https://github.com/Kong/kuma/pull/448)
 
 Breaking changes:
-* kumactl: `dataplane-token-client-cert` and `dataplane-token-client-key` arguments in `config control-planes add` command
-are renamed to `admin-client-cert` and `admin-client-key`. 
+* ⚠️ a few arguments of `kumactl config control-planes add` have been renamed: `--dataplane-token-client-cert => --admin-client-cert` and `--dataplane-token-client-key => --admin-client-key`
+  [474](https://github.com/Kong/kuma/pull/474)
+* ⚠️ instead of applying all matching `TrafficLog` policies to a given `outbound` interface of a `Dataplane`, only a single the most specific `TrafficLog` policy is now applied
+  [#482](https://github.com/Kong/kuma/pull/482)
+* ⚠️ `Mesh` CRD on Kubernetes is now Cluster-scoped
+  [#458](https://github.com/Kong/kuma/pull/458)
 
 ## [0.3.0]
 
