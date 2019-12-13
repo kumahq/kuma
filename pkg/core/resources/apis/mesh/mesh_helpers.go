@@ -12,3 +12,12 @@ func (m *MeshResource) HasBuiltinCA() bool {
 		return false
 	}
 }
+
+func (m *MeshResource) HasProvidedCA() bool {
+	switch m.Spec.GetMtls().GetCa().GetType().(type) {
+	case *mesh_proto.CertificateAuthority_Provided_:
+		return true
+	default:
+		return false
+	}
+}
