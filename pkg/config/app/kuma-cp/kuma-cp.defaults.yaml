@@ -25,6 +25,16 @@ store:
     dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
+    # TLS settings
+    tls:
+      # Mode of TLS connection. Available values (disable, require, verify-ca, verify-full)
+      mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
+      # Path to TLS Certificate of the client. Used in require, verify-ca and verify-full modes
+      certPath: # ENV: KUMA_STORE_POSTGRES_TLS_CERT_PATH
+      # Path to TLS Key of the client. Used in require, verify-ca and verify-full modes
+      keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
+      # Path to the root certificate. Used in verify-ca and verify-full modes.
+      caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:

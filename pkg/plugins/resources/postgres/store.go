@@ -33,9 +33,13 @@ func NewStore(config config.PostgresStoreConfig) (store.ResourceStore, error) {
 	}, nil
 }
 
-func connectToDb(config config.PostgresStoreConfig) (*sql.DB, error) {
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable connect_timeout=%d",
-		config.Host, config.Port, config.User, config.Password, config.DbName, config.ConnectionTimeout)
+func connectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
+	mode, err := postgresMode(cfg.TLS.Mode)
+	if err != nil {
+		return nil, err
+	}
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s connect_timeout=%d sslmode=%s sslcert=%s sslkey=%s sslrootcert=%s",
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DbName, cfg.ConnectionTimeout, mode, cfg.TLS.CertPath, cfg.TLS.KeyPath, cfg.TLS.CAPath)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create connection to DB")
@@ -47,6 +51,21 @@ func connectToDb(config config.PostgresStoreConfig) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func postgresMode(mode config.TLSMode) (string, error) {
+	switch mode {
+	case config.Disable:
+		return "disable", nil
+	case config.VerifyNone:
+		return "require", nil
+	case config.VerifyCa:
+		return "verify-ca", nil
+	case config.VerifyFull:
+		return "verify-full", nil
+	default:
+		return "", errors.Errorf("could not translate mode %q to postgres mode", mode)
+	}
 }
 
 func (r *postgresResourceStore) Create(_ context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
