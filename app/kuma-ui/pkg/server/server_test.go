@@ -3,6 +3,11 @@ package server_test
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
+	"strconv"
+
 	"github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	"github.com/Kong/kuma/app/kuma-ui/pkg/server/types"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
@@ -10,10 +15,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"net/http"
-	"path/filepath"
-	"strconv"
 )
 
 var _ = Describe("GUI Server", func() {
@@ -93,10 +94,6 @@ var _ = Describe("GUI Server", func() {
 		Entry("should serve index.html with / path", testCase{
 			urlPath:      "/",
 			expectedFile: "index.html",
-		}),
-		Entry("should serve data.js", testCase{
-			urlPath:      "/data.js",
-			expectedFile: "data.js",
 		}),
 	)
 
