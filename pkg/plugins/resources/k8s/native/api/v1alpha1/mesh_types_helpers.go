@@ -31,6 +31,10 @@ func (pt *Mesh) SetSpec(spec map[string]interface{}) {
 	pt.Spec = spec
 }
 
+func (pt *Mesh) Scope() model.Scope {
+	return model.ScopeCluster
+}
+
 func (l *MeshList) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {

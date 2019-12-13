@@ -1,0 +1,7 @@
+type: Mesh
+mesh: default
+name: default
+mtls:
+  ca:
+    builtin: {}
+  enabled: false

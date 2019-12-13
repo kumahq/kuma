@@ -82,7 +82,7 @@ var _ = Describe("Store Polling Source", func() {
 				},
 			},
 		}
-		err := memoryStore.Create(context.Background(), resource, store.CreateByKey("sample-ns", "sample-mesh", "sample-name"))
+		err := memoryStore.Create(context.Background(), resource, store.CreateByKey("sample-mesh", "sample-name"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -104,7 +104,7 @@ var _ = Describe("Store Polling Source", func() {
 		Expect(consumer.Updates()).To(HaveLen(1))
 
 		// when
-		err = memoryStore.Delete(context.Background(), resource, store.DeleteByKey("sample-ns", "sample-mesh", "sample-name"))
+		err = memoryStore.Delete(context.Background(), resource, store.DeleteByKey("sample-mesh", "sample-name"))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = source.detectChanges()

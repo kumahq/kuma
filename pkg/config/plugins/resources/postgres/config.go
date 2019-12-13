@@ -24,6 +24,10 @@ type PostgresStoreConfig struct {
 	ConnectionTimeout int `yaml:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
 }
 
+func (p *PostgresStoreConfig) Sanitize() {
+	p.Password = config.SanitizedValue
+}
+
 func (p *PostgresStoreConfig) Validate() error {
 	if len(p.Host) < 1 {
 		return errors.New("Host should not be empty")

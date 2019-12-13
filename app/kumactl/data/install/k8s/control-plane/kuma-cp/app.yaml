@@ -103,10 +103,6 @@ spec:
           value: "5681"
         - name: KUMA_BOOTSTRAP_SERVER_PORT
           value: "5682"
-        - name: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
-          value: {{ .ControlPlaneServiceName }}.{{ .Namespace }}
-        - name: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
-          value: "5678"
         - name: KUMA_SDS_SERVER_TLS_CERT_FILE
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
         - name: KUMA_SDS_SERVER_TLS_KEY_FILE
@@ -212,5 +208,6 @@ webhooks:
           - trafficpermissions
           - trafficroutes
           - dataplanes
+          - healthchecks
           - meshes
           - proxytemplates

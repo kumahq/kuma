@@ -30,6 +30,8 @@ var _ = Describe("Bootstrap Server", func() {
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
 		config = bootstrap_config.DefaultBootstrapParamsConfig()
+		config.XdsHost = "127.0.0.1"
+		config.XdsPort = 5678
 
 		port, err := test.GetFreePort()
 		baseUrl = "http://localhost:" + strconv.Itoa(port)
@@ -59,11 +61,12 @@ var _ = Describe("Bootstrap Server", func() {
 	})
 
 	BeforeEach(func() {
-		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default", "default"))
+		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	type testCase struct {
+		dataplaneName      string
 		body               string
 		expectedConfigFile string
 	}
@@ -84,7 +87,7 @@ var _ = Describe("Bootstrap Server", func() {
 					},
 				},
 			}
-			err := resManager.Create(context.Background(), &res, store.CreateByKey("default", "dp-1", "default"))
+			err := resManager.Create(context.Background(), &res, store.CreateByKey(given.dataplaneName, "default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -104,14 +107,17 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(received).To(MatchYAML(expected))
 		},
 		Entry("minimal data provided (universal)", testCase{
+			dataplaneName:      "dp-1",
 			body:               `{ "mesh": "default", "name": "dp-1" }`,
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{
+			dataplaneName:      "dp-1.default",
 			body:               `{ "mesh": "default", "name": "dp-1.default" }`,
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
+			dataplaneName:      "dp-1.default",
 			body:               `{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneTokenPath": "/tmp/token" }`,
 			expectedConfigFile: "bootstrap.overridden.golden.yaml",
 		}),

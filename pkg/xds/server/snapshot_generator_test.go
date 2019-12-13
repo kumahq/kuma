@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/Kong/kuma/pkg/core/logs"
 	"github.com/Kong/kuma/pkg/core/permissions"
 	"io/ioutil"
 	"path/filepath"
@@ -50,7 +49,7 @@ var _ = Describe("Reconcile", func() {
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "side-car", Namespace: "default"},
+				Id: model.ProxyId{Name: "side-car"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",
@@ -62,9 +61,8 @@ var _ = Describe("Reconcile", func() {
 						Items: []*mesh_core.TrafficPermissionResource{
 							&mesh_core.TrafficPermissionResource{
 								Meta: &test_model.ResourceMeta{
-									Name:      "tp-1",
-									Mesh:      "default",
-									Namespace: "default",
+									Name: "tp-1",
+									Mesh: "default",
 								},
 								Spec: mesh_proto.TrafficPermission{
 									Sources: []*mesh_proto.Selector{
@@ -88,7 +86,6 @@ var _ = Describe("Reconcile", func() {
 						},
 					},
 				},
-				Logs:     logs.NewMatchedLogs(),
 				Metadata: &model.DataplaneMetadata{},
 			}
 

@@ -40,9 +40,8 @@ var _ = Describe("kumactl get meshes", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "mesh1",
-				Name:      "mesh1",
-				Namespace: "",
+				Mesh: "mesh1",
+				Name: "mesh1",
 			},
 		},
 		{
@@ -57,9 +56,8 @@ var _ = Describe("kumactl get meshes", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "mesh2",
-				Name:      "mesh2",
-				Namespace: "",
+				Mesh: "mesh2",
+				Name: "mesh2",
 			},
 		},
 	}
@@ -86,9 +84,8 @@ var _ = Describe("kumactl get meshes", func() {
 
 			for _, ds := range sampleMeshes {
 				key := core_model.ResourceKey{
-					Mesh:      ds.Meta.GetMesh(),
-					Namespace: ds.Meta.GetNamespace(),
-					Name:      ds.Meta.GetName(),
+					Mesh: ds.Meta.GetMesh(),
+					Name: ds.Meta.GetName(),
 				}
 				err := store.Create(context.Background(), ds, core_store.CreateBy(key))
 				Expect(err).ToNot(HaveOccurred())

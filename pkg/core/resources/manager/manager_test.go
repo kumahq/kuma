@@ -28,7 +28,7 @@ var _ = Describe("Resource Manager", func() {
 		meshRes := mesh.MeshResource{
 			Spec: mesh_proto.Mesh{},
 		}
-		return resManager.Create(context.Background(), &meshRes, store.CreateByKey("default", name, name))
+		return resManager.Create(context.Background(), &meshRes, store.CreateByKey(name, name))
 	}
 
 	createSampleResource := func(mesh string) (*sample.TrafficRouteResource, error) {
@@ -37,7 +37,7 @@ var _ = Describe("Resource Manager", func() {
 				Path: "/some",
 			},
 		}
-		err := resManager.Create(context.Background(), &trRes, store.CreateByKey("default", "tr-1", mesh))
+		err := resManager.Create(context.Background(), &trRes, store.CreateByKey("tr-1", mesh))
 		return &trRes, err
 	}
 
@@ -76,9 +76,8 @@ var _ = Describe("Resource Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			tlKey := model.ResourceKey{
-				Mesh:      "mesh-1",
-				Namespace: "default",
-				Name:      "tl-1",
+				Mesh: "mesh-1",
+				Name: "tl-1",
 			}
 			trafficLog := &mesh.TrafficLogResource{
 				Spec: mesh_proto.TrafficLog{
@@ -109,7 +108,7 @@ var _ = Describe("Resource Manager", func() {
 
 			// and resource from mesh-1 is deleted
 			res1 := sample.TrafficRouteResource{}
-			err = resManager.Get(context.Background(), &res1, store.GetByKey("default", "tr-1", "mesh-1"))
+			err = resManager.Get(context.Background(), &res1, store.GetByKey("tr-1", "mesh-1"))
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and only TrafficRoutes are deleted
@@ -117,7 +116,7 @@ var _ = Describe("Resource Manager", func() {
 
 			// and resource from mesh-2 is retained
 			res2 := sample.TrafficRouteResource{}
-			err = resManager.Get(context.Background(), &res2, store.GetByKey("default", "tr-1", "mesh-2"))
+			err = resManager.Get(context.Background(), &res2, store.GetByKey("tr-1", "mesh-2"))
 			Expect(err).ToNot(HaveOccurred())
 
 		})

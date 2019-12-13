@@ -97,12 +97,11 @@ var _ = Describe("KubernetesStore", func() {
 `).(*kube_core.Secret)
 
 			// when
-			err := s.Create(context.Background(), secret, store.CreateByKey("ignored", name, noMesh))
+			err := s.Create(context.Background(), secret, store.CreateByKey(name, noMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(secret.Meta.GetNamespace()).To(Equal(ns))
 			Expect(secret.Meta.GetName()).To(Equal(name))
 			Expect(secret.Meta.GetMesh()).To(Equal(""))
 			Expect(secret.Meta.GetVersion()).ToNot(Equal(""))
@@ -123,16 +122,16 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&kube_core.Secret{}, "ignored", name)
 
 			// when
-			err := s.Create(context.Background(), &secret_model.SecretResource{}, store.CreateByKey("ignored", name, noMesh))
+			err := s.Create(context.Background(), &secret_model.SecretResource{}, store.CreateByKey(name, noMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = s.Create(context.Background(), &secret_model.SecretResource{}, store.CreateByKey("ignored", name, noMesh))
+			err = s.Create(context.Background(), &secret_model.SecretResource{}, store.CreateByKey(name, noMesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(core_system.SecretType, ns, name, noMesh)))
+			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(core_system.SecretType, name, noMesh)))
 		})
 	})
 
@@ -163,7 +162,7 @@ var _ = Describe("KubernetesStore", func() {
 			secret := &secret_model.SecretResource{}
 
 			// when
-			err := s.Get(context.Background(), secret, store.GetByKey("ignored", name, noMesh))
+			err := s.Get(context.Background(), secret, store.GetByKey(name, noMesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			version := secret.Meta.GetVersion()
@@ -205,7 +204,7 @@ var _ = Describe("KubernetesStore", func() {
 			secret := &secret_model.SecretResource{}
 
 			// when
-			err := s.Get(context.Background(), secret, store.GetByKey("ignored", name, noMesh))
+			err := s.Get(context.Background(), secret, store.GetByKey(name, noMesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -215,7 +214,7 @@ var _ = Describe("KubernetesStore", func() {
 			err = s.Update(context.Background(), secret)
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceConflict(core_system.SecretType, ns, name, noMesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(core_system.SecretType, name, noMesh)))
 		})
 
 		It("should return an error if resource has changed", func() {
@@ -234,7 +233,7 @@ var _ = Describe("KubernetesStore", func() {
 			secret1 := &secret_model.SecretResource{}
 
 			// when
-			err := s.Get(context.Background(), secret1, store.GetByKey("ignored", name, noMesh))
+			err := s.Get(context.Background(), secret1, store.GetByKey(name, noMesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -242,7 +241,7 @@ var _ = Describe("KubernetesStore", func() {
 			secret2 := &secret_model.SecretResource{}
 
 			// when
-			err = s.Get(context.Background(), secret2, store.GetByKey("ignored", name, noMesh))
+			err = s.Get(context.Background(), secret2, store.GetByKey(name, noMesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -256,7 +255,7 @@ var _ = Describe("KubernetesStore", func() {
 			secret2.Spec.Value = []byte("another")
 			err = s.Update(context.Background(), secret2)
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceConflict(core_system.SecretType, ns, name, noMesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(core_system.SecretType, name, noMesh)))
 		})
 	})
 
@@ -266,10 +265,10 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&kube_core.Secret{}, ns, name)
 
 			// when
-			err := s.Get(context.Background(), &secret_model.SecretResource{}, store.GetByKey("ignored", name, noMesh))
+			err := s.Get(context.Background(), &secret_model.SecretResource{}, store.GetByKey(name, noMesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceNotFound(core_system.SecretType, ns, name, noMesh)))
+			Expect(err).To(MatchError(store.ErrorResourceNotFound(core_system.SecretType, name, noMesh)))
 		})
 
 		It("should return an existing resource", func() {
@@ -290,12 +289,11 @@ var _ = Describe("KubernetesStore", func() {
 			actual := &secret_model.SecretResource{}
 
 			// when
-			err := s.Get(context.Background(), actual, store.GetByKey("ignored", name, noMesh))
+			err := s.Get(context.Background(), actual, store.GetByKey(name, noMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(actual.Meta.GetNamespace()).To(Equal(ns))
 			Expect(actual.Meta.GetName()).To(Equal(name))
 			// and
 			Expect(actual.Spec.Value).To(Equal([]byte("example")))
@@ -308,7 +306,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&kube_core.Secret{}, ns, name)
 
 			// when
-			err := s.Delete(context.Background(), &secret_model.SecretResource{}, store.DeleteByKey("ignored", name, noMesh))
+			err := s.Delete(context.Background(), &secret_model.SecretResource{}, store.DeleteByKey(name, noMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -327,7 +325,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), &secret_model.SecretResource{}, store.DeleteByKey("ignored", name, noMesh))
+			err := s.Delete(context.Background(), &secret_model.SecretResource{}, store.DeleteByKey(name, noMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -342,7 +340,7 @@ var _ = Describe("KubernetesStore", func() {
 			secrets := &secret_model.SecretResourceList{}
 
 			// when
-			err := s.List(context.Background(), secrets, store.ListByNamespace("ignored"), store.ListByMesh("ignored"))
+			err := s.List(context.Background(), secrets, store.ListByMesh("ignored"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -380,7 +378,7 @@ var _ = Describe("KubernetesStore", func() {
 			secrets := &secret_model.SecretResourceList{}
 
 			// when
-			err := s.List(context.Background(), secrets, store.ListByNamespace("ignored"))
+			err := s.List(context.Background(), secrets)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -393,10 +391,8 @@ var _ = Describe("KubernetesStore", func() {
 				secrets.Items[1].Meta.GetName(): secrets.Items[1],
 			}
 			// then
-			Expect(items["one"].Meta.GetNamespace()).To(Equal(ns))
 			Expect(items["one"].Spec.Value).To(Equal([]byte("example")))
 			// and
-			Expect(items["two"].Meta.GetNamespace()).To(Equal(ns))
 			Expect(items["two"].Spec.Value).To(Equal([]byte("another")))
 		})
 	})

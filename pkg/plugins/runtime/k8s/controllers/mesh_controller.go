@@ -43,7 +43,7 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 	mesh := &mesh_k8s.Mesh{}
 	if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Namespace, req.Name, req.Name))
+			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Name, req.Name))
 			return kube_ctrl.Result{}, err
 		}
 		log.Error(err, "unable to fetch Mesh")

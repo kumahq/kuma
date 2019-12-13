@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	util_http "github.com/Kong/kuma/pkg/util/http"
 	"io/ioutil"
 	"net/http"
@@ -80,10 +80,9 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
 	res.SetMeta(remoteMeta{
-		Namespace: "",
-		Name:      meta.Name,
-		Mesh:      meta.Mesh,
-		Version:   "",
+		Name:    meta.Name,
+		Mesh:    meta.Mesh,
+		Version: "",
 	})
 	return nil
 }
@@ -100,7 +99,7 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
 		if statusCode == 404 {
-			return store.ErrorResourceNotFound(res.GetType(), opts.Namespace, opts.Name, opts.Mesh)
+			return store.ErrorResourceNotFound(res.GetType(), opts.Name, opts.Mesh)
 		}
 		return err
 	}
@@ -122,7 +121,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
 		if statusCode == 404 {
-			return store.ErrorResourceNotFound(res.GetType(), opts.Namespace, opts.Name, opts.Mesh)
+			return store.ErrorResourceNotFound(res.GetType(), opts.Name, opts.Mesh)
 		}
 		return err
 	}

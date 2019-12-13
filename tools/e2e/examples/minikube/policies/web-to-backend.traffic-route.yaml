@@ -1,0 +1,24 @@
+apiVersion: kuma.io/v1alpha1
+kind: TrafficRoute
+metadata:
+  namespace: kuma-example
+  name: web-to-backend
+mesh: default
+spec:
+  sources:
+  - match:
+      service: kuma-example-web.kuma-example.svc:6060
+      env: prod
+  destinations:
+  - match:
+        # NOTE: only `service` tag can be used here (in `universal` all TCP connections will have `127.0.0.1` as destination => it's not enough info to infer any other destination tags)
+      service: kuma-example-backend.kuma-example.svc:7070
+  conf:
+  - weight: 0
+    destination:
+      service: kuma-example-backend.kuma-example.svc:7070
+      version: v1
+  - weight: 100
+    destination:
+      service: kuma-example-backend.kuma-example.svc:7070
+      version: v2

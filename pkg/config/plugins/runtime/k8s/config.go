@@ -35,6 +35,9 @@ type AdmissionServerConfig struct {
 
 var _ config.Config = &KubernetesRuntimeConfig{}
 
+func (c *KubernetesRuntimeConfig) Sanitize() {
+}
+
 func (c *KubernetesRuntimeConfig) Validate() error {
 	if err := c.AdmissionServer.Validate(); err != nil {
 		return errors.Wrap(err, "Admission Server validation failed")
@@ -43,6 +46,9 @@ func (c *KubernetesRuntimeConfig) Validate() error {
 }
 
 var _ config.Config = &AdmissionServerConfig{}
+
+func (c *AdmissionServerConfig) Sanitize() {
+}
 
 func (c *AdmissionServerConfig) Validate() error {
 	if 65535 < c.Port {

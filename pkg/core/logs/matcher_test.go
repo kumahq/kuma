@@ -44,7 +44,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &meshRes, store.CreateByKey("default", "sample", "sample"))
+		err := manager.Create(context.Background(), &meshRes, store.CreateByKey("sample", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
@@ -78,7 +78,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err = manager.Create(context.Background(), &dpRes, store.CreateByKey("default", "dp-1", "sample"))
+		err = manager.Create(context.Background(), &dpRes, store.CreateByKey("dp-1", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -105,32 +105,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &logRes1, store.CreateByKey("default", "lr-1", "sample"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// and
-		logRes2 := core_mesh.TrafficLogResource{
-			Spec: mesh_proto.TrafficLog{
-				Sources: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"service": "kong-admin",
-						},
-					},
-				},
-				Destinations: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"service": "web",
-						},
-					},
-				},
-				Conf: &mesh_proto.TrafficLog_Conf{
-					Backend: "file3",
-				},
-			},
-		}
-		err = manager.Create(context.Background(), &logRes2, store.CreateByKey("default", "lr-2", "sample"))
+		err := manager.Create(context.Background(), &logRes1, store.CreateByKey("lr-1", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
@@ -152,7 +127,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err = manager.Create(context.Background(), &logRes3, store.CreateByKey("default", "lr-3", "sample"))
+		err = manager.Create(context.Background(), &logRes3, store.CreateByKey("lr-3", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -160,17 +135,10 @@ var _ = Describe("Matcher", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(log.Outbounds[":9091"]).To(HaveLen(2))
-		// should match because *->* rule with file-1 logging backend as default
-		Expect(log.Outbounds[":9091"]).To(ContainElement(backendFile1))
 		// should match because kong->backend rule
-		Expect(log.Outbounds[":9091"]).To(ContainElement(backendFile2))
-
-		Expect(log.Outbounds[":9092"]).To(HaveLen(2))
-		// should match because *->* rule with file-1 logging backend as default
-		Expect(log.Outbounds[":9092"]).To(ContainElement(backendFile1))
-		// should match because kong-admin->web rule
-		Expect(log.Outbounds[":9092"]).To(ContainElement(backendFile3))
+		Expect(log["backend"]).To(Equal(backendFile2))
+		// should match because *->* rule and default backend file1
+		Expect(log["web"]).To(Equal(backendFile1))
 	})
 
 	It("should not match services", func() {
@@ -196,7 +164,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &logRes, store.CreateByKey("default", "lr-1", "sample"))
+		err := manager.Create(context.Background(), &logRes, store.CreateByKey("lr-1", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -204,7 +172,7 @@ var _ = Describe("Matcher", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(log.Outbounds).To(HaveLen(0))
+		Expect(log).To(HaveLen(0))
 	})
 
 	It("should skip unknown backends", func() {
@@ -230,7 +198,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &logRes, store.CreateByKey("default", "lr-1", "sample"))
+		err := manager.Create(context.Background(), &logRes, store.CreateByKey("lr-1", "sample"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -238,6 +206,6 @@ var _ = Describe("Matcher", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(log.Outbounds).To(HaveLen(0))
+		Expect(log).To(HaveLen(0))
 	})
 })

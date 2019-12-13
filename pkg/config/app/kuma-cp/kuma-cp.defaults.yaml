@@ -38,10 +38,10 @@ bootstrapServer:
     adminPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
     # Path to access log file of Envoy Admin
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
-    # Host of XDS Server
-    xdsHost: 127.0.0.1 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
-    # Port of XDS Server
-    xdsPort: 5678 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
+    # Host of XDS Server. By default it is autoconfigured from KUMA_GENERAL_ADVERTISED_HOSTNAME
+    xdsHost: "" # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+    # Port of XDS Server. By default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
+    xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
 
@@ -54,7 +54,7 @@ sdsServer:
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
   tlsKeyFile: # ENV: KUMA_SDS_SERVER_TLS_KEY_FILE
 
-# Dataplane Token server configuration
+# Dataplane Token server configuration (DEPRECATED: use adminServer)
 dataplaneTokenServer:
   # If true then Dataplane Token Server and token verification is enabled
   enabled: true
@@ -76,6 +76,33 @@ dataplaneTokenServer:
     tlsKeyFile: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE
     # Directory of authorized client certificates
     clientCertsDir: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR"`
+
+# Admin server configuration
+adminServer:
+  # Local configuration of server that is available only on localhost
+  local:
+    # Port on which the server will be exposed
+    port: 5679 # ENV: KUMA_ADMIN_SERVER_LOCAL_PORT
+  # Public configuration of server that is available on public interface
+  public:
+    # If true then Admin Server is exposed on public interface
+    enabled: false
+    # Port on which the server will be exposed. If not specified (0) then port from local configuration will be used
+    port: 0 # ENV: KUMA_ADMIN_SERVER_PUBLIC_PORT
+    # Public interface on which the server will be exposed
+    interface: # ENV: KUMA_ADMIN_SERVER_PUBLIC_INTERFACE
+    # Path to TLS certificate file
+    tlsCertFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE
+    # Path to TLS key file
+    tlsKeyFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE
+    # Directory of authorized client certificates
+    clientCertsDir: # ENV: KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR"
+  # Admin Server APIs configuration
+  apis:
+    # Dataplane Token API configuration
+    dataplaneToken:
+      # If true then Dataplane Token WS and token verification is enabled
+      enabled: true # ENV: KUMA_ADMIN_SERVER_DATAPLANE_TOKEN_WS_ENABLED
 
 # Envoy XDS server configuration
 xdsServer:

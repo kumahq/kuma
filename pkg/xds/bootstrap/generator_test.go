@@ -48,25 +48,25 @@ var _ = Describe("bootstrapGenerator", func() {
 		}
 
 		// when
-		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "mesh", "mesh"))
+		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh", "mesh"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = resManager.Create(context.Background(), &dataplane, store.CreateByKey("namespace", "name", "mesh"))
+		err = resManager.Create(context.Background(), &dataplane, store.CreateByKey("name.namespace", "mesh"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	type testCase struct {
-		config             *bootstrap_config.BootstrapParamsConfig
+		config             func() *bootstrap_config.BootstrapParamsConfig
 		request            types.BootstrapRequest
 		expectedConfigFile string
 	}
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator := NewDefaultBootstrapGenerator(resManager, given.config)
+			generator := NewDefaultBootstrapGenerator(resManager, given.config())
 
 			// when
 			bootstrapConfig, err := generator.Generate(context.Background(), given.request)
@@ -87,7 +87,12 @@ var _ = Describe("bootstrapGenerator", func() {
 			Expect(actual).To(MatchYAML(expected))
 		},
 		Entry("default config with minimal request", testCase{
-			config: bootstrap_config.DefaultBootstrapParamsConfig(),
+			config: func() *bootstrap_config.BootstrapParamsConfig {
+				cfg := bootstrap_config.DefaultBootstrapParamsConfig()
+				cfg.XdsHost = "127.0.0.1"
+				cfg.XdsPort = 5678
+				return cfg
+			},
 			request: types.BootstrapRequest{
 				Mesh: "mesh",
 				Name: "name.namespace",
@@ -95,7 +100,12 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.default-config-minimal-request.golden.yaml",
 		}),
 		Entry("default config", testCase{
-			config: bootstrap_config.DefaultBootstrapParamsConfig(),
+			config: func() *bootstrap_config.BootstrapParamsConfig {
+				cfg := bootstrap_config.DefaultBootstrapParamsConfig()
+				cfg.XdsHost = "127.0.0.1"
+				cfg.XdsPort = 5678
+				return cfg
+			},
 			request: types.BootstrapRequest{
 				Mesh:               "mesh",
 				Name:               "name.namespace",
@@ -105,13 +115,15 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.default-config.golden.yaml",
 		}),
 		Entry("custom config with minimal request", testCase{
-			config: &bootstrap_config.BootstrapParamsConfig{
-				AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-				AdminPort:          9902,          // by default, turn off Admin interface of Envoy
-				AdminAccessLogPath: "/var/log",
-				XdsHost:            "kuma-control-plane.internal",
-				XdsPort:            15678,
-				XdsConnectTimeout:  2 * time.Second,
+			config: func() *bootstrap_config.BootstrapParamsConfig {
+				return &bootstrap_config.BootstrapParamsConfig{
+					AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
+					AdminPort:          9902,          // by default, turn off Admin interface of Envoy
+					AdminAccessLogPath: "/var/log",
+					XdsHost:            "kuma-control-plane.internal",
+					XdsPort:            15678,
+					XdsConnectTimeout:  2 * time.Second,
+				}
 			},
 			request: types.BootstrapRequest{
 				Mesh: "mesh",
@@ -120,13 +132,15 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.custom-config-minimal-request.golden.yaml",
 		}),
 		Entry("custom config", testCase{
-			config: &bootstrap_config.BootstrapParamsConfig{
-				AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-				AdminPort:          9902,          // by default, turn off Admin interface of Envoy
-				AdminAccessLogPath: "/var/log",
-				XdsHost:            "kuma-control-plane.internal",
-				XdsPort:            15678,
-				XdsConnectTimeout:  2 * time.Second,
+			config: func() *bootstrap_config.BootstrapParamsConfig {
+				return &bootstrap_config.BootstrapParamsConfig{
+					AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
+					AdminPort:          9902,          // by default, turn off Admin interface of Envoy
+					AdminAccessLogPath: "/var/log",
+					XdsHost:            "kuma-control-plane.internal",
+					XdsPort:            15678,
+					XdsConnectTimeout:  2 * time.Second,
+				}
 			},
 			request: types.BootstrapRequest{
 				Mesh:               "mesh",

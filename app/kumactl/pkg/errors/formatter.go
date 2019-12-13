@@ -2,7 +2,7 @@ package errors
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/pkg/api-server/types"
+	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

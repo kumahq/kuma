@@ -33,9 +33,8 @@ var _ = Describe("Matcher", func() {
 			Items: []*core_mesh.TrafficPermissionResource{
 				{ // not relevant resource
 					Meta: &model.ResourceMeta{
-						Name:      "mobile-api-gateway",
-						Mesh:      "default",
-						Namespace: "default",
+						Name: "mobile-api-gateway",
+						Mesh: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{
 						Sources: []*mesh_proto.Selector{
@@ -56,9 +55,8 @@ var _ = Describe("Matcher", func() {
 				},
 				{
 					Meta: &model.ResourceMeta{
-						Name:      "mobile",
-						Mesh:      "default",
-						Namespace: "default",
+						Name: "mobile",
+						Mesh: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{ // relevant rule
 						Sources: []*mesh_proto.Selector{
@@ -79,9 +77,8 @@ var _ = Describe("Matcher", func() {
 				},
 				{
 					Meta: &model.ResourceMeta{
-						Name:      "mobile-2",
-						Mesh:      "default",
-						Namespace: "default",
+						Name: "mobile-2",
+						Mesh: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{ // not relevant rule
 						Sources: []*mesh_proto.Selector{
@@ -102,9 +99,8 @@ var _ = Describe("Matcher", func() {
 				},
 				{
 					Meta: &model.ResourceMeta{
-						Name:      "load-balancer",
-						Mesh:      "default",
-						Namespace: "default",
+						Name: "load-balancer",
+						Mesh: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{ // relevant rule
 						Sources: []*mesh_proto.Selector{
@@ -125,9 +121,8 @@ var _ = Describe("Matcher", func() {
 				},
 				{
 					Meta: &model.ResourceMeta{
-						Name:      "load-balancer-2",
-						Mesh:      "default",
-						Namespace: "default",
+						Name: "load-balancer-2",
+						Mesh: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{ // not relevant rule
 						Sources: []*mesh_proto.Selector{
@@ -158,9 +153,8 @@ var _ = Describe("Matcher", func() {
 			Items: []*core_mesh.TrafficPermissionResource{
 				{
 					Meta: &model.ResourceMeta{
-						Name:      "mobile",
-						Mesh:      "default",
-						Namespace: "default",
+						Name: "mobile",
+						Mesh: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{
 						Sources: []*mesh_proto.Selector{
@@ -188,9 +182,8 @@ var _ = Describe("Matcher", func() {
 			Items: []*core_mesh.TrafficPermissionResource{
 				{
 					Meta: &model.ResourceMeta{
-						Name:      "load-balancer",
-						Mesh:      "default",
-						Namespace: "default",
+						Name: "load-balancer",
+						Mesh: "default",
 					},
 					Spec: mesh_proto.TrafficPermission{
 						Sources: []*mesh_proto.Selector{

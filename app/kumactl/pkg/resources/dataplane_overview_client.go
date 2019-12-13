@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/Kong/kuma/pkg/api-server/types"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/Kong/kuma/pkg/plugins/resources/remote"
 	kuma_http "github.com/Kong/kuma/pkg/util/http"
 	"github.com/pkg/errors"

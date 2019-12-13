@@ -5,6 +5,7 @@ import (
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -38,7 +39,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	initializeBuiltinCaManager(builder)
+	initializeCaManagers(builder)
 
 	initializeResourceManager(builder)
 
@@ -97,7 +98,7 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 		// default Mesh on Kubernetes is managed by a Controller
 		return nil
 	case config_core.UniversalEnvironment:
-		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto(), core_model.DefaultNamespace)
+		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto())
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}
@@ -214,15 +215,16 @@ func initializeXds(builder *core_runtime.Builder) {
 	builder.WithXdsContext(core_xds.NewXdsContext())
 }
 
-func initializeBuiltinCaManager(builder *core_runtime.Builder) {
+func initializeCaManagers(builder *core_runtime.Builder) {
 	builder.WithBuiltinCaManager(builtin_ca.NewBuiltinCaManager(builder.SecretManager()))
+	builder.WithProvidedCaManager(provided_ca.NewProvidedCaManager(builder.SecretManager()))
 }
 
 func initializeResourceManager(builder *core_runtime.Builder) {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), customizableManager, builder.SecretManager(), registry.Global())
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), builder.ProvidedCaManager(), customizableManager, builder.SecretManager(), registry.Global())
 	customManagers[mesh.MeshType] = meshManager
 	builder.WithResourceManager(customizableManager)
 }

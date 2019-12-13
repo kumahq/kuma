@@ -7,17 +7,13 @@ import (
 )
 
 type remoteMeta struct {
-	Namespace string
-	Name      string
-	Mesh      string
-	Version   string
+	Name    string
+	Mesh    string
+	Version string
 }
 
 func (m remoteMeta) GetName() string {
 	return m.Name
-}
-func (m remoteMeta) GetNamespace() string {
-	return m.Namespace
 }
 func (m remoteMeta) GetMesh() string {
 	return m.Mesh
@@ -34,10 +30,9 @@ func Unmarshal(b []byte, res model.Resource) error {
 		return err
 	}
 	res.SetMeta(remoteMeta{
-		Namespace: "",
-		Name:      restResource.Meta.Name,
-		Mesh:      restResource.Meta.Mesh,
-		Version:   "",
+		Name:    restResource.Meta.Name,
+		Mesh:    restResource.Meta.Mesh,
+		Version: "",
 	})
 	return nil
 }
@@ -55,10 +50,9 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 			return err
 		}
 		r.SetMeta(&remoteMeta{
-			Namespace: "",
-			Name:      ri.Meta.Name,
-			Mesh:      ri.Meta.Mesh,
-			Version:   "",
+			Name:    ri.Meta.Name,
+			Mesh:    ri.Meta.Mesh,
+			Version: "",
 		})
 		_ = rs.AddItem(r)
 	}

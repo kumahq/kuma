@@ -18,6 +18,10 @@ type BootstrapServerConfig struct {
 	Params *BootstrapParamsConfig `yaml:"params"`
 }
 
+func (b *BootstrapServerConfig) Sanitize() {
+	b.Params.Sanitize()
+}
+
 func (b *BootstrapServerConfig) Validate() error {
 	if b.Port > 65535 {
 		return errors.New("Port must be in the range [0, 65535]")
@@ -44,12 +48,15 @@ type BootstrapParamsConfig struct {
 	AdminPort uint32 `yaml:"adminPort" envconfig:"kuma_bootstrap_server_params_admin_port"`
 	// Path to access log file of Envoy Admin
 	AdminAccessLogPath string `yaml:"adminAccessLogPath" envconfig:"kuma_bootstrap_server_params_admin_access_log_path"`
-	// Host of XDS Server
+	// Host of XDS Server. By default it is autoconfigured from KUMA_GENERAL_ADVERTISED_HOSTNAME
 	XdsHost string `yaml:"xdsHost" envconfig:"kuma_bootstrap_server_params_xds_host"`
-	// Port of XDS Server
+	// Port of XDS Server. By default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
 	XdsPort uint32 `yaml:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
 	XdsConnectTimeout time.Duration `yaml:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
+}
+
+func (b *BootstrapParamsConfig) Sanitize() {
 }
 
 func (b *BootstrapParamsConfig) Validate() error {
@@ -65,9 +72,6 @@ func (b *BootstrapParamsConfig) Validate() error {
 	if b.AdminAccessLogPath == "" {
 		return errors.New("AdminAccessLogPath cannot be empty")
 	}
-	if b.XdsHost == "" {
-		return errors.New("XdsHost cannot be empty")
-	}
 	if b.XdsPort > 65535 {
 		return errors.New("AdminPort must be in the range [0, 65535]")
 	}
@@ -82,8 +86,8 @@ func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 		AdminAddress:       "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
 		AdminPort:          0,           // by default, turn off Admin interface of Envoy
 		AdminAccessLogPath: "/dev/null",
-		XdsHost:            "127.0.0.1",
-		XdsPort:            5678,
+		XdsHost:            "", // by default it is autoconfigured from KUMA_GENERAL_ADVERTISED_HOSTNAME
+		XdsPort:            0,  // by default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
 		XdsConnectTimeout:  1 * time.Second,
 	}
 }

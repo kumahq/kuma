@@ -88,7 +88,7 @@ var _ = Describe("Sync", func() {
 			typ := ""
 			req := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
-					Id: "pilot.example.demo",
+					Id: "pilot.example",
 				},
 			}
 
@@ -108,7 +108,7 @@ var _ = Describe("Sync", func() {
 			// when
 			dataplaneID := <-watchdogCh
 			// then
-			Expect(dataplaneID).To(Equal(core_model.ResourceKey{Mesh: "pilot", Namespace: "demo", Name: "example"}))
+			Expect(dataplaneID).To(Equal(core_model.ResourceKey{Mesh: "pilot", Name: "example"}))
 
 			By("simulating another DiscoveryRequest")
 			// when

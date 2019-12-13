@@ -150,7 +150,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		// generate LDS resource
 		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
 		destinationService := oface.Service
-		listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, oface.Service, clusters, virtual, sourceService, destinationService, proxy.Logs.Outbounds[oface.Interface], proxy)
+		listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, oface.Service, clusters, virtual, sourceService, destinationService, proxy.Logs[oface.Service], proxy)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i), outboundListenerName)
 		}
@@ -183,11 +183,13 @@ func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy
 
 func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *model.Proxy, clusters []envoy.ClusterInfo) (resources []*Resource) {
 	for _, cluster := range clusters {
+		serviceName := cluster.Tags[kuma_mesh.ServiceTag]
+		healthCheck := proxy.HealthChecks[serviceName]
 		resources = append(resources, &Resource{
 			Name:     cluster.Name,
-			Resource: envoy.CreateEdsCluster(ctx, cluster.Name, proxy.Metadata),
+			Resource: envoy.ClusterWithHealthChecks(envoy.CreateEdsCluster(ctx, cluster.Name, proxy.Metadata), healthCheck),
 		})
-		endpoints := model.EndpointList(proxy.OutboundTargets[cluster.Tags[kuma_mesh.ServiceTag]]).Filter(kuma_mesh.MatchTags(cluster.Tags))
+		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName]).Filter(kuma_mesh.MatchTags(cluster.Tags))
 		resources = append(resources, &Resource{
 			Name:     cluster.Name,
 			Resource: envoy.CreateClusterLoadAssignment(cluster.Name, endpoints),

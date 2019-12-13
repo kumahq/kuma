@@ -23,6 +23,9 @@ type XdsServerConfig struct {
 	DataplaneStatusFlushInterval time.Duration `yaml:"dataplaneStatusFlushInterval" envconfig:"kuma_xds_server_dataplane_status_flush_interval"`
 }
 
+func (x *XdsServerConfig) Sanitize() {
+}
+
 func (x *XdsServerConfig) Validate() error {
 	if x.GrpcPort < 0 {
 		return errors.New("GrpcPort cannot be negative")

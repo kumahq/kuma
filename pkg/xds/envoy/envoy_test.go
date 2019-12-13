@@ -1,6 +1,8 @@
 package envoy_test
 
 import (
+	"time"
+
 	"github.com/Kong/kuma/pkg/core/xds"
 
 	. "github.com/onsi/ginkgo"
@@ -13,6 +15,9 @@ import (
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
+
+	envoy_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/golang/protobuf/ptypes"
 )
 
 var _ = Describe("Envoy", func() {
@@ -367,6 +372,130 @@ var _ = Describe("Envoy", func() {
 		)
 	})
 
+	Describe("ClusterWithHealthChecks()", func() {
+
+		type testCase struct {
+			healthCheck *mesh_core.HealthCheckResource
+			expected    string
+		}
+		DescribeTable("should add health checks to a given Cluster",
+			func(given testCase) {
+				// given
+				cluster := &envoy_v2.Cluster{
+					Name: "example",
+				}
+				// when
+				metadata := envoy.ClusterWithHealthChecks(cluster, given.healthCheck)
+				// and
+				actual, err := util_proto.ToYAML(metadata)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(actual).To(MatchYAML(given.expected))
+			},
+			Entry("`nil` HealthCheck", testCase{
+				healthCheck: nil,
+				expected: `
+                name: example
+`,
+			}),
+			Entry("HealthCheck with neither active nor passive checks", testCase{
+				healthCheck: &mesh_core.HealthCheckResource{},
+				expected: `
+                name: example
+`,
+			}),
+			Entry("HealthCheck with active checks", testCase{
+				healthCheck: &mesh_core.HealthCheckResource{
+					Spec: mesh_proto.HealthCheck{
+						Sources: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "backend"}},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "redis"}},
+						},
+						Conf: &mesh_proto.HealthCheck_Conf{
+							ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
+							},
+						},
+					},
+				},
+				expected: `
+                healthChecks:
+                - healthyThreshold: 2
+                  interval: 5s
+                  tcpHealthCheck: {}
+                  timeout: 4s
+                  unhealthyThreshold: 3
+                name: example
+`,
+			}),
+			Entry("HealthCheck with passive checks", testCase{
+				healthCheck: &mesh_core.HealthCheckResource{
+					Spec: mesh_proto.HealthCheck{
+						Sources: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "backend"}},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "redis"}},
+						},
+						Conf: &mesh_proto.HealthCheck_Conf{
+							PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
+								UnhealthyThreshold: 20,
+								PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
+							},
+						},
+					},
+				},
+				expected: `
+                name: example
+                outlierDetection:
+                  consecutive5xx: 20
+                  interval: 30s
+`,
+			}),
+			Entry("HealthCheck with both active and passive checks", testCase{
+				healthCheck: &mesh_core.HealthCheckResource{
+					Spec: mesh_proto.HealthCheck{
+						Sources: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "backend"}},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{Match: mesh_proto.TagSelector{"service": "redis"}},
+						},
+						Conf: &mesh_proto.HealthCheck_Conf{
+							ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
+							},
+							PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
+								UnhealthyThreshold: 20,
+								PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
+							},
+						},
+					},
+				},
+				expected: `
+                healthChecks:
+                - healthyThreshold: 2
+                  interval: 5s
+                  tcpHealthCheck: {}
+                  timeout: 4s
+                  unhealthyThreshold: 3
+                name: example
+                outlierDetection:
+                  consecutive5xx: 20
+                  interval: 30s
+`,
+			}),
+		)
+	})
+
 	Describe("'inbound' listener", func() {
 
 		type testCase struct {
@@ -383,9 +512,8 @@ var _ = Describe("Envoy", func() {
 					Items: []*mesh_core.TrafficPermissionResource{
 						&mesh_core.TrafficPermissionResource{
 							Meta: &test_model.ResourceMeta{
-								Name:      "tp-1",
-								Mesh:      "default",
-								Namespace: "default",
+								Name: "tp-1",
+								Mesh: "default",
 							},
 							Spec: mesh_proto.TrafficPermission{
 								Sources: []*mesh_proto.Selector{
@@ -489,7 +617,7 @@ var _ = Describe("Envoy", func() {
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules:
                   policies:
-                    default.tp-1:
+                    tp-1:
                       permissions:
                       - any: true
                       principals:
@@ -560,7 +688,7 @@ var _ = Describe("Envoy", func() {
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules:
                   policies:
-                    default.tp-1:
+                    tp-1:
                       permissions:
                       - any: true
                       principals:
@@ -631,7 +759,7 @@ var _ = Describe("Envoy", func() {
 			virtual  bool
 			clusters []envoy.ClusterInfo
 			expected string
-			logs     []*mesh_proto.LoggingBackend
+			log      *mesh_proto.LoggingBackend
 		}
 
 		singleCluster := []envoy.ClusterInfo{{
@@ -644,9 +772,8 @@ var _ = Describe("Envoy", func() {
 			func(given testCase) {
 				proxy := xds.Proxy{
 					Id: xds.ProxyId{
-						Name:      "backend",
-						Mesh:      "example",
-						Namespace: "sample",
+						Name: "backend",
+						Mesh: "example",
 					},
 					Dataplane: &mesh_core.DataplaneResource{
 						Spec: mesh_proto.Dataplane{
@@ -669,7 +796,7 @@ var _ = Describe("Envoy", func() {
 				destinationService := "db"
 
 				// when
-				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "db", given.clusters, given.virtual, sourceService, destinationService, given.logs, &proxy)
+				resource, err := envoy.CreateOutboundListener(given.ctx, "outbound:127.0.0.1:18080", "127.0.0.1", 18080, "db", given.clusters, given.virtual, sourceService, destinationService, given.log, &proxy)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -782,7 +909,7 @@ var _ = Describe("Envoy", func() {
                 name: outbound:127.0.0.1:18080
 `,
 			}),
-			Entry("with traffic logs", testCase{
+			Entry("with file traffic logs", testCase{
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
@@ -790,22 +917,11 @@ var _ = Describe("Envoy", func() {
 					},
 				},
 				clusters: singleCluster,
-				logs: []*mesh_proto.LoggingBackend{
-					{
-						Name: "file",
-						Type: &mesh_proto.LoggingBackend_File_{
-							File: &mesh_proto.LoggingBackend_File{
-								Path: "/tmp/log",
-							},
-						},
-					},
-					{
-						Name:   "tcp",
-						Format: "custom format",
-						Type: &mesh_proto.LoggingBackend_Tcp_{
-							Tcp: &mesh_proto.LoggingBackend_Tcp{
-								Address: "127.0.0.1:1234",
-							},
+				log: &mesh_proto.LoggingBackend{
+					Name: "file",
+					Type: &mesh_proto.LoggingBackend_File_{
+						File: &mesh_proto.LoggingBackend_File{
+							Path: "/tmp/log",
 						},
 					},
 				},
@@ -826,6 +942,39 @@ var _ = Describe("Envoy", func() {
                     format: |
                       [%START_TIME%] 192.168.0.1:0(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                     path: /tmp/log
+                cluster: db
+                statPrefix: db
+          name: outbound:127.0.0.1:18080
+`,
+			}),
+			Entry("with tcp traffic logs", testCase{
+				ctx: xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{},
+					Mesh: xds_context.MeshContext{
+						TlsEnabled: false,
+					},
+				},
+				clusters: singleCluster,
+				log: &mesh_proto.LoggingBackend{
+					Name:   "tcp",
+					Format: "custom format",
+					Type: &mesh_proto.LoggingBackend_Tcp_{
+						Tcp: &mesh_proto.LoggingBackend_Tcp{
+							Address: "127.0.0.1:1234",
+						},
+					},
+				},
+				expected: `
+          address:
+            socketAddress:
+              address: 127.0.0.1
+              portValue: 18080
+          filterChains:
+          - filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                accessLog:
                 - name: envoy.http_grpc_access_log
                   typedConfig:
                     '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig

@@ -33,6 +33,8 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				resourceType = mesh.MeshType
 			case "dataplane":
 				resourceType = mesh.DataplaneType
+			case "healthcheck":
+				resourceType = mesh.HealthCheckType
 			case "proxytemplate":
 				resourceType = mesh.ProxyTemplateType
 			case "traffic-log":
@@ -43,7 +45,7 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				resourceType = mesh.TrafficRouteType
 
 			default:
-				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, proxytemplate, traffic-log, traffic-permission, traffic-route", resourceTypeArg)
+				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route", resourceTypeArg)
 			}
 
 			currentMesh := pctx.CurrentMesh()
@@ -68,16 +70,11 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 }
 
 func deleteResource(name string, mesh string, resource model.Resource, resourceType model.ResourceType, rs store.ResourceStore) error {
-	getOptions := store.GetBy(model.ResourceKey{Mesh: mesh, Name: name})
-	if err := rs.Get(context.Background(), resource, getOptions); err != nil {
+	deleteOptions := store.DeleteBy(model.ResourceKey{Mesh: mesh, Name: name})
+	if err := rs.Delete(context.Background(), resource, deleteOptions); err != nil {
 		if store.IsResourceNotFound(err) {
 			return errors.Errorf("there is no %s with name %q", resourceType, name)
 		}
-		return errors.Wrapf(err, "failed to get %s with the name %q", resourceType, name)
-	}
-
-	deleteOptions := store.DeleteBy(model.ResourceKey{Mesh: mesh, Name: name})
-	if err := rs.Delete(context.Background(), resource, deleteOptions); err != nil {
 		return errors.Wrapf(err, "failed to delete %s with the name %q", resourceType, name)
 	}
 

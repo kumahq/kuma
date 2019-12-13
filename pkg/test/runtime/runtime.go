@@ -2,6 +2,7 @@ package runtime
 
 import (
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
@@ -37,6 +38,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	builder.
 		WithSecretManager(newSecretManager(builder)).
 		WithBuiltinCaManager(newBuiltinCaManager(builder)).
+		WithProvidedCaManager(newProvidedCaManager(builder)).
 		WithResourceManager(newResourceManager(builder))
 
 	return builder
@@ -48,6 +50,10 @@ func newSecretManager(builder *core_runtime.Builder) secret_manager.SecretManage
 	return secretManager
 }
 
+func newProvidedCaManager(builder *core_runtime.Builder) provided_ca.ProvidedCaManager {
+	return provided_ca.NewProvidedCaManager(builder.SecretManager())
+}
+
 func newBuiltinCaManager(builder *core_runtime.Builder) builtin_ca.BuiltinCaManager {
 	return builtin_ca.NewBuiltinCaManager(builder.SecretManager())
 }
@@ -56,7 +62,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.ResourceMana
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), customizableManager, builder.SecretManager(), registry.Global())
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), builder.ProvidedCaManager(), customizableManager, builder.SecretManager(), registry.Global())
 	customManagers[core_mesh.MeshType] = meshManager
 	return customizableManager
 }

@@ -41,6 +41,7 @@ gen_help kumactl generate dp-token
 gen_help kumactl get
 gen_help kumactl get meshes
 gen_help kumactl get dataplanes
+gen_help kumactl get healthchecks
 gen_help kumactl get proxytemplates
 gen_help kumactl get traffic-logs
 gen_help kumactl get traffic-permissions
@@ -48,4 +49,11 @@ gen_help kumactl get traffic-routes
 gen_help kumactl delete
 gen_help kumactl inspect
 gen_help kumactl inspect dataplanes
+gen_help kumactl manage
+gen_help kumactl manage ca
+gen_help kumactl manage ca provided
+gen_help kumactl manage ca provided certificates
+gen_help kumactl manage ca provided certificates list
+gen_help kumactl manage ca provided certificates delete
+gen_help kumactl manage ca provided certificates add
 gen_help kumactl version

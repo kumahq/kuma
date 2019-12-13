@@ -64,19 +64,17 @@ message Context {
 
   // Credentials defines credentials for various APIs
   message Credentials {
-    // DataplaneTokenApiCredentials defines credentials for dataplane token api
-    DataplaneTokenApiCredentials dataplaneTokenApi = 1;
+    // AdminApiCredentials defines credentials for admin client
+    AdminApiCredentials adminApi = 1;
   }
 
-  // DataplaneTokenApiCredentials defines credential configuration of dataplane
-  // token client
-  message DataplaneTokenApiCredentials {
+  // AdminApiCredentials defines credential configuration of admin client
+  message AdminApiCredentials {
 
-    // ClientCert defines certificate of authorized client of dataplane token
-    // server
+    // ClientCert defines certificate of authorized client of admin server
     string client_cert = 2;
 
-    // ClientKey defines key of authorized client of dataplane token server
+    // ClientKey defines key of authorized client of admin server
     string client_key = 3;
   }
 }

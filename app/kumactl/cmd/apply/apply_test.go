@@ -14,8 +14,8 @@ import (
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	test_store "github.com/Kong/kuma/pkg/test/store"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -47,13 +47,12 @@ var _ = Describe("kumactl apply", func() {
 
 	ValidatePersistedResource := func() {
 		resource := mesh.DataplaneResource{}
-		err := store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", "default"))
+		err := store.Get(context.Background(), &resource, core_store.GetByKey("sample", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
 		Expect(resource.Meta.GetMesh()).To(Equal("default"))
-		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 		// and
 		Expect(resource.Spec.Networking.Inbound).To(HaveLen(1))
 		Expect(resource.Spec.Networking.Inbound[0].Interface).To(Equal("1.1.1.1:80:8080"))
@@ -143,7 +142,7 @@ var _ = Describe("kumactl apply", func() {
 				},
 			},
 		}
-		err := store.Create(context.Background(), &newResource, core_store.CreateByKey("default", "sample", "default"))
+		err := store.Create(context.Background(), &newResource, core_store.CreateByKey("sample", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
@@ -176,13 +175,12 @@ var _ = Describe("kumactl apply", func() {
 		// when
 		resource := mesh.MeshResource{}
 		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
-		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "sample", ""))
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("sample", ""))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
 		Expect(resource.Meta.GetMesh()).To(Equal(""))
-		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 	})
 
 	It("should apply a new Dataplane resource from URL", func() {
@@ -242,13 +240,12 @@ var _ = Describe("kumactl apply", func() {
 		// when
 		resource := mesh.MeshResource{}
 		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
-		err = store.Get(context.Background(), &resource, core_store.GetByKey("default", "meshinit", ""))
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("meshinit", ""))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("meshinit"))
 		Expect(resource.Meta.GetMesh()).To(Equal(""))
-		Expect(resource.Meta.GetNamespace()).To(Equal("default"))
 	})
 
 	It("should return kuma api server error", func() {

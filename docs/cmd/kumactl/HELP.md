@@ -15,6 +15,7 @@ Available Commands:
   help        Help about any command
   inspect     Inspect Kuma resources
   install     Install Kuma on Kubernetes
+  manage      Manage certificate authorities, etc
   version     Print version
 
 Flags:
@@ -136,12 +137,12 @@ Usage:
   kumactl config control-planes add [flags]
 
 Flags:
-      --address string                       URL of the Control Plane API Server (required)
-      --dataplane-token-client-cert string   Path to certificate of a client that is authorized to use Dataplane Token Server
-      --dataplane-token-client-key string    Path to certificate key of a client that is authorized to use Dataplane Token Server
-  -h, --help                                 help for add
-      --name string                          reference name for the Control Plane (required)
-      --overwrite                            overwrite existing Control Plane with the same reference name
+      --address string             URL of the Control Plane API Server (required)
+      --admin-client-cert string   Path to certificate of a client that is authorized to use Admin Server
+      --admin-client-key string    Path to certificate key of a client that is authorized to use Admin Server
+  -h, --help                       help for add
+      --name string                reference name for the Control Plane (required)
+      --overwrite                  overwrite existing Control Plane with the same reference name
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -329,6 +330,7 @@ Usage:
 
 Available Commands:
   dataplanes          Show Dataplanes
+  healthchecks        Show HealthChecks
   meshes              Show Meshes
   proxytemplates      Show ProxyTemplates
   traffic-logs        Show TrafficLogs
@@ -375,6 +377,24 @@ Usage:
 
 Flags:
   -h, --help   help for dataplanes
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get healthchecks
+
+```
+Show HealthChecks.
+
+Usage:
+  kumactl get healthchecks [flags]
+
+Flags:
+  -h, --help   help for healthchecks
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -512,6 +532,150 @@ Global Flags:
       --log-level string     log level: one of off|info|debug (default "off")
       --mesh string          mesh to use (default "default")
   -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+## kumactl manage
+
+```
+Manage certificate authorities, etc.
+
+Usage:
+  kumactl manage [command]
+
+Available Commands:
+  ca          Manage certificate authorities
+
+Flags:
+  -h, --help   help for manage
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+
+Use "kumactl manage [command] --help" for more information about a command.
+```
+
+### kumactl manage ca
+
+```
+Manage certificate authorities.
+
+Usage:
+  kumactl manage ca [command]
+
+Available Commands:
+  provided    Manage "provided" certificate authorities
+
+Flags:
+  -h, --help   help for ca
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+
+Use "kumactl manage ca [command] --help" for more information about a command.
+```
+
+#### kumactl manage ca provided
+
+```
+Manage "provided" certificate authorities.
+
+Usage:
+  kumactl manage ca provided [command]
+
+Available Commands:
+  certificates Manage signing certificates used by a "provided" certificate authority
+
+Flags:
+  -h, --help   help for provided
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+
+Use "kumactl manage ca provided [command] --help" for more information about a command.
+```
+
+##### kumactl manage ca provided certificates
+
+```
+Manage signing certificates used by a "provided" certificate authority.
+
+Usage:
+  kumactl manage ca provided certificates [command]
+
+Available Commands:
+  add         Add signing certificate
+  delete      Delete signing certificate
+  list        List signing certificates
+
+Flags:
+  -h, --help   help for certificates
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+
+Use "kumactl manage ca provided certificates [command] --help" for more information about a command.
+```
+
+###### kumactl manage ca provided certificates list
+
+```
+List signing certificates.
+
+Usage:
+  kumactl manage ca provided certificates list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+```
+
+###### kumactl manage ca provided certificates delete
+
+```
+Delete signing certificate.
+
+Usage:
+  kumactl manage ca provided certificates delete [flags]
+
+Flags:
+  -h, --help        help for delete
+      --id string   id of the certificate
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+```
+
+###### kumactl manage ca provided certificates add
+
+```
+Add signing certificate.
+
+Usage:
+  kumactl manage ca provided certificates add [flags]
+
+Flags:
+      --cert-file string   path to a file with a CA certificate
+  -h, --help               help for add
+      --key-file string    path to a file with a private key
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
 ```
 
 ## kumactl version

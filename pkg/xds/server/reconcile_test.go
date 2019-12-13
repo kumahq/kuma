@@ -90,10 +90,9 @@ var _ = Describe("Reconcile", func() {
 			// given
 			dataplane := &mesh_core.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
-					Mesh:      "pilot",
-					Namespace: "example",
-					Name:      "demo",
-					Version:   "abcdefg",
+					Mesh:    "pilot",
+					Name:    "demo",
+					Version: "abcdefg",
 				},
 			}
 
@@ -101,9 +100,8 @@ var _ = Describe("Reconcile", func() {
 			// when
 			proxy := &xds_model.Proxy{
 				Id: xds_model.ProxyId{
-					Mesh:      "pilot",
-					Namespace: "example",
-					Name:      "demo",
+					Mesh: "pilot",
+					Name: "demo",
 				},
 				Dataplane: dataplane,
 			}
@@ -113,7 +111,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("verifying that snapshot versions were auto-generated")
 			// when
-			snapshot, err := xdsContext.Cache().GetSnapshot("pilot.demo.example")
+			snapshot, err := xdsContext.Cache().GetSnapshot("pilot.demo")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
@@ -132,7 +130,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("verifying that snapshot versions remain the same")
 			// when
-			snapshot, err = xdsContext.Cache().GetSnapshot("pilot.demo.example")
+			snapshot, err = xdsContext.Cache().GetSnapshot("pilot.demo")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
@@ -151,7 +149,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("verifying that snapshot versions are new")
 			// when
-			snapshot, err = xdsContext.Cache().GetSnapshot("pilot.demo.example")
+			snapshot, err = xdsContext.Cache().GetSnapshot("pilot.demo")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())

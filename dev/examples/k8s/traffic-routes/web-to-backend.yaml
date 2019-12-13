@@ -7,20 +7,18 @@ mesh: default
 spec:
   sources:
   - match:
-      service: web
-      region: us-east-1
-      version: v10
+      service: kuma-example-web.kuma-example.svc:6060
+      env: prod
   destinations:
   - match:
         # NOTE: only `service` tag can be used here (in `universal` all TCP connections will have `127.0.0.1` as destination => it's not enough info to infer any other destination tags)
-      service: backend
+      service: kuma-example-backend.kuma-example.svc:7070
   conf:
   - weight: 90
     destination:
-      service: backend
-      region: us-east-1
-      version: v2
+      service: kuma-example-backend.kuma-example.svc:7070
+      version: v1
   - weight: 10
     destination:
-      service: backend
-      version: v3
+      service: kuma-example-backend.kuma-example.svc:7070
+      version: v2

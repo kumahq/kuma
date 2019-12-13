@@ -2,7 +2,7 @@ package api_server
 
 import (
 	"errors"
-	"github.com/Kong/kuma/pkg/config/api-server/catalogue"
+	"github.com/Kong/kuma/pkg/config/api-server/catalog"
 
 	"github.com/Kong/kuma/pkg/config"
 )
@@ -15,10 +15,13 @@ type ApiServerConfig struct {
 	Port int `yaml:"port" envconfig:"kuma_api_server_port"`
 	// If true, then API Server will operate in read only mode (serving GET requests)
 	ReadOnly bool `yaml:"readOnly" envconfig:"kuma_api_server_read_only"`
-	// API Catalogue
-	Catalogue *catalogue.CatalogueConfig
+	// API Catalog
+	Catalog *catalog.CatalogConfig `yaml:"-"`
 	// Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
 	CorsAllowedDomains []string `yaml:"corsAllowedDomains" envconfig:"kuma_api_server_cors_allowed_domains"`
+}
+
+func (a *ApiServerConfig) Sanitize() {
 }
 
 func (a *ApiServerConfig) Validate() error {
@@ -32,7 +35,7 @@ func DefaultApiServerConfig() *ApiServerConfig {
 	return &ApiServerConfig{
 		Port:               5681,
 		ReadOnly:           false,
-		Catalogue:          &catalogue.CatalogueConfig{},
+		Catalog:            &catalog.CatalogConfig{},
 		CorsAllowedDomains: []string{".*"},
 	}
 }

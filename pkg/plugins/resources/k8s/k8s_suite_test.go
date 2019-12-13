@@ -17,6 +17,7 @@ limitations under the License.
 package k8s_test
 
 import (
+	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path/filepath"
@@ -54,7 +55,10 @@ var _ = BeforeSuite(func(done Done) {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("native", "test", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("native", "test", "config", "crd", "bases"),
+			filepath.Join("native", "config", "crd", "bases"),
+		},
 	}
 
 	cfg, err := testEnv.Start()
@@ -62,6 +66,9 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(cfg).ToNot(BeNil())
 
 	err = sample_v1alpha1.AddToScheme(k8sClientScheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = mesh_k8s.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

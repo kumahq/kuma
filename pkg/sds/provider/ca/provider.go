@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -14,16 +15,18 @@ import (
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
 )
 
-func New(resourceManager core_manager.ResourceManager, builtinCaManager builtin_ca.BuiltinCaManager) sds_provider.SecretProvider {
+func New(resourceManager core_manager.ResourceManager, builtinCaManager builtin_ca.BuiltinCaManager, providedCaManager provided_ca.ProvidedCaManager) sds_provider.SecretProvider {
 	return &meshCaProvider{
-		resourceManager:  resourceManager,
-		builtinCaManager: builtinCaManager,
+		resourceManager:   resourceManager,
+		builtinCaManager:  builtinCaManager,
+		providedCaManager: providedCaManager,
 	}
 }
 
 type meshCaProvider struct {
-	resourceManager  core_manager.ResourceManager
-	builtinCaManager builtin_ca.BuiltinCaManager
+	resourceManager   core_manager.ResourceManager
+	builtinCaManager  builtin_ca.BuiltinCaManager
+	providedCaManager provided_ca.ProvidedCaManager
 }
 
 func (s *meshCaProvider) RequiresIdentity() bool {
@@ -51,6 +54,18 @@ func (s *meshCaProvider) Get(ctx context.Context, resource string, requestor sds
 		}
 		return &MeshCaSecret{
 			PemCerts: rootCerts,
+		}, nil
+	case *mesh_proto.CertificateAuthority_Provided_:
+		rootCerts, err := s.providedCaManager.GetSigningCerts(ctx, mesh.Meta.GetName())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to retrieve Root Certificates of a given Provided CA")
+		}
+		var certs [][]byte = make([][]byte, len(rootCerts))
+		for i, rootCert := range rootCerts {
+			certs[i] = rootCert.Cert
+		}
+		return &MeshCaSecret{
+			PemCerts: certs,
 		}, nil
 	default:
 		return nil, errors.Errorf("Mesh %q has unsupported CA type", meshName)

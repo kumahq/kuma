@@ -46,7 +46,7 @@ var _ = Describe("TrafficRoute WS", func() {
 
 	BeforeEach(func() {
 		// when
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default", "default"))
+		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})

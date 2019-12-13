@@ -126,6 +126,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					return err
 				}
 
+				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ResourceManager())
+				if err != nil {
+					return err
+				}
+
 				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane)
 				if err != nil {
 					return err
@@ -143,6 +148,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					TrafficRoutes:      routes,
 					OutboundSelectors:  destinations,
 					OutboundTargets:    outbound,
+					HealthChecks:       healthChecks,
 					Logs:               matchedLogs,
 					Metadata:           metadataTracker.Metadata(streamId),
 				}

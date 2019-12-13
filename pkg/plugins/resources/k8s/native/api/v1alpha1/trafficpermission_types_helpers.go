@@ -31,6 +31,10 @@ func (tp *TrafficPermission) SetSpec(spec map[string]interface{}) {
 	tp.Spec = spec
 }
 
+func (tp *TrafficPermission) Scope() model.Scope {
+	return model.ScopeNamespace
+}
+
 func (l *TrafficPermissionList) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {

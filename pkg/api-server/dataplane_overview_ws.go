@@ -11,6 +11,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
+	rest_errors "github.com/Kong/kuma/pkg/core/rest/errors"
 	"github.com/emicklei/go-restful"
 )
 
@@ -39,24 +40,24 @@ func (r *overviewWs) inspectDataplane(request *restful.Request, response *restfu
 
 	overview, err := r.fetchOverview(request.Request.Context(), name, meshName)
 	if err != nil {
-		handleError(response, err, "Could not retrieve a dataplane overview")
+		rest_errors.HandleError(response, err, "Could not retrieve a dataplane overview")
 		return
 	}
 
 	res := rest.From.Resource(overview)
 	if err := response.WriteAsJson(res); err != nil {
-		handleError(response, err, "Could not retrieve a dataplane overview")
+		rest_errors.HandleError(response, err, "Could not retrieve a dataplane overview")
 	}
 }
 
 func (r *overviewWs) fetchOverview(ctx context.Context, name string, meshName string) (*mesh.DataplaneOverviewResource, error) {
 	dataplane := mesh.DataplaneResource{}
-	if err := r.resManager.Get(ctx, &dataplane, store.GetByKey(namespace, name, meshName)); err != nil {
+	if err := r.resManager.Get(ctx, &dataplane, store.GetByKey(name, meshName)); err != nil {
 		return nil, err
 	}
 
 	insight := mesh.DataplaneInsightResource{}
-	err := r.resManager.Get(ctx, &insight, store.GetByKey(namespace, name, meshName))
+	err := r.resManager.Get(ctx, &insight, store.GetByKey(name, meshName))
 	if err != nil && !store.IsResourceNotFound(err) { // It's fine to have dataplane without insight
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 	meshName := request.PathParameter("mesh")
 	overviews, err := r.fetchOverviews(request.Request.Context(), meshName)
 	if err != nil {
-		handleError(response, err, "Could not retrieve dataplane overviews")
+		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
 	}
 
@@ -83,7 +84,7 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 
 	restList := rest.From.ResourceList(&overviews)
 	if err := response.WriteAsJson(restList); err != nil {
-		handleError(response, err, "Could not list dataplane overviews")
+		rest_errors.HandleError(response, err, "Could not list dataplane overviews")
 	}
 }
 

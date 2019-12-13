@@ -7,10 +7,10 @@ import (
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
-	"github.com/Kong/kuma/pkg/catalogue"
-	catalogue_client "github.com/Kong/kuma/pkg/catalogue/client"
+	"github.com/Kong/kuma/pkg/catalog"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
 	config_kumactl "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	test_catalogue "github.com/Kong/kuma/pkg/test/catalogue"
+	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
@@ -40,14 +40,14 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		generator = &staticDataplaneTokenGenerator{}
 		ctx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewDataplaneTokenClient: func(string, *config_kumactl.Context_DataplaneTokenApiCredentials) (tokens.DataplaneTokenClient, error) {
+				NewDataplaneTokenClient: func(string, *config_kumactl.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
 				},
-				NewCatalogueClient: func(s string) (catalogue_client.CatalogueClient, error) {
-					return &test_catalogue.StaticCatalogueClient{
-						Resp: catalogue.Catalogue{
-							Apis: catalogue.Apis{
-								DataplaneToken: catalogue.DataplaneTokenApi{
+				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
+					return &test_catalog.StaticCatalogClient{
+						Resp: catalog.Catalog{
+							Apis: catalog.Apis{
+								DataplaneToken: catalog.DataplaneTokenApi{
 									LocalUrl: "http://localhost:1234",
 								},
 							},
@@ -103,11 +103,11 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 
 	It("should throw an error when dataplane token server is disabled", func() {
 		// setup
-		ctx.Runtime.NewCatalogueClient = func(s string) (catalogue_client.CatalogueClient, error) {
-			return &test_catalogue.StaticCatalogueClient{
-				Resp: catalogue.Catalogue{
-					Apis: catalogue.Apis{
-						DataplaneToken: catalogue.DataplaneTokenApi{
+		ctx.Runtime.NewCatalogClient = func(s string) (catalog_client.CatalogClient, error) {
+			return &test_catalog.StaticCatalogClient{
+				Resp: catalog.Catalog{
+					Apis: catalog.Apis{
+						DataplaneToken: catalog.DataplaneTokenApi{
 							LocalUrl: "", // disabled dataplane token server
 						},
 					},

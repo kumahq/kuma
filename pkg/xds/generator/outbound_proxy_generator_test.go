@@ -4,8 +4,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/Kong/kuma/pkg/core/logs"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -55,7 +53,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "side-car", Namespace: "default", Mesh: "default"},
+				Id: model.ProxyId{Name: "side-car", Mesh: "default"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",
@@ -105,7 +103,6 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
 					},
 				},
-				Logs:     logs.NewMatchedLogs(),
 				Metadata: &model.DataplaneMetadata{},
 			}
 
@@ -230,7 +227,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 
 				proxy := &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Namespace: "default", Mesh: "default"},
+					Id: model.ProxyId{Name: "side-car", Mesh: "default"},
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Version: "1",
@@ -280,7 +277,6 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
 						},
 					},
-					Logs:     logs.NewMatchedLogs(),
 					Metadata: &model.DataplaneMetadata{},
 				}
 

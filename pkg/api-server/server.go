@@ -3,12 +3,14 @@ package api_server
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/pkg/errors"
 	"net/http"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
-	config "github.com/Kong/kuma/pkg/config/api-server"
+	"github.com/Kong/kuma/pkg/config"
+	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/emicklei/go-restful"
 )
@@ -25,7 +27,7 @@ func (a *ApiServer) Address() string {
 	return a.server.Addr
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, serverConfig *config.ApiServerConfig) *ApiServer {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
@@ -47,15 +49,20 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	addToWs(ws, defs, resManager, serverConfig)
 	container.Add(ws)
 	container.Add(indexWs())
-	container.Add(catalogueWs(*serverConfig.Catalogue))
+	container.Add(catalogWs(*serverConfig.Catalog))
+	configWs, err := configWs(cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create configuration webservice")
+	}
+	container.Add(configWs)
 
-	ws.Filter(cors.Filter)
+	container.Filter(cors.Filter)
 	return &ApiServer{
 		server: srv,
-	}
+	}, nil
 }
 
-func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *config.ApiServerConfig) {
+func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
 	overviewWs := overviewWs{
 		resManager: resManager,
 	}
@@ -96,6 +103,10 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 }
 
 func SetupServer(rt runtime.Runtime) error {
-	apiServer := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config().ApiServer)
+	cfg := rt.Config()
+	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config().ApiServer, &cfg)
+	if err != nil {
+		return err
+	}
 	return rt.Add(apiServer)
 }

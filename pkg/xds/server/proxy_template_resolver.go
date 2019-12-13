@@ -46,10 +46,10 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 // Every matching ProxyTemplate gets a rank (score) defined as a maximum number of tags in a matching selector.
 // ProxyTemplate with an empty list of selectors is considered a match with a rank (score) of 0.
 // ProxyTemplate with an empty selector (one that has no tags) is considered a match with a rank (score) of 0.
-// In case if there are multiple ProxyTemplates with the same rank (score), templates are sorted alphabetically by Namespace and Name
+// In case if there are multiple ProxyTemplates with the same rank (score), templates are sorted alphabetically by Name
 // and the first one is considered the "best match".
 func FindBestMatch(proxy *model.Proxy, templates []*mesh_core.ProxyTemplateResource) *mesh_core.ProxyTemplateResource {
-	sort.Stable(ProxyTemplatesByNamespacedName(templates)) // sort to avoid flakiness
+	sort.Stable(ProxyTemplatesByName(templates)) // sort to avoid flakiness
 
 	var bestMatch *mesh_core.ProxyTemplateResource
 	var bestScore int
@@ -87,11 +87,10 @@ func ScoreMatch(selector map[string]string, target map[string]string) (bool, int
 	return true, len(selector)
 }
 
-type ProxyTemplatesByNamespacedName []*mesh_core.ProxyTemplateResource
+type ProxyTemplatesByName []*mesh_core.ProxyTemplateResource
 
-func (a ProxyTemplatesByNamespacedName) Len() int      { return len(a) }
-func (a ProxyTemplatesByNamespacedName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ProxyTemplatesByNamespacedName) Less(i, j int) bool {
-	return a[i].Meta.GetNamespace() < a[j].Meta.GetNamespace() ||
-		(a[i].Meta.GetNamespace() == a[j].Meta.GetNamespace() && a[i].Meta.GetName() < a[j].Meta.GetName())
+func (a ProxyTemplatesByName) Len() int      { return len(a) }
+func (a ProxyTemplatesByName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ProxyTemplatesByName) Less(i, j int) bool {
+	return a[i].Meta.GetName() < a[j].Meta.GetName()
 }

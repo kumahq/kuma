@@ -50,9 +50,8 @@ var _ = Describe("kumactl get traffic-logs", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "default",
-				Name:      "web1-to-backend1",
-				Namespace: "",
+				Mesh: "default",
+				Name: "web1-to-backend1",
 			},
 		},
 		{
@@ -78,9 +77,8 @@ var _ = Describe("kumactl get traffic-logs", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh:      "default",
-				Name:      "web2-to-backend2",
-				Namespace: "",
+				Mesh: "default",
+				Name: "web2-to-backend2",
 			},
 		},
 	}
