@@ -28,13 +28,13 @@ store:
     # TLS settings
     tls:
       # Mode of TLS connection. Available values (disable, require, verify-ca, verify-full)
-      mode: disable # ENV: KUMA_STORE_POSTGRES_SSL_MODE
-      # Path to SSL Certificate of the client. Used in require, verify-ca and verify-full modes
-      certPath: # ENV: KUMA_STORE_POSTGRES_SSL_CERT_PATH
-      # Path to SSL Key of the client. Used in require, verify-ca and verify-full modes
-      keyPath: # ENV: KUMA_STORE_POSTGRES_SSL_KEY_PATH
+      mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
+      # Path to TLS Certificate of the client. Used in require, verify-ca and verify-full modes
+      certPath: # ENV: KUMA_STORE_POSTGRES_TLS_CERT_PATH
+      # Path to TLS Key of the client. Used in require, verify-ca and verify-full modes
+      keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verify-ca and verify-full modes.
-      rootCertPath: # ENV: KUMA_STORE_POSTGRES_SSL_ROOT_CERT_PATH
+      caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:

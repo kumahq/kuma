@@ -21,20 +21,6 @@ var _ = Describe("TLSPostgresStoreConfig", func() {
 			// then
 			Expect(err).To(MatchError(given.error))
 		},
-		Entry("VerifyNone without certPath", testCase{
-			config: postgres.TLSPostgresStoreConfig{
-				Mode:    postgres.VerifyNone,
-				KeyPath: "/path",
-			},
-			error: "CertPath cannot be empty",
-		}),
-		Entry("VerifyNone without keyPath", testCase{
-			config: postgres.TLSPostgresStoreConfig{
-				Mode:     postgres.VerifyNone,
-				CertPath: "/path",
-			},
-			error: "KeyPath cannot be empty",
-		}),
 		Entry("VerifyCA without CAPath", testCase{
 			config: postgres.TLSPostgresStoreConfig{
 				Mode:     postgres.VerifyCa,

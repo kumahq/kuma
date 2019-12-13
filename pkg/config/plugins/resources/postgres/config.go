@@ -60,14 +60,13 @@ func (s TLSPostgresStoreConfig) Validate() error {
 		if s.CAPath == "" {
 			return errors.New("CAPath cannot be empty")
 		}
-		fallthrough
-	case VerifyNone:
 		if s.CertPath == "" {
 			return errors.New("CertPath cannot be empty")
 		}
 		if s.KeyPath == "" {
 			return errors.New("KeyPath cannot be empty")
 		}
+	case VerifyNone:
 	case Disable:
 	default:
 		return errors.Errorf("invalid mode: %s", s.Mode)
@@ -109,13 +108,13 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		Password:          "kuma",
 		DbName:            "kuma",
 		ConnectionTimeout: 5,
-		TLS:               DefaultSSLPostgresStoreConfig(),
+		TLS:               DefaultTLSPostgresStoreConfig(),
 	}
 }
 
 var _ config.Config = &TLSPostgresStoreConfig{}
 
-func DefaultSSLPostgresStoreConfig() TLSPostgresStoreConfig {
+func DefaultTLSPostgresStoreConfig() TLSPostgresStoreConfig {
 	return TLSPostgresStoreConfig{
 		Mode:     Disable,
 		CertPath: "",
