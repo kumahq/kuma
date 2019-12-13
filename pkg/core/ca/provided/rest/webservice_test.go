@@ -1,10 +1,20 @@
 package rest_test
 
 import (
+	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest"
+	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	resources_manager "github.com/Kong/kuma/pkg/core/resources/manager"
+	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/Kong/kuma/pkg/core/secrets/cipher"
 	"github.com/Kong/kuma/pkg/core/secrets/manager"
@@ -12,21 +22,21 @@ import (
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/tls"
 	"github.com/emicklei/go-restful"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"path/filepath"
 )
 
 var _ = Describe("Provided CA WS", func() {
 
 	var client ca.ProvidedCaClient
 	var srv *httptest.Server
+	var resManager resources_manager.ResourceManager
 
 	BeforeEach(func() {
-		ws := rest.NewWebservice(provided.NewProvidedCaManager(manager.NewSecretManager(store.NewSecretStore(memory.NewStore()), cipher.None())))
+		memStore := memory.NewStore()
+		resManager = resources_manager.NewResourceManager(memStore)
+		ws := rest.NewWebservice(provided.NewProvidedCaManager(manager.NewSecretManager(store.NewSecretStore(memStore), cipher.None())), resManager)
 		container := restful.NewContainer()
 		container.Add(ws)
 		srv = httptest.NewServer(container)
@@ -172,6 +182,39 @@ var _ = Describe("Provided CA WS", func() {
 			Expect(err).To(Equal(&types.Error{
 				Title:   "Could not delete signing cert",
 				Details: "Not found",
+			}))
+		})
+
+		It("should throw an error when mTLS is active and type is provided", func() {
+			// given mesh with active mTLS and type provided
+			meshName := "demo"
+			meshRes := &core_mesh.MeshResource{
+				Spec: mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						Ca: &mesh_proto.CertificateAuthority{
+							Type: &mesh_proto.CertificateAuthority_Provided_{
+								Provided: &mesh_proto.CertificateAuthority_Provided{},
+							},
+						},
+						Enabled: true,
+					},
+				},
+			}
+			err := resManager.Create(context.Background(), meshRes, core_store.CreateByKey(meshName, meshName))
+			Expect(err).ToNot(HaveOccurred())
+
+			// given
+			signingCert, err := client.AddSigningCertificate(meshName, pair)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = client.DeleteSigningCertificate(meshName, signingCert.Id)
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(&types.Error{
+				Title:   "Could not delete signing cert",
+				Details: "Cannot delete signing certificate when the mTLS in the mesh is active and type of CA is Provided",
 			}))
 		})
 	})

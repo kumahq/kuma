@@ -118,14 +118,12 @@ func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, 
 		}
 	}
 
-	// todo(jakubdyszkiewicz) validate that retained ca roots cannot be 0 if mtls mesh is enabled and the type is provided
 	providedCa.SigningKeyCerts = retainedCaRoots
 	newBytes, err := json.Marshal(providedCa)
 	if err != nil {
 		return err
 	}
 
-	// todo(jakubdyszkiewicz) should we delete CA when there are 0 certs?
 	providedCaSecret.Spec.Value = newBytes
 	if err := p.secretManager.Update(ctx, providedCaSecret); err != nil {
 		return errors.Wrapf(err, "failed to update CA for mesh %q", mesh)
@@ -143,7 +141,7 @@ func (s *SigningCertNotFound) Error() string {
 }
 
 func (p *providedCaManager) DeleteCa(ctx context.Context, mesh string) error {
-	// todo(jakubdyszkiewicz) validate that mesh is disabled or the type is other than provided
+	// If we ever expose this via API, we need to validate that mesh is disabled or the type is other than provided
 	secretKey := providedCaSecretKey(mesh)
 	caSecret := &core_system.SecretResource{}
 	if err := p.secretManager.Delete(ctx, caSecret, core_store.DeleteBy(secretKey)); err != nil {

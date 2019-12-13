@@ -155,7 +155,7 @@ func requireClientCerts(certsDir string) (*tls.Config, error) {
 func SetupServer(rt runtime.Runtime) error {
 	var webservices []*restful.WebService
 
-	ws := ca_provided_rest.NewWebservice(rt.ProvidedCaManager())
+	ws := ca_provided_rest.NewWebservice(rt.ProvidedCaManager(), rt.ResourceManager())
 	webservices = append(webservices, ws)
 
 	ws, err := dataplaneTokenWs(rt)
