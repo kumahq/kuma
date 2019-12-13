@@ -16,14 +16,12 @@ import (
 	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry) (*admission.Webhook, error) {
-	return &admission.Webhook{
-		Handler: &validatingHandler{
-			coreRegistry: coreRegistry,
-			k8sRegistry:  k8sRegistry,
-			converter:    converter,
-		},
-	}, nil
+func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry) AdmissionValidator {
+	return &validatingHandler{
+		coreRegistry: coreRegistry,
+		k8sRegistry:  k8sRegistry,
+		converter:    converter,
+	}
 }
 
 type validatingHandler struct {
@@ -66,6 +64,10 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 	}
 
 	return admission.Allowed("")
+}
+
+func (h *validatingHandler) Supports(admission.Request) bool {
+	return true
 }
 
 func convertValidationError(kumaErr *validators.ValidationError, obj k8s_model.KubernetesObject) admission.Response {
