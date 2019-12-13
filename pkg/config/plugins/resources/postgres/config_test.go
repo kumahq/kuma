@@ -37,6 +37,22 @@ var _ = Describe("TLSPostgresStoreConfig", func() {
 			},
 			error: "CAPath cannot be empty",
 		}),
+		Entry("CertPath without KeyPath", testCase{
+			config: postgres.TLSPostgresStoreConfig{
+				Mode:     postgres.VerifyNone,
+				KeyPath:  "",
+				CertPath: "/path",
+			},
+			error: "KeyPath cannot be empty when CertPath is provided",
+		}),
+		Entry("KeyPath without CertPath", testCase{
+			config: postgres.TLSPostgresStoreConfig{
+				Mode:     postgres.VerifyNone,
+				KeyPath:  "/path",
+				CertPath: "",
+			},
+			error: "CertPath cannot be empty when KeyPath is provided",
+		}),
 	)
 
 	DescribeTable("should validate valid config",

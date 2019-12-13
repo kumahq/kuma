@@ -65,6 +65,12 @@ func (s TLSPostgresStoreConfig) Validate() error {
 	default:
 		return errors.Errorf("invalid mode: %s", s.Mode)
 	}
+	if s.KeyPath == "" && s.CertPath != "" {
+		return errors.New("KeyPath cannot be empty when CertPath is provided")
+	}
+	if s.CertPath == "" && s.KeyPath != "" {
+		return errors.New("CertPath cannot be empty when KeyPath is provided")
+	}
 	return nil
 }
 
