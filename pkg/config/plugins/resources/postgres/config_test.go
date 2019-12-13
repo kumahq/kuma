@@ -29,22 +29,6 @@ var _ = Describe("TLSPostgresStoreConfig", func() {
 			},
 			error: "CAPath cannot be empty",
 		}),
-		Entry("VerifyCA without CertPath", testCase{
-			config: postgres.TLSPostgresStoreConfig{
-				Mode:    postgres.VerifyCa,
-				CAPath:  "/path",
-				KeyPath: "/path",
-			},
-			error: "CertPath cannot be empty",
-		}),
-		Entry("VerifyCA without KeyPath", testCase{
-			config: postgres.TLSPostgresStoreConfig{
-				Mode:     postgres.VerifyCa,
-				CAPath:   "/path",
-				CertPath: "/path",
-			},
-			error: "KeyPath cannot be empty",
-		}),
 		Entry("VerifyFull without CAPath", testCase{
 			config: postgres.TLSPostgresStoreConfig{
 				Mode:     postgres.VerifyFull,
@@ -52,22 +36,6 @@ var _ = Describe("TLSPostgresStoreConfig", func() {
 				CertPath: "/path",
 			},
 			error: "CAPath cannot be empty",
-		}),
-		Entry("VerifyFull without CertPath", testCase{
-			config: postgres.TLSPostgresStoreConfig{
-				Mode:    postgres.VerifyFull,
-				CAPath:  "/path",
-				KeyPath: "/path",
-			},
-			error: "CertPath cannot be empty",
-		}),
-		Entry("VerifyFull without KeyPath", testCase{
-			config: postgres.TLSPostgresStoreConfig{
-				Mode:     postgres.VerifyFull,
-				CAPath:   "/path",
-				CertPath: "/path",
-			},
-			error: "KeyPath cannot be empty",
 		}),
 	)
 

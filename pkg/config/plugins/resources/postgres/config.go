@@ -60,12 +60,6 @@ func (s TLSPostgresStoreConfig) Validate() error {
 		if s.CAPath == "" {
 			return errors.New("CAPath cannot be empty")
 		}
-		if s.CertPath == "" {
-			return errors.New("CertPath cannot be empty")
-		}
-		if s.KeyPath == "" {
-			return errors.New("KeyPath cannot be empty")
-		}
 	case VerifyNone:
 	case Disable:
 	default:
