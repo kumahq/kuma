@@ -6,6 +6,8 @@
 
 Changes:
 
+* feature: added Kuma UI
+  [#461](https://github.com/Kong/kuma/pull/461)
 * feature: support TLS in Postgres-based storage backend
   [#472](https://github.com/Kong/kuma/pull/472)
 * feature: prevent removal of a signing certificate from a "provided" CA in use
