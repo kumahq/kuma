@@ -62,7 +62,7 @@ func DefaultConfig() Config {
 				},
 			},
 			InitContainer: InitContainer{
-				Image: "docker.io/istio/proxy_init:1.1.2",
+				Image: "kuma/kuma-init:latest",
 			},
 		},
 	}

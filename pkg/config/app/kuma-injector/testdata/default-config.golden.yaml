@@ -31,4 +31,4 @@ injector:
         cpu: 1000m
         memory: 512Mi
   initContainer:
-    image: docker.io/istio/proxy_init:1.1.2
+    image: kuma/kuma-init:latest

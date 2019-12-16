@@ -1,14 +1,14 @@
 .PHONY: help clean clean/build clean/proto \
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
-		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector \
+		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector kind/load/kuma-init \
 		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/control-plane \ generate/gui \
 		fmt fmt/go fmt/proto vet golangci-lint check test integration build run/k8s run/universal/memory run/universal/postgres \
-		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo \
-		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-tcp-echo \
-		docker/save docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-injector docker/save/kuma-tcp-echo \
-		docker/load docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-injector docker/load/kuma-tcp-echo \
-		build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector build/kuma-tcp-echo \
+		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-tcp-echo \
+		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-tcp-echo \
+		docker/save docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-injector docker/save/kuma-init docker/save/kuma-tcp-echo \
+		docker/load docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-injector docker/load/kuma-init docker/load/kuma-tcp-echo \
+		build/kuma-cp build/kuma-dp build/kumactl build/kuma-injector build/kuma-init build/kuma-tcp-echo \
 		build/kuma-cp/linux-amd64 build/kuma-dp/linux-amd64 build/kumactl/linux-amd64 build/kuma-injector/linux-amd64 build/kuma-tcp-echo/linux-amd64 \
 		docs _docs_ docs/kumactl \
 		run/example/envoy config_dump/example/envoy \
@@ -96,16 +96,18 @@ KUMA_CP_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-cp
 KUMA_DP_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-dp
 KUMACTL_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kumactl
 KUMA_INJECTOR_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-injector
+KUMA_INIT_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-init
 KUMA_TCP_ECHO_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-tcp-echo
 
 export KUMA_CP_DOCKER_IMAGE ?= $(KUMA_CP_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_DP_DOCKER_IMAGE ?= $(KUMA_DP_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMACTL_DOCKER_IMAGE ?= $(KUMACTL_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_INJECTOR_DOCKER_IMAGE ?= $(KUMA_INJECTOR_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
+export KUMA_INIT_DOCKER_IMAGE ?= $(KUMA_INIT_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_TCP_ECHO_DOCKER_IMAGE ?= $(KUMA_TCP_ECHO_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
-	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME)
+	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME) --dataplane-init-image=$(KUMA_INIT_DOCKER_IMAGE_NAME)
 else
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
 endif
@@ -206,6 +208,9 @@ kind/load/kuma-dp: image/kuma-dp
 kind/load/kuma-injector: image/kuma-injector
 	kind load docker-image $(KUMA_INJECTOR_DOCKER_IMAGE) --name=kuma
 
+kind/load/kuma-init: image/kuma-init
+	kind load docker-image $(KUMA_INIT_DOCKER_IMAGE) --name=kuma
+
 deploy/control-plane/k8s: build/kumactl
 	kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n kuma-system pod -l app=kuma-injector
@@ -214,7 +219,7 @@ deploy/control-plane/k8s: build/kumactl
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
 
-start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
+start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector kind/load/kuma-init deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
 clean: clean/build ## Dev: Clean
 
@@ -371,7 +376,7 @@ run/example/envoy: build/kuma-dp build/kumactl ## Dev: Run Envoy configured agai
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-images: image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-tcp-echo ## Dev: Build all Docker images
+images: image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-tcp-echo ## Dev: Build all Docker images
 
 build/kuma-cp/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cp
@@ -388,7 +393,7 @@ build/kuma-injector/linux-amd64:
 build/kuma-tcp-echo/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-tcp-echo
 
-docker/build: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-tcp-echo
+docker/build: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-tcp-echo
 
 docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
@@ -402,6 +407,9 @@ docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl
 docker/build/kuma-injector: build/artifacts-linux-amd64/kuma-injector/kuma-injector
 	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-injector .
 
+docker/build/kuma-init:
+	docker build -t $(KUMA_INIT_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-init .
+
 docker/build/kuma-tcp-echo: build/artifacts-linux-amd64/kuma-tcp-echo/kuma-tcp-echo
 	docker build -t $(KUMA_TCP_ECHO_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-tcp-echo .
 
@@ -413,12 +421,14 @@ image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Build `kum
 
 image/kuma-injector: build/kuma-injector/linux-amd64 docker/build/kuma-injector ## Dev: Build `kuma-injector` Docker image
 
+image/kuma-init: docker/build/kuma-init ## Dev: Build `kuma-init` Docker image
+
 image/kuma-tcp-echo: build/kuma-tcp-echo/linux-amd64 docker/build/kuma-tcp-echo ## Dev: Build `kuma-tcp-echo` Docker image
 
 ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
 
-docker/save: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-injector docker/save/kuma-tcp-echo
+docker/save: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-injector docker/save/kuma-init docker/save/kuma-tcp-echo
 
 docker/save/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar $(KUMA_CP_DOCKER_IMAGE)
@@ -432,10 +442,13 @@ docker/save/kumactl: ${BUILD_DOCKER_IMAGES_DIR}
 docker/save/kuma-injector: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-injector.tar $(KUMA_INJECTOR_DOCKER_IMAGE)
 
+docker/save/kuma-init: ${BUILD_DOCKER_IMAGES_DIR}
+	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar $(KUMA_INIT_DOCKER_IMAGE)
+
 docker/save/kuma-tcp-echo: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-tcp-echo.tar $(KUMA_TCP_ECHO_DOCKER_IMAGE)
 
-docker/load: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-injector docker/load/kuma-tcp-echo
+docker/load: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-injector docker/load/kuma-init docker/load/kuma-tcp-echo
 
 docker/load/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
 	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
@@ -448,6 +461,9 @@ docker/load/kumactl: ${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar
 
 docker/load/kuma-injector: ${BUILD_DOCKER_IMAGES_DIR}/kuma-injector.tar
 	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-injector.tar
+
+docker/load/kuma-init: ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
+	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
 
 docker/load/kuma-tcp-echo: ${BUILD_DOCKER_IMAGES_DIR}/kuma-tcp-echo.tar
 	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-tcp-echo.tar
