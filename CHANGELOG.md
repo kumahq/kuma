@@ -17,6 +17,10 @@ Changes:
 * chore: update Envoy to v1.12.2
   [#493](https://github.com/Kong/kuma/pull/493)
 
+Breaking changes:
+
+* ⚠️ An `--dataplane-init-version` argument was removed. Init container was changed to `kuma-init` which version is in sync with the rest of the Kuma containers.
+
 ## [0.3.1]
 
 > Released on 2019/12/13
