@@ -6,6 +6,8 @@ Changes:
 
 * chore: update Envoy to v1.12.2
   [#493](https://github.com/Kong/kuma/pull/493)
+* feature: display CA type in kumactl get meshes
+  [#494](https://github.com/Kong/kuma/pull/494)
 
 ## [0.3.1]
 

@@ -49,8 +49,8 @@ var _ = Describe("kumactl get meshes", func() {
 				Mtls: &v1alpha1.Mesh_Mtls{
 					Enabled: false,
 					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Builtin_{
-							Builtin: &v1alpha1.CertificateAuthority_Builtin{},
+						Type: &v1alpha1.CertificateAuthority_Provided_{
+							Provided: &v1alpha1.CertificateAuthority_Provided{},
 						},
 					},
 				},

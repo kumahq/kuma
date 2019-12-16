@@ -7,6 +7,6 @@ items:
     type: Mesh
   - mtls:
       ca:
-        builtin: {}
+        provided: {}
     name: mesh2
     type: Mesh
