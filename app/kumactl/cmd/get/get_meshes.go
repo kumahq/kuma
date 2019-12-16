@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
-
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
+	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/pkg/errors"
@@ -47,7 +47,7 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 
 func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME", "mTLS"},
+		Headers: []string{"NAME", "mTLS", "CA"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -57,9 +57,20 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 				}
 				mesh := meshes.Items[i]
 
+				ca := ""
+				switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
+				case *mesh_proto.CertificateAuthority_Provided_:
+					ca = "provided"
+				case *mesh_proto.CertificateAuthority_Builtin_:
+					ca = "builtin"
+				default:
+					ca = "unknown"
+				}
+
 				return []string{
 					mesh.GetMeta().GetName(),                 // NAME
 					table.OnOff(mesh.Spec.Mtls.GetEnabled()), // mTLS
+					ca,                                       // CA
 				}
 			}
 		}(),
