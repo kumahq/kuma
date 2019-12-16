@@ -51,7 +51,7 @@ var _ = Describe("Config", func() {
 			// setup
 			env := map[string]string{
 				"KUMA_CONTROL_PLANE_API_SERVER_URL":  "https://kuma-control-plane.internal:5682",
-				"KUMA_DATAPLANE_MESH":                "pilot",
+				"KUMA_DATAPLANE_MESH":                "demo",
 				"KUMA_DATAPLANE_NAME":                "example",
 				"KUMA_DATAPLANE_ADMIN_PORT":          "2345",
 				"KUMA_DATAPLANE_DRAIN_TIME":          "60s",
@@ -74,7 +74,7 @@ var _ = Describe("Config", func() {
 
 			// and
 			Expect(cfg.ControlPlane.ApiServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
-			Expect(cfg.Dataplane.Mesh).To(Equal("pilot"))
+			Expect(cfg.Dataplane.Mesh).To(Equal("demo"))
 			Expect(cfg.Dataplane.Name).To(Equal("example"))
 			Expect(cfg.Dataplane.AdminPort).To(Equal(uint32(2345)))
 			Expect(cfg.Dataplane.DrainTime).To(Equal(60 * time.Second))

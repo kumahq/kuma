@@ -48,7 +48,7 @@ var _ = Describe("kumactl get proxytemplates", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh: "pilot",
+					Mesh: "demo",
 					Name: "simple-template",
 				},
 				Spec: mesh_proto.ProxyTemplate{},

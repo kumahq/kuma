@@ -508,7 +508,7 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			backend.AssertNotExists(&mesh_k8s.Mesh{}, ns, "pilot")
+			backend.AssertNotExists(&mesh_k8s.Mesh{}, ns, "demo")
 		})
 	})
 

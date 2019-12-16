@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   namespace: kuma-system
-  name: pilot
+  name: demo
 spec:
   mtls:
     ca:

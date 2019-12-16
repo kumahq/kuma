@@ -1,7 +1,7 @@
 contexts:
 - controlPlane: k8s_minikube
   defaults:
-    mesh: pilot
+    mesh: demo
   name: k8s_minikube
 - controlPlane: vm_test
   defaults:

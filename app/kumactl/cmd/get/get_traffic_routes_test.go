@@ -48,7 +48,7 @@ var _ = Describe("kumactl get traffic-routes", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh: "pilot",
+					Mesh: "demo",
 					Name: "gateway-to-service",
 				},
 				Spec: mesh_proto.TrafficRoute{},

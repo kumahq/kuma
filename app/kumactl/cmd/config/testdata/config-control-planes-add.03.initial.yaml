@@ -1,7 +1,7 @@
 contexts:
   - controlPlane: test1
     defaults:
-      mesh: pilot
+      mesh: demo
     name: test1
   - controlPlane: test2
     defaults:

@@ -1,7 +1,7 @@
 contexts:
 - controlPlane: other
   defaults:
-    mesh: pilot
+    mesh: demo
   name: other
 controlPlanes:
 - coordinates:

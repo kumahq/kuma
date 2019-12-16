@@ -28,7 +28,7 @@ var _ = Describe("ResourceListReceiver", func() {
 				 },
 				 {
 					"type": "TrafficRoute",
-					"mesh": "pilot",
+					"mesh": "demo",
 					"name": "two",
 					"path": "/another"
 				 }
@@ -63,7 +63,7 @@ var _ = Describe("ResourceListReceiver", func() {
 				&rest.Resource{
 					Meta: rest.ResourceMeta{
 						Type: "TrafficRoute",
-						Mesh: "pilot",
+						Mesh: "demo",
 						Name: "two",
 					},
 					Spec: &sample_proto.TrafficRoute{

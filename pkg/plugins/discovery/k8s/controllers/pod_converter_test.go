@@ -366,9 +366,9 @@ var _ = Describe("MeshFor(..)", func() {
 		}),
 		Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
 			podAnnotations: map[string]string{
-				"kuma.io/mesh": "pilot",
+				"kuma.io/mesh": "demo",
 			},
-			expected: "pilot",
+			expected: "demo",
 		}),
 	)
 })
