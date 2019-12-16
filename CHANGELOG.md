@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [Unreleased]
+
+Changes:
+
+* chore: update Envoy to v1.12.2
+  [#493](https://github.com/Kong/kuma/pull/493)
+
 ## [0.3.1]
 
 > Released on 2019/12/13
