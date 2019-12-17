@@ -77,6 +77,41 @@ metrics:
     path: /metrics
 ```
 
+#### Kubernetes
+
+Since on Kubernetes `Dataplane` resources are generated automatically (and are not supposed to be edited by users), it should be possible to override `Mesh`-wide Prometheus settings through a use of annotations, namely
+
+* `kuma.io/prometheus-port`
+* `kuma.io/prometheus-path`
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: kuma-example
+  name: kuma-tcp-echo
+spec:
+  ...
+  template:
+    metadata:
+      ...
+      annotations:
+        kuma.io/prometheus-port: "1234"               # override Mesh-wide default 'port'
+        kuma.io/prometheus-path: "/non-standard-path" # override Mesh-wide default 'path'
+    spec:
+      containers:
+      - name: kuma-tcp-echo
+        image: kong-docker-kuma-docker.bintray.io/kuma-tcp-echo:0.1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+```
+
+Alternative naming schemes could look like:
+
+* `metrics.kuma.io/prometheus-port`
+* `prometheus.metrics.kuma.io/port`
+
 ## Implementation Notes
 
 * It is assumed, there will be no mTLS between Prometheus and the metrics endpoint exposed by a dataplane (`Envoy`)
