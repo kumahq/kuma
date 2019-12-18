@@ -163,14 +163,18 @@ func (m meta) GetName() string {
 	return m.Name
 }
 
-func (m meta) GetNamespace() string {
-	return "default"
-}
-
 func (m meta) GetVersion() string {
 	return ""
 }
 
 func (m meta) GetMesh() string {
 	return m.Mesh
+}
+
+func (m meta) GetCreationTime() time.Time {
+	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
+}
+
+func (m meta) GetModificationTime() time.Time {
+	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
 }

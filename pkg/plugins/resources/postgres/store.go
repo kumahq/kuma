@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	config "github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -256,4 +257,12 @@ func (r *resourceMetaObject) GetVersion() string {
 
 func (r *resourceMetaObject) GetMesh() string {
 	return r.Mesh
+}
+
+func (r *resourceMetaObject) GetCreationTime() time.Time {
+	return time.Unix(0, 0) // todo(jakubdyszkiewicz) solve db migration
+}
+
+func (r *resourceMetaObject) GetModificationTime() time.Time {
+	return time.Unix(0, 0) // todo(jakubdyszkiewicz) solve db migration
 }

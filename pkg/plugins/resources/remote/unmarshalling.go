@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
+	"time"
 )
 
 type remoteMeta struct {
-	Name    string
-	Mesh    string
-	Version string
+	Name             string
+	Mesh             string
+	Version          string
+	CreationTime     time.Time
+	ModificationTime time.Time
 }
 
 func (m remoteMeta) GetName() string {
@@ -20,6 +23,12 @@ func (m remoteMeta) GetMesh() string {
 }
 func (m remoteMeta) GetVersion() string {
 	return m.Version
+}
+func (m remoteMeta) GetCreationTime() time.Time {
+	return m.CreationTime
+}
+func (m remoteMeta) GetModificationTime() time.Time {
+	return m.ModificationTime
 }
 
 func Unmarshal(b []byte, res model.Resource) error {
@@ -33,6 +42,7 @@ func Unmarshal(b []byte, res model.Resource) error {
 		Name:    restResource.Meta.Name,
 		Mesh:    restResource.Meta.Mesh,
 		Version: "",
+		// todo(jakubdyszkiewicz) creation and modification time is not set because it's not exposed in API yet
 	})
 	return nil
 }
@@ -53,6 +63,7 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 			Name:    ri.Meta.Name,
 			Mesh:    ri.Meta.Mesh,
 			Version: "",
+			// todo(jakubdyszkiewicz) creation and modification time is not set because it's not exposed in API yet
 		})
 		_ = rs.AddItem(r)
 	}

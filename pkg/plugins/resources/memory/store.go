@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -12,20 +13,24 @@ import (
 )
 
 type memoryStoreRecord struct {
-	ResourceType string
-	Name         string
-	Mesh         string
-	Version      memoryVersion
-	Spec         string
+	ResourceType     string
+	Name             string
+	Mesh             string
+	Version          memoryVersion
+	Spec             string
+	CreationTime     time.Time
+	ModificationTime time.Time
 }
 type memoryStoreRecords = []*memoryStoreRecord
 
 var _ model.ResourceMeta = &memoryMeta{}
 
 type memoryMeta struct {
-	Name    string
-	Mesh    string
-	Version memoryVersion
+	Name             string
+	Mesh             string
+	Version          memoryVersion
+	CreationTime     time.Time
+	ModificationTime time.Time
 }
 
 func (m memoryMeta) GetName() string {
@@ -36,6 +41,12 @@ func (m memoryMeta) GetMesh() string {
 }
 func (m memoryMeta) GetVersion() string {
 	return m.Version.String()
+}
+func (m memoryMeta) GetCreationTime() time.Time {
+	return m.CreationTime
+}
+func (m memoryMeta) GetModificationTime() time.Time {
+	return m.ModificationTime
 }
 
 type memoryVersion uint64
@@ -74,10 +85,13 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
 	}
 
+	now := time.Now()
 	meta := memoryMeta{
-		Name:    opts.Name,
-		Mesh:    opts.Mesh,
-		Version: initialVersion(),
+		Name:             opts.Name,
+		Mesh:             opts.Mesh,
+		Version:          initialVersion(),
+		CreationTime:     now,
+		ModificationTime: now,
 	}
 
 	// fill the meta
@@ -114,6 +128,7 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 		return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
 	}
 	meta.Version = meta.Version.Next()
+	meta.ModificationTime = time.Now()
 
 	record, err := c.marshalRecord(
 		string(r.GetType()),
@@ -213,18 +228,22 @@ func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec m
 	return &memoryStoreRecord{
 		ResourceType: resourceType,
 		// Name must be provided via CreateOptions
-		Name:    meta.Name,
-		Mesh:    meta.Mesh,
-		Version: meta.Version,
-		Spec:    string(content),
+		Name:             meta.Name,
+		Mesh:             meta.Mesh,
+		Version:          meta.Version,
+		Spec:             string(content),
+		CreationTime:     meta.CreationTime,
+		ModificationTime: meta.ModificationTime,
 	}, nil
 }
 
 func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r model.Resource) error {
 	r.SetMeta(memoryMeta{
-		Name:    s.Name,
-		Mesh:    s.Mesh,
-		Version: s.Version,
+		Name:             s.Name,
+		Mesh:             s.Mesh,
+		Version:          s.Version,
+		CreationTime:     s.CreationTime,
+		ModificationTime: s.ModificationTime,
 	})
 	return util_proto.FromJSON([]byte(s.Spec), r.GetSpec())
 }
