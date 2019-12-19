@@ -1,3 +1,3 @@
-NAME    mTLS   CA
-mesh1   on     builtin
-mesh2   off    provided
+NAME    mTLS   CA         METRICS
+mesh1   on     builtin    off
+mesh2   off    provided   prometheus

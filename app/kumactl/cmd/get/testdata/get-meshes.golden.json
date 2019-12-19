@@ -11,6 +11,12 @@
       "type": "Mesh"
     },
     {
+      "metrics": {
+        "prometheus": {
+          "port": 1234,
+          "path": "/non-standard-path"
+        }
+      },
       "mtls": {
         "ca": {
           "provided": {}

@@ -54,6 +54,12 @@ var _ = Describe("kumactl get meshes", func() {
 						},
 					},
 				},
+				Metrics: &v1alpha1.Metrics{
+					Prometheus: &v1alpha1.Metrics_Prometheus{
+						Port: 1234,
+						Path: "/non-standard-path",
+					},
+				},
 			},
 			Meta: &test_model.ResourceMeta{
 				Mesh: "mesh2",
