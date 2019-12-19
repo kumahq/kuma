@@ -23,6 +23,10 @@ func HasTransparentProxyingEnabled(pod *kube_core.Pod) bool {
 	return pod.Annotations[KumaTransparentProxyingAnnotation] == KumaTransparentProxyingEnabled
 }
 
+func HasGatewayEnabled(pod *kube_core.Pod) bool {
+	return pod.Annotations[KumaGatewayAnnotation] == KumaGatewayEnabled
+}
+
 func GetTransparentProxyingPort(pod *kube_core.Pod) uint32 {
 	port, err := strconv.ParseUint(pod.Annotations[KumaTransparentProxyingPortAnnotation], 10, 32)
 	if err != nil {

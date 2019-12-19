@@ -85,5 +85,8 @@ var _ = Describe("Injector", func() {
 		Entry("05. Pod without ServiceAccount token", testCase{
 			num: "05",
 		}),
+		Entry("06. Pod with kuma.io/gateway annotation", testCase{
+			num: "06",
+		}),
 	)
 })

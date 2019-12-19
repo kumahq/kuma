@@ -55,11 +55,19 @@ func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*m
 		}
 	}
 
-	ifaces, err := InboundInterfacesFor(pod, services)
-	if err != nil {
-		return nil, err
+	if injector_metadata.HasGatewayEnabled(pod) {
+		gateway, err := GatewayFor(pod, services)
+		if err != nil {
+			return nil, err
+		}
+		dataplane.Networking.Gateway = gateway
+	} else {
+		ifaces, err := InboundInterfacesFor(pod, services)
+		if err != nil {
+			return nil, err
+		}
+		dataplane.Networking.Inbound = ifaces
 	}
-	dataplane.Networking.Inbound = ifaces
 
 	ofaces, err := OutboundInterfacesFor(others, serviceGetter)
 	if err != nil {
@@ -68,6 +76,19 @@ func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*m
 	dataplane.Networking.Outbound = ofaces
 
 	return dataplane, nil
+}
+
+func GatewayFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
+	interfaces, err := InboundInterfacesFor(pod, services)
+	if err != nil {
+		return nil, err
+	}
+	if len(interfaces) == 0 {
+		return nil, nil // todo(jakubdyszkiewicz) should we throw an error on DP without interfaces
+	}
+	return &mesh_proto.Dataplane_Networking_Gateway{
+		Tags: interfaces[0].Tags,
+	}, nil
 }
 
 func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
