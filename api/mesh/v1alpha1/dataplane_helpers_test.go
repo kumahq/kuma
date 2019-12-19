@@ -430,7 +430,7 @@ var _ = Describe("Dataplane with gateway", func() {
 	})
 
 	Describe("MatchTags()", func() {
-		It("should match any inbound", func() {
+		It("should match gateway", func() {
 			// when
 			selector := TagSelector{
 				"service": "backend",
@@ -441,7 +441,7 @@ var _ = Describe("Dataplane with gateway", func() {
 			Expect(d.MatchTags(selector)).To(BeTrue())
 		})
 
-		It("should not match if all inbounds did not match", func() {
+		It("should not match if gateway did not match", func() {
 			// when
 			selector := TagSelector{
 				"service": "unknown",

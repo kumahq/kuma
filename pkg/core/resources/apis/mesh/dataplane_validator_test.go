@@ -131,7 +131,7 @@ var _ = Describe("Dataplane", func() {
 			validationResult: &validators.ValidationError{
 				Violations: []validators.Violation{
 					{
-						Field:   "networking.inbound",
+						Field:   "networking",
 						Message: `has to contain at least one inbound interface or gateway`,
 					},
 				},
@@ -149,8 +149,8 @@ var _ = Describe("Dataplane", func() {
 			validationResult: &validators.ValidationError{
 				Violations: []validators.Violation{
 					{
-						Field:   "networking.inbound",
-						Message: `cannot be defined both with networking.gateway`,
+						Field:   "networking",
+						Message: `inbound cannot be defined both with gateway`,
 					},
 				},
 			},

@@ -278,14 +278,12 @@ func (d *Dataplane) Tags() MultiValueTagSet {
 			tags[tag][value] = true
 		}
 	}
-	if d.GetNetworking().GetGateway() != nil {
-		for tag, value := range d.Networking.Gateway.Tags {
-			_, exists := tags[tag]
-			if !exists {
-				tags[tag] = map[string]bool{}
-			}
-			tags[tag][value] = true
+	for tag, value := range d.GetNetworking().GetGateway().GetTags() {
+		_, exists := tags[tag]
+		if !exists {
+			tags[tag] = map[string]bool{}
 		}
+		tags[tag][value] = true
 	}
 	return tags
 }

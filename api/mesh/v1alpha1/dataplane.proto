@@ -47,13 +47,11 @@ message Dataplane {
           [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
     }
 
-    // Gateway describes a service that ingress should not be proxied ex. API
-    // Gateways
+    // Gateway describes a service that ingress should not be proxied.
     message Gateway {
-      // Tags associated with an application this dataplane is deployed next to,
-      // e.g. service=web, version=1.0.
+      // Tags associated with a gateway (e.g., Kong, Contour, etc) this dataplane is deployed next to, e.g. service=gateway, env=prod.
       // `service` tag is mandatory.
-      map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
+      map<string, string> tags = 1 [ (validate.rules).map.min_pairs = 1 ];
     }
 
     // TransparentProxying describes configuration for transparent proxying.

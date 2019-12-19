@@ -1,36 +1,36 @@
 package mesh
 
 import (
-	"fmt"
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
 )
 
 func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
-	err.AddError("networking", validateNetworking(d.Spec.GetNetworking()))
+	err.Add(validateNetworking(d.Spec.GetNetworking()))
 	return err.OrNil()
 }
 
 func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
 	var err validators.ValidationError
+	path := validators.RootedAt("networking")
 	if len(networking.GetInbound()) == 0 && networking.Gateway == nil {
-		err.AddViolation("inbound", "has to contain at least one inbound interface or gateway")
+		err.AddViolationAt(path, "has to contain at least one inbound interface or gateway")
 	}
 	if len(networking.GetInbound()) > 0 && networking.Gateway != nil {
-		err.AddViolation("inbound", "cannot be defined both with networking.gateway")
+		err.AddViolationAt(path, "inbound cannot be defined both with gateway")
 	}
 	if networking.Gateway != nil {
 		result := validateGateway(networking.Gateway)
-		err.AddError("gateway", result)
+		err.AddErrorAt(path.Field("gateway"), result)
 	}
 	for i, inbound := range networking.GetInbound() {
 		result := validateInbound(inbound)
-		err.AddError(fmt.Sprintf("inbound[%d]", i), result)
+		err.AddErrorAt(path.Field("inbound").Index(i), result)
 	}
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)
-		err.AddError(fmt.Sprintf("outbound[%d]", i), result)
+		err.AddErrorAt(path.Field("outbound").Index(i), result)
 	}
 	return err
 }
@@ -41,11 +41,11 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound) validator
 		result.AddViolation("interface", "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT ex. 192.168.0.100:9090:8080")
 	}
 	if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
-		result.AddViolation(fmt.Sprintf(`tags["%s"]`, mesh_proto.ServiceTag), `tag has to exist`)
+		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
 	}
 	for name, value := range inbound.Tags {
 		if value == "" {
-			result.AddViolation(fmt.Sprintf(`tags["%s"]`, name), `tag value cannot be empty`)
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value cannot be empty`)
 		}
 	}
 	return result
@@ -65,11 +65,11 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validators.ValidationError {
 	var result validators.ValidationError
 	if _, exist := gateway.Tags[mesh_proto.ServiceTag]; !exist {
-		result.AddViolation(fmt.Sprintf(`tags["%s"]`, mesh_proto.ServiceTag), `tag has to exist`)
+		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
 	}
 	for name, value := range gateway.Tags {
 		if value == "" {
-			result.AddViolation(fmt.Sprintf(`tags["%s"]`, name), `tag value cannot be empty`)
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value cannot be empty`)
 		}
 	}
 	return result
