@@ -5,7 +5,11 @@ items:
         builtin: {}
     name: mesh1
     type: Mesh
-  - mtls:
+  - metrics:
+      prometheus:
+        path: /non-standard-path
+        port: 1234
+    mtls:
       ca:
         provided: {}
     name: mesh2
