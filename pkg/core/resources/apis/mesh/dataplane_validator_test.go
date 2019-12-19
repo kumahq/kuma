@@ -42,13 +42,44 @@ var _ = Describe("Dataplane", func() {
 		}
 	})
 
-	It("should pass validation", func() {
-		// when
-		err := validDataplane.Validate()
+	DescribeTable("should pass validation",
+		func(dataplaneFn func() core_mesh.DataplaneResource) {
+			// given
+			dataplane := dataplaneFn()
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-	})
+			// when
+			err := dataplane.Validate()
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		},
+		Entry("dataplane with inbounds", func() core_mesh.DataplaneResource {
+			return validDataplane
+		}),
+		Entry("dataplane with gateway", func() core_mesh.DataplaneResource {
+			return core_mesh.DataplaneResource{
+				Meta: &model.ResourceMeta{
+					Name: "dp-1",
+					Mesh: "mesh-1",
+				},
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+							Tags: map[string]string{
+								"service": "gateway",
+							},
+						},
+						Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+							{
+								Interface: ":3333",
+								Service:   "redis",
+							},
+						},
+					},
+				},
+			}
+		}),
+	)
 
 	type testCase struct {
 		dataplane        func() core_mesh.DataplaneResource
@@ -92,7 +123,7 @@ var _ = Describe("Dataplane", func() {
 				},
 			},
 		}),
-		Entry("not enough inbound interfaces", testCase{
+		Entry("not enough inbound interfaces and no gateway", testCase{
 			dataplane: func() core_mesh.DataplaneResource {
 				validDataplane.Spec.Networking.Inbound = []*mesh_proto.Dataplane_Networking_Inbound{}
 				return validDataplane
@@ -101,7 +132,25 @@ var _ = Describe("Dataplane", func() {
 				Violations: []validators.Violation{
 					{
 						Field:   "networking.inbound",
-						Message: `has to contain at least one inbound interface`,
+						Message: `has to contain at least one inbound interface or gateway`,
+					},
+				},
+			},
+		}),
+		Entry("both inbounds and gateway are defined", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{
+						"service": "gateway",
+					},
+				}
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   "networking.inbound",
+						Message: `cannot be defined both with networking.gateway`,
 					},
 				},
 			},
@@ -129,6 +178,43 @@ var _ = Describe("Dataplane", func() {
 				Violations: []validators.Violation{
 					{
 						Field:   `networking.inbound[0].tags["version"]`,
+						Message: `tag value cannot be empty`,
+					},
+				},
+			},
+		}),
+		Entry("gateway: empty service tag", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound = nil
+				validDataplane.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{},
+				}
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.gateway.tags["service"]`,
+						Message: `tag has to exist`,
+					},
+				},
+			},
+		}),
+		Entry("gateway: empty tag", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound = nil
+				validDataplane.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{
+						"service": "gateway",
+						"version": "",
+					},
+				}
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.gateway.tags["version"]`,
 						Message: `tag value cannot be empty`,
 					},
 				},

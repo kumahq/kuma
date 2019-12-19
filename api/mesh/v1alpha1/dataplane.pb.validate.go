@@ -155,6 +155,16 @@ func (m *Dataplane_Networking) Validate() error {
 
 	}
 
+	if v, ok := interface{}(m.GetGateway()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return Dataplane_NetworkingValidationError{
+				field:  "Gateway",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if v, ok := interface{}(m.GetTransparentProxying()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return Dataplane_NetworkingValidationError{
@@ -425,6 +435,81 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Dataplane_Networking_OutboundValidationError{}
+
+// Validate checks the field values on Dataplane_Networking_Gateway with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *Dataplane_Networking_Gateway) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if len(m.GetTags()) < 1 {
+		return Dataplane_Networking_GatewayValidationError{
+			field:  "Tags",
+			reason: "value must contain at least 1 pair(s)",
+		}
+	}
+
+	return nil
+}
+
+// Dataplane_Networking_GatewayValidationError is the validation error returned
+// by Dataplane_Networking_Gateway.Validate if the designated constraints
+// aren't met.
+type Dataplane_Networking_GatewayValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Dataplane_Networking_GatewayValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Dataplane_Networking_GatewayValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Dataplane_Networking_GatewayValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Dataplane_Networking_GatewayValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Dataplane_Networking_GatewayValidationError) ErrorName() string {
+	return "Dataplane_Networking_GatewayValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Dataplane_Networking_GatewayValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDataplane_Networking_Gateway.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Dataplane_Networking_GatewayValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Dataplane_Networking_GatewayValidationError{}
 
 // Validate checks the field values on Dataplane_Networking_TransparentProxying
 // with the rules defined in the proto definition for this message. If any

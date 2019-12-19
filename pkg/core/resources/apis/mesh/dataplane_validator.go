@@ -14,8 +14,15 @@ func (d *DataplaneResource) Validate() error {
 
 func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
 	var err validators.ValidationError
-	if len(networking.GetInbound()) == 0 {
-		err.AddViolation("inbound", "has to contain at least one inbound interface")
+	if len(networking.GetInbound()) == 0 && networking.Gateway == nil {
+		err.AddViolation("inbound", "has to contain at least one inbound interface or gateway")
+	}
+	if len(networking.GetInbound()) > 0 && networking.Gateway != nil {
+		err.AddViolation("inbound", "cannot be defined both with networking.gateway")
+	}
+	if networking.Gateway != nil {
+		result := validateGateway(networking.Gateway)
+		err.AddError("gateway", result)
 	}
 	for i, inbound := range networking.GetInbound() {
 		result := validateInbound(inbound)
@@ -51,6 +58,19 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 	}
 	if outbound.Service == "" {
 		result.AddViolation("service", "cannot be empty")
+	}
+	return result
+}
+
+func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validators.ValidationError {
+	var result validators.ValidationError
+	if _, exist := gateway.Tags[mesh_proto.ServiceTag]; !exist {
+		result.AddViolation(fmt.Sprintf(`tags["%s"]`, mesh_proto.ServiceTag), `tag has to exist`)
+	}
+	for name, value := range gateway.Tags {
+		if value == "" {
+			result.AddViolation(fmt.Sprintf(`tags["%s"]`, name), `tag value cannot be empty`)
+		}
 	}
 	return result
 }

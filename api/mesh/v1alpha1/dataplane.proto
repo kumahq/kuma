@@ -47,6 +47,15 @@ message Dataplane {
           [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
     }
 
+    // Gateway describes a service that ingress should not be proxied ex. API
+    // Gateways
+    message Gateway {
+      // Tags associated with an application this dataplane is deployed next to,
+      // e.g. service=web, version=1.0.
+      // `service` tag is mandatory.
+      map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
+    }
+
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
 
@@ -60,8 +69,11 @@ message Dataplane {
     // Outbound describes a list of outbound interfaces of the dataplane.
     repeated Outbound outbound = 2;
 
+    // Gateway describes configuration of gateway of the dataplane.
+    Gateway gateway = 3;
+
     // TransparentProxying describes configuration for transparent proxying.
-    TransparentProxying transparent_proxying = 3;
+    TransparentProxying transparent_proxying = 4;
   }
 
   // Networking describes inbound and outbound interfaces of the dataplane.
