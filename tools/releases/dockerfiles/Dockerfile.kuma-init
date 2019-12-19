@@ -2,5 +2,5 @@ FROM docker.io/istio/proxy_init:1.1.2
 
 RUN mkdir /kuma
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
-COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
+COPY $KUMA_ROOT/tools/releases/templates/NOTICE-kuma-init /kuma/NOTICE
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
