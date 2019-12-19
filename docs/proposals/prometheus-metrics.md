@@ -96,8 +96,8 @@ spec:
     metadata:
       ...
       annotations:
-        kuma.io/prometheus-port: "1234"               # override Mesh-wide default 'port'
-        kuma.io/prometheus-path: "/non-standard-path" # override Mesh-wide default 'path'
+        prometheus.metrics.kuma.io/port: "1234"               # override Mesh-wide default 'port'
+        prometheus.metrics.kuma.io/path: "/non-standard-path" # override Mesh-wide default 'path'
     spec:
       containers:
       - name: kuma-tcp-echo
@@ -106,11 +106,6 @@ spec:
         ports:
         - containerPort: 8000
 ```
-
-Alternative naming schemes could look like:
-
-* `metrics.kuma.io/prometheus-port`
-* `prometheus.metrics.kuma.io/port`
 
 ## Implementation Notes
 
