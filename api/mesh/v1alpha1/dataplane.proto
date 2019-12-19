@@ -4,6 +4,8 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "v1alpha1";
 
+import "mesh/v1alpha1/metrics.proto";
+
 import "validate/validate.proto";
 
 // Dataplane defines configuration of a side-car proxy.
@@ -64,4 +66,11 @@ message Dataplane {
 
   // Networking describes inbound and outbound interfaces of the dataplane.
   Networking networking = 1;
+
+  // Configuration for metrics that should be collected and exposed by the
+  // dataplane.
+  //
+  // Settings defined here will override their respective defaults
+  // defined at a Mesh level.
+  Metrics metrics = 2;
 }

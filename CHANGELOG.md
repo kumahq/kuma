@@ -4,10 +4,12 @@
 
 Changes:
 
-* chore: update Envoy to v1.12.2
-  [#493](https://github.com/Kong/kuma/pull/493)
+* feature: add proto definitions for metrics that should be collected and exposed by dataplanes
+  [#500](https://github.com/Kong/kuma/pull/500)
 * feature: display CA type in kumactl get meshes
   [#494](https://github.com/Kong/kuma/pull/494)
+* chore: update Envoy to v1.12.2
+  [#493](https://github.com/Kong/kuma/pull/493)
 
 ## [0.3.1]
 

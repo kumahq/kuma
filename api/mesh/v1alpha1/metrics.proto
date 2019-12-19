@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+// Metrics defines configuration for metrics that should be collected and
+// exposed by dataplanes.
+message Metrics {
+  // Prometheus defines Prometheus-specific configuration for metrics that
+  // should be collected and exposed by dataplanes.
+  message Prometheus {
+
+    // Port on which a dataplane should expose HTTP endpoint with Prometheus
+    // metrics.
+    uint32 port = 1;
+
+    // Path on which a dataplane should expose HTTP endpoint with Prometheus
+    // metrics.
+    string path = 2;
+  }
+
+  // Prometheus-specific configuration for metrics that should be collected and
+  // exposed by dataplanes.
+  Prometheus prometheus = 1;
+}
