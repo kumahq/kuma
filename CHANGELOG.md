@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: automatically set default values for Prometheus settings in the Mesh resource
+  [#501](https://github.com/Kong/kuma/pull/501)
 * feature: add proto definitions for metrics that should be collected and exposed by dataplanes
   [#500](https://github.com/Kong/kuma/pull/500)
 * feature: display CA type in kumactl get meshes
