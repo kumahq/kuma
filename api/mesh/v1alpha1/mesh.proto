@@ -4,6 +4,8 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "v1alpha1";
 
+import "mesh/v1alpha1/metrics.proto";
+
 // Mesh defines configuration of a single mesh.
 message Mesh {
 
@@ -29,6 +31,14 @@ message Mesh {
   // Logging settings.
   // +optional
   Logging logging = 3;
+
+  // Configuration for metrics collected and exposed by dataplanes.
+  //
+  // Settings defined here become defaults for every dataplane in a given Mesh.
+  // Additionally, it is also possible to further customize this configuration
+  // for each dataplane individually using Dataplane resource.
+  // +optional
+  Metrics metrics = 4;
 }
 
 // CertificateAuthority defines configuration of a CA.
