@@ -2,6 +2,11 @@ package mesh
 
 import (
 	"context"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/ca/builtin"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
@@ -16,8 +21,8 @@ import (
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_resources "github.com/Kong/kuma/pkg/test/resources"
 	"github.com/Kong/kuma/pkg/tls"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Mesh Manager", func() {
@@ -64,6 +69,100 @@ var _ = Describe("Mesh Manager", func() {
 			certs, err := builtinCaManager.GetRootCerts(context.Background(), meshName)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(certs).To(HaveLen(1))
+		})
+
+		Describe("should set default values for Prometheus settings", func() {
+
+			type testCase struct {
+				input    string
+				expected string
+			}
+
+			DescribeTable("should apply defaults on a target MeshResource",
+				func(given testCase) {
+					// given
+					key := model.ResourceKey{Mesh: "demo", Name: "demo"}
+					mesh := core_mesh.MeshResource{}
+
+					// when
+					err := util_proto.FromYAML([]byte(given.input), &mesh.Spec)
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					// when
+					err = resManager.Create(context.Background(), &mesh, store.CreateBy(key))
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					// when
+					actual, err := util_proto.ToYAML(&mesh.Spec)
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					Expect(actual).To(MatchYAML(given.expected))
+
+					By("fetching a fresh Mesh object")
+
+					new := core_mesh.MeshResource{}
+
+					// when
+					err = resManager.Get(context.Background(), &new, store.GetBy(key))
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					// when
+					actual, err = util_proto.ToYAML(&new.Spec)
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					Expect(actual).To(MatchYAML(given.expected))
+				},
+				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are not set", testCase{
+					input: `
+                    metrics:
+                      prometheus: {}
+`,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+                    metrics:
+                      prometheus:
+                        port: 5670
+                        path: /metrics
+`,
+				}),
+				Entry("when `metrics.prometheus.port` is not set", testCase{
+					input: `
+                    metrics:
+                      prometheus:
+                        path: /non-standard-path
+`,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+                    metrics:
+                      prometheus:
+                        port: 5670
+                        path: /non-standard-path
+`,
+				}),
+				Entry("when `metrics.prometheus.path` is not set", testCase{
+					input: `
+                    metrics:
+                      prometheus:
+                        port: 1234
+`,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+                    metrics:
+                      prometheus:
+                        port: 1234
+                        path: /metrics
+`,
+				}),
+			)
 		})
 
 		Context("Mesh with Provided CA", func() {
@@ -235,6 +334,198 @@ var _ = Describe("Mesh Manager", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		Describe("should set default values for Prometheus settings", func() {
+
+			type testCase struct {
+				initial  string
+				updated  string
+				expected string
+			}
+
+			DescribeTable("should apply defaults on a target MeshResource",
+				func(given testCase) {
+					// given
+					key := model.ResourceKey{Mesh: "demo", Name: "demo"}
+					mesh := core_mesh.MeshResource{}
+
+					// when
+					err := util_proto.FromYAML([]byte(given.initial), &mesh.Spec)
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					By("creating a new Mesh")
+					// when
+					err = resManager.Create(context.Background(), &mesh, store.CreateBy(key))
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					By("changing Prometheus settings")
+					// when
+					mesh.Spec = mesh_proto.Mesh{}
+					err = util_proto.FromYAML([]byte(given.updated), &mesh.Spec)
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					By("updating the Mesh with new Prometheus settings")
+					// when
+					err = resManager.Update(context.Background(), &mesh)
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					// when
+					actual, err := util_proto.ToYAML(&mesh.Spec)
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					Expect(actual).To(MatchYAML(given.expected))
+
+					By("fetching a fresh Mesh object")
+
+					new := core_mesh.MeshResource{}
+
+					// when
+					err = resManager.Get(context.Background(), &new, store.GetBy(key))
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					// when
+					actual, err = util_proto.ToYAML(&new.Spec)
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					Expect(actual).To(MatchYAML(given.expected))
+				},
+				Entry("when `metrics.prometheus` is unset", testCase{
+					initial: `
+                    metrics:
+                      prometheus: {}
+`,
+					updated: `
+                    metrics: {}
+`,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+                    metrics: {}
+`,
+				}),
+				Entry("when `metrics` is unset", testCase{
+					initial: `
+                    metrics:
+                      prometheus: {}
+`,
+					updated: ``,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+`,
+				}),
+				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are unset", testCase{
+					initial: `
+                    metrics:
+                      prometheus: {}
+`,
+					updated: `
+                    metrics:
+                      prometheus: {}
+`,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+                    metrics:
+                      prometheus:
+                        port: 5670
+                        path: /metrics
+`,
+				}),
+				Entry("when `metrics.prometheus.port` is unset", testCase{
+					initial: `
+                    metrics:
+                      prometheus: {}
+`,
+					updated: `
+                    metrics:
+                      prometheus:
+                        path: /non-standard-path
+`,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+                    metrics:
+                      prometheus:
+                        port: 5670
+                        path: /non-standard-path
+`,
+				}),
+				Entry("when `metrics.prometheus.path` is unset", testCase{
+					initial: `
+                    metrics:
+                      prometheus: {}
+`,
+					updated: `
+                    metrics:
+                      prometheus:
+                        port: 1234
+`,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+                    metrics:
+                      prometheus:
+                        port: 1234
+                        path: /metrics
+`,
+				}),
+				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are changed", testCase{
+					initial: `
+                    metrics:
+                      prometheus: {}
+`,
+					updated: `
+                    metrics:
+                      prometheus:
+                        port: 1234
+                        path: /non-standard-path
+`,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+                    metrics:
+                      prometheus:
+                        port: 1234
+                        path: /non-standard-path
+`,
+				}),
+				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` remain unchanged", testCase{
+					initial: `
+                    metrics:
+                      prometheus:
+                        port: 1234
+                        path: /non-standard-path
+`,
+					updated: `
+                    metrics:
+                      prometheus:
+                        port: 1234
+                        path: /non-standard-path
+`,
+					expected: `
+                    mtls:
+                      ca:
+                        builtin: {}
+                    metrics:
+                      prometheus:
+                        port: 1234
+                        path: /non-standard-path
+`,
+				}),
+			)
 		})
 	})
 
