@@ -1,0 +1,6 @@
+type: Mesh
+name: default
+metrics:
+  prometheus:
+    port: 1234
+    path: /non-standard-path
