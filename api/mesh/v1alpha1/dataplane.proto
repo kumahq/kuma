@@ -49,7 +49,8 @@ message Dataplane {
 
     // Gateway describes a service that ingress should not be proxied.
     message Gateway {
-      // Tags associated with a gateway (e.g., Kong, Contour, etc) this dataplane is deployed next to, e.g. service=gateway, env=prod.
+      // Tags associated with a gateway (e.g., Kong, Contour, etc) this
+      // dataplane is deployed next to, e.g. service=gateway, env=prod.
       // `service` tag is mandatory.
       map<string, string> tags = 1 [ (validate.rules).map.min_pairs = 1 ];
     }

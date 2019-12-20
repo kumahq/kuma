@@ -84,8 +84,7 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 				Mesh: "demo",
 				Name: "dp-1",
 			},
-			Spec: mesh_proto.Dataplane{
-			},
+			Spec: mesh_proto.Dataplane{},
 		}
 
 		// when
