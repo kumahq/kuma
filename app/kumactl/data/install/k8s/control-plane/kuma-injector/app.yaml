@@ -93,7 +93,7 @@ spec:
         - name: KUMA_INJECTOR_SIDECAR_CONTAINER_IMAGE
           value: {{ .DataplaneImage }}:{{ .ControlPlaneVersion }}
         - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-          value: {{ .DataplaneInitImage }}:{{ .DataplaneInitVersion }}
+          value: {{ .DataplaneInitImage }}:{{ .ControlPlaneVersion }}
         args:
         - run
         - --log-level=info

@@ -3550,7 +3550,7 @@ spec:
         - name: KUMA_INJECTOR_SIDECAR_CONTAINER_IMAGE
           value: kuma-ci/kuma-dp:greatest
         - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-          value: kuma-ci/kuma-init:dev
+          value: kuma-ci/kuma-init:greatest
         args:
         - run
         - --log-level=info

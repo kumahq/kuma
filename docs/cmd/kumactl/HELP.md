@@ -224,8 +224,7 @@ Flags:
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
       --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
       --dataplane-image string              image of the Kuma Dataplane component (default "kong-docker-kuma-docker.bintray.io/kuma-dp")
-      --dataplane-init-image string         init image of the Kuma Dataplane component (default "docker.io/istio/proxy_init")
-      --dataplane-init-version string       version of the init image of the Kuma Dataplane component (default "1.1.2")
+      --dataplane-init-image string         init image of the Kuma Dataplane component (default "kong-docker-kuma-docker.bintray.io/kuma-init")
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")

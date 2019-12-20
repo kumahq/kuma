@@ -122,7 +122,6 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--injector-tls-key", "InjectorKey",
 				"--dataplane-image", "kuma-ci/kuma-dp",
 				"--dataplane-init-image", "kuma-ci/kuma-init",
-				"--dataplane-init-version", "dev",
 				"--sds-tls-cert", "SdsCert",
 				"--sds-tls-key", "SdsKey",
 			},

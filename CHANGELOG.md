@@ -10,10 +10,16 @@ Changes:
   [#501](https://github.com/Kong/kuma/pull/501)
 * feature: add proto definitions for metrics that should be collected and exposed by dataplanes
   [#500](https://github.com/Kong/kuma/pull/500)
+* chore: encapsulate proxy init into kuma-init container
+  [#495](https://github.com/Kong/kuma/pull/495)
 * feature: display CA type in kumactl get meshes
   [#494](https://github.com/Kong/kuma/pull/494)
 * chore: update Envoy to v1.12.2
   [#493](https://github.com/Kong/kuma/pull/493)
+
+Breaking changes:
+
+* ⚠️ An `--dataplane-init-version` argument was removed. Init container was changed to `kuma-init` which version is in sync with the rest of the Kuma containers.
 
 ## [0.3.1]
 

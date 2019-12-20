@@ -39,7 +39,6 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		InjectorTlsKey          string
 		DataplaneImage          string
 		DataplaneInitImage      string
-		DataplaneInitVersion    string
 		SdsTlsCert              string
 		SdsTlsKey               string
 	}{
@@ -56,8 +55,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		InjectorTlsCert:         "",
 		InjectorTlsKey:          "",
 		DataplaneImage:          "kong-docker-kuma-docker.bintray.io/kuma-dp",
-		DataplaneInitImage:      "docker.io/istio/proxy_init",
-		DataplaneInitVersion:    "1.1.2",
+		DataplaneInitImage:      "kong-docker-kuma-docker.bintray.io/kuma-init",
 		SdsTlsCert:              "",
 		SdsTlsKey:               "",
 	}
@@ -147,7 +145,6 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.InjectorTlsKey, "injector-tls-key", args.InjectorTlsKey, "TLS key for the mutating web hook implemented by the Kuma Injector component")
 	cmd.Flags().StringVar(&args.DataplaneImage, "dataplane-image", args.DataplaneImage, "image of the Kuma Dataplane component")
 	cmd.Flags().StringVar(&args.DataplaneInitImage, "dataplane-init-image", args.DataplaneInitImage, "init image of the Kuma Dataplane component")
-	cmd.Flags().StringVar(&args.DataplaneInitVersion, "dataplane-init-version", args.DataplaneInitVersion, "version of the init image of the Kuma Dataplane component")
 	cmd.Flags().StringVar(&args.SdsTlsCert, "sds-tls-cert", args.SdsTlsCert, "TLS certificate for the SDS server")
 	cmd.Flags().StringVar(&args.SdsTlsKey, "sds-tls-key", args.SdsTlsKey, "TLS key for the SDS server")
 	return cmd

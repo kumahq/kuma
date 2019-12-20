@@ -3549,7 +3549,7 @@ spec:
         - name: KUMA_INJECTOR_SIDECAR_CONTAINER_IMAGE
           value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
         - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-          value: docker.io/istio/proxy_init:1.1.2
+          value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
         args:
         - run
         - --log-level=info
