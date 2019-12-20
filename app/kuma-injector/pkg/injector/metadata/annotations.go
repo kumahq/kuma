@@ -17,4 +17,7 @@ const (
 	KumaTransparentProxyingEnabled    = "enabled"
 
 	KumaTransparentProxyingPortAnnotation = "kuma.io/transparent-proxying-port"
+
+	KumaGatewayAnnotation = "kuma.io/gateway"
+	KumaGatewayEnabled    = "enabled"
 )

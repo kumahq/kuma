@@ -63,6 +63,39 @@ var _ = Describe("PodToDataplane(..)", func() {
 		},
 	}
 
+	gatewayPod := &kube_core.Pod{
+		ObjectMeta: kube_meta.ObjectMeta{
+			Namespace: "demo",
+			Name:      "example",
+			Labels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			Annotations: map[string]string{
+				"kuma.io/gateway": "enabled",
+			},
+		},
+		Spec: kube_core.PodSpec{
+			Containers: []kube_core.Container{
+				{
+					Ports: []kube_core.ContainerPort{
+						{ContainerPort: 8080},
+						{ContainerPort: 8443},
+					},
+				},
+				{
+					Ports: []kube_core.ContainerPort{
+						{ContainerPort: 7070},
+						{ContainerPort: 6060, Name: "metrics"},
+					},
+				},
+			},
+		},
+		Status: kube_core.PodStatus{
+			PodIP: "192.168.0.1",
+		},
+	}
+
 	ParseDataplanes := func(values []string) ([]*mesh_k8s.Dataplane, error) {
 		dataplanes := make([]*mesh_k8s.Dataplane, 0, len(values))
 		for _, value := range values {
@@ -330,6 +363,60 @@ var _ = Describe("PodToDataplane(..)", func() {
                   service: test-app.playground.svc:443
                 - interface: 10.108.144.24:80
                   service: test-app.playground.svc:80
+`,
+		}),
+		Entry("pod with gateway annotation and 1 service", testCase{
+			pod: gatewayPod,
+			services: []*kube_core.Service{
+				{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Namespace: "demo",
+						Name:      "example",
+					},
+					Spec: kube_core.ServiceSpec{
+						Ports: []kube_core.ServicePort{
+							{
+								Protocol: "", // defaults to TCP
+								Port:     80,
+								TargetPort: kube_intstr.IntOrString{
+									Type:   kube_intstr.Int,
+									IntVal: 8080,
+								},
+							},
+							{
+								Protocol: "TCP",
+								Port:     443,
+								TargetPort: kube_intstr.IntOrString{
+									Type:   kube_intstr.Int,
+									IntVal: 8443,
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `
+            mesh: default
+            metadata:
+              creationTimestamp: null
+            spec:
+              networking:
+                gateway:
+                  tags:
+                    app: example
+                    service: example.demo.svc:80
+                    version: "0.1"
+`,
+		}),
+		Entry("pod with gateway annotation and 0 services", testCase{
+			pod:      gatewayPod,
+			services: nil,
+			expected: `
+            mesh: default
+            metadata:
+              creationTimestamp: null
+            spec:
+              networking: {}
 `,
 		}),
 	)

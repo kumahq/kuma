@@ -37,12 +37,6 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	}
 	pod.Spec.Containers = append(pod.Spec.Containers, i.NewSidecarContainer(pod))
 
-	// init container
-	if pod.Spec.InitContainers == nil {
-		pod.Spec.InitContainers = []kube_core.Container{}
-	}
-	pod.Spec.InitContainers = append(pod.Spec.InitContainers, i.NewInitContainer())
-
 	// annotations
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
@@ -50,6 +44,12 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	for key, value := range i.NewAnnotations(pod) {
 		pod.Annotations[key] = value
 	}
+
+	// init container
+	if pod.Spec.InitContainers == nil {
+		pod.Spec.InitContainers = []kube_core.Container{}
+	}
+	pod.Spec.InitContainers = append(pod.Spec.InitContainers, i.NewInitContainer(pod))
 	return nil
 }
 
@@ -194,7 +194,11 @@ func (i *KumaInjector) FindServiceAccountToken(pod *kube_core.Pod) *kube_core.Vo
 	return nil
 }
 
-func (i *KumaInjector) NewInitContainer() kube_core.Container {
+func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container {
+	inboundPortsToIntercept := "*"
+	if pod.GetAnnotations()[metadata.KumaGatewayAnnotation] == metadata.KumaGatewayEnabled {
+		inboundPortsToIntercept = ""
+	}
 	return kube_core.Container{
 		Name:            KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
@@ -211,7 +215,7 @@ func (i *KumaInjector) NewInitContainer() kube_core.Container {
 			"-i",
 			"*",
 			"-b",
-			"*",
+			inboundPortsToIntercept,
 		},
 		SecurityContext: &kube_core.SecurityContext{
 			Capabilities: &kube_core.Capabilities{
