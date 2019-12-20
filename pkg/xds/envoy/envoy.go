@@ -317,14 +317,14 @@ func CreateCommonTlsContext(ctx xds_context.Context, metadata *core_xds.Dataplan
 
 func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) *envoy_auth.SdsSecretConfig {
 	withCallCredentials := func(grpc *envoy_core.GrpcService_GoogleGrpc) *envoy_core.GrpcService_GoogleGrpc {
-		if metadata.DataplaneTokenPath == "" {
+		if metadata.GetDataplaneTokenPath() == "" {
 			return grpc
 		}
 
 		config := &envoy_grpc_credential.FileBasedMetadataConfig{
 			SecretData: &envoy_core.DataSource{
 				Specifier: &envoy_core.DataSource_Filename{
-					Filename: metadata.DataplaneTokenPath,
+					Filename: metadata.GetDataplaneTokenPath(),
 				},
 			},
 		}

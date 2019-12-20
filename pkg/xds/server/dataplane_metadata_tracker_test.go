@@ -41,7 +41,7 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		metadata := tracker.Metadata(streamId)
 
 		// then
-		Expect(metadata.DataplaneTokenPath).To(Equal("/tmp/token"))
+		Expect(metadata.GetDataplaneTokenPath()).To(Equal("/tmp/token"))
 
 		// when
 		tracker.OnStreamClosed(streamId)
@@ -68,6 +68,6 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		metadata := tracker.Metadata(streamId)
 
 		// then
-		Expect(metadata.DataplaneTokenPath).To(Equal("/tmp/token"))
+		Expect(metadata.GetDataplaneTokenPath()).To(Equal("/tmp/token"))
 	})
 })
