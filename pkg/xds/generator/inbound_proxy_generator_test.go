@@ -1,9 +1,10 @@
 package generator_test
 
 import (
-	"github.com/Kong/kuma/pkg/core/permissions"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/Kong/kuma/pkg/core/permissions"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -36,7 +37,13 @@ var _ = Describe("InboundProxyGenerator", func() {
 					SdsTlsCert:  []byte("12345"),
 				},
 				Mesh: xds_context.MeshContext{
-					TlsEnabled: true,
+					Resource: &mesh_core.MeshResource{
+						Spec: mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{
+								Enabled: true,
+							},
+						},
+					},
 				},
 			}
 

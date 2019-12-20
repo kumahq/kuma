@@ -168,7 +168,7 @@ var _ = Describe("Envoy", func() {
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: false,
+						Resource: &mesh_core.MeshResource{},
 					},
 				},
 				metadata: xds.DataplaneMetadata{},
@@ -188,7 +188,13 @@ var _ = Describe("Envoy", func() {
 						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: true,
+						Resource: &mesh_core.MeshResource{
+							Spec: mesh_proto.Mesh{
+								Mtls: &mesh_proto.Mesh_Mtls{
+									Enabled: true,
+								},
+							},
+						},
 					},
 				},
 				metadata: xds.DataplaneMetadata{},
@@ -236,7 +242,13 @@ var _ = Describe("Envoy", func() {
 						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: true,
+						Resource: &mesh_core.MeshResource{
+							Spec: mesh_proto.Mesh{
+								Mtls: &mesh_proto.Mesh_Mtls{
+									Enabled: true,
+								},
+							},
+						},
 					},
 				},
 				metadata: xds.DataplaneMetadata{
@@ -550,7 +562,7 @@ var _ = Describe("Envoy", func() {
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: false,
+						Resource: &mesh_core.MeshResource{},
 					},
 				},
 				virtual: false,
@@ -573,7 +585,7 @@ var _ = Describe("Envoy", func() {
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: false,
+						Resource: &mesh_core.MeshResource{},
 					},
 				},
 				virtual: true,
@@ -601,7 +613,13 @@ var _ = Describe("Envoy", func() {
 						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: true,
+						Resource: &mesh_core.MeshResource{
+							Spec: mesh_proto.Mesh{
+								Mtls: &mesh_proto.Mesh_Mtls{
+									Enabled: true,
+								},
+							},
+						},
 					},
 				},
 				virtual: false,
@@ -669,7 +687,13 @@ var _ = Describe("Envoy", func() {
 						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: true,
+						Resource: &mesh_core.MeshResource{
+							Spec: mesh_proto.Mesh{
+								Mtls: &mesh_proto.Mesh_Mtls{
+									Enabled: true,
+								},
+							},
+						},
 					},
 				},
 				virtual: false,
@@ -809,7 +833,7 @@ var _ = Describe("Envoy", func() {
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: false,
+						Resource: &mesh_core.MeshResource{},
 					},
 				},
 				virtual:  false,
@@ -833,7 +857,7 @@ var _ = Describe("Envoy", func() {
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: false,
+						Resource: &mesh_core.MeshResource{},
 					},
 				},
 				virtual:  true,
@@ -862,7 +886,13 @@ var _ = Describe("Envoy", func() {
 						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: true,
+						Resource: &mesh_core.MeshResource{
+							Spec: mesh_proto.Mesh{
+								Mtls: &mesh_proto.Mesh_Mtls{
+									Enabled: true,
+								},
+							},
+						},
 					},
 				},
 				virtual:  false,
@@ -889,7 +919,13 @@ var _ = Describe("Envoy", func() {
 						SdsTlsCert:  []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: true,
+						Resource: &mesh_core.MeshResource{
+							Spec: mesh_proto.Mesh{
+								Mtls: &mesh_proto.Mesh_Mtls{
+									Enabled: true,
+								},
+							},
+						},
 					},
 				},
 				virtual:  false,
@@ -913,7 +949,7 @@ var _ = Describe("Envoy", func() {
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: false,
+						Resource: &mesh_core.MeshResource{},
 					},
 				},
 				clusters: singleCluster,
@@ -951,7 +987,7 @@ var _ = Describe("Envoy", func() {
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: false,
+						Resource: &mesh_core.MeshResource{},
 					},
 				},
 				clusters: singleCluster,
@@ -992,7 +1028,7 @@ var _ = Describe("Envoy", func() {
 				ctx: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: false,
+						Resource: &mesh_core.MeshResource{},
 					},
 				},
 				virtual: false,
