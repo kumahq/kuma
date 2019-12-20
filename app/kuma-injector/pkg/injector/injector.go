@@ -37,11 +37,6 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	}
 	pod.Spec.Containers = append(pod.Spec.Containers, i.NewSidecarContainer(pod))
 
-	// init container
-	if pod.Spec.InitContainers == nil {
-		pod.Spec.InitContainers = []kube_core.Container{}
-	}
-
 	// annotations
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
@@ -50,6 +45,10 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		pod.Annotations[key] = value
 	}
 
+	// init container
+	if pod.Spec.InitContainers == nil {
+		pod.Spec.InitContainers = []kube_core.Container{}
+	}
 	pod.Spec.InitContainers = append(pod.Spec.InitContainers, i.NewInitContainer(pod))
 	return nil
 }
