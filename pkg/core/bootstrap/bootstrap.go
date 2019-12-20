@@ -194,8 +194,7 @@ func initializeDiscovery(cfg kuma_cp.Config, builder *core_runtime.Builder) erro
 		pluginName = core_plugins.Kubernetes
 		pluginConfig = nil
 	case config_core.UniversalEnvironment:
-		pluginName = core_plugins.Universal
-		pluginConfig = cfg.Discovery.Universal
+		return nil
 	default:
 		return errors.Errorf("unknown environment type %s", cfg.Environment)
 	}
