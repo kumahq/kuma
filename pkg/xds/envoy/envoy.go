@@ -21,7 +21,9 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -274,6 +276,71 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 		filter := createRbacFilter(listenerName, permissions)
 		// RBAC filter should be first in chain
 		listener.FilterChains[0].Filters = append([]*envoy_listener.Filter{&filter}, listener.FilterChains[0].Filters...)
+	}
+
+	if virtual {
+		// TODO(yskopets): What is the up-to-date alternative ?
+		listener.DeprecatedV1 = &v2.Listener_DeprecatedV1{
+			BindToPort: &wrappers.BoolValue{Value: false},
+		}
+	}
+	return listener
+}
+
+func CreatePrometheusListener(ctx xds_context.Context, listenerName string, address string, port uint32, path string, clusterName string, virtual bool, metadata *core_xds.DataplaneMetadata) *v2.Listener {
+	config := &envoy_hcm.HttpConnectionManager{
+		StatPrefix: clusterName,
+		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
+		HttpFilters: []*envoy_hcm.HttpFilter{{
+			Name: wellknown.Router,
+		}},
+		RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
+			RouteConfig: &v2.RouteConfiguration{
+				VirtualHosts: []*envoy_route.VirtualHost{{
+					Name:    "envoy_admin",
+					Domains: []string{"*"},
+					Routes: []*envoy_route.Route{{
+						Match: &envoy_route.RouteMatch{
+							PathSpecifier: &envoy_route.RouteMatch_Prefix{
+								Prefix: path,
+							},
+						},
+						Action: &envoy_route.Route_Route{
+							Route: &envoy_route.RouteAction{
+								ClusterSpecifier: &envoy_route.RouteAction_Cluster{
+									Cluster: clusterName,
+								},
+								PrefixRewrite: "/stats/prometheus", // well-known Admin API endpoint
+							},
+						},
+					}},
+				}},
+			},
+		},
+	}
+	pbst, err := ptypes.MarshalAny(config)
+	util_error.MustNot(err)
+	listener := &v2.Listener{
+		Name: listenerName,
+		Address: &envoy_core.Address{
+			Address: &envoy_core.Address_SocketAddress{
+				SocketAddress: &envoy_core.SocketAddress{
+					Protocol: envoy_core.SocketAddress_TCP,
+					Address:  address,
+					PortSpecifier: &envoy_core.SocketAddress_PortValue{
+						PortValue: port,
+					},
+				},
+			},
+		},
+		FilterChains: []*envoy_listener.FilterChain{{
+			Filters: []*envoy_listener.Filter{{
+				Name: wellknown.HTTPConnectionManager,
+				ConfigType: &envoy_listener.Filter_TypedConfig{
+					TypedConfig: pbst,
+				},
+			}},
+		}},
 	}
 
 	if virtual {
