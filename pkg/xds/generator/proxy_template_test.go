@@ -38,6 +38,9 @@ var _ = Describe("TemplateProxyGenerator", func() {
 						SdsLocation: "kuma-system:5677",
 						SdsTlsCert:  []byte("12345"),
 					},
+					Mesh: xds_context.MeshContext{
+						Resource: &mesh_core.MeshResource{},
+					},
 				}
 
 				// when
@@ -111,7 +114,13 @@ var _ = Describe("TemplateProxyGenerator", func() {
 						SdsTlsCert:  []byte("12345"),
 					},
 					Mesh: xds_context.MeshContext{
-						TlsEnabled: true,
+						Resource: &mesh_core.MeshResource{
+							Spec: mesh_proto.Mesh{
+								Mtls: &mesh_proto.Mesh_Mtls{
+									Enabled: true,
+								},
+							},
+						},
 					},
 				}
 

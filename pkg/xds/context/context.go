@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 )
 
 type Context struct {
@@ -18,7 +19,7 @@ type ControlPlaneContext struct {
 }
 
 type MeshContext struct {
-	TlsEnabled bool
+	Resource *mesh_core.MeshResource
 }
 
 func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, error) {

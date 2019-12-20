@@ -270,7 +270,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 		}},
 	}
 
-	if ctx.Mesh.TlsEnabled {
+	if ctx.Mesh.Resource.Spec.GetMtls().GetEnabled() {
 		filter := createRbacFilter(listenerName, permissions)
 		// RBAC filter should be first in chain
 		listener.FilterChains[0].Filters = append([]*envoy_listener.Filter{&filter}, listener.FilterChains[0].Filters...)
@@ -286,7 +286,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 }
 
 func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *envoy_auth.DownstreamTlsContext {
-	if !ctx.Mesh.TlsEnabled {
+	if !ctx.Mesh.Resource.Spec.GetMtls().GetEnabled() {
 		return nil
 	}
 	return &envoy_auth.DownstreamTlsContext{
@@ -296,7 +296,7 @@ func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Data
 }
 
 func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) *envoy_auth.UpstreamTlsContext {
-	if !ctx.Mesh.TlsEnabled {
+	if !ctx.Mesh.Resource.Spec.GetMtls().GetEnabled() {
 		return nil
 	}
 	return &envoy_auth.UpstreamTlsContext{
