@@ -1,6 +1,6 @@
 .PHONY: help clean generate build test check \
 		dev/tools install/protoc install/protobuf-wellknown-types install/protoc-gen-go install/protoc-gen-validate \
-		protoc protoc/discovery/v1alpha1 protoc/mesh/v1alpha1
+		protoc protoc/mesh/v1alpha1
 
 TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -98,10 +98,7 @@ clean: ## Remove generated files
 	find . -name '*.pb.go' -delete
 	find . -name '*.pb.validate.go' -delete
 
-generate: clean protoc/discovery/v1alpha1 protoc/mesh/v1alpha1 ## Process .proto definitions
-
-protoc/discovery/v1alpha1:
-	$(PROTOC_GO) discovery/v1alpha1/*.proto
+generate: clean protoc/mesh/v1alpha1 ## Process .proto definitions
 
 protoc/mesh/v1alpha1:
 	$(PROTOC_GO) mesh/v1alpha1/*.proto
