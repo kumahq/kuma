@@ -2,13 +2,10 @@ package kuma_cp
 
 import (
 	"github.com/Kong/kuma/pkg/config"
-	"github.com/Kong/kuma/pkg/config/core/discovery"
-	"github.com/Kong/kuma/pkg/config/plugins/discovery/universal"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"os"
 	"strings"
-	"time"
 )
 
 var _ = Describe("Default config", func() {
@@ -28,14 +25,7 @@ var _ = Describe("Default config", func() {
 
 	It("should be check against the kuma-cp.defaults.yaml file", func() {
 		// given
-		cfg := Config{
-			Discovery: &discovery.DiscoveryConfig{
-				Universal: &universal.UniversalDiscoveryConfig{
-					// todo(jakubdyszkiewicz) this will be removed in the next versions of Kuma
-					PollingInterval: time.Second,
-				},
-			},
-		}
+		cfg := Config{}
 
 		// when
 		err := config.Load("kuma-cp.defaults.yaml", &cfg)

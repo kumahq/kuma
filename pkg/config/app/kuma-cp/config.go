@@ -6,7 +6,6 @@ import (
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	api_server "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/config/core"
-	"github.com/Kong/kuma/pkg/config/core/discovery"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
@@ -63,8 +62,6 @@ type Config struct {
 	Environment core.EnvironmentType `yaml:"environment" envconfig:"kuma_environment"`
 	// Resource Store configuration
 	Store *store.StoreConfig `yaml:"store"`
-	// Discovery configuration
-	Discovery *discovery.DiscoveryConfig `yaml:"discovery"`
 	// Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 	BootstrapServer *bootstrap.BootstrapServerConfig `yaml:"bootstrapServer"`
 	// Envoy XDS server configuration
@@ -90,7 +87,6 @@ type Config struct {
 func (c *Config) Sanitize() {
 	c.General.Sanitize()
 	c.Store.Sanitize()
-	c.Discovery.Sanitize()
 	c.BootstrapServer.Sanitize()
 	c.XdsServer.Sanitize()
 	c.SdsServer.Sanitize()
@@ -112,7 +108,6 @@ func DefaultConfig() Config {
 		AdminServer:          admin_server.DefaultAdminServerConfig(),
 		ApiServer:            api_server.DefaultApiServerConfig(),
 		BootstrapServer:      bootstrap.DefaultBootstrapServerConfig(),
-		Discovery:            discovery.DefaultDiscoveryConfig(),
 		Runtime:              runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
 			Mesh: `type: Mesh
@@ -154,9 +149,6 @@ func (c *Config) Validate() error {
 	}
 	if err := c.ApiServer.Validate(); err != nil {
 		return errors.Wrap(err, "ApiServer validation failed")
-	}
-	if err := c.Discovery.Validate(); err != nil {
-		return errors.Wrap(err, "Discovery validation failed")
 	}
 	if err := c.Runtime.Validate(c.Environment); err != nil {
 		return errors.Wrap(err, "Runtime validation failed")
