@@ -35,11 +35,17 @@ var _ = DescribeTable("DataplaneMetadataFromNode",
 							StringValue: "/tmp/token",
 						},
 					},
+					"dataplane.admin.port": &pstruct.Value{
+						Kind: &pstruct.Value_StringValue{
+							StringValue: "1234",
+						},
+					},
 				},
 			},
 		},
 		expected: xds.DataplaneMetadata{
 			DataplaneTokenPath: "/tmp/token",
+			AdminPort:          1234,
 		},
 	}),
 )

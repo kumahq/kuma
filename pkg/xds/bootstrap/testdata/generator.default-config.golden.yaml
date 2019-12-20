@@ -18,6 +18,7 @@ node:
   cluster: backend
   id: mesh.name.namespace
   metadata:
+    dataplane.admin.port: "1234"
     dataplaneTokenPath: /tmp/token
 staticResources:
   clusters:

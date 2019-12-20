@@ -17,6 +17,8 @@ dynamicResources:
 node:
   cluster: backend
   id: mesh.name.namespace
+  metadata:
+    dataplane.admin.port: "9902"
 staticResources:
   clusters:
   - connectTimeout: 2s

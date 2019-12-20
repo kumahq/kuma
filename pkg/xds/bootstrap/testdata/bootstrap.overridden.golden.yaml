@@ -18,6 +18,7 @@ node:
   cluster: backend
   id: default.dp-1.default
   metadata:
+    dataplane.admin.port: "1234"
     dataplaneTokenPath: /tmp/token
 staticResources:
   clusters:
