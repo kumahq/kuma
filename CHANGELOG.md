@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: make port of Envoy Admin API available to Envoy config generators
+  [#508](https://github.com/Kong/kuma/pull/508)
 * feature: add option to run dataplane as a gateway without inbounds
   [#503](https://github.com/Kong/kuma/pull/503)
 * feature: add `METRICS` column to the table output of `kumactl get meshes` to make it visible whether Prometheus settings have been configured
