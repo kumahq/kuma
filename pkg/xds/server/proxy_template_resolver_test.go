@@ -26,7 +26,7 @@ var _ = Describe("Reconcile", func() {
 			proxy := &model.Proxy{
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh: "pilot",
+						Mesh: "demo",
 					},
 				},
 			}
@@ -49,7 +49,7 @@ var _ = Describe("Reconcile", func() {
 			proxy := &model.Proxy{
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh: "pilot",
+						Mesh: "demo",
 					},
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -67,7 +67,7 @@ var _ = Describe("Reconcile", func() {
 
 			expected := &mesh_core.ProxyTemplateResource{
 				Meta: &test_model.ResourceMeta{
-					Mesh: "pilot",
+					Mesh: "demo",
 					Name: "expected",
 				},
 				Spec: mesh_proto.ProxyTemplate{
@@ -117,7 +117,7 @@ var _ = Describe("Reconcile", func() {
 			proxy := &model.Proxy{
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh: "pilot",
+						Mesh: "demo",
 					},
 				},
 			}
@@ -155,13 +155,13 @@ var _ = Describe("Reconcile", func() {
 				input: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "last",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "first",
 						},
 					},
@@ -169,13 +169,13 @@ var _ = Describe("Reconcile", func() {
 				expected: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "first",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "last",
 						},
 					},
@@ -290,20 +290,20 @@ var _ = Describe("Reconcile", func() {
 				templates: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "last",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "first",
 						},
 					},
 				},
 				expected: &mesh_core.ProxyTemplateResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh: "pilot",
+						Mesh: "demo",
 						Name: "first",
 					},
 				},
@@ -313,7 +313,7 @@ var _ = Describe("Reconcile", func() {
 				templates: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "last",
 						},
 						Spec: mesh_proto.ProxyTemplate{
@@ -324,7 +324,7 @@ var _ = Describe("Reconcile", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "first",
 						},
 						Spec: mesh_proto.ProxyTemplate{
@@ -336,7 +336,7 @@ var _ = Describe("Reconcile", func() {
 				},
 				expected: &mesh_core.ProxyTemplateResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh: "pilot",
+						Mesh: "demo",
 						Name: "first",
 					},
 					Spec: mesh_proto.ProxyTemplate{
@@ -372,7 +372,7 @@ var _ = Describe("Reconcile", func() {
 				templates: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "last",
 						},
 						Spec: mesh_proto.ProxyTemplate{
@@ -388,7 +388,7 @@ var _ = Describe("Reconcile", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "first",
 						},
 						Spec: mesh_proto.ProxyTemplate{
@@ -411,7 +411,7 @@ var _ = Describe("Reconcile", func() {
 				},
 				expected: &mesh_core.ProxyTemplateResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh: "pilot",
+						Mesh: "demo",
 						Name: "first",
 					},
 					Spec: mesh_proto.ProxyTemplate{
@@ -437,7 +437,7 @@ var _ = Describe("Reconcile", func() {
 				templates: []*mesh_core.ProxyTemplateResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "pilot",
+							Mesh: "demo",
 							Name: "last",
 						},
 						Spec: mesh_proto.ProxyTemplate{

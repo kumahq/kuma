@@ -355,12 +355,12 @@ var _ = Describe("RemoteStore", func() {
 		It("should successfully list known resources", func() {
 			// given
 			store := setupStore("list.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/pilot/traffic-routes")))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/demo/traffic-routes")))
 			})
 
 			// when
 			rs := sample_core.TrafficRouteResourceList{}
-			err := store.List(context.Background(), &rs, core_store.ListByMesh("pilot"))
+			err := store.List(context.Background(), &rs, core_store.ListByMesh("demo"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -372,7 +372,7 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[0].Spec.Path).To(Equal("/example"))
 			// and
 			Expect(rs.Items[1].Meta.GetName()).To(Equal("two"))
-			Expect(rs.Items[1].Meta.GetMesh()).To(Equal("pilot"))
+			Expect(rs.Items[1].Meta.GetMesh()).To(Equal("demo"))
 			Expect(rs.Items[1].Meta.GetVersion()).To(Equal(""))
 			Expect(rs.Items[1].Spec.Path).To(Equal("/another"))
 		})

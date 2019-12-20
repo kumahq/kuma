@@ -64,14 +64,14 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 
 	It("should generate a token", func() {
 		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example", "--mesh=pilot"})
+		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example", "--mesh=demo"})
 		err := rootCmd.Execute()
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(buf.String()).To(Equal("token-for-example-pilot"))
+		Expect(buf.String()).To(Equal("token-for-example-demo"))
 	})
 
 	It("should generate a token for default mesh when it is not specified", func() {

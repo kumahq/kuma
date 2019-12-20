@@ -2,7 +2,7 @@ controlPlane:
   apiServer:
     url: https://kuma-control-plane.internal:5682
 dataplane:
-  mesh: pilot
+  mesh: demo
   name: example
   adminPort: 2345
   drainTime: 60s

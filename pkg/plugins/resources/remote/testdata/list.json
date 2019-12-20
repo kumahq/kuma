@@ -8,7 +8,7 @@
         },
         {
             "type": "TrafficRoute",
-            "mesh": "pilot",
+            "mesh": "demo",
             "name": "two",
             "path": "/another"
         }

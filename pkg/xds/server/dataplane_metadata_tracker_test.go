@@ -16,7 +16,7 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 
 	req := v2.DiscoveryRequest{
 		Node: &envoy_core.Node{
-			Id: "default.example.pilot",
+			Id: "default.example",
 			Metadata: &pstruct.Struct{
 				Fields: map[string]*pstruct.Value{
 					"dataplaneTokenPath": &pstruct.Value{
