@@ -194,6 +194,7 @@ func initializeDiscovery(cfg kuma_cp.Config, builder *core_runtime.Builder) erro
 		pluginName = core_plugins.Kubernetes
 		pluginConfig = nil
 	case config_core.UniversalEnvironment:
+		// there is no discovery mechanism for Universal. Dataplanes are applied via API
 		return nil
 	default:
 		return errors.Errorf("unknown environment type %s", cfg.Environment)
@@ -202,10 +203,8 @@ func initializeDiscovery(cfg kuma_cp.Config, builder *core_runtime.Builder) erro
 	if err != nil {
 		return err
 	}
-	if source, err := plugin.NewDiscoverySource(builder, pluginConfig); err != nil {
+	if err := plugin.StartDiscovering(builder, pluginConfig); err != nil {
 		return err
-	} else {
-		builder.AddDiscoverySource(source)
 	}
 	return nil
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
 	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
-	core_discovery "github.com/Kong/kuma/pkg/core/discovery"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
@@ -35,7 +34,6 @@ type Builder struct {
 	sm  secret_manager.SecretManager
 	bcm builtin_ca.BuiltinCaManager
 	pcm provided_ca.ProvidedCaManager
-	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
 	ext context.Context
 }
@@ -74,11 +72,6 @@ func (b *Builder) WithProvidedCaManager(pcm provided_ca.ProvidedCaManager) *Buil
 	return b
 }
 
-func (b *Builder) AddDiscoverySource(ds core_discovery.DiscoverySource) *Builder {
-	b.dss = append(b.dss, ds)
-	return b
-}
-
 func (b *Builder) WithXdsContext(xds core_xds.XdsContext) *Builder {
 	b.xds = xds
 	return b
@@ -108,10 +101,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.pcm == nil {
 		return nil, errors.Errorf("ProvidedCaManager has not been configured")
 	}
-	// todo(jakubdyszkiewicz) restore when we've got store based discovery source
-	//if len(b.dss) == 0 {
-	//	return nil, errors.Errorf("DiscoverySources have not been configured")
-	//}
 	if b.xds == nil {
 		return nil, errors.Errorf("xDS Context has not been configured")
 	}
@@ -128,7 +117,6 @@ func (b *Builder) Build() (Runtime, error) {
 			sm:  b.sm,
 			bcm: b.bcm,
 			pcm: b.pcm,
-			dss: b.dss,
 			xds: b.xds,
 			ext: b.ext,
 		},

@@ -6,7 +6,6 @@ import (
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
 	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
-	core_discovery "github.com/Kong/kuma/pkg/core/discovery"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
@@ -25,7 +24,6 @@ type RuntimeInfo interface {
 
 type RuntimeContext interface {
 	Config() kuma_cp.Config
-	DiscoverySources() []core_discovery.DiscoverySource
 	XDS() core_xds.XdsContext
 	ResourceManager() core_manager.ResourceManager
 	SecretManager() secret_manager.SecretManager
@@ -60,16 +58,12 @@ type runtimeContext struct {
 	sm  secret_manager.SecretManager
 	bcm builtin_ca.BuiltinCaManager
 	pcm provided_ca.ProvidedCaManager
-	dss []core_discovery.DiscoverySource
 	xds core_xds.XdsContext
 	ext context.Context
 }
 
 func (rc *runtimeContext) Config() kuma_cp.Config {
 	return rc.cfg
-}
-func (rc *runtimeContext) DiscoverySources() []core_discovery.DiscoverySource {
-	return rc.dss
 }
 func (rc *runtimeContext) XDS() core_xds.XdsContext {
 	return rc.xds
