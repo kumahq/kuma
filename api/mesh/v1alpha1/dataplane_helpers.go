@@ -177,7 +177,16 @@ func (d *Dataplane) MatchTags(selector TagSelector) bool {
 			return true
 		}
 	}
+	if d.GetNetworking().GetGateway() != nil {
+		if d.Networking.Gateway.MatchTags(selector) {
+			return true
+		}
+	}
 	return false
+}
+
+func (d *Dataplane_Networking_Gateway) MatchTags(selector TagSelector) bool {
+	return selector.Matches(d.Tags)
 }
 
 func (d *Dataplane_Networking_Inbound) MatchTags(selector TagSelector) bool {
@@ -268,6 +277,13 @@ func (d *Dataplane) Tags() MultiValueTagSet {
 			}
 			tags[tag][value] = true
 		}
+	}
+	for tag, value := range d.GetNetworking().GetGateway().GetTags() {
+		_, exists := tags[tag]
+		if !exists {
+			tags[tag] = map[string]bool{}
+		}
+		tags[tag][value] = true
 	}
 	return tags
 }

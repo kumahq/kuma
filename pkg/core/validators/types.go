@@ -53,6 +53,10 @@ func (v *ValidationError) Add(err ValidationError) {
 	v.AddError("", err)
 }
 
+func (v *ValidationError) AddErrorAt(path PathBuilder, validationErr ValidationError) {
+	v.AddError(path.String(), validationErr)
+}
+
 func (v *ValidationError) AddError(rootField string, validationErr ValidationError) {
 	rootPrefix := ""
 	if rootField != "" {
