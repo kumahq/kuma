@@ -48,6 +48,7 @@ Kuma is a better way to build L4/L7 connectivity among your services and applica
 * **Traffic Logs**: To log all the activity to a third-party service, like Splunk or ELK.
 * **Traffic Metrics**: For every Envoy dataplane managed by Kuma, via Prometheus and other integrations.
 * **Proxy Configuration Templating**: The easiest way to run and configure Envoy with low-level configuration.
+* **Healthchecks**: Both active and passive.
 * **GUI**: Out of the box browser GUI to explore all the Service Meshes configured in the system.
 * **Tagging Selectors**: To apply sophisticated regional, cloud-specific and team-oriented policies.
 * **Platform-Agnostic**: Support for K8s, VMs, and bare metal.
