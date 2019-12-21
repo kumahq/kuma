@@ -6,7 +6,7 @@
 
 Kuma is a universal open source control-plane for Service Mesh and Microservices that can run and be operated natively across both Kubernetes and VM environments, in order to be easily adopted by every team in the organization.
 
-Built on top of Envoy, Kuma can instrument any L4/L7 traffic to secure, observe, route and enhance connectivity between any service or database. It can be used natively in Kubernetes via CRDs or via a RESTful API across other environments, and it doesn't require a change to your application's code in order to be used.
+Built on top of Envoy, Kuma can instrument any L4/L7 traffic to secure, observe, route and enhance connectivity between any service or database. It can be used natively in Kubernetes via CRDs or via a RESTful API on VM and Bare Metal environments, and it doesn't require a change to your application's code in order to be used.
 
 Built by Envoy contributors at Kong 🦍.
 
@@ -30,26 +30,28 @@ Built by Envoy contributors at Kong 🦍.
 
 ## Why Kuma?
 
-If you are building any software architecture, you will inevitably introduce services that will communicate with each other using requests on a network. Every time services interconnect via a network request the end-user experience at risk. As we all know the connectivity between different services can be slow and unpredictable. It can be insecure, hard to trace, and pose many other problems (e.g. routing, versioning, canary deployments).
+Modern applications will inevitably make requests over a network to communicate to other services, like databases, caches or microservices. But - as we all know - the network is by default unreliable and unsecure, and can introduce significant challenges to any modern environment like security, tracing and routing amongh the others.
 
-Kuma's main goal is to reduce the code that has to be written and maintained to build reliable architectures. Therefore, Kuma embraces the sidecar proxy model by leveraging Envoy as its sidecar data-plane technology and by providing a Universal Control Plane that can run on both modern Kubernetes architectures and existing VM-based architectures in order to deliver business value across every team in the organization.
+Kuma is a better way to build L4/L7 connectivity among your services and applications (Service Mesh) by reducing the code that application teams have to write, enabling to ship products faster and improve the reliability and security of the overall architecture with minimal effort. Therefore, Kuma embraces the sidecar proxy model by leveraging Envoy as its sidecar data-plane technology and by providing a Universal Control Plane that can run on both modern Kubernetes and existing VM/Bare Metal architectures in order to deliver business value across every team in the organization with one comprhensive solution.
 
 [![][kuma-benefits]][kuma-url]
 
 ## Features
 
-* **Universal Control Plane**: Easy to use, distributed, runs anywhere.
-* **Lightweight Data Plane**: To process any traffic, powered by Envoy.
-* **Automatic**: No code changes required in K8s, flexible on VMs.
-* **Multi-Tenancy**: To setup multiple isolated Service Meshes in one cluster and one Control Plane.
-* **Network Security**: Automatic mTLS encryption.
-* **Traffic Segmentation**: With flexible ACL rules.
-* **Traffic Tracing**: Automatic with Zipkin and Jaeger integrations.
-* **Traffic Metrics**: Automatic with Prometheus/Splunk/ELK integrations.
-* **Proxy Configuration Templating**: For advanced users, to configure low-level Envoy configuration.
+* **Universal Control Plane**: Easy to use, distributed, runs anywhere on both Kubernetes and VM/Bare Metal.
+* **Lightweight Data Plane**: Powered by Envoy to process any L4/L7 traffic, with automatic Envoy bootstrapping.
+* **Automatic DP Injection**: No code changes required in K8s. Easy YAML specification for VM and Bare Metal deployments.
+* **Multi-Tenancy**: To setup multiple isolated Meshes in one cluster and one Control Plane, lowering OPs cost.
+* **mTLS**: Automatic mTLS issuing, identity and encryption with optional support for third-party CA.
+* **Traffic Permissions**: To firewall traffic between the services of a Mesh.
+* **Traffic Routing**: With dynamic load-balancing for blue/green, canary, versioning and rollback deployments.
+* **Traffic Logs**: To log all the activity to a third-party service, like Splunk or ELK.
+* **Traffic Metrics**: For every Envoy dataplane managed by Kuma, via Prometheus and other integrations.
+* **Proxy Configuration Templating**: The easiest way to run and configure Envoy with low-level configuration.
+* **GUI**: Out of the box browser GUI to explore all the Service Meshes configured in the system.
 * **Tagging Selectors**: To apply sophisticated regional, cloud-specific and team-oriented policies.
 * **Platform-Agnostic**: Support for K8s, VMs, and bare metal.
-* **Powerful APIM Ingress**: Via Kong Gateway integration.
+* **Powerful APIM Ingress**: Support for [Kong Gateway](https://github.com/Kong/kong) integration to provide full-cycle APIM.
 
 ## Distributions
 
