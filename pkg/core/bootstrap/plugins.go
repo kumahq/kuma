@@ -14,7 +14,6 @@ import (
 	_ "github.com/Kong/kuma/pkg/plugins/secrets/universal"
 
 	_ "github.com/Kong/kuma/pkg/plugins/discovery/k8s"
-	_ "github.com/Kong/kuma/pkg/plugins/discovery/universal"
 
 	_ "github.com/Kong/kuma/pkg/plugins/runtime/k8s"
 )

@@ -99,11 +99,6 @@ var _ = Describe("Config WS", func() {
           "defaults": {
             "mesh": "type: Mesh\nname: default\nmtls:\n  ca: {}\n  enabled: false\n"
           },
-          "discovery": {
-            "universal": {
-              "pollingInterval": "1s"
-            }
-          },
           "environment": "universal",
           "general": {
             "advertisedHostname": "localhost"

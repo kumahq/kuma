@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	core_discovery "github.com/Kong/kuma/pkg/core/discovery"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
@@ -35,10 +34,10 @@ type SecretStorePlugin interface {
 	NewSecretStore(PluginContext, PluginConfig) (secret_store.SecretStore, error)
 }
 
-// DiscoveryPlugin is responsible for instantiating a particular DiscoverySource.
+// DiscoveryPlugin is responsible for discovering Dataplanes for given environment.
 type DiscoveryPlugin interface {
 	Plugin
-	NewDiscoverySource(PluginContext, PluginConfig) (core_discovery.DiscoverySource, error)
+	StartDiscovering(PluginContext, PluginConfig) error
 }
 
 // RuntimePlugin is responsible for registering environment-specific components,
