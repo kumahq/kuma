@@ -36,6 +36,20 @@ type DataplaneMetadata struct {
 	AdminPort          uint32
 }
 
+func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
+	if m == nil {
+		return ""
+	}
+	return m.DataplaneTokenPath
+}
+
+func (m *DataplaneMetadata) GetAdminPort() uint32 {
+	if m == nil {
+		return 0
+	}
+	return m.AdminPort
+}
+
 func DataplaneMetadataFromNode(node *envoy_core.Node) *DataplaneMetadata {
 	metadata := DataplaneMetadata{}
 	if node.Metadata == nil {
