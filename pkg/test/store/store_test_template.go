@@ -230,6 +230,24 @@ func ExecuteStoreTests(
 			Expect(res.Meta.GetVersion()).ToNot(BeEmpty())
 			Expect(res.Spec).To(Equal(createdResource.Spec))
 		})
+
+		It("should get resource by version", func() {
+			// given
+			name := "existing-resource.demo"
+			res := createResource(name)
+
+			// when trying to retrieve resource with proper version
+			err := s.Get(context.Background(), &sample_model.TrafficRouteResource{}, store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
+
+			// then resource is found
+			Expect(err).ToNot(HaveOccurred())
+
+			// when trying to retrieve resource with different version
+			err = s.Get(context.Background(), &sample_model.TrafficRouteResource{}, store.GetByKey(name, mesh), store.GetByVersion("9999999"))
+
+			// then resource is not found
+			Expect(store.IsResourceNotFound(err)).To(BeTrue())
+		})
 	})
 
 	Describe("List()", func() {

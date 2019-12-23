@@ -117,6 +117,9 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	if err := s.Converter.ToCoreResource(obj, r); err != nil {
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
+	if opts.Version != "" && r.GetMeta().GetVersion() != opts.Version {
+		return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
+	}
 	if r.GetMeta().GetMesh() != opts.Mesh {
 		return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
 	}

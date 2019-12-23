@@ -149,8 +149,20 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
-	statement := `SELECT spec, version FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
-	row := r.db.QueryRow(statement, opts.Name, opts.Mesh, resource.GetType())
+	statement := `SELECT spec, version FROM resources WHERE name=$1 AND mesh=$2 AND type=$3`
+	if opts.Version != "" {
+		statement += " AND version=$4"
+	}
+	var statementArgs []interface{}
+	statementArgs = append(statementArgs, opts.Name, opts.Mesh, resource.GetType())
+	if opts.Version != "" {
+		v, err := strconv.Atoi(opts.Version)
+		if err != nil {
+			return errors.Wrap(err, "invalid version. Postgres version should be an integer")
+		}
+		statementArgs = append(statementArgs, v)
+	}
+	row := r.db.QueryRow(statement, statementArgs...)
 
 	var spec string
 	var version int
