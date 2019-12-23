@@ -22,7 +22,10 @@ node:
   metadata:
 {{if .DataplaneTokenPath}}
     dataplaneTokenPath: {{.DataplaneTokenPath}}
-{{end}}    
+{{end}}
+{{if .AdminPort }}
+    dataplane.admin.port: "{{ .AdminPort }}"
+{{ end }}
 
 {{if .AdminPort }}
 admin:
