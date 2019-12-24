@@ -40,8 +40,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	// even when it doesn't have any inbound interfaces (e.g., gateway scenario).
 	// Therefore, we always bind Prometheus endpoint to `0.0.0.0`
 	// instead of trying to reuse IP address of an inbound listener.
-	prometheusEndpointIP := net.IPv4zero   // 0.0.0.0
-	prometheusEndpointAddress := "0.0.0.0" // just a small caching optimization
+	prometheusEndpointIP := net.IPv4zero // 0.0.0.0
+	prometheusEndpointAddress := prometheusEndpointIP.String()
 
 	if proxy.Dataplane.UsesInterface(prometheusEndpointIP, prometheusEndpoint.Port) {
 		// If the Prometheus endpoint would otherwise overshadow one of interfaces of that Dataplane,
