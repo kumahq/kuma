@@ -21,33 +21,13 @@ func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bo
 		if err != nil {
 			continue
 		}
-		if iface.DataplanePort != port && iface.WorkloadPort != port {
-			// no need to compare IP addresses
-			continue
+		// compare against port and IP address of the dataplane
+		if port == iface.DataplanePort && overlap(address, net.ParseIP(iface.DataplaneIP)) {
+			return true
 		}
-		if iface.DataplanePort == port {
-			// compare against IP address of dataplane
-			inboundAddress := net.ParseIP(iface.DataplaneIP)
-			if inboundAddress.IsUnspecified() || address.IsUnspecified() {
-				// wildcard match (either IPv4 address "0.0.0.0" or the IPv6 address "::")
-				return true
-			}
-			if inboundAddress.Equal(address) {
-				// exact match
-				return true
-			}
-		}
-		if iface.WorkloadPort == port {
-			// compare against IP address of application
-			applicationAddress := ipv4loopback
-			if address.IsUnspecified() {
-				// wildcard match (either IPv4 address "0.0.0.0" or the IPv6 address "::")
-				return true
-			}
-			if applicationAddress.Equal(address) {
-				// exact match
-				return true
-			}
+		// compare against port and IP address of the application
+		if port == iface.WorkloadPort && overlap(address, ipv4loopback) {
+			return true
 		}
 	}
 	return false
@@ -62,19 +42,19 @@ func (d *DataplaneResource) UsesOutboundInterface(address net.IP, port uint32) b
 		if err != nil {
 			continue
 		}
-		if oface.DataplanePort != port {
-			// no need to compare IP addresses
-			continue
-		}
-		outboundAddress := net.ParseIP(oface.DataplaneIP)
-		if outboundAddress.IsUnspecified() || address.IsUnspecified() {
-			// wildcard match (either IPv4 address "0.0.0.0" or the IPv6 address "::")
-			return true
-		}
-		if outboundAddress.Equal(address) {
-			// exact match
+		// compare against port and IP address of the dataplane
+		if port == oface.DataplanePort && overlap(address, net.ParseIP(oface.DataplaneIP)) {
 			return true
 		}
 	}
 	return false
+}
+
+func overlap(address1 net.IP, address2 net.IP) bool {
+	if address1.IsUnspecified() || address2.IsUnspecified() {
+		// wildcard match (either IPv4 address "0.0.0.0" or the IPv6 address "::")
+		return true
+	}
+	// exact match
+	return address1.Equal(address2)
 }
