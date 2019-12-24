@@ -1,10 +1,10 @@
 resources:
-- name: localhost:9902
+- name: kuma:envoy:admin
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Cluster
     connectTimeout: 5s
     loadAssignment:
-      clusterName: localhost:9902
+      clusterName: kuma:envoy:admin
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -12,9 +12,9 @@ resources:
               socketAddress:
                 address: 127.0.0.1
                 portValue: 9902
-    name: localhost:9902
+    name: kuma:envoy:admin
     type: STATIC
-- name: inbound:0.0.0.0:1234
+- name: kuma:metrics:prometheus
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Listener
     address:
@@ -37,10 +37,10 @@ resources:
               - match:
                   prefix: /non-standard-path
                 route:
-                  cluster: localhost:9902
+                  cluster: kuma:envoy:admin
                   prefixRewrite: /stats/prometheus
-          statPrefix: localhost:9902
-    name: inbound:0.0.0.0:1234
+          statPrefix: kuma:metrics:prometheus
+    name: kuma:metrics:prometheus
 - name: localhost:8080
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Cluster

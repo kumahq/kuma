@@ -170,12 +170,12 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			},
 			expected: `
             resources:
-            - name: localhost:9902
+            - name: kuma:envoy:admin
               resource:
                 '@type': type.googleapis.com/envoy.api.v2.Cluster
                 connectTimeout: 5s
                 loadAssignment:
-                  clusterName: localhost:9902
+                  clusterName: kuma:envoy:admin
                   endpoints:
                   - lbEndpoints:
                     - endpoint:
@@ -183,9 +183,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                           socketAddress:
                             address: 127.0.0.1
                             portValue: 9902
-                name: localhost:9902
+                name: kuma:envoy:admin
                 type: STATIC
-            - name: inbound:0.0.0.0:1234
+            - name: kuma:metrics:prometheus
               resource:
                 '@type': type.googleapis.com/envoy.api.v2.Listener
                 address:
@@ -208,10 +208,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                           - match:
                               prefix: /non-standard-path
                             route:
-                              cluster: localhost:9902
+                              cluster: kuma:envoy:admin
                               prefixRewrite: /stats/prometheus
-                      statPrefix: localhost:9902
-                name: inbound:0.0.0.0:1234
+                      statPrefix: kuma:metrics:prometheus
+                name: kuma:metrics:prometheus
 `,
 		}),
 		Entry("should support a Dataplane with custom metrics configuration", testCase{
@@ -247,12 +247,12 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			},
 			expected: `
             resources:
-            - name: localhost:9902
+            - name: kuma:envoy:admin
               resource:
                 '@type': type.googleapis.com/envoy.api.v2.Cluster
                 connectTimeout: 5s
                 loadAssignment:
-                  clusterName: localhost:9902
+                  clusterName: kuma:envoy:admin
                   endpoints:
                   - lbEndpoints:
                     - endpoint:
@@ -260,9 +260,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                           socketAddress:
                             address: 127.0.0.1
                             portValue: 9902
-                name: localhost:9902
+                name: kuma:envoy:admin
                 type: STATIC
-            - name: inbound:0.0.0.0:8765
+            - name: kuma:metrics:prometheus
               resource:
                 '@type': type.googleapis.com/envoy.api.v2.Listener
                 address:
@@ -285,10 +285,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                           - match:
                               prefix: /even-more-non-standard-path
                             route:
-                              cluster: localhost:9902
+                              cluster: kuma:envoy:admin
                               prefixRewrite: /stats/prometheus
-                      statPrefix: localhost:9902
-                name: inbound:0.0.0.0:8765
+                      statPrefix: kuma:metrics:prometheus
+                name: kuma:metrics:prometheus
 `,
 		}),
 	)

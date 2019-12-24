@@ -289,7 +289,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 
 func CreatePrometheusListener(ctx xds_context.Context, listenerName string, address string, port uint32, path string, clusterName string, virtual bool, metadata *core_xds.DataplaneMetadata) *v2.Listener {
 	config := &envoy_hcm.HttpConnectionManager{
-		StatPrefix: clusterName,
+		StatPrefix: listenerName,
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
 		HttpFilters: []*envoy_hcm.HttpFilter{{
 			Name: wellknown.Router,

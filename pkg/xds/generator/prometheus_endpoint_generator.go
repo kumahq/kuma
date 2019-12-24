@@ -61,21 +61,21 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	// since it would allow a malicious user to manipulate that value and use Prometheus endpoint
 	// as a gateway to another host.
 	adminAddress := "127.0.0.1"
-	localClusterName := localClusterName(adminPort)
-	inboundListenerName := localListenerName(prometheusEndpointAddress, prometheusEndpoint.Port)
+	envoyAdminClusterName := envoyAdminClusterName()
+	prometheusListenerName := prometheusListenerName()
 	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
 	return []*Resource{
 		// CDS resource
 		&Resource{
-			Name:     localClusterName,
+			Name:     envoyAdminClusterName,
 			Version:  "",
-			Resource: envoy.CreateLocalCluster(localClusterName, adminAddress, adminPort),
+			Resource: envoy.CreateLocalCluster(envoyAdminClusterName, adminAddress, adminPort),
 		},
 		// LDS resource
 		&Resource{
-			Name:     inboundListenerName,
+			Name:     prometheusListenerName,
 			Version:  "",
-			Resource: envoy.CreatePrometheusListener(ctx, inboundListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, prometheusEndpoint.Path, localClusterName, virtual, proxy.Metadata),
+			Resource: envoy.CreatePrometheusListener(ctx, prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, prometheusEndpoint.Path, envoyAdminClusterName, virtual, proxy.Metadata),
 		},
 	}, nil
 }
