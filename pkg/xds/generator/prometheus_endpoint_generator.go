@@ -31,6 +31,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	}
 	if proxy.Metadata.GetAdminPort() == 0 {
 		// It's not possible to export Prometheus metrics if Envoy Admin API has not been enabled on that dataplane.
+
+		// TODO(yskopets): find a way to communicate this to users
 		return nil, nil
 	}
 	dataplaneLevelSettings := proxy.Dataplane.Spec.Metrics.GetPrometheus()
