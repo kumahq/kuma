@@ -48,6 +48,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	if proxy.Dataplane.UsesInterface(prometheusEndpointIP, prometheusEndpoint.Port) {
 		// If the Prometheus endpoint would otherwise overshadow one of interfaces of that Dataplane,
 		// we prefer not to do that.
+
+		// TODO(yskopets): find a way to communicate this to users
 		return nil, nil
 	}
 
