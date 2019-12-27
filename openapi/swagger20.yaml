@@ -1,0 +1,385 @@
+swagger: '2.0'
+info:
+  version: '1.0'
+  title: KumaHTTPAPIs
+  description: 'TODO: Add Description'
+  contact: {}
+host: https://control-plane.host/5681
+basePath: /
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /config:
+    get:
+      description: 'TODO: Add Description'
+      summary: Get Control-Plane Config
+      tags:
+        - control-plane
+      operationId: G-Conf
+      deprecated: false
+      produces:
+        - application/json
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          headers: {}
+  /meshes:
+    get:
+      description: 'TODO: Add Description'
+      summary: Get Meshes
+      tags:
+        - meshes
+      operationId: G-Mesh
+      deprecated: false
+      produces:
+        - application/json
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          headers: {}
+  /meshes/{name}:
+    get:
+      description: 'TODO: Add Description'
+      summary: Get Mesh by Name
+      tags:
+        - meshes
+      operationId: G-Mesh-ByName
+      deprecated: false
+      produces:
+        - application/json
+      parameters:
+        - name: name
+          in: path
+          description: ''
+          required: true
+          type: string
+          default: ''
+      responses:
+        '200':
+          description: ''
+          headers: {}
+  /meshes/{name}/dataplanes:
+    get:
+      description: 'TODO: Add Description'
+      summary: Get Dataplanes
+      tags:
+        - data-plane
+      operationId: G-DPlane
+      deprecated: false
+      produces:
+        - application/json
+      parameters:
+        - name: name
+          in: path
+          description: ''
+          required: true
+          type: string
+          default: ''
+      responses:
+        '200':
+          description: ''
+          headers: {}
+  /meshes/{name}/dataplanes/{dname}:
+    get:
+      description: 'TODO: Add Description'
+      summary: Get Dataplane by Name
+      tags:
+        - data-plane
+      operationId: G-DPlane-ByName
+      deprecated: false
+      produces:
+        - application/json
+      parameters:
+        - name: name
+          in: path
+          description: ''
+          required: true
+          type: string
+          default: ''
+        - name: dname
+          in: path
+          description: ''
+          required: true
+          type: string
+          default: ''
+      responses:
+        '200':
+          description: ''
+          headers: {}
+  /meshes/{name}/dataplanes+insights:
+    get:
+      description: 'TODO: Add Description'
+      summary: Get Dataplanes with insights
+      tags:
+        - data-plane+insights
+      operationId: G-DPlaneInsght
+      deprecated: false
+      produces:
+        - application/json
+      parameters:
+        - name: name
+          in: path
+          description: ''
+          required: true
+          type: string
+          default: ''
+      responses:
+        '200':
+          description: ''
+          headers: {}
+  /meshes/{name}/dataplanes+insights/{name}:
+    get:
+      description: 'TODO: Add Description'
+      summary: Get Dataplanes with insights by name
+      tags:
+        - data-plane+insights
+      operationId: G-DPlaneInsght-ByName
+      deprecated: false
+      produces:
+        - application/json
+      parameters:
+        - name: name
+          in: path
+          description: ''
+          required: true
+          type: string
+          default: ''
+      responses:
+        '200':
+          description: ''
+          headers: {}
+  /meshes/{name}/health-checks:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get Healthchecks
+        tags:
+          - health-check
+        operationId: G-HealthChk
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+  /meshes/{name}/health-checks/{name}:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get Healthchecks by name
+        tags:
+          - health-check
+        operationId: G-HealthChk-ByName
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+  /meshes/{name}/proxytemplates:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get proxy templates
+        tags:
+          - proxytemplate
+        operationId: G-Proxy
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+  /meshes/{name}/proxytemplates/{name}:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get proxy template by name
+        tags:
+          - proxytemplate
+        operationId: G-Proxy-ByName
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+  /meshes/{name}/traffic-logs:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get traffic logs
+        tags:
+          - traffic-logs
+        operationId: G-Trfclog
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+  /meshes/{name}/traffic-logs/{name}:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get traffic logs by name
+        tags:
+          - traffic-logs
+        operationId: G-Trfclog-ByName
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+  /meshes/{name}/traffic-permissions:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get traffic permissions
+        tags:
+          - traffic-permission
+        operationId: G-Trfcprm
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+  /meshes/{name}/traffic-permissions/{name}:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get traffic permission by name
+        tags:
+          - traffic-permission
+        operationId: G-Trfcprm-ByName
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+  /meshes/{name}/traffic-routes:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get traffic routes
+        tags:
+          - traffic-route
+        operationId: G-Trfcrte
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+  /meshes/{name}/traffic-routes/{name}:
+      get:
+        description: 'TODO: Add Description'
+        summary: Get traffic route by name
+        tags:
+          - traffic-route
+        operationId: G-Trfcrte-ByName
+        deprecated: false
+        produces:
+          - application/json
+        parameters:
+          - name: name
+            in: path
+            description: ''
+            required: true
+            type: string
+            default: ''
+        responses:
+          '200':
+            description: ''
+            headers: {}
+tags:
+  - name: control-plane
+    description: ''
+  - name: meshes
+    description: ''
+  - name: data-plane
+    description: ''
+  - name: data-plane+insights
+    description: ''
+  - name: health-check
+    description: ''
+  - name: proxytemplate
+    description: ''
+  - name: traffic-logs
+    description: ''
+  - name: traffic-permission
+    description: ''
+  - name: traffic-route
+    description: ''
