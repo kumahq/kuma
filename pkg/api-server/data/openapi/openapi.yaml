@@ -1,385 +1,749 @@
-swagger: '2.0'
+# Semantic version number of the OpenAPI Specification version used by this OpenAPI document.
+openapi: 3.0.1
+# Provides metadata about the API.
 info:
-  version: '1.0'
-  title: KumaHTTPAPIs
-  description: 'TODO: Add Description'
-  contact: {}
-host: https://control-plane.host/5681
-basePath: /
-schemes:
-  - https
-consumes:
-  - application/json
-produces:
-  - application/json
+  title: 'Kuma - Universal Control Plane'
+  description: 'REST API of the Kuma Control Plane.'
+  license:
+    name: 'Apache 2.0'
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 0.3.1
+# Additional external documentation.
+externalDocs:
+  description: Documentation
+  url: https://kuma.io/docs/0.3.1/documentation/#http-api
+# An array of Server Objects, which provide connectivity information to a target server.
+servers:
+- url: /
+# A list of tags used by the specification with additional metadata.
+tags:
+- name: control-plane
+- name: meshes
+- name: dataplanes
+- name: dataplanes+insights
+- name: health-checks
+- name: proxytemplates
+- name: traffic-logs
+- name: traffic-permissions
+- name: traffic-routes
+# The available paths and operations for the API.
 paths:
   /config:
     get:
-      description: 'TODO: Add Description'
-      summary: Get Control-Plane Config
       tags:
-        - control-plane
-      operationId: G-Conf
-      deprecated: false
-      produces:
-        - application/json
-      parameters: []
+      - control-plane
+      summary: 'Get configuration of the Control Plane.'
+      description: 'Return effective configuration of the Control Plane.'
+      operationId: getControlPlaneConfig
       responses:
-        '200':
-          description: ''
-          headers: {}
+        200:
+          description: 'Effective configuration of the Control Plane.'
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/config.kuma-cp.v1alpha1.Config'
+              examples:
+                config.kuma-cp.universal:
+                  $ref: '#/components/examples/config.kuma-cp.universal'
   /meshes:
     get:
-      description: 'TODO: Add Description'
-      summary: Get Meshes
       tags:
-        - meshes
-      operationId: G-Mesh
-      deprecated: false
-      produces:
-        - application/json
-      parameters: []
+      - meshes
+      summary: 'List all Meshes.'
+      description: 'Return a list of existing Mesh resources.'
+      operationId: getMeshes
       responses:
-        '200':
-          description: ''
-          headers: {}
-  /meshes/{name}:
+        200:
+          description: 'List of Mesh resources.'
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/kuma.mesh.v1alpha1.MeshList'
+              examples:
+                resource.mesh-list.non-empty:
+                  $ref: '#/components/examples/resource.mesh-list.non-empty'
+  /meshes/{mesh-name}:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
     get:
-      description: 'TODO: Add Description'
-      summary: Get Mesh by Name
       tags:
-        - meshes
-      operationId: G-Mesh-ByName
-      deprecated: false
-      produces:
-        - application/json
-      parameters:
-        - name: name
-          in: path
-          description: ''
-          required: true
-          type: string
-          default: ''
+      - meshes
+      summary: 'Get a Mesh.'
+      description: 'Return an existing Mesh resource.'
+      operationId: getMesh
       responses:
-        '200':
-          description: ''
-          headers: {}
-  /meshes/{name}/dataplanes:
+        200:
+          description: 'Mesh resource.'
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/kuma.mesh.v1alpha1.Mesh'
+              examples:
+                resource.mesh.with-builtin-ca-and-mtls-enabled:
+                  $ref: '#/components/examples/resource.mesh.with-builtin-ca-and-mtls-enabled'
+                resource.mesh.with-provided-ca-and-mtls-enabled:
+                  $ref: '#/components/examples/resource.mesh.with-provided-ca-and-mtls-enabled'
+        404:
+          $ref: '#/components/responses/resource.get.not-found'
+    put:
+      tags:
+      - meshes
+      summary: 'Create or update a Mesh.'
+      description: 'Create a new or update an existing Mesh resource.'
+      operationId: saveMesh
+      requestBody:
+        description: 'Mesh resource.'
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/kuma.mesh.v1alpha1.Mesh'
+            examples:
+              resource.mesh.with-builtin-ca-and-mtls-enabled:
+                $ref: '#/components/examples/resource.mesh.with-builtin-ca-and-mtls-enabled'
+              resource.mesh.with-provided-ca-and-mtls-enabled:
+                $ref: '#/components/examples/resource.mesh.with-provided-ca-and-mtls-enabled'
+      responses:
+        200:
+          $ref: '#/components/responses/resource.put.updated'
+        201:
+          $ref: '#/components/responses/resource.put.created'
+        400:
+          $ref: '#/components/responses/resource.put.request-body-not-valid'
+    delete:
+      tags:
+      - meshes
+      summary: 'Delete a Mesh.'
+      description: 'Delete an existing Mesh resource.'
+      operationId: deleteMesh
+      responses:
+        200:
+          $ref: '#/components/responses/resource.delete.successful'
+        404:
+          $ref: '#/components/responses/resource.delete.not-found'
+  /meshes/{mesh-name}/dataplanes:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
     get:
-      description: 'TODO: Add Description'
-      summary: Get Dataplanes
       tags:
-        - data-plane
-      operationId: G-DPlane
-      deprecated: false
-      produces:
-        - application/json
-      parameters:
-        - name: name
-          in: path
-          description: ''
-          required: true
-          type: string
-          default: ''
+      - dataplanes
+      summary: 'List all Dataplanes within a given Mesh.'
+      description: 'Return a list of existing Dataplane resources within a given Mesh.'
+      operationId: getDataplanes
       responses:
-        '200':
-          description: ''
-          headers: {}
-  /meshes/{name}/dataplanes/{dname}:
+        200:
+          description: 'List of Dataplane resources.'
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/kuma.mesh.v1alpha1.DataplaneList'
+              examples:
+                resource.dataplane-list.non-empty:
+                  $ref: '#/components/examples/resource.dataplane-list.non-empty'
+  /meshes/{mesh-name}/dataplanes/{dataplane-name}:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    - $ref: '#/components/parameters/dataplane-name'
     get:
-      description: 'TODO: Add Description'
-      summary: Get Dataplane by Name
       tags:
-        - data-plane
-      operationId: G-DPlane-ByName
-      deprecated: false
-      produces:
-        - application/json
-      parameters:
-        - name: name
-          in: path
-          description: ''
-          required: true
-          type: string
-          default: ''
-        - name: dname
-          in: path
-          description: ''
-          required: true
-          type: string
-          default: ''
+      - dataplanes
+      summary: 'Get a Dataplane.'
+      description: 'Return an existing Dataplane resource.'
+      operationId: getDataplane
       responses:
-        '200':
-          description: ''
-          headers: {}
-  /meshes/{name}/dataplanes+insights:
+        200:
+          description: 'Dataplane resource.'
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/kuma.mesh.v1alpha1.Dataplane'
+              examples:
+                resource.dataplane.web:
+                  $ref: '#/components/examples/resource.dataplane.web'
+        404:
+          $ref: '#/components/responses/resource.get.not-found'
+    put:
+      tags:
+      - dataplanes
+      summary: 'Create or update a Dataplane.'
+      description: 'Create a new or update an existing Dataplane resource.'
+      operationId: saveDataplane
+      requestBody:
+        description: 'Dataplane resource.'
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/kuma.mesh.v1alpha1.Dataplane'
+            examples:
+              resource.dataplane.web:
+                $ref: '#/components/examples/resource.dataplane.web'
+      responses:
+        200:
+          $ref: '#/components/responses/resource.put.updated'
+        201:
+          $ref: '#/components/responses/resource.put.created'
+        400:
+          $ref: '#/components/responses/resource.put.request-body-not-valid'
+    delete:
+      tags:
+      - dataplanes
+      summary: 'Delete a Dataplane.'
+      description: 'Delete an existing Dataplane resource.'
+      operationId: deleteDataplane
+      responses:
+        200:
+          $ref: '#/components/responses/resource.delete.successful'
+        404:
+          $ref: '#/components/responses/resource.delete.not-found'
+
+  /meshes/{mesh-name}/dataplanes+insights:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
     get:
-      description: 'TODO: Add Description'
-      summary: Get Dataplanes with insights
       tags:
-        - data-plane+insights
-      operationId: G-DPlaneInsght
-      deprecated: false
-      produces:
-        - application/json
-      parameters:
-        - name: name
-          in: path
-          description: ''
-          required: true
-          type: string
-          default: ''
+      - dataplanes+insights
+      summary: 'List all Dataplanes and their statuses within a given Mesh.'
+      description: 'Return a list of existing Dataplane resources and their statuses within a given Mesh.'
+      operationId: getDataplaneInsights
       responses:
-        '200':
-          description: ''
-          headers: {}
-  /meshes/{name}/dataplanes+insights/{name}:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/dataplanes+insights/{dataplane-name}:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    - $ref: '#/components/parameters/dataplane-name'
     get:
-      description: 'TODO: Add Description'
-      summary: Get Dataplanes with insights by name
       tags:
-        - data-plane+insights
-      operationId: G-DPlaneInsght-ByName
-      deprecated: false
-      produces:
-        - application/json
-      parameters:
-        - name: name
-          in: path
-          description: ''
-          required: true
-          type: string
-          default: ''
+      - dataplanes+insights
+      summary: 'Get a Dataplane and its status.'
+      description: 'Return an existing Dataplane resource and its status within a given Mesh.'
+      operationId: getDataplaneInsight
       responses:
-        '200':
-          description: ''
-          headers: {}
-  /meshes/{name}/health-checks:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get Healthchecks
-        tags:
-          - health-check
-        operationId: G-HealthChk
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-  /meshes/{name}/health-checks/{name}:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get Healthchecks by name
-        tags:
-          - health-check
-        operationId: G-HealthChk-ByName
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-  /meshes/{name}/proxytemplates:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get proxy templates
-        tags:
-          - proxytemplate
-        operationId: G-Proxy
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-  /meshes/{name}/proxytemplates/{name}:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get proxy template by name
-        tags:
-          - proxytemplate
-        operationId: G-Proxy-ByName
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-  /meshes/{name}/traffic-logs:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get traffic logs
-        tags:
-          - traffic-logs
-        operationId: G-Trfclog
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-  /meshes/{name}/traffic-logs/{name}:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get traffic logs by name
-        tags:
-          - traffic-logs
-        operationId: G-Trfclog-ByName
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-  /meshes/{name}/traffic-permissions:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get traffic permissions
-        tags:
-          - traffic-permission
-        operationId: G-Trfcprm
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-  /meshes/{name}/traffic-permissions/{name}:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get traffic permission by name
-        tags:
-          - traffic-permission
-        operationId: G-Trfcprm-ByName
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-  /meshes/{name}/traffic-routes:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get traffic routes
-        tags:
-          - traffic-route
-        operationId: G-Trfcrte
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-  /meshes/{name}/traffic-routes/{name}:
-      get:
-        description: 'TODO: Add Description'
-        summary: Get traffic route by name
-        tags:
-          - traffic-route
-        operationId: G-Trfcrte-ByName
-        deprecated: false
-        produces:
-          - application/json
-        parameters:
-          - name: name
-            in: path
-            description: ''
-            required: true
-            type: string
-            default: ''
-        responses:
-          '200':
-            description: ''
-            headers: {}
-tags:
-  - name: control-plane
-    description: ''
-  - name: meshes
-    description: ''
-  - name: data-plane
-    description: ''
-  - name: data-plane+insights
-    description: ''
-  - name: health-check
-    description: ''
-  - name: proxytemplate
-    description: ''
-  - name: traffic-logs
-    description: ''
-  - name: traffic-permission
-    description: ''
-  - name: traffic-route
-    description: ''
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/health-checks:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    get:
+      tags:
+      - health-checks
+      summary: Get Healthchecks
+      description: 'TODO: Add Description'
+      operationId: G-HealthChk
+      responses:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/health-checks/{policy-name}:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    - $ref: '#/components/parameters/policy-name'
+    get:
+      tags:
+      - health-checks
+      summary: Get Healthchecks by name
+      description: 'TODO: Add Description'
+      operationId: G-HealthChk-ByName
+      responses:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/proxytemplates:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    get:
+      tags:
+      - proxytemplates
+      summary: Get proxy templates
+      description: 'TODO: Add Description'
+      operationId: G-Proxy
+      responses:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/proxytemplates/{policy-name}:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    - $ref: '#/components/parameters/policy-name'
+    get:
+      tags:
+      - proxytemplates
+      summary: Get proxy template by name
+      description: 'TODO: Add Description'
+      operationId: G-Proxy-ByName
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/traffic-logs:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    get:
+      tags:
+      - traffic-logs
+      summary: Get traffic logs
+      description: 'TODO: Add Description'
+      operationId: G-Trfclog
+      responses:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/traffic-logs/{policy-name}:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    - $ref: '#/components/parameters/policy-name'
+    get:
+      tags:
+      - traffic-logs
+      summary: Get traffic logs by name
+      description: 'TODO: Add Description'
+      operationId: G-Trfclog-ByName
+      responses:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/traffic-permissions:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    get:
+      tags:
+      - traffic-permissions
+      summary: Get traffic permissions
+      description: 'TODO: Add Description'
+      operationId: G-Trfcprm
+      responses:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/traffic-permissions/{policy-name}:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    - $ref: '#/components/parameters/policy-name'
+    get:
+      tags:
+      - traffic-permissions
+      summary: Get traffic permission by name
+      description: 'TODO: Add Description'
+      operationId: G-Trfcprm-ByName
+      responses:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/traffic-routes:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    get:
+      tags:
+      - traffic-routes
+      summary: Get traffic routes
+      description: 'TODO: Add Description'
+      operationId: G-Trfcrte
+      responses:
+        200:
+          description: ""
+          content: {}
+  /meshes/{mesh-name}/traffic-routes/{policy-name}:
+    # A list of parameters that are applicable for all the operations described under this path.
+    parameters:
+    - $ref: '#/components/parameters/mesh-name'
+    - $ref: '#/components/parameters/policy-name'
+    get:
+      tags:
+      - traffic-routes
+      summary: Get traffic route by name
+      description: 'TODO: Add Description'
+      operationId: G-Trfcrte-ByName
+      responses:
+        200:
+          description: ""
+          content: {}
+# An element to hold various schemas for the specification.
+components:
+  schemas:
+    config.kuma-cp.v1alpha1.Config:
+      title: 'Configuration of `kuma-cp`'
+      description: 'TODO(autogenerate)'
+      type: object
+    kuma.api.v1alpha1.Error:
+      title: 'API error'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        title:
+          type: string
+        details:
+          type: string
+      required:
+      - title
+      - details
+    kuma.mesh.v1alpha1.Mesh:
+      title: 'Mesh resource'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['Mesh']
+          default: 'Mesh'
+        name:
+          type: string
+      required:
+      - type
+      - name
+    kuma.mesh.v1alpha1.Dataplane:
+      title: 'Dataplane resource'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['Dataplane']
+          default: 'Dataplane'
+        mesh:
+          type: string
+        name:
+          type: string
+      required:
+      - type
+      - mesh
+      - name
+    kuma.mesh.v1alpha1.HealthCheck:
+      title: 'HealthCheck resource'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['HealthCheck']
+          default: 'HealthCheck'
+        mesh:
+          type: string
+        name:
+          type: string
+      required:
+      - type
+      - mesh
+      - name
+    kuma.mesh.v1alpha1.ProxyTemplate:
+      title: 'ProxyTemplate resource'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['ProxyTemplate']
+          default: 'ProxyTemplate'
+        mesh:
+          type: string
+        name:
+          type: string
+      required:
+      - type
+      - mesh
+      - name
+    kuma.mesh.v1alpha1.TrafficLog:
+      title: 'ProxyTemplate resource'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['TrafficLog']
+          default: 'TrafficLog'
+        mesh:
+          type: string
+        name:
+          type: string
+      required:
+      - type
+      - mesh
+      - name
+    kuma.mesh.v1alpha1.TrafficPermission:
+      title: 'TrafficPermission resource'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['TrafficPermission']
+          default: 'TrafficPermission'
+        mesh:
+          type: string
+        name:
+          type: string
+      required:
+      - type
+      - mesh
+      - name
+    kuma.mesh.v1alpha1.TrafficRoute:
+      title: 'TrafficRoute resource'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ['TrafficRoute']
+          default: 'TrafficRoute'
+        mesh:
+          type: string
+        name:
+          type: string
+      required:
+      - type
+      - mesh
+      - name
+    kuma.mesh.v1alpha1.MeshList:
+      title: 'List of Mesh resources'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/kuma.mesh.v1alpha1.Mesh"
+    kuma.mesh.v1alpha1.DataplaneList:
+      title: 'List of Dataplane resources'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/kuma.mesh.v1alpha1.Dataplane"
+    kuma.mesh.v1alpha1.HealthCheckList:
+      title: 'List of HealthCheck resources'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/kuma.mesh.v1alpha1.HealthCheck"
+    kuma.mesh.v1alpha1.ProxyTemplateList:
+      title: 'List of ProxyTemplate resources'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/kuma.mesh.v1alpha1.ProxyTemplate"
+    kuma.mesh.v1alpha1.TrafficLogList:
+      title: 'List of TrafficLog resources'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/kuma.mesh.v1alpha1.TrafficLog"
+    kuma.mesh.v1alpha1.TrafficPermissionList:
+      title: 'List of TrafficPermission resources'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/kuma.mesh.v1alpha1.TrafficPermission"
+    kuma.mesh.v1alpha1.TrafficRouteList:
+      title: 'List of TrafficRoute resources'
+      description: 'TODO(autogenerate)'
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/kuma.mesh.v1alpha1.TrafficRoute"
+  parameters:
+    mesh-name:
+      description: 'Name of a Mesh.'
+      name: mesh-name
+      in: path
+      required: true
+      schema:
+        type: string
+      examples:
+        parameter.mesh-name.demo:
+          $ref: '#/components/examples/parameter.mesh-name.demo'
+    dataplane-name:
+      description: 'Name of a Dataplane within a Mesh.'
+      name: dataplane-name
+      in: path
+      required: true
+      schema:
+        type: string
+      examples:
+        parameter.dataplane-name.web-01:
+          $ref: '#/components/examples/parameter.dataplane-name.web-01'
+    policy-name:
+      description: 'Name of a policy (such as ProxyTemplate, TrafficRoute, HealthCheck, etc) within a Mesh.'
+      name: policy-name
+      in: path
+      required: true
+      schema:
+        type: string
+      examples:
+        parameter.policy-name.web-to-backend:
+          $ref: '#/components/examples/parameter.policy-name.web-to-backend'
+  responses:
+    resource.get.not-found:
+      description: 'There is no resource with a given name.'
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/kuma.api.v1alpha1.Error'
+          examples:
+            error.resource.get.not-found:
+              $ref: '#/components/examples/error.resource.get.not-found'
+    resource.put.request-body-not-valid:
+      description: 'Request body is not a valid resource.'
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/kuma.api.v1alpha1.Error'
+          examples:
+            error.resource.put.invalid-name:
+              $ref: '#/components/examples/error.resource.put.invalid-name'
+    resource.put.created:
+      description: 'A new resource has been created.'
+    resource.put.updated:
+      description: 'An existing resource has been updated.'
+    resource.delete.not-found:
+      description: 'There is no resource with a given name.'
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/kuma.api.v1alpha1.Error'
+          examples:
+            error.resource.get.not-found:
+              $ref: '#/components/examples/error.resource.delete.not-found'
+    resource.delete.successful:
+      description: 'An existing resource has been deleted.'
+  examples:
+    parameter.mesh-name.demo:
+      summary: 'Mesh named `demo`'
+      value: 'demo'
+    parameter.dataplane-name.web-01:
+      summary: 'Dataplane named `web-01`'
+      value: 'web-01'
+    parameter.policy-name.web-to-backend:
+      summary: 'Policy named `web-to-backend`'
+      value: 'web-to-backend'
+    config.kuma-cp.universal:
+      summary: 'Effective configuration of `kuma-cp` in `Universal` mode'
+      value:
+        environment: universal
+        general:
+          advertisedHostname: kuma-control-plane.internal
+    resource.mesh.with-builtin-ca-and-mtls-enabled:
+      summary: 'Mesh with "builtin" CA and mTLS enabled'
+      value:
+        type: Mesh
+        name: demo
+        mtls:
+          enabled: true
+          ca:
+            builtin: {}
+    resource.mesh.with-provided-ca-and-mtls-enabled:
+      summary: 'Mesh with "provided" CA and mTLS enabled'
+      value:
+        type: Mesh
+        name: demo
+        mtls:
+          enabled: true
+          ca:
+            provided: {}
+    resource.mesh-list.non-empty:
+      summary: 'Non-empty list of Mesh resources'
+      value:
+        items:
+        - type: Mesh
+          name: default
+          mtls:
+            ca:
+              builtin: {}
+        - type: Mesh
+          name: demo
+          mtls:
+            enabled: true
+            ca:
+              provided: {}
+    resource.dataplane.web:
+      summary: 'Dataplane with both "inbound" and "outbound" interfaces'
+      value:
+        type: Dataplane
+        mesh: default
+        name: web-01
+        networking:
+          inbound:
+          - interface: 0.0.0.0:18080:8080
+            tags:
+              service: web
+          outbound:
+          - interface: 0.0.0.0:23000
+            service: backend
+    resource.dataplane-list.non-empty:
+      summary: 'Non-empty list of Dataplane resources'
+      value:
+        items:
+        - type: Dataplane
+          mesh: default
+          name: web-01
+          networking:
+            inbound:
+            - interface: 0.0.0.0:18080:8080
+              tags:
+                service: web
+            outbound:
+            - interface: 0.0.0.0:23000
+              service: backend
+        - type: Dataplane
+          mesh: default
+          name: backend-01
+          networking:
+            inbound:
+            - interface: 0.0.0.0:13000:3000
+              tags:
+                service: backend
+    error.resource.get.not-found:
+      summary: 'Resource not found'
+      value:
+        title: 'Could not retrieve a resource'
+        details: 'Not found'
+    error.resource.put.invalid-name:
+      summary: 'Request body is not valid'
+      value:
+        title: 'Could not process a resource'
+        details: 'Resource is not valid'
+        causes:
+        - field: 'name'
+          message: 'name from the URL has to be the same as in body'
+    error.resource.delete.not-found:
+      summary: 'Resource not found'
+      value:
+        title: 'Could not delete a resource'
+        details: 'Not found'
