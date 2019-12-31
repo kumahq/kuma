@@ -1,14 +1,22 @@
 package test
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
 func GetFreePort() (int, error) {
-	ln, err := net.Listen("tcp", ":0")
+	port, err := FindFreePort("")
+	return int(port), err
+}
+
+func FindFreePort(ip string) (uint32, error) {
+	ln, err := net.Listen("tcp", fmt.Sprintf("%s:0", ip))
 	if err != nil {
 		return 0, err
 	}
 	if err := ln.Close(); err != nil {
 		return 0, err
 	}
-	return ln.Addr().(*net.TCPAddr).Port, nil
+	return uint32(ln.Addr().(*net.TCPAddr).Port), nil
 }

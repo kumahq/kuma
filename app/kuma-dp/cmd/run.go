@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"github.com/Kong/kuma/pkg/catalog/client"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/Kong/kuma/pkg/catalog/client"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -15,7 +16,9 @@ import (
 	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
+	config_types "github.com/Kong/kuma/pkg/config/types"
 	"github.com/Kong/kuma/pkg/core"
+	util_net "github.com/Kong/kuma/pkg/util/net"
 )
 
 type CatalogClientFactory func(string) (client.CatalogClient, error)
@@ -62,6 +65,16 @@ func newRunCmd() *cobra.Command {
 				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
 					return err
 				}
+			}
+
+			if !cfg.Dataplane.AdminPort.Empty() {
+				// unless a user has explicitly opted out of Envoy Admin API, pick a free port from the range
+				adminPort, err := util_net.PickTCPPort("127.0.0.1", cfg.Dataplane.AdminPort.Lowest(), cfg.Dataplane.AdminPort.Highest())
+				if err != nil {
+					return errors.Wrapf(err, "unable to find a free port in the range %q for Envoy Admin API to listen on", cfg.Dataplane.AdminPort)
+				}
+				cfg.Dataplane.AdminPort = config_types.MustExactPort(adminPort)
+				runLog.Info("picked a free port for Envoy Admin API to listen on", "port", cfg.Dataplane.AdminPort)
 			}
 
 			if cfg.DataplaneRuntime.ConfigDir == "" {
@@ -125,7 +138,7 @@ func newRunCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
-	cmd.PersistentFlags().Uint32Var(&cfg.Dataplane.AdminPort, "admin-port", cfg.Dataplane.AdminPort, "Port for Envoy Admin")
+	cmd.PersistentFlags().Var(&cfg.Dataplane.AdminPort, "admin-port", `Port (or range of ports to choose from) for Envoy Admin API to listen on. Empty value indicates that Envoy Admin API should not be exposed over TCP. Format: "9901 | 9901-9999 | 9901- | -9901"`)
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.ApiServer.URL, "cp-address", cfg.ControlPlane.ApiServer.URL, "URL of the Control Plane API Server")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")

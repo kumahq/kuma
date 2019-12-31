@@ -4,7 +4,12 @@ controlPlane:
 dataplane:
   mesh:
   name:
-  adminPort: 82345
+  # If a field value is not valid, config loader fails early
+  # and `Validate()` method is not be called at all.
+  # Notice that it's not specific to the `adminPort` field, though;
+  # putting text into a number field will cause the same behaviour.
+  #
+  # adminPort: 82345
   drainTime: 0
 dataplaneRuntime:
   binaryPath:

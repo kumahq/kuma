@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: enable Envoy Admin API by default with an option to opt out
+  [#523](https://github.com/Kong/kuma/pull/523)
 * feature: add integration with Prometheus on K8S
   [#524](https://github.com/Kong/kuma/pull/524)
 * feature: generate Envoy configuration that exposes Prometheus metrics

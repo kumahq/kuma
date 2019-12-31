@@ -9,14 +9,22 @@ import (
 	"strconv"
 	"strings"
 
-	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
+	config_types "github.com/Kong/kuma/pkg/config/types"
 )
 
 var _ = Describe("Remote Bootstrap", func() {
 
-	It("should generate bootstrap configuration", func() {
+	type testCase struct {
+		config                   kuma_dp.Config
+		expectedBootstrapRequest string
+	}
+
+	DescribeTable("should generate bootstrap configuration", func(given testCase) {
 		// given
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
@@ -25,14 +33,7 @@ var _ = Describe("Remote Bootstrap", func() {
 			defer GinkgoRecover()
 			body, err := ioutil.ReadAll(req.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(body).To(MatchJSON(`
-			{
-				"mesh": "demo",
-				"name": "sample",
-				"adminPort": 4321,
-				"dataplaneTokenPath": "/tmp/token"
-			}
-			`))
+			Expect(body).To(MatchJSON(given.expectedBootstrapRequest))
 
 			response, err := ioutil.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
@@ -45,17 +46,72 @@ var _ = Describe("Remote Bootstrap", func() {
 		// and
 		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
 
-		cfg := kuma_dp.DefaultConfig()
-		cfg.Dataplane.Mesh = "demo"
-		cfg.Dataplane.Name = "sample"
-		cfg.Dataplane.AdminPort = 4321
-		cfg.DataplaneRuntime.TokenPath = "/tmp/token"
-
 		// when
-		config, err := generator(fmt.Sprintf("http://localhost:%d", port), cfg)
+		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(config).ToNot(BeNil())
-	})
+	},
+		Entry("should support port range with exactly 1 port",
+			func() testCase {
+				cfg := kuma_dp.DefaultConfig()
+				cfg.Dataplane.Mesh = "demo"
+				cfg.Dataplane.Name = "sample"
+				cfg.Dataplane.AdminPort = config_types.MustExactPort(4321) // exact port
+				cfg.DataplaneRuntime.TokenPath = "/tmp/token"
+
+				return testCase{
+					config: cfg,
+					expectedBootstrapRequest: `
+                    {
+                      "mesh": "demo",
+                      "name": "sample",
+                      "adminPort": 4321,
+                      "dataplaneTokenPath": "/tmp/token"
+                    }
+`,
+				}
+			}()),
+
+		Entry("should support port range with multiple ports (choose the lowest port)",
+			func() testCase {
+				cfg := kuma_dp.DefaultConfig()
+				cfg.Dataplane.Mesh = "demo"
+				cfg.Dataplane.Name = "sample"
+				cfg.Dataplane.AdminPort = config_types.MustPortRange(4321, 8765) // port range
+				cfg.DataplaneRuntime.TokenPath = "/tmp/token"
+
+				return testCase{
+					config: cfg,
+					expectedBootstrapRequest: `
+                    {
+                      "mesh": "demo",
+                      "name": "sample",
+                      "adminPort": 4321,
+                      "dataplaneTokenPath": "/tmp/token"
+                    }
+`,
+				}
+			}()),
+		Entry("should support empty port range",
+			func() testCase {
+				cfg := kuma_dp.DefaultConfig()
+				cfg.Dataplane.Mesh = "demo"
+				cfg.Dataplane.Name = "sample"
+				cfg.Dataplane.AdminPort = config_types.PortRange{} // empty port range
+				cfg.DataplaneRuntime.TokenPath = "/tmp/token"
+
+				return testCase{
+					config: cfg,
+					expectedBootstrapRequest: `
+                    {
+                      "mesh": "demo",
+                      "name": "sample",
+                      "dataplaneTokenPath": "/tmp/token"
+                    }
+`,
+				}
+			}()),
+	)
 })

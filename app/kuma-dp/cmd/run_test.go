@@ -5,13 +5,15 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/Kong/kuma/pkg/catalog"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/Kong/kuma/pkg/catalog"
 
 	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
@@ -288,6 +290,32 @@ var _ = Describe("run", func() {
 				expectedFile: "",
 			}
 		}),
+		Entry("can be launched without Envoy Admin API (env vars)", func() testCase {
+			return testCase{
+				envVars: map[string]string{
+					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
+					"KUMA_DATAPLANE_NAME":                "example",
+					"KUMA_DATAPLANE_ADMIN_PORT":          "",
+					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
+				},
+				args:         []string{},
+				expectedFile: "",
+			}
+		}),
+		Entry("can be launched without Envoy Admin API (command-line args)", func() testCase {
+			return testCase{
+				envVars: map[string]string{},
+				args: []string{
+					"--cp-address", "http://localhost:1234",
+					"--name", "example",
+					"--admin-port", "",
+					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
+				},
+				expectedFile: "",
+			}
+		}),
 	)
 
 	It("should fail when dataplane token server is enabled but token is not provided", func() {
@@ -310,5 +338,35 @@ var _ = Describe("run", func() {
 		// then
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP"))
+	})
+
+	It("should fail when there are no free ports in the port range chosen for Envoy Admin API", func() {
+
+		By("simulating another Envoy instance that already uses this port")
+		// given
+		address := fmt.Sprintf("%s:%d", "127.0.0.1", port)
+		// when
+		l, err := net.Listen("tcp", address)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		defer l.Close()
+
+		// given
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{
+			"run",
+			"--cp-address", "http://localhost:1234",
+			"--name", "example",
+			"--admin-port", fmt.Sprintf("%d", port),
+			"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+		})
+
+		// when
+		err = cmd.Execute()
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(`unable to find a free port in the range "%d" for Envoy Admin API to listen on`, port)))
 	})
 })

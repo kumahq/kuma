@@ -3,11 +3,12 @@ package envoy
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/catalog"
 	"io"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/Kong/kuma/pkg/catalog"
 
 	"path/filepath"
 
