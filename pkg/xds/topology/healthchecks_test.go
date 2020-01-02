@@ -292,7 +292,7 @@ var _ = Describe("HealthCheck", func() {
 					},
 				},
 			}),
-			Entry("HealthChecks should be ordered by name to consistently pick between two equally specific HealthCehcks", testCase{
+			Entry("HealthChecks should be picked by latest modification date given two equally specific HealthChecks", testCase{
 				dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -311,7 +311,8 @@ var _ = Describe("HealthCheck", func() {
 				healthChecks: []*mesh_core.HealthCheckResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Name: "healthcheck-everything-passive",
+							Name:             "healthcheck-everything-passive",
+							ModificationTime: time.Unix(1, 1),
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
@@ -332,7 +333,8 @@ var _ = Describe("HealthCheck", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Name: "healthcheck-everything-active",
+							Name:             "healthcheck-everything-active",
+							ModificationTime: time.Unix(0, 0),
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
@@ -353,7 +355,7 @@ var _ = Describe("HealthCheck", func() {
 				expected: core_xds.HealthCheckMap{
 					"redis": &mesh_core.HealthCheckResource{
 						Meta: &test_model.ResourceMeta{
-							Name: "healthcheck-everything-active",
+							Name: "healthcheck-everything-passive",
 						},
 					},
 				},
@@ -556,7 +558,7 @@ var _ = Describe("HealthCheck", func() {
 					},
 				},
 			}),
-			Entry("in case if HealthChecks have equal aggregate ranks, most specific one should be selected based on ordering by name", testCase{
+			Entry("in case if HealthChecks have equal aggregate ranks, most specific one should be selected based on last modification date", testCase{
 				dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -575,7 +577,8 @@ var _ = Describe("HealthCheck", func() {
 				healthChecks: []*mesh_core.HealthCheckResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Name: "equally-specific-2",
+							Name:             "equally-specific-2",
+							ModificationTime: time.Unix(1, 1),
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
@@ -596,7 +599,8 @@ var _ = Describe("HealthCheck", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Name: "equally-specific-1",
+							Name:             "equally-specific-1",
+							ModificationTime: time.Unix(0, 0),
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
@@ -617,7 +621,7 @@ var _ = Describe("HealthCheck", func() {
 				expected: core_xds.HealthCheckMap{
 					"redis": &mesh_core.HealthCheckResource{
 						Meta: &test_model.ResourceMeta{
-							Name: "equally-specific-1",
+							Name: "equally-specific-2",
 						},
 					},
 				},

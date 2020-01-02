@@ -2,6 +2,7 @@ package topology_test
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -312,7 +313,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("TrafficRoutes should be ordered by name to consistently pick between two equally specific routes", testCase{
+			Entry("TrafficRoutes should be picked by latest modification date given two equally specific routes", testCase{
 				dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -328,7 +329,8 @@ var _ = Describe("TrafficRoute", func() {
 				routes: []*mesh_core.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Name: "everything-to-hollygrail",
+							Name:             "everything-to-hollygrail",
+							ModificationTime: time.Unix(1, 1),
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
@@ -347,7 +349,8 @@ var _ = Describe("TrafficRoute", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Name: "everything-to-blackhole",
+							Name:             "everything-to-blackhole",
+							ModificationTime: time.Unix(0, 0),
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
@@ -368,7 +371,7 @@ var _ = Describe("TrafficRoute", func() {
 				expected: core_xds.RouteMap{
 					"redis": &mesh_core.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
-							Name: "everything-to-blackhole",
+							Name: "everything-to-hollygrail",
 						},
 					},
 				},
@@ -556,7 +559,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("in case if TrafficRoutes have equal aggregate ranks, most specific one should be selected based on ordering by name", testCase{
+			Entry("in case if TrafficRoutes have equal aggregate ranks, most specific one should be selected based on last modification date", testCase{
 				dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -572,7 +575,8 @@ var _ = Describe("TrafficRoute", func() {
 				routes: []*mesh_core.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Name: "equally-specific-2",
+							Name:             "equally-specific-2",
+							ModificationTime: time.Unix(1, 1),
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
@@ -591,7 +595,8 @@ var _ = Describe("TrafficRoute", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Name: "equally-specific-1",
+							Name:             "equally-specific-1",
+							ModificationTime: time.Unix(0, 0),
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
@@ -612,7 +617,7 @@ var _ = Describe("TrafficRoute", func() {
 				expected: core_xds.RouteMap{
 					"redis": &mesh_core.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
-							Name: "equally-specific-1",
+							Name: "equally-specific-2",
 						},
 					},
 				},

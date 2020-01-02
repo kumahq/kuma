@@ -77,7 +77,6 @@ func SelectConnectionPolicies(dataplane *mesh_core.DataplaneResource, destinatio
 			if dataplane.Spec.Matches(sourceSelector) {
 				sourceRank := sourceSelector.Rank()
 				if !matches || sourceRank.CompareTo(candidate.bestSourceRank) > 0 {
-					// TODO(yskopets): use CreationDate to resolve a conflict between 2 equal ranks
 					candidate.bestSourceRank = sourceRank
 				}
 				matches = true
@@ -115,8 +114,9 @@ func SelectConnectionPolicies(dataplane *mesh_core.DataplaneResource, destinatio
 
 					candidateByDestination, exists := candidatesByDestination[service]
 
-					if !exists || aggregateRank.CompareTo(candidateByDestination.bestAggregateRank) > 0 {
-						// TODO(yskopets): use CreationDate to resolve a conflict between 2 equal ranks
+					if !exists ||
+						aggregateRank.CompareTo(candidateByDestination.bestAggregateRank) > 0 ||
+						(aggregateRank.CompareTo(candidateByDestination.bestAggregateRank) == 0 && candidateBySource.policy.GetMeta().GetModificationTime().After(candidateByDestination.policy.GetMeta().GetModificationTime())) {
 						candidateByDestination.candidateBySource = candidateBySource
 						candidateByDestination.bestAggregateRank = aggregateRank
 
