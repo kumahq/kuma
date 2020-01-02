@@ -162,7 +162,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	}
 
 	currentMesh := &core_mesh.MeshResource{}
-	if err := m.Get(ctx, currentMesh, core_store.GetBy(core_model.MetaToResourceKey(mesh.GetMeta()))); err != nil {
+	if err := m.Get(ctx, currentMesh, core_store.GetBy(core_model.MetaToResourceKey(mesh.GetMeta())), core_store.GetByVersion(mesh.GetMeta().GetVersion())); err != nil {
 		return err
 	}
 	if err := m.meshValidator.ValidateUpdate(ctx, currentMesh, mesh); err != nil {

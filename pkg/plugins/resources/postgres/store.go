@@ -172,6 +172,10 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 		Version: strconv.Itoa(version),
 	}
 	resource.SetMeta(meta)
+
+	if opts.Version != "" && resource.GetMeta().GetVersion() != opts.Version {
+		return store.ErrorResourcePreconditionFailed(resource.GetType(), opts.Name, opts.Mesh)
+	}
 	return nil
 }
 

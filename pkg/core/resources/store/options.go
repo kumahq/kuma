@@ -90,8 +90,9 @@ func NewDeleteAllOptions(fs ...DeleteAllOptionsFunc) *DeleteAllOptions {
 }
 
 type GetOptions struct {
-	Name string
-	Mesh string
+	Name    string
+	Mesh    string
+	Version string
 }
 
 type GetOptionsFunc func(*GetOptions)
@@ -112,6 +113,12 @@ func GetByKey(name, mesh string) GetOptionsFunc {
 	return func(opts *GetOptions) {
 		opts.Name = name
 		opts.Mesh = mesh
+	}
+}
+
+func GetByVersion(version string) GetOptionsFunc {
+	return func(opts *GetOptions) {
+		opts.Version = version
 	}
 }
 
