@@ -245,8 +245,8 @@ func ExecuteStoreTests(
 			// when trying to retrieve resource with different version
 			err = s.Get(context.Background(), &sample_model.TrafficRouteResource{}, store.GetByKey(name, mesh), store.GetByVersion("9999999"))
 
-			// then resource is not found
-			Expect(store.IsResourceNotFound(err)).To(BeTrue())
+			// then resource precondition failed error occurred
+			Expect(store.IsResourcePreconditionFailed(err)).To(BeTrue())
 		})
 	})
 

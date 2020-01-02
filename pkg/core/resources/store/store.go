@@ -122,6 +122,14 @@ func ErrorResourceConflict(rt model.ResourceType, name, mesh string) error {
 	return fmt.Errorf("Resource conflict: type=%q name=%q mesh=%q", rt, name, mesh)
 }
 
+func ErrorResourcePreconditionFailed(rt model.ResourceType, name, mesh string) error {
+	return fmt.Errorf("Resource precondition failed: type=%q name=%q mesh=%q", rt, name, mesh)
+}
+
 func IsResourceNotFound(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), "Resource not found")
+}
+
+func IsResourcePreconditionFailed(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "Resource precondition failed")
 }

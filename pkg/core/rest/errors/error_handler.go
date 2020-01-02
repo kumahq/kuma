@@ -14,6 +14,8 @@ func HandleError(response *restful.Response, err error, title string) {
 	switch {
 	case store.IsResourceNotFound(err):
 		handleNotFound(title, response)
+	case store.IsResourcePreconditionFailed(err):
+		handlePreconditionFailed(title, response)
 	case manager.IsMeshNotFound(err):
 		handleMeshNotFound(title, err.(*manager.MeshNotFoundError), response)
 	case validators.IsValidationError(err):
@@ -29,6 +31,14 @@ func handleNotFound(title string, response *restful.Response) {
 		Details: "Not found",
 	}
 	writeError(response, 404, kumaErr)
+}
+
+func handlePreconditionFailed(title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: "Precondition Failed",
+	}
+	writeError(response, 412, kumaErr)
 }
 
 func handleMeshNotFound(title string, err *manager.MeshNotFoundError, response *restful.Response) {
