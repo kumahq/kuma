@@ -63,7 +63,7 @@ func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Pr
 var predefinedProfiles = make(map[string]ResourceGenerator)
 
 func NewDefaultProxyProfile() ResourceGenerator {
-	return CompositeResourceGenerator{TransparentProxyGenerator{}, InboundProxyGenerator{}, OutboundProxyGenerator{}}
+	return CompositeResourceGenerator{PrometheusEndpointGenerator{}, TransparentProxyGenerator{}, InboundProxyGenerator{}, OutboundProxyGenerator{}}
 }
 
 func init() {
@@ -97,7 +97,7 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	resources := &ResourceSet{}
 	for _, endpoint := range endpoints {
 		// generate CDS resource
-		localClusterName := fmt.Sprintf("localhost:%d", endpoint.WorkloadPort)
+		localClusterName := localClusterName(endpoint.WorkloadPort)
 		resources.Add(&Resource{
 			Name:     localClusterName,
 			Version:  "",
@@ -105,7 +105,7 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		})
 
 		// generate LDS resource
-		inboundListenerName := fmt.Sprintf("inbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
+		inboundListenerName := localListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		resources.Add(&Resource{
 			Name:     inboundListenerName,
 			Version:  "",

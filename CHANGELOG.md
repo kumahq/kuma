@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: generate Envoy configuration that exposes Prometheus metrics
+  [#510](https://github.com/Kong/kuma/pull/510)
 * feature: make port of Envoy Admin API available to Envoy config generators
   [#508](https://github.com/Kong/kuma/pull/508)
 * feature: add option to run dataplane as a gateway without inbounds
