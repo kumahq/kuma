@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	"github.com/Kong/kuma/app/kuma-ui/pkg/server/types"
@@ -28,6 +30,19 @@ var _ = Describe("GUI Server", func() {
 	}
 
 	BeforeEach(func() {
+		// setup api server
+		mux := http.NewServeMux()
+		mux.HandleFunc("/some-endpoint", func(writer http.ResponseWriter, request *http.Request) {
+			defer GinkgoRecover()
+			writer.WriteHeader(200)
+			_, err := writer.Write([]byte(fmt.Sprintf("response from api server: %s", request.URL.Path)))
+			Expect(err).ToNot(HaveOccurred())
+		})
+		apiSrv := httptest.NewServer(mux)
+		apiSrvPort, err := strconv.Atoi(strings.Split(apiSrv.Listener.Addr().String(), ":")[1])
+		Expect(err).ToNot(HaveOccurred())
+
+		// setup gui server
 		port, err := test.GetFreePort()
 		Expect(err).ToNot(HaveOccurred())
 		baseUrl = "http://localhost:" + strconv.Itoa(port)
@@ -40,6 +55,7 @@ var _ = Describe("GUI Server", func() {
 					Environment: "kubernetes",
 				},
 			},
+			ApiServerPort: apiSrvPort,
 		}
 		stop = make(chan struct{})
 		go func() {
@@ -120,6 +136,24 @@ var _ = Describe("GUI Server", func() {
 
 		// then
 		Expect(cfg).To(Equal(guiConfig))
+	})
+
+	It("should proxy requests to api server", func() {
+		// when
+		resp, err := http.Get(fmt.Sprintf("%s/api/some-endpoint", baseUrl))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		received, err := ioutil.ReadAll(resp.Body)
+
+		// then
+		Expect(resp.Body.Close()).To(Succeed())
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		Expect(string(received)).To(Equal("response from api server: /some-endpoint"))
 	})
 
 })

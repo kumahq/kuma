@@ -6,6 +6,8 @@ Changes:
 
 * feature: add integration with Prometheus on K8S
   [#524](https://github.com/Kong/kuma/pull/524)
+* feature: redirect requests to /api path on GUI server to API Server
+  [#520](https://github.com/Kong/kuma/pull/520)
 * feature: generate Envoy configuration that exposes Prometheus metrics
   [#510](https://github.com/Kong/kuma/pull/510)
 * feature: make port of Envoy Admin API available to Envoy config generators

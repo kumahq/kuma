@@ -10,12 +10,18 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"strings"
 )
 
 var log = core.Log.WithName("gui-server")
 
 func SetupServer(rt core_runtime.Runtime) error {
-	srv := Server{rt.Config().GuiServer}
+	srv := Server{
+		Config:        rt.Config().GuiServer,
+		ApiServerPort: rt.Config().ApiServer.Port,
+	}
 	if err := core_runtime.Add(rt, &srv); err != nil {
 		return err
 	}
@@ -23,7 +29,8 @@ func SetupServer(rt core_runtime.Runtime) error {
 }
 
 type Server struct {
-	Config *gui_server.GuiServerConfig
+	Config        *gui_server.GuiServerConfig
+	ApiServerPort int
 }
 
 var _ core_runtime.Component = &Server{}
@@ -33,6 +40,11 @@ func (g *Server) Start(stop <-chan struct{}) error {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", fileServer)
+	apiHandler, err := g.apiHandler()
+	if err != nil {
+		return err
+	}
+	mux.Handle("/api/", apiHandler)
 	mux.HandleFunc("/config", g.configHandler)
 
 	guiServer := &http.Server{
@@ -62,6 +74,21 @@ func (g *Server) Start(stop <-chan struct{}) error {
 	case err := <-errChan:
 		return err
 	}
+}
+
+func (g *Server) apiHandler() (http.Handler, error) {
+	apiServerUrl, err := url.Parse(fmt.Sprintf("http://localhost:%d", g.ApiServerPort))
+	if err != nil {
+		return nil, err
+	}
+	proxy := httputil.NewSingleHostReverseProxy(apiServerUrl)
+	proxy.Director = func(request *http.Request) {
+		request.URL.Scheme = apiServerUrl.Scheme
+		request.URL.Host = apiServerUrl.Host
+		// strip the /api prefix
+		request.URL.Path = strings.TrimPrefix(request.URL.Path, "/api")
+	}
+	return proxy, nil
 }
 
 func (g *Server) configHandler(writer http.ResponseWriter, request *http.Request) {
