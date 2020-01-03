@@ -20,4 +20,7 @@ const (
 
 	KumaGatewayAnnotation = "kuma.io/gateway"
 	KumaGatewayEnabled    = "enabled"
+
+	KumaMetricsPrometheusPort = "prometheus.metrics.kuma.io/port"
+	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
 )

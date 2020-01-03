@@ -82,6 +82,12 @@ data:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  name: kuma-injector
+  namespace: kuma-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
   name: kuma-control-plane
   namespace: kuma-system
 ---
@@ -3333,6 +3339,20 @@ rules:
   - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma:injector
+rules:
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshes
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma:control-plane
@@ -3344,6 +3364,19 @@ subjects:
 - kind: ServiceAccount
   name: kuma-control-plane
   namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma:injector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma:injector
+subjects:
+  - kind: ServiceAccount
+    name: kuma-injector
+    namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -3533,6 +3566,7 @@ spec:
       labels:
         app: kuma-injector
     spec:
+      serviceAccountName: kuma-injector
       containers:
       - name: kuma-injector
         image: kong-docker-kuma-docker.bintray.io/kuma-injector:0.0.1

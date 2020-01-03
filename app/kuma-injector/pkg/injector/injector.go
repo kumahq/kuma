@@ -1,13 +1,21 @@
 package injector
 
 import (
+	"context"
 	"fmt"
+	"github.com/pkg/errors"
+	"strconv"
 
 	"github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
 	config "github.com/Kong/kuma/pkg/config/app/kuma-injector"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
+	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -20,14 +28,18 @@ const (
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 )
 
-func New(cfg config.Injector) *KumaInjector {
+func New(cfg config.Injector, client kube_client.Client) *KumaInjector {
 	return &KumaInjector{
-		cfg: cfg,
+		cfg:       cfg,
+		client:    client,
+		converter: k8s_resources.DefaultConverter(),
 	}
 }
 
 type KumaInjector struct {
-	cfg config.Injector
+	cfg       config.Injector
+	client    kube_client.Client
+	converter k8s_resources.Converter
 }
 
 func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
@@ -41,7 +53,11 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
-	for key, value := range i.NewAnnotations(pod) {
+	annotations, err := i.NewAnnotations(pod)
+	if err != nil {
+		return err
+	}
+	for key, value := range annotations {
 		pod.Annotations[key] = value
 	}
 
@@ -237,11 +253,63 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 	}
 }
 
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod) map[string]string {
-	return map[string]string{
-		metadata.KumaMeshAnnotation:                    metadata.GetMesh(pod), // either user-defined value or default
+func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod) (map[string]string, error) {
+	meshName := metadata.GetMesh(pod)
+	annotations := map[string]string{
+		metadata.KumaMeshAnnotation:                    meshName, // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:         metadata.KumaSidecarInjected,
 		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
 		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
 	}
+	prometheusAnnotations, err := i.prometheusAnnotations(meshName, pod)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not construct Prometheus annotations")
+	}
+	for k, v := range prometheusAnnotations {
+		annotations[k] = v
+	}
+	return annotations, nil
+}
+
+const (
+	prometheusScrape = "prometheus.io/scrape"
+	prometheusPath   = "prometheus.io/path"
+	prometheusPort   = "prometheus.io/port"
+)
+
+func (i *KumaInjector) prometheusAnnotations(meshName string, pod *kube_core.Pod) (map[string]string, error) {
+	annotations := map[string]string{}
+
+	// we want to ignore adding annotation when there are already prometheus annotation present on the Pod
+	_, scrapeExists := pod.Annotations[prometheusScrape]
+	_, pathExists := pod.Annotations[prometheusPath]
+	_, portExists := pod.Annotations[prometheusPort]
+	if scrapeExists || pathExists || portExists {
+		return annotations, nil
+	}
+
+	mesh := &mesh_k8s.Mesh{}
+	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
+		return nil, err
+	}
+	meshResource := &mesh_core.MeshResource{}
+	if err := i.converter.ToCoreResource(mesh, meshResource); err != nil {
+		return nil, err
+	}
+
+	if meshResource.Spec.GetMetrics().GetPrometheus() != nil {
+		// use mesh defaults
+		annotations[prometheusScrape] = "true"
+		annotations[prometheusPath] = meshResource.Spec.Metrics.Prometheus.Path
+		annotations[prometheusPort] = strconv.Itoa(int(meshResource.Spec.Metrics.Prometheus.Port))
+
+		// set overrides from custom Kuma Prometheus annotations
+		if port, exists := pod.GetAnnotations()[metadata.KumaMetricsPrometheusPort]; exists {
+			annotations[prometheusPort] = port
+		}
+		if path, exists := pod.GetAnnotations()[metadata.KumaMetricsPrometheusPath]; exists {
+			annotations[prometheusPath] = path
+		}
+	}
+	return annotations, nil
 }

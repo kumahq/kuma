@@ -1,8 +1,11 @@
 package injector_test
 
 import (
+	"context"
 	"fmt"
+	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -24,18 +27,31 @@ var _ = Describe("Injector", func() {
 	BeforeEach(func() {
 		var cfg conf.Injector
 		Expect(config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
-		injector = inject.New(cfg)
+		injector = inject.New(cfg, k8sClient)
 	})
 
 	type testCase struct {
-		num string
+		num      string
+		meshYAML string
 	}
+
+	BeforeEach(func() {
+		err := k8sClient.DeleteAllOf(context.Background(), &v1alpha1.Mesh{})
+		Expect(err).ToNot(HaveOccurred())
+	})
 
 	DescribeTable("should inject Kuma into a Pod",
 		func(given testCase) {
 			// setup
 			inputFile := filepath.Join("testdata", fmt.Sprintf("inject.%s.input.yaml", given.num))
 			goldenFile := filepath.Join("testdata", fmt.Sprintf("inject.%s.golden.yaml", given.num))
+
+			// and create mesh
+			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
+			obj, _, err := decoder.Decode([]byte(given.meshYAML), nil, nil)
+			Expect(err).ToNot(HaveOccurred())
+			err = k8sClient.Create(context.Background(), obj)
+			Expect(err).ToNot(HaveOccurred())
 
 			// given
 			pod := &kube_core.Pod{}
@@ -72,21 +88,90 @@ var _ = Describe("Injector", func() {
 		},
 		Entry("01. Pod without init containers and annotations", testCase{
 			num: "01",
+			meshYAML: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
 		}),
 		Entry("02. Pod with init containers and annotations", testCase{
 			num: "02",
+			meshYAML: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
 		}),
 		Entry("03. Pod without Namespace and Name", testCase{
 			num: "03",
+			meshYAML: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
 		}),
 		Entry("04. Pod with explicitly selected Mesh", testCase{
 			num: "04",
+			meshYAML: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: demo`,
 		}),
 		Entry("05. Pod without ServiceAccount token", testCase{
 			num: "05",
+			meshYAML: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
 		}),
 		Entry("06. Pod with kuma.io/gateway annotation", testCase{
 			num: "06",
+			meshYAML: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+		}),
+		Entry("07. Pod with mesh with metrics enabled", testCase{
+			num: "07",
+			meshYAML: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec:
+                metrics:
+                  prometheus:
+                    port: 1234
+                    path: /metrics`,
+		}),
+		Entry("08. Pod with prometheus annotation already defined so injector won't override those", testCase{
+			num: "08",
+			meshYAML: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec:
+                metrics:
+                  prometheus:
+                    port: 1234
+                    path: /metrics`,
+		}),
+		Entry("09. Pod with Kuma metrics annotation overrides", testCase{
+			num: "08",
+			meshYAML: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec:
+                metrics:
+                  prometheus:
+                    port: 1234
+                    path: /metrics`,
 		}),
 	)
 })
