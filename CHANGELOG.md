@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add proto definition for Monitoring Assignment Discovery Service (MADS)
+  [#525](https://github.com/Kong/kuma/pull/525)
 * feature: enable Envoy Admin API by default with an option to opt out
   [#523](https://github.com/Kong/kuma/pull/523)
 * feature: add integration with Prometheus on K8S
