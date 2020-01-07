@@ -104,7 +104,8 @@ var _ = Describe("Config WS", func() {
             "advertisedHostname": "localhost"
           },
           "guiServer": {
-            "port": 5683
+            "port": 5683,
+            "apiServerUrl": ""
           },
           "reports": {
             "enabled": true

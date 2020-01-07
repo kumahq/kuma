@@ -54,8 +54,8 @@ var _ = Describe("GUI Server", func() {
 					ApiUrl:      "http://kuma.internal:5681",
 					Environment: "kubernetes",
 				},
+				ApiServerUrl: fmt.Sprintf("http://localhost:%d", apiSrvPort),
 			},
-			ApiServerPort: apiSrvPort,
 		}
 		stop = make(chan struct{})
 		go func() {

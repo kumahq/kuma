@@ -19,8 +19,7 @@ var log = core.Log.WithName("gui-server")
 
 func SetupServer(rt core_runtime.Runtime) error {
 	srv := Server{
-		Config:        rt.Config().GuiServer,
-		ApiServerPort: rt.Config().ApiServer.Port,
+		Config: rt.Config().GuiServer,
 	}
 	if err := core_runtime.Add(rt, &srv); err != nil {
 		return err
@@ -29,8 +28,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 }
 
 type Server struct {
-	Config        *gui_server.GuiServerConfig
-	ApiServerPort int
+	Config *gui_server.GuiServerConfig
 }
 
 var _ core_runtime.Component = &Server{}
@@ -77,7 +75,7 @@ func (g *Server) Start(stop <-chan struct{}) error {
 }
 
 func (g *Server) apiHandler() (http.Handler, error) {
-	apiServerUrl, err := url.Parse(fmt.Sprintf("http://localhost:%d", g.ApiServerPort))
+	apiServerUrl, err := url.Parse(g.Config.ApiServerUrl)
 	if err != nil {
 		return nil, err
 	}

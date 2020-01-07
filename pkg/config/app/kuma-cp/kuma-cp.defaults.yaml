@@ -175,3 +175,5 @@ general:
 guiServer:
   # Port on which the server is exposed
   port: 5683 # ENV: KUMA_GUI_SERVER_PORT
+  # URL of the Api Server that requests with /api prefix will be redirected to. By default autoconfigured to http://locahost:port_of_api_server
+  apiServerUrl: # ENV: KUMA_GUI_SERVER_API_SERVER_URL

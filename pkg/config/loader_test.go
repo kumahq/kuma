@@ -115,6 +115,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.AdvertisedHostname).To(Equal("kuma.internal"))
 
 			Expect(cfg.GuiServer.Port).To(Equal(uint32(8888)))
+			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -185,6 +186,7 @@ general:
   advertisedHostname: kuma.internal
 guiServer:
   port: 8888
+  apiServerUrl: http://localhost:1234
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -232,6 +234,7 @@ guiServer:
 				"KUMA_GENERAL_ADVERTISED_HOSTNAME":                    "kuma.internal",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                "https://kuma,https://someapi",
 				"KUMA_GUI_SERVER_PORT":                                "8888",
+				"KUMA_GUI_SERVER_API_SERVER_URL":                      "http://localhost:1234",
 			},
 			yamlFileConfig: "",
 		}),
