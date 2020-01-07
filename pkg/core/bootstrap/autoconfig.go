@@ -105,6 +105,7 @@ func autoconfigureAdminServer(cfg *kuma_cp.Config) {
 }
 
 func autoconfigureGui(cfg *kuma_cp.Config) {
+	cfg.GuiServer.ApiServerUrl = fmt.Sprintf("http://localhost:%d", cfg.ApiServer.Port)
 	cfg.GuiServer.GuiConfig = &gui_server.GuiConfig{
 		ApiUrl:      fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.Port),
 		Environment: cfg.Environment,

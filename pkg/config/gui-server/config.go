@@ -9,8 +9,10 @@ import (
 type GuiServerConfig struct {
 	// Port on which the server is exposed
 	Port uint32 `yaml:"port" envconfig:"kuma_gui_server_port"`
+	// URL of the Api Server that requests with /api prefix will be redirected to. By default autoconfigured to http://locahost:port_of_api_server
+	ApiServerUrl string `yaml:"apiServerUrl" envconfig:"kuma_gui_server_api_server_url"`
 	// Config of the GUI itself
-	GuiConfig *GuiConfig `yaml:"-"`
+	GuiConfig *GuiConfig `yaml:"-"` // DEPRECATED, will be removed when GUI is switched to use /api URL
 }
 
 func (g *GuiServerConfig) Sanitize() {
