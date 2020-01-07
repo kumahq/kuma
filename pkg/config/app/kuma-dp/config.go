@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Kong/kuma/pkg/config"
+	config_types "github.com/Kong/kuma/pkg/config/types"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 )
@@ -18,8 +19,8 @@ func DefaultConfig() Config {
 		},
 		Dataplane: Dataplane{
 			Mesh:      "default",
-			Name:      "", // Dataplane name must be set explicitly
-			AdminPort: 0,  // by default, turn off Admin interface of Envoy
+			Name:      "",                                                      // Dataplane name must be set explicitly
+			AdminPort: config_types.MustPortRange(30001, config_types.MaxPort), // by default, automatically choose a free port for Envoy Admin interface
 			DrainTime: 30 * time.Second,
 		},
 		DataplaneRuntime: DataplaneRuntime{
@@ -62,8 +63,10 @@ type Dataplane struct {
 	Mesh string `yaml:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
 	// Dataplane name.
 	Name string `yaml:"name,omitempty" envconfig:"kuma_dataplane_name"`
-	// Envoy Admin port.
-	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
+	// Port (or range of ports to choose from) for Envoy Admin API to listen on.
+	// Empty value indicates that Envoy Admin API should not be exposed over TCP.
+	// Format: "9901 | 9901-9999 | 9901- | -9901".
+	AdminPort config_types.PortRange `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
 	// Drain time for listeners.
 	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
 }
@@ -118,9 +121,7 @@ func (d *Dataplane) Validate() (errs error) {
 	if d.Name == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Name must be non-empty"))
 	}
-	if 65535 < d.AdminPort {
-		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
-	}
+	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}

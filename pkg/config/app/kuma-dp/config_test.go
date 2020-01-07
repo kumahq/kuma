@@ -12,6 +12,7 @@ import (
 
 	"github.com/Kong/kuma/pkg/config"
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
+	config_types "github.com/Kong/kuma/pkg/config/types"
 )
 
 var _ = Describe("Config", func() {
@@ -27,7 +28,7 @@ var _ = Describe("Config", func() {
 
 		// and
 		Expect(cfg.ControlPlane.ApiServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
-		Expect(cfg.Dataplane.AdminPort).To(Equal(uint32(2345)))
+		Expect(cfg.Dataplane.AdminPort).To(Equal(config_types.MustExactPort(2345)))
 		Expect(cfg.Dataplane.DrainTime).To(Equal(60 * time.Second))
 	})
 
@@ -76,7 +77,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.ControlPlane.ApiServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
 			Expect(cfg.Dataplane.Mesh).To(Equal("demo"))
 			Expect(cfg.Dataplane.Name).To(Equal("example"))
-			Expect(cfg.Dataplane.AdminPort).To(Equal(uint32(2345)))
+			Expect(cfg.Dataplane.AdminPort).To(Equal(config_types.MustExactPort(2345)))
 			Expect(cfg.Dataplane.DrainTime).To(Equal(60 * time.Second))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
@@ -109,6 +110,6 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err).To(MatchError(`Invalid configuration: .ControlPlane is not valid: .ApiServer is not valid: .URL must be a valid absolute URI; .Dataplane is not valid: .Mesh must be non-empty; .Name must be non-empty; .AdminPort must be in the range [0, 65535]; .DrainTime must be positive; .DataplaneRuntime is not valid: .BinaryPath must be non-empty`))
+		Expect(err).To(MatchError(`Invalid configuration: .ControlPlane is not valid: .ApiServer is not valid: .URL must be a valid absolute URI; .Dataplane is not valid: .Mesh must be non-empty; .Name must be non-empty; .DrainTime must be positive; .DataplaneRuntime is not valid: .BinaryPath must be non-empty`))
 	})
 })
