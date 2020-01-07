@@ -1,4 +1,9 @@
-
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-injector
+  namespace: {{ .Namespace }}
 ---
 apiVersion: v1
 kind: Service
@@ -77,6 +82,7 @@ spec:
       labels:
         app: kuma-injector
     spec:
+      serviceAccountName: kuma-injector
       containers:
       - name: kuma-injector
         image: {{ .InjectorImage }}:{{ .ControlPlaneVersion }}
