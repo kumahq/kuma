@@ -49,15 +49,16 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	}
 	pod.Spec.Containers = append(pod.Spec.Containers, i.NewSidecarContainer(pod))
 
+	mesh, err := i.meshFor(pod)
+	if err != nil {
+		return errors.Wrap(err, "could not retrieve mesh for pod")
+	}
+
 	// annotations
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
-	annotations, err := i.NewAnnotations(pod)
-	if err != nil {
-		return err
-	}
-	for key, value := range annotations {
+	for key, value := range i.NewAnnotations(pod, mesh) {
 		pod.Annotations[key] = value
 	}
 
@@ -67,6 +68,19 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	}
 	pod.Spec.InitContainers = append(pod.Spec.InitContainers, i.NewInitContainer(pod))
 	return nil
+}
+
+func (i *KumaInjector) meshFor(pod *kube_core.Pod) (*mesh_core.MeshResource, error) {
+	meshName := metadata.GetMesh(pod) // either user-defined value or default
+	mesh := &mesh_k8s.Mesh{}
+	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
+		return nil, err
+	}
+	meshResource := &mesh_core.MeshResource{}
+	if err := i.converter.ToCoreResource(mesh, meshResource); err != nil {
+		return nil, err
+	}
+	return meshResource, nil
 }
 
 func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Container {
@@ -253,22 +267,17 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 	}
 }
 
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod) (map[string]string, error) {
-	meshName := metadata.GetMesh(pod)
+func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
 	annotations := map[string]string{
-		metadata.KumaMeshAnnotation:                    meshName, // either user-defined value or default
+		metadata.KumaMeshAnnotation:                    mesh.GetMeta().GetName(), // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:         metadata.KumaSidecarInjected,
 		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
 		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
 	}
-	prometheusAnnotations, err := i.prometheusAnnotations(meshName, pod)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not construct Prometheus annotations")
-	}
-	for k, v := range prometheusAnnotations {
+	for k, v := range i.prometheusAnnotations(pod, mesh) {
 		annotations[k] = v
 	}
-	return annotations, nil
+	return annotations
 }
 
 const (
@@ -277,7 +286,7 @@ const (
 	prometheusPort   = "prometheus.io/port"
 )
 
-func (i *KumaInjector) prometheusAnnotations(meshName string, pod *kube_core.Pod) (map[string]string, error) {
+func (i *KumaInjector) prometheusAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
 	annotations := map[string]string{}
 
 	// we want to ignore adding annotation when there are already prometheus annotation present on the Pod
@@ -285,23 +294,14 @@ func (i *KumaInjector) prometheusAnnotations(meshName string, pod *kube_core.Pod
 	_, pathExists := pod.Annotations[prometheusPath]
 	_, portExists := pod.Annotations[prometheusPort]
 	if scrapeExists || pathExists || portExists {
-		return annotations, nil
+		return annotations
 	}
 
-	mesh := &mesh_k8s.Mesh{}
-	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
-		return nil, err
-	}
-	meshResource := &mesh_core.MeshResource{}
-	if err := i.converter.ToCoreResource(mesh, meshResource); err != nil {
-		return nil, err
-	}
-
-	if meshResource.Spec.GetMetrics().GetPrometheus() != nil {
+	if mesh.Spec.GetMetrics().GetPrometheus() != nil {
 		// use mesh defaults
 		annotations[prometheusScrape] = "true"
-		annotations[prometheusPath] = meshResource.Spec.Metrics.Prometheus.Path
-		annotations[prometheusPort] = strconv.Itoa(int(meshResource.Spec.Metrics.Prometheus.Port))
+		annotations[prometheusPath] = mesh.Spec.Metrics.Prometheus.Path
+		annotations[prometheusPort] = strconv.Itoa(int(mesh.Spec.Metrics.Prometheus.Port))
 
 		// set overrides from custom Kuma Prometheus annotations
 		if port, exists := pod.GetAnnotations()[metadata.KumaMetricsPrometheusPort]; exists {
@@ -311,5 +311,5 @@ func (i *KumaInjector) prometheusAnnotations(meshName string, pod *kube_core.Pod
 			annotations[prometheusPath] = path
 		}
 	}
-	return annotations, nil
+	return annotations
 }

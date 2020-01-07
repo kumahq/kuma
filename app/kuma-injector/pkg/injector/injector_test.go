@@ -31,8 +31,8 @@ var _ = Describe("Injector", func() {
 	})
 
 	type testCase struct {
-		num      string
-		meshYAML string
+		num  string
+		mesh string
 	}
 
 	BeforeEach(func() {
@@ -48,7 +48,7 @@ var _ = Describe("Injector", func() {
 
 			// and create mesh
 			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
-			obj, _, err := decoder.Decode([]byte(given.meshYAML), nil, nil)
+			obj, _, err := decoder.Decode([]byte(given.mesh), nil, nil)
 			Expect(err).ToNot(HaveOccurred())
 			err = k8sClient.Create(context.Background(), obj)
 			Expect(err).ToNot(HaveOccurred())
@@ -88,7 +88,7 @@ var _ = Describe("Injector", func() {
 		},
 		Entry("01. Pod without init containers and annotations", testCase{
 			num: "01",
-			meshYAML: `
+			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
@@ -96,7 +96,7 @@ var _ = Describe("Injector", func() {
 		}),
 		Entry("02. Pod with init containers and annotations", testCase{
 			num: "02",
-			meshYAML: `
+			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
@@ -104,7 +104,7 @@ var _ = Describe("Injector", func() {
 		}),
 		Entry("03. Pod without Namespace and Name", testCase{
 			num: "03",
-			meshYAML: `
+			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
@@ -112,7 +112,7 @@ var _ = Describe("Injector", func() {
 		}),
 		Entry("04. Pod with explicitly selected Mesh", testCase{
 			num: "04",
-			meshYAML: `
+			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
@@ -120,7 +120,7 @@ var _ = Describe("Injector", func() {
 		}),
 		Entry("05. Pod without ServiceAccount token", testCase{
 			num: "05",
-			meshYAML: `
+			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
@@ -128,7 +128,7 @@ var _ = Describe("Injector", func() {
 		}),
 		Entry("06. Pod with kuma.io/gateway annotation", testCase{
 			num: "06",
-			meshYAML: `
+			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
@@ -136,7 +136,7 @@ var _ = Describe("Injector", func() {
 		}),
 		Entry("07. Pod with mesh with metrics enabled", testCase{
 			num: "07",
-			meshYAML: `
+			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
@@ -149,7 +149,7 @@ var _ = Describe("Injector", func() {
 		}),
 		Entry("08. Pod with prometheus annotation already defined so injector won't override those", testCase{
 			num: "08",
-			meshYAML: `
+			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
@@ -161,8 +161,8 @@ var _ = Describe("Injector", func() {
                     path: /metrics`,
 		}),
 		Entry("09. Pod with Kuma metrics annotation overrides", testCase{
-			num: "08",
-			meshYAML: `
+			num: "09",
+			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
