@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add a generic watchdog for xDS streams
+  [#530](https://github.com/Kong/kuma/pull/530)
 * feature: add a generic versioner for xDS Snapshots
   [#529](https://github.com/Kong/kuma/pull/529)
 * feature: add a custom version of SnapshotCache that supports arbitrary xDS resources
