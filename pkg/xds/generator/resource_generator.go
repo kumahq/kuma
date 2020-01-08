@@ -2,12 +2,9 @@ package generator
 
 import (
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 
 	model "github.com/Kong/kuma/pkg/core/xds"
-	util_error "github.com/Kong/kuma/pkg/util/error"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 )
 
 type ResourceGenerator interface {
@@ -26,22 +23,6 @@ func (c CompositeResourceGenerator) Generate(ctx xds_context.Context, proxy *mod
 		resources = append(resources, rs...)
 	}
 	return resources, nil
-}
-
-type ResourceList []*model.Resource
-
-func (rs ResourceList) ToDeltaDiscoveryResponse() *envoy.DeltaDiscoveryResponse {
-	resp := &envoy.DeltaDiscoveryResponse{}
-	for _, r := range rs {
-		pbany, err := ptypes.MarshalAny(r.Resource)
-		util_error.MustNot(err)
-		resp.Resources = append(resp.Resources, &envoy.Resource{
-			Name:     r.Name,
-			Version:  r.Version,
-			Resource: pbany,
-		})
-	}
-	return resp
 }
 
 type ResourceSet struct {

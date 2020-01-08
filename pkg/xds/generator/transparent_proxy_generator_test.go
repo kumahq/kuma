@@ -35,7 +35,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			resp := generator.ResourceList(rs).ToDeltaDiscoveryResponse()
+			resp := model.ResourceList(rs).ToDeltaDiscoveryResponse()
 			actual, err := util_proto.ToYAML(resp)
 
 			Expect(err).ToNot(HaveOccurred())
