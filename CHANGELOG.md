@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add a custom version of SnapshotCache that supports arbitrary xDS resources
+  [#528](https://github.com/Kong/kuma/pull/528)
 * feature: add proto definition for Monitoring Assignment Discovery Service (MADS)
   [#525](https://github.com/Kong/kuma/pull/525)
 * feature: enable Envoy Admin API by default with an option to opt out
