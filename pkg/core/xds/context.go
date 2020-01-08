@@ -1,13 +1,13 @@
 package xds
 
 import (
-	"fmt"
+	"github.com/go-logr/logr"
 
 	"github.com/Kong/kuma/pkg/core"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	envoy_log "github.com/envoyproxy/go-control-plane/pkg/log"
-	"github.com/go-logr/logr"
 )
 
 type XdsContext interface {
@@ -22,7 +22,7 @@ func NewXdsContext() XdsContext {
 func newXdsContext(name string, ads bool) XdsContext {
 	log := core.Log.WithName(name)
 	hasher := hasher{log}
-	logger := logger{log}
+	logger := util_xds.NewLogger(log)
 	cache := envoy_cache.NewSnapshotCache(ads, hasher, logger)
 	return &xdsContext{
 		NodeHash:      hasher,
@@ -63,17 +63,4 @@ func (h hasher) ID(node *envoy_core.Node) string {
 		return "unknown"
 	}
 	return proxyId.String()
-}
-
-var _ envoy_log.Logger = &logger{}
-
-type logger struct {
-	log logr.Logger
-}
-
-func (l logger) Infof(format string, args ...interface{}) {
-	l.log.V(1).Info(fmt.Sprintf(format, args...))
-}
-func (l logger) Errorf(format string, args ...interface{}) {
-	l.log.Error(fmt.Errorf(format, args...), "")
 }
