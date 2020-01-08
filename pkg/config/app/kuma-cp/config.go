@@ -8,6 +8,7 @@ import (
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
+	"github.com/Kong/kuma/pkg/config/mads"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
 	"github.com/Kong/kuma/pkg/config/sds"
 	token_server "github.com/Kong/kuma/pkg/config/token-server"
@@ -70,6 +71,8 @@ type Config struct {
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer"`
 	// Dataplane Token server configuration (DEPRECATED: use adminServer)
 	DataplaneTokenServer *token_server.DataplaneTokenServerConfig `yaml:"dataplaneTokenServer"`
+	// Monitoring Assignment Discovery Service (MADS) server configuration
+	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer"`
 	// Admin server configuration
 	AdminServer *admin_server.AdminServerConfig `yaml:"adminServer"`
 	// API Server configuration
@@ -91,6 +94,7 @@ func (c *Config) Sanitize() {
 	c.XdsServer.Sanitize()
 	c.SdsServer.Sanitize()
 	c.DataplaneTokenServer.Sanitize()
+	c.MonitoringAssignmentServer.Sanitize()
 	c.AdminServer.Sanitize()
 	c.ApiServer.Sanitize()
 	c.Runtime.Sanitize()
@@ -100,15 +104,16 @@ func (c *Config) Sanitize() {
 
 func DefaultConfig() Config {
 	return Config{
-		Environment:          core.UniversalEnvironment,
-		Store:                store.DefaultStoreConfig(),
-		XdsServer:            xds.DefaultXdsServerConfig(),
-		SdsServer:            sds.DefaultSdsServerConfig(),
-		DataplaneTokenServer: token_server.DefaultDataplaneTokenServerConfig(),
-		AdminServer:          admin_server.DefaultAdminServerConfig(),
-		ApiServer:            api_server.DefaultApiServerConfig(),
-		BootstrapServer:      bootstrap.DefaultBootstrapServerConfig(),
-		Runtime:              runtime.DefaultRuntimeConfig(),
+		Environment:                core.UniversalEnvironment,
+		Store:                      store.DefaultStoreConfig(),
+		XdsServer:                  xds.DefaultXdsServerConfig(),
+		SdsServer:                  sds.DefaultSdsServerConfig(),
+		DataplaneTokenServer:       token_server.DefaultDataplaneTokenServerConfig(),
+		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
+		AdminServer:                admin_server.DefaultAdminServerConfig(),
+		ApiServer:                  api_server.DefaultApiServerConfig(),
+		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
+		Runtime:                    runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
 			Mesh: `type: Mesh
 name: default
@@ -137,6 +142,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.DataplaneTokenServer.Validate(); err != nil {
 		return errors.Wrap(err, "Dataplane Token Server validation failed")
+	}
+	if err := c.MonitoringAssignmentServer.Validate(); err != nil {
+		return errors.Wrap(err, "Monitoring Assignment Server validation failed")
 	}
 	if err := c.AdminServer.Validate(); err != nil {
 		return errors.Wrap(err, "Admin Server validation failed")

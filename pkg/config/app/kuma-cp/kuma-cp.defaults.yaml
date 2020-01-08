@@ -87,6 +87,11 @@ dataplaneTokenServer:
     # Directory of authorized client certificates
     clientCertsDir: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR"`
 
+#  Monitoring Assignment Discovery Service (MADS) server configuration
+monitoringAssignmentServer:
+  # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
+  grpcPort: 5676
+
 # Admin server configuration
 adminServer:
   # Local configuration of server that is available only on localhost

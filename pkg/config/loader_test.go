@@ -1,9 +1,10 @@
 package config_test
 
 import (
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	"io/ioutil"
 	"os"
+
+	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -97,6 +98,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DataplaneTokenServer.Public.TlsCertFile).To(Equal("/tmp/cert"))
 			Expect(cfg.DataplaneTokenServer.Public.ClientCertsDir).To(Equal("/tmp/certs"))
 
+			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
+
 			Expect(cfg.AdminServer.Apis.DataplaneToken.Enabled).To(BeTrue())
 			Expect(cfg.AdminServer.Local.Port).To(Equal(uint32(1111)))
 			Expect(cfg.AdminServer.Public.Enabled).To(BeTrue())
@@ -161,6 +164,8 @@ dataplaneTokenServer:
     tlsCertFile: /tmp/cert
     tlsKeyFile: /tmp/key
     clientCertsDir: /tmp/certs
+monitoringAssignmentServer:
+  grpcPort: 3333
 adminServer:
   local:
     port: 1111
@@ -219,6 +224,7 @@ guiServer:
 				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE":     "/tmp/key",
 				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE":    "/tmp/cert",
 				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR": "/tmp/certs",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":         "3333",
 				"KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED":      "true",
 				"KUMA_ADMIN_SERVER_LOCAL_PORT":                        "1111",
 				"KUMA_ADMIN_SERVER_PUBLIC_ENABLED":                    "true",

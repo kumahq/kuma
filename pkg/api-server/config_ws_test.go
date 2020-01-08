@@ -2,13 +2,14 @@ package api_server_test
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+
 	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"net/http"
-	"strings"
 )
 
 var _ = Describe("Config WS", func() {
@@ -106,6 +107,9 @@ var _ = Describe("Config WS", func() {
           "guiServer": {
             "port": 5683,
             "apiServerUrl": ""
+          },
+          "monitoringAssignmentServer": {
+            "grpcPort": 5676
           },
           "reports": {
             "enabled": true

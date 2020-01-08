@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add a Monitoring Assignment Discovery Service (MADS) server
+  [#531](https://github.com/Kong/kuma/pull/531)
 * feature: add a generic watchdog for xDS streams
   [#530](https://github.com/Kong/kuma/pull/530)
 * feature: add a generic versioner for xDS Snapshots

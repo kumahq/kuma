@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/Kong/kuma/pkg/admin-server"
 	api_server "github.com/Kong/kuma/pkg/api-server"
@@ -9,6 +10,7 @@ import (
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/bootstrap"
+	mads_server "github.com/Kong/kuma/pkg/mads/server"
 	sds_server "github.com/Kong/kuma/pkg/sds/server"
 	xds_server "github.com/Kong/kuma/pkg/xds/server"
 	"github.com/spf13/cobra"
@@ -65,6 +67,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := xds_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up xDS server")
+				return err
+			}
+			if err := mads_server.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up Monitoring Assignment server")
 				return err
 			}
 			if err := api_server.SetupServer(rt); err != nil {
