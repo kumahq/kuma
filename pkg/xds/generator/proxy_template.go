@@ -94,7 +94,7 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		return nil, nil
 	}
 	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
-	resources := &ResourceSet{}
+	resources := &model.ResourceSet{}
 	for _, endpoint := range endpoints {
 		// generate CDS resource
 		localClusterName := localClusterName(endpoint.WorkloadPort)
@@ -124,7 +124,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		return nil, nil
 	}
 	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
-	resources := &ResourceSet{}
+	resources := &model.ResourceSet{}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	for i, oface := range ofaces {
 		endpoint, err := kuma_mesh.ParseOutboundInterface(oface.Interface)
