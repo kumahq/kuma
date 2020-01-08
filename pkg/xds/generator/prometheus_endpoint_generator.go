@@ -23,7 +23,7 @@ import (
 type PrometheusEndpointGenerator struct {
 }
 
-func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) ([]*Resource, error) {
+func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) ([]*core_xds.Resource, error) {
 	meshLevelSettings := ctx.Mesh.Resource.Spec.Metrics.GetPrometheus()
 	if meshLevelSettings == nil {
 		// Prometheus metrics must be enabled Mesh-wide for Prometheus endpoint to be generated.
@@ -64,15 +64,15 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	envoyAdminClusterName := envoyAdminClusterName()
 	prometheusListenerName := prometheusListenerName()
 	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
-	return []*Resource{
+	return []*core_xds.Resource{
 		// CDS resource
-		&Resource{
+		&core_xds.Resource{
 			Name:     envoyAdminClusterName,
 			Version:  "",
 			Resource: envoy.CreateLocalCluster(envoyAdminClusterName, adminAddress, adminPort),
 		},
 		// LDS resource
-		&Resource{
+		&core_xds.Resource{
 			Name:     prometheusListenerName,
 			Version:  "",
 			Resource: envoy.CreatePrometheusListener(ctx, prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, prometheusEndpoint.Path, envoyAdminClusterName, virtual, proxy.Metadata),

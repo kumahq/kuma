@@ -8,25 +8,16 @@ import (
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/cache"
 )
 
-type ResourcePayload = cache.Resource
-
-type Resource struct {
-	Name     string
-	Version  string
-	Resource ResourcePayload
-}
-
 type ResourceGenerator interface {
-	Generate(xds_context.Context, *model.Proxy) ([]*Resource, error)
+	Generate(xds_context.Context, *model.Proxy) ([]*model.Resource, error)
 }
 
 type CompositeResourceGenerator []ResourceGenerator
 
-func (c CompositeResourceGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*Resource, error) {
-	resources := make([]*Resource, 0)
+func (c CompositeResourceGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+	resources := make([]*model.Resource, 0)
 	for _, gen := range c {
 		rs, err := gen.Generate(ctx, proxy)
 		if err != nil {
@@ -37,7 +28,7 @@ func (c CompositeResourceGenerator) Generate(ctx xds_context.Context, proxy *mod
 	return resources, nil
 }
 
-type ResourceList []*Resource
+type ResourceList []*model.Resource
 
 func (rs ResourceList) ToDeltaDiscoveryResponse() *envoy.DeltaDiscoveryResponse {
 	resp := &envoy.DeltaDiscoveryResponse{}
@@ -55,12 +46,12 @@ func (rs ResourceList) ToDeltaDiscoveryResponse() *envoy.DeltaDiscoveryResponse 
 
 type ResourceSet struct {
 	// we want to keep resources in the order they were added
-	resources []*Resource
+	resources []*model.Resource
 	// we want to prevent duplicates
 	typeToNamesIndex map[string]map[string]bool
 }
 
-func (s *ResourceSet) Contains(name string, resource ResourcePayload) bool {
+func (s *ResourceSet) Contains(name string, resource model.ResourcePayload) bool {
 	names, ok := s.typeToNamesIndex[s.typeName(resource)]
 	if !ok {
 		return false
@@ -69,7 +60,7 @@ func (s *ResourceSet) Contains(name string, resource ResourcePayload) bool {
 	return ok
 }
 
-func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
+func (s *ResourceSet) Add(resources ...*model.Resource) *ResourceSet {
 	for _, resource := range resources {
 		if s.Contains(resource.Name, resource.Resource) {
 			continue
@@ -80,11 +71,11 @@ func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
 	return s
 }
 
-func (s *ResourceSet) typeName(resource ResourcePayload) string {
+func (s *ResourceSet) typeName(resource model.ResourcePayload) string {
 	return proto.MessageName(resource)
 }
 
-func (s *ResourceSet) index(resource *Resource) {
+func (s *ResourceSet) index(resource *model.Resource) {
 	if s.typeToNamesIndex == nil {
 		s.typeToNamesIndex = map[string]map[string]bool{}
 	}
@@ -95,6 +86,6 @@ func (s *ResourceSet) index(resource *Resource) {
 	s.typeToNamesIndex[typeName][resource.Name] = true
 }
 
-func (s *ResourceSet) List() []*Resource {
+func (s *ResourceSet) List() []*model.Resource {
 	return s.resources
 }
