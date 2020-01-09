@@ -1,21 +1,32 @@
 package cmd
 
 import (
+	"context"
+
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/prometheus/prometheus/documentation/examples/custom-sd/adapter"
 
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_promsd "github.com/Kong/kuma/pkg/config/app/kuma-prometheus-sd"
+	"github.com/Kong/kuma/pkg/core"
+
+	"github.com/Kong/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
+	util_log "github.com/Kong/kuma/app/kuma-prometheus-sd/pkg/util/go-kit/log"
 )
 
 var (
 	runLog = prometheusSdLog.WithName("run")
 )
 
+type CatalogClientFactory func(string) (catalog_client.CatalogClient, error)
+
 var (
 	// overridable by unit tests
-	setupSignalHandler = core.SetupSignalHandler
+	setupSignalHandler   = core.SetupSignalHandler
+	catalogClientFactory = catalog_client.NewCatalogClient
 )
 
 func newRunCmd() *cobra.Command {
@@ -37,8 +48,35 @@ func newRunCmd() *cobra.Command {
 				return err
 			}
 
-			runLog.Info("not implemented yet")
+			catalogClient, err := catalogClientFactory(cfg.ControlPlane.ApiServer.URL)
+			if err != nil {
+				return errors.Wrap(err, "could not create catalog client")
+			}
+			catalog, err := catalogClient.Catalog()
+			if err != nil {
+				return errors.Wrap(err, "could retrieve catalog")
+			}
+			runLog.Info("fetched API Catalog", "catalog", catalog)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			discoverer, err := xds.NewDiscoverer(
+				xds.DiscoveryConfig{
+					ServerURL:  catalog.Apis.MonitoringAssignment.Url,
+					ClientName: cfg.MonitoringAssignment.Client.Name,
+				},
+				runLog.WithName("xds_sd").WithName("discoverer"),
+			)
+			if err != nil {
+				runLog.Error(err, "unable to set up xDS discoverer")
+				return err
+			}
+			discovery := adapter.NewAdapter(ctx, cfg.Prometheus.OutputFile, "xds_sd", discoverer, util_log.NewLogger(runLog.WithName("xds_sd"), "adapter"))
+			discovery.Run()
+
 			<-setupSignalHandler()
+			cancel()
 			return nil
 		},
 	}

@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: implement MADS xDS client and integrate `kuma-prometheus-sd` with `Prometheus` via `file_sd` discovery
+  [#537](https://github.com/Kong/kuma/pull/537)
 * feature: add configuration options to `kuma-prometheus-sd run`
   [#536](https://github.com/Kong/kuma/pull/536)
 * feature: add `kuma-prometheus-sd` binary
