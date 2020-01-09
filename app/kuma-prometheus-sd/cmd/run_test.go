@@ -27,7 +27,7 @@ var _ = Describe("run", func() {
 		}
 	})
 
-	It("should be possible to run `kuma-prometheus-sd run`", func(done Done) {
+	XIt("should be possible to run `kuma-prometheus-sd run`", func(done Done) {
 		// given
 		cmd := NewRootCmd()
 		cmd.SetArgs([]string{"run"})
