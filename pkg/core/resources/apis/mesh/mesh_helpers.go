@@ -21,3 +21,7 @@ func (m *MeshResource) HasProvidedCA() bool {
 		return false
 	}
 }
+
+func (m *MeshResource) HasPrometheusMetricsEnabled() bool {
+	return m != nil && m.Spec.GetMetrics().GetPrometheus() != nil
+}

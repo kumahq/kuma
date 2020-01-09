@@ -3,9 +3,6 @@ package generator
 import (
 	"net"
 
-	"github.com/golang/protobuf/proto"
-
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 
@@ -24,8 +21,8 @@ type PrometheusEndpointGenerator struct {
 }
 
 func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) ([]*core_xds.Resource, error) {
-	meshLevelSettings := ctx.Mesh.Resource.Spec.Metrics.GetPrometheus()
-	if meshLevelSettings == nil {
+	prometheusEndpoint := proxy.Dataplane.GetPrometheusEndpoint(ctx.Mesh.Resource)
+	if prometheusEndpoint == nil {
 		// Prometheus metrics must be enabled Mesh-wide for Prometheus endpoint to be generated.
 		return nil, nil
 	}
@@ -35,8 +32,6 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 		// TODO(yskopets): find a way to communicate this to users
 		return nil, nil
 	}
-	dataplaneLevelSettings := proxy.Dataplane.Spec.Metrics.GetPrometheus()
-	prometheusEndpoint := g.mergePrometheusSettings(meshLevelSettings, dataplaneLevelSettings)
 
 	// It should be always possible to scrape metrics out of a Dataplane,
 	// even when it doesn't have any inbound interfaces (e.g., gateway scenario).
@@ -78,11 +73,4 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 			Resource: envoy.CreatePrometheusListener(ctx, prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, prometheusEndpoint.Path, envoyAdminClusterName, virtual, proxy.Metadata),
 		},
 	}, nil
-}
-
-func (_ PrometheusEndpointGenerator) mergePrometheusSettings(meshLevel *mesh_proto.Metrics_Prometheus, dataplaneLevel *mesh_proto.Metrics_Prometheus) mesh_proto.Metrics_Prometheus {
-	result := mesh_proto.Metrics_Prometheus{}
-	proto.Merge(&result, meshLevel)
-	proto.Merge(&result, dataplaneLevel)
-	return result
 }

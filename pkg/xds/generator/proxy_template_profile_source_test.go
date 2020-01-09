@@ -43,7 +43,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					SdsTlsCert:  []byte("12345"),
 				},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{},
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+					},
 				},
 			}
 
@@ -52,9 +56,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			dataplane := mesh_proto.Dataplane{}
 			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "side-car"},
+				Id: model.ProxyId{Name: "demo.backend-01"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
+						Name:    "backend-01",
+						Mesh:    "demo",
 						Version: "1",
 					},
 					Spec: dataplane,
