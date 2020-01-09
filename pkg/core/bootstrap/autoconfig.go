@@ -2,13 +2,14 @@ package bootstrap
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"reflect"
+
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	"github.com/Kong/kuma/pkg/config/api-server/catalog"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	token_server "github.com/Kong/kuma/pkg/config/token-server"
-	"io/ioutil"
-	"os"
-	"reflect"
 
 	"github.com/pkg/errors"
 
@@ -35,6 +36,9 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 		},
 		Admin: catalog.AdminApiConfig{
 			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port),
+		},
+		MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
+			Url: fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort),
 		},
 	}
 	if cfg.AdminServer.Public.Enabled {

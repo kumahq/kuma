@@ -2,12 +2,13 @@ package api_server_test
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	config "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"net/http"
 )
 
 var _ = Describe("Catalog WS", func() {
@@ -20,6 +21,7 @@ var _ = Describe("Catalog WS", func() {
 		cfg.Catalog.DataplaneToken.LocalUrl = "http://localhost:1111"
 		cfg.Catalog.DataplaneToken.PublicUrl = "https://kuma.internal:2222"
 		cfg.Catalog.Bootstrap.Url = "http://kuma.internal:3333"
+		cfg.Catalog.MonitoringAssignment.Url = "grpc://kuma.internal:4444"
 
 		// setup
 		resourceStore := memory.NewStore()
@@ -59,6 +61,9 @@ var _ = Describe("Catalog WS", func() {
 				"admin": {
 					"localUrl": "http://localhost:1111",
 					"publicUrl": "https://kuma.internal:2222"
+				},
+				"monitoringAssignment": {
+					"url": "grpc://kuma.internal:4444"
 				}
 			}
 		}
