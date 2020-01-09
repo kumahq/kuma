@@ -41,6 +41,9 @@ var _ = Describe("Reconcile", func() {
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
 						Spec: mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								Enabled: true,
@@ -59,6 +62,8 @@ var _ = Describe("Reconcile", func() {
 				Id: model.ProxyId{Name: "side-car"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
+						Name:    "web1",
+						Mesh:    "demo",
 						Version: "1",
 					},
 					Spec: dataplane,

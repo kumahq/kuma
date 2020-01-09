@@ -3,6 +3,8 @@ package mesh
 import (
 	"net"
 
+	"github.com/golang/protobuf/proto"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
@@ -57,4 +59,14 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	}
 	// exact match
 	return address1.Equal(address2)
+}
+
+func (d *DataplaneResource) GetPrometheusEndpoint(mesh *MeshResource) *mesh_proto.Metrics_Prometheus {
+	if d == nil || mesh == nil || mesh.Meta.GetName() != d.Meta.GetMesh() || !mesh.HasPrometheusMetricsEnabled() {
+		return nil
+	}
+	result := &mesh_proto.Metrics_Prometheus{}
+	proto.Merge(result, mesh.Spec.GetMetrics().GetPrometheus())
+	proto.Merge(result, d.Spec.GetMetrics().GetPrometheus())
+	return result
 }

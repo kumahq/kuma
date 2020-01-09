@@ -3,8 +3,9 @@ package injector
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"strconv"
+
+	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
 	config "github.com/Kong/kuma/pkg/config/app/kuma-injector"
@@ -297,7 +298,7 @@ func (i *KumaInjector) prometheusAnnotations(pod *kube_core.Pod, mesh *mesh_core
 		return annotations
 	}
 
-	if mesh.Spec.GetMetrics().GetPrometheus() != nil {
+	if mesh.HasPrometheusMetricsEnabled() {
 		// use mesh defaults
 		annotations[prometheusScrape] = "true"
 		annotations[prometheusPath] = mesh.Spec.Metrics.Prometheus.Path

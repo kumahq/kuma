@@ -69,7 +69,7 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 
 				metrics := "off"
 				switch {
-				case mesh.Spec.Metrics.GetPrometheus() != nil:
+				case mesh.HasPrometheusMetricsEnabled():
 					metrics = "prometheus"
 				}
 
