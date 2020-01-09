@@ -35,6 +35,7 @@ var _ = Describe("Config", func() {
 			env := map[string]string{
 				"KUMA_CONTROL_PLANE_API_SERVER_URL":      "https://kuma-control-plane.internal:5682",
 				"KUMA_MONITORING_ASSIGNMENT_CLIENT_NAME": "custom",
+				"KUMA_PROMETHEUS_OUTPUT_FILE":            "/path/to/file",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -52,6 +53,7 @@ var _ = Describe("Config", func() {
 			// and
 			Expect(cfg.ControlPlane.ApiServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
 			Expect(cfg.MonitoringAssignment.Client.Name).To(Equal("custom"))
+			Expect(cfg.Prometheus.OutputFile).To(Equal("/path/to/file"))
 		})
 	})
 
@@ -68,6 +70,7 @@ var _ = Describe("Config", func() {
 		// and
 		Expect(cfg.ControlPlane.ApiServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
 		Expect(cfg.MonitoringAssignment.Client.Name).To(Equal("custom"))
+		Expect(cfg.Prometheus.OutputFile).To(Equal("/path/to/file"))
 	})
 
 	It("should have consistent defaults", func() {
@@ -95,6 +98,6 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err).To(MatchError(`Invalid configuration: .ControlPlane is not valid: .ApiServer is not valid: .URL must be a valid absolute URI; .MonitoringAssignment is not valid: .Client is not valid: .Name must be non-empty`))
+		Expect(err.Error()).To(Equal(`Invalid configuration: .ControlPlane is not valid: .ApiServer is not valid: .URL must be a valid absolute URI; .MonitoringAssignment is not valid: .Client is not valid: .Name must be non-empty; .Prometheus is not valid: .OutputFile must be non-empty`))
 	})
 })

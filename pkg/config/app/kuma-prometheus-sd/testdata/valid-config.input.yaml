@@ -4,3 +4,5 @@ controlPlane:
 monitoringAssignment:
   client:
     name: custom
+prometheus:
+  outputFile: /path/to/file
