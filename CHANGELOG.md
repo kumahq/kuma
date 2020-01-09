@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add `kuma-prometheus-sd` binary
+  [#535](https://github.com/Kong/kuma/pull/535)
 * feature: advertise MonitoringAssignment server via API Catalog
   [#534](https://github.com/Kong/kuma/pull/534)
 * feature: generate MonitoringAssignment for each Dataplane in a Mesh

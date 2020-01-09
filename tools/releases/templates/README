@@ -10,6 +10,7 @@ This folder contains your download of Kuma:
 │   ├── envoy
 │   ├── kuma-cp
 │   ├── kuma-dp
+│   ├── kuma-prometheus-sd
 │   ├── kuma-tcp-echo
 │   └── kumactl
 └── conf
