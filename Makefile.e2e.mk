@@ -47,6 +47,7 @@ define pull_docker_images
 		&& docker pull $(KUMA_DP_DOCKER_IMAGE) \
 		&& docker pull $(KUMA_INJECTOR_DOCKER_IMAGE) \
 		&& docker pull $(KUMA_INIT_DOCKER_IMAGE) \
+		&& docker pull $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) \
 		&& docker pull $(KUMA_TCP_ECHO_DOCKER_IMAGE) \
 		&& docker pull $(KUMACTL_DOCKER_IMAGE) \
 		&& set +x \
