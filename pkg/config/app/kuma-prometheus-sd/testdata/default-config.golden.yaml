@@ -4,3 +4,5 @@ controlPlane:
 monitoringAssignment:
   client:
     name: kuma_sd
+prometheus:
+  outputFile: kuma.file_sd.json
