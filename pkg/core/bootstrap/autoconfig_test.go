@@ -53,6 +53,9 @@ var _ = Describe("Auto configuration", func() {
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "https://kuma.internal:2222",
 				},
+				MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
+					Url: "grpc://kuma.internal:5676",
+				},
 			},
 		}),
 		Entry("without public port explicitly defined", testCase{
@@ -77,6 +80,9 @@ var _ = Describe("Auto configuration", func() {
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "https://kuma.internal:1111", // port is autoconfigured from the local port
 				},
+				MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
+					Url: "grpc://kuma.internal:5676",
+				},
 			},
 		}),
 		Entry("without public settings for dataplane token server", testCase{
@@ -99,6 +105,9 @@ var _ = Describe("Auto configuration", func() {
 					LocalUrl:  "http://localhost:1111",
 					PublicUrl: "",
 				},
+				MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
+					Url: "grpc://kuma.internal:5676",
+				},
 			},
 		}),
 		Entry("without dataplane token server", testCase{
@@ -118,6 +127,9 @@ var _ = Describe("Auto configuration", func() {
 				Admin: catalog.AdminApiConfig{
 					LocalUrl:  "http://localhost:5679",
 					PublicUrl: "",
+				},
+				MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
+					Url: "grpc://localhost:5676",
 				},
 			},
 		}),
@@ -200,5 +212,21 @@ var _ = Describe("Auto configuration", func() {
 		Expect(cfg.AdminServer.Public.Enabled).To(BeTrue())
 		Expect(cfg.AdminServer.Public.Port).To(Equal(uint32(2222)))
 		Expect(cfg.AdminServer.Local.Port).To(Equal(uint32(1111)))
+	})
+
+	It("should autoconfigure MonitoringAssignment server", func() {
+		// given
+		cfg := kuma_cp.DefaultConfig()
+		cfg.General.AdvertisedHostname = "kuma.internal"
+		cfg.MonitoringAssignmentServer.GrpcPort = 8765
+
+		// when
+		err := autoconfigure(&cfg)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		Expect(cfg.ApiServer.Catalog.MonitoringAssignment.Url).To(Equal("grpc://kuma.internal:8765"))
 	})
 })
