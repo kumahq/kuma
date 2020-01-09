@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add configuration options to `kuma-prometheus-sd run`
+  [#536](https://github.com/Kong/kuma/pull/536)
 * feature: add `kuma-prometheus-sd` binary
   [#535](https://github.com/Kong/kuma/pull/535)
 * feature: advertise MonitoringAssignment server via API Catalog
