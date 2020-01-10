@@ -1,9 +1,11 @@
 package config_test
 
 import (
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	"io/ioutil"
 	"os"
+	"time"
+
+	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -97,6 +99,9 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DataplaneTokenServer.Public.TlsCertFile).To(Equal("/tmp/cert"))
 			Expect(cfg.DataplaneTokenServer.Public.ClientCertsDir).To(Equal("/tmp/certs"))
 
+			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
+			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
+
 			Expect(cfg.AdminServer.Apis.DataplaneToken.Enabled).To(BeTrue())
 			Expect(cfg.AdminServer.Local.Port).To(Equal(uint32(1111)))
 			Expect(cfg.AdminServer.Public.Enabled).To(BeTrue())
@@ -161,6 +166,9 @@ dataplaneTokenServer:
     tlsCertFile: /tmp/cert
     tlsKeyFile: /tmp/key
     clientCertsDir: /tmp/certs
+monitoringAssignmentServer:
+  grpcPort: 3333
+  assignmentRefreshInterval: 12s
 adminServer:
   local:
     port: 1111
@@ -191,50 +199,52 @@ guiServer:
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
-				"KUMA_XDS_SERVER_GRPC_PORT":                           "5000",
-				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                    "5003",
-				"KUMA_BOOTSTRAP_SERVER_PORT":                          "5004",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":             "1234",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":               "kuma-control-plane",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":               "4321",
-				"KUMA_ENVIRONMENT":                                    "kubernetes",
-				"KUMA_STORE_TYPE":                                     "postgres",
-				"KUMA_STORE_POSTGRES_HOST":                            "postgres.host",
-				"KUMA_STORE_POSTGRES_PORT":                            "5432",
-				"KUMA_STORE_POSTGRES_USER":                            "kuma",
-				"KUMA_STORE_POSTGRES_PASSWORD":                        "kuma",
-				"KUMA_STORE_POSTGRES_DB_NAME":                         "kuma",
-				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":              "10",
-				"KUMA_STORE_POSTGRES_TLS_MODE":                        "verifyFull",
-				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                   "/path/to/cert",
-				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                    "/path/to/key",
-				"KUMA_STORE_POSTGRES_TLS_CA_PATH":                     "/path/to/rootCert",
-				"KUMA_API_SERVER_READ_ONLY":                           "true",
-				"KUMA_API_SERVER_PORT":                                "9090",
-				"KUMA_DATAPLANE_TOKEN_SERVER_ENABLED":                 "true",
-				"KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT":              "1111",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_ENABLED":          "true",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE":        "192.168.0.1",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT":             "2222",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE":     "/tmp/key",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE":    "/tmp/cert",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR": "/tmp/certs",
-				"KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED":      "true",
-				"KUMA_ADMIN_SERVER_LOCAL_PORT":                        "1111",
-				"KUMA_ADMIN_SERVER_PUBLIC_ENABLED":                    "true",
-				"KUMA_ADMIN_SERVER_PUBLIC_INTERFACE":                  "192.168.0.1",
-				"KUMA_ADMIN_SERVER_PUBLIC_PORT":                       "2222",
-				"KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE":               "/tmp/key",
-				"KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE":              "/tmp/cert",
-				"KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR":           "/tmp/certs",
-				"KUMA_REPORTS_ENABLED":                                "false",
-				"KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS":            "127.0.0.2",
-				"KUMA_KUBERNETES_ADMISSION_SERVER_PORT":               "9443",
-				"KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR":           "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
-				"KUMA_GENERAL_ADVERTISED_HOSTNAME":                    "kuma.internal",
-				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                "https://kuma,https://someapi",
-				"KUMA_GUI_SERVER_PORT":                                "8888",
-				"KUMA_GUI_SERVER_API_SERVER_URL":                      "http://localhost:1234",
+				"KUMA_XDS_SERVER_GRPC_PORT":                                     "5000",
+				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                              "5003",
+				"KUMA_BOOTSTRAP_SERVER_PORT":                                    "5004",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                       "1234",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                         "kuma-control-plane",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                         "4321",
+				"KUMA_ENVIRONMENT":                                              "kubernetes",
+				"KUMA_STORE_TYPE":                                               "postgres",
+				"KUMA_STORE_POSTGRES_HOST":                                      "postgres.host",
+				"KUMA_STORE_POSTGRES_PORT":                                      "5432",
+				"KUMA_STORE_POSTGRES_USER":                                      "kuma",
+				"KUMA_STORE_POSTGRES_PASSWORD":                                  "kuma",
+				"KUMA_STORE_POSTGRES_DB_NAME":                                   "kuma",
+				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":                        "10",
+				"KUMA_STORE_POSTGRES_TLS_MODE":                                  "verifyFull",
+				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                             "/path/to/cert",
+				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                              "/path/to/key",
+				"KUMA_STORE_POSTGRES_TLS_CA_PATH":                               "/path/to/rootCert",
+				"KUMA_API_SERVER_READ_ONLY":                                     "true",
+				"KUMA_API_SERVER_PORT":                                          "9090",
+				"KUMA_DATAPLANE_TOKEN_SERVER_ENABLED":                           "true",
+				"KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT":                        "1111",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_ENABLED":                    "true",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE":                  "192.168.0.1",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT":                       "2222",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE":               "/tmp/key",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE":              "/tmp/cert",
+				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR":           "/tmp/certs",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                   "3333",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL": "12s",
+				"KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED":                "true",
+				"KUMA_ADMIN_SERVER_LOCAL_PORT":                                  "1111",
+				"KUMA_ADMIN_SERVER_PUBLIC_ENABLED":                              "true",
+				"KUMA_ADMIN_SERVER_PUBLIC_INTERFACE":                            "192.168.0.1",
+				"KUMA_ADMIN_SERVER_PUBLIC_PORT":                                 "2222",
+				"KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE":                         "/tmp/key",
+				"KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE":                        "/tmp/cert",
+				"KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR":                     "/tmp/certs",
+				"KUMA_REPORTS_ENABLED":                                          "false",
+				"KUMA_KUBERNETES_ADMISSION_SERVER_ADDRESS":                      "127.0.0.2",
+				"KUMA_KUBERNETES_ADMISSION_SERVER_PORT":                         "9443",
+				"KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR":                     "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
+				"KUMA_GENERAL_ADVERTISED_HOSTNAME":                              "kuma.internal",
+				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                          "https://kuma,https://someapi",
+				"KUMA_GUI_SERVER_PORT":                                          "8888",
+				"KUMA_GUI_SERVER_API_SERVER_URL":                                "http://localhost:1234",
 			},
 			yamlFileConfig: "",
 		}),
