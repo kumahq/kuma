@@ -25,6 +25,68 @@ const (
 
 // MonitoringAssignmentsGenerator knows how to generate MonitoringAssignment
 // resources for a given set of Dataplanes.
+//
+// Beware of the following constraints when it comes to integration with Prometheus:
+//
+//  1. Prometheus model for all `sd`s except for `file_sd` looks like this:
+//
+//     // Group is a set of targets with a common label set(production , test, staging etc.).
+//     type Group struct {
+//         // Targets is a list of targets identified by a label set. Each target is
+//         // uniquely identifiable in the group by its address label.
+//         Targets []model.LabelSet
+//         // Labels is a set of labels that is common across all targets in the group.
+//         Labels model.LabelSet
+//
+//         // Source is an identifier that describes a group of targets.
+//         Source string
+//     }
+//
+//     That is why Kuma's MonitoringAssignment was designed to be close to that model.
+//
+//  2. However, `file_sd` uses different model for reading data from a file:
+//
+//     struct {
+//         Targets []string       `yaml:"targets"`
+//         Labels  model.LabelSet `yaml:"labels"`
+//     }
+//
+//     Notice that Targets is just a list of addresses rather than a list of model.LabelSet.
+//
+//  3. Because of that mismatch, some form of conversion is unavoidable on client side,
+//     e.g. inside `kuma-prometheus-sd`
+//
+//  4. The next component that imposes its constraints is `custom-sd`- adapter
+//     (https://github.com/prometheus/prometheus/tree/master/documentation/examples/custom-sd)
+//     that is recommended for use by all `file_sd`-based `sd`s.
+//
+//     This adapter is doing conversion from Prometheus model into `file_sd` model
+//     and it expects that `Targets` field has only 1 label - `__address__` -
+//     and the rest of the labels must be a part of `Labels` field.
+//
+//  5. Therefore, we need to convert MonitoringAssignment into a model that `custom-sd` expects.
+//     It could happen on server side, it could happen on client side.
+//     Given that we're trying to minimize amount of logic on the client side,
+//     the choice was made in favour of server side.
+//
+//  In practice, it means that generated MonitoringAssignment will look the following way:
+//
+//     name: /meshes/default/dataplanes/backend-01
+//     targets:
+//     - labels:
+//         __address__: 192.168.0.1:8080
+//     labels:
+//       __scheme__: http
+//       __metrics_path__: /metrics
+//       job: backend
+//       instance: backend-01
+//       mesh: default
+//       dataplane: backend-01
+//       env: prod
+//       envs: ,prod,
+//       service: backend
+//       services: ,backend,
+//
 type MonitoringAssignmentsGenerator struct {
 }
 
