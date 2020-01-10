@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/Kong/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
 	util_log "github.com/Kong/kuma/app/kuma-prometheus-sd/pkg/util/go-kit/log"
+	util_os "github.com/Kong/kuma/pkg/util/os"
 )
 
 var (
@@ -46,6 +48,11 @@ func newRunCmd() *cobra.Command {
 			} else {
 				runLog.Error(err, "unable to format effective configuration", "config", cfg)
 				return err
+			}
+
+			outputDir, _ := filepath.Split(cfg.Prometheus.OutputFile)
+			if err := util_os.TryWriteToDir(outputDir); err != nil {
+				return errors.Wrapf(err, "unable to write to directory %q", outputDir)
 			}
 
 			catalogClient, err := catalogClientFactory(cfg.ControlPlane.ApiServer.URL)
