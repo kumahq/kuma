@@ -1,6 +1,8 @@
 # CHANGELOG
 
-## [Unreleased]
+## [0.3.2]
+
+> Released on 2020/01/10
 
 Changes:
 
