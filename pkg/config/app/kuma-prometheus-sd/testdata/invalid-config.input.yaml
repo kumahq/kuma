@@ -1,0 +1,8 @@
+controlPlane:
+  apiServer:
+    url: invalid-url
+monitoringAssignment:
+  client:
+    name:
+prometheus:
+  outputFile:

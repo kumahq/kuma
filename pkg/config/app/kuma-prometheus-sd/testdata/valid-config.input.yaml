@@ -1,0 +1,8 @@
+controlPlane:
+  apiServer:
+    url: https://kuma-control-plane.internal:5682
+monitoringAssignment:
+  client:
+    name: custom
+prometheus:
+  outputFile: /path/to/file

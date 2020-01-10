@@ -1,0 +1,8 @@
+controlPlane:
+  apiServer:
+    url: http://localhost:5681
+monitoringAssignment:
+  client:
+    name: kuma_sd
+prometheus:
+  outputFile: kuma.file_sd.json
