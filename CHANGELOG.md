@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add a generic versioner for xDS Snapshots
+  [#529](https://github.com/Kong/kuma/pull/529)
 * feature: add a custom version of SnapshotCache that supports arbitrary xDS resources
   [#528](https://github.com/Kong/kuma/pull/528)
 * feature: add proto definition for Monitoring Assignment Discovery Service (MADS)
