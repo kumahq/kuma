@@ -150,7 +150,7 @@ var _ = Describe("Auto configuration", func() {
 
 		// and
 		Expect(*cfg.GuiServer.GuiConfig).To(Equal(gui_server.GuiConfig{
-			ApiUrl:      "http://kuma.internal:1234",
+			ApiUrl:      "/api",
 			Environment: "kubernetes",
 		}))
 	})
