@@ -12,6 +12,6 @@ type Reconciler interface {
 }
 
 // Generates a snapshot of xDS resources for a given node.
-type Snapshotter interface {
-	Snapshot(*envoy_core.Node) (util_xds.Snapshot, error)
+type SnapshotGenerator interface {
+	GenerateSnapshot(*envoy_core.Node) (util_xds.Snapshot, error)
 }

@@ -31,6 +31,8 @@ func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks, log l
 	return &server{cache: config, callbacks: callbacks, log: log}
 }
 
+// server is a simplified version of the original XDS server at
+// https://github.com/envoyproxy/go-control-plane/blob/master/pkg/server/server.go
 type server struct {
 	cache     envoy_cache.Cache
 	callbacks envoy_server.Callbacks

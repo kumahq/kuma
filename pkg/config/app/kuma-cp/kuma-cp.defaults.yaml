@@ -90,7 +90,9 @@ dataplaneTokenServer:
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
-  grpcPort: 5676
+  grpcPort: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT
+  # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
+  assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
 
 # Admin server configuration
 adminServer:

@@ -13,9 +13,9 @@ var (
 
 func SetupServer(rt core_runtime.Runtime) error {
 	hasher, cache := NewXdsContext(madsServerLog)
-	snapshotter := NewSnapshotter()
+	generator := NewSnapshotGenerator()
 	versioner := NewVersioner()
-	reconciler := NewReconciler(hasher, cache, snapshotter, versioner)
+	reconciler := NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := NewSyncTracker(rt, reconciler)
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: madsServerLog},

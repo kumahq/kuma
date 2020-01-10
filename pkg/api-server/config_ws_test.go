@@ -109,6 +109,7 @@ var _ = Describe("Config WS", func() {
             "apiServerUrl": ""
           },
           "monitoringAssignmentServer": {
+            "assignmentRefreshInterval": "1s",
             "grpcPort": 5676
           },
           "reports": {

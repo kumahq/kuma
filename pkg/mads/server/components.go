@@ -16,8 +16,8 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
-func NewSnapshotter() mads_reconcile.Snapshotter {
-	return mads_reconcile.NewSnapshotter()
+func NewSnapshotGenerator() mads_reconcile.SnapshotGenerator {
+	return mads_reconcile.NewSnapshotGenerator()
 }
 
 func NewVersioner() util_xds.SnapshotVersioner {
@@ -25,22 +25,23 @@ func NewVersioner() util_xds.SnapshotVersioner {
 }
 
 func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
-	snapshotter mads_reconcile.Snapshotter, versioner util_xds.SnapshotVersioner) mads_reconcile.Reconciler {
-	return mads_reconcile.NewReconciler(hasher, cache, snapshotter, versioner)
+	generator mads_reconcile.SnapshotGenerator, versioner util_xds.SnapshotVersioner) mads_reconcile.Reconciler {
+	return mads_reconcile.NewReconciler(hasher, cache, generator, versioner)
 }
 
 func NewSyncTracker(rt core_runtime.Runtime, reconciler mads_reconcile.Reconciler) envoy_xds.Callbacks {
 	return util_xds.NewWatchdogCallbacks(func(node *envoy_core.Node, _ int64) (util_watchdog.Watchdog, error) {
+		log := madsServerLog.WithValues("node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
-				return time.NewTicker(1 * time.Second)
+				return time.NewTicker(rt.Config().MonitoringAssignmentServer.AssignmentRefreshInterval)
 			},
 			OnTick: func() error {
-				madsServerLog.V(1).Info("on tick")
+				log.V(1).Info("on tick")
 				return reconciler.Reconcile(node)
 			},
 			OnError: func(err error) {
-				madsServerLog.Error(err, "OnTick() failed")
+				log.Error(err, "OnTick() failed")
 			},
 		}, nil
 	})
