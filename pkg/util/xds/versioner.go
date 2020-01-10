@@ -7,7 +7,7 @@ import (
 
 // SnapshotVersioner assigns versions to xDS resources in a new Snapshot.
 type SnapshotVersioner interface {
-	Version(new, old Snapshot)
+	Version(new, old Snapshot) Snapshot
 }
 
 // SnapshotAutoVersioner assigns versions to xDS resources in a new Snapshot
@@ -17,7 +17,10 @@ type SnapshotAutoVersioner struct {
 	UUID func() string
 }
 
-func (v SnapshotAutoVersioner) Version(new, old Snapshot) {
+func (v SnapshotAutoVersioner) Version(new, old Snapshot) Snapshot {
+	if new == nil {
+		return nil
+	}
 	for _, typ := range new.GetSupportedTypes() {
 		version := new.GetVersion(typ)
 		if version != "" {
@@ -30,8 +33,9 @@ func (v SnapshotAutoVersioner) Version(new, old Snapshot) {
 		if version == "" {
 			version = v.UUID()
 		}
-		new.SetVersion(typ, version)
+		new = new.WithVersion(typ, version)
 	}
+	return new
 }
 
 func (_ SnapshotAutoVersioner) equal(new, old map[string]envoy_cache.Resource) bool {
