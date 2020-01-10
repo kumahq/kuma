@@ -7,9 +7,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+
+	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -225,4 +228,120 @@ var _ = Describe("Dataplane", func() {
 			Expect(dataplane.UsesInterface(address, port)).To(Equal(expected))
 		})
 	})
+
+	Describe("GetPrometheusEndpoint()", func() {
+
+		type testCase struct {
+			dataplaneName string
+			dataplaneMesh string
+			dataplaneSpec string
+			meshName      string
+			meshSpec      string
+			expected      *mesh_proto.Metrics_Prometheus
+		}
+
+		DescribeTable("should correctly determine effective Prometheus config for given Dataplane and Mesh",
+			func(given testCase) {
+				// given
+				var dataplane *DataplaneResource
+				if given.dataplaneName != "" {
+					dataplane = &DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Name: given.dataplaneName,
+							Mesh: given.dataplaneMesh,
+						},
+					}
+					Expect(util_proto.FromYAML([]byte(given.dataplaneSpec), &dataplane.Spec)).To(Succeed())
+				}
+
+				// given
+				var mesh *MeshResource
+				if given.meshName != "" {
+					mesh = &MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: given.meshName,
+						},
+					}
+					Expect(util_proto.FromYAML([]byte(given.meshSpec), &mesh.Spec)).To(Succeed())
+				}
+
+				// then
+				Expect(dataplane.GetPrometheusEndpoint(mesh)).To(Equal(given.expected))
+			},
+			Entry("dataplane == `nil` && mesh == `nil`", testCase{
+				expected: nil,
+			}),
+			Entry("dataplane != `nil` && mesh == `nil`", testCase{
+				dataplaneName: "backend-01",
+				dataplaneSpec: `
+                metrics:
+                  prometheus:
+                    port: 8765
+                    path: /even-more-non-standard-path
+`,
+				expected: nil,
+			}),
+			Entry("dataplane.mesh != mesh", testCase{
+				dataplaneName: "backend-01",
+				dataplaneMesh: "default",
+				meshName:      "demo",
+				meshSpec: `
+                metrics:
+                  prometheus:
+                    port: 1234
+                    path: /non-standard-path
+`,
+				expected: nil,
+			}),
+			Entry("dataplane.mesh == mesh && mesh.metrics.prometheus == nil", testCase{
+				dataplaneName: "backend-01",
+				dataplaneMesh: "demo",
+				dataplaneSpec: `
+                metrics:
+                  prometheus:
+                    port: 8765
+                    path: /even-more-non-standard-path
+`,
+				meshName: "demo",
+				expected: nil,
+			}),
+			Entry("dataplane.mesh == mesh && dataplane.metrics.prometheus == nil && mesh.metrics.prometheus != nil", testCase{
+				dataplaneName: "backend-01",
+				dataplaneMesh: "demo",
+				meshName:      "demo",
+				meshSpec: `
+                metrics:
+                  prometheus:
+                    port: 1234
+                    path: /non-standard-path
+`,
+				expected: &mesh_proto.Metrics_Prometheus{
+					Port: 1234,
+					Path: "/non-standard-path",
+				},
+			}),
+			Entry("dataplane.mesh == mesh && dataplane.metrics.prometheus != nil && mesh.metrics.prometheus != nil", testCase{
+				dataplaneName: "backend-01",
+				dataplaneMesh: "demo",
+				dataplaneSpec: `
+                metrics:
+                  prometheus:
+                    port: 8765
+                    path: /even-more-non-standard-path
+`,
+				meshName: "demo",
+				meshSpec: `
+                metrics:
+                  prometheus:
+                    port: 1234
+                    path: /non-standard-path
+`,
+				expected: &mesh_proto.Metrics_Prometheus{
+					Port: 8765,
+					Path: "/even-more-non-standard-path",
+				},
+			}),
+		)
+	})
+
 })

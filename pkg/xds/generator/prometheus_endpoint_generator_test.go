@@ -14,6 +14,8 @@ import (
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+
+	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("PrometheusEndpointGenerator", func() {
@@ -39,23 +41,40 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		Entry("both Mesh and Datalane have no Prometheus configuration", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{},
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+					},
 				},
 			},
 			proxy: &model.Proxy{
-				Id:        model.ProxyId{Name: "side-car"},
-				Dataplane: &mesh_core.DataplaneResource{},
+				Id: model.ProxyId{Name: "demo.backend-01"},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
+				},
 			},
 		}),
 		Entry("Datalane has Prometheus configuration while Mesh doesn't", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{},
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+					},
 				},
 			},
 			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "side-car"},
+				Id: model.ProxyId{Name: "demo.backend-01"},
 				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
 					Spec: mesh_proto.Dataplane{
 						Metrics: &mesh_proto.Metrics{
 							Prometheus: &mesh_proto.Metrics_Prometheus{
@@ -71,6 +90,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								Prometheus: &mesh_proto.Metrics_Prometheus{
@@ -83,8 +105,12 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "side-car"},
+				Id: model.ProxyId{Name: "demo.backend-01"},
 				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
 					Spec: mesh_proto.Dataplane{
 						Metrics: &mesh_proto.Metrics{
 							Prometheus: &mesh_proto.Metrics_Prometheus{
@@ -101,6 +127,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								Prometheus: &mesh_proto.Metrics_Prometheus{
@@ -113,8 +142,12 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "side-car"},
+				Id: model.ProxyId{Name: "demo.backend-01"},
 				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
 					Spec: mesh_proto.Dataplane{
 						Metrics: &mesh_proto.Metrics{
 							Prometheus: &mesh_proto.Metrics_Prometheus{
@@ -150,6 +183,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								Prometheus: &mesh_proto.Metrics_Prometheus{
@@ -162,8 +198,13 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id:        model.ProxyId{Name: "side-car"},
-				Dataplane: &mesh_core.DataplaneResource{},
+				Id: model.ProxyId{Name: "demo.backend-01"},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
+				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort: 9902,
 				},
@@ -218,6 +259,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								Prometheus: &mesh_proto.Metrics_Prometheus{
@@ -230,8 +274,12 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "side-car"},
+				Id: model.ProxyId{Name: "demo.backend-01"},
 				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
 					Spec: mesh_proto.Dataplane{
 						Metrics: &mesh_proto.Metrics{
 							Prometheus: &mesh_proto.Metrics_Prometheus{
@@ -305,6 +353,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				ctx := xds_context.Context{
 					Mesh: xds_context.MeshContext{
 						Resource: &mesh_core.MeshResource{
+							Meta: &test_model.ResourceMeta{
+								Name: "demo",
+							},
 							Spec: mesh_proto.Mesh{
 								Metrics: &mesh_proto.Metrics{
 									Prometheus: &mesh_proto.Metrics_Prometheus{
@@ -317,8 +368,13 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				}
 				proxy := &model.Proxy{
-					Id:        model.ProxyId{Name: "side-car"},
-					Dataplane: &mesh_core.DataplaneResource{},
+					Id: model.ProxyId{Name: "demo.backend-01"},
+					Dataplane: &mesh_core.DataplaneResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "backend-01",
+							Mesh: "demo",
+						},
+					},
 					Metadata: &core_xds.DataplaneMetadata{
 						AdminPort: 9902,
 					},
