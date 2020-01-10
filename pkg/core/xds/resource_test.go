@@ -1,10 +1,10 @@
-package generator_test
+package xds_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/generator"
+	. "github.com/Kong/kuma/pkg/core/xds"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 )
