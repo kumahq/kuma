@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: advertise MonitoringAssignment server via API Catalog
+  [#534](https://github.com/Kong/kuma/pull/534)
 * feature: generate MonitoringAssignment for each Dataplane in a Mesh
   [#532](https://github.com/Kong/kuma/pull/532)
 * feature: add a Monitoring Assignment Discovery Service (MADS) server
