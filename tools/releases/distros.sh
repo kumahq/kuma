@@ -78,6 +78,7 @@ function create_tarball {
   cp -p build/artifacts-$system-$arch/kuma-cp/kuma-cp $dest_dir/bin
   cp -p build/artifacts-$system-$arch/kuma-dp/kuma-dp $dest_dir/bin
   cp -p build/artifacts-$system-$arch/kumactl/kumactl $dest_dir/bin
+  cp -p build/artifacts-$system-$arch/kuma-prometheus-sd/kuma-prometheus-sd $dest_dir/bin
   cp -p build/artifacts-$system-$arch/kuma-tcp-echo/kuma-tcp-echo $dest_dir/bin
   cp -p pkg/config/app/kuma-cp/kuma-cp.defaults.yaml $dest_dir/conf/kuma-cp.conf
 
