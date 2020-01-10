@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
@@ -67,7 +68,7 @@ func (d *discoverer) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	}
 }
 
-func (d *discoverer) stream(ctx context.Context, streamID uint64, ch chan<- []*targetgroup.Group) error {
+func (d *discoverer) stream(ctx context.Context, streamID uint64, ch chan<- []*targetgroup.Group) (errs error) {
 	log := d.log.WithValues("streamID", streamID)
 
 	log.Info("creating a gRPC client for Monitoring Assignment Discovery Service (MADS) server ...")
@@ -75,14 +76,24 @@ func (d *discoverer) stream(ctx context.Context, streamID uint64, ch chan<- []*t
 	if err != nil {
 		return errors.Wrap(err, "failed to connect to gRPC server")
 	}
-	defer client.Close()
+	defer func() {
+		log.Info("closing a connection ...")
+		if err := client.Close(); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, "failed to close a connection"))
+		}
+	}()
 
 	log.Info("starting an xDS stream ...")
 	stream, err := client.StartStream()
 	if err != nil {
 		return errors.Wrap(err, "failed to start an xDS stream")
 	}
-	defer stream.Close()
+	defer func() {
+		log.Info("closing an xDS stream ...")
+		if err := stream.Close(); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, "failed to close an xDS stream"))
+		}
+	}()
 
 	log.Info("sending first discovery request on a new xDS stream ...")
 	err = stream.RequestAssignments(d.config.ClientName)
@@ -115,16 +126,6 @@ func (d *discoverer) stream(ctx context.Context, streamID uint64, ch chan<- []*t
 			}
 			return errors.Wrap(err, "failed to ACK a discovery response")
 		}
-	}
-
-	log.Info("closing an xDS stream ...")
-	if err := stream.Close(); err != nil {
-		return errors.Wrap(err, "failed to close an xDS stream")
-	}
-
-	log.Info("closing a connection ...")
-	if err := client.Close(); err != nil {
-		return errors.Wrap(err, "failed to close a connection")
 	}
 
 	return nil
