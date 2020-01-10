@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add support for `MonitoringAssignment`s with arbitrary `Target` labels (rather than only `__address__`) to `kuma-prometheus-sd`
+  [#540](https://github.com/Kong/kuma/pull/540)
 * feature: on `kuma-prometheus-sd` start-up, check write permissions on the output dir
   [#539](https://github.com/Kong/kuma/pull/539)
 * feature: implement MADS xDS client and integrate `kuma-prometheus-sd` with `Prometheus` via `file_sd` discovery
