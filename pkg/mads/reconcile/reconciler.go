@@ -1,6 +1,8 @@
 package reconcile
 
 import (
+	"context"
+
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 
@@ -24,8 +26,8 @@ type reconciler struct {
 	versioner util_xds.SnapshotVersioner
 }
 
-func (r *reconciler) Reconcile(node *envoy_core.Node) error {
-	new, err := r.generator.GenerateSnapshot(node)
+func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {
+	new, err := r.generator.GenerateSnapshot(ctx, node)
 	if err != nil {
 		return err
 	}

@@ -37,6 +37,17 @@ func (rs ResourceList) ToDeltaDiscoveryResponse() *envoy.DeltaDiscoveryResponse 
 	return resp
 }
 
+func (rs ResourceList) ToIndex() map[string]ResourcePayload {
+	if len(rs) == 0 {
+		return nil
+	}
+	index := make(map[string]ResourcePayload)
+	for _, resource := range rs {
+		index[resource.Name] = resource.Resource
+	}
+	return index
+}
+
 // ResourceSet represents a set of generic xDS resources.
 type ResourceSet struct {
 	// we want to keep resources in the order they were added

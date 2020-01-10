@@ -13,7 +13,7 @@ var (
 
 func SetupServer(rt core_runtime.Runtime) error {
 	hasher, cache := NewXdsContext(madsServerLog)
-	generator := NewSnapshotGenerator()
+	generator := NewSnapshotGenerator(rt)
 	versioner := NewVersioner()
 	reconciler := NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := NewSyncTracker(rt, reconciler)
