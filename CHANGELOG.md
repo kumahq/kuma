@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add a brand new version of Kuma GUI
+  [#538](https://github.com/Kong/kuma/pull/538)
 * feature: add support for `MonitoringAssignment`s with arbitrary `Target` labels (rather than only `__address__`) to `kuma-prometheus-sd`
   [#540](https://github.com/Kong/kuma/pull/540)
 * feature: on `kuma-prometheus-sd` start-up, check write permissions on the output dir

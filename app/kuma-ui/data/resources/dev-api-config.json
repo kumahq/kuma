@@ -1,1 +1,4 @@
-{"apiUrl":"http://localhost:5681","environment":"universal"}
+{
+  "apiUrl": "http://localhost:5681",
+  "environment": "universal"
+}
