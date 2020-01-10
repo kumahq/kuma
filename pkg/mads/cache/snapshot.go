@@ -10,9 +10,9 @@ import (
 )
 
 // NewSnapshot creates a snapshot from response types and a version.
-func NewSnapshot(version string, assignments []envoy_cache.Resource) Snapshot {
-	return Snapshot{
-		MonitoringAssignments: envoy_cache.NewResources(version, assignments),
+func NewSnapshot(version string, assignments map[string]envoy_cache.Resource) *Snapshot {
+	return &Snapshot{
+		MonitoringAssignments: envoy_cache.Resources{Version: version, Items: assignments},
 	}
 }
 
@@ -61,13 +61,19 @@ func (s *Snapshot) GetVersion(typ string) string {
 	return ""
 }
 
-// SetVersion sets the version for a resource type.
-func (s *Snapshot) SetVersion(typ string, version string) {
+// WithVersion creates a new snapshot with a different version for a given resource type.
+func (s *Snapshot) WithVersion(typ string, version string) util_xds.Snapshot {
 	if s == nil {
-		return
+		return nil
+	}
+	if s.GetVersion(typ) == version {
+		return s
 	}
 	switch typ {
 	case mads.MonitoringAssignmentType:
-		s.MonitoringAssignments.Version = version
+		return &Snapshot{
+			MonitoringAssignments: envoy_cache.Resources{Version: version, Items: s.MonitoringAssignments.Items},
+		}
 	}
+	return s
 }

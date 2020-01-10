@@ -59,8 +59,8 @@ type Snapshot interface {
 	// GetVersion returns the version for a resource type.
 	GetVersion(typ string) string
 
-	// SetVersion sets the version for a resource type.
-	SetVersion(typ string, version string)
+	// WithVersion creates a new snapshot with a different version for a given resource type.
+	WithVersion(typ string, version string) Snapshot
 }
 
 // SnapshotCache is a snapshot-based cache that maintains a single versioned
