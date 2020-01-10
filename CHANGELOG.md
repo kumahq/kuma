@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: on `kuma-prometheus-sd` start-up, check write permissions on the output dir
+  [#539](https://github.com/Kong/kuma/pull/539)
 * feature: implement MADS xDS client and integrate `kuma-prometheus-sd` with `Prometheus` via `file_sd` discovery
   [#537](https://github.com/Kong/kuma/pull/537)
 * feature: add configuration options to `kuma-prometheus-sd run`
