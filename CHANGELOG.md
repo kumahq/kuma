@@ -4,6 +4,18 @@
 
 > Released on 2020/01/10
 
+A new `Kuma` release that brings in a couple of highly-requested features, i.e.
+
+* **support for ingress traffic into the service mesh** - it is now possible to re-use
+  existing, feature-rich `API Gateway` solutions at the front doors of
+  your service mesh.
+  E.g., check out our [instructions](TODO) how to leverage `Kuma` and [Kong](https://github.com/Kong/kong) together. Or, if you're a hands-on kind of person, play with our demos for [kubernetes](https://github.com/Kong/kuma-demo/tree/master/kubernetes) and [universal](https://github.com/Kong/kuma-demo/tree/master/vagrant).
+* **access to Prometheus metrics collected by individual dataplanes** (Envoys) -
+  as a user, you only need to enable `Prometheus` metrics as part of your `Mesh` policy,
+  and that's it - every dataplane (Envoy) will automatically make its metrics available for scraping. Read more about it in the [docs](TODO).
+* **native integration with Prometheus auto-discovery** - be it `kubernetes` or `universal` (😮), `Prometheus` will automatically find all dataplanes in your mesh and scrape metrics out of them. Sounds interesting? See our [docs](TODO) and play with our demos for [kubernetes](https://github.com/Kong/kuma-demo/tree/master/kubernetes) and [universal](https://github.com/Kong/kuma-demo/tree/master/vagrant).
+* **brand new Kuma GUI** - following the very first preview release, `Kuma GUI` have been significantly overhauled to become what users would expect it to be. Read more about it in the [docs](TODO), see it live  as part of our demos for [kubernetes](https://github.com/Kong/kuma-demo/tree/master/kubernetes) and [universal](https://github.com/Kong/kuma-demo/tree/master/vagrant).
+
 Changes:
 
 * feature: enable proxying of Kuma REST API via Kuma GUI
