@@ -13,13 +13,13 @@ Practically, it means that `Prometheus` will be retrieving a list of scrape targ
 
 ## How it works
 
-`kuma-prometheus-sd` is meant to be run alongside `Prometheus` instance.
+`kuma-prometheus-sd` is meant to run alongside `Prometheus` instance.
 
 It is responsible for talking to `Kuma` Control Plane and fetching an up-to-date list of scrape targets from it.
 
 It then transforms that information into a format that `Prometheus` can understand, and saves it into a file on disk.
 
-`Prometheus` periodically reads from that file and updates its scraping configuration accordingly.
+`Prometheus` watches for changes to that file and updates its scraping configuration accordingly.
 
 ## How to use
 
@@ -40,8 +40,7 @@ scrape_configs:
 - job_name: 'kuma-dataplanes'
   scrape_interval: 15s
   file_sd_configs:
-  - refresh_interval: 1s
-    files:
+  - files:
     - /var/run/kuma-prometheus-sd/kuma.file_sd.json
 ```
 
@@ -65,7 +64,7 @@ This way, `kuma-prometheus-sd` can be deployed into your infrustructure just onc
 
 ## Protocol
 
-A unit of configuration for `kuma-prometheus-sd` is called `Monitoring Assignment`, which is an equivalent of `targetgroup` in `Prometheus`.
+A unit of configuration for `kuma-prometheus-sd` is called `Monitoring Assignment`, which is an equivalent of [targetgroup](https://github.com/prometheus/prometheus/blob/master/discovery/targetgroup/targetgroup.go) in `Prometheus`.
 
 E.g., a `Monitoring Assignment` that instructs `Prometheus` to scrape metrics from a single `Kuma` dataplane looks the following way:
 
@@ -83,16 +82,18 @@ labels:
   job: backend
   mesh: default
   service: backend
-  env: prod
 ```
 
-To serve `Monitoring Assignments` to compatible monitoring tools (i.e. `kuma-prometheus-sd` adapter),  `Kuma` Control Plane implements a gRPC service named `Monitoring Assignment Discovery Service` (MADS).
+To serve `Monitoring Assignments`, `Kuma` Control Plane implements a gRPC service called `Monitoring Assignment Discovery Service` (MADS).
+
+And `kuma-prometheus-sd` is a client of that service.
 
 Definitions of both `Monitoring Assignment` and `MADS` are available at [kuma/api/observability](https://github.com/Kong/kuma/blob/master/api/observability/v1alpha1/mads.proto).
 
 ## References
 
 1. [Traffic Metrics in Kuma Service Mesh](https://kuma.io/docs/latest/policies/#traffic-route) @ `kuma.io/docs`
-2. [Implementing Custom Service Discovery](https://prometheus.io/blog/2018/07/05/implementing-custom-sd/) @ `prometheus.io/blog`
-3. [documentation/examples/custom-sd](https://github.com/prometheus/prometheus/tree/master/documentation/examples/custom-sd) @ `github.com/prometheus/prometheus`
-4. [Envoy xDS gRPC protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) @ `envoyproxy.io/docs`
+2. [Monitoring Assignment Discovery Service](https://github.com/Kong/kuma/blob/master/api/observability/v1alpha1/mads.proto) @ `github.com/Kong/kuma`
+3. [Implementing Custom Service Discovery](https://prometheus.io/blog/2018/07/05/implementing-custom-sd/) @ `prometheus.io/blog`
+4. [documentation/examples/custom-sd](https://github.com/prometheus/prometheus/tree/master/documentation/examples/custom-sd) @ `github.com/prometheus/prometheus`
+5. [Envoy xDS gRPC protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) @ `envoyproxy.io/docs`
