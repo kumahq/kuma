@@ -92,7 +92,7 @@ Definitions of both `Monitoring Assignment` and `MADS` are available at [kuma/ap
 
 ## References
 
-1. [Traffic Metrics in Kuma Service Mesh](https://kuma.io/docs/latest/policies/#traffic-route) @ `kuma.io/docs`
+1. [Traffic Metrics in Kuma Service Mesh](https://kuma.io/docs/latest/policies/#traffic-metrics) @ `kuma.io/docs`
 2. [Monitoring Assignment Discovery Service](https://github.com/Kong/kuma/blob/master/api/observability/v1alpha1/mads.proto) @ `github.com/Kong/kuma`
 3. [Implementing Custom Service Discovery](https://prometheus.io/blog/2018/07/05/implementing-custom-sd/) @ `prometheus.io/blog`
 4. [documentation/examples/custom-sd](https://github.com/prometheus/prometheus/tree/master/documentation/examples/custom-sd) @ `github.com/prometheus/prometheus`
