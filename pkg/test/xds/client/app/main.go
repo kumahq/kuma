@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -38,9 +40,11 @@ func newRunCmd() *cobra.Command {
 	args := struct {
 		xdsServerAddress string
 		configFile       string
+		rampUpPeriod     time.Duration
 	}{
 		xdsServerAddress: "grpc://localhost:5678",
 		configFile:       "",
+		rampUpPeriod:     30 * time.Second,
 	}
 	cmd := &cobra.Command{
 		Use:   "run",
@@ -76,6 +80,12 @@ func newRunCmd() *cobra.Command {
 				nodeLog.Info("creating an xDS client ...")
 
 				go func(i int, node Node) {
+					// add some jitter
+					delay := time.Duration(int64(float64(args.rampUpPeriod.Nanoseconds()) * rand.Float64()))
+					// wait
+					<-time.After(delay)
+					// proceed
+
 					errCh <- func() (errs error) {
 						client, err := xds_client.New(args.xdsServerAddress)
 						if err != nil {
@@ -144,6 +154,7 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&args.xdsServerAddress, "xds-server-address", args.xdsServerAddress, "address of xDS server")
 	cmd.PersistentFlags().StringVar(&args.configFile, "config-file", args.configFile, "path to a config file")
 	_ = cmd.MarkFlagRequired("config-file")
+	cmd.PersistentFlags().DurationVar(&args.rampUpPeriod, "rampup-period", args.rampUpPeriod, "ramp up period")
 	return cmd
 }
 
