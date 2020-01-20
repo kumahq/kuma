@@ -30,6 +30,7 @@ type ResourceStorePlugin interface {
 	NewResourceStore(PluginContext, PluginConfig) (core_store.ResourceStore, error)
 	Migrate(PluginContext, PluginConfig) (uint, error)
 }
+
 var AlreadyMigrated = errors.New("database already migrated")
 
 // SecretStorePlugin is responsible for instantiating a particular SecretStore.

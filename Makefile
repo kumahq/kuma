@@ -355,6 +355,19 @@ run/universal/postgres/ssl: POSTGRES_SSL_ROOT_CERT_PATH=$(shell pwd)/tools/postg
 run/universal/postgres/ssl: run/universal/postgres ## Dev: Run Control Plane locally in universal mode with Postgres store and SSL enabled
 
 run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
+	KUMA_ENVIRONMENT=universal \
+	KUMA_STORE_TYPE=postgres \
+	KUMA_STORE_POSTGRES_HOST=localhost \
+	KUMA_STORE_POSTGRES_PORT=15432 \
+	KUMA_STORE_POSTGRES_USER=kuma \
+	KUMA_STORE_POSTGRES_PASSWORD=kuma \
+	KUMA_STORE_POSTGRES_DB_NAME=kuma \
+	KUMA_STORE_POSTGRES_TLS_MODE=$(POSTGRES_SSL_MODE) \
+	KUMA_STORE_POSTGRES_TLS_CERT_PATH=$(POSTGRES_SSL_CERT_PATH) \
+	KUMA_STORE_POSTGRES_TLS_KEY_PATH=$(POSTGRES_SSL_KEY_PATH) \
+	KUMA_STORE_POSTGRES_TLS_CA_PATH=$(POSTGRES_SSL_ROOT_CERT_PATH) \
+	$(GO_RUN) ./app/kuma-cp/main.go migrate up --log-level=debug
+
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
 	KUMA_ENVIRONMENT=universal \

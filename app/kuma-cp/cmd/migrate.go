@@ -4,8 +4,8 @@ import (
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	"github.com/pkg/errors"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
+	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
 )
