@@ -2,7 +2,7 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector kind/load/kuma-init \
-		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/control-plane \ generate/gui \
+		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/control-plane generate/kuma-cp/migrations generate/gui \
 		fmt fmt/go fmt/proto vet golangci-lint check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-prometheus-sd image/kuma-tcp-echo \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-prometheus-sd docker/build/kuma-tcp-echo \
@@ -247,6 +247,9 @@ protoc/pkg/test/apis/sample/v1alpha1:
 generate/kumactl/install/control-plane:
 	go generate ./app/kumactl/pkg/install/k8s/control-plane/...
 	go generate ./app/kumactl/pkg/install/universal/control-plane/postgres/...
+
+generate/kuma-cp/migrations:
+	go generate ./pkg/plugins/resources/postgres/migrations/...
 
 generate/gui: ## Generate go files with GUI static files to embed it into binary
 	go generate ./app/kuma-ui/pkg/resources/...

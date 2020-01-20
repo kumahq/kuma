@@ -24,7 +24,7 @@ var _ = Describe("postgresResourceStore", func() {
 		Expect(err).ToNot(HaveOccurred())
 		cfg.DbName = dbName
 
-		err = prepareDb(cfg)
+		_, err := migrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		pStore, err := NewStore(cfg)
@@ -50,29 +50,4 @@ func createRandomDb(cfg postgres.PostgresStoreConfig) (string, error) {
 		return "", err
 	}
 	return dbName, err
-}
-
-func prepareDb(cfg postgres.PostgresStoreConfig) error {
-	db, err := connectToDb(cfg)
-	if err != nil {
-		return err
-	}
-	statement := ` 
-			CREATE TABLE IF NOT EXISTS resources (
-			   name        varchar(100) NOT NULL,
-			   namespace   varchar(100) NOT NULL,
-			   mesh        varchar(100) NOT NULL,
-			   type        varchar(100) NOT NULL,
-			   version     integer NOT NULL,
-			   spec        text,
-			   PRIMARY KEY (name, namespace, mesh, type)
-			);
-			DELETE FROM resources;
-		`
-	_, err = db.Exec(statement)
-	if err != nil {
-		return err
-	}
-	err = db.Close()
-	return err
 }

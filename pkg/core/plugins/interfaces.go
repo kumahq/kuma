@@ -1,6 +1,8 @@
 package plugins
 
 import (
+	"github.com/pkg/errors"
+
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
@@ -26,7 +28,9 @@ type BootstrapPlugin interface {
 type ResourceStorePlugin interface {
 	Plugin
 	NewResourceStore(PluginContext, PluginConfig) (core_store.ResourceStore, error)
+	Migrate(PluginContext, PluginConfig) (uint, error)
 }
+var AlreadyMigrated = errors.New("database already migrated")
 
 // SecretStorePlugin is responsible for instantiating a particular SecretStore.
 type SecretStorePlugin interface {
