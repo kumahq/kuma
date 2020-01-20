@@ -9,13 +9,13 @@ import (
 
 func SortResourcesByKind(files []data.File) []data.File {
 	singleFile := data.JoinYAML(files)
-	resources := helm_releaseutil.SplitManifests(string(singleFile))
+	resources := helm_releaseutil.SplitManifests(string(singleFile.Data))
 	manifests := helm_manifest.SplitManifests(resources)
 	SortByKind(manifests)
 
 	result := make([]data.File, len(manifests))
 	for i, manifest := range manifests {
-		result[i] = []byte(manifest.Content)
+		result[i].Data = []byte(manifest.Content)
 	}
 	return result
 }

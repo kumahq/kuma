@@ -11,7 +11,7 @@ var sep = regexp.MustCompile("(?:^|\\s*\n)---\\s*")
 func SplitYAML(file File) []File {
 	files := make([]File, 0)
 
-	bigFile := string(file)
+	bigFile := string(file.Data)
 	// Making sure that any extra whitespace in YAML stream doesn't interfere in splitting documents correctly.
 	bigFileTmp := strings.TrimSpace(bigFile)
 	docs := sep.Split(bigFileTmp, -1)
@@ -21,7 +21,11 @@ func SplitYAML(file File) []File {
 		}
 
 		doc = strings.TrimSpace(doc)
-		files = append(files, File(doc))
+		file := File{
+			Data: []byte(doc),
+			Name: file.Name,
+		}
+		files = append(files, file)
 	}
 
 	return files
@@ -32,12 +36,15 @@ func JoinYAML(files []File) File {
 	for _, file := range files {
 		docs := SplitYAML(file)
 		for _, doc := range docs {
-			if len(doc) == 0 {
+			if len(doc.Data) == 0 {
 				continue
 			}
 			buf.Write([]byte("\n---\n"))
-			buf.Write(doc)
+			buf.Write(doc.Data)
 		}
 	}
-	return buf.Bytes()
+	file := File{
+		Data: buf.Bytes(),
+	}
+	return file
 }

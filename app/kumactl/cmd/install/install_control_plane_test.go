@@ -86,14 +86,14 @@ var _ = Describe("kumactl install control-plane", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			expectedManifests := data.SplitYAML(expected)
+			expectedManifests := data.SplitYAML(data.File{Data: expected})
 
 			// when
 			actual := stdout.Bytes()
 			// then
 			Expect(actual).To(MatchYAML(expected))
 			// and
-			actualManifests := data.SplitYAML(actual)
+			actualManifests := data.SplitYAML(data.File{Data: expected})
 
 			// and
 			Expect(len(actualManifests)).To(Equal(len(expectedManifests)))

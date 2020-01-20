@@ -28,7 +28,7 @@ rm $sql_file`,
 				if err != nil {
 					return errors.Wrap(err, "could not read schema file")
 				}
-				_, err = cmd.OutOrStdout().Write(file)
+				_, err = cmd.OutOrStdout().Write(file.Data)
 				return err
 			default:
 				return errors.Errorf("unknown target type: %s", args.target)

@@ -123,7 +123,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
 			singleFile := data.JoinYAML(sortedResources)
 
-			if _, err := cmd.OutOrStdout().Write(singleFile); err != nil {
+			if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
 				return errors.Wrap(err, "Failed to output rendered resources")
 			}
 
@@ -162,7 +162,7 @@ func renderFiles(templates []data.File, args interface{}, newRenderer func(data.
 		if err := renderer.Execute(&buf, args); err != nil {
 			return nil, err
 		}
-		renderedFiles[i] = buf.Bytes()
+		renderedFiles[i].Data = buf.Bytes()
 	}
 
 	return renderedFiles, nil
@@ -173,7 +173,7 @@ type templateRenderer interface {
 }
 
 func simpleTemplateRenderer(text data.File) (templateRenderer, error) {
-	tmpl, err := template.New("").Funcs(sprig.TxtFuncMap()).Parse(string(text))
+	tmpl, err := template.New("").Funcs(sprig.TxtFuncMap()).Parse(string(text.Data))
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to parse k8s resource template")
 	}

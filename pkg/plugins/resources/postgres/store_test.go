@@ -24,7 +24,7 @@ var _ = Describe("postgresResourceStore", func() {
 		Expect(err).ToNot(HaveOccurred())
 		cfg.DbName = dbName
 
-		_, err := migrateDb(cfg)
+		_, err = migrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		pStore, err := NewStore(cfg)
