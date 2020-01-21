@@ -4,9 +4,11 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Kong/kuma/blob/master/LICENSE)
 [![Twitter](https://img.shields.io/twitter/follow/thekonginc.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=thekonginc)
 
-Kuma is a universal open source control-plane for Service Mesh and Microservices that can run and be operated natively across both Kubernetes and VM environments, in order to be easily adopted by every team in the organization.
+Kuma is a platform agnostic open-source control plane for Service Mesh and Microservices. It can run and be operated natively across both Kubernetes and VM environments, making it easy to adopt by every team in the organization.
 
-Built on top of Envoy, Kuma can instrument any L4/L7 traffic to secure, observe, route and enhance connectivity between any service or database. It can be used natively in Kubernetes via CRDs or via a RESTful API on VM and Bare Metal environments, and it doesn't require a change to your application's code in order to be used.
+Bundling Envoy as a data-plane, Kuma can instrument any L4/L7 traffic to secure, observe, route and enhance connectivity between any service or database. It can be used natively in Kubernetes via CRDs or via a RESTful API across other environments like VMs and Bare Metal.
+
+While being simple to use for most use-cases, Kuma also provides policies to configure the underlying Envoy data-planes in a more fine-grained manner. By doing so, Kuma can be used by both first-time users of Service Mesh, as well as the most experienced ones.
 
 Built by Envoy contributors at Kong 🦍.
 
@@ -30,9 +32,11 @@ Built by Envoy contributors at Kong 🦍.
 
 ## Why Kuma?
 
-Modern applications will inevitably make requests over a network to communicate to other services, like databases, caches or microservices. But - as we all know - the network is by default unreliable and unsecure, and can introduce significant challenges to any modern environment like security, tracing and routing amongh the others.
+Modern applications will inevitably make requests over a network to communicate to other services, like databases, caches or microservices. But - as we all know - the network is by default unreliable and unsecure, and can introduce significant challenges to any modern environment like security, tracing and routing among the others.
 
-Kuma is a better way to build L4/L7 connectivity among your services and applications (Service Mesh) by reducing the code that application teams have to write, enabling to ship products faster and improve the reliability and security of the overall architecture with minimal effort. Therefore, Kuma embraces the sidecar proxy model by leveraging Envoy as its sidecar data-plane technology and by providing a Universal Control Plane that can run on both modern Kubernetes and existing VM/Bare Metal architectures in order to deliver business value across every team in the organization with one comprhensive solution.
+Kuma is a better way to build L4/L7 connectivity among your services and applications (Service Mesh) by reducing the code that application teams have to write, enabling to ship products faster and improve the reliability and security of the overall architecture with minimal effort. 
+
+Kuma embraces the sidecar proxy model by bundling Envoy as its sidecar data-plane technology and by providing a platform-agnostic Control Plane that can run on both modern Kubernetes and existing VM/Bare Metal architectures in order to deliver business value across every team in the organization with one comprhensive solution.
 
 [![][kuma-benefits]][kuma-url]
 
@@ -48,19 +52,23 @@ Kuma is a better way to build L4/L7 connectivity among your services and applica
 * **Traffic Logs**: To log all the activity to a third-party service, like Splunk or ELK.
 * **Traffic Metrics**: For every Envoy dataplane managed by Kuma, via Prometheus and other integrations.
 * **Proxy Configuration Templating**: The easiest way to run and configure Envoy with low-level configuration.
+* **Gateway Support**: To support any API Gateway or Ingress, like [Kong Gateway](https://github.com/Kong/kong).
 * **Healthchecks**: Both active and passive.
 * **GUI**: Out of the box browser GUI to explore all the Service Meshes configured in the system.
 * **Tagging Selectors**: To apply sophisticated regional, cloud-specific and team-oriented policies.
 * **Platform-Agnostic**: Support for K8s, VMs, and bare metal.
-* **Powerful APIM Ingress**: Support for [Kong Gateway](https://github.com/Kong/kong) integration to provide full-cycle APIM.
+
+Below you can find a snapshot of the GUI that ships with Kuma:
+
+[![][kuma-gui]][kuma-url]
 
 ## Distributions
 
-Kuma is a platform-agnostic product that comes in many shapes. You can explore the available installation options at [the official website](https://kuma.io/install).
+Kuma is a platform-agnostic product that ships in different distributions. You can explore the available installation options at [the official website](https://kuma.io/install).
 
 You can use Kuma for modern greenfield applications built on containers as well as existing applications running on more traditional infrastructure. Kuma can be fully configured via CRDs (Custom Resource Definitions) on Kubernetes and via a RESTful HTTP API in other environments that can be easily integrated with CI/CD workflows.
 
-Kuma also provides an easy to use `kumactl` CLI client for every environment.
+Kuma also provides an easy to use `kumactl` CLI client for every environment, and an official GUI that can be accessed by the browser.
 
 ## Development
 
@@ -68,9 +76,9 @@ Kuma is under active development and production-ready.
 
 See [Developer Guide](DEVELOPER.md) for further details.
 
-## Enterprise Demo
+## Enterprise Support
 
-If you are implementing Kuma in a mission-critical environment, visit [Request Demo](https://kuma.io/request-demo/) and get in touch with Kong.
+If you are implementing Kuma in a mission-critical environment and require Enterprise support and features, please visit [Enterprise](https://kuma.io/enterprise/) and get in touch with Kong.
 
 ## License
 
@@ -92,4 +100,5 @@ limitations under the License.
 
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo.png
+[kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui.png
 [kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits.jpg
