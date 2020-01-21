@@ -21,7 +21,7 @@ var Migrations = func() http.FileSystem {
 	fs := vfsgen۰FS{
 		"/": &vfsgen۰DirInfo{
 			name:    "/",
-			modTime: time.Date(2020, 1, 20, 14, 10, 10, 870594103, time.UTC),
+			modTime: time.Date(2020, 1, 21, 11, 3, 13, 288605105, time.UTC),
 		},
 		"/1579518998_create_resources.up.sql": &vfsgen۰CompressedFileInfo{
 			name:             "1579518998_create_resources.up.sql",
@@ -30,15 +30,9 @@ var Migrations = func() http.FileSystem {
 
 			compressedContent: []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x8c\x8e\x4f\x0b\x82\x40\x10\x47\xef\x7e\x8a\xdf\x51\x61\x0f\x76\xee\x64\xb1\x81\x64\x16\xba\x41\x1e\x97\x65\x48\x0f\xea\xb2\xb3\x49\x7d\xfb\x68\xfb\x07\x1d\xc2\x39\x0e\x6f\xde\xbc\x75\x25\x33\x25\xa1\xb2\x55\x21\x91\x6f\x50\xee\x15\xe4\x29\xaf\x55\x0d\x47\x3c\x5e\x9c\x21\x46\x1c\x01\xc0\xa0\x7b\xc2\x6b\x26\xed\x4c\xab\x5d\xbc\x48\xd3\x24\xdc\x94\xc7\xa2\x10\x1f\x8c\xad\x36\xf4\x1f\xeb\x89\xdb\x19\x36\x7f\xb3\x73\x9e\x4e\xe4\xb8\x1b\x87\x80\x75\x83\xa7\x33\xb9\x1f\x82\x2d\x99\xb7\xc8\xd3\xd5\x3f\xb7\x87\x2a\xdf\x65\x55\x83\xad\x6c\x10\x3f\xca\xc5\xb7\x5f\x84\x46\x11\x12\x92\x28\x59\xde\x03\x00\x00\xff\xff\x88\x1c\x8d\x52\x2b\x01\x00\x00"),
 		},
-		"/1579529348_add_create_date.up.sql": &vfsgen۰FileInfo{
-			name:    "1579529348_add_create_date.up.sql",
-			modTime: time.Date(2020, 1, 20, 14, 10, 10, 869894772, time.UTC),
-			content: []byte("\x41\x4c\x54\x45\x52\x20\x54\x41\x42\x4c\x45\x20\x72\x65\x73\x6f\x75\x72\x63\x65\x73\x20\x41\x44\x44\x20\x43\x4f\x4c\x55\x4d\x4e\x20\x63\x72\x65\x61\x74\x69\x6f\x6e\x5f\x64\x61\x74\x65\x20\x74\x69\x6d\x65\x73\x74\x61\x6d\x70\x3b"),
-		},
 	}
 	fs["/"].(*vfsgen۰DirInfo).entries = []os.FileInfo{
 		fs["/1579518998_create_resources.up.sql"].(os.FileInfo),
-		fs["/1579529348_add_create_date.up.sql"].(os.FileInfo),
 	}
 
 	return fs
@@ -63,11 +57,6 @@ func (fs vfsgen۰FS) Open(path string) (http.File, error) {
 		return &vfsgen۰CompressedFile{
 			vfsgen۰CompressedFileInfo: f,
 			gr:                        gr,
-		}, nil
-	case *vfsgen۰FileInfo:
-		return &vfsgen۰File{
-			vfsgen۰FileInfo: f,
-			Reader:          bytes.NewReader(f.content),
 		}, nil
 	case *vfsgen۰DirInfo:
 		return &vfsgen۰Dir{
@@ -148,37 +137,6 @@ func (f *vfsgen۰CompressedFile) Seek(offset int64, whence int) (int64, error) {
 }
 func (f *vfsgen۰CompressedFile) Close() error {
 	return f.gr.Close()
-}
-
-// vfsgen۰FileInfo is a static definition of an uncompressed file (because it's not worth gzip compressing).
-type vfsgen۰FileInfo struct {
-	name    string
-	modTime time.Time
-	content []byte
-}
-
-func (f *vfsgen۰FileInfo) Readdir(count int) ([]os.FileInfo, error) {
-	return nil, fmt.Errorf("cannot Readdir from file %s", f.name)
-}
-func (f *vfsgen۰FileInfo) Stat() (os.FileInfo, error) { return f, nil }
-
-func (f *vfsgen۰FileInfo) NotWorthGzipCompressing() {}
-
-func (f *vfsgen۰FileInfo) Name() string       { return f.name }
-func (f *vfsgen۰FileInfo) Size() int64        { return int64(len(f.content)) }
-func (f *vfsgen۰FileInfo) Mode() os.FileMode  { return 0444 }
-func (f *vfsgen۰FileInfo) ModTime() time.Time { return f.modTime }
-func (f *vfsgen۰FileInfo) IsDir() bool        { return false }
-func (f *vfsgen۰FileInfo) Sys() interface{}   { return nil }
-
-// vfsgen۰File is an opened file instance.
-type vfsgen۰File struct {
-	*vfsgen۰FileInfo
-	*bytes.Reader
-}
-
-func (f *vfsgen۰File) Close() error {
-	return nil
 }
 
 // vfsgen۰DirInfo is a static definition of a directory.
