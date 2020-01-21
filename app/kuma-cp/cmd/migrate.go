@@ -15,8 +15,8 @@ var migrateLog = controlPlaneLog.WithName("migrate")
 func newMigrateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
-		Short: "Launch Control Plane",
-		Long:  `Launch Control Plane.`,
+		Short: "Migrate database to which Control Plane is connected",
+		Long:  `Migrate database to which Control Plane is connected.`,
 	}
 	cmd.AddCommand(newMigrateUpCmd())
 	return cmd
@@ -28,8 +28,8 @@ func newMigrateUpCmd() *cobra.Command {
 	}{}
 	cmd := &cobra.Command{
 		Use:   "up",
-		Short: "Launch Control Plane",
-		Long:  `Launch Control Plane.`,
+		Short: "Run up migrations",
+		Long:  `Run up migrations.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := kuma_cp.DefaultConfig()
 			err := config.Load(args.configPath, &cfg)
