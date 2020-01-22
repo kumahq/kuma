@@ -25,6 +25,9 @@ store:
     dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
+    # Maximum number of open connections to the database
+    # `0` value means number of open connections is unlimited
+    maxOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values (disable, require, verify-ca, verify-full)

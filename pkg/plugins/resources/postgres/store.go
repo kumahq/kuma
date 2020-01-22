@@ -4,14 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
+	"strings"
+
 	config "github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/util/proto"
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
-	"strconv"
-	"strings"
 )
 
 const duplicateKeyErrorMsg = "duplicate key value violates unique constraint"
@@ -44,6 +45,8 @@ func connectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create connection to DB")
 	}
+
+	db.SetMaxOpenConns(cfg.MaxOpenConnections)
 
 	// check connection to DB, Open() does not check it.
 	if err := db.Ping(); err != nil {

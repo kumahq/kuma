@@ -80,6 +80,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.Password).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
+			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
 
 			Expect(cfg.Store.Postgres.TLS.Mode).To(Equal(postgres.VerifyFull))
 			Expect(cfg.Store.Postgres.TLS.CertPath).To(Equal("/path/to/cert"))
@@ -135,6 +136,7 @@ store:
     password: kuma
     dbName: kuma
     connectionTimeout: 10
+    maxOpenConnections: 300
     tls:
       mode: verifyFull
       certPath: /path/to/cert
@@ -213,6 +215,7 @@ guiServer:
 				"KUMA_STORE_POSTGRES_PASSWORD":                                  "kuma",
 				"KUMA_STORE_POSTGRES_DB_NAME":                                   "kuma",
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":                        "10",
+				"KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS":                      "300",
 				"KUMA_STORE_POSTGRES_TLS_MODE":                                  "verifyFull",
 				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                             "/path/to/cert",
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                              "/path/to/key",
