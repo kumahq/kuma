@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [master]
+
+Changes:
+
+* feature: make maximum number of open connections to Postgres configurable
+  [#557](https://github.com/Kong/kuma/pull/557)
+
 ## [0.3.2]
 
 > Released on 2020/01/10

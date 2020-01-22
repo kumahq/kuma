@@ -21,6 +21,9 @@ type PostgresStoreConfig struct {
 	DbName string `yaml:"dbName" envconfig:"kuma_store_postgres_db_name"`
 	// Connection Timeout to the DB in seconds
 	ConnectionTimeout int `yaml:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
+	// Maximum number of open connections to the database
+	// `0` value means number of open connections is unlimited
+	MaxOpenConnections int `yaml:"maxOpenConnections" envconfig:"kuma_store_postgres_max_open_connections"`
 	// TLS settings
 	TLS TLSPostgresStoreConfig `yaml:"tls"`
 }
@@ -102,13 +105,14 @@ func (p *PostgresStoreConfig) Validate() error {
 
 func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 	return &PostgresStoreConfig{
-		Host:              "127.0.0.1",
-		Port:              15432,
-		User:              "kuma",
-		Password:          "kuma",
-		DbName:            "kuma",
-		ConnectionTimeout: 5,
-		TLS:               DefaultTLSPostgresStoreConfig(),
+		Host:               "127.0.0.1",
+		Port:               15432,
+		User:               "kuma",
+		Password:           "kuma",
+		DbName:             "kuma",
+		ConnectionTimeout:  5,
+		MaxOpenConnections: 0, // number of open connections is unlimited
+		TLS:                DefaultTLSPostgresStoreConfig(),
 	}
 }
 

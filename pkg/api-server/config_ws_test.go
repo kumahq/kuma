@@ -137,6 +137,7 @@ var _ = Describe("Config WS", func() {
               "connectionTimeout": 5,
               "dbName": "kuma",
               "host": "127.0.0.1",
+              "maxOpenConnections": 0,
               "password": "*****",
               "port": 15432,
               "tls": {
