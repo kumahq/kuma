@@ -41,12 +41,12 @@ func newMigrateUpCmd() *cobra.Command {
 			ver, err := migrate(cfg)
 			if err != nil {
 				if err == core_plugins.AlreadyMigrated {
-					cmd.Printf("DB already migrated to the newest version: %d", ver)
+					cmd.Printf("DB already migrated to the newest version: %d\n", ver)
 				} else {
 					return err
 				}
 			} else {
-				cmd.Printf("DB migrated to %d version", ver)
+				cmd.Printf("DB migrated to %d version\n", ver)
 			}
 
 			return nil

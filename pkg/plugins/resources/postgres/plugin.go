@@ -30,7 +30,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 	return NewStore(*cfg)
 }
 
-func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (uint, error) {
+func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {
 	cfg, ok := config.(*postgres.PostgresStoreConfig)
 	if !ok {
 		return 0, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")

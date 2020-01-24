@@ -25,10 +25,11 @@ type BootstrapPlugin interface {
 }
 
 // ResourceStorePlugin is responsible for instantiating a particular ResourceStore.
+type DbVersion = uint
 type ResourceStorePlugin interface {
 	Plugin
 	NewResourceStore(PluginContext, PluginConfig) (core_store.ResourceStore, error)
-	Migrate(PluginContext, PluginConfig) (uint, error)
+	Migrate(PluginContext, PluginConfig) (DbVersion, error)
 }
 
 var AlreadyMigrated = errors.New("database already migrated")

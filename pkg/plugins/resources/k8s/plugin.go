@@ -28,6 +28,6 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.
 	return NewStore(mgr.GetClient())
 }
 
-func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (uint, error) {
+func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {
 	return 0, errors.New("migrations are not supported for Kubernetes resource store")
 }

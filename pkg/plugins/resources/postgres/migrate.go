@@ -14,7 +14,7 @@ import (
 	"github.com/Kong/kuma/pkg/plugins/resources/postgres/migrations"
 )
 
-func migrateDb(cfg postgres_cfg.PostgresStoreConfig) (uint, error) {
+func migrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, error) {
 	m, err := newMigrate(cfg)
 	if err != nil {
 		return 0, err
@@ -88,7 +88,7 @@ func isDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
 	return dbVer == fileVer, nil
 }
 
-func newestMigration() (uint, error) {
+func newestMigration() (core_plugins.DbVersion, error) {
 	files, err := data.ReadFiles(migrations.Migrations)
 	if err != nil {
 		return 0, err
@@ -104,5 +104,5 @@ func newestMigration() (uint, error) {
 			latest = ver
 		}
 	}
-	return uint(latest), nil
+	return core_plugins.DbVersion(latest), nil
 }
