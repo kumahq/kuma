@@ -28,7 +28,7 @@ statsConfig:
     - tagName: worker
       regex: '(worker_([0-9]+)\.)'
     - tagName: listener
-      regex: '(.+?)rbac\.'
+      regex: '((.+?)\.)rbac\.'
 staticResources:
   clusters:
   - connectTimeout: 2s

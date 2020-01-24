@@ -2,13 +2,13 @@ package envoy
 
 import (
 	"fmt"
-
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
 
 	envoy_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
@@ -19,7 +19,7 @@ func createRbacFilter(listenerName string, permissions *mesh_core.TrafficPermiss
 	rbacMarshalled, err := ptypes.MarshalAny(rbacRule)
 	util_error.MustNot(err)
 	return envoy_listener.Filter{
-		Name: "envoy.filters.network.rbac", // TODO(gszr): Change to util.RoleBasedAccessControl after go-control-plane update
+		Name: envoy_wellknown.RoleBasedAccessControl,
 		ConfigType: &envoy_listener.Filter_TypedConfig{
 			TypedConfig: rbacMarshalled,
 		},
@@ -38,7 +38,7 @@ func createRbacRule(listenerName string, permissions *mesh_core.TrafficPermissio
 			Action:   rbac_config.RBAC_ALLOW,
 			Policies: policies,
 		},
-		StatPrefix: listenerName,
+		StatPrefix: fmt.Sprintf("%s.", listenerName), // we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric to "inbound:127.0.0.1:21011.rbac.allowed"
 	}
 }
 

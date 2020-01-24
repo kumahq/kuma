@@ -46,7 +46,7 @@ stats_config:
   - tag_name: worker
     regex: '(worker_([0-9]+)\.)'
   - tag_name: listener
-    regex: '(.+?)rbac\.'
+    regex: '((.+?)\.)rbac\.'
 
 dynamic_resources:
   lds_config: {ads: {}}
