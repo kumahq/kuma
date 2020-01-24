@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: reformat some Envoy metrics available in Prometheus
+  [#558](https://github.com/Kong/kuma/pull/558)
 * feature: make maximum number of open connections to Postgres configurable
   [#557](https://github.com/Kong/kuma/pull/557)
 
