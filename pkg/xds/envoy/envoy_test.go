@@ -642,7 +642,7 @@ var _ = Describe("Envoy", func() {
                       - authenticated:
                           principalName:
                             exact: spiffe://default/web1
-                statPrefix: inbound:192.168.0.1:8080
+                statPrefix: inbound:192.168.0.1:8080.
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
@@ -719,7 +719,7 @@ var _ = Describe("Envoy", func() {
                       - authenticated:
                           principalName:
                             exact: spiffe://default/web1
-                statPrefix: inbound:192.168.0.1:8080
+                statPrefix: inbound:192.168.0.1:8080.
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy

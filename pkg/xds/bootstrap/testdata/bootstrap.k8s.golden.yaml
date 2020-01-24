@@ -11,6 +11,16 @@ dynamicResources:
 node:
   cluster: backend
   id: default.dp-1.default
+statsConfig:
+  statsTags:
+    - tagName: name
+      regex: '^grpc\.((.+)\.)'
+    - tagName: status
+      regex: '^grpc.*streams_closed(_([0-9]+))'
+    - tagName: worker
+      regex: '(worker_([0-9]+)\.)'
+    - tagName: listener
+      regex: '((.+?)\.)rbac\.'
 staticResources:
   clusters:
     - connectTimeout: 1s

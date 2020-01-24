@@ -20,6 +20,16 @@ node:
   metadata:
     dataplane.admin.port: "1234"
     dataplaneTokenPath: /tmp/token
+statsConfig:
+  statsTags:
+    - tagName: name
+      regex: '^grpc\.((.+)\.)'
+    - tagName: status
+      regex: '^grpc.*streams_closed(_([0-9]+))'
+    - tagName: worker
+      regex: '(worker_([0-9]+)\.)'
+    - tagName: listener
+      regex: '((.+?)\.)rbac\.'
 staticResources:
   clusters:
     - connectTimeout: 1s

@@ -37,6 +37,17 @@ admin:
       port_value: {{ .AdminPort }}
 {{ end }}
 
+stats_config:
+  stats_tags:
+  - tag_name: name
+    regex: '^grpc\.((.+)\.)'
+  - tag_name: status
+    regex: '^grpc.*streams_closed(_([0-9]+))'
+  - tag_name: worker
+    regex: '(worker_([0-9]+)\.)'
+  - tag_name: listener
+    regex: '((.+?)\.)rbac\.'
+
 dynamic_resources:
   lds_config: {ads: {}}
   cds_config: {ads: {}}

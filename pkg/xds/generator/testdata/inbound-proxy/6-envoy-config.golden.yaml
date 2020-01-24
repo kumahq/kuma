@@ -37,7 +37,7 @@ resources:
                       - authenticated:
                           principalName:
                             exact: spiffe://default/web1
-                statPrefix: inbound:192.168.0.1:80
+                statPrefix: inbound:192.168.0.1:80.
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
@@ -103,7 +103,7 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules: {}
-                statPrefix: inbound:192.168.0.1:443
+                statPrefix: inbound:192.168.0.1:443.
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
