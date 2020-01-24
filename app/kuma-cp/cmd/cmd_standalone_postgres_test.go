@@ -19,7 +19,7 @@ var _ = Describe("Standalone Postgres test", func() {
 		err := config.Load("", &cfg)
 		cfg.Store.Type = store.PostgresStore
 		Expect(err).ToNot(HaveOccurred())
-		_, err = migrate(cfg)
+		err = migrate(cfg)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
