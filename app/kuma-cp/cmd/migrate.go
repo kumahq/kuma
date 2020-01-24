@@ -5,6 +5,7 @@ import (
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
+	"github.com/Kong/kuma/pkg/version"
 	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
@@ -16,7 +17,7 @@ func newMigrateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Migrate database to which Control Plane is connected",
-		Long:  `Migrate database to which Control Plane is connected.`,
+		Long:  `Migrate database to which Control Plane is connected. The database contains all policies, dataplanes and secrets. The schema has to be in sync with version of Kuma CP to properly work. Make sure to run "kumactl migrate up" before running new version of Kuma.`,
 	}
 	cmd.AddCommand(newMigrateUpCmd())
 	return cmd
@@ -28,8 +29,8 @@ func newMigrateUpCmd() *cobra.Command {
 	}{}
 	cmd := &cobra.Command{
 		Use:   "up",
-		Short: "Run up migrations",
-		Long:  `Run up migrations.`,
+		Short: "Apply the newest schema changes to the database.",
+		Long:  `Apply the newest schema changes to the database.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := kuma_cp.DefaultConfig()
 			err := config.Load(args.configPath, &cfg)
@@ -38,15 +39,14 @@ func newMigrateUpCmd() *cobra.Command {
 				return err
 			}
 
-			ver, err := migrate(cfg)
-			if err != nil {
+			if err := migrate(cfg); err != nil {
 				if err == core_plugins.AlreadyMigrated {
-					cmd.Printf("DB already migrated to the newest version: %d\n", ver)
+					cmd.Printf("DB has already been migrated for Kuma %s\n", version.Build.Version)
 				} else {
 					return err
 				}
 			} else {
-				cmd.Printf("DB migrated to %d version\n", ver)
+				cmd.Printf("DB has been migrated for Kuma %s\n", version.Build.Version)
 			}
 
 			return nil
@@ -56,7 +56,7 @@ func newMigrateUpCmd() *cobra.Command {
 	return cmd
 }
 
-func migrate(cfg kuma_cp.Config) (uint, error) {
+func migrate(cfg kuma_cp.Config) error {
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
 	switch cfg.Store.Type {
@@ -70,11 +70,12 @@ func migrate(cfg kuma_cp.Config) (uint, error) {
 		pluginName = core_plugins.Postgres
 		pluginConfig = cfg.Store.Postgres
 	default:
-		return 0, errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	plugin, err := core_plugins.Plugins().ResourceStore(pluginName)
 	if err != nil {
-		return 0, errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
+		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
 	}
-	return plugin.Migrate(nil, pluginConfig)
+	_, err = plugin.Migrate(nil, pluginConfig)
+	return err
 }
