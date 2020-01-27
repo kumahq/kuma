@@ -8,6 +8,8 @@ Changes:
   [#558](https://github.com/Kong/kuma/pull/558)
 * feature: make maximum number of open connections to Postgres configurable
   [#557](https://github.com/Kong/kuma/pull/557)
+* feature: DB migrations for Postgres
+  [#552](https://github.com/Kong/kuma/pull/552)
 
 ## [0.3.2]
 
