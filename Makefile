@@ -2,7 +2,7 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector kind/load/kuma-init \
-		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/control-plane \ generate/gui \
+		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/control-plane generate/kuma-cp/migrations generate/gui \
 		fmt fmt/go fmt/proto vet golangci-lint check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-prometheus-sd image/kuma-tcp-echo \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-prometheus-sd docker/build/kuma-tcp-echo \
@@ -248,6 +248,9 @@ generate/kumactl/install/control-plane:
 	go generate ./app/kumactl/pkg/install/k8s/control-plane/...
 	go generate ./app/kumactl/pkg/install/universal/control-plane/postgres/...
 
+generate/kuma-cp/migrations:
+	go generate ./pkg/plugins/resources/postgres/migrations/...
+
 generate/gui: ## Generate go files with GUI static files to embed it into binary
 	go generate ./app/kuma-ui/pkg/resources/...
 
@@ -352,6 +355,19 @@ run/universal/postgres/ssl: POSTGRES_SSL_ROOT_CERT_PATH=$(shell pwd)/tools/postg
 run/universal/postgres/ssl: run/universal/postgres ## Dev: Run Control Plane locally in universal mode with Postgres store and SSL enabled
 
 run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
+	KUMA_ENVIRONMENT=universal \
+	KUMA_STORE_TYPE=postgres \
+	KUMA_STORE_POSTGRES_HOST=localhost \
+	KUMA_STORE_POSTGRES_PORT=15432 \
+	KUMA_STORE_POSTGRES_USER=kuma \
+	KUMA_STORE_POSTGRES_PASSWORD=kuma \
+	KUMA_STORE_POSTGRES_DB_NAME=kuma \
+	KUMA_STORE_POSTGRES_TLS_MODE=$(POSTGRES_SSL_MODE) \
+	KUMA_STORE_POSTGRES_TLS_CERT_PATH=$(POSTGRES_SSL_CERT_PATH) \
+	KUMA_STORE_POSTGRES_TLS_KEY_PATH=$(POSTGRES_SSL_KEY_PATH) \
+	KUMA_STORE_POSTGRES_TLS_CA_PATH=$(POSTGRES_SSL_ROOT_CERT_PATH) \
+	$(GO_RUN) ./app/kuma-cp/main.go migrate up --log-level=debug
+
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
 	KUMA_ENVIRONMENT=universal \

@@ -11,7 +11,6 @@ services:
     ports:
       - ${KUMA_STORE_POSTGRES_PORT:-15432}:5432
     volumes:
-      - ../../../app/kumactl/cmd/install/testdata/postgres_schema.golden.sql:/docker-entrypoint-initdb.d/init.sql
       - ./certs/rootCA.crt:/var/lib/postgresql/rootCA.crt:ro
       - ./certs/postgres.server.crt:/var/lib/postgresql/postgres.server.crt:ro
       # certs/postgres.server.key is provided via ../Dockerfile, because there is no way to mount it with 600 permission
