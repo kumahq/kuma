@@ -332,7 +332,7 @@ wait/example/minikube: ## Minikube: Wait for demo setup to get ready
 
 wait/example/minikube/mtls: ## Minikube: Wait until incoming Listener and outgoing Cluster have been configured for mTLS
 	$(call kubectl_exec,kuma-demo,demo-client,demo-client) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,3000) ) -eq 1 ]]; then echo "listener has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for mTLS" ; exit 1'
-	$(call kubectl_exec,kuma-demo,demo-client,demo-client) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,demo-app.kuma-demo.svc:8000) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-demo,demo-client,demo-client) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,demo-app_kuma-demo_svc_8000) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
 
 curl/example/minikube: ## Minikube: Make sample requests to demo setup
 	$(call kubectl_exec,kuma-demo,demo-client,demo-client) $(call curl_example_client)
@@ -352,7 +352,7 @@ verify/example/minikube/mtls: verify/example/minikube/mtls/outbound ## Minikube:
 
 verify/example/minikube/mtls/outbound:
 	@echo "Checking number of Outbound mTLS requests via Envoy ..."
-	test $$( $(call kubectl_exec,kuma-demo,demo-client,kuma-sidecar) wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_kuma_demo_svc_8000_ssl_handshake{envoy_cluster_name="demo-app"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 5
+	test $$( $(call kubectl_exec,kuma-demo,demo-client,kuma-sidecar) wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_ssl_handshake{envoy_cluster_name="demo-app_kuma-demo_svc_8000"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 5
 	@echo "Check passed!"
 
 kumactl/example/minikube:
@@ -404,7 +404,7 @@ wait/traffic-routing/minikube/mtls: ## Minikube: Wait until incoming Listener an
 	@echo "Waiting until incoming Listener and outgoing Cluster have been configured for mTLS ..."
 	@echo
 	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,6060) ) -eq 1 ]]; then echo "listener has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for mTLS" ; exit 1'
-	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend.kuma-example.svc:7070) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend_kuma-example_svc_7070) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
 
 apply/traffic-routing/minikube/no-mtls: ## Minikube: disable mTLS
 	@echo
@@ -417,7 +417,7 @@ wait/traffic-routing/minikube/no-mtls: ## Minikube: Wait until mTLS has been dis
 	@echo "Waiting until mTLS has been disabled on incoming Listener and outgoing Cluster ..."
 	@echo
 	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,6060) ) -eq 0 ]]; then echo "listener is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener is still configured for mTLS" ; exit 1'
-	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend.kuma-example.svc:7070) ) -eq 0 ]]; then echo "cluster is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend_kuma-example_svc_7070) ) -eq 0 ]]; then echo "cluster is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for mTLS" ; exit 1'
 
 wait/traffic-routing/minikube: ## Minikube: Wait for example setup for TrafficRoute to get ready
 	@echo
@@ -442,8 +442,8 @@ wait/traffic-routing/minikube/web-to-backend-route: ## Minikube: Wait until cust
 	@echo
 	@echo "Waiting until custom 'web-to-backend' TrafficRoute is applied ..."
 	@echo
-	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_listeners_count,outbound,7070,kuma-example-backend.kuma-example.svc:7070{version=v2}) ) -eq 1 ]]; then echo "listener is now configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for subset routing" ; exit 1'
-	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_clusters_count,kuma-example-backend.kuma-example.svc:7070{version=v2}) ) -eq 1 ]]; then echo "cluster is now configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for subset routing" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_listeners_count,outbound,7070,kuma-example-backend_kuma-example_svc_7070{version=v2}) ) -eq 1 ]]; then echo "listener is now configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for subset routing" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_clusters_count,kuma-example-backend_kuma-example_svc_7070{version=v2}) ) -eq 1 ]]; then echo "cluster is now configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for subset routing" ; exit 1'
 
 verify/traffic-routing/minikube/web-to-backend-route: ## Minikube: Make sample requests to example setup for TrafficRoute
 	@echo
@@ -462,8 +462,8 @@ wait/traffic-routing/minikube/no-web-to-backend-route: ## Minikube: Wait until c
 	@echo
 	@echo "Waiting until custom 'web-to-backend' TrafficRoute is removed ..."
 	@echo
-	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_listeners_count,outbound,7070,kuma-example-backend.kuma-example.svc:7070{version=v2}) ) -eq 0 ]]; then echo "listener is no longer configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: listener is still configured for subset routing" ; exit 1'
-	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_clusters_count,kuma-example-backend.kuma-example.svc:7070{version=v2}) ) -eq 0 ]]; then echo "cluster is no longer configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for subset routing" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_listeners_count,outbound,7070,kuma-example-backend_kuma-example_svc_7070{version=v2}) ) -eq 0 ]]; then echo "listener is no longer configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: listener is still configured for subset routing" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_routing_clusters_count,kuma-example-backend_kuma-example_svc_7070{version=v2}) ) -eq 0 ]]; then echo "cluster is no longer configured for subset routing "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for subset routing" ; exit 1'
 
 undeploy/traffic-routing/minikube: ## Minikube: Undeploy example setup for TrafficRoute
 	@echo

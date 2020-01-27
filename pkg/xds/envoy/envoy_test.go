@@ -578,7 +578,7 @@ var _ = Describe("Envoy", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: localhost:8080
-                      statPrefix: localhost:8080
+                      statPrefix: localhost_8080
 `,
 			}),
 			Entry("with transparent proxying", testCase{
@@ -601,7 +601,7 @@ var _ = Describe("Envoy", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: localhost:8080
-                      statPrefix: localhost:8080
+                      statPrefix: localhost_8080
                 deprecatedV1:
                   bindToPort: false
 `,
@@ -642,12 +642,12 @@ var _ = Describe("Envoy", func() {
                       - authenticated:
                           principalName:
                             exact: spiffe://default/web1
-                statPrefix: inbound:192.168.0.1:8080.
+                statPrefix: inbound_192_168_0_1_8080.
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: localhost:8080
-                statPrefix: localhost:8080
+                statPrefix: localhost_8080
             tlsContext:
               commonTlsContext:
                 tlsCertificateSdsSecretConfigs:
@@ -719,12 +719,12 @@ var _ = Describe("Envoy", func() {
                       - authenticated:
                           principalName:
                             exact: spiffe://default/web1
-                statPrefix: inbound:192.168.0.1:8080.
+                statPrefix: inbound_192_168_0_1_8080.
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: localhost:8080
-                statPrefix: localhost:8080
+                statPrefix: localhost_8080
             tlsContext:
               commonTlsContext:
                 tlsCertificateSdsSecretConfigs:

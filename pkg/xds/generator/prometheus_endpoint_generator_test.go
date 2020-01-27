@@ -251,7 +251,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                             route:
                               cluster: kuma:envoy:admin
                               prefixRewrite: /stats/prometheus
-                      statPrefix: kuma:metrics:prometheus
+                      statPrefix: kuma_metrics_prometheus
                 name: kuma:metrics:prometheus
 `,
 		}),
@@ -335,7 +335,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                             route:
                               cluster: kuma:envoy:admin
                               prefixRewrite: /stats/prometheus
-                      statPrefix: kuma:metrics:prometheus
+                      statPrefix: kuma_metrics_prometheus
                 name: kuma:metrics:prometheus
 `,
 		}),

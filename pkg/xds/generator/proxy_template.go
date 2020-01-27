@@ -12,6 +12,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/validators"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	util_envoy "github.com/Kong/kuma/pkg/util/envoy"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
 )
@@ -229,8 +230,10 @@ func destinationClusterName(service string, selector map[string]string) string {
 		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
 	}
 	if len(pairs) == 0 {
-		return service
+		// we need to replace . in cluster name to _ to have consistent metrics across all the environments.
+		// Otherwise on K8S we would have backend.kuma-system.svc_1234 which breaks prometheus metrics converter.
+		return util_xds.SanitizeMetric(service)
 	}
 	sort.Strings(pairs)
-	return fmt.Sprintf("%s{%s}", service, strings.Join(pairs, ","))
+	return util_xds.SanitizeMetric(fmt.Sprintf("%s{%s}", service, strings.Join(pairs, ",")))
 }

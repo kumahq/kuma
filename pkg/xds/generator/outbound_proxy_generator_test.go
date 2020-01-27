@@ -213,6 +213,81 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		}),
 	)
 
+	It("Sanitize cluster names", func() {
+		// setup
+		gen := &generator.OutboundProxyGenerator{}
+		dp := `
+        networking:
+          outbound:
+          - interface: :18080
+            service: backend.kuma-system
+          - interface: :54321
+            service: db.kuma-system`
+
+		dataplane := mesh_proto.Dataplane{}
+		Expect(util_proto.FromYAML([]byte(dp), &dataplane)).To(Succeed())
+
+		proxy := &model.Proxy{
+			Id: model.ProxyId{Name: "side-car", Mesh: "default"},
+			Dataplane: &mesh_core.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Version: "1",
+				},
+				Spec: dataplane,
+			},
+			TrafficRoutes: model.RouteMap{
+				"backend.kuma-system": &mesh_core.TrafficRouteResource{
+					Spec: mesh_proto.TrafficRoute{
+						Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+							Weight:      100,
+							Destination: mesh_proto.MatchService("backend.kuma-system"),
+						}},
+					},
+				},
+				"db.kuma-system": &mesh_core.TrafficRouteResource{
+					Spec: mesh_proto.TrafficRoute{
+						Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+							Weight:      100,
+							Destination: mesh_proto.TagSelector{"service": "db", "version": "3.2.0"},
+						},
+						}},
+				},
+			},
+			OutboundSelectors: model.DestinationMap{
+				"backend.kuma-system": model.TagSelectorSet{
+					{"service": "backend.kuma-system"},
+				},
+				"db.kuma-system": model.TagSelectorSet{
+					{"service": "db", "version": "3.2.0"},
+				},
+			},
+			OutboundTargets: model.EndpointMap{
+				"backend.kuma-system": []model.Endpoint{
+					{Target: "192.168.0.1", Port: 8082},
+				},
+				"db.kuma-system": []model.Endpoint{
+					{Target: "192.168.0.2", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
+				},
+			},
+			Metadata: &model.DataplaneMetadata{},
+		}
+
+		// when
+		rs, err := gen.Generate(plainCtx, proxy)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		resp := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+		actual, err := util_proto.ToYAML(resp)
+		Expect(err).ToNot(HaveOccurred())
+
+		expected, err := ioutil.ReadFile(filepath.Join("testdata", "outbound-proxy", "cluster-dots.envoy.golden.yaml"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actual).To(MatchYAML(expected))
+	})
+
 	Describe("fail when a user-defined configuration (Dataplane, TrafficRoute, etc) is not valid", func() {
 
 		type testCase struct {

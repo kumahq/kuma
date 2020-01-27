@@ -15,6 +15,7 @@ import (
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_error "github.com/Kong/kuma/pkg/util/error"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
@@ -185,7 +186,7 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 	}
 
 	config := &envoy_tcp.TcpProxy{
-		StatPrefix: statsName,
+		StatPrefix: util_xds.SanitizeMetric(statsName),
 		AccessLog:  accessLogs,
 	}
 	if len(clusters) == 1 {
@@ -241,7 +242,7 @@ func CreateOutboundListener(ctx xds_context.Context, listenerName string, addres
 
 func CreateInboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string, virtual bool, permissions *mesh_core.TrafficPermissionResourceList, metadata *core_xds.DataplaneMetadata) *v2.Listener {
 	config := &envoy_tcp.TcpProxy{
-		StatPrefix: clusterName,
+		StatPrefix: util_xds.SanitizeMetric(clusterName),
 		ClusterSpecifier: &envoy_tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
@@ -289,7 +290,7 @@ func CreateInboundListener(ctx xds_context.Context, listenerName string, address
 
 func CreatePrometheusListener(ctx xds_context.Context, listenerName string, address string, port uint32, path string, clusterName string, virtual bool, metadata *core_xds.DataplaneMetadata) *v2.Listener {
 	config := &envoy_hcm.HttpConnectionManager{
-		StatPrefix: listenerName,
+		StatPrefix: util_xds.SanitizeMetric(listenerName),
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
 		HttpFilters: []*envoy_hcm.HttpFilter{{
 			Name: wellknown.Router,
@@ -423,7 +424,7 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 							TargetSpecifier: &envoy_core.GrpcService_GoogleGrpc_{
 								GoogleGrpc: withCallCredentials(&envoy_core.GrpcService_GoogleGrpc{
 									TargetUri:  context.ControlPlane.SdsLocation,
-									StatPrefix: "sds_" + name,
+									StatPrefix: util_xds.SanitizeMetric("sds_" + name),
 									ChannelCredentials: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials{
 										CredentialSpecifier: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
 											SslCredentials: &envoy_core.GrpcService_GoogleGrpc_SslCredentials{
@@ -447,7 +448,7 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 
 func CreateCatchAllListener(ctx xds_context.Context, listenerName string, address string, port uint32, clusterName string) *v2.Listener {
 	config := &envoy_tcp.TcpProxy{
-		StatPrefix: clusterName,
+		StatPrefix: util_xds.SanitizeMetric(clusterName),
 		ClusterSpecifier: &envoy_tcp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
