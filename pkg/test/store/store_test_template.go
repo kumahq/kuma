@@ -2,7 +2,10 @@ package store
 
 import (
 	"context"
+	"reflect"
+
 	"github.com/Kong/kuma/pkg/core/resources/store"
+	resources_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
 	. "github.com/onsi/ginkgo"
@@ -129,7 +132,10 @@ func ExecuteStoreTests(
 			Expect(res.Spec.Path).To(Equal("new-path"))
 
 			// and modification time is updated
-			Expect(resource.Meta.GetModificationTime().Nanosecond() < res.Meta.GetModificationTime().Nanosecond()).To(BeTrue())
+			// on K8S modification time is always the creation time, because there is no data for modification time
+			if reflect.TypeOf(createStore()) != reflect.TypeOf(&resources_k8s.KubernetesStore{}) {
+				Expect(resource.Meta.GetModificationTime().Nanosecond() < res.Meta.GetModificationTime().Nanosecond()).To(BeTrue())
+			}
 		})
 
 		//todo(jakubdyszkiewicz) write tests for optimistic locking
