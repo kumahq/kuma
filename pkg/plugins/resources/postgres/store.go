@@ -81,8 +81,9 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 	}
 
 	version := 0
-	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6);`
-	_, err = r.db.Exec(statement, opts.Name, "", opts.Mesh, resource.GetType(), version, string(bytes)) // todo(jakubdyszkiewicz) solve db migration
+	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
+	now := time.Now()
+	_, err = r.db.Exec(statement, opts.Name, "", opts.Mesh, resource.GetType(), version, string(bytes), now, now)
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Name, opts.Mesh)
@@ -91,9 +92,11 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 	}
 
 	resource.SetMeta(&resourceMetaObject{
-		Name:    opts.Name,
-		Mesh:    opts.Mesh,
-		Version: strconv.Itoa(version),
+		Name:             opts.Name,
+		Mesh:             opts.Mesh,
+		Version:          strconv.Itoa(version),
+		CreationTime:     now,
+		ModificationTime: now,
 	})
 	return nil
 }
@@ -108,11 +111,13 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	if err != nil {
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
-	statement := `UPDATE resources SET spec=$1, version=$2 WHERE name=$3 AND mesh=$4 AND type=$5 AND version=$6;`
+	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3 WHERE name=$4 AND mesh=$5 AND type=$6 AND version=$7;`
+	now := time.Now()
 	result, err := r.db.Exec(
 		statement,
 		string(bytes),
 		version+1,
+		now,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
 		resource.GetType(),
@@ -153,12 +158,13 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
-	statement := `SELECT spec, version FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
+	statement := `SELECT spec, version, creation_time, modification_time FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
 	row := r.db.QueryRow(statement, opts.Name, opts.Mesh, resource.GetType())
 
 	var spec string
 	var version int
-	err := row.Scan(&spec, &version)
+	var creationTime, modificationTime time.Time
+	err := row.Scan(&spec, &version, &creationTime, &modificationTime)
 	if err == sql.ErrNoRows {
 		return store.ErrorResourceNotFound(resource.GetType(), opts.Name, opts.Mesh)
 	}
@@ -171,9 +177,11 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 	}
 
 	meta := &resourceMetaObject{
-		Name:    opts.Name,
-		Mesh:    opts.Mesh,
-		Version: strconv.Itoa(version),
+		Name:             opts.Name,
+		Mesh:             opts.Mesh,
+		Version:          strconv.Itoa(version),
+		CreationTime:     creationTime,
+		ModificationTime: modificationTime,
 	}
 	resource.SetMeta(meta)
 
@@ -186,7 +194,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 func (r *postgresResourceStore) List(_ context.Context, resources model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, mesh, spec, version FROM resources WHERE type=$1`
+	statement := `SELECT name, mesh, spec, version, creation_time, modification_time FROM resources WHERE type=$1`
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
@@ -216,7 +224,8 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, error) {
 	var name, mesh, spec string
 	var version int
-	if err := rows.Scan(&name, &mesh, &spec, &version); err != nil {
+	var creationTime, modificationTime time.Time
+	if err := rows.Scan(&name, &mesh, &spec, &version, &creationTime, &modificationTime); err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve elements from query")
 	}
 
@@ -240,9 +249,11 @@ func (r *postgresResourceStore) Close() error {
 }
 
 type resourceMetaObject struct {
-	Name    string
-	Version string
-	Mesh    string
+	Name             string
+	Version          string
+	Mesh             string
+	CreationTime     time.Time
+	ModificationTime time.Time
 }
 
 var _ model.ResourceMeta = &resourceMetaObject{}
@@ -260,9 +271,9 @@ func (r *resourceMetaObject) GetMesh() string {
 }
 
 func (r *resourceMetaObject) GetCreationTime() time.Time {
-	return time.Unix(0, 0) // todo(jakubdyszkiewicz) solve db migration
+	return r.CreationTime
 }
 
 func (r *resourceMetaObject) GetModificationTime() time.Time {
-	return time.Unix(0, 0) // todo(jakubdyszkiewicz) solve db migration
+	return r.ModificationTime
 }

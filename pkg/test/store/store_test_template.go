@@ -64,9 +64,8 @@ func ExecuteStoreTests(
 			Expect(resource.Meta.GetName()).To(Equal(name))
 			Expect(resource.Meta.GetMesh()).To(Equal(mesh))
 			Expect(resource.Meta.GetVersion()).ToNot(BeEmpty())
-			// todo(jakubdyszkiewicz) enable assertions when postgres impl in place
-			//Expect(resource.Meta.GetCreationTime().Unix()).ToNot(Equal(0))
-			//Expect(resource.Meta.GetCreationTime()).To(Equal(resource.Meta.GetModificationTime()))
+			Expect(resource.Meta.GetCreationTime().Unix()).ToNot(Equal(0))
+			Expect(resource.Meta.GetCreationTime()).To(Equal(resource.Meta.GetModificationTime()))
 			Expect(resource.Spec).To(Equal(created.Spec))
 		})
 
@@ -130,8 +129,7 @@ func ExecuteStoreTests(
 			Expect(res.Spec.Path).To(Equal("new-path"))
 
 			// and modification time is updated
-			// todo(jakubdyszkiewicz) enable assertions when postgres impl in place
-			//Expect(resource.Meta.GetModificationTime().Nanosecond() < res.Meta.GetModificationTime().Nanosecond()).To(BeTrue())
+			Expect(resource.Meta.GetModificationTime().Nanosecond() < res.Meta.GetModificationTime().Nanosecond()).To(BeTrue())
 		})
 
 		//todo(jakubdyszkiewicz) write tests for optimistic locking
