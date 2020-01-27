@@ -83,7 +83,7 @@ jobs:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-      CLANG_FORMAT_PATH: clang-format-10
+      CLANG_FORMAT_PATH: clang-format-11
       # if GOPATH is not set, `golang-ci` fails with an obscure message
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
@@ -121,7 +121,7 @@ jobs:
 
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
-          apt update && apt install -y clang-format-10
+          apt update && apt install -y clang-format-11
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
@@ -198,7 +198,7 @@ jobs:
   check:
     executor: golang
     environment:
-      CLANG_FORMAT_PATH: clang-format-10
+      CLANG_FORMAT_PATH: clang-format-11
     steps:
     - checkout
     - restore_cache:
@@ -216,22 +216,21 @@ jobs:
     - run:
         name: "Install all development tools"
         command: make dev/tools
-    # TODO(yskopets): uncomment once LLVM apt repository is functional again
-    # - run:
-    #     name: "Install check tools (clang-format, ...)"
-    #     command: |
-    #       # see https://apt.llvm.org/
+    - run:
+        name: "Install check tools (clang-format, ...)"
+        command: |
+         # see https://apt.llvm.org/
 
-    #       cat  >>/etc/apt/sources.list \<<EOF
+         cat  >>/etc/apt/sources.list \<<EOF
 
-    #       deb http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
-    #       deb-src http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
+         deb http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
+         deb-src http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
 
-    #       EOF
+         EOF
 
-    #       wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
+         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
-    #       apt update && apt install -y clang-format-10
+         apt update && apt install -y clang-format-11
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
