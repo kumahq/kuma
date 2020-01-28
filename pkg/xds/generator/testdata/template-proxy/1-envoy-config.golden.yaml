@@ -38,6 +38,7 @@ resources:
                       address: 127.0.0.1
                       portValue: 8080
       name: localhost:8080
+      altStatName: localhost_8080
       type: STATIC
   - name: inbound:192.168.0.1:80
     resource:
@@ -104,5 +105,6 @@ resources:
                       address: 127.0.0.1
                       portValue: 8443
       name: localhost:8443
+      altStatName: localhost_8443
       type: STATIC
     version: raw-version

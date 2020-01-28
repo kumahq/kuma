@@ -116,16 +116,16 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 }
 
 func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Cluster {
-	return &v2.Cluster{
+	return clusterWithAltStatName(&v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       ptypes.DurationProto(defaultConnectTimeout),
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_STATIC},
 		LoadAssignment:       CreateStaticEndpoint(clusterName, address, port),
-	}
+	})
 }
 
 func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *core_xds.DataplaneMetadata) *v2.Cluster {
-	return &v2.Cluster{
+	return clusterWithAltStatName(&v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       ptypes.DurationProto(defaultConnectTimeout),
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_EDS},
@@ -137,7 +137,15 @@ func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *cor
 			},
 		},
 		TlsContext: CreateUpstreamTlsContext(ctx, metadata),
+	})
+}
+
+func clusterWithAltStatName(cluster *v2.Cluster) *v2.Cluster {
+	sanitizedName := util_xds.SanitizeMetric(cluster.Name)
+	if sanitizedName != cluster.Name {
+		cluster.AltStatName = sanitizedName
 	}
+	return cluster
 }
 
 func ClusterWithHealthChecks(cluster *v2.Cluster, healthCheck *mesh_core.HealthCheckResource) *v2.Cluster {
@@ -167,12 +175,12 @@ func ClusterWithHealthChecks(cluster *v2.Cluster, healthCheck *mesh_core.HealthC
 }
 
 func CreatePassThroughCluster(clusterName string) *v2.Cluster {
-	return &v2.Cluster{
+	return clusterWithAltStatName(&v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       ptypes.DurationProto(defaultConnectTimeout),
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_ORIGINAL_DST},
 		LbPolicy:             v2.Cluster_ORIGINAL_DST_LB,
-	}
+	})
 }
 
 func CreateOutboundListener(ctx xds_context.Context, listenerName string, address string, port uint32, statsName string, clusters []ClusterInfo, virtual bool, sourceService string, destinationService string, backend *v1alpha1.LoggingBackend, proxy *core_xds.Proxy) (*v2.Listener, error) {

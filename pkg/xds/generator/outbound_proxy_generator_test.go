@@ -213,7 +213,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		}),
 	)
 
-	It("Sanitize cluster names", func() {
+	It("Add sanitized alternative cluster name for stats", func() {
 		// setup
 		gen := &generator.OutboundProxyGenerator{}
 		dp := `

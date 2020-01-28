@@ -77,6 +77,7 @@ resources:
       edsConfig:
         ads: {}
     name: db{role=master}
+    altStatName: db_role_master_
     tlsContext:
       commonTlsContext:
         tlsCertificateSdsSecretConfigs:
@@ -130,6 +131,7 @@ resources:
       edsConfig:
         ads: {}
     name: db{role=replica}
+    altStatName: db_role_replica_
     tlsContext:
       commonTlsContext:
         tlsCertificateSdsSecretConfigs:

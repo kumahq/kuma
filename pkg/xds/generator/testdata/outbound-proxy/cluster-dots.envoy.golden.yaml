@@ -1,17 +1,18 @@
 resources:
-  - name: backend_kuma-system
+  - name: backend.kuma-system
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
-      name: backend_kuma-system
+      name: backend.kuma-system
+      altStatName: backend_kuma-system
       type: EDS
-  - name: backend_kuma-system
+  - name: backend.kuma-system
     resource:
       '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: backend_kuma-system
+      clusterName: backend.kuma-system
       endpoints:
         - {}
   - name: outbound:127.0.0.1:18080
@@ -26,22 +27,23 @@ resources:
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                cluster: backend_kuma-system
+                cluster: backend.kuma-system
                 statPrefix: backend_kuma-system
       name: outbound:127.0.0.1:18080
-  - name: db{version=3_2_0}
+  - name: db{version=3.2.0}
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
-      name: db{version=3_2_0}
+      name: db{version=3.2.0}
+      altStatName: db_version_3_2_0_
       type: EDS
-  - name: db{version=3_2_0}
+  - name: db{version=3.2.0}
     resource:
       '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: db{version=3_2_0}
+      clusterName: db{version=3.2.0}
       endpoints:
         - {}
   - name: outbound:127.0.0.1:54321
@@ -56,6 +58,6 @@ resources:
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                cluster: db{version=3_2_0}
+                cluster: db{version=3.2.0}
                 statPrefix: db_kuma-system
       name: outbound:127.0.0.1:54321

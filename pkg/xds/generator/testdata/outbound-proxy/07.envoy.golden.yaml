@@ -47,6 +47,7 @@ resources:
       edsConfig:
         ads: {}
     name: db{role=master}
+    altStatName: db_role_master_
     type: EDS
 - name: db{role=master}
   resource:
@@ -72,6 +73,7 @@ resources:
       edsConfig:
         ads: {}
     name: db{role=replica}
+    altStatName: db_role_replica_
     type: EDS
 - name: db{role=replica}
   resource:

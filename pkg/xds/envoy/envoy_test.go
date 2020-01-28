@@ -48,6 +48,7 @@ var _ = Describe("Envoy", func() {
 		// given
 		expected := `
         name: localhost:8080
+        altStatName: localhost_8080
         type: STATIC
         connectTimeout: 5s
         loadAssignment:
@@ -178,6 +179,7 @@ var _ = Describe("Envoy", func() {
                   edsConfig:
                     ads: {}
                 name: 192.168.0.1:8080
+                altStatName: "192_168_0_1_8080"
                 type: EDS
 `,
 			}),
@@ -204,6 +206,7 @@ var _ = Describe("Envoy", func() {
                   edsConfig:
                     ads: {}
                 name: 192.168.0.1:8080
+                altStatName: "192_168_0_1_8080"
                 tlsContext:
                   commonTlsContext:
                     tlsCertificateSdsSecretConfigs:
@@ -260,6 +263,7 @@ var _ = Describe("Envoy", func() {
                   edsConfig:
                     ads: {}
                 name: 192.168.0.1:8080
+                altStatName: "192_168_0_1_8080"
                 tlsContext:
                   commonTlsContext:
                     tlsCertificateSdsSecretConfigs:

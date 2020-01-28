@@ -9,12 +9,12 @@ import (
 var _ = Describe("Metric sanitizer", func() {
 	It("should sanitize metrics", func() {
 		// given
-		metric := "some metric with chars :/_-0123{}"
+		metric := "some metric with chars :/_-0123{version=3.0}"
 
 		// when
 		sanitized := xds.SanitizeMetric(metric)
 
 		// then
-		Expect(sanitized).To(Equal("some_metric_with_chars____-0123{}"))
+		Expect(sanitized).To(Equal("some_metric_with_chars____-0123_version_3_0_"))
 	})
 })

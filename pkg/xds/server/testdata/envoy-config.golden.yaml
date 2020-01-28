@@ -13,6 +13,7 @@ resources:
                       address: 127.0.0.1
                       portValue: 8080
       name: localhost:8080
+      altStatName: localhost_8080
       type: STATIC
   - name: localhost:8443
     resource:
@@ -28,6 +29,7 @@ resources:
                       address: 127.0.0.1
                       portValue: 8443
       name: localhost:8443
+      altStatName: localhost_8443
       type: STATIC
   - name: pass_through
     resource:
