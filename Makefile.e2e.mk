@@ -352,7 +352,7 @@ verify/example/minikube/mtls: verify/example/minikube/mtls/outbound ## Minikube:
 
 verify/example/minikube/mtls/outbound:
 	@echo "Checking number of Outbound mTLS requests via Envoy ..."
-	test $$( $(call kubectl_exec,kuma-demo,demo-client,kuma-sidecar) wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_kuma_demo_svc_8000_ssl_handshake{envoy_cluster_name="demo-app"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 5
+	test $$( $(call kubectl_exec,kuma-demo,demo-client,kuma-sidecar) wget -qO- http://localhost:9901/stats/prometheus | grep 'envoy_cluster_ssl_handshake{envoy_cluster_name="demo-app_kuma-demo_svc_8000"}' | awk '{print $$2}' | tr -d [:space:] ) -ge 5
 	@echo "Check passed!"
 
 kumactl/example/minikube:
