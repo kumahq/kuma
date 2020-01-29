@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: sanitize metrics for StatsD and Prometheus
+  [#562](https://github.com/Kong/kuma/pull/562)
 * feature: reformat some Envoy metrics available in Prometheus
   [#558](https://github.com/Kong/kuma/pull/558)
 * feature: make maximum number of open connections to Postgres configurable
