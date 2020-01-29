@@ -2,6 +2,7 @@ package provided_test
 
 import (
 	"context"
+
 	"github.com/Kong/kuma/pkg/core/ca/provided"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/secrets/cipher"
@@ -23,7 +24,7 @@ var _ = Describe("CA Provided Manager", func() {
 	})
 
 	Describe("AddSigningCert", func() {
-		It("should create CA when adding new CA Root to it", func() {
+		It("should allow adding a valid Root CA cert", func() {
 			// when
 			_, err := caManager.GetSigningCerts(context.Background(), meshName)
 
@@ -50,7 +51,7 @@ var _ = Describe("CA Provided Manager", func() {
 			Expect(rootCerts[0]).To(Equal(*signingCert))
 		})
 
-		It("should not allow to add another CA Root to existing CA", func() {
+		It("should not allow to add another signing cert to existing provided CA", func() {
 			// setup CA with CA Root
 			caRoot := tls.KeyPair{
 				CertPEM: []byte("CERT"),
@@ -70,7 +71,7 @@ var _ = Describe("CA Provided Manager", func() {
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError("cannot add more than 1 CA root to provided CA"))
+			Expect(err).To(MatchError("cannot add more than 1 signing cert to provided CA"))
 		})
 	})
 
@@ -85,7 +86,7 @@ var _ = Describe("CA Provided Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should delete CA root", func() {
+		It("should delete a signing cert", func() {
 			// when
 			caRootCerts, err := caManager.GetSigningCerts(context.Background(), meshName)
 
@@ -113,16 +114,16 @@ var _ = Describe("CA Provided Manager", func() {
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "unknown-mesh": Resource not found: type="Secret" name="providedca.unknown-mesh" mesh="unknown-mesh"`))
+			Expect(err).To(MatchError(`failed to load provided CA for Mesh "unknown-mesh": Resource not found: type="Secret" name="providedca.unknown-mesh" mesh="unknown-mesh"`))
 		})
 
-		It("should throw an error for unknown CA root", func() {
+		It("should throw an error for unknown signing cert", func() {
 			// when
 			err := caManager.DeleteSigningCert(context.Background(), meshName, "unknown-id")
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(`could not find CA Root of id "unknown-id" for mesh "demo"`))
+			Expect(err).To(MatchError(`could not find signing cert with id "unknown-id" for Mesh "demo"`))
 		})
 	})
 
@@ -181,13 +182,13 @@ var _ = Describe("CA Provided Manager", func() {
 			Expect(pair.KeyPEM).ToNot(HaveLen(0))
 		})
 
-		It("should throw an error for mesh without CA", func() {
+		It("should throw an error for mesh without a signing cert", func() {
 			// when
 			_, err := caManager.GenerateWorkloadCert(context.Background(), "mesh-without-ca", "backend")
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "mesh-without-ca": Resource not found: type="Secret" name="providedca.mesh-without-ca" mesh="mesh-without-ca"`))
+			Expect(err).To(MatchError(`failed to load provided CA for Mesh "mesh-without-ca": Resource not found: type="Secret" name="providedca.mesh-without-ca" mesh="mesh-without-ca"`))
 		})
 	})
 })

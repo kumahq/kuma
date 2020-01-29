@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/tls"
 	"github.com/pkg/errors"
@@ -49,47 +50,47 @@ func NewProvidedCaManager(secretManager secret_manager.SecretManager) ProvidedCa
 	return &providedCaManager{secretManager}
 }
 
-func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, root tls.KeyPair) (*SigningCert, error) {
+func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, signingPair tls.KeyPair) (*SigningCert, error) {
 	providedCaSecret := &core_system.SecretResource{}
 	if err := p.secretManager.Get(ctx, providedCaSecret, core_store.GetBy(providedCaSecretKey(mesh))); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			if err := p.secretManager.Create(ctx, providedCaSecret, core_store.CreateBy(providedCaSecretKey(mesh))); err != nil {
-				return nil, errors.Wrapf(err, "could not create CA for mesh %q", mesh)
+				return nil, errors.Wrapf(err, "could not create provided CA for Mesh %q", mesh)
 			}
 		} else {
-			return nil, errors.Wrapf(err, "failed to load CA for mesh %q", mesh)
+			return nil, errors.Wrapf(err, "failed to load provided CA for Mesh %q", mesh)
 		}
 	}
 
 	providedCa := ProvidedCa{}
 	if len(providedCaSecret.Spec.Value) > 0 {
 		if err := json.Unmarshal(providedCaSecret.Spec.Value, &providedCa); err != nil {
-			return nil, errors.Wrapf(err, "failed to deserialize a Root CA cert for Mesh %q", mesh)
+			return nil, errors.Wrapf(err, "failed to deserialize provided CA for Mesh %q", mesh)
 		}
 	}
 
 	if len(providedCa.SigningKeyCerts) > 0 {
-		return nil, errors.New("cannot add more than 1 CA root to provided CA")
+		return nil, errors.New("cannot add more than 1 signing cert to provided CA")
 	}
 
 	signingCert := SigningCert{
 		Id:   core.NewUUID(),
-		Cert: root.CertPEM,
+		Cert: signingPair.CertPEM,
 	}
-	caRoot := SigningKeyCert{
-		Key:         root.KeyPEM,
+	signingKeyCert := SigningKeyCert{
+		Key:         signingPair.KeyPEM,
 		SigningCert: signingCert,
 	}
-	providedCa.SigningKeyCerts = append(providedCa.SigningKeyCerts, caRoot)
+	providedCa.SigningKeyCerts = append(providedCa.SigningKeyCerts, signingKeyCert)
 
 	caBytes, err := json.Marshal(providedCa)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal CA")
+		return nil, errors.Wrap(err, "failed to marshal provided CA")
 	}
 
 	providedCaSecret.Spec.Value = caBytes
 	if err := p.secretManager.Update(ctx, providedCaSecret); err != nil {
-		return nil, errors.Wrapf(err, "failed to update CA for mesh %q", mesh)
+		return nil, errors.Wrapf(err, "failed to update provided CA for Mesh %q", mesh)
 	}
 	return &signingCert, nil
 }
@@ -97,11 +98,11 @@ func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, roo
 func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, id string) error {
 	providedCaSecret := &core_system.SecretResource{}
 	if err := p.secretManager.Get(ctx, providedCaSecret, core_store.GetBy(providedCaSecretKey(mesh))); err != nil {
-		return errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
+		return errors.Wrapf(err, "failed to load provided CA for Mesh %q", mesh)
 	}
 	providedCa := ProvidedCa{}
 	if err := json.Unmarshal(providedCaSecret.Spec.Value, &providedCa); err != nil {
-		return errors.Wrapf(err, "failed to deserialize a provided CA for Mesh %q", mesh)
+		return errors.Wrapf(err, "failed to deserialize provided CA for Mesh %q", mesh)
 	}
 
 	var retainedCaRoots []SigningKeyCert
@@ -126,7 +127,7 @@ func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, 
 
 	providedCaSecret.Spec.Value = newBytes
 	if err := p.secretManager.Update(ctx, providedCaSecret); err != nil {
-		return errors.Wrapf(err, "failed to update CA for mesh %q", mesh)
+		return errors.Wrapf(err, "failed to update provided CA for Mesh %q", mesh)
 	}
 	return nil
 }
@@ -137,7 +138,7 @@ type SigningCertNotFound struct {
 }
 
 func (s *SigningCertNotFound) Error() string {
-	return fmt.Sprintf("could not find CA Root of id %q for mesh %q", s.Id, s.Mesh)
+	return fmt.Sprintf("could not find signing cert with id %q for Mesh %q", s.Id, s.Mesh)
 }
 
 func (p *providedCaManager) DeleteCa(ctx context.Context, mesh string) error {
@@ -148,7 +149,7 @@ func (p *providedCaManager) DeleteCa(ctx context.Context, mesh string) error {
 		if core_store.IsResourceNotFound(err) {
 			return err
 		}
-		return errors.Wrapf(err, "failed to delete Provided CA for Mesh %q", mesh)
+		return errors.Wrapf(err, "failed to delete provided CA for Mesh %q", mesh)
 	}
 	return nil
 }
@@ -159,7 +160,7 @@ func (p *providedCaManager) GetSigningCerts(ctx context.Context, mesh string) ([
 		if core_store.IsResourceNotFound(err) {
 			return nil, err
 		}
-		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
+		return nil, errors.Wrapf(err, "failed to load provided CA for Mesh %q", mesh)
 	}
 	caRootCerts := make([]SigningCert, len(meshCa.SigningKeyCerts))
 	for i, root := range meshCa.SigningKeyCerts {
@@ -174,10 +175,10 @@ func (p *providedCaManager) GetSigningCerts(ctx context.Context, mesh string) ([
 func (p *providedCaManager) GenerateWorkloadCert(ctx context.Context, mesh string, workload string) (*tls.KeyPair, error) {
 	meshCa, err := p.getMeshCa(ctx, mesh)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
+		return nil, errors.Wrapf(err, "failed to load provided CA for Mesh %q", mesh)
 	}
 	if len(meshCa.SigningKeyCerts) < 1 {
-		return nil, errors.Wrapf(err, "CA for Mesh %q has no key pair", mesh)
+		return nil, errors.Wrapf(err, "provided CA for Mesh %q has no key pair", mesh)
 	}
 	active := meshCa.SigningKeyCerts[0]
 	signer := tls.KeyPair{CertPEM: active.Cert, KeyPEM: active.Key}
@@ -196,7 +197,7 @@ func (p *providedCaManager) getMeshCa(ctx context.Context, mesh string) (*Provid
 	}
 	providedCa := ProvidedCa{}
 	if err := json.Unmarshal(providedCaSecret.Spec.Value, &providedCa); err != nil {
-		return nil, errors.Wrapf(err, "failed to deserialize a Root CA cert for Mesh %q", mesh)
+		return nil, errors.Wrapf(err, "failed to deserialize provided CA for Mesh %q", mesh)
 	}
 	return &providedCa, nil
 }
