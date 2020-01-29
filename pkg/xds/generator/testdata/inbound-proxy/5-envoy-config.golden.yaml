@@ -13,6 +13,7 @@ resources:
                       address: 127.0.0.1
                       portValue: 8080
       name: localhost:8080
+      altStatName: localhost_8080
       type: STATIC
   - name: inbound:192.168.0.1:80
     resource:
@@ -35,12 +36,12 @@ resources:
                       - authenticated:
                           principalName:
                             exact: spiffe://default/web1
-                statPrefix: inbound:192.168.0.1:80.
+                statPrefix: inbound_192_168_0_1_80.
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: localhost:8080
-                statPrefix: localhost:8080
+                statPrefix: localhost_8080
           tlsContext:
             commonTlsContext:
               tlsCertificateSdsSecretConfigs:
@@ -85,6 +86,7 @@ resources:
                       address: 127.0.0.1
                       portValue: 8443
       name: localhost:8443
+      altStatName: localhost_8443
       type: STATIC
   - name: inbound:192.168.0.1:443
     resource:
@@ -99,12 +101,12 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules: {}
-                statPrefix: inbound:192.168.0.1:443.
+                statPrefix: inbound_192_168_0_1_443.
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: localhost:8443
-                statPrefix: localhost:8443
+                statPrefix: localhost_8443
           tlsContext:
             commonTlsContext:
               tlsCertificateSdsSecretConfigs:

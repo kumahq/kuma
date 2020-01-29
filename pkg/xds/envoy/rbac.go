@@ -5,6 +5,7 @@ import (
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_error "github.com/Kong/kuma/pkg/util/error"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
@@ -38,7 +39,7 @@ func createRbacRule(listenerName string, permissions *mesh_core.TrafficPermissio
 			Action:   rbac_config.RBAC_ALLOW,
 			Policies: policies,
 		},
-		StatPrefix: fmt.Sprintf("%s.", listenerName), // we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric to "inbound:127.0.0.1:21011.rbac.allowed"
+		StatPrefix: fmt.Sprintf("%s.", util_xds.SanitizeMetric(listenerName)), // we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric to "inbound:127.0.0.1:21011.rbac.allowed"
 	}
 }
 

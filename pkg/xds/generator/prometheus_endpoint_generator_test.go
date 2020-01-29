@@ -225,6 +225,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                             address: 127.0.0.1
                             portValue: 9902
                 name: kuma:envoy:admin
+                altStatName: kuma_envoy_admin
                 type: STATIC
             - name: kuma:metrics:prometheus
               resource:
@@ -251,7 +252,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                             route:
                               cluster: kuma:envoy:admin
                               prefixRewrite: /stats/prometheus
-                      statPrefix: kuma:metrics:prometheus
+                      statPrefix: kuma_metrics_prometheus
                 name: kuma:metrics:prometheus
 `,
 		}),
@@ -309,6 +310,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                             address: 127.0.0.1
                             portValue: 9902
                 name: kuma:envoy:admin
+                altStatName: kuma_envoy_admin
                 type: STATIC
             - name: kuma:metrics:prometheus
               resource:
@@ -335,7 +337,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                             route:
                               cluster: kuma:envoy:admin
                               prefixRewrite: /stats/prometheus
-                      statPrefix: kuma:metrics:prometheus
+                      statPrefix: kuma_metrics_prometheus
                 name: kuma:metrics:prometheus
 `,
 		}),

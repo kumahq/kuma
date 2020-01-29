@@ -1,0 +1,20 @@
+package xds_test
+
+import (
+	"github.com/Kong/kuma/pkg/util/xds"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("Metric sanitizer", func() {
+	It("should sanitize metrics", func() {
+		// given
+		metric := "some metric with chars :/_-0123{version=3.0}"
+
+		// when
+		sanitized := xds.SanitizeMetric(metric)
+
+		// then
+		Expect(sanitized).To(Equal("some_metric_with_chars____-0123_version_3_0_"))
+	})
+})
