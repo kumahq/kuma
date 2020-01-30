@@ -1,12 +1,15 @@
 package store
 
 import (
+	"time"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
 type CreateOptions struct {
-	Name string
-	Mesh string
+	Name         string
+	Mesh         string
+	CreationTime time.Time
 }
 
 type CreateOptionsFunc func(*CreateOptions)
@@ -30,7 +33,20 @@ func CreateByKey(name, mesh string) CreateOptionsFunc {
 	}
 }
 
+func CreatedAt(creationTime time.Time) CreateOptionsFunc {
+	return func(opts *CreateOptions) {
+		opts.CreationTime = creationTime
+	}
+}
+
 type UpdateOptions struct {
+	ModificationTime time.Time
+}
+
+func ModifiedAt(modificationTime time.Time) UpdateOptionsFunc {
+	return func(opts *UpdateOptions) {
+		opts.ModificationTime = modificationTime
+	}
 }
 
 type UpdateOptionsFunc func(*UpdateOptions)

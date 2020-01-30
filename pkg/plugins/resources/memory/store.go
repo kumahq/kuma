@@ -85,13 +85,12 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
 	}
 
-	now := time.Now()
 	meta := memoryMeta{
 		Name:             opts.Name,
 		Mesh:             opts.Mesh,
 		Version:          initialVersion(),
-		CreationTime:     now,
-		ModificationTime: now,
+		CreationTime:     opts.CreationTime,
+		ModificationTime: opts.CreationTime,
 	}
 
 	// fill the meta
@@ -114,7 +113,7 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	_ = store.NewUpdateOptions(fs...)
+	opts := store.NewUpdateOptions(fs...)
 
 	meta, ok := (r.GetMeta()).(memoryMeta)
 	if !ok {
@@ -128,7 +127,7 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 		return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
 	}
 	meta.Version = meta.Version.Next()
-	meta.ModificationTime = time.Now()
+	meta.ModificationTime = opts.ModificationTime
 
 	record, err := c.marshalRecord(
 		string(r.GetType()),

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"reflect"
+	"time"
 
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	resources_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s"
@@ -43,7 +44,7 @@ func ExecuteStoreTests(
 				Path: "demo",
 			},
 		}
-		err := s.Create(context.Background(), &res, store.CreateByKey(name, mesh))
+		err := s.Create(context.Background(), &res, store.CreateByKey(name, mesh), store.CreatedAt(time.Now()))
 		Expect(err).ToNot(HaveOccurred())
 		return &res
 	}
@@ -113,10 +114,11 @@ func ExecuteStoreTests(
 			// given a resources in storage
 			name := "to-be-updated.demo"
 			resource := createResource(name)
+			modificationTime := time.Now().Add(time.Second)
 
 			// when
 			resource.Spec.Path = "new-path"
-			err := s.Update(context.Background(), resource)
+			err := s.Update(context.Background(), resource, store.ModifiedAt(modificationTime))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -133,8 +135,11 @@ func ExecuteStoreTests(
 
 			// and modification time is updated
 			// on K8S modification time is always the creation time, because there is no data for modification time
-			if reflect.TypeOf(createStore()) != reflect.TypeOf(&resources_k8s.KubernetesStore{}) {
-				Expect(resource.Meta.GetModificationTime().Nanosecond() < res.Meta.GetModificationTime().Nanosecond()).To(BeTrue())
+			if reflect.TypeOf(createStore()) == reflect.TypeOf(&resources_k8s.KubernetesStore{}) {
+				Expect(res.Meta.GetModificationTime()).To(Equal(res.Meta.GetCreationTime()))
+			} else {
+				Expect(res.Meta.GetModificationTime()).ToNot(Equal(res.Meta.GetCreationTime()))
+				Expect(res.Meta.GetModificationTime().Round(time.Millisecond).Nanosecond() / 1e6).To(Equal(modificationTime.Round(time.Millisecond).Nanosecond() / 1e6))
 			}
 		})
 

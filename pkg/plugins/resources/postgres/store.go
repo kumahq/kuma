@@ -82,8 +82,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
-	now := time.Now()
-	_, err = r.db.Exec(statement, opts.Name, "", opts.Mesh, resource.GetType(), version, string(bytes), now, now)
+	_, err = r.db.Exec(statement, opts.Name, "", opts.Mesh, resource.GetType(), version, string(bytes), opts.CreationTime, opts.CreationTime)
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Name, opts.Mesh)
@@ -95,8 +94,8 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 		Name:             opts.Name,
 		Mesh:             opts.Mesh,
 		Version:          strconv.Itoa(version),
-		CreationTime:     now,
-		ModificationTime: now,
+		CreationTime:     opts.CreationTime,
+		ModificationTime: opts.CreationTime,
 	})
 	return nil
 }
@@ -107,17 +106,18 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 		return err
 	}
 
+	opts := store.NewUpdateOptions(fs...)
+
 	version, err := strconv.Atoi(resource.GetMeta().GetVersion())
 	if err != nil {
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
 	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3 WHERE name=$4 AND mesh=$5 AND type=$6 AND version=$7;`
-	now := time.Now()
 	result, err := r.db.Exec(
 		statement,
 		string(bytes),
 		version+1,
-		now,
+		opts.ModificationTime,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
 		resource.GetType(),
