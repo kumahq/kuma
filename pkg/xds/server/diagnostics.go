@@ -31,7 +31,7 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		resp.WriteHeader(http.StatusOK)
 	})
 
-	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", s.port), Handler: mux}
+	httpServer := &http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", s.port), Handler: mux}
 
 	errChan := make(chan error)
 	go func() {
@@ -45,7 +45,7 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		}
 		diagnosticsServerLog.Info("terminated normally")
 	}()
-	diagnosticsServerLog.Info("starting", "port", s.port)
+	diagnosticsServerLog.Info("starting", "address", httpServer.Addr)
 
 	select {
 	case <-stop:

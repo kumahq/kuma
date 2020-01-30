@@ -28,7 +28,7 @@ func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 	mux.HandleFunc("/bootstrap", b.handleBootstrapRequest)
 
 	bootstrapServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", b.Port),
+		Addr:    fmt.Sprintf("127.0.0.1:%d", b.Port),
 		Handler: mux,
 	}
 
@@ -45,7 +45,7 @@ func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 		}
 		log.Info("terminated normally")
 	}()
-	log.Info("starting", "port", b.Port)
+	log.Info("starting", "address", bootstrapServer.Addr)
 
 	select {
 	case <-stop:

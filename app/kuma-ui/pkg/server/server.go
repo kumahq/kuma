@@ -46,7 +46,7 @@ func (g *Server) Start(stop <-chan struct{}) error {
 	mux.HandleFunc("/config", g.configHandler)
 
 	guiServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", g.Config.Port),
+		Addr:    fmt.Sprintf("127.0.0.1:%d", g.Config.Port),
 		Handler: mux,
 	}
 
@@ -63,7 +63,7 @@ func (g *Server) Start(stop <-chan struct{}) error {
 		}
 		log.Info("terminated normally")
 	}()
-	log.Info("starting", "port", g.Config.Port)
+	log.Info("starting", "address", guiServer.Addr)
 
 	select {
 	case <-stop:
