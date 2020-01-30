@@ -30,7 +30,7 @@ func (a *ApiServer) Address() string {
 func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
 	container := restful.NewContainer()
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", serverConfig.Port),
+		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
 		Handler: container.ServeMux,
 	}
 
