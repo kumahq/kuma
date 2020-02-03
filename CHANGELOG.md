@@ -4,6 +4,8 @@
 
 Changes:
 
+* fix: add MADS port to K8S install script
+  [#564](https://github.com/Kong/kuma/pull/564)
 * feature: sanitize metrics for StatsD and Prometheus
   [#562](https://github.com/Kong/kuma/pull/562)
 * feature: reformat some Envoy metrics available in Prometheus
