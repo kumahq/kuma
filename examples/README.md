@@ -14,4 +14,4 @@ For an in-depth guide on how to deploy Kuma and this sample application in Kuber
 For an in-depth guide on how to deploy Kuma and this sample application in Universal mode via Vagrant, please click [here](https://github.com/Kong/kuma-demo/tree/master/vagrant).
 
 
-[diagram]: https://i.imgur.com/77enHZ3.jpg
+[diagram]: https://raw.githubusercontent.com/Kong/kuma-website/master/docs/.vuepress/public/images/diagrams/diagram-kuma-demo-basic.jpg
