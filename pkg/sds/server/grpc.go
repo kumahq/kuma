@@ -44,7 +44,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	}
 	grpcServer := grpc.NewServer(grpcOptions...)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", s.config.GrpcPort))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
 	if err != nil {
 		return err
 	}

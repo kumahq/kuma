@@ -74,7 +74,7 @@ func (a *AdminServer) Start(stop <-chan struct{}) error {
 
 func (a *AdminServer) startHttpServer() (*http.Server, chan error) {
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", a.cfg.Public.Interface, a.cfg.Local.Port),
+		Addr:    fmt.Sprintf("127.0.0.1:%d", a.cfg.Local.Port),
 		Handler: a.container,
 	}
 
