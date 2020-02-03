@@ -46,7 +46,7 @@ func (g *Server) Start(stop <-chan struct{}) error {
 	mux.HandleFunc("/config", g.configHandler)
 
 	guiServer := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", g.Config.Port),
+		Addr:    fmt.Sprintf(":%d", g.Config.Port),
 		Handler: mux,
 	}
 
