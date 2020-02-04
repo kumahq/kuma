@@ -20,11 +20,6 @@ var (
 	DefaultValidityPeriod = 10 * 365 * 24 * time.Hour
 )
 
-type KeyPair struct {
-	CertPEM []byte
-	KeyPEM  []byte
-}
-
 type CertType string
 
 const (

@@ -129,6 +129,77 @@ var _ = Describe("Provided CA WS", func() {
 				},
 			}))
 		})
+
+		It("should not allow to add improper CA certificate", func() {
+			// when
+			pair.CertPEM = []byte(`
+-----BEGIN CERTIFICATE-----
+MIIDKzCCAhOgAwIBAgIBADANBgkqhkiG9w0BAQsFADAwMQ0wCwYDVQQKEwRLdW1h
+MQ0wCwYDVQQLEwRNZXNoMRAwDgYDVQQDEwdkZWZhdWx0MB4XDTIwMDEyOTE2MDgw
+NFoXDTMwMDEyNjE2MDgxNFowQDENMAsGA1UEChMES3VtYTEdMAsGA1UECxMETWVz
+aDAOBgNVBAsTB2xldmVsLTExEDAOBgNVBAMTB2RlZmF1bHQwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQC+HgOFAO4T+heMQnO3VOaCYzqzkO2whggQ+yzF
+0OIMSOYnOEYA93QGYB+vPf99dnoKqqp8C9MqRMMaNI3SEa23W2EXvbB41+ZBf1zW
+BS6QQDSARFI6xJaXOnwDNzl+Ne2XmOJCS9pqk2hDw+WMtzxISyCd293EPW0NVY3q
+H3RsyC26rIozsWf/X6fCFETEpFM5KVHSJL1511Y9w3cc0auXe+MIXShQX/v36ckm
+p5pdrC3T7Y8IyTFjpPrLMVpL+HQ7LeZcs5DUfmfdxnYxIQwpBKz19/yDN4elbJem
+AHVcQo1xS+KtUp9on9YTm/SuJ4bz0H9idBN25CevCY9W7CbjAgMBAAGjQDA+MA4G
+A1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTADAQH/MBsGA1UdEQQUMBKGEHNwaWZm
+ZTovL2RlZmF1bHQwDQYJKoZIhvcNAQELBQADggEBACVXnYWCCrji551pbJsOCGYJ
+GEqlvcwNnnYdykas4GrfsbW2rglmaXv0uG8iH2sAH+4/MjGjnlQ6Y6Fj7mDFnidj
+ugU964sEDnLuU0CtaIpHl7VZ13I0EzmfY+GsCrcIXIxbAxwWTJhz77XqbHe3baLx
+Sh9wHgz/aZuy99rq9OoAvUALEaIfxrvUsVs25jLuv0Xzy57B2Dpqo0odshDA4WSS
+MynQnSX7aFg1jqZQL4YjPHryEQQRj8mgjqiWp8M4/PHq5s09zDMB0DCag0QtdC/k
+ydtqRoojiRS2fXY8DhFRqqRVBqLvA+7eTEKpzfjUTyEovMqxIM2n4U5MSGKQlbM=
+-----END CERTIFICATE-----
+			
+`)
+			pair.KeyPEM = []byte(`
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEA2F7A2cdkjR/7nm+yb6IZ6P00BgW0JvYU3MUdmUZy7QXTthID
+Kis8m4z7pXcEVxjYiRYcvxY6ig2YnRf/LMF3hFKtvdNpwYq1oNrJGNOjwk5bs2WH
+5a/BHXwoeMJBcOOWqSZ8TF1ghRmM6ok6G72c7n1+rPRIkW+jZYqSQ/sJpMtBe3Wn
+f4ebVejlYJdl8PtbntiE0FlkuWOKn83ykMvtvZWSF763Fu/8+pWsNEwajJEGc80B
+9LtI+hxFtwRL22HYJ6w274jCW27iAkE5BunJ0EiMm+vXOvH/PFvEz4RupsavqDCq
+4a8pPJcerbS7kITi1bLcYpKHksRUi09LTrp3lQIDAQABAoIBADUU2d8TqbltlT9D
+S9VTQWQFalPn5lCAopGe0ioePGelvFC4jooz3USUC9CGKExtzgGjqR3ACFCCEWTI
+1FNYi0etOO6PBSz0KKbzxc4PbednbdvPFs3klk3zfcJSddeKHhYVWP0rE1jT8dxA
+Gj9f/zYLF566t2rmpoFsw4Fl/vGscBzOq777oOPNviGPA+MSXOeI+xbMGRq+fU3R
+RoMaHzjokCibQVWZb0FaLpkYGCNz7P1Zvhpkt0OZrB//e5oNjX7ksTpJsQmffCMl
+XG/wX34KErjKD4CiNL5Y2CtfOKNstjS7yZoM81BIs/1dQ6OA9VGthHn6Qh8hXn4B
+Y0M7wCkCgYEA97yDytk7rF6vtC3vYSKOkuYY+X06h+avDOUGB3hTYLd1vcNkA0hF
+FFigof349yYG3JUdXcPPehtMzNWn1zOKfXnjHrnd/RHctuhIkKeX4AtI7+MFMT2n
+vXttwBcYgRXo0+isGnSysBdHI/sF/VMLcszy5eUfy0EKxFBemufaPpMCgYEA35Zk
+2DJkQ88nEtRADfHExYHJNxEmsq3V1PKQT+j68zKE84zzp1emyYH+d3ur7wXr86ZX
+UA4aDVhAXcD7NUq9mVecUaRYRYmBxap1fuvu+wXXYVFsxhwWraKGSrYzwPDrt3xb
+eqWAetiAqmJp8UZpyev7EHOYsWf+EUZwJLiKojcCgYBpZZCEeotCuD30YB6ZqsQR
+h0dUzYxbSS9sQvufrfd7DFJRW5FvPA33rAUbJhwHuevtaJtHywi4IGk6NCPmEI14
++KRB7D2fbzwBrS1CLasVrHdpZ6JL4rk8igiVUr4gHRwjG7gswT1MYXroueFAd1ZF
+jyA/4oz2QkO8ZZz6Nm3JdQKBgCIH6wt5CAfGJOVZxvIYZWHGclDeXGx/xvclgE+Z
+X3DatJ+5SXCkB6/OCGQ5P58e4J3yKIH304FKeGmMsO+Yk6keS52ljQXwev8SBdYu
+pO4yImkekpbIua7t+NCwUMpCIS6JUAcn35lTEKpeVk+x7vIb59fGMGx4LpSEixcb
+u4YbAoGBAIgfmzZ3SCLx4pBC5/o/LdVMpzfV3vPzvu5dIsQDOat70aTHmDl+S6Cq
+K96xPXFnxPS0a5TLvVCcGnA39iZDgaIWCYEEmRRsnYhlKzkNgqJEB8ZZfENwFBuO
+1kXKbhap66yPSayVOAfyVS4ACia8BwT+x64AFSKjaudVNX+rGatX
+-----END RSA PRIVATE KEY-----
+`)
+			_, err := client.AddSigningCertificate("demo", pair)
+
+			// then
+			Expect(err).To(HaveOccurred())
+			apiErr := err.(*types.Error)
+
+			Expect(*apiErr).To(Equal(types.Error{
+				Title:   "Could not add signing cert",
+				Details: "Resource is not valid",
+				Causes: []types.Cause{
+					{
+						Field:   ".",
+						Message: "not a valid TLS key pair: tls: private key does not match public key",
+					},
+				},
+			}))
+		})
 	})
 
 	Describe("Get certificates", func() {

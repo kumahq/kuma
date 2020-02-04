@@ -51,6 +51,10 @@ func NewProvidedCaManager(secretManager secret_manager.SecretManager) ProvidedCa
 }
 
 func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, signingPair tls.KeyPair) (*SigningCert, error) {
+	if err := ValidateCaCert(signingPair); err != nil {
+		return nil, err
+	}
+
 	providedCaSecret := &core_system.SecretResource{}
 	if err := p.secretManager.Get(ctx, providedCaSecret, core_store.GetBy(providedCaSecretKey(mesh))); err != nil {
 		if core_store.IsResourceNotFound(err) {
