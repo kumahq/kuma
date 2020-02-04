@@ -116,7 +116,7 @@ func SelectConnectionPolicies(dataplane *mesh_core.DataplaneResource, destinatio
 
 					if !exists ||
 						aggregateRank.CompareTo(candidateByDestination.bestAggregateRank) > 0 ||
-						(aggregateRank.CompareTo(candidateByDestination.bestAggregateRank) == 0 && candidateBySource.policy.GetMeta().GetModificationTime().After(candidateByDestination.policy.GetMeta().GetModificationTime())) {
+						(aggregateRank.CompareTo(candidateByDestination.bestAggregateRank) == 0 && candidateBySource.policy.GetMeta().GetCreationTime().After(candidateByDestination.policy.GetMeta().GetCreationTime())) {
 						candidateByDestination.candidateBySource = candidateBySource
 						candidateByDestination.bestAggregateRank = aggregateRank
 

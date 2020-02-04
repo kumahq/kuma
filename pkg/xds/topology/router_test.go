@@ -313,7 +313,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("TrafficRoutes should be picked by latest modification date given two equally specific routes", testCase{
+			Entry("TrafficRoutes should be picked by latest creation time given two equally specific routes", testCase{
 				dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -329,8 +329,8 @@ var _ = Describe("TrafficRoute", func() {
 				routes: []*mesh_core.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Name:             "everything-to-hollygrail",
-							ModificationTime: time.Unix(1, 1),
+							Name:         "everything-to-hollygrail",
+							CreationTime: time.Unix(1, 1),
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
@@ -349,8 +349,8 @@ var _ = Describe("TrafficRoute", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Name:             "everything-to-blackhole",
-							ModificationTime: time.Unix(0, 0),
+							Name:         "everything-to-blackhole",
+							CreationTime: time.Unix(0, 0),
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
@@ -559,7 +559,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("in case if TrafficRoutes have equal aggregate ranks, most specific one should be selected based on last modification date", testCase{
+			Entry("in case if TrafficRoutes have equal aggregate ranks, most specific one should be selected based on last creation time", testCase{
 				dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -575,8 +575,8 @@ var _ = Describe("TrafficRoute", func() {
 				routes: []*mesh_core.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Name:             "equally-specific-2",
-							ModificationTime: time.Unix(1, 1),
+							Name:         "equally-specific-2",
+							CreationTime: time.Unix(1, 1),
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
@@ -595,8 +595,8 @@ var _ = Describe("TrafficRoute", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Name:             "equally-specific-1",
-							ModificationTime: time.Unix(0, 0),
+							Name:         "equally-specific-1",
+							CreationTime: time.Unix(0, 0),
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{

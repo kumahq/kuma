@@ -292,7 +292,7 @@ var _ = Describe("HealthCheck", func() {
 					},
 				},
 			}),
-			Entry("HealthChecks should be picked by latest modification date given two equally specific HealthChecks", testCase{
+			Entry("HealthChecks should be picked by latest creation time given two equally specific HealthChecks", testCase{
 				dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -311,8 +311,8 @@ var _ = Describe("HealthCheck", func() {
 				healthChecks: []*mesh_core.HealthCheckResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Name:             "healthcheck-everything-passive",
-							ModificationTime: time.Unix(1, 1),
+							Name:         "healthcheck-everything-passive",
+							CreationTime: time.Unix(1, 1),
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
@@ -333,8 +333,8 @@ var _ = Describe("HealthCheck", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Name:             "healthcheck-everything-active",
-							ModificationTime: time.Unix(0, 0),
+							Name:         "healthcheck-everything-active",
+							CreationTime: time.Unix(0, 0),
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
@@ -558,7 +558,7 @@ var _ = Describe("HealthCheck", func() {
 					},
 				},
 			}),
-			Entry("in case if HealthChecks have equal aggregate ranks, most specific one should be selected based on last modification date", testCase{
+			Entry("in case if HealthChecks have equal aggregate ranks, most specific one should be selected based on last creation time", testCase{
 				dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -577,8 +577,8 @@ var _ = Describe("HealthCheck", func() {
 				healthChecks: []*mesh_core.HealthCheckResource{
 					{
 						Meta: &test_model.ResourceMeta{
-							Name:             "equally-specific-2",
-							ModificationTime: time.Unix(1, 1),
+							Name:         "equally-specific-2",
+							CreationTime: time.Unix(1, 1),
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
@@ -599,8 +599,8 @@ var _ = Describe("HealthCheck", func() {
 					},
 					{
 						Meta: &test_model.ResourceMeta{
-							Name:             "equally-specific-1",
-							ModificationTime: time.Unix(0, 0),
+							Name:         "equally-specific-1",
+							CreationTime: time.Unix(0, 0),
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
