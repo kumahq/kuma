@@ -19,7 +19,7 @@ var _ = Describe("KubernetesStore template", func() {
 		Expect(kubeTypes.RegisterObjectType(&sample_proto.TrafficRoute{}, &sample_k8s.SampleTrafficRoute{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&sample_proto.TrafficRoute{}, &sample_k8s.SampleTrafficRouteList{})).To(Succeed())
 
-		ks := &k8s.KubernetesStore{
+		return &k8s.KubernetesStore{
 			Client: k8sClient,
 			Converter: &k8s.SimpleConverter{
 				KubeFactory: &k8s.SimpleKubeFactory{
@@ -27,7 +27,5 @@ var _ = Describe("KubernetesStore template", func() {
 				},
 			},
 		}
-		s := store.NewStrictResourceStore(ks)
-		return s
 	})
 })

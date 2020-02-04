@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -133,6 +134,14 @@ func (m *KubernetesMetaAdapter) GetVersion() string {
 
 func (m *KubernetesMetaAdapter) GetMesh() string {
 	return noMesh
+}
+
+func (m *KubernetesMetaAdapter) GetCreationTime() time.Time {
+	return m.GetObjectMeta().GetCreationTimestamp().Time
+}
+
+func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
+	return m.GetObjectMeta().GetCreationTimestamp().Time
 }
 
 type Converter interface {

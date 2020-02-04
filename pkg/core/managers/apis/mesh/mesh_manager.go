@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	"time"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
@@ -96,7 +97,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 		}
 	}
 	// persist Mesh
-	if err := m.store.Create(ctx, mesh, fs...); err != nil {
+	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
 	return nil
@@ -168,7 +169,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	if err := m.meshValidator.ValidateUpdate(ctx, currentMesh, mesh); err != nil {
 		return err
 	}
-	return m.store.Update(ctx, mesh, fs...)
+	return m.store.Update(ctx, mesh, append(fs, core_store.ModifiedAt(time.Now()))...)
 }
 
 func (m *meshManager) mesh(resource core_model.Resource) (*core_mesh.MeshResource, error) {

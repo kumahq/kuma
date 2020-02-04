@@ -8,6 +8,7 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	"time"
 )
 
 type pseudoMeta struct {
@@ -22,6 +23,12 @@ func (m *pseudoMeta) GetName() string {
 }
 func (m *pseudoMeta) GetVersion() string {
 	return ""
+}
+func (m *pseudoMeta) GetCreationTime() time.Time {
+	return time.Now()
+}
+func (m *pseudoMeta) GetModificationTime() time.Time {
+	return time.Now()
 }
 
 // GetRoutes picks a single the most specific route for each outbound interface of a given Dataplane.

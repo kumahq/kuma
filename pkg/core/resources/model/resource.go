@@ -2,9 +2,9 @@ package model
 
 import (
 	"fmt"
-	"reflect"
-
 	"github.com/golang/protobuf/proto"
+	"reflect"
+	"time"
 )
 
 const (
@@ -31,6 +31,8 @@ type ResourceMeta interface {
 	GetName() string
 	GetVersion() string
 	GetMesh() string
+	GetCreationTime() time.Time
+	GetModificationTime() time.Time
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {
