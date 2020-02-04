@@ -14,6 +14,8 @@ Changes:
   [#557](https://github.com/Kong/kuma/pull/557)
 * feature: DB migrations for Postgres
   [#552](https://github.com/Kong/kuma/pull/552)
+* feat: add creation and modification time to core entities
+  [#521](https://github.com/Kong/kuma/pull/521)
 
 ## [0.3.2]
 
