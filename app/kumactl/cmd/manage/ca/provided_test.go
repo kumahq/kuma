@@ -2,9 +2,10 @@ package ca_test
 
 import (
 	"bytes"
-	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
@@ -12,11 +13,15 @@ import (
 	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
 	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
+	error_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
 	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
 	"github.com/Kong/kuma/pkg/tls"
 	"github.com/spf13/cobra"
 
+	"github.com/ghodss/yaml"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -25,6 +30,7 @@ var _ ca.ProvidedCaClient = &staticProvidedCaClient{}
 type staticProvidedCaClient struct {
 	addMesh string
 	addPair tls.KeyPair
+	addErr  error
 
 	deleteCertMesh string
 	deleteCertId   string
@@ -38,6 +44,9 @@ type staticProvidedCaClient struct {
 func (s *staticProvidedCaClient) AddSigningCertificate(mesh string, pair tls.KeyPair) (types.SigningCert, error) {
 	s.addMesh = mesh
 	s.addPair = pair
+	if s.addErr != nil {
+		return types.SigningCert{}, s.addErr
+	}
 	return types.SigningCert{
 		Id: "id-13456",
 	}, nil
@@ -92,7 +101,7 @@ var _ = Describe("kumactl manage provided ca", func() {
 		rootCmd.SetOut(buf)
 	})
 
-	It("should add certificate", func() {
+	It("should add proper CA certificate", func() {
 		// setup
 		certBytes, err := ioutil.ReadFile(filepath.Join("testdata", "cert.pem"))
 		Expect(err).ToNot(HaveOccurred())
@@ -120,6 +129,71 @@ var _ = Describe("kumactl manage provided ca", func() {
 		Expect(client.addMesh).To(Equal("demo"))
 		Expect(client.addPair).To(Equal(keyPar))
 		Expect(buf.String()).To(Equal(`added certificate "id-13456"`))
+	})
+
+	Describe("should not add improper CA certificate", func() {
+
+		type testCase struct {
+			addErr      string
+			expectedOut string
+		}
+
+		DescribeTable("should reject invalid cert",
+			func(given testCase) {
+				// setup
+
+				addErr := error_types.Error{}
+				// when
+				err := yaml.Unmarshal([]byte(given.addErr), &addErr)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// and
+				client.addErr = &addErr
+
+				// given
+				rootCmd.SetArgs([]string{
+					"manage", "ca", "provided", "certificates", "add",
+					"--mesh", "demo",
+					"--key-file", filepath.Join("testdata", "cert.key"),
+					"--cert-file", filepath.Join("testdata", "cert.pem"),
+				})
+
+				// when
+				err = rootCmd.Execute()
+				// then
+				Expect(err).To(HaveOccurred())
+
+				// and
+				Expect(buf.String()).To(Equal(given.expectedOut))
+			},
+			Entry("1 violation", testCase{
+				addErr: `
+                title: 'Could not add signing cert'
+                details: 'Resource is not valid'
+                causes:
+                - field: cert
+                  message: "key usage extension 'keyCertSign' must be set (see X509-SVID: 4.3. Key Usage)"
+`,
+				expectedOut: `Error: Could not add signing cert (Resource is not valid)
+* cert: key usage extension 'keyCertSign' must be set (see X509-SVID: 4.3. Key Usage)
+`,
+			}),
+			Entry("N violations", testCase{
+				addErr: `
+                title: 'Could not add signing cert'
+                details: 'Resource is not valid'
+                causes:
+                - field: cert
+                  message: "basic constraint 'CA' must be set to 'true' (see X509-SVID: 4.1. Basic Constraints)"
+                - field: cert
+                  message: "key usage extension 'keyCertSign' must be set (see X509-SVID: 4.3. Key Usage)"
+`,
+				expectedOut: `Error: Could not add signing cert (Resource is not valid)
+* cert: basic constraint 'CA' must be set to 'true' (see X509-SVID: 4.1. Basic Constraints)
+* cert: key usage extension 'keyCertSign' must be set (see X509-SVID: 4.3. Key Usage)
+`,
+			}),
+		)
 	})
 
 	It("should delete certificate", func() {
