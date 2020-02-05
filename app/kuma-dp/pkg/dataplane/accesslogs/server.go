@@ -138,7 +138,7 @@ func formatEntry(entry *envoy_data_accesslog_v2.HTTPAccessLogEntry, format strin
 }
 
 func (s *accessLogServer) sendLog(conn net.Conn, log string) error {
-	_, err := conn.Write([]byte(log))
+	_, err := conn.Write(append([]byte(log), byte('\n')))
 	return err
 }
 
