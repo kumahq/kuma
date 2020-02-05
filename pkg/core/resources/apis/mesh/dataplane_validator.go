@@ -38,7 +38,7 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound) validators.ValidationError {
 	var result validators.ValidationError
 	if _, err := mesh_proto.ParseInboundInterface(inbound.Interface); err != nil {
-		result.AddViolation("interface", "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT ex. 192.168.0.100:9090:8080")
+		result.AddViolation("interface", "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT , e.g. 192.168.0.100:9090:8080 or [2001:db8::1]:7070:6060")
 	}
 	if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
 		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
@@ -54,7 +54,7 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound) validator
 func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) validators.ValidationError {
 	var result validators.ValidationError
 	if _, err := mesh_proto.ParseOutboundInterface(outbound.Interface); err != nil {
-		result.AddViolation("interface", "invalid format: expected format is IP_ADDRESS:PORT where IP_ADDRESS is optional. ex. 192.168.0.100:9090 or :9090")
+		result.AddViolation("interface", "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT where DATAPLANE_IP is optional. E.g. 127.0.0.1:9090, :9090, [::1]:8080")
 	}
 	if outbound.Service == "" {
 		result.AddViolation("service", "cannot be empty")

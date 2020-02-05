@@ -150,6 +150,10 @@ type Dataplane_Networking_Inbound struct {
 	// <DATAPLANE_IP>:<DATAPLANE_PORT>:<WORKLOAD_PORT>, which means
 	// that dataplane must listen on <DATAPLANE_IP>:<DATAPLANE_PORT>
 	// and must dispatch to 127.0.0.1:<WORKLOAD_PORT>.
+	//
+	// E.g.,
+	// "192.168.0.100:9090:8080" in case of IPv4 or
+	// "[2001:db8::1]:7070:6060" in case of IPv6.
 	Interface string `protobuf:"bytes,1,opt,name=interface,proto3" json:"interface,omitempty"`
 	// Tags associated with an application this dataplane is deployed next to,
 	// e.g. service=web, version=1.0.
@@ -202,9 +206,15 @@ func (m *Dataplane_Networking_Inbound) GetTags() map[string]string {
 // Outbound describes a service consumed by the dataplane.
 type Dataplane_Networking_Outbound struct {
 	// Interface describes networking rules for outgoing traffic.
-	// The value is a string formatted as <IP_ADDRESS>:<PORT>,
-	// which means that dataplane must listen on <IP_ADDRESS>:<PORT>
-	// and must be dispatch to <SERVICE>:<SERVICE_PORT>.
+	// The value is a string formatted as <DATAPLANE_IP>:<DATAPLANE_PORT>,
+	// which means that dataplane must listen on
+	// <DATAPLANE_IP>:<DATAPLANE_PORT> and must be dispatch to
+	// <SERVICE>:<SERVICE_PORT>.
+	//
+	// E.g.,
+	// "127.0.0.1:9090" in case of IPv4 or
+	// "[::1]:8080" in case of IPv6 or
+	// ":7070".
 	Interface string `protobuf:"bytes,1,opt,name=interface,proto3" json:"interface,omitempty"`
 	// Service name.
 	Service string `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`
