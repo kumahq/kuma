@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"reflect"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -59,26 +58,32 @@ func (i OutboundInterface) String() string {
 	return fmt.Sprintf("%s:%d", i.DataplaneIP, i.DataplanePort)
 }
 
-const inboundInterfacePattern = `^(?P<dataplane_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)):(?P<dataplane_port>[0-9]{1,5}):(?P<workload_port>[0-9]{1,5})$`
-
-var inboundInterfaceRegexp = regexp.MustCompile(inboundInterfacePattern)
+const inboundInterfaceBNF = `( IPv4 | '[' IPv6 ']' ) ':' DATAPLANE_PORT ':' WORKLOAD_PORT`
 
 func ParseInboundInterface(text string) (InboundInterface, error) {
-	groups := inboundInterfaceRegexp.FindStringSubmatch(text)
-	if groups == nil {
-		return InboundInterface{}, errors.Errorf("invalid format: expected %s, got %q", inboundInterfacePattern, text)
+	wpInd := strings.LastIndex(text, ":")
+	if wpInd < 0 {
+		return InboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", inboundInterfaceBNF, text)
 	}
-	dataplaneIP, err := ParseIP(groups[1])
-	if err != nil {
-		return InboundInterface{}, errors.Wrapf(err, "invalid <DATAPLANE_IP> in %q", text)
+	dpInd := strings.LastIndex(text[:wpInd], ":")
+	if dpInd < 0 {
+		return InboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", inboundInterfaceBNF, text)
 	}
-	dataplanePort, err := ParsePort(groups[2])
+	host, port, err := net.SplitHostPort(text[:wpInd])
 	if err != nil {
-		return InboundInterface{}, errors.Wrapf(err, "invalid <DATAPLANE_PORT> in %q", text)
+		return InboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", inboundInterfaceBNF, text)
 	}
-	workloadPort, err := ParsePort(groups[3])
+	dataplaneIP, err := ParseIP(host)
 	if err != nil {
-		return InboundInterface{}, errors.Wrapf(err, "invalid <WORKLOAD_PORT> in %q", text)
+		return InboundInterface{}, errors.Wrapf(err, "invalid DATAPLANE_IP in %q", text)
+	}
+	dataplanePort, err := ParsePort(port)
+	if err != nil {
+		return InboundInterface{}, errors.Wrapf(err, "invalid DATAPLANE_PORT in %q", text)
+	}
+	workloadPort, err := ParsePort(text[wpInd+1:])
+	if err != nil {
+		return InboundInterface{}, errors.Wrapf(err, "invalid WORKLOAD_PORT in %q", text)
 	}
 	return InboundInterface{
 		DataplaneIP:   dataplaneIP,
@@ -87,28 +92,31 @@ func ParseInboundInterface(text string) (InboundInterface, error) {
 	}, nil
 }
 
-const outboundInterfacePattern = `^(?P<dataplane_ip>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|):(?P<dataplane_port>[0-9]{1,5})$`
-
-var outboundInterfaceRegexp = regexp.MustCompile(outboundInterfacePattern)
+const outboundInterfaceBNF = `[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT`
 
 func ParseOutboundInterface(text string) (OutboundInterface, error) {
-	groups := outboundInterfaceRegexp.FindStringSubmatch(text)
-	if groups == nil {
-		return OutboundInterface{}, errors.Errorf("invalid format: expected %s, got %q", outboundInterfacePattern, text)
+	wpInd := strings.LastIndex(text, ":")
+	if wpInd < 0 {
+		return OutboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", outboundInterfaceBNF, text)
 	}
+	port := text[wpInd+1:]
 	var dataplaneIP string
-	if groups[1] == "" {
+	if wpInd == 0 {
 		dataplaneIP = "127.0.0.1"
 	} else {
 		var err error
-		dataplaneIP, err = ParseIP(groups[1])
+		dataplaneIP, port, err = net.SplitHostPort(text)
 		if err != nil {
-			return OutboundInterface{}, errors.Wrapf(err, "invalid <DATAPLANE_IP> in %q", text)
+			return OutboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", outboundInterfaceBNF, text)
+		}
+		dataplaneIP, err = ParseIP(dataplaneIP)
+		if err != nil {
+			return OutboundInterface{}, errors.Wrapf(err, "invalid DATAPLANE_IP in %q", text)
 		}
 	}
-	dataplanePort, err := ParsePort(groups[2])
+	dataplanePort, err := ParsePort(port)
 	if err != nil {
-		return OutboundInterface{}, errors.Wrapf(err, "invalid <DATAPLANE_PORT> in %q", text)
+		return OutboundInterface{}, errors.Wrapf(err, "invalid DATAPLANE_PORT in %q", text)
 	}
 	return OutboundInterface{
 		DataplaneIP:   dataplaneIP,

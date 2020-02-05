@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: support IPv6 in Dataplane resource
+  [#567](https://github.com/Kong/kuma/pull/567)
 * feature: validate certificates that users want to use as a `provided` CA
   [#565](https://github.com/Kong/kuma/pull/565)
 * fix: add MADS port to K8S install script
