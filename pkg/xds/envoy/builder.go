@@ -19,17 +19,33 @@ type ListenerBuilderOpt interface {
 	ApplyTo(config *ListenerBuilderConfig)
 }
 
-// ListenerBuilder is responsible for generating an Envoy listener
-// by applying a series of ListenerConfigurers.
-type ListenerBuilder interface {
-	// Configure configures ListenerBuilder by adding individual ListenerConfigurers.
-	Configure(opts ...ListenerBuilderOpt) ListenerBuilder
-	// Build generates an Envoy listener by applying a series of ListenerConfigurers.
-	Build() (*v2.Listener, error)
+func NewListenerBuilder() *ListenerBuilder {
+	return &ListenerBuilder{}
 }
 
-func NewListenerBuilder() ListenerBuilder {
-	return &listenerBuilder{}
+// ListenerBuilder is responsible for generating an Envoy listener
+// by applying a series of ListenerConfigurers.
+type ListenerBuilder struct {
+	config ListenerBuilderConfig
+}
+
+// Configure configures ListenerBuilder by adding individual ListenerConfigurers.
+func (b *ListenerBuilder) Configure(opts ...ListenerBuilderOpt) *ListenerBuilder {
+	for _, opt := range opts {
+		opt.ApplyTo(&b.config)
+	}
+	return b
+}
+
+// Build generates an Envoy listener by applying a series of ListenerConfigurers.
+func (b *ListenerBuilder) Build() (*v2.Listener, error) {
+	listener := v2.Listener{}
+	for _, configurer := range b.config.Configurers {
+		if err := configurer.Configure(&listener); err != nil {
+			return nil, err
+		}
+	}
+	return &listener, nil
 }
 
 // ListenerBuilderConfig holds configuration of a ListenerBuilder.
@@ -38,31 +54,9 @@ type ListenerBuilderConfig struct {
 	Configurers []ListenerConfigurer
 }
 
+// Add appends a given ListenerConfigurer to the end of the chain.
 func (c *ListenerBuilderConfig) Add(configurer ListenerConfigurer) {
 	c.Configurers = append(c.Configurers, configurer)
-}
-
-type listenerBuilder struct {
-	config ListenerBuilderConfig
-}
-
-// Configure configures ListenerBuilder by adding individual ListenerConfigurers.
-func (b *listenerBuilder) Configure(opts ...ListenerBuilderOpt) ListenerBuilder {
-	for _, opt := range opts {
-		opt.ApplyTo(&b.config)
-	}
-	return b
-}
-
-// Build generates an Envoy listener by applying a series of ListenerConfigurers.
-func (b *listenerBuilder) Build() (*v2.Listener, error) {
-	listener := v2.Listener{}
-	for _, configurer := range b.config.Configurers {
-		if err := configurer.Configure(&listener); err != nil {
-			return nil, err
-		}
-	}
-	return &listener, nil
 }
 
 // ListenerBuilderOptFunc is a convenience type adapter.
