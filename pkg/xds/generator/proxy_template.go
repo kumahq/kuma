@@ -93,9 +93,8 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	if len(endpoints) == 0 {
 		return nil, nil
 	}
-	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
 	resources := &model.ResourceSet{}
-	for _, endpoint := range endpoints {
+	for i, endpoint := range endpoints {
 		// generate CDS resource
 		localClusterName := localClusterName(endpoint.WorkloadPort)
 		resources.Add(&model.Resource{
@@ -106,10 +105,20 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 
 		// generate LDS resource
 		inboundListenerName := localListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
+		inboundListener, err := envoy.NewListenerBuilder().
+			Configure(envoy.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
+			Configure(envoy.ServerSideMTLS(ctx, proxy.Metadata)).
+			Configure(envoy.TcpProxy(localClusterName, envoy.ClusterInfo{Name: localClusterName})).
+			Configure(envoy.NetworkRBAC(ctx.Mesh.Resource.Spec.GetMtls().GetEnabled(), proxy.TrafficPermissions.Get(endpoint.String()))).
+			Configure(envoy.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+			Build()
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
+		}
 		resources.Add(&model.Resource{
 			Name:     inboundListenerName,
 			Version:  "",
-			Resource: envoy.CreateInboundListener(ctx, inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, localClusterName, virtual, proxy.TrafficPermissions.Get(endpoint.String()), proxy.Metadata),
+			Resource: inboundListener,
 		})
 	}
 	return resources.List(), nil
@@ -123,7 +132,6 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	if len(ofaces) == 0 {
 		return nil, nil
 	}
-	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
 	resources := &model.ResourceSet{}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	for i, oface := range ofaces {
@@ -150,7 +158,13 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		// generate LDS resource
 		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
 		destinationService := oface.Service
-		listener, err := envoy.CreateOutboundListener(ctx, outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, oface.Service, clusters, virtual, sourceService, destinationService, proxy.Logs[oface.Service], proxy)
+
+		listener, err := envoy.NewListenerBuilder().
+			Configure(envoy.OutboundListener(outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
+			Configure(envoy.TcpProxy(oface.Service, clusters...)).
+			Configure(envoy.NetworkAccessLog(sourceService, destinationService, proxy.Logs[oface.Service], proxy)).
+			Configure(envoy.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+			Build()
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i), outboundListenerName)
 		}
@@ -206,11 +220,19 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	if redirectPort == 0 {
 		return nil, nil
 	}
+	listener, err := envoy.NewListenerBuilder().
+		Configure(envoy.OutboundListener("catch_all", "0.0.0.0", redirectPort)).
+		Configure(envoy.TcpProxy("pass_through", envoy.ClusterInfo{Name: "pass_through"})).
+		Configure(envoy.OriginalDstForwarder()).
+		Build()
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not generate listener %s", "catch_all")
+	}
 	return []*model.Resource{
 		&model.Resource{
 			Name:     "catch_all",
 			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: envoy.CreateCatchAllListener(ctx, "catch_all", "0.0.0.0", redirectPort, "pass_through"),
+			Resource: listener,
 		},
 		&model.Resource{
 			Name:     "pass_through",

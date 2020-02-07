@@ -4,15 +4,75 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	"github.com/pkg/errors"
+
+	"github.com/golang/protobuf/ptypes"
+
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/pkg/errors"
+	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	util_error "github.com/Kong/kuma/pkg/util/error"
 )
+
+func NetworkAccessLog(sourceService string, destinationService string, backend *v1alpha1.LoggingBackend, proxy *core_xds.Proxy) ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+		if backend != nil {
+			config.Add(&NetworkAccessLogConfigurer{
+				sourceService:      sourceService,
+				destinationService: destinationService,
+				backend:            backend,
+				proxy:              proxy,
+			})
+		}
+	})
+}
+
+type NetworkAccessLogConfigurer struct {
+	sourceService      string
+	destinationService string
+	backend            *v1alpha1.LoggingBackend
+	proxy              *core_xds.Proxy
+}
+
+func (c *NetworkAccessLogConfigurer) Configure(l *v2.Listener) error {
+	accessLog, err := convertLoggingBackend(c.sourceService, c.destinationService, c.backend, c.proxy)
+	if err != nil {
+		return err
+	}
+
+	for i := range l.FilterChains {
+		for _, filter := range l.FilterChains[i].Filters {
+			if filter.Name == wellknown.TCPProxy && filter.GetTypedConfig() != nil {
+				var dany ptypes.DynamicAny
+				if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), &dany); err != nil {
+					return err
+				}
+				proxy, ok := dany.Message.(*envoy_tcp.TcpProxy)
+				if !ok {
+					continue
+				}
+				proxy.AccessLog = append(proxy.AccessLog, accessLog)
+
+				pbst, err := ptypes.MarshalAny(proxy)
+				util_error.MustNot(err)
+
+				filter.ConfigType = &envoy_listener.Filter_TypedConfig{
+					TypedConfig: pbst,
+				}
+			}
+		}
+	}
+
+	return nil
+}
 
 const AccessLogDefaultFormat = "[%START_TIME%] %KUMA_SOURCE_ADDRESS%(%KUMA_SOURCE_SERVICE%)->%UPSTREAM_HOST%(%KUMA_DESTINATION_SERVICE%) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes\n"
 

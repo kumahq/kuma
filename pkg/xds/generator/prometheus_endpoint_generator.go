@@ -58,7 +58,15 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	adminAddress := "127.0.0.1"
 	envoyAdminClusterName := envoyAdminClusterName()
 	prometheusListenerName := prometheusListenerName()
-	virtual := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort() != 0
+
+	listener, err := envoy.NewListenerBuilder().
+		Configure(envoy.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
+		Configure(envoy.PrometheusEndpoint(prometheusEndpoint.Path, envoyAdminClusterName)).
+		Configure(envoy.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+		Build()
+	if err != nil {
+		return nil, err
+	}
 	return []*core_xds.Resource{
 		// CDS resource
 		&core_xds.Resource{
@@ -70,7 +78,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 		&core_xds.Resource{
 			Name:     prometheusListenerName,
 			Version:  "",
-			Resource: envoy.CreatePrometheusListener(ctx, prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, prometheusEndpoint.Path, envoyAdminClusterName, virtual, proxy.Metadata),
+			Resource: listener,
 		},
 	}, nil
 }
