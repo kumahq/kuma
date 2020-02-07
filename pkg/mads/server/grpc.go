@@ -52,7 +52,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 			grpcServerLog.Info("terminated normally")
 		}
 	}()
-	grpcServerLog.Info("starting", "address", lis.Addr().String())
+	grpcServerLog.Info("starting", "port", s.config.GrpcPort)
 
 	select {
 	case <-stop:
