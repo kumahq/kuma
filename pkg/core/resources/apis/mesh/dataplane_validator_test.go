@@ -104,7 +104,7 @@ var _ = Describe("Dataplane", func() {
 				Violations: []validators.Violation{
 					{
 						Field:   "networking.inbound[0].interface",
-						Message: `invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT ex. 192.168.0.100:9090:8080`,
+						Message: `invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT , e.g. 192.168.0.100:9090:8080 or [2001:db8::1]:7070:6060`,
 					},
 				},
 			},
@@ -118,7 +118,7 @@ var _ = Describe("Dataplane", func() {
 				Violations: []validators.Violation{
 					{
 						Field:   "networking.inbound[0].interface",
-						Message: `invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT ex. 192.168.0.100:9090:8080`,
+						Message: `invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT , e.g. 192.168.0.100:9090:8080 or [2001:db8::1]:7070:6060`,
 					},
 				},
 			},
@@ -260,7 +260,7 @@ var _ = Describe("Dataplane", func() {
 				Violations: []validators.Violation{
 					{
 						Field:   "networking.inbound[0].interface",
-						Message: "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT ex. 192.168.0.100:9090:8080",
+						Message: "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT , e.g. 192.168.0.100:9090:8080 or [2001:db8::1]:7070:6060",
 					},
 					{
 						Field:   "networking.inbound[0].tags[\"service\"]",
@@ -272,7 +272,7 @@ var _ = Describe("Dataplane", func() {
 					},
 					{
 						Field:   "networking.outbound[0].interface",
-						Message: "invalid format: expected format is IP_ADDRESS:PORT where IP_ADDRESS is optional. ex. 192.168.0.100:9090 or :9090",
+						Message: "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT where DATAPLANE_IP is optional. E.g. 127.0.0.1:9090, :9090, [::1]:8080",
 					},
 					{
 						Field:   "networking.outbound[0].service",

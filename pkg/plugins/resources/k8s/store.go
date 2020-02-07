@@ -13,6 +13,7 @@ import (
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 )
 
 var _ store.ResourceStore = &KubernetesStore{}
@@ -177,6 +178,14 @@ func (m *KubernetesMetaAdapter) GetVersion() string {
 
 func (m *KubernetesMetaAdapter) GetMesh() string {
 	return m.Mesh
+}
+
+func (m *KubernetesMetaAdapter) GetCreationTime() time.Time {
+	return m.GetObjectMeta().GetCreationTimestamp().Time
+}
+
+func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
+	return m.GetObjectMeta().GetCreationTimestamp().Time
 }
 
 type KubeFactory interface {

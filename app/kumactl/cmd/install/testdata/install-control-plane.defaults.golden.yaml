@@ -3434,6 +3434,8 @@ spec:
   - port: 443
     name: https-admission-server
     targetPort: 5443
+  - port: 5676
+    name: mads-server
   - port: 5677
     name: grpc-sds
   - port: 5678

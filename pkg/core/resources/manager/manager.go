@@ -3,6 +3,8 @@ package manager
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -41,7 +43,7 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 	if err := resource.Validate(); err != nil {
 		return err
 	}
-	opts := store.NewCreateOptions(fs...)
+	opts := store.NewCreateOptions(append(fs, store.CreatedAt(time.Now()))...)
 	if resource.GetType() != mesh.MeshType {
 		if err := r.ensureMeshExists(ctx, opts.Mesh); err != nil {
 			return err
@@ -86,7 +88,7 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 	if err := resource.Validate(); err != nil {
 		return err
 	}
-	return r.Store.Update(ctx, resource, fs...)
+	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()))...)
 }
 
 type MeshNotFoundError struct {

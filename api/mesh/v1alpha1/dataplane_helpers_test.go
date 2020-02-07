@@ -153,13 +153,37 @@ var _ = Describe("ParseInboundInterface(..)", func() {
 					WorkloadPort:  8080,
 				},
 			}),
+			Entry("IPv6 full", testCase{
+				input: "[2001:db8:85a3:8d3:1319:8a2e:370:7348]:80:8080",
+				expected: InboundInterface{
+					DataplaneIP:   "2001:db8:85a3:8d3:1319:8a2e:370:7348",
+					DataplanePort: 80,
+					WorkloadPort:  8080,
+				},
+			}),
+			Entry("IPv6 shortend", testCase{
+				input: "[2001:db8::1:0:0:1]:80:8080",
+				expected: InboundInterface{
+					DataplaneIP:   "2001:db8::1:0:0:1",
+					DataplanePort: 80,
+					WorkloadPort:  8080,
+				},
+			}),
+			Entry("IPv4", testCase{
+				input: "[1.2.3.4]:80:8080", // unexpected side-effect of Golang SDK
+				expected: InboundInterface{
+					DataplaneIP:   "1.2.3.4",
+					DataplanePort: 80,
+					WorkloadPort:  8080,
+				},
+			}),
 		)
 	})
 
 	Context("invalid input values", func() {
 		type testCase struct {
 			input       string
-			expectedErr gomega_types.GomegaMatcher
+			expectedErr string
 		}
 
 		DescribeTable("should fail on invalid input values",
@@ -167,33 +191,35 @@ var _ = Describe("ParseInboundInterface(..)", func() {
 				// when
 				iface, err := ParseInboundInterface(given.input)
 				// then
-				Expect(err.Error()).To(given.expectedErr)
+				Expect(err).To(HaveOccurred())
+				// then
+				Expect(err.Error()).To(Equal(given.expectedErr))
 				// and
 				Expect(iface).To(BeZero())
 			},
 			Entry("dataplane IP address is missing", testCase{
 				input:       ":80:8080",
-				expectedErr: MatchRegexp(`invalid format: expected .*, got ":80:8080"`),
+				expectedErr: `invalid DATAPLANE_IP in ":80:8080": "" is not a valid IP address`,
 			}),
 			Entry("dataplane IP address is not valid", testCase{
 				input:       "localhost:80:65536",
-				expectedErr: MatchRegexp(`invalid format: expected .*, got "localhost:80:65536"`),
+				expectedErr: `invalid DATAPLANE_IP in "localhost:80:65536": "localhost" is not a valid IP address`,
 			}),
 			Entry("service port is missing", testCase{
 				input:       "1.2.3.4::8080",
-				expectedErr: MatchRegexp(`invalid format: expected .*, got "1.2.3.4::8080"`),
+				expectedErr: `invalid DATAPLANE_PORT in "1.2.3.4::8080": "" is not a valid port number: strconv.ParseUint: parsing "": invalid syntax`,
 			}),
 			Entry("service port is out of range", testCase{
 				input:       "1.2.3.4:0:8080",
-				expectedErr: Equal(`invalid <DATAPLANE_PORT> in "1.2.3.4:0:8080": port number must be in the range [1, 65535] but got 0`),
+				expectedErr: `invalid DATAPLANE_PORT in "1.2.3.4:0:8080": port number must be in the range [1, 65535] but got 0`,
 			}),
 			Entry("application port is missing", testCase{
 				input:       "1.2.3.4:80:",
-				expectedErr: MatchRegexp(`invalid format: expected .*, got "1.2.3.4:80:"`),
+				expectedErr: `invalid WORKLOAD_PORT in "1.2.3.4:80:": "" is not a valid port number: strconv.ParseUint: parsing "": invalid syntax`,
 			}),
 			Entry("application port is out of range", testCase{
 				input:       "1.2.3.4:80:65536",
-				expectedErr: Equal(`invalid <WORKLOAD_PORT> in "1.2.3.4:80:65536": port number must be in the range [1, 65535] but got 65536`),
+				expectedErr: `invalid WORKLOAD_PORT in "1.2.3.4:80:65536": port number must be in the range [1, 65535] but got 65536`,
 			}),
 		)
 	})
@@ -230,31 +256,62 @@ var _ = Describe("ParseOutboundInterface(..)", func() {
 					DataplanePort: 18080,
 				},
 			}),
+			Entry("IPv6 full", testCase{
+				input: "[2001:db8:85a3:8d3:1319:8a2e:370:7348]:18080",
+				expected: OutboundInterface{
+					DataplaneIP:   "2001:db8:85a3:8d3:1319:8a2e:370:7348",
+					DataplanePort: 18080,
+				},
+			}),
+			Entry("IPv6 shortend", testCase{
+				input: "[2001:db8::1:0:0:1]:18080",
+				expected: OutboundInterface{
+					DataplaneIP:   "2001:db8::1:0:0:1",
+					DataplanePort: 18080,
+				},
+			}),
+			Entry("IPv4", testCase{
+				input: "[127.0.0.2]:18080", // unexpected side-effect of Golang SDK
+				expected: OutboundInterface{
+					DataplaneIP:   "127.0.0.2",
+					DataplanePort: 18080,
+				},
+			}),
 		)
 	})
 
 	Context("invalid input values", func() {
 		type testCase struct {
 			input       string
-			expectedErr gomega_types.GomegaMatcher
+			expectedErr string
 		}
 
 		DescribeTable("should fail on invalid input values",
 			func(given testCase) {
 				// when
-				iface, err := ParseInboundInterface(given.input)
+				iface, err := ParseOutboundInterface(given.input)
 				// then
-				Expect(err.Error()).To(given.expectedErr)
+				Expect(err).To(HaveOccurred())
+				// and
+				Expect(err.Error()).To(Equal(given.expectedErr))
 				// and
 				Expect(iface).To(BeZero())
 			},
 			Entry("dataplane IP address is not valid", testCase{
 				input:       "localhost:65536",
-				expectedErr: MatchRegexp(`invalid format: expected .*, got "localhost:65536"`),
+				expectedErr: `invalid DATAPLANE_IP in "localhost:65536": "localhost" is not a valid IP address`,
+			}),
+			Entry("dataplane IPv6 address is not valid", testCase{
+				input:       "[:65536",
+				expectedErr: `invalid format: expected "[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT", got "[:65536"`,
 			}),
 			Entry("port without colon", testCase{
 				input:       "18080",
-				expectedErr: MatchRegexp(`invalid format: expected .*, got "18080"`),
+				expectedErr: `invalid format: expected "[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT", got "18080"`,
+			}),
+			Entry("colon without port", testCase{
+				input:       ":",
+				expectedErr: `invalid DATAPLANE_PORT in ":": "" is not a valid port number: strconv.ParseUint: parsing "": invalid syntax`,
 			}),
 		)
 	})
@@ -324,7 +381,7 @@ var _ = Describe("Dataplane_Networking", func() {
 							{Interface: ":443:8443"},
 						},
 					},
-					expectedErr: MatchRegexp(`invalid format: expected .*, got ":443:8443"`),
+					expectedErr: Equal(`invalid DATAPLANE_IP in ":443:8443": "" is not a valid IP address`),
 				}),
 			)
 		})

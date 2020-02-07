@@ -2,6 +2,11 @@ package apply
 
 import (
 	"context"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
+
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -13,10 +18,6 @@ import (
 	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"net/http"
-	"strings"
-	"time"
 )
 
 const (
@@ -60,8 +61,8 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					if err != nil {
 						return errors.Wrap(err, "error with GET http request")
 					}
-					if resp.StatusCode != 200 {
-						return errors.Wrap(err, "errpr while retrieving URL")
+					if resp.StatusCode != http.StatusOK {
+						return errors.Wrap(err, "error while retrieving URL")
 					}
 					defer resp.Body.Close()
 					b, err = ioutil.ReadAll(resp.Body)
@@ -163,14 +164,18 @@ func (m meta) GetName() string {
 	return m.Name
 }
 
-func (m meta) GetNamespace() string {
-	return "default"
-}
-
 func (m meta) GetVersion() string {
 	return ""
 }
 
 func (m meta) GetMesh() string {
 	return m.Mesh
+}
+
+func (m meta) GetCreationTime() time.Time {
+	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
+}
+
+func (m meta) GetModificationTime() time.Time {
+	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
 }

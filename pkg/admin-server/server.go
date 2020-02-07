@@ -91,7 +91,7 @@ func (a *AdminServer) startHttpServer() (*http.Server, chan error) {
 		}
 		log.Info("http server terminated normally")
 	}()
-	log.Info("starting server", "port", a.cfg.Local.Port)
+	log.Info("starting server", "address", server.Addr)
 	return server, errChan
 }
 

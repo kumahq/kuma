@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/ca/builtin"
+	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
@@ -20,7 +21,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_resources "github.com/Kong/kuma/pkg/test/resources"
-	"github.com/Kong/kuma/pkg/tls"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
@@ -42,10 +42,16 @@ var _ = Describe("Mesh Manager", func() {
 	})
 
 	createProvidedCa := func(meshName string) string {
-		pair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType)
+		// when
+		signingPair, err := builtin_issuer.NewRootCA(meshName)
+		// then
 		Expect(err).ToNot(HaveOccurred())
-		signingCert, err := providedCaManager.AddSigningCert(context.Background(), meshName, pair)
+
+		// when
+		signingCert, err := providedCaManager.AddSigningCert(context.Background(), meshName, *signingPair)
+		// then
 		Expect(err).ToNot(HaveOccurred())
+
 		return signingCert.Id
 	}
 
@@ -242,9 +248,15 @@ var _ = Describe("Mesh Manager", func() {
 	Describe("Update()", func() {
 		It("should not allow to change CA when mTLS is enabled", func() {
 			// setup
-			pair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType)
+
+			// when
+			signingPair, err := builtin_issuer.NewRootCA("mesh-1")
+			// then
 			Expect(err).ToNot(HaveOccurred())
-			_, err = providedCaManager.AddSigningCert(context.Background(), "mesh-1", pair)
+
+			// when
+			_, err = providedCaManager.AddSigningCert(context.Background(), "mesh-1", *signingPair)
+			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// given

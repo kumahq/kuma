@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"github.com/Kong/kuma/pkg/core/resources/model"
+	"time"
 
 	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -56,7 +57,7 @@ func (s *secretManager) Create(ctx context.Context, secret *secret_model.SecretR
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
-	if err := s.secretStore.Create(ctx, secret, fs...); err != nil {
+	if err := s.secretStore.Create(ctx, secret, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
 	return s.decrypt(secret)
@@ -66,7 +67,7 @@ func (s *secretManager) Update(ctx context.Context, secret *secret_model.SecretR
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
-	if err := s.secretStore.Update(ctx, secret, fs...); err != nil {
+	if err := s.secretStore.Update(ctx, secret, append(fs, core_store.ModifiedAt(time.Now()))...); err != nil {
 		return err
 	}
 	return s.decrypt(secret)

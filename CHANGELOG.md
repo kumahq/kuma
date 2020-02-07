@@ -4,10 +4,26 @@
 
 Changes:
 
+* feature: support IPv6 in Dataplane resource
+  [#567](https://github.com/Kong/kuma/pull/567)
+* fix: separate tcp access logs with a new line
+  [#566](https://github.com/Kong/kuma/pull/566)
+* feature: validate certificates that users want to use as a `provided` CA
+  [#565](https://github.com/Kong/kuma/pull/565)
+* fix: add MADS port to K8S install script
+  [#564](https://github.com/Kong/kuma/pull/564)
+* feature: sanitize metrics for StatsD and Prometheus
+  [#562](https://github.com/Kong/kuma/pull/562)
 * feature: reformat some Envoy metrics available in Prometheus
   [#558](https://github.com/Kong/kuma/pull/558)
 * feature: make maximum number of open connections to Postgres configurable
   [#557](https://github.com/Kong/kuma/pull/557)
+* feature: DB migrations for Postgres
+  [#552](https://github.com/Kong/kuma/pull/552)
+* feat: order matching policies by creation time
+  [#522](https://github.com/Kong/kuma/pull/522)
+* feat: add creation and modification time to core entities
+  [#521](https://github.com/Kong/kuma/pull/521)
 
 ## [0.3.2]
 

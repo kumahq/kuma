@@ -17,6 +17,8 @@ require (
 	github.com/go-logr/glogr v0.1.0 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.0
+	github.com/golang-migrate/migrate v3.5.4+incompatible // indirect
+	github.com/golang-migrate/migrate/v4 v4.8.0
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69

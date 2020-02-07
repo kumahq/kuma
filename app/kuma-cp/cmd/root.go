@@ -42,6 +42,7 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.InfoLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	// sub-commands
 	cmd.AddCommand(newRunCmd())
+	cmd.AddCommand(newMigrateCmd())
 	cmd.AddCommand(version.NewVersionCmd())
 	return cmd
 }

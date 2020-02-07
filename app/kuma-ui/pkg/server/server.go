@@ -63,7 +63,7 @@ func (g *Server) Start(stop <-chan struct{}) error {
 		}
 		log.Info("terminated normally")
 	}()
-	log.Info("starting", "port", g.Config.Port)
+	log.Info("starting", "address", guiServer.Addr)
 
 	select {
 	case <-stop:

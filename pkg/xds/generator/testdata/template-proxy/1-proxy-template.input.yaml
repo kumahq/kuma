@@ -17,4 +17,5 @@ conf:
                         address: 127.0.0.1
                         portValue: 8443
         name: localhost:8443
+        altStatName: localhost_8443
         type: STATIC
