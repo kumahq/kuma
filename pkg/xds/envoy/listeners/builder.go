@@ -1,4 +1,4 @@
-package envoy
+package listeners
 
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"

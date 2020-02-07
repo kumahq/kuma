@@ -1,4 +1,4 @@
-package envoy
+package listeners
 
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"

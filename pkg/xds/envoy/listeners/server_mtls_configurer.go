@@ -1,10 +1,11 @@
-package envoy
+package listeners
 
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	"github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 func ServerSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) ListenerBuilderOpt {
@@ -23,7 +24,7 @@ type ServerSideMTLSConfigurer struct {
 
 func (c *ServerSideMTLSConfigurer) Configure(l *v2.Listener) error {
 	for i := range l.FilterChains {
-		l.FilterChains[i].TlsContext = CreateDownstreamTlsContext(c.ctx, c.metadata)
+		l.FilterChains[i].TlsContext = envoy.CreateDownstreamTlsContext(c.ctx, c.metadata)
 	}
 
 	return nil

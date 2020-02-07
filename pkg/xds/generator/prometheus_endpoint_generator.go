@@ -6,7 +6,8 @@ import (
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 
-	"github.com/Kong/kuma/pkg/xds/envoy"
+	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 )
 
 // PrometheusEndpointGenerator generates an inbound Envoy listener
@@ -59,10 +60,10 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	envoyAdminClusterName := envoyAdminClusterName()
 	prometheusListenerName := prometheusListenerName()
 
-	listener, err := envoy.NewListenerBuilder().
-		Configure(envoy.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
-		Configure(envoy.PrometheusEndpoint(prometheusEndpoint.Path, envoyAdminClusterName)).
-		Configure(envoy.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+	listener, err := envoy_listeners.NewListenerBuilder().
+		Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
+		Configure(envoy_listeners.PrometheusEndpoint(prometheusEndpoint.Path, envoyAdminClusterName)).
+		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Build()
 	if err != nil {
 		return nil, err
@@ -72,7 +73,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 		&core_xds.Resource{
 			Name:     envoyAdminClusterName,
 			Version:  "",
-			Resource: envoy.CreateLocalCluster(envoyAdminClusterName, adminAddress, adminPort),
+			Resource: envoy_clusters.CreateLocalCluster(envoyAdminClusterName, adminAddress, adminPort),
 		},
 		// LDS resource
 		&core_xds.Resource{

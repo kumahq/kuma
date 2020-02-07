@@ -1,11 +1,11 @@
-package envoy_test
+package listeners_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy"
+	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )

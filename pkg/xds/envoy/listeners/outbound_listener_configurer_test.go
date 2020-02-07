@@ -1,16 +1,16 @@
-package envoy_test
+package listeners_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy"
+	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
-var _ = Describe("InboundListenerConfigurer", func() {
+var _ = Describe("OutboundListenerConfigurer", func() {
 
 	type testCase struct {
 		listenerName    string
@@ -23,7 +23,7 @@ var _ = Describe("InboundListenerConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder().
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -35,11 +35,11 @@ var _ = Describe("InboundListenerConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic listener", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
+			listenerName:    "outbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			expected: `
-            name: inbound:192.168.0.1:8080
+            name: outbound:192.168.0.1:8080
             address:
               socketAddress:
                 address: 192.168.0.1

@@ -1,4 +1,4 @@
-package envoy
+package listeners
 
 import (
 	"github.com/golang/protobuf/ptypes"
@@ -11,6 +11,12 @@ import (
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
+
+type ClusterInfo struct {
+	Name   string
+	Weight uint32
+	Tags   map[string]string
+}
 
 func TcpProxy(statsName string, clusters ...ClusterInfo) ListenerBuilderOpt {
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
