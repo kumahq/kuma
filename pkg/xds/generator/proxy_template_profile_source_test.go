@@ -141,6 +141,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
             networking:
               inbound:
                 - interface: 192.168.0.1:80:8080
+                  tags:
+                    service: backend
               outbound:
               - interface: :54321
                 service: db
@@ -159,6 +161,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
             networking:
               inbound:
                 - interface: 192.168.0.1:80:8080
+                  tags:
+                    service: backend
               outbound:
               - interface: :54321
                 service: db
@@ -183,6 +187,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
             networking:
               inbound:
                 - interface: 192.168.0.1:80:8080
+                  tags:
+                    service: backend
+                    protocol: http
               outbound:
               - interface: :54321
                 service: db
@@ -205,6 +212,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
             networking:
               inbound:
                 - interface: 192.168.0.1:80:8080
+                  tags:
+                    service: backend
+                    protocol: http
               outbound:
               - interface: :54321
                 service: db

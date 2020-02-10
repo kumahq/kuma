@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -408,6 +408,52 @@ var _ = Describe("Dataplane", func() {
                       service: backend-https
 `,
 				expected: "",
+			}),
+		)
+	})
+
+	Describe("ParseProtocol()", func() {
+
+		type testCase struct {
+			tag      string
+			expected Protocol
+		}
+
+		DescribeTable("should parse protocol from a tag",
+			func(given testCase) {
+				Expect(ParseProtocol(given.tag)).To(Equal(given.expected))
+			},
+			Entry("http", testCase{
+				tag:      "http",
+				expected: ProtocolHTTP,
+			}),
+			Entry("tcp", testCase{
+				tag:      "tcp",
+				expected: ProtocolTCP,
+			}),
+			Entry("http2", testCase{
+				tag:      "http2",
+				expected: ProtocolUnknown,
+			}),
+			Entry("grpc", testCase{
+				tag:      "grpc",
+				expected: ProtocolUnknown,
+			}),
+			Entry("mongo", testCase{
+				tag:      "mongo",
+				expected: ProtocolUnknown,
+			}),
+			Entry("mysql", testCase{
+				tag:      "mysql",
+				expected: ProtocolUnknown,
+			}),
+			Entry("unknown", testCase{
+				tag:      "unknown",
+				expected: ProtocolUnknown,
+			}),
+			Entry("empty", testCase{
+				tag:      "",
+				expected: ProtocolUnknown,
 			}),
 		)
 	})
