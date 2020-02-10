@@ -7,7 +7,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
@@ -32,7 +32,7 @@ func (c *PrometheusEndpointConfigurer) Configure(l *v2.Listener) error {
 		StatPrefix: util_xds.SanitizeMetric(l.Name),
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
 		HttpFilters: []*envoy_hcm.HttpFilter{{
-			Name: wellknown.Router,
+			Name: envoy_wellknown.Router,
 		}},
 		RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: &v2.RouteConfiguration{
@@ -63,7 +63,7 @@ func (c *PrometheusEndpointConfigurer) Configure(l *v2.Listener) error {
 
 	for i := range l.FilterChains {
 		l.FilterChains[i].Filters = append(l.FilterChains[i].Filters, &envoy_listener.Filter{
-			Name: wellknown.HTTPConnectionManager,
+			Name: envoy_wellknown.HTTPConnectionManager,
 			ConfigType: &envoy_listener.Filter_TypedConfig{
 				TypedConfig: pbst,
 			},

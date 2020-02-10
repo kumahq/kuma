@@ -6,7 +6,7 @@ import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
@@ -60,7 +60,7 @@ func (c *TcpProxyConfigurer) Configure(l *v2.Listener) error {
 
 	for i := range l.FilterChains {
 		l.FilterChains[i].Filters = append(l.FilterChains[i].Filters, &envoy_listener.Filter{
-			Name: wellknown.TCPProxy,
+			Name: envoy_wellknown.TCPProxy,
 			ConfigType: &envoy_listener.Filter_TypedConfig{
 				TypedConfig: pbst,
 			},
