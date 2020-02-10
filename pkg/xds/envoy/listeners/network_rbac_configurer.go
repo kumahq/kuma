@@ -1,11 +1,13 @@
-package envoy
+package listeners
 
 import (
 	"fmt"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
@@ -14,6 +16,30 @@ import (
 
 	envoy_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 )
+
+func NetworkRBAC(rbacEnabled bool, permissions *mesh_core.TrafficPermissionResourceList) ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+		if rbacEnabled {
+			config.Add(&NetworkRBACConfigurer{permissions})
+		}
+	})
+}
+
+type NetworkRBACConfigurer struct {
+	// Traffic Permissions to enforce.
+	permissions *mesh_core.TrafficPermissionResourceList
+}
+
+func (c *NetworkRBACConfigurer) Configure(l *v2.Listener) error {
+	for i := range l.FilterChains {
+		filter := createRbacFilter(l.Name, c.permissions)
+
+		// RBAC filter should be the first in the chain
+		l.FilterChains[i].Filters = append([]*envoy_listener.Filter{&filter}, l.FilterChains[i].Filters...)
+	}
+
+	return nil
+}
 
 func createRbacFilter(listenerName string, permissions *mesh_core.TrafficPermissionResourceList) envoy_listener.Filter {
 	rbacRule := createRbacRule(listenerName, permissions)
