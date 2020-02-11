@@ -6,20 +6,18 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_error "github.com/Kong/kuma/pkg/util/error"
 )
 
 func NetworkAccessLog(sourceService string, destinationService string, backend *v1alpha1.LoggingBackend, proxy *core_xds.Proxy) ListenerBuilderOpt {
@@ -48,30 +46,14 @@ func (c *NetworkAccessLogConfigurer) Configure(l *v2.Listener) error {
 		return err
 	}
 
-	for i := range l.FilterChains {
-		for _, filter := range l.FilterChains[i].Filters {
-			if filter.Name == wellknown.TCPProxy && filter.GetTypedConfig() != nil {
-				var dany ptypes.DynamicAny
-				if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), &dany); err != nil {
-					return err
-				}
-				proxy, ok := dany.Message.(*envoy_tcp.TcpProxy)
-				if !ok {
-					continue
-				}
-				proxy.AccessLog = append(proxy.AccessLog, accessLog)
-
-				pbst, err := ptypes.MarshalAny(proxy)
-				util_error.MustNot(err)
-
-				filter.ConfigType = &envoy_listener.Filter_TypedConfig{
-					TypedConfig: pbst,
-				}
-			}
+	return UpdateFilterConfig(l, envoy_wellknown.TCPProxy, func(filterConfig proto.Message) error {
+		proxy, ok := filterConfig.(*envoy_tcp.TcpProxy)
+		if !ok {
+			return NewUnexpectedFilterConfigTypeError(filterConfig, &envoy_tcp.TcpProxy{})
 		}
-	}
-
-	return nil
+		proxy.AccessLog = append(proxy.AccessLog, accessLog)
+		return nil
+	})
 }
 
 const AccessLogDefaultFormat = "[%START_TIME%] %KUMA_SOURCE_ADDRESS%(%KUMA_SOURCE_SERVICE%)->%UPSTREAM_HOST%(%KUMA_DESTINATION_SERVICE%) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes\n"
@@ -122,7 +104,7 @@ func tcpAccessLog(format string, tcp *v1alpha1.LoggingBackend_Tcp_) (*filter_acc
 		return nil, errors.Wrap(err, "could not marshall FileAccessLog")
 	}
 	return &filter_accesslog.AccessLog{
-		Name: wellknown.HTTPGRPCAccessLog,
+		Name: envoy_wellknown.HTTPGRPCAccessLog,
 		ConfigType: &filter_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshalled,
 		},
@@ -141,7 +123,7 @@ func fileAccessLog(format string, file *v1alpha1.LoggingBackend_File_) (*filter_
 		return nil, errors.Wrap(err, "could not marshall FileAccessLog")
 	}
 	return &filter_accesslog.AccessLog{
-		Name: wellknown.FileAccessLog,
+		Name: envoy_wellknown.FileAccessLog,
 		ConfigType: &filter_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshalled,
 		},
