@@ -55,12 +55,14 @@ Envoy's tracing setting on HTTP Connection manager is available [here](https://w
 type: Mesh
 name: default
 tracing:
-  sampling: 10.0 # percentages 0-100
-  backend:
-    zipkin:
-      url: http://zipkin.local/api/v2/spans
-      traceId128bit: false # Generate 128bit traces. Default: false
-      apiVersion: httpJson # Pick a version of the API. values: httpJson, httpProto. Default: httpJson
+  defaultBackend: my-zipkin
+  backends:
+    - name: my-zipkin
+      sampling: 10.0 # percentages 0-100
+      zipkin:
+        url: http://zipkin.local/api/v2/spans
+        traceId128bit: false # Generate 128bit traces. Default: false
+        apiVersion: httpJson # Pick a version of the API. values: httpJson, httpProto. Default: httpJson
 ```
 
 Note: Zipkin can be also supported via OpenCensus. Jaeger is also [compatible](https://www.jaegertracing.io/docs/1.13/features/#backwards-compatibility-with-zipkin) with Zipkin format.
@@ -71,10 +73,11 @@ Note: Zipkin can be also supported via OpenCensus. Jaeger is also [compatible](h
 type: Mesh
 name: default
 tracing:
-  sampling: 10.0 # percentages 0-100
-  backend:
-    datadog:
-      address: datadog.address:1234
+  backends:
+    - name: my-datadog
+      sampling: 10.0 # percentages 0-100
+      datadog:
+        address: datadog.address:1234
 ```
 
 Envoy's Datadog config also requires service name which we could infer from the Dataplane entity.
@@ -93,11 +96,12 @@ I think design for this backend need separate proposal in form of Github issue.
 type: Mesh
 name: default
 tracing:
-  sampling: 10.0 # percentages 0-100
-  backend:
-    openTracing:
-      libraryPath: /usr/local/lib/libinstana_sensor.so
-      config: {} # config can be anything as it is specific to the dynamic library 
+  backends:
+    - name: my-ot
+      sampling: 10.0 # percentages 0-100
+      openTracing:
+        libraryPath: /usr/local/lib/libinstana_sensor.so
+        config: {} # config can be anything as it is specific to the dynamic library 
 ```
 
 It assumes that every Dataplane in a Mesh will have this library in a given path.
@@ -111,28 +115,47 @@ Jaeger is the most popular tracer of OpenTracing. List of supported tracers in O
 type: Mesh
 name: default
 tracing:
-  sampling: 10.0 # percentages 0-100
-  backend:
-    openCensus:
-      stackdriver:
-        projectId: 1234
-        address: # optional
-      zipkin:
-        url: http://127.0.0.1:9411/api/v2/spans
-      agent:
-        address: "ipv4:127.0.0.1:345" # https://github.com/grpc/grpc/blob/master/doc/naming.md
-      incomingTraceContext: # in what header format trace will be consumed. Default all, Envoy looks for all of them.
-        - b3
-        - w3c
-        - cloud
-      outgoingTraceContext: # in what header format trace will be produced (default: b3)
-        - b3
+  backends:
+    - name: my-oc
+      sampling: 10.0 # percentages 0-100
+      openCensus:
+        stackdriver:
+          projectId: 1234
+          address: # optional
+        zipkin:
+          url: http://127.0.0.1:9411/api/v2/spans
+        agent:
+          address: "ipv4:127.0.0.1:345" # https://github.com/grpc/grpc/blob/master/doc/naming.md
+        incomingTraceContext: # in what header format trace will be consumed. Default all, Envoy looks for all of them.
+          - b3
+          - w3c
+          - cloud
+        outgoingTraceContext: # in what header format trace will be produced (default: b3)
+          - b3
 ```
 
 It seems that you can pick multiple Open Census exporters at once.
 Since exporters here are limited to Stackdriver and Zipkin you can send traces to Agent which will send it to all supported backends listed [here](https://opencensus.io/exporters/supported-exporters/go/ocagent/).
 
+### TrafficTrace
+
+Additionally, to enable Tracing, you have to select Dataplanes that tracing will be enabled on.  
+
+```yaml
+type: TrafficTrace
+mesh: default
+name: us
+selectors:
+  - match:
+      zone: us
+conf:
+  backend: zipkin-us
+```
+
+This enables user to segment the destinations of traces.
+
 ## Summary
 
-I propose to start the implementation with one backend of choice (for example Zipkin) since we need to do the
-work (adding config to http manager filters for listeners) regardless of the backend configuration. Then we can add support for more backends gradually.
+We decided to start with Zipkin backend, and add more backends gradualy.
+First implementation will require users to restart Envoy to reload configuration, but we want to make contribution
+to Envoy and improve it to have dynamic configuration like the rest of the configurations in Kuma.
