@@ -106,13 +106,14 @@ func (d *DataplaneResource) GetIP() string {
 	return ifaces[0].DataplaneIP
 }
 
-func (d *DataplaneResource) GetProtocol(idx int) Protocol {
+// GetProtocol returns a protocol of an inbound interface with a given index.
+func (d *DataplaneResource) GetProtocol(inboundIdx int) Protocol {
 	if d == nil {
-		return ProtocolTCP
+		return ProtocolUnknown
 	}
-	if idx < 0 || idx > len(d.Spec.Networking.GetInbound())-1 {
-		return ProtocolTCP
+	if inboundIdx < 0 || inboundIdx > len(d.Spec.Networking.GetInbound())-1 {
+		return ProtocolUnknown
 	}
-	iface := d.Spec.Networking.Inbound[idx]
+	iface := d.Spec.Networking.Inbound[inboundIdx]
 	return ParseProtocol(iface.Tags[mesh_proto.ProtocolTag])
 }
