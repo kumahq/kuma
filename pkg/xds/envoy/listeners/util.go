@@ -8,8 +8,6 @@ import (
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-
-	util_error "github.com/Kong/kuma/pkg/util/error"
 )
 
 func UpdateFilterConfig(l *v2.Listener, filterName string, updateFunc func(proto.Message) error) error {
@@ -29,7 +27,9 @@ func UpdateFilterConfig(l *v2.Listener, filterName string, updateFunc func(proto
 				}
 
 				pbst, err := ptypes.MarshalAny(dany.Message)
-				util_error.MustNot(err)
+				if err != nil {
+					return err
+				}
 
 				filter.ConfigType = &envoy_listener.Filter_TypedConfig{
 					TypedConfig: pbst,

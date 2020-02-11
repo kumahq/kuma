@@ -155,9 +155,13 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
+				// when
+				resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
 				// then
-				resp := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+				Expect(err).ToNot(HaveOccurred())
+				// when
 				actual, err := util_proto.ToYAML(resp)
+				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				expected, err := ioutil.ReadFile(filepath.Join("testdata", "template-proxy", given.envoyConfigFile))

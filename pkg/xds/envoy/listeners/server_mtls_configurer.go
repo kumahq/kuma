@@ -24,7 +24,11 @@ type ServerSideMTLSConfigurer struct {
 
 func (c *ServerSideMTLSConfigurer) Configure(l *v2.Listener) error {
 	for i := range l.FilterChains {
-		l.FilterChains[i].TlsContext = envoy.CreateDownstreamTlsContext(c.ctx, c.metadata)
+		tlsContext, err := envoy.CreateDownstreamTlsContext(c.ctx, c.metadata)
+		if err != nil {
+			return err
+		}
+		l.FilterChains[i].TlsContext = tlsContext
 	}
 
 	return nil

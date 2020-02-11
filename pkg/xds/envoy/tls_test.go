@@ -29,8 +29,10 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			metadata := &core_xds.DataplaneMetadata{}
 
 			// when
-			snippet := CreateDownstreamTlsContext(ctx, metadata)
+			snippet, err := CreateDownstreamTlsContext(ctx, metadata)
 			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
 			Expect(snippet).To(BeNil())
 		})
 	})
@@ -62,8 +64,10 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet := CreateDownstreamTlsContext(ctx, given.metadata)
-				// and
+				snippet, err := CreateDownstreamTlsContext(ctx, given.metadata)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// when
 				actual, err := util_proto.ToYAML(snippet)
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -205,8 +209,10 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			metadata := &core_xds.DataplaneMetadata{}
 
 			// when
-			snippet := CreateUpstreamTlsContext(ctx, metadata)
+			snippet, err := CreateUpstreamTlsContext(ctx, metadata)
 			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
 			Expect(snippet).To(BeNil())
 		})
 	})
@@ -238,8 +244,10 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet := CreateUpstreamTlsContext(ctx, given.metadata)
-				// and
+				snippet, err := CreateUpstreamTlsContext(ctx, given.metadata)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// when
 				actual, err := util_proto.ToYAML(snippet)
 				// then
 				Expect(err).ToNot(HaveOccurred())

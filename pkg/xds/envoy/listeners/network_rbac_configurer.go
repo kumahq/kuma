@@ -5,7 +5,6 @@ import (
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_error "github.com/Kong/kuma/pkg/util/error"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -32,25 +31,30 @@ type NetworkRBACConfigurer struct {
 
 func (c *NetworkRBACConfigurer) Configure(l *v2.Listener) error {
 	for i := range l.FilterChains {
-		filter := createRbacFilter(l.Name, c.permissions)
+		filter, err := createRbacFilter(l.Name, c.permissions)
+		if err != nil {
+			return err
+		}
 
 		// RBAC filter should be the first in the chain
-		l.FilterChains[i].Filters = append([]*envoy_listener.Filter{&filter}, l.FilterChains[i].Filters...)
+		l.FilterChains[i].Filters = append([]*envoy_listener.Filter{filter}, l.FilterChains[i].Filters...)
 	}
 
 	return nil
 }
 
-func createRbacFilter(listenerName string, permissions *mesh_core.TrafficPermissionResourceList) envoy_listener.Filter {
+func createRbacFilter(listenerName string, permissions *mesh_core.TrafficPermissionResourceList) (*envoy_listener.Filter, error) {
 	rbacRule := createRbacRule(listenerName, permissions)
 	rbacMarshalled, err := ptypes.MarshalAny(rbacRule)
-	util_error.MustNot(err)
-	return envoy_listener.Filter{
+	if err != nil {
+		return nil, err
+	}
+	return &envoy_listener.Filter{
 		Name: envoy_wellknown.RoleBasedAccessControl,
 		ConfigType: &envoy_listener.Filter_TypedConfig{
 			TypedConfig: rbacMarshalled,
 		},
-	}
+	}, nil
 }
 
 func createRbacRule(listenerName string, permissions *mesh_core.TrafficPermissionResourceList) *rbac.RBAC {
