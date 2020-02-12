@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: generate HTTP-specific inbound listeners for services tagged with `protocol: http`
+  [#574](https://github.com/Kong/kuma/pull/574)
 * feature: support IPv6 in Dataplane resource
   [#567](https://github.com/Kong/kuma/pull/567)
 * fix: separate tcp access logs with a new line
