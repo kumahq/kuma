@@ -2,11 +2,32 @@ package mesh
 
 import (
 	"net"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
+
+// Protocol identifies a protocol supported by a service.
+type Protocol string
+
+const (
+	ProtocolUnknown = "<unknown>"
+	ProtocolTCP     = "tcp"
+	ProtocolHTTP    = "http"
+)
+
+func ParseProtocol(tag string) Protocol {
+	switch strings.ToLower(tag) {
+	case ProtocolHTTP:
+		return ProtocolHTTP
+	case ProtocolTCP:
+		return ProtocolTCP
+	default:
+		return ProtocolUnknown
+	}
+}
 
 var ipv4loopback = net.IPv4(127, 0, 0, 1)
 
@@ -83,4 +104,16 @@ func (d *DataplaneResource) GetIP() string {
 		return ""
 	}
 	return ifaces[0].DataplaneIP
+}
+
+// GetProtocol returns a protocol of an inbound interface with a given index.
+func (d *DataplaneResource) GetProtocol(inboundIdx int) Protocol {
+	if d == nil {
+		return ProtocolUnknown
+	}
+	if inboundIdx < 0 || inboundIdx > len(d.Spec.Networking.GetInbound())-1 {
+		return ProtocolUnknown
+	}
+	iface := d.Spec.Networking.Inbound[inboundIdx]
+	return ParseProtocol(iface.Tags[mesh_proto.ProtocolTag])
 }

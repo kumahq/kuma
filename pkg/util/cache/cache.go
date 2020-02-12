@@ -5,18 +5,19 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 
-	util_error "github.com/Kong/kuma/pkg/util/error"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	ctl_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 )
 
-func ToDeltaDiscoveryResponse(s ctl_cache.Snapshot) *v2.DeltaDiscoveryResponse {
+func ToDeltaDiscoveryResponse(s ctl_cache.Snapshot) (*v2.DeltaDiscoveryResponse, error) {
 	resp := &v2.DeltaDiscoveryResponse{}
 	for _, rs := range []ctl_cache.Resources{s.Endpoints, s.Clusters, s.Routes, s.Listeners, s.Secrets} {
 		for _, name := range sortedResourceNames(rs) {
 			r := rs.Items[name]
 			pbany, err := ptypes.MarshalAny(r)
-			util_error.MustNot(err)
+			if err != nil {
+				return nil, err
+			}
 			resp.Resources = append(resp.Resources, &v2.Resource{
 				Version:  rs.Version,
 				Name:     name,
@@ -24,7 +25,7 @@ func ToDeltaDiscoveryResponse(s ctl_cache.Snapshot) *v2.DeltaDiscoveryResponse {
 			})
 		}
 	}
-	return resp
+	return resp, nil
 }
 
 func sortedResourceNames(rs ctl_cache.Resources) []string {

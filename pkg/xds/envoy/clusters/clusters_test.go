@@ -79,12 +79,15 @@ var _ = Describe("Clusters", func() {
 		DescribeTable("should generate 'EDS' Cluster",
 			func(given testCase) {
 				// when
-				resource := CreateEdsCluster(given.ctx, "192.168.0.1:8080", &given.metadata)
-
+				resource, err := CreateEdsCluster(given.ctx, "192.168.0.1:8080", &given.metadata)
 				// then
-				actual, err := util_proto.ToYAML(resource)
-
 				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				actual, err := util_proto.ToYAML(resource)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("without mTLS", testCase{

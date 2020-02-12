@@ -32,7 +32,11 @@ func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Clu
 	})
 }
 
-func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *core_xds.DataplaneMetadata) *v2.Cluster {
+func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *core_xds.DataplaneMetadata) (*v2.Cluster, error) {
+	tlsContext, err := envoy.CreateUpstreamTlsContext(ctx, metadata)
+	if err != nil {
+		return nil, err
+	}
 	return clusterWithAltStatName(&v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       ptypes.DurationProto(defaultConnectTimeout),
@@ -44,8 +48,8 @@ func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *cor
 				},
 			},
 		},
-		TlsContext: envoy.CreateUpstreamTlsContext(ctx, metadata),
-	})
+		TlsContext: tlsContext,
+	}), nil
 }
 
 func clusterWithAltStatName(cluster *v2.Cluster) *v2.Cluster {

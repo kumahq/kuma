@@ -9,7 +9,6 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	util_error "github.com/Kong/kuma/pkg/util/error"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
@@ -59,7 +58,9 @@ func (c *PrometheusEndpointConfigurer) Configure(l *v2.Listener) error {
 		},
 	}
 	pbst, err := ptypes.MarshalAny(config)
-	util_error.MustNot(err)
+	if err != nil {
+		return err
+	}
 
 	for i := range l.FilterChains {
 		l.FilterChains[i].Filters = append(l.FilterChains[i].Filters, &envoy_listener.Filter{

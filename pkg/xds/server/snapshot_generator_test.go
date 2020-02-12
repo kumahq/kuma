@@ -107,9 +107,13 @@ var _ = Describe("Reconcile", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
+			// when
+			resp, err := util_cache.ToDeltaDiscoveryResponse(s)
 			// then
-			resp := util_cache.ToDeltaDiscoveryResponse(s)
+			Expect(err).ToNot(HaveOccurred())
+			// when
 			actual, err := util_proto.ToYAML(resp)
+			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			expected, err := ioutil.ReadFile(filepath.Join("testdata", "envoy-config.golden.yaml"))

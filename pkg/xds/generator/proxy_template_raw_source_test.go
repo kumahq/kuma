@@ -209,11 +209,15 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
+			// when
+			resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
 			// then
-			resp := model.ResourceList(rs).ToDeltaDiscoveryResponse()
-			actual, err := util_proto.ToYAML(resp)
-
 			Expect(err).ToNot(HaveOccurred())
+			// when
+			actual, err := util_proto.ToYAML(resp)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 			Entry("should support empty resource list", testCase{

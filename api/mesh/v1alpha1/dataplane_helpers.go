@@ -12,8 +12,12 @@ import (
 )
 
 const (
+	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "service"
 	ServiceUnknown = "unknown"
+	// Optional tag that has a reserved meaning in Kuma.
+	// If absent, Kuma will treat application's protocol as opaque TCP.
+	ProtocolTag = "protocol"
 )
 
 // ServiceTagValue represents the value of "service" tag.

@@ -123,9 +123,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
+			// when
+			resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
 			// then
-			resp := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+			Expect(err).ToNot(HaveOccurred())
+			// when
 			actual, err := util_proto.ToYAML(resp)
+			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			expected, err := ioutil.ReadFile(filepath.Join("testdata", "profile-source", given.envoyConfigFile))
@@ -141,6 +145,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
             networking:
               inbound:
                 - interface: 192.168.0.1:80:8080
+                  tags:
+                    service: backend
               outbound:
               - interface: :54321
                 service: db
@@ -159,6 +165,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
             networking:
               inbound:
                 - interface: 192.168.0.1:80:8080
+                  tags:
+                    service: backend
               outbound:
               - interface: :54321
                 service: db
@@ -183,6 +191,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
             networking:
               inbound:
                 - interface: 192.168.0.1:80:8080
+                  tags:
+                    service: backend
+                    protocol: http
               outbound:
               - interface: :54321
                 service: db
@@ -205,6 +216,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
             networking:
               inbound:
                 - interface: 192.168.0.1:80:8080
+                  tags:
+                    service: backend
+                    protocol: http
               outbound:
               - interface: :54321
                 service: db

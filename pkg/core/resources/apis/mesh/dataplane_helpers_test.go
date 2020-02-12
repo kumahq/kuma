@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -411,4 +411,138 @@ var _ = Describe("Dataplane", func() {
 			}),
 		)
 	})
+
+	Describe("GetProtocol()", func() {
+
+		type testCase struct {
+			dataplane string
+			index     int
+			expected  Protocol
+		}
+
+		DescribeTable("should return protocol of a given inbound interface",
+			func(given testCase) {
+				// setup
+				dataplane := &DataplaneResource{}
+				// when
+				err := util_proto.FromYAML([]byte(given.dataplane), &dataplane.Spec)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// expect
+				Expect(dataplane.GetProtocol(given.index)).To(Equal(given.expected))
+			},
+			Entry("negative index", testCase{
+				index:    -1,
+				expected: ProtocolUnknown,
+			}),
+			Entry("too big index", testCase{
+				index:    2,
+				expected: ProtocolUnknown,
+			}),
+			Entry("no `protocol` tag", testCase{
+				dataplane: `
+                networking:
+                  inbound:
+                  - interface: 192.168.0.1:80:8080
+                    tags:
+                      service: backend
+`,
+				index:    0,
+				expected: ProtocolUnknown,
+			}),
+			Entry("`protocol: unsupported`", testCase{
+				dataplane: `
+                networking:
+                  inbound:
+                  - interface: 192.168.0.1:80:8080
+                    tags:
+                      service: backend
+                      protocol: unsupported
+                  - interface: 192.168.0.1:443:8443
+                    tags:
+                      service: backend-https
+`,
+				index:    0,
+				expected: ProtocolUnknown,
+			}),
+			Entry("`protocol: http`", testCase{
+				dataplane: `
+                networking:
+                  inbound:
+                  - interface: 192.168.0.1:443:8443
+                    tags:
+                      service: backend-https
+                  - interface: 192.168.0.1:80:8080
+                    tags:
+                      service: backend
+                      protocol: http
+`,
+				index:    1,
+				expected: ProtocolHTTP,
+			}),
+			Entry("`protocol: tcp`", testCase{
+				dataplane: `
+                networking:
+                  inbound:
+                  - interface: 192.168.0.1:80:8080
+                    tags:
+                      service: backend
+                      protocol: tcp
+                  - interface: 192.168.0.1:443:8443
+                    tags:
+                      service: backend-https
+`,
+				index:    0,
+				expected: ProtocolTCP,
+			}),
+		)
+	})
+})
+
+var _ = Describe("ParseProtocol()", func() {
+
+	type testCase struct {
+		tag      string
+		expected Protocol
+	}
+
+	DescribeTable("should parse protocol from a tag",
+		func(given testCase) {
+			Expect(ParseProtocol(given.tag)).To(Equal(given.expected))
+		},
+		Entry("http", testCase{
+			tag:      "http",
+			expected: ProtocolHTTP,
+		}),
+		Entry("tcp", testCase{
+			tag:      "tcp",
+			expected: ProtocolTCP,
+		}),
+		Entry("http2", testCase{
+			tag:      "http2",
+			expected: ProtocolUnknown,
+		}),
+		Entry("grpc", testCase{
+			tag:      "grpc",
+			expected: ProtocolUnknown,
+		}),
+		Entry("mongo", testCase{
+			tag:      "mongo",
+			expected: ProtocolUnknown,
+		}),
+		Entry("mysql", testCase{
+			tag:      "mysql",
+			expected: ProtocolUnknown,
+		}),
+		Entry("unknown", testCase{
+			tag:      "unknown",
+			expected: ProtocolUnknown,
+		}),
+		Entry("empty", testCase{
+			tag:      "",
+			expected: ProtocolUnknown,
+		}),
+	)
+
 })

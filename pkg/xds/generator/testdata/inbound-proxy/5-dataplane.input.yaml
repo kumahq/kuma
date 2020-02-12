@@ -1,4 +1,9 @@
 networking:
   inbound:
     - interface: 192.168.0.1:80:8080
+      tags:
+        service: backend1
+        protocol: http
     - interface: 192.168.0.1:443:8443
+      tags:
+        service: backend2

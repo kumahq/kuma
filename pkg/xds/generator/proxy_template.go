@@ -88,7 +88,7 @@ func (s *ProxyTemplateProfileSource) Generate(ctx xds_context.Context, proxy *mo
 type InboundProxyGenerator struct {
 }
 
-func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
 	endpoints, err := proxy.Dataplane.Spec.Networking.GetInboundInterfaces()
 	if err != nil {
 		return nil, err
@@ -107,11 +107,12 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		})
 
 		// generate LDS resource
+		protocol := proxy.Dataplane.GetProtocol(i)
 		inboundListenerName := localListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		inboundListener, err := envoy_listeners.NewListenerBuilder().
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
 			Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
-			Configure(envoy_listeners.TcpProxy(localClusterName, envoy_listeners.ClusterInfo{Name: localClusterName})).
+			Configure(g.protocolSpecificOpts(protocol, envoy_listeners.ClusterInfo{Name: localClusterName})...).
 			Configure(envoy_listeners.NetworkRBAC(ctx.Mesh.Resource.Spec.GetMtls().GetEnabled(), proxy.TrafficPermissions.Get(endpoint.String()))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()
@@ -125,6 +126,22 @@ func (_ InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		})
 	}
 	return resources.List(), nil
+}
+
+func (_ InboundProxyGenerator) protocolSpecificOpts(protocol mesh_core.Protocol, localCluster envoy_listeners.ClusterInfo) []envoy_listeners.ListenerBuilderOpt {
+	switch protocol {
+	case mesh_core.ProtocolHTTP:
+		return []envoy_listeners.ListenerBuilderOpt{
+			envoy_listeners.HttpConnectionManager(localCluster.Name),
+			envoy_listeners.HttpInboundRoute(localCluster),
+		}
+	case mesh_core.ProtocolTCP:
+		fallthrough
+	default:
+		return []envoy_listeners.ListenerBuilderOpt{
+			envoy_listeners.TcpProxy(localCluster.Name, localCluster),
+		}
+	}
 }
 
 type OutboundProxyGenerator struct {
@@ -156,7 +173,11 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		}
 
 		// generate CDS and EDS resources
-		resources.Add(g.generateEds(ctx, proxy, clusters)...)
+		edsResources, err := g.generateEds(ctx, proxy, clusters)
+		if err != nil {
+			return nil, err
+		}
+		resources.Add(edsResources...)
 
 		// generate LDS resource
 		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
@@ -198,13 +219,17 @@ func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy
 	return
 }
 
-func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *model.Proxy, clusters []envoy_listeners.ClusterInfo) (resources []*model.Resource) {
+func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *model.Proxy, clusters []envoy_listeners.ClusterInfo) (resources []*model.Resource, _ error) {
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags[kuma_mesh.ServiceTag]
 		healthCheck := proxy.HealthChecks[serviceName]
+		edsCluster, err := envoy_clusters.CreateEdsCluster(ctx, cluster.Name, proxy.Metadata)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, &model.Resource{
 			Name:     cluster.Name,
-			Resource: envoy_clusters.ClusterWithHealthChecks(envoy_clusters.CreateEdsCluster(ctx, cluster.Name, proxy.Metadata), healthCheck),
+			Resource: envoy_clusters.ClusterWithHealthChecks(edsCluster, healthCheck),
 		})
 		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName]).Filter(kuma_mesh.MatchTags(cluster.Tags))
 		resources = append(resources, &model.Resource{

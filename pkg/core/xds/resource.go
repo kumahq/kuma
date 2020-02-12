@@ -6,8 +6,6 @@ import (
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
-
-	util_error "github.com/Kong/kuma/pkg/util/error"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -23,18 +21,20 @@ type Resource struct {
 // ResourceList represents a list of generic xDS resources.
 type ResourceList []*Resource
 
-func (rs ResourceList) ToDeltaDiscoveryResponse() *envoy.DeltaDiscoveryResponse {
+func (rs ResourceList) ToDeltaDiscoveryResponse() (*envoy.DeltaDiscoveryResponse, error) {
 	resp := &envoy.DeltaDiscoveryResponse{}
 	for _, r := range rs {
 		pbany, err := ptypes.MarshalAny(r.Resource)
-		util_error.MustNot(err)
+		if err != nil {
+			return nil, err
+		}
 		resp.Resources = append(resp.Resources, &envoy.Resource{
 			Name:     r.Name,
 			Version:  r.Version,
 			Resource: pbany,
 		})
 	}
-	return resp
+	return resp, nil
 }
 
 func (rs ResourceList) ToIndex() map[string]ResourcePayload {
