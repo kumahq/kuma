@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	injector_metadata "github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
 	"github.com/Kong/kuma/pkg/core"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_k8s "github.com/Kong/kuma/pkg/plugins/discovery/k8s/util"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
@@ -62,7 +63,7 @@ func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*m
 		}
 		dataplane.Networking.Gateway = gateway
 	} else {
-		ifaces, err := InboundInterfacesFor(pod, services)
+		ifaces, err := InboundInterfacesFor(pod, services, false)
 		if err != nil {
 			return nil, err
 		}
@@ -79,7 +80,7 @@ func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*m
 }
 
 func GatewayFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	interfaces, err := InboundInterfacesFor(pod, services)
+	interfaces, err := InboundInterfacesFor(pod, services, true)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func GatewayFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.
 	}, nil
 }
 
-func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isGateway bool) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 
 	for _, svc := range services {
@@ -111,7 +112,7 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service) ([]
 				DataplanePort: uint32(containerPort),
 				WorkloadPort:  uint32(containerPort),
 			}
-			tags := InboundTagsFor(pod, svc, &svcPort)
+			tags := InboundTagsFor(pod, svc, &svcPort, isGateway)
 
 			ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 				Interface: iface.String(),
@@ -172,17 +173,37 @@ func OutboundInterfacesFor(others []*mesh_k8s.Dataplane, serviceGetter kube_clie
 	return ofaces, nil
 }
 
-func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort) map[string]string {
+func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	if tags == nil {
 		tags = make(map[string]string)
 	}
 	tags[mesh_proto.ServiceTag] = ServiceTagFor(svc, svcPort)
+	// notice that in case of a gateway it might be confusing to see a protocol tag
+	// since gateway proxies multiple services each with its own protocol
+	if !isGateway {
+		tags[mesh_proto.ProtocolTag] = ProtocolTagFor(svc, svcPort)
+	}
 	return tags
 }
 
 func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
 	return fmt.Sprintf("%s.%s.svc:%d", svc.Name, svc.Namespace, svcPort.Port)
+}
+
+// ProtocolTagFor infers service protocol from a `<port>.service.kuma.io/protocol` annotation.
+func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
+	protocolAnnotation := fmt.Sprintf("%d.service.kuma.io/protocol", svcPort.Port)
+	protocolValue := svc.Annotations[protocolAnnotation]
+	if protocolValue == "" {
+		// if `<port>.service.kuma.io/protocol` annotation is missing or has an empty value
+		// we want Dataplane to have a `protocol: tcp` tag in order to get user's attention
+		return mesh_core.ProtocolTCP
+	}
+	// if `<port>.service.kuma.io/protocol` annotation is present but has an invalid value
+	// we still want Dataplane to have a `protocol: <value as is>` tag in order to make it clear
+	// to a user that at least `<port>.service.kuma.io/protocol` has an effect
+	return protocolValue
 }
 
 func ParseServiceFQDN(host string) (name string, namespace string, err error) {

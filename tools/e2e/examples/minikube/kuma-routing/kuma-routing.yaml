@@ -88,6 +88,8 @@ kind: Service
 metadata:
   name: kuma-example-backend
   namespace: kuma-example
+  annotations:
+    7070.service.kuma.io/protocol: http
 spec:
   ports:
   - port: 7070

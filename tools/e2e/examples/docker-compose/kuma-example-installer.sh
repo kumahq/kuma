@@ -92,7 +92,9 @@ networking:
   inbound:
   - interface: {{ IP }}:{{ PUBLIC_PORT }}:{{ LOCAL_PORT }}
     tags:
-      service: kuma-example-app"
+      service: kuma-example-app
+      protocol: http
+"
 
 #
 # Create Dataplane for `kuma-example-client` service
@@ -143,6 +145,7 @@ networking:
   - interface: {{ IP }}:{{ PUBLIC_PORT }}:{{ LOCAL_PORT }}
     tags:
       service: kuma-example-backend
+      protocol: http
       version: v1
       env: prod"
 
@@ -159,5 +162,6 @@ networking:
   - interface: {{ IP }}:{{ PUBLIC_PORT }}:{{ LOCAL_PORT }}
     tags:
       service: kuma-example-backend
+      protocol: http
       version: v2
       env: intg"

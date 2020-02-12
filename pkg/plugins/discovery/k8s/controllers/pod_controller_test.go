@@ -81,6 +81,9 @@ var _ = Describe("PodReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
 					Name:      "example",
+					Annotations: map[string]string{
+						"80.service.kuma.io/protocol": "http",
+					},
 				},
 				Spec: kube_core.ServiceSpec{
 					Ports: []kube_core.ServicePort{
@@ -247,9 +250,11 @@ var _ = Describe("PodReconciler", func() {
             - interface: 192.168.0.1:8080:8080
               tags:
                 service: example.demo.svc:80
+                protocol: http
             - interface: 192.168.0.1:6060:6060
               tags:
                 service: example.demo.svc:6061
+                protocol: tcp
 `))
 	})
 
@@ -311,9 +316,11 @@ var _ = Describe("PodReconciler", func() {
             - interface: 192.168.0.1:8080:8080
               tags:
                 service: example.demo.svc:80
+                protocol: http
             - interface: 192.168.0.1:6060:6060
               tags:
                 service: example.demo.svc:6061
+                protocol: tcp
 `))
 	})
 })
