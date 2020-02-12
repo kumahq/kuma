@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: support `<port>.service.kuma.io/protocol` annotation on k8s as a way for users to indicate protocol of a service
+  [#575](https://github.com/Kong/kuma/pull/575)
 * feature: generate HTTP-specific inbound listeners for services tagged with `protocol: http`
   [#574](https://github.com/Kong/kuma/pull/574)
 * feature: support IPv6 in Dataplane resource

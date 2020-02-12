@@ -29,6 +29,8 @@ kind: Service
 metadata:
   name: demo-app
   namespace: kuma-demo
+  annotations:
+    8080.service.kuma.io/protocol: http
 spec:
   ports:
   - port: 8000
