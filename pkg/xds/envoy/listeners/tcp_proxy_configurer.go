@@ -33,28 +33,9 @@ type TcpProxyConfigurer struct {
 }
 
 func (c *TcpProxyConfigurer) Configure(l *v2.Listener) error {
-	config := &envoy_tcp.TcpProxy{
-		StatPrefix: util_xds.SanitizeMetric(c.statsName),
-	}
-	if len(c.clusters) == 1 {
-		config.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
-			Cluster: c.clusters[0].Name,
-		}
-	} else {
-		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
-		for _, cluster := range c.clusters {
-			weightedClusters = append(weightedClusters, &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
-				Name:   cluster.Name,
-				Weight: cluster.Weight,
-			})
-		}
-		config.ClusterSpecifier = &envoy_tcp.TcpProxy_WeightedClusters{
-			WeightedClusters: &envoy_tcp.TcpProxy_WeightedCluster{
-				Clusters: weightedClusters,
-			},
-		}
-	}
-	pbst, err := ptypes.MarshalAny(config)
+	tcpProxy := c.tcpProxy()
+
+	pbst, err := ptypes.MarshalAny(tcpProxy)
 	if err != nil {
 		return err
 	}
@@ -69,4 +50,29 @@ func (c *TcpProxyConfigurer) Configure(l *v2.Listener) error {
 	}
 
 	return nil
+}
+
+func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
+	proxy := envoy_tcp.TcpProxy{
+		StatPrefix: util_xds.SanitizeMetric(c.statsName),
+	}
+	if len(c.clusters) == 1 {
+		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
+			Cluster: c.clusters[0].Name,
+		}
+	} else {
+		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
+		for _, cluster := range c.clusters {
+			weightedClusters = append(weightedClusters, &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
+				Name:   cluster.Name,
+				Weight: cluster.Weight,
+			})
+		}
+		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_WeightedClusters{
+			WeightedClusters: &envoy_tcp.TcpProxy_WeightedCluster{
+				Clusters: weightedClusters,
+			},
+		}
+	}
+	return &proxy
 }

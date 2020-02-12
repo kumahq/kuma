@@ -107,12 +107,14 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		})
 
 		// generate LDS resource
-		protocol := proxy.Dataplane.GetProtocol(i)
+		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
+		service := iface.GetService()
+		protocol := mesh_core.ParseProtocol(iface.GetProtocol())
 		inboundListenerName := localListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		inboundListener, err := envoy_listeners.NewListenerBuilder().
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
 			Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
-			Configure(g.protocolSpecificOpts(protocol, envoy_listeners.ClusterInfo{Name: localClusterName})...).
+			Configure(g.protocolSpecificOpts(service, protocol, envoy_listeners.ClusterInfo{Name: localClusterName})...).
 			Configure(envoy_listeners.NetworkRBAC(ctx.Mesh.Resource.Spec.GetMtls().GetEnabled(), proxy.TrafficPermissions.Get(endpoint.String()))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()
@@ -128,12 +130,12 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	return resources.List(), nil
 }
 
-func (_ InboundProxyGenerator) protocolSpecificOpts(protocol mesh_core.Protocol, localCluster envoy_listeners.ClusterInfo) []envoy_listeners.ListenerBuilderOpt {
+func (_ InboundProxyGenerator) protocolSpecificOpts(service string, protocol mesh_core.Protocol, localCluster envoy_listeners.ClusterInfo) []envoy_listeners.ListenerBuilderOpt {
 	switch protocol {
 	case mesh_core.ProtocolHTTP:
 		return []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.HttpConnectionManager(localCluster.Name),
-			envoy_listeners.HttpInboundRoute(localCluster),
+			envoy_listeners.HttpInboundRoute(service, localCluster),
 		}
 	case mesh_core.ProtocolTCP:
 		fallthrough

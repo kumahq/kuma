@@ -17,6 +17,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
+		service         string
 		cluster         ClusterInfo
 		expected        string
 	}
@@ -27,7 +28,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
 				Configure(HttpConnectionManager(given.statsName)).
-				Configure(HttpInboundRoute(given.cluster)).
+				Configure(HttpInboundRoute(given.service, given.cluster)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -43,6 +44,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
+			service:         "backend",
 			cluster:         ClusterInfo{Name: "localhost:8080", Weight: 200},
 			expected: `
             name: inbound:192.168.0.1:8080
@@ -58,12 +60,12 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                   httpFilters:
                   - name: envoy.router
                   routeConfig:
-                    name: inbound
+                    name: inbound:backend
                     validateClusters: true
                     virtualHosts:
                     - domains:
                       - '*'
-                      name: local_service
+                      name: backend
                       routes:
                       - match:
                           prefix: /
