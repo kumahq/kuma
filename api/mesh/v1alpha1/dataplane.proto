@@ -14,11 +14,15 @@ message Dataplane {
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {
 
+    // Public address on which the dataplane is accessible in the network.
+    string address = 1;
+
     // Inbound describes a service implemented by the dataplane.
     message Inbound {
 
-      // Interface describes networking rules for incoming traffic.
-      // The value is a string formatted as
+      // DEPRECATED: use networking.address, networking.inbound[].port and
+      // networking.inbound[].servicePort Interface describes networking rules
+      // for incoming traffic. The value is a string formatted as
       // <DATAPLANE_IP>:<DATAPLANE_PORT>:<WORKLOAD_PORT>, which means
       // that dataplane must listen on <DATAPLANE_IP>:<DATAPLANE_PORT>
       // and must dispatch to 127.0.0.1:<WORKLOAD_PORT>.
@@ -26,17 +30,30 @@ message Dataplane {
       // E.g.,
       // "192.168.0.100:9090:8080" in case of IPv4 or
       // "[2001:db8::1]:7070:6060" in case of IPv6.
-      string interface = 1 [ (validate.rules).string.min_len = 2 ];
+      string interface = 1;
+
+      // Port of the inbound interface that will forward requests to the
+      // service.
+      uint32 port = 2 [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
+
+      // Port of the service that requests will be forwarded to.
+      uint32 servicePort = 3
+          [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
+
+      // Address on which inbound listener will be exposed. Defaults to
+      // networking.interface.
+      string address = 4;
 
       // Tags associated with an application this dataplane is deployed next to,
       // e.g. service=web, version=1.0.
       // `service` tag is mandatory.
-      map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
+      map<string, string> tags = 5 [ (validate.rules).map.min_pairs = 1 ];
     }
 
     // Outbound describes a service consumed by the dataplane.
     message Outbound {
 
+      // DEPRECATED: use networking.interface and networking.outbound[].port
       // Interface describes networking rules for outgoing traffic.
       // The value is a string formatted as <DATAPLANE_IP>:<DATAPLANE_PORT>,
       // which means that dataplane must listen on
@@ -47,14 +64,13 @@ message Dataplane {
       // "127.0.0.1:9090" in case of IPv4 or
       // "[::1]:8080" in case of IPv6 or
       // ":7070".
-      string interface = 1 [ (validate.rules).string.min_len = 2 ];
+      string interface = 1;
+
+      // Port on which the service will be available to this dataplane.
+      uint32 port = 2 [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
 
       // Service name.
-      string service = 2 [ (validate.rules).string.hostname = true ];
-
-      // Service port.
-      uint32 service_port = 3
-          [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
+      string service = 3 [ (validate.rules).string.hostname = true ];
     }
 
     // Gateway describes a service that ingress should not be proxied.
@@ -73,16 +89,16 @@ message Dataplane {
     }
 
     // Inbound describes a list of inbound interfaces of the dataplane.
-    repeated Inbound inbound = 1;
+    repeated Inbound inbound = 2;
 
     // Outbound describes a list of outbound interfaces of the dataplane.
-    repeated Outbound outbound = 2;
+    repeated Outbound outbound = 3;
 
     // Gateway describes configuration of gateway of the dataplane.
-    Gateway gateway = 3;
+    Gateway gateway = 4;
 
     // TransparentProxying describes configuration for transparent proxying.
-    TransparentProxying transparent_proxying = 4;
+    TransparentProxying transparent_proxying = 5;
   }
 
   // Networking describes inbound and outbound interfaces of the dataplane.

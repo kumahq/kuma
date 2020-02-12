@@ -63,7 +63,6 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Spec.Networking.Outbound).To(HaveLen(1))
 		Expect(resource.Spec.Networking.Outbound[0].Interface).To(Equal(":30000"))
 		Expect(resource.Spec.Networking.Outbound[0].Service).To(Equal("postgres"))
-		Expect(resource.Spec.Networking.Outbound[0].ServicePort).To(Equal(uint32(5432)))
 	}
 
 	It("should read configuration from stdin (no -f arg)", func() {

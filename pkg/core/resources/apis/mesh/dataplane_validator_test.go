@@ -22,9 +22,10 @@ var _ = Describe("Dataplane", func() {
 			},
 			Spec: mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Interface: "127.0.0.1:8080:9090",
+							Port: 8080,
 							Tags: map[string]string{
 								"service": "backend",
 								"version": "1",
@@ -33,8 +34,8 @@ var _ = Describe("Dataplane", func() {
 					},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
-							Interface: ":3333",
-							Service:   "redis",
+							Port:    3333,
+							Service: "redis",
 						},
 					},
 				},
@@ -53,15 +54,42 @@ var _ = Describe("Dataplane", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		},
+		Entry("legacy - valid dataplane with inbounds", func() core_mesh.DataplaneResource {
+			return core_mesh.DataplaneResource{
+				Meta: &model.ResourceMeta{
+					Name: "dp-1",
+					Mesh: "mesh-1",
+				},
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Interface: "127.0.0.1:8080:9090",
+								Tags: map[string]string{
+									"service": "backend",
+									"version": "1",
+								},
+							},
+						},
+						Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+							{
+								Interface: ":3333",
+								Service:   "redis",
+							},
+						},
+					},
+				},
+			}
+		}),
 		Entry("dataplane with inbounds", func() core_mesh.DataplaneResource {
 			return validDataplane
 		}),
-		Entry("dataplane with inbounds and no `protocol` tag", func() core_mesh.DataplaneResource {
-			delete(validDataplane.Spec.Networking.Inbound[0].Tags, "protocol")
+		Entry("dataplane with inbounds that has service ports", func() core_mesh.DataplaneResource {
+			validDataplane.Spec.Networking.Inbound[0].ServicePort = 4567
 			return validDataplane
 		}),
-		Entry("dataplane with inbounds and a valid `protocol` tag", func() core_mesh.DataplaneResource {
-			validDataplane.Spec.Networking.Inbound[0].Tags["protocol"] = "http"
+		Entry("dataplane with inbounds that has an address", func() core_mesh.DataplaneResource {
+			validDataplane.Spec.Networking.Inbound[0].Address = "192.168.0.1"
 			return validDataplane
 		}),
 		Entry("dataplane with gateway", func() core_mesh.DataplaneResource {
@@ -72,6 +100,7 @@ var _ = Describe("Dataplane", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						//Address: "192.168.0.1", to have backwards compatibility we do not validate it yet
 						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 							Tags: map[string]string{
 								"service": "gateway",
@@ -79,8 +108,8 @@ var _ = Describe("Dataplane", func() {
 						},
 						Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 							{
-								Interface: ":3333",
-								Service:   "redis",
+								Port:    3333,
+								Service: "redis",
 							},
 						},
 					},
@@ -103,34 +132,6 @@ var _ = Describe("Dataplane", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(given.validationResult))
 		},
-		Entry("empty inbound interface", testCase{
-			dataplane: func() core_mesh.DataplaneResource {
-				validDataplane.Spec.Networking.Inbound[0].Interface = ""
-				return validDataplane
-			},
-			validationResult: &validators.ValidationError{
-				Violations: []validators.Violation{
-					{
-						Field:   "networking.inbound[0].interface",
-						Message: `invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT , e.g. 192.168.0.100:9090:8080 or [2001:db8::1]:7070:6060`,
-					},
-				},
-			},
-		}),
-		Entry("invalid inbound interface", testCase{
-			dataplane: func() core_mesh.DataplaneResource {
-				validDataplane.Spec.Networking.Inbound[0].Interface = "asdf"
-				return validDataplane
-			},
-			validationResult: &validators.ValidationError{
-				Violations: []validators.Violation{
-					{
-						Field:   "networking.inbound[0].interface",
-						Message: `invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT , e.g. 192.168.0.100:9090:8080 or [2001:db8::1]:7070:6060`,
-					},
-				},
-			},
-		}),
 		Entry("not enough inbound interfaces and no gateway", testCase{
 			dataplane: func() core_mesh.DataplaneResource {
 				validDataplane.Spec.Networking.Inbound = []*mesh_proto.Dataplane_Networking_Inbound{}
@@ -163,6 +164,34 @@ var _ = Describe("Dataplane", func() {
 				},
 			},
 		}),
+		Entry("inbound: empty port", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound[0].Port = 0
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.inbound[0].port`,
+						Message: `port has to be greater than 0`,
+					},
+				},
+			},
+		}),
+		Entry("inbound: invalid address", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound[0].Address = "invalid"
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.inbound[0].address`,
+						Message: `address has to be valid IP address`,
+					},
+				},
+			},
+		}),
 		Entry("inbound: empty service tag", testCase{
 			dataplane: func() core_mesh.DataplaneResource {
 				validDataplane.Spec.Networking.Inbound[0].Tags = map[string]string{}
@@ -187,38 +216,6 @@ var _ = Describe("Dataplane", func() {
 					{
 						Field:   `networking.inbound[0].tags["version"]`,
 						Message: `tag value cannot be empty`,
-					},
-				},
-			},
-		}),
-		Entry("inbound: `protocol` tag with an empty value", testCase{
-			dataplane: func() core_mesh.DataplaneResource {
-				validDataplane.Spec.Networking.Inbound[0].Tags["protocol"] = ""
-				return validDataplane
-			},
-			validationResult: &validators.ValidationError{
-				Violations: []validators.Violation{
-					{
-						Field:   `networking.inbound[0].tags["protocol"]`,
-						Message: `tag "protocol" has an invalid value "". Allowed values: http, tcp`,
-					},
-					{
-						Field:   `networking.inbound[0].tags["protocol"]`,
-						Message: `tag value cannot be empty`,
-					},
-				},
-			},
-		}),
-		Entry("inbound: `protocol` tag with unsupported value", testCase{
-			dataplane: func() core_mesh.DataplaneResource {
-				validDataplane.Spec.Networking.Inbound[0].Tags["protocol"] = "not-yet-supported-protocol"
-				return validDataplane
-			},
-			validationResult: &validators.ValidationError{
-				Violations: []validators.Violation{
-					{
-						Field:   `networking.inbound[0].tags["protocol"]`,
-						Message: `tag "protocol" has an invalid value "not-yet-supported-protocol". Allowed values: http, tcp`,
 					},
 				},
 			},
@@ -274,6 +271,34 @@ var _ = Describe("Dataplane", func() {
 				},
 			},
 		}),
+		Entry("outbound: empty service tag", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Outbound[0].Port = 0
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.outbound[0].port`,
+						Message: `port has to be greater than 0`,
+					},
+				},
+			},
+		}),
+		Entry("invalid networking.address", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Address = "asdf"
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.address`,
+						Message: `address has to be valid IP address`,
+					},
+				},
+			},
+		}),
 		Entry("multiple errors", testCase{
 			dataplane: func() core_mesh.DataplaneResource {
 				validDataplane.Spec = mesh_proto.Dataplane{
@@ -317,6 +342,86 @@ var _ = Describe("Dataplane", func() {
 					{
 						Field:   "networking.outbound[0].service",
 						Message: "cannot be empty",
+					},
+				},
+			},
+		}),
+		Entry("legacy - invalid inbound interface", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound[0].Interface = "asdf"
+				validDataplane.Spec.Networking.Address = ""
+				validDataplane.Spec.Networking.Inbound[0].Port = 0
+				validDataplane.Spec.Networking.Inbound[0].ServicePort = 0
+				validDataplane.Spec.Networking.Inbound[0].Address = ""
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   "networking.inbound[0].interface",
+						Message: `invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT , e.g. 192.168.0.100:9090:8080 or [2001:db8::1]:7070:6060`,
+					},
+				},
+			},
+		}),
+		Entry("legacy - mixing networking.address with legacy inbounds", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Address = "192.168.0.1"
+				validDataplane.Spec.Networking.Inbound[0].Interface = "127.0.0.1:1234:5678"
+				validDataplane.Spec.Networking.Inbound[0].Port = 0
+				validDataplane.Spec.Networking.Inbound[0].ServicePort = 0
+				validDataplane.Spec.Networking.Inbound[0].Address = ""
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.inbound[0].interface`,
+						Message: `interface cannot be defined with networking.address. Replace it with port, servicePort and networking.address`,
+					},
+				},
+			},
+		}),
+		Entry("legacy - mixing legacy inbounds config with new config", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound[0].Interface = "127.0.0.1:1234:5678"
+				validDataplane.Spec.Networking.Inbound[0].Port = 1234
+				validDataplane.Spec.Networking.Inbound[0].ServicePort = 5678
+				validDataplane.Spec.Networking.Inbound[0].Address = "127.0.0.1"
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.inbound[0].interface`,
+						Message: `interface cannot be defined with port. Replace it with port, servicePort and networking.address`,
+					},
+					{
+						Field:   `networking.inbound[0].interface`,
+						Message: `interface cannot be defined with servicePort. Replace it with port, servicePort and networking.address`,
+					},
+					{
+						Field:   `networking.inbound[0].interface`,
+						Message: `interface cannot be defined with address. Replace it with port, servicePort and networking.address`,
+					},
+					{
+						Field:   "networking.inbound[0].interface",
+						Message: "interface cannot be defined with networking.address. Replace it with port, servicePort and networking.address",
+					},
+				},
+			},
+		}),
+		Entry("legacy - mixing legacy outbound config with new config", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Outbound[0].Interface = ":5678"
+				validDataplane.Spec.Networking.Outbound[0].Port = 5678
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.outbound[0].interface`,
+						Message: `interface cannot be defined with port. Replace it with port`,
 					},
 				},
 			},
