@@ -66,11 +66,15 @@ message Dataplane {
       // ":7070".
       string interface = 1;
 
+      // Address on which the service will be available to this dataplane.
+      // Defaults to 127.0.0.1
+      string address = 2;
+
       // Port on which the service will be available to this dataplane.
-      uint32 port = 2 [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
+      uint32 port = 3 [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
 
       // Service name.
-      string service = 3 [ (validate.rules).string.hostname = true ];
+      string service = 4 [ (validate.rules).string.hostname = true ];
     }
 
     // Gateway describes a service that ingress should not be proxied.

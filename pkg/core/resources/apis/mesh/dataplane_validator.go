@@ -99,14 +99,23 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 	var result validators.ValidationError
 	if outbound.Interface != "" { // for backwards compatibility
 		if outbound.Port != 0 {
-			result.AddViolation("interface", "interface cannot be defined with port. Replace it with port")
+			result.AddViolation("interface", "interface cannot be defined with port. Replace it with port and address")
+		}
+		if outbound.Address != "" {
+			result.AddViolation("interface", "interface cannot be defined with address. Replace it with port and address")
 		}
 		if _, err := mesh_proto.ParseOutboundInterface(outbound.Interface); err != nil {
 			result.AddViolation("interface", "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT where DATAPLANE_IP is optional. E.g. 127.0.0.1:9090, :9090, [::1]:8080")
 		}
-	} else if outbound.Port == 0 {
-		result.AddViolation("port", "port has to be greater than 0")
+	} else {
+		if outbound.Port == 0 {
+			result.AddViolation("port", "port has to be greater than 0")
+		}
+		if outbound.Address != "" && net.ParseIP(outbound.Address) == nil {
+			result.AddViolation("address", "address has to be valid IP address")
+		}
 	}
+
 	if outbound.Service == "" {
 		result.AddViolation("service", "cannot be empty")
 	}

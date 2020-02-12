@@ -271,7 +271,7 @@ var _ = Describe("Dataplane", func() {
 				},
 			},
 		}),
-		Entry("outbound: empty service tag", testCase{
+		Entry("outbound: empty port", testCase{
 			dataplane: func() core_mesh.DataplaneResource {
 				validDataplane.Spec.Networking.Outbound[0].Port = 0
 				return validDataplane
@@ -281,6 +281,20 @@ var _ = Describe("Dataplane", func() {
 					{
 						Field:   `networking.outbound[0].port`,
 						Message: `port has to be greater than 0`,
+					},
+				},
+			},
+		}),
+		Entry("outbound: invalid address", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Outbound[0].Address = "asdf"
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.outbound[0].address`,
+						Message: `address has to be valid IP address`,
 					},
 				},
 			},
@@ -415,13 +429,18 @@ var _ = Describe("Dataplane", func() {
 			dataplane: func() core_mesh.DataplaneResource {
 				validDataplane.Spec.Networking.Outbound[0].Interface = ":5678"
 				validDataplane.Spec.Networking.Outbound[0].Port = 5678
+				validDataplane.Spec.Networking.Outbound[0].Address = "127.0.0.1"
 				return validDataplane
 			},
 			validationResult: &validators.ValidationError{
 				Violations: []validators.Violation{
 					{
 						Field:   `networking.outbound[0].interface`,
-						Message: `interface cannot be defined with port. Replace it with port`,
+						Message: `interface cannot be defined with port. Replace it with port and address`,
+					},
+					{
+						Field:   `networking.outbound[0].interface`,
+						Message: `interface cannot be defined with address. Replace it with port and address`,
 					},
 				},
 			},

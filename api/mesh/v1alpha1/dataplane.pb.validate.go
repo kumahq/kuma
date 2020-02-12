@@ -246,9 +246,19 @@ func (m *Dataplane_Networking_Inbound) Validate() error {
 
 	// no validation rules for Interface
 
-	// no validation rules for Port
+	if val := m.GetPort(); val < 1 || val > 65535 {
+		return Dataplane_Networking_InboundValidationError{
+			field:  "Port",
+			reason: "value must be inside range [1, 65535]",
+		}
+	}
 
-	// no validation rules for ServicePort
+	if val := m.GetServicePort(); val < 1 || val > 65535 {
+		return Dataplane_Networking_InboundValidationError{
+			field:  "ServicePort",
+			reason: "value must be inside range [1, 65535]",
+		}
+	}
 
 	// no validation rules for Address
 
@@ -329,7 +339,14 @@ func (m *Dataplane_Networking_Outbound) Validate() error {
 
 	// no validation rules for Interface
 
-	// no validation rules for Port
+	// no validation rules for Address
+
+	if val := m.GetPort(); val < 1 || val > 65535 {
+		return Dataplane_Networking_OutboundValidationError{
+			field:  "Port",
+			reason: "value must be inside range [1, 65535]",
+		}
+	}
 
 	if err := m._validateHostname(m.GetService()); err != nil {
 		return Dataplane_Networking_OutboundValidationError{
