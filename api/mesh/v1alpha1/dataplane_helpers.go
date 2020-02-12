@@ -128,6 +128,33 @@ func ParseOutboundInterface(text string) (OutboundInterface, error) {
 	}, nil
 }
 
+func (n *Dataplane_Networking) GetOutboundInterfaces() ([]OutboundInterface, error) {
+	if n == nil {
+		return nil, nil
+	}
+	ofaces := make([]OutboundInterface, len(n.Outbound))
+	for i, outbound := range n.Outbound {
+		if outbound.Interface != "" { // legacy format
+			oface, err := ParseOutboundInterface(outbound.Interface)
+			if err != nil {
+				return nil, err
+			}
+			ofaces[i] = oface
+		} else {
+			oface := OutboundInterface{
+				DataplanePort: outbound.Port,
+			}
+			if outbound.Address != "" {
+				oface.DataplaneIP = outbound.Address
+			} else {
+				oface.DataplaneIP = "127.0.0.1"
+			}
+			ofaces[i] = oface
+		}
+	}
+	return ofaces, nil
+}
+
 func ParsePort(text string) (uint32, error) {
 	port, err := strconv.ParseUint(text, 10, 32)
 	if err != nil {
@@ -147,15 +174,15 @@ func ParseIP(text string) (string, error) {
 }
 
 func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInterface, error) {
-	for _, inbound := range n.Inbound {
+	ifaces, err := n.GetInboundInterfaces()
+	if err != nil {
+		return nil, err
+	}
+	for i, inbound := range n.Inbound {
 		if inbound.Tags[ServiceTag] != service {
 			continue
 		}
-		iface, err := ParseInboundInterface(inbound.Interface)
-		if err != nil {
-			return nil, err
-		}
-		return &iface, nil
+		return &ifaces[i], nil
 	}
 	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
 }
@@ -166,11 +193,28 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 	}
 	ifaces := make([]InboundInterface, len(n.Inbound))
 	for i, inbound := range n.Inbound {
-		iface, err := ParseInboundInterface(inbound.Interface)
-		if err != nil {
-			return nil, err
+		if inbound.Interface != "" {
+			iface, err := ParseInboundInterface(inbound.Interface)
+			if err != nil {
+				return nil, err
+			}
+			ifaces[i] = iface
+		} else {
+			iface := InboundInterface{
+				DataplanePort: inbound.Port,
+			}
+			if inbound.Address != "" {
+				iface.DataplaneIP = inbound.Address
+			} else {
+				iface.DataplaneIP = n.Address
+			}
+			if inbound.ServicePort != 0 {
+				iface.WorkloadPort = inbound.ServicePort
+			} else {
+				iface.WorkloadPort = inbound.Port
+			}
+			ifaces[i] = iface
 		}
-		ifaces[i] = iface
 	}
 	return ifaces, nil
 }

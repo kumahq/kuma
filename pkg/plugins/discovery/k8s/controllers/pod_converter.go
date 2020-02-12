@@ -56,6 +56,7 @@ func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*m
 		}
 	}
 
+	dataplane.Networking.Address = pod.Status.PodIP
 	if injector_metadata.HasGatewayEnabled(pod) {
 		gateway, err := GatewayFor(pod, services)
 		if err != nil {
@@ -107,16 +108,11 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 				continue
 			}
 
-			iface := mesh_proto.InboundInterface{
-				DataplaneIP:   pod.Status.PodIP,
-				DataplanePort: uint32(containerPort),
-				WorkloadPort:  uint32(containerPort),
-			}
 			tags := InboundTagsFor(pod, svc, &svcPort, isGateway)
 
 			ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
-				Interface: iface.String(),
-				Tags:      tags,
+				Port: uint32(containerPort),
+				Tags: tags,
 			})
 		}
 	}
@@ -163,10 +159,8 @@ func OutboundInterfacesFor(others []*mesh_k8s.Dataplane, serviceGetter kube_clie
 		dataplanePort := port
 
 		ofaces = append(ofaces, &mesh_proto.Dataplane_Networking_Outbound{
-			Interface: mesh_proto.OutboundInterface{
-				DataplaneIP:   dataplaneIP,
-				DataplanePort: dataplanePort,
-			}.String(),
+			Address: dataplaneIP,
+			Port:    dataplanePort,
 			Service: serviceTag,
 		})
 	}

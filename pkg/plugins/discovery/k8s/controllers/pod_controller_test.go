@@ -246,12 +246,13 @@ var _ = Describe("PodReconciler", func() {
             uid: ""
         spec:
           networking:
+            address: 192.168.0.1
             inbound:
-            - interface: 192.168.0.1:8080:8080
+            - port: 8080
               tags:
-                service: example.demo.svc:80
                 protocol: http
-            - interface: 192.168.0.1:6060:6060
+                service: example.demo.svc:80
+            - port: 6060
               tags:
                 service: example.demo.svc:6061
                 protocol: tcp
@@ -312,12 +313,13 @@ var _ = Describe("PodReconciler", func() {
             uid: ""
         spec:
           networking:
+            address: 192.168.0.1
             inbound:
-            - interface: 192.168.0.1:8080:8080
+            - port: 8080
               tags:
-                service: example.demo.svc:80
                 protocol: http
-            - interface: 192.168.0.1:6060:6060
+                service: example.demo.svc:80
+            - port: 6060
               tags:
                 service: example.demo.svc:6061
                 protocol: tcp

@@ -29,7 +29,12 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 	}
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
-		for _, inbound := range dataplane.Spec.Networking.GetInbound() {
+		ifaces, err := dataplane.Spec.Networking.GetInboundInterfaces()
+		if err != nil {
+			// skip dataplanes with invalid configuration
+			continue
+		}
+		for i, inbound := range dataplane.Spec.Networking.GetInbound() {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			selectors, ok := destinations[service]
 			if !ok {
@@ -45,16 +50,11 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 			if !matches {
 				continue
 			}
-			iface, err := mesh_proto.ParseInboundInterface(inbound.Interface)
-			if err != nil {
-				// skip dataplanes with invalid configuration
-				continue
-			}
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
-				Target: iface.DataplaneIP,
-				Port:   iface.DataplanePort,
+				Target: ifaces[i].DataplaneIP,
+				Port:   ifaces[i].DataplanePort,
 				Tags:   inbound.Tags,
 			})
 		}

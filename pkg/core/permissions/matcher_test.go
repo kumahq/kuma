@@ -145,10 +145,15 @@ var _ = Describe("Matcher", func() {
 		}
 
 		// when
-		matchedPerms := MatchDataplaneTrafficPermissions(&dataplane, &permissions)
+		matchedPerms, err := MatchDataplaneTrafficPermissions(&dataplane, &permissions)
 
 		// then
-		backendMatches := matchedPerms.Get("192.168.0.1:8080:80")
+		Expect(err).ToNot(HaveOccurred())
+		backendMatches := matchedPerms.Get(mesh_proto.InboundInterface{
+			DataplaneIP:   "192.168.0.1",
+			DataplanePort: 8080,
+			WorkloadPort:  80,
+		})
 		expectedBackendMatches := core_mesh.TrafficPermissionResourceList{
 			Items: []*core_mesh.TrafficPermissionResource{
 				{
@@ -204,7 +209,11 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		webMatches := matchedPerms.Get("192.168.0.1:8090:90")
+		webMatches := matchedPerms.Get(mesh_proto.InboundInterface{
+			DataplaneIP:   "192.168.0.1",
+			DataplanePort: 8090,
+			WorkloadPort:  90,
+		})
 		Expect(*webMatches).To(Equal(expectedWebMatches))
 	})
 })

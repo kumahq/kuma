@@ -210,13 +210,13 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-									Interface: "192.168.0.3:3000:3000",
+								Address: "192.168.0.3",
+								Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 									Tags: map[string]string{
 										"service": "web",
 										"env":     "test",
 									},
-								}},
+								},
 							},
 							Metrics: &mesh_proto.Metrics{
 								Prometheus: &mesh_proto.Metrics_Prometheus{

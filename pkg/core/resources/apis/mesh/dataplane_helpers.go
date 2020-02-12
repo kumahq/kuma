@@ -56,11 +56,11 @@ func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bo
 	if d == nil {
 		return false
 	}
-	for _, inbound := range d.Spec.Networking.GetInbound() {
-		iface, err := mesh_proto.ParseInboundInterface(inbound.Interface)
-		if err != nil {
-			continue
-		}
+	ifaces, err := d.Spec.Networking.GetInboundInterfaces()
+	if err != nil {
+		return false
+	}
+	for _, iface := range ifaces {
 		// compare against port and IP address of the dataplane
 		if port == iface.DataplanePort && overlap(address, net.ParseIP(iface.DataplaneIP)) {
 			return true
@@ -77,11 +77,11 @@ func (d *DataplaneResource) UsesOutboundInterface(address net.IP, port uint32) b
 	if d == nil {
 		return false
 	}
-	for _, outbound := range d.Spec.Networking.GetOutbound() {
-		oface, err := mesh_proto.ParseOutboundInterface(outbound.Interface)
-		if err != nil {
-			continue
-		}
+	ofaces, err := d.Spec.Networking.GetOutboundInterfaces()
+	if err != nil {
+		return false
+	}
+	for _, oface := range ofaces {
 		// compare against port and IP address of the dataplane
 		if port == oface.DataplanePort && overlap(address, net.ParseIP(oface.DataplaneIP)) {
 			return true
@@ -113,6 +113,10 @@ func (d *DataplaneResource) GetIP() string {
 	if d == nil {
 		return ""
 	}
+	if d.Spec.Networking.Address != "" {
+		return d.Spec.Networking.Address
+	}
+	// fallback to legacy format
 	ifaces, err := d.Spec.Networking.GetInboundInterfaces()
 	if err != nil {
 		return ""

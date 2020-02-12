@@ -373,7 +373,18 @@ var _ = Describe("Dataplane", func() {
 `,
 				expected: "",
 			}),
-			Entry("dataplane with 1 inbound interface", testCase{
+			Entry("dataplane with address in networking", testCase{
+				dataplane: `
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                  - port: 8080
+                    tags:
+                      service: backend
+`,
+				expected: "192.168.0.1",
+			}),
+			Entry("legacy - dataplane with 1 inbound interface", testCase{
 				dataplane: `
                 networking:
                   inbound:
@@ -383,7 +394,7 @@ var _ = Describe("Dataplane", func() {
 `,
 				expected: "192.168.0.1",
 			}),
-			Entry("dataplane with 2 inbound interfaces", testCase{
+			Entry("legacy - dataplane with 2 inbound interfaces", testCase{
 				dataplane: `
                 networking:
                   inbound:
