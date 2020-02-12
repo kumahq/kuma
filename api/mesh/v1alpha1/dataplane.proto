@@ -34,11 +34,10 @@ message Dataplane {
 
       // Port of the inbound interface that will forward requests to the
       // service.
-      uint32 port = 2 [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
+      uint32 port = 2;
 
       // Port of the service that requests will be forwarded to.
-      uint32 servicePort = 3
-          [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
+      uint32 servicePort = 3;
 
       // Address on which inbound listener will be exposed. Defaults to
       // networking.interface.
@@ -71,7 +70,7 @@ message Dataplane {
       string address = 2;
 
       // Port on which the service will be available to this dataplane.
-      uint32 port = 3 [ (validate.rules).uint32 = {gte : 1, lte : 65535} ];
+      uint32 port = 3;
 
       // Service name.
       string service = 4 [ (validate.rules).string.hostname = true ];
