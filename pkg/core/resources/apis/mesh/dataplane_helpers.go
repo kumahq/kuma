@@ -29,6 +29,23 @@ func ParseProtocol(tag string) Protocol {
 	}
 }
 
+// ProtocolList represents a list of Protocols.
+type ProtocolList []Protocol
+
+func (l ProtocolList) Strings() []string {
+	values := make([]string, len(l))
+	for i := range l {
+		values[i] = string(l[i])
+	}
+	return values
+}
+
+// SupportedProtocols is a list of supported protocols that will be communicated to a user.
+var SupportedProtocols = ProtocolList{
+	ProtocolHTTP,
+	ProtocolTCP,
+}
+
 var ipv4loopback = net.IPv4(127, 0, 0, 1)
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {

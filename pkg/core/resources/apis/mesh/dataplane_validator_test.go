@@ -56,6 +56,14 @@ var _ = Describe("Dataplane", func() {
 		Entry("dataplane with inbounds", func() core_mesh.DataplaneResource {
 			return validDataplane
 		}),
+		Entry("dataplane with inbounds and no `protocol` tag", func() core_mesh.DataplaneResource {
+			delete(validDataplane.Spec.Networking.Inbound[0].Tags, "protocol")
+			return validDataplane
+		}),
+		Entry("dataplane with inbounds and a valid `protocol` tag", func() core_mesh.DataplaneResource {
+			validDataplane.Spec.Networking.Inbound[0].Tags["protocol"] = "http"
+			return validDataplane
+		}),
 		Entry("dataplane with gateway", func() core_mesh.DataplaneResource {
 			return core_mesh.DataplaneResource{
 				Meta: &model.ResourceMeta{
@@ -179,6 +187,38 @@ var _ = Describe("Dataplane", func() {
 					{
 						Field:   `networking.inbound[0].tags["version"]`,
 						Message: `tag value cannot be empty`,
+					},
+				},
+			},
+		}),
+		Entry("inbound: `protocol` tag with an empty value", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound[0].Tags["protocol"] = ""
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.inbound[0].tags["protocol"]`,
+						Message: `tag "protocol" has an invalid value "". Allowed values: http, tcp`,
+					},
+					{
+						Field:   `networking.inbound[0].tags["protocol"]`,
+						Message: `tag value cannot be empty`,
+					},
+				},
+			},
+		}),
+		Entry("inbound: `protocol` tag with unsupported value", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound[0].Tags["protocol"] = "not-yet-supported-protocol"
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.inbound[0].tags["protocol"]`,
+						Message: `tag "protocol" has an invalid value "not-yet-supported-protocol". Allowed values: http, tcp`,
 					},
 				},
 			},

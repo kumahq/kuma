@@ -3,6 +3,7 @@ package mesh
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
@@ -121,4 +122,12 @@ func ValidateThreshold(path validators.PathBuilder, threshold uint32) (err valid
 		err.AddViolationAt(path, "must have a positive value")
 	}
 	return
+}
+
+func AllowedValuesHint(values ...string) string {
+	options := strings.Join(values, ", ")
+	if len(values) == 0 {
+		options = "(none)"
+	}
+	return fmt.Sprintf("Allowed values: %s", options)
 }

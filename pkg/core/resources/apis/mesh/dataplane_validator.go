@@ -1,6 +1,8 @@
 package mesh
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
 )
@@ -42,6 +44,11 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound) validator
 	}
 	if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
 		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
+	}
+	if value, exist := inbound.Tags[mesh_proto.ProtocolTag]; exist {
+		if ParseProtocol(value) == ProtocolUnknown {
+			result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(SupportedProtocols.Strings()...)))
+		}
 	}
 	for name, value := range inbound.Tags {
 		if value == "" {
