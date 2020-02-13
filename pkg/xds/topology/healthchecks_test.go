@@ -55,13 +55,22 @@ var _ = Describe("HealthCheck", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{Tags: map[string]string{"service": "backend", "region": "eu"}, Interface: "192.168.0.1:8080:18080"},
-							{Tags: map[string]string{"service": "frontend", "region": "eu"}, Interface: "192.168.0.1:7070:17070"},
+							{
+								Tags:        map[string]string{"service": "backend", "region": "eu"},
+								Port:        8080,
+								ServicePort: 18080,
+							},
+							{
+								Tags:        map[string]string{"service": "frontend", "region": "eu"},
+								Port:        7070,
+								ServicePort: 17070,
+							},
 						},
 						Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-							{Service: "redis", Interface: ":10001"},
-							{Service: "elastic", Interface: ":10002"},
+							{Service: "redis", Port: 10001},
+							{Service: "elastic", Port: 10002},
 						},
 					},
 				},

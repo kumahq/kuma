@@ -39,12 +39,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("port of an inbound interface is overshadowed (wilcard ip match)", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                  - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "0.0.0.0",
@@ -54,12 +56,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("port of the application is overshadowed (wilcard ip match)", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                   - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "0.0.0.0",
@@ -69,12 +73,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("port of an outbound interface is overshadowed (wilcard ip match)", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                   - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "0.0.0.0",
@@ -84,12 +90,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("port of an inbound interface is overshadowed (exact ip match)", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                  - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "192.168.0.1",
@@ -99,12 +107,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("port of the application is overshadowed (exact ip match)", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                   - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "127.0.0.1",
@@ -114,12 +124,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("port of an outbound interface is overshadowed (exact ip match)", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                   - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "127.0.0.1",
@@ -132,9 +144,9 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                    - interface: ?:80:8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "0.0.0.0",
@@ -144,12 +156,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("port of invalid outbound interface is not overshadowed", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                   - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
                   - interface: ?:54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "0.0.0.0",
@@ -159,12 +173,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("non-overlapping ports are not overshadowed", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                   - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "0.0.0.0",
@@ -174,12 +190,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("non-overlapping ip addresses are not overshadowed (inbound listener port)", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                   - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "192.168.0.2",
@@ -189,12 +207,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("non-overlapping ip addresses are not overshadowed (application port)", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                   - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "192.168.0.2",
@@ -204,12 +224,14 @@ var _ = Describe("Dataplane", func() {
 			Entry("non-overlapping ip addresses are not overshadowed (outbound listener port)", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                   - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
 `,
 				address:  "192.168.0.2",

@@ -100,9 +100,11 @@ var _ = Describe("Components", func() {
 			resource := &mesh_core.DataplaneResource{
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Interface: "127.0.0.1:9090:8080",
+								Port:        9090,
+								ServicePort: 8080,
 								Tags: map[string]string{
 									"service": "backend",
 								},

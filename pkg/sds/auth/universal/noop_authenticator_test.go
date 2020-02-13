@@ -37,9 +37,11 @@ var _ = Describe("Noop Authenticator", func() {
 		dpRes := core_mesh.DataplaneResource{
 			Spec: mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "127.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Interface: "127.0.0.1:8080:8081",
+							Port:        8080,
+							ServicePort: 8081,
 							Tags: map[string]string{
 								"service": "web",
 							},

@@ -143,14 +143,16 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
                   tags:
                     service: backend
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
 `,
 			profile:         mesh_core.ProfileDefaultProxy,
@@ -163,14 +165,16 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
                   tags:
                     service: backend
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
               transparentProxying:
                 redirectPort: 15001
@@ -189,15 +193,17 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
                   tags:
                     service: backend
                     protocol: http
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
 `,
 			profile:         mesh_core.ProfileDefaultProxy,
@@ -214,15 +220,17 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
                   tags:
                     service: backend
                     protocol: http
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
               transparentProxying:
                 redirectPort: 15001
@@ -241,12 +249,14 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
 `,
 			profile: mesh_core.ProfileDefaultProxy,
@@ -265,12 +275,14 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
               transparentProxying:
                 redirectPort: 15001
@@ -291,12 +303,14 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
 `,
 			profile: mesh_core.ProfileDefaultProxy,
@@ -315,12 +329,14 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
               transparentProxying:
                 redirectPort: 15001
@@ -341,12 +357,14 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
 `,
 			profile: mesh_core.ProfileDefaultProxy,
@@ -365,12 +383,14 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			dataplane: `
             networking:
+              address: 192.168.0.1
               inbound:
-                - interface: 192.168.0.1:80:8080
+                - port: 80
+                  servicePort: 8080
               outbound:
-              - interface: :54321
+              - port: 54321
                 service: db
-              - interface: :59200
+              - port: 59200
                 service: elastic
               transparentProxying:
                 redirectPort: 15001

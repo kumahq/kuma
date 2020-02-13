@@ -21,9 +21,11 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 			},
 			Spec: mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "127.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Interface: "127.0.0.1:8080:80",
+							Port:        8080,
+							ServicePort: 80,
 							Tags: map[string]string{
 								"service": "backend",
 							},

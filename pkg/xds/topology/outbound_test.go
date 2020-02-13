@@ -52,13 +52,22 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{Tags: map[string]string{"service": "backend", "region": "eu"}, Interface: "192.168.0.1:8080:18080"},
-							{Tags: map[string]string{"service": "frontend", "region": "eu"}, Interface: "192.168.0.1:7070:17070"},
+							{
+								Tags:        map[string]string{"service": "backend", "region": "eu"},
+								Port:        8080,
+								ServicePort: 18080,
+							},
+							{
+								Tags:        map[string]string{"service": "frontend", "region": "eu"},
+								Port:        7070,
+								ServicePort: 17070,
+							},
 						},
 						Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-							{Service: "redis", Interface: ":10001"},
-							{Service: "elastic", Interface: ":10002"},
+							{Service: "redis", Port: 10001},
+							{Service: "elastic", Port: 10002},
 						},
 					},
 				},
@@ -70,8 +79,13 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.2",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{Tags: map[string]string{"service": "redis", "version": "v1"}, Interface: "192.168.0.2:6379:16379"},
+							{
+								Tags:        map[string]string{"service": "redis", "version": "v1"},
+								Port:        6379,
+								ServicePort: 16379,
+							},
 						},
 					},
 				},
@@ -83,8 +97,13 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.3",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{Tags: map[string]string{"service": "redis", "version": "v2"}, Interface: "192.168.0.3:6379:26379"},
+							{
+								Tags:        map[string]string{"service": "redis", "version": "v2"},
+								Port:        6379,
+								ServicePort: 26379,
+							},
 						},
 					},
 				},
@@ -96,8 +115,13 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.4",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{Tags: map[string]string{"service": "redis", "version": "v3"}, Interface: "192.168.0.4:6379:36379"},
+							{
+								Tags:        map[string]string{"service": "redis", "version": "v3"},
+								Port:        6379,
+								ServicePort: 36379,
+							},
 						},
 					},
 				},
@@ -109,8 +133,13 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.5",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{Tags: map[string]string{"service": "elastic", "region": "eu"}, Interface: "192.168.0.5:9200:49200"},
+							{
+								Tags:        map[string]string{"service": "elastic", "region": "eu"},
+								Port:        9200,
+								ServicePort: 49200,
+							},
 						},
 					},
 				},
@@ -122,8 +151,13 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.6",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{Tags: map[string]string{"service": "elastic", "region": "us"}, Interface: "192.168.0.6:9200:59200"},
+							{
+								Tags:        map[string]string{"service": "elastic", "region": "us"},
+								Port:        9200,
+								ServicePort: 59200,
+							},
 						},
 					},
 				},
@@ -195,8 +229,13 @@ var _ = Describe("TrafficRoute", func() {
 					{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:9200:19200", Tags: map[string]string{"service": "elastic"}},
+									{
+										Tags:        map[string]string{"service": "elastic"},
+										Port:        9200,
+										ServicePort: 19200,
+									},
 								},
 							},
 						},
@@ -212,8 +251,13 @@ var _ = Describe("TrafficRoute", func() {
 					{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:6379:16379", Tags: map[string]string{"service": "redis", "version": "v2"}},
+									{
+										Tags:        map[string]string{"service": "redis", "version": "v2"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
 								},
 							},
 						},
@@ -229,8 +273,13 @@ var _ = Describe("TrafficRoute", func() {
 					{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:6379:16379", Tags: map[string]string{"service": "redis", "version": "v1"}},
+									{
+										Tags:        map[string]string{"service": "redis", "version": "v1"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
 								},
 							},
 						},
@@ -247,8 +296,13 @@ var _ = Describe("TrafficRoute", func() {
 					{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.3",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.3:6379:36379", Tags: map[string]string{"service": "redis", "version": "v3"}},
+									{
+										Tags:        map[string]string{"service": "redis", "version": "v3"},
+										Port:        6379,
+										ServicePort: 36379,
+									},
 								},
 							},
 						},
@@ -272,8 +326,13 @@ var _ = Describe("TrafficRoute", func() {
 					{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:6379:16379", Tags: map[string]string{"service": "redis", "region": "us"}},
+									{
+										Tags:        map[string]string{"service": "redis", "region": "us"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
 								},
 							},
 						},
@@ -296,8 +355,13 @@ var _ = Describe("TrafficRoute", func() {
 					{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:6379:16379", Tags: map[string]string{"service": "redis", "region": "us"}},
+									{
+										Tags:        map[string]string{"service": "redis", "region": "us"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
 								},
 							},
 						},
@@ -324,8 +388,13 @@ var _ = Describe("TrafficRoute", func() {
 					{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:6379:16379", Tags: map[string]string{"service": "redis", "version": "v1"}},
+									{
+										Tags:        map[string]string{"service": "redis", "version": "v1"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
 								},
 							},
 						},
@@ -333,8 +402,13 @@ var _ = Describe("TrafficRoute", func() {
 					{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.2:9200:19200", Tags: map[string]string{"service": "elastic", "region": "us"}},
+									{
+										Tags:        map[string]string{"service": "elastic", "region": "us"},
+										Port:        9200,
+										ServicePort: 19200,
+									},
 								},
 							},
 						},
@@ -364,9 +438,19 @@ var _ = Describe("TrafficRoute", func() {
 					{
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:6379:16379", Tags: map[string]string{"service": "redis", "version": "v1"}},
-									{Interface: "192.168.0.2:9200:19200", Tags: map[string]string{"service": "elastic", "region": "us"}},
+									{
+										Tags:        map[string]string{"service": "redis", "version": "v1"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
+									{
+										Tags:        map[string]string{"service": "elastic", "region": "us"},
+										Address:     "192.168.0.2",
+										Port:        9200,
+										ServicePort: 19200,
+									},
 								},
 							},
 						},

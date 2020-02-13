@@ -2,12 +2,15 @@ items:
 - mesh: default
   name: experiment
   networking:
+    address: 127.0.0.1
     inbound:
-    - interface: 127.0.0.1:8080:80
+    - port: 8080
+      servicePort: 80
       tags:
         service: mobile
         version: v1
-    - interface: 127.0.0.1:8090:90
+    - port: 8090
+      servicePort: 90
       tags:
         service: metrics
         version: v1
@@ -15,8 +18,10 @@ items:
 - mesh: default
   name: example
   networking:
+    address: 127.0.0.2
     inbound:
-    - interface: 127.0.0.2:8080:80
+    - port: 8080
+      servicePort: 80
       tags:
         service: web
         version: v2

@@ -66,8 +66,12 @@ var _ = Describe("TemplateProxyGenerator", func() {
 						},
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "192.168.0.1:80:8080"},
+									{
+										Port:        80,
+										ServicePort: 8080,
+									},
 								},
 								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 									RedirectPort: 15001,
@@ -173,8 +177,10 @@ var _ = Describe("TemplateProxyGenerator", func() {
                 networking:
                   transparentProxying:
                     redirectPort: 15001
+                  address: 192.168.0.1
                   inbound:
-                    - interface: 192.168.0.1:80:8080
+                    - port: 80
+                      servicePort: 8080
 `,
 				proxyTemplateFile: "1-proxy-template.input.yaml",
 				envoyConfigFile:   "1-envoy-config.golden.yaml",

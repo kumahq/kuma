@@ -6,9 +6,11 @@
             "name": "one",
             "dataplane": {
                 "networking": {
+                    "address": "127.0.0.1",
                     "inbound": [
                         {
-                            "interface": "127.0.0.1:8080:80",
+                            "port": 8080,
+                            "servicePort": 80,
                             "tags": {
                                 "service": "mobile",
                                 "version": "v1"
