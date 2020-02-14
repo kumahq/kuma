@@ -67,18 +67,37 @@ message CertificateAuthority {
 // Tracing defines tracing configuration of the mesh.
 message Tracing {
 
+  // Name of the default backend
+  string defaultBackend = 1;
+
+  // List of available logging backends
+  repeated TracingBackend backends = 2;
+}
+
+// TracingBackend defines logging backend available to mesh. Backends can be
+// used in TrafficTrace rules.
+message TracingBackend {
+  // Name of the backend, can be then used in Mesh.tracing.defaultBackend or in
+  // TrafficTrace
+  string name = 1;
+
+  // Percentage of traces that will be sent to the backend (range 0.0 - 100.0)
+  double sampling = 2;
+
   // Zipkin defined configuration of Zipkin tracer.
   message Zipkin {
 
     // Address of Zipkin collector.
-    string address = 1;
+    string url = 1;
+
+    // Generate 128bit traces. Default: false
+    bool traceId128bit = 2;
+
+    // Version of the API. values: httpJson, httpProto. Default: httpJson
+    string apiVersion = 3;
   }
 
-  oneof type {
-
-    // Use Zipkin tracer.
-    Zipkin zipkin = 1;
-  }
+  oneof type { Zipkin zipkin = 3; }
 }
 
 message Logging {
