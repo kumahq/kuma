@@ -1,0 +1,19 @@
+items:
+  - mesh: default
+    name: web1
+    selectors:
+    - match:
+        service: web1
+        version: "1.0"
+    conf:
+      backend: zipkin
+    type: TrafficTrace
+  - mesh: default
+    name: web2
+    selectors:
+    - match:
+        service: web2
+        version: "1.0"
+    conf:
+      backend: zipkin
+    type: TrafficTrace

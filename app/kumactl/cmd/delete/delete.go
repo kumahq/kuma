@@ -43,9 +43,11 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				resourceType = mesh.TrafficPermissionType
 			case "traffic-route":
 				resourceType = mesh.TrafficRouteType
+			case "traffic-trace":
+				resourceType = mesh.TrafficTraceType
 
 			default:
-				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route", resourceTypeArg)
+				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace", resourceTypeArg)
 			}
 
 			currentMesh := pctx.CurrentMesh()
