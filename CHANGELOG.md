@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: generate HTTP-specific outbound listeners for services tagged with `protocol: http`
+  [#585](https://github.com/Kong/kuma/pull/585)
 * feature: TracingTrace in Kuma REST API
   [#583](https://github.com/Kong/kuma/pull/583)
 * feature: TracingTrace entity

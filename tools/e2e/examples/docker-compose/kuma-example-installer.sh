@@ -172,6 +172,5 @@ networking:
     servicePort: {{ LOCAL_PORT }}
     tags:
       service: kuma-example-backend
-      protocol: http
       version: v2
       env: intg"
