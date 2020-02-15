@@ -3,48 +3,49 @@ package listeners
 import (
 	"fmt"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/golang/protobuf/ptypes"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes"
-
 	envoy_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
-func NetworkRBAC(rbacEnabled bool, permissions *mesh_core.TrafficPermissionResourceList) ListenerBuilderOpt {
-	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+func NetworkRBAC(statsName string, rbacEnabled bool, permissions *mesh_core.TrafficPermissionResourceList) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		if rbacEnabled {
-			config.Add(&NetworkRBACConfigurer{permissions})
+			config.Add(&NetworkRBACConfigurer{
+				statsName:   statsName,
+				permissions: permissions,
+			})
 		}
 	})
 }
 
 type NetworkRBACConfigurer struct {
+	statsName string
 	// Traffic Permissions to enforce.
 	permissions *mesh_core.TrafficPermissionResourceList
 }
 
-func (c *NetworkRBACConfigurer) Configure(l *v2.Listener) error {
-	for i := range l.FilterChains {
-		filter, err := createRbacFilter(l.Name, c.permissions)
-		if err != nil {
-			return err
-		}
-
-		// RBAC filter should be the first in the chain
-		l.FilterChains[i].Filters = append([]*envoy_listener.Filter{filter}, l.FilterChains[i].Filters...)
+func (c *NetworkRBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+	filter, err := createRbacFilter(c.statsName, c.permissions)
+	if err != nil {
+		return err
 	}
 
+	// RBAC filter should be the first in the chain
+	filterChain.Filters = append([]*envoy_listener.Filter{filter}, filterChain.Filters...)
 	return nil
 }
 
-func createRbacFilter(listenerName string, permissions *mesh_core.TrafficPermissionResourceList) (*envoy_listener.Filter, error) {
-	rbacRule := createRbacRule(listenerName, permissions)
+func createRbacFilter(statsName string, permissions *mesh_core.TrafficPermissionResourceList) (*envoy_listener.Filter, error) {
+	rbacRule := createRbacRule(statsName, permissions)
 	rbacMarshalled, err := ptypes.MarshalAny(rbacRule)
 	if err != nil {
 		return nil, err
@@ -57,7 +58,7 @@ func createRbacFilter(listenerName string, permissions *mesh_core.TrafficPermiss
 	}, nil
 }
 
-func createRbacRule(listenerName string, permissions *mesh_core.TrafficPermissionResourceList) *rbac.RBAC {
+func createRbacRule(statsName string, permissions *mesh_core.TrafficPermissionResourceList) *rbac.RBAC {
 	policies := make(map[string]*rbac_config.Policy, len(permissions.Items))
 	for _, permission := range permissions.Items {
 		policyName := permission.Meta.GetName()
@@ -69,7 +70,7 @@ func createRbacRule(listenerName string, permissions *mesh_core.TrafficPermissio
 			Action:   rbac_config.RBAC_ALLOW,
 			Policies: policies,
 		},
-		StatPrefix: fmt.Sprintf("%s.", util_xds.SanitizeMetric(listenerName)), // we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric to "inbound:127.0.0.1:21011.rbac.allowed"
+		StatPrefix: fmt.Sprintf("%s.", util_xds.SanitizeMetric(statsName)), // we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric to "inbound:127.0.0.1:21011.rbac.allowed"
 	}
 }
 

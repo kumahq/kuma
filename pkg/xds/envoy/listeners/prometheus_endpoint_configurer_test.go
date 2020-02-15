@@ -26,7 +26,8 @@ var _ = Describe("PrometheusEndpointConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(PrometheusEndpoint(given.path, given.clusterName)).
+				Configure(FilterChain(NewFilterChainBuilder().
+					Configure(PrometheusEndpoint(given.listenerName, given.path, given.clusterName)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

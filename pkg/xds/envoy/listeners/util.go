@@ -6,38 +6,34 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 )
 
-func UpdateFilterConfig(l *v2.Listener, filterName string, updateFunc func(proto.Message) error) error {
-	for i := range l.FilterChains {
-		for j, filter := range l.FilterChains[i].Filters {
-			if filter.Name == filterName {
-				if filter.GetTypedConfig() == nil {
-					return errors.Errorf("filter_chains[%d].filters[%d]: config cannot be 'nil'", i, j)
-				}
+func UpdateFilterConfig(filterChain *envoy_listener.FilterChain, filterName string, updateFunc func(proto.Message) error) error {
+	for i, filter := range filterChain.Filters {
+		if filter.Name == filterName {
+			if filter.GetTypedConfig() == nil {
+				return errors.Errorf("filters[%d]: config cannot be 'nil'", i)
+			}
 
-				var dany ptypes.DynamicAny
-				if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), &dany); err != nil {
-					return err
-				}
-				if err := updateFunc(dany.Message); err != nil {
-					return err
-				}
+			var dany ptypes.DynamicAny
+			if err := ptypes.UnmarshalAny(filter.GetTypedConfig(), &dany); err != nil {
+				return err
+			}
+			if err := updateFunc(dany.Message); err != nil {
+				return err
+			}
 
-				pbst, err := ptypes.MarshalAny(dany.Message)
-				if err != nil {
-					return err
-				}
+			pbst, err := ptypes.MarshalAny(dany.Message)
+			if err != nil {
+				return err
+			}
 
-				filter.ConfigType = &envoy_listener.Filter_TypedConfig{
-					TypedConfig: pbst,
-				}
+			filter.ConfigType = &envoy_listener.Filter_TypedConfig{
+				TypedConfig: pbst,
 			}
 		}
 	}
-
 	return nil
 }
 

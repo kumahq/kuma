@@ -14,6 +14,7 @@ import (
 	util_envoy "github.com/Kong/kuma/pkg/util/envoy"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 
+	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
 	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
@@ -113,9 +114,10 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		inboundListenerName := localListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		inboundListener, err := envoy_listeners.NewListenerBuilder().
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
-			Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
-			Configure(g.protocolSpecificOpts(service, protocol, envoy_listeners.ClusterInfo{Name: localClusterName})...).
-			Configure(envoy_listeners.NetworkRBAC(ctx.Mesh.Resource.Spec.GetMtls().GetEnabled(), proxy.TrafficPermissions.Get(endpoint))).
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+				Configure(g.protocolSpecificOpts(service, protocol, envoy_common.ClusterInfo{Name: localClusterName})...).
+				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
+				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.Spec.GetMtls().GetEnabled(), proxy.TrafficPermissions.Get(endpoint))))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()
 		if err != nil {
@@ -130,17 +132,17 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	return resources.List(), nil
 }
 
-func (_ InboundProxyGenerator) protocolSpecificOpts(service string, protocol mesh_core.Protocol, localCluster envoy_listeners.ClusterInfo) []envoy_listeners.ListenerBuilderOpt {
+func (_ InboundProxyGenerator) protocolSpecificOpts(service string, protocol mesh_core.Protocol, localCluster envoy_common.ClusterInfo) []envoy_listeners.FilterChainBuilderOpt {
 	switch protocol {
 	case mesh_core.ProtocolHTTP:
-		return []envoy_listeners.ListenerBuilderOpt{
+		return []envoy_listeners.FilterChainBuilderOpt{
 			envoy_listeners.HttpConnectionManager(localCluster.Name),
 			envoy_listeners.HttpInboundRoute(service, localCluster),
 		}
 	case mesh_core.ProtocolTCP:
 		fallthrough
 	default:
-		return []envoy_listeners.ListenerBuilderOpt{
+		return []envoy_listeners.FilterChainBuilderOpt{
 			envoy_listeners.TcpProxy(localCluster.Name, localCluster),
 		}
 	}
@@ -186,8 +188,9 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 
 		listener, err := envoy_listeners.NewListenerBuilder().
 			Configure(envoy_listeners.OutboundListener(outboundListenerName, endpoints[i].DataplaneIP, endpoints[i].DataplanePort)).
-			Configure(envoy_listeners.TcpProxy(oface.Service, clusters...)).
-			Configure(envoy_listeners.NetworkAccessLog(sourceService, destinationService, proxy.Logs[oface.Service], proxy)).
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+				Configure(envoy_listeners.TcpProxy(oface.Service, clusters...)).
+				Configure(envoy_listeners.NetworkAccessLog(sourceService, destinationService, proxy.Logs[oface.Service], proxy)))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()
 		if err != nil {
@@ -201,7 +204,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	return resources.List(), nil
 }
 
-func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy *model.Proxy, route *mesh_core.TrafficRouteResource) (clusters []envoy_listeners.ClusterInfo, err error) {
+func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy *model.Proxy, route *mesh_core.TrafficRouteResource) (clusters []envoy_common.ClusterInfo, err error) {
 	for j, destination := range route.Spec.Conf {
 		service, ok := destination.Destination[kuma_mesh.ServiceTag]
 		if !ok {
@@ -211,7 +214,7 @@ func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy
 			// Envoy doesn't support 0 weight
 			continue
 		}
-		clusters = append(clusters, envoy_listeners.ClusterInfo{
+		clusters = append(clusters, envoy_common.ClusterInfo{
 			Name:   destinationClusterName(service, destination.Destination),
 			Weight: destination.Weight,
 			Tags:   destination.Destination,
@@ -220,7 +223,7 @@ func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy
 	return
 }
 
-func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *model.Proxy, clusters []envoy_listeners.ClusterInfo) (resources []*model.Resource, _ error) {
+func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *model.Proxy, clusters []envoy_common.ClusterInfo) (resources []*model.Resource, _ error) {
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags[kuma_mesh.ServiceTag]
 		healthCheck := proxy.HealthChecks[serviceName]
@@ -251,7 +254,8 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	}
 	listener, err := envoy_listeners.NewListenerBuilder().
 		Configure(envoy_listeners.OutboundListener("catch_all", "0.0.0.0", redirectPort)).
-		Configure(envoy_listeners.TcpProxy("pass_through", envoy_listeners.ClusterInfo{Name: "pass_through"})).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+			Configure(envoy_listeners.TcpProxy("pass_through", envoy_common.ClusterInfo{Name: "pass_through"})))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {

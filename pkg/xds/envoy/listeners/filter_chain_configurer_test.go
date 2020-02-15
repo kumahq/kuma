@@ -10,7 +10,7 @@ import (
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
-var _ = Describe("InboundListenerConfigurer", func() {
+var _ = Describe("ListenerFilterChainConfigurer", func() {
 
 	type testCase struct {
 		listenerName    string
@@ -24,17 +24,19 @@ var _ = Describe("InboundListenerConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(FilterChain(NewFilterChainBuilder())).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
 			actual, err := util_proto.ToYAML(listener)
+			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("basic listener", testCase{
+		Entry("basic listener with an empty filter chain", testCase{
 			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
@@ -44,6 +46,8 @@ var _ = Describe("InboundListenerConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
+            filterChains:
+            - {}
 `,
 		}),
 	)

@@ -8,6 +8,7 @@ import (
 	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("OriginalDstForwarderConfigurer", func() {
@@ -17,7 +18,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
-		clusters        []ClusterInfo
+		clusters        []envoy_common.ClusterInfo
 		expected        string
 	}
 
@@ -26,7 +27,8 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(TcpProxy(given.statsName, given.clusters...)).
+				Configure(FilterChain(NewFilterChainBuilder().
+					Configure(TcpProxy(given.statsName, given.clusters...)))).
 				Configure(OriginalDstForwarder()).
 				Build()
 			// then
@@ -43,7 +45,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			listenerAddress: "0.0.0.0",
 			listenerPort:    12345,
 			statsName:       "pass_through",
-			clusters:        []ClusterInfo{{Name: "pass_through", Weight: 200}},
+			clusters:        []envoy_common.ClusterInfo{{Name: "pass_through", Weight: 200}},
 			expected: `
             name: catch_all
             address:

@@ -5,7 +5,7 @@ import (
 )
 
 // ListenerConfigurer is responsible for configuring a single aspect of the entire Envoy listener,
-// such as TcpProxy filter, RBAC filter, access log, etc.
+// such as filter chain, transparent proxying, etc.
 type ListenerConfigurer interface {
 	// Configure configures a single aspect on a given Envoy listener.
 	Configure(listener *v2.Listener) error

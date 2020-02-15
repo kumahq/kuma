@@ -13,6 +13,7 @@ import (
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("ServerMtlsConfigurer", func() {
@@ -22,7 +23,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
-		clusters        []ClusterInfo
+		clusters        []envoy_common.ClusterInfo
 		ctx             xds_context.Context
 		metadata        core_xds.DataplaneMetadata
 		expected        string
@@ -33,8 +34,9 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(ServerSideMTLS(given.ctx, &given.metadata)).
-				Configure(TcpProxy(given.statsName, given.clusters...)).
+				Configure(FilterChain(NewFilterChainBuilder().
+					Configure(ServerSideMTLS(given.ctx, &given.metadata)).
+					Configure(TcpProxy(given.statsName, given.clusters...)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -50,7 +52,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []ClusterInfo{{Name: "localhost:8080", Weight: 200}},
+			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsLocation: "kuma-control-plane:5677",
@@ -115,7 +117,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []ClusterInfo{{Name: "localhost:8080", Weight: 200}},
+			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsLocation: "kuma-control-plane:5677",
