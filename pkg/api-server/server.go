@@ -92,7 +92,7 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 			}
 		}
 	}()
-	log.Info("starting", "port", a.Address())
+	log.Info("starting", "interface", "0.0.0.0","port", a.Address())
 	select {
 	case <-stop:
 		log.Info("Stopping down API Server")

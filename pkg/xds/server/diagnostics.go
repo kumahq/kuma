@@ -45,7 +45,7 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		}
 		diagnosticsServerLog.Info("terminated normally")
 	}()
-	diagnosticsServerLog.Info("starting", "port", s.port)
+	diagnosticsServerLog.Info("starting", "interface", "0.0.0.0", "port", s.port)
 
 	select {
 	case <-stop:
