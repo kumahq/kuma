@@ -15,7 +15,7 @@ func (d *TrafficTraceResource) validateSelectors() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("selectors"), d.Spec.GetSelectors(), ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
-			SkipRequireService: true,
+			RequireAtLeastOneTag: true,
 		},
 	})
 }

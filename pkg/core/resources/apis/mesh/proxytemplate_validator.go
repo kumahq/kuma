@@ -68,5 +68,10 @@ func validateResources(resources []*v1alpha1.ProxyTemplateRawResource) validator
 }
 
 func validateSelectors(selectors []*v1alpha1.Selector) validators.ValidationError {
-	return ValidateSelectors(validators.RootedAt("selectors"), selectors, ValidateSelectorsOpts{})
+	return ValidateSelectors(validators.RootedAt("selectors"), selectors, ValidateSelectorsOpts{
+		ValidateSelectorOpts: ValidateSelectorOpts{
+			RequireService: true,
+			RequireAtLeastOneTag: true,
+		},
+	})
 }

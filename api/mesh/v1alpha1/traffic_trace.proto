@@ -18,6 +18,6 @@ message TrafficTrace {
     string backend = 1;
   }
 
-  // Configuration of the logging.
+  // Configuration of the tracing.
   Conf conf = 3;
 }

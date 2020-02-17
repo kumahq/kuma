@@ -17,11 +17,11 @@ type TagKeyValidatorFunc func(path validators.PathBuilder, key string) validator
 type TagValueValidatorFunc func(path validators.PathBuilder, key, value string) validators.ValidationError
 
 type ValidateSelectorOpts struct {
-	SkipRequireAtLeastOneTag bool
-	SkipRequireService       bool
-	ExtraSelectorValidators  []SelectorValidatorFunc
-	ExtraTagKeyValidators    []TagKeyValidatorFunc
-	ExtraTagValueValidators  []TagValueValidatorFunc
+	RequireAtLeastOneTag    bool
+	RequireService          bool
+	ExtraSelectorValidators []SelectorValidatorFunc
+	ExtraTagKeyValidators   []TagKeyValidatorFunc
+	ExtraTagValueValidators []TagValueValidatorFunc
 }
 
 type ValidateSelectorsOpts struct {
@@ -40,7 +40,7 @@ func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Select
 }
 
 func ValidateSelector(path validators.PathBuilder, selector map[string]string, opts ValidateSelectorOpts) (err validators.ValidationError) {
-	if !opts.SkipRequireAtLeastOneTag && len(selector) == 0 {
+	if opts.RequireAtLeastOneTag && len(selector) == 0 {
 		err.AddViolationAt(path, "must have at least one tag")
 	}
 	for _, validate := range opts.ExtraSelectorValidators {
@@ -62,7 +62,7 @@ func ValidateSelector(path validators.PathBuilder, selector map[string]string, o
 		}
 	}
 	_, defined := selector[mesh_proto.ServiceTag]
-	if !opts.SkipRequireService && !defined {
+	if opts.RequireService && !defined {
 		err.AddViolationAt(path, fmt.Sprintf("mandatory tag %q is missing", mesh_proto.ServiceTag))
 	}
 	return
@@ -71,7 +71,7 @@ func ValidateSelector(path validators.PathBuilder, selector map[string]string, o
 var OnlyServiceTagAllowed = ValidateSelectorsOpts{
 	RequireAtLeastOneSelector: true,
 	ValidateSelectorOpts: ValidateSelectorOpts{
-		SkipRequireAtLeastOneTag: true,
+		RequireService:       true,
 		ExtraSelectorValidators: []SelectorValidatorFunc{
 			func(path validators.PathBuilder, selector map[string]string) (err validators.ValidationError) {
 				_, defined := selector[mesh_proto.ServiceTag]
