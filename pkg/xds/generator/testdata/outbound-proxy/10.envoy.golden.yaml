@@ -271,6 +271,13 @@ resources:
       - name: envoy.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          accessLog:
+          - name: envoy.file_access_log
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
+              format: |
+                [%START_TIME%] "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
+              path: /var/log
           httpFilters:
           - name: envoy.router
           rds:
@@ -372,6 +379,16 @@ resources:
       - name: envoy.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          accessLog:
+          - name: envoy.http_grpc_access_log
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
+              commonConfig:
+                grpcService:
+                  envoyGrpc:
+                    clusterName: access_log_sink
+                logName: |
+                  logstash:1234;[%START_TIME%] 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
           cluster: api-tcp
           statPrefix: api-tcp
     name: outbound:127.0.0.1:40002

@@ -8,6 +8,7 @@ import (
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 )
 
@@ -15,9 +16,19 @@ func UpdateHTTPConnectionManager(filterChain *envoy_listener.FilterChain, update
 	return UpdateFilterConfig(filterChain, envoy_wellknown.HTTPConnectionManager, func(filterConfig proto.Message) error {
 		hcm, ok := filterConfig.(*envoy_hcm.HttpConnectionManager)
 		if !ok {
-			return NewUnexpectedFilterConfigTypeError(filterConfig, &envoy_hcm.HttpConnectionManager{})
+			return NewUnexpectedFilterConfigTypeError(filterConfig, (*envoy_hcm.HttpConnectionManager)(nil))
 		}
 		return updateFunc(hcm)
+	})
+}
+
+func UpdateTCPProxy(filterChain *envoy_listener.FilterChain, updateFunc func(*envoy_tcp.TcpProxy) error) error {
+	return UpdateFilterConfig(filterChain, envoy_wellknown.TCPProxy, func(filterConfig proto.Message) error {
+		tcpProxy, ok := filterConfig.(*envoy_tcp.TcpProxy)
+		if !ok {
+			return NewUnexpectedFilterConfigTypeError(filterConfig, (*envoy_tcp.TcpProxy)(nil))
+		}
+		return updateFunc(tcpProxy)
 	})
 }
 
