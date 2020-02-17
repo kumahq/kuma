@@ -13,6 +13,43 @@ import (
 
 var _ = Describe("TrafficTrace", func() {
 	Describe("Validate()", func() {
+		DescribeTable("should pass validation",
+			func(trafficTraceYAML string) {
+				// setup
+				trafficTrace := TrafficTraceResource{}
+
+				// when
+				err := util_proto.FromYAML([]byte(trafficTraceYAML), &trafficTrace.Spec)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				verr := trafficTrace.Validate()
+
+				// then
+				Expect(verr).ToNot(HaveOccurred())
+			},
+			Entry("full example", `
+                selectors:
+                - match:
+                    region: eu
+                conf:
+                  backend: zipkin-eu`,
+			),
+			Entry("empty backend", `
+                selectors:
+                - match:
+                    region: eu
+                conf:
+                  backend: # backend can be empty, default backend from mesh is chosen`,
+			),
+			Entry("empty conf", `
+                selectors:
+                - match:
+                    region: eu`,
+			),
+		)
+
 		type testCase struct {
 			trafficTrace string
 			expected     string
