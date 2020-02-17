@@ -45,7 +45,7 @@ func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 		}
 		log.Info("terminated normally")
 	}()
-	log.Info("starting", "port", b.Port)
+	log.Info("starting", "interface", "0.0.0.0", "port", b.Port)
 
 	select {
 	case <-stop:
