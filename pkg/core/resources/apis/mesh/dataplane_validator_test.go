@@ -173,7 +173,35 @@ var _ = Describe("Dataplane", func() {
 				Violations: []validators.Violation{
 					{
 						Field:   `networking.inbound[0].port`,
-						Message: `port has to be greater than 0`,
+						Message: `port has to in range of [1, 65535]`,
+					},
+				},
+			},
+		}),
+		Entry("inbound: port outside of the range", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound[0].Port = 65536
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.inbound[0].port`,
+						Message: `port has to in range of [1, 65535]`,
+					},
+				},
+			},
+		}),
+		Entry("inbound: servicePort outside of the range", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Inbound[0].ServicePort = 65536
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.inbound[0].servicePort`,
+						Message: `servicePort has to in range of [1, 65535]`,
 					},
 				},
 			},
@@ -280,7 +308,21 @@ var _ = Describe("Dataplane", func() {
 				Violations: []validators.Violation{
 					{
 						Field:   `networking.outbound[0].port`,
-						Message: `port has to be greater than 0`,
+						Message: `port has to in range of [1, 65535]`,
+					},
+				},
+			},
+		}),
+		Entry("outbound: port outside of the range", testCase{
+			dataplane: func() core_mesh.DataplaneResource {
+				validDataplane.Spec.Networking.Outbound[0].Port = 65536
+				return validDataplane
+			},
+			validationResult: &validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   `networking.outbound[0].port`,
+						Message: `port has to in range of [1, 65535]`,
 					},
 				},
 			},

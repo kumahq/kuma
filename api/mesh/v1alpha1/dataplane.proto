@@ -14,8 +14,9 @@ message Dataplane {
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {
 
-    // Public address on which the dataplane is accessible in the network.
-    string address = 1;
+    // Public IP on which the dataplane is accessible in the network.
+    // Host names and DNS are not allowed.
+    string address = 5;
 
     // Inbound describes a service implemented by the dataplane.
     message Inbound {
@@ -34,25 +35,25 @@ message Dataplane {
 
       // Port of the inbound interface that will forward requests to the
       // service.
-      uint32 port = 2;
+      uint32 port = 3;
 
       // Port of the service that requests will be forwarded to.
-      uint32 servicePort = 3;
+      uint32 servicePort = 4;
 
       // Address on which inbound listener will be exposed. Defaults to
-      // networking.interface.
-      string address = 4;
+      // networking.address.
+      string address = 5;
 
       // Tags associated with an application this dataplane is deployed next to,
       // e.g. service=web, version=1.0.
       // `service` tag is mandatory.
-      map<string, string> tags = 5 [ (validate.rules).map.min_pairs = 1 ];
+      map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
     }
 
     // Outbound describes a service consumed by the dataplane.
     message Outbound {
 
-      // DEPRECATED: use networking.interface and networking.outbound[].port
+      // DEPRECATED: use networking.address and networking.outbound[].port
       // Interface describes networking rules for outgoing traffic.
       // The value is a string formatted as <DATAPLANE_IP>:<DATAPLANE_PORT>,
       // which means that dataplane must listen on
@@ -67,13 +68,13 @@ message Dataplane {
 
       // Address on which the service will be available to this dataplane.
       // Defaults to 127.0.0.1
-      string address = 2;
+      string address = 3;
 
       // Port on which the service will be available to this dataplane.
-      uint32 port = 3;
+      uint32 port = 4;
 
       // Service name.
-      string service = 4 [ (validate.rules).string.hostname = true ];
+      string service = 2 [ (validate.rules).string.hostname = true ];
     }
 
     // Gateway describes a service that ingress should not be proxied.
@@ -92,16 +93,16 @@ message Dataplane {
     }
 
     // Inbound describes a list of inbound interfaces of the dataplane.
-    repeated Inbound inbound = 2;
+    repeated Inbound inbound = 1;
 
     // Outbound describes a list of outbound interfaces of the dataplane.
-    repeated Outbound outbound = 3;
+    repeated Outbound outbound = 2;
 
     // Gateway describes configuration of gateway of the dataplane.
-    Gateway gateway = 4;
+    Gateway gateway = 3;
 
     // TransparentProxying describes configuration for transparent proxying.
-    TransparentProxying transparent_proxying = 5;
+    TransparentProxying transparent_proxying = 4;
   }
 
   // Networking describes inbound and outbound interfaces of the dataplane.

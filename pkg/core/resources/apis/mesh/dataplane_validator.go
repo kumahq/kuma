@@ -14,6 +14,11 @@ func (d *DataplaneResource) Validate() error {
 	return err.OrNil()
 }
 
+// For networking section validation we need to take into account our legacy model.
+// Legacy model is detected by having interface defined either on inbound listeners.
+// We do not allow networking.address with the old format. Instead, we recommend switching to the new format.
+// When we've got dataplane in the new format, we require networking.address field to be defined unless it is Gateway
+// then for the backward compatibility for the old format we cannot require it yet.
 func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
 	var err validators.ValidationError
 	path := validators.RootedAt("networking")
@@ -72,8 +77,11 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 			result.AddViolation("interface", "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT , e.g. 192.168.0.100:9090:8080 or [2001:db8::1]:7070:6060")
 		}
 	} else {
-		if inbound.Port == 0 {
-			result.AddViolationAt(validators.RootedAt("port"), `port has to be greater than 0`)
+		if inbound.Port < 1 || inbound.Port > 65535 {
+			result.AddViolationAt(validators.RootedAt("port"), `port has to in range of [1, 65535]`)
+		}
+		if inbound.ServicePort > 65535 {
+			result.AddViolationAt(validators.RootedAt("servicePort"), `servicePort has to in range of [1, 65535]`)
 		}
 		if inbound.Address != "" && net.ParseIP(inbound.Address) == nil {
 			result.AddViolationAt(validators.RootedAt("address"), `address has to be valid IP address`)
@@ -108,8 +116,8 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 			result.AddViolation("interface", "invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT where DATAPLANE_IP is optional. E.g. 127.0.0.1:9090, :9090, [::1]:8080")
 		}
 	} else {
-		if outbound.Port == 0 {
-			result.AddViolation("port", "port has to be greater than 0")
+		if outbound.Port < 1 || outbound.Port > 65535 {
+			result.AddViolation("port", "port has to in range of [1, 65535]")
 		}
 		if outbound.Address != "" && net.ParseIP(outbound.Address) == nil {
 			result.AddViolation("address", "address has to be valid IP address")
