@@ -17,14 +17,14 @@ var (
 	}
 )
 
-// GetCommonProtocol returns a common protocol between given two.
+// getCommonProtocol returns a common protocol between given two.
 //
 // E.g.,
 // a common protocol between HTTP and HTTP  is HTTP,
 // a common protocol between HTTP and TCP   is TCP,
 // a common protocol between GRPC and HTTP2 is HTTP2,
 // a common protocol between HTTP and HTTP2 is TCP.
-func GetCommonProtocol(one, another mesh_core.Protocol) mesh_core.Protocol {
+func getCommonProtocol(one, another mesh_core.Protocol) mesh_core.Protocol {
 	if one == another {
 		return one
 	}
@@ -57,7 +57,7 @@ func InferServiceProtocol(endpoints []core_xds.Endpoint) mesh_core.Protocol {
 	serviceProtocol := mesh_core.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
 	for _, endpoint := range endpoints[1:] {
 		endpointProtocol := mesh_core.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
-		serviceProtocol = GetCommonProtocol(serviceProtocol, endpointProtocol)
+		serviceProtocol = getCommonProtocol(serviceProtocol, endpointProtocol)
 	}
 	return serviceProtocol
 }
