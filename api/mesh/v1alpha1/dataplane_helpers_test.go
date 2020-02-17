@@ -432,6 +432,77 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 	)
 })
 
+var _ = Describe("Dataplane_Networking_Inbound", func() {
+
+	DescribeTable("GetService()", func() {
+
+		type testCase struct {
+			inbound  *Dataplane_Networking_Inbound
+			expected string
+		}
+
+		DescribeTable("should infer service name from `service` tag",
+			func(given testCase) {
+				Expect(given.inbound.GetService()).To(Equal(given.expected))
+			},
+			Entry("inbound is `nil`", testCase{
+				inbound:  nil,
+				expected: "",
+			}),
+			Entry("inbound has no `service` tag", testCase{
+				inbound:  &Dataplane_Networking_Inbound{},
+				expected: "",
+			}),
+			Entry("inbound has `service` tag", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{
+						"service": "backend",
+					},
+				},
+				expected: "backend",
+			}),
+		)
+	})
+
+	DescribeTable("GetProtocol()", func() {
+
+		type testCase struct {
+			inbound  *Dataplane_Networking_Inbound
+			expected string
+		}
+
+		DescribeTable("should infer protocol from `protocol` tag",
+			func(given testCase) {
+				Expect(given.inbound.GetProtocol()).To(Equal(given.expected))
+			},
+			Entry("inbound is `nil`", testCase{
+				inbound:  nil,
+				expected: "",
+			}),
+			Entry("inbound has no `protocol` tag", testCase{
+				inbound:  &Dataplane_Networking_Inbound{},
+				expected: "",
+			}),
+			Entry("inbound has `protocol` tag with a known value", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{
+						"protocol": "http",
+					},
+				},
+				expected: "http",
+			}),
+			Entry("inbound has `protocol` tag with an unknown value", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{
+						"protocol": "not-yet-supported-protocol",
+					},
+				},
+				expected: "not-yet-supported-protocol",
+			}),
+		)
+	})
+})
+
 var _ = Describe("Dataplane with inbound", func() {
 	d := Dataplane{
 		Networking: &Dataplane_Networking{

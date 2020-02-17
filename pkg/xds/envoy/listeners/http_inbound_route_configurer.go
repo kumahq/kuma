@@ -1,6 +1,8 @@
 package listeners
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
@@ -10,24 +12,41 @@ import (
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 )
 
-func HttpInboundRoute(cluster ClusterInfo) ListenerBuilderOpt {
+func HttpInboundRoute(service string, cluster ClusterInfo) ListenerBuilderOpt {
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		config.Add(&HttpInboundRouteConfigurer{
+			service: service,
 			cluster: cluster,
 		})
 	})
 }
 
 type HttpInboundRouteConfigurer struct {
+	service string
 	// Cluster to forward traffic to.
 	cluster ClusterInfo
 }
 
 func (c *HttpInboundRouteConfigurer) Configure(l *v2.Listener) error {
-	config := &v2.RouteConfiguration{
-		Name: "inbound",
+	routeConfig := c.routeConfiguration()
+
+	return UpdateFilterConfig(l, envoy_wellknown.HTTPConnectionManager, func(filterConfig proto.Message) error {
+		hcm, ok := filterConfig.(*envoy_hcm.HttpConnectionManager)
+		if !ok {
+			return NewUnexpectedFilterConfigTypeError(filterConfig, &envoy_hcm.HttpConnectionManager{})
+		}
+		hcm.RouteSpecifier = &envoy_hcm.HttpConnectionManager_RouteConfig{
+			RouteConfig: routeConfig,
+		}
+		return nil
+	})
+}
+
+func (c *HttpInboundRouteConfigurer) routeConfiguration() *v2.RouteConfiguration {
+	return &v2.RouteConfiguration{
+		Name: fmt.Sprintf("inbound:%s", c.service),
 		VirtualHosts: []*envoy_route.VirtualHost{{
-			Name:    "local_service",
+			Name:    c.service,
 			Domains: []string{"*"},
 			Routes: []*envoy_route.Route{{
 				Match: &envoy_route.RouteMatch{
@@ -48,15 +67,4 @@ func (c *HttpInboundRouteConfigurer) Configure(l *v2.Listener) error {
 			Value: true,
 		},
 	}
-
-	return UpdateFilterConfig(l, envoy_wellknown.HTTPConnectionManager, func(filterConfig proto.Message) error {
-		hcm, ok := filterConfig.(*envoy_hcm.HttpConnectionManager)
-		if !ok {
-			return NewUnexpectedFilterConfigTypeError(filterConfig, &envoy_hcm.HttpConnectionManager{})
-		}
-		hcm.RouteSpecifier = &envoy_hcm.HttpConnectionManager_RouteConfig{
-			RouteConfig: config,
-		}
-		return nil
-	})
 }

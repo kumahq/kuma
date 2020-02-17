@@ -78,12 +78,12 @@ resources:
           httpFilters:
           - name: envoy.router
           routeConfig:
-            name: inbound
+            name: inbound:backend
             validateClusters: true
             virtualHosts:
             - domains:
               - '*'
-              name: local_service
+              name: backend
               routes:
               - match:
                   prefix: /

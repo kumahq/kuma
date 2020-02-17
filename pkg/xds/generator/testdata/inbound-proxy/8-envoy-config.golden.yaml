@@ -45,12 +45,12 @@ resources:
                 httpFilters:
                 - name: envoy.router
                 routeConfig:
-                  name: inbound
+                  name: inbound:backend1
                   validateClusters: true
                   virtualHosts:
                   - domains:
                     - '*'
-                    name: local_service
+                    name: backend1
                     routes:
                     - match:
                         prefix: /
@@ -176,12 +176,12 @@ resources:
                 httpFilters:
                 - name: envoy.router
                 routeConfig:
-                  name: inbound
+                  name: inbound:backend3
                   validateClusters: true
                   virtualHosts:
                   - domains:
                     - '*'
-                    name: local_service
+                    name: backend3
                     routes:
                     - match:
                         prefix: /
