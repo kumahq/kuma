@@ -1,8 +1,6 @@
 package listeners
 
 import (
-	"fmt"
-
 	"github.com/golang/protobuf/proto"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -10,6 +8,7 @@ import (
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
 )
 
@@ -29,7 +28,7 @@ type HttpInboundRouteConfigurer struct {
 }
 
 func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	routeName := fmt.Sprintf("inbound:%s", c.service)
+	routeName := envoy_names.GetInboundRouteName(c.service)
 	routeConfig, err := envoy_routes.NewRouteConfigurationBuilder().
 		Configure(envoy_routes.CommonRouteConfiguration(routeName)).
 		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder().

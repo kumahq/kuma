@@ -16,6 +16,7 @@ import (
 	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
 	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
 )
 
@@ -99,7 +100,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	resources := &model.ResourceSet{}
 	for i, endpoint := range endpoints {
 		// generate CDS resource
-		localClusterName := localClusterName(endpoint.WorkloadPort)
+		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 		resources.Add(&model.Resource{
 			Name:     localClusterName,
 			Version:  "",
@@ -110,7 +111,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
 		service := iface.GetService()
 		protocol := mesh_core.ParseProtocol(iface.GetProtocol())
-		inboundListenerName := inboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
+		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder()
 			switch protocol {
@@ -183,8 +184,8 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		protocol := InferServiceProtocol(endpoints)
 
 		// generate LDS resource
-		outboundListenerName := outboundListenerName(ofaces[i].DataplaneIP, ofaces[i].DataplanePort)
-		outboundRouteName := outboundRouteName(outbound.Service)
+		outboundListenerName := envoy_names.GetOutboundListenerName(ofaces[i].DataplaneIP, ofaces[i].DataplanePort)
+		outboundRouteName := envoy_names.GetOutboundRouteName(outbound.Service)
 		destinationService := outbound.Service
 
 		filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
@@ -238,7 +239,7 @@ func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy
 			continue
 		}
 		clusters = append(clusters, envoy_common.ClusterInfo{
-			Name:   destinationClusterName(service, destination.Destination),
+			Name:   envoy_names.GetDestinationClusterName(service, destination.Destination),
 			Weight: destination.Weight,
 			Tags:   destination.Destination,
 		})

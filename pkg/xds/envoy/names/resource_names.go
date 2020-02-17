@@ -1,4 +1,4 @@
-package generator
+package names
 
 import (
 	"fmt"
@@ -8,31 +8,35 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
-func localClusterName(port uint32) string {
+func GetLocalClusterName(port uint32) string {
 	return fmt.Sprintf("localhost:%d", port)
 }
 
-func inboundListenerName(address string, port uint32) string {
+func GetInboundListenerName(address string, port uint32) string {
 	return fmt.Sprintf("inbound:%s:%d", address, port)
 }
 
-func outboundListenerName(address string, port uint32) string {
+func GetOutboundListenerName(address string, port uint32) string {
 	return fmt.Sprintf("outbound:%s:%d", address, port)
 }
 
-func outboundRouteName(service string) string {
+func GetInboundRouteName(service string) string {
+	return fmt.Sprintf("inbound:%s", service)
+}
+
+func GetOutboundRouteName(service string) string {
 	return fmt.Sprintf("outbound:%s", service)
 }
 
-func envoyAdminClusterName() string {
+func GetEnvoyAdminClusterName() string {
 	return "kuma:envoy:admin"
 }
 
-func prometheusListenerName() string {
+func GetPrometheusListenerName() string {
 	return "kuma:metrics:prometheus"
 }
 
-func destinationClusterName(service string, selector map[string]string) string {
+func GetDestinationClusterName(service string, selector map[string]string) string {
 	var pairs []string
 	for key, value := range selector {
 		if key == mesh_proto.ServiceTag {

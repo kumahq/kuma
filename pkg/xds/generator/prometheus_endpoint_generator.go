@@ -8,6 +8,7 @@ import (
 
 	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
 )
 
 // PrometheusEndpointGenerator generates an inbound Envoy listener
@@ -57,8 +58,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	// since it would allow a malicious user to manipulate that value and use Prometheus endpoint
 	// as a gateway to another host.
 	adminAddress := "127.0.0.1"
-	envoyAdminClusterName := envoyAdminClusterName()
-	prometheusListenerName := prometheusListenerName()
+	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
+	prometheusListenerName := envoy_names.GetPrometheusListenerName()
 
 	listener, err := envoy_listeners.NewListenerBuilder().
 		Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
