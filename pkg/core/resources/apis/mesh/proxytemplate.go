@@ -72,3 +72,7 @@ func init() {
 	registry.RegisterType(&ProxyTemplateResource{})
 	registry.RegistryListType(&ProxyTemplateResourceList{})
 }
+
+func (t *ProxyTemplateResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.Selectors
+}
