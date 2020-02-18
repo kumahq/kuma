@@ -19,6 +19,7 @@ var _ = Describe("Dataplane", func() {
           inbound:
           - port: 80
             servicePort: 8080
+            address: 2.2.2.2
             tags:
               service: mobile
               version: "0.1"
@@ -46,6 +47,7 @@ var _ = Describe("Dataplane", func() {
 		Expect(dataplane.Networking.Inbound).To(HaveLen(1))
 		Expect(dataplane.Networking.Inbound[0].Port).To(Equal(uint32(80)))
 		Expect(dataplane.Networking.Inbound[0].ServicePort).To(Equal(uint32(8080)))
+		Expect(dataplane.Networking.Inbound[0].Address).To(Equal("2.2.2.2"))
 		Expect(dataplane.Networking.Inbound[0].Tags).To(HaveLen(3))
 		Expect(dataplane.Networking.Inbound[0].Tags).To(HaveKeyWithValue("service", "mobile"))
 		Expect(dataplane.Networking.Inbound[0].Tags).To(HaveKeyWithValue("version", "0.1"))
