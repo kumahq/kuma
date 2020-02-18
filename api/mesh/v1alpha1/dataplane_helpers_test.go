@@ -319,6 +319,89 @@ var _ = Describe("ParseOutboundInterface(..)", func() {
 
 var _ = Describe("Dataplane_Networking", func() {
 
+	Describe("GetOutboundInterfaces()", func() {
+		Context("valid input values", func() {
+			type testCase struct {
+				input    *Dataplane_Networking
+				expected []OutboundInterface
+			}
+
+			DescribeTable("should parse valid input values",
+				func(given testCase) {
+					// when
+					ofaces, err := given.input.GetOutboundInterfaces()
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					// and
+					Expect(ofaces).To(Equal(given.expected))
+				},
+				Entry("nil", testCase{
+					input:    nil,
+					expected: nil,
+				}),
+				Entry("empty", testCase{
+					input:    &Dataplane_Networking{},
+					expected: []OutboundInterface{},
+				}),
+				Entry("legacy - 2 outbound interfaces", testCase{
+					input: &Dataplane_Networking{
+						Outbound: []*Dataplane_Networking_Outbound{
+							{Interface: ":8080"},
+							{Interface: "192.168.0.1:443"},
+						},
+					},
+					expected: []OutboundInterface{
+						{DataplaneIP: "127.0.0.1", DataplanePort: 8080},
+						{DataplaneIP: "192.168.0.1", DataplanePort: 443},
+					},
+				}),
+				Entry("2 outbound interfaces", testCase{
+					input: &Dataplane_Networking{
+						Outbound: []*Dataplane_Networking_Outbound{
+							{
+								Port: 8080,
+							},
+							{
+								Address: "192.168.0.1",
+								Port:    443,
+							},
+						},
+					},
+					expected: []OutboundInterface{
+						{DataplaneIP: "127.0.0.1", DataplanePort: 8080},
+						{DataplaneIP: "192.168.0.1", DataplanePort: 443},
+					},
+				}),
+			)
+		})
+
+		Context("invalid input values", func() {
+			type testCase struct {
+				input       *Dataplane_Networking
+				expectedErr gomega_types.GomegaMatcher
+			}
+
+			DescribeTable("should fail on invalid input values",
+				func(given testCase) {
+					// when
+					ifaces, err := given.input.GetOutboundInterfaces()
+					// then
+					Expect(ifaces).To(BeNil())
+					// and
+					Expect(err.Error()).To(given.expectedErr)
+				},
+				Entry("dataplane IP address is missing", testCase{
+					input: &Dataplane_Networking{
+						Outbound: []*Dataplane_Networking_Outbound{
+							{Interface: ":443:8443"},
+						},
+					},
+					expectedErr: Equal(`invalid format: expected "[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT", got ":443:8443"`),
+				}),
+			)
+		})
+	})
+
 	Describe("GetInboundInterfaces()", func() {
 
 		Context("valid input values", func() {
@@ -344,7 +427,7 @@ var _ = Describe("Dataplane_Networking", func() {
 					input:    &Dataplane_Networking{},
 					expected: []InboundInterface{},
 				}),
-				Entry("2 inbound interfaces", testCase{
+				Entry("legacy - 2 inbound interfaces", testCase{
 					input: &Dataplane_Networking{
 						Inbound: []*Dataplane_Networking_Inbound{
 							{Interface: "192.168.0.1:80:8080"},
@@ -354,6 +437,25 @@ var _ = Describe("Dataplane_Networking", func() {
 					expected: []InboundInterface{
 						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadPort: 8080},
 						{DataplaneIP: "192.168.0.1", DataplanePort: 443, WorkloadPort: 8443},
+					},
+				}),
+				Entry("2 inbound interfaces", testCase{
+					input: &Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*Dataplane_Networking_Inbound{
+							{
+								Port: 80,
+							},
+							{
+								Address:     "192.168.0.2",
+								Port:        443,
+								ServicePort: 8443,
+							},
+						},
+					},
+					expected: []InboundInterface{
+						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadPort: 80},
+						{DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadPort: 8443},
 					},
 				}),
 			)

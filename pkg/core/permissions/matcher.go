@@ -12,9 +12,9 @@ type TrafficPermissionsMatcher struct {
 	ResourceManager manager.ResourceManager
 }
 
-type MatchedPermissions map[string]*mesh_core.TrafficPermissionResourceList
+type MatchedPermissions map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResourceList
 
-func (m MatchedPermissions) Get(inbound string) *mesh_core.TrafficPermissionResourceList {
+func (m MatchedPermissions) Get(inbound mesh_proto.InboundInterface) *mesh_core.TrafficPermissionResourceList {
 	matched, ok := m[inbound]
 	if ok {
 		return matched
@@ -28,24 +28,27 @@ func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *mesh_c
 	if err := m.ResourceManager.List(ctx, permissions, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, err
 	}
-	return MatchDataplaneTrafficPermissions(&dataplane.Spec, permissions), nil
+	return MatchDataplaneTrafficPermissions(&dataplane.Spec, permissions)
 }
 
-func MatchDataplaneTrafficPermissions(dataplane *mesh_proto.Dataplane, permissions *mesh_core.TrafficPermissionResourceList) MatchedPermissions {
+func MatchDataplaneTrafficPermissions(dataplane *mesh_proto.Dataplane, permissions *mesh_core.TrafficPermissionResourceList) (MatchedPermissions, error) {
 	matchedPermissions := make(MatchedPermissions)
-	for _, inbound := range dataplane.GetNetworking().GetInbound() {
-		matchedPermissions[inbound.Interface] = &mesh_core.TrafficPermissionResourceList{
+	ifaces, err := dataplane.GetNetworking().GetInboundInterfaces()
+	if err != nil {
+		return nil, err
+	}
+	for i, inbound := range dataplane.GetNetworking().GetInbound() {
+		matchedPermissions[ifaces[i]] = &mesh_core.TrafficPermissionResourceList{
 			Items: matchInbound(inbound, permissions),
 		}
 	}
-	return matchedPermissions
+	return matchedPermissions, nil
 }
 
 func matchInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, trafficPermissions *mesh_core.TrafficPermissionResourceList) []*mesh_core.TrafficPermissionResource {
 	matchedPerms := []*mesh_core.TrafficPermissionResource{}
 	for _, perm := range trafficPermissions.Items {
 		if len(perm.Spec.Sources) == 0 {
-			// todo(jakubdyszkiewicz) there shouldn't be any rule with 0 sources. Move to validation logic in a manager
 			continue
 		}
 		for _, dest := range perm.Spec.Destinations {

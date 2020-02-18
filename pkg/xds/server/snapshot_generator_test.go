@@ -69,7 +69,11 @@ var _ = Describe("Reconcile", func() {
 					Spec: dataplane,
 				},
 				TrafficPermissions: permissions.MatchedPermissions{
-					"192.168.0.1:80:8080": &mesh_core.TrafficPermissionResourceList{
+					mesh_proto.InboundInterface{
+						DataplaneIP:   "192.168.0.1",
+						DataplanePort: 80,
+						WorkloadPort:  8080,
+					}: &mesh_core.TrafficPermissionResourceList{
 						Items: []*mesh_core.TrafficPermissionResource{
 							&mesh_core.TrafficPermissionResource{
 								Meta: &test_model.ResourceMeta{

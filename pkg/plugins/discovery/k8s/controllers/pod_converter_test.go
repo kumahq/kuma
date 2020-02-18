@@ -136,7 +136,8 @@ var _ = Describe("PodToDataplane(..)", func() {
             metadata:
               creationTimestamp: null
             spec:
-              networking: {}
+              networking:
+                address: 192.168.0.1
 `,
 		}),
 		Entry("Pod with a Service but mismatching ports", testCase{
@@ -186,7 +187,8 @@ var _ = Describe("PodToDataplane(..)", func() {
             metadata:
               creationTimestamp: null
             spec:
-              networking: {}
+              networking:
+                address: 192.168.0.1
 `,
 		}),
 		Entry("Pod with 2 Services", testCase{
@@ -257,26 +259,27 @@ var _ = Describe("PodToDataplane(..)", func() {
               creationTimestamp: null
             spec:
               networking:
+                address: 192.168.0.1
                 inbound:
-                - interface: 192.168.0.1:8080:8080
+                - port: 8080
                   tags:
                     app: example
                     protocol: http
                     service: example.demo.svc:80
                     version: "0.1"
-                - interface: 192.168.0.1:8443:8443
+                - port: 8443
                   tags:
                     app: example
                     protocol: tcp
                     service: example.demo.svc:443
                     version: "0.1"
-                - interface: 192.168.0.1:7070:7070
+                - port: 7070
                   tags:
                     app: example
                     protocol: MONGO
                     service: sample.playground.svc:7071
                     version: "0.1"
-                - interface: 192.168.0.1:6060:6060
+                - port: 6060
                   tags:
                     app: example
                     protocol: tcp
@@ -315,13 +318,14 @@ var _ = Describe("PodToDataplane(..)", func() {
               namespace: playground
             spec:
               networking:
+                address: 10.244.0.25
                 inbound:
-                - interface: 10.244.0.25:80:80
+                - port: 80
                   tags:
                     app: test-app
                     pod-template-hash: 8646b8bbc8
                     service: test-app.playground.svc:80
-                - interface: 10.244.0.25:443:443
+                - port: 443
                   tags:
                     app: test-app
                     pod-template-hash: 8646b8bbc8
@@ -362,17 +366,20 @@ var _ = Describe("PodToDataplane(..)", func() {
               creationTimestamp: null
             spec:
               networking:
+                address: 192.168.0.1
                 inbound:
-                - interface: 192.168.0.1:8080:8080
+                - port: 8080
                   tags:
                     app: example
                     protocol: tcp
                     service: example.demo.svc:80
                     version: "0.1"
                 outbound:
-                - interface: 10.108.144.24:443
+                - address: 10.108.144.24
+                  port: 443
                   service: test-app.playground.svc:443
-                - interface: 10.108.144.24:80
+                - address: 10.108.144.24
+                  port: 80
                   service: test-app.playground.svc:80
 `,
 		}),
@@ -415,6 +422,7 @@ var _ = Describe("PodToDataplane(..)", func() {
               creationTimestamp: null
             spec:
               networking:
+                address: 192.168.0.1
                 gateway:
                   tags:
                     app: example
@@ -430,7 +438,8 @@ var _ = Describe("PodToDataplane(..)", func() {
             metadata:
               creationTimestamp: null
             spec:
-              networking: {}
+              networking:
+                address: 192.168.0.1
 `,
 		}),
 	)

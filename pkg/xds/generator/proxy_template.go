@@ -115,7 +115,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
 			Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
 			Configure(g.protocolSpecificOpts(service, protocol, envoy_listeners.ClusterInfo{Name: localClusterName})...).
-			Configure(envoy_listeners.NetworkRBAC(ctx.Mesh.Resource.Spec.GetMtls().GetEnabled(), proxy.TrafficPermissions.Get(endpoint.String()))).
+			Configure(envoy_listeners.NetworkRBAC(ctx.Mesh.Resource.Spec.GetMtls().GetEnabled(), proxy.TrafficPermissions.Get(endpoint))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()
 		if err != nil {
@@ -156,12 +156,11 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 	resources := &model.ResourceSet{}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
+	endpoints, err := proxy.Dataplane.Spec.Networking.GetOutboundInterfaces()
+	if err != nil {
+		return nil, err
+	}
 	for i, oface := range ofaces {
-		endpoint, err := kuma_mesh.ParseOutboundInterface(oface.Interface)
-		if err != nil {
-			return nil, errors.Wrapf(err, "%s: value is not valid: %q", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i).Field("interface"), oface.Interface)
-		}
-
 		// pick a route
 		route := proxy.TrafficRoutes[oface.Service]
 		if route == nil {
@@ -182,11 +181,11 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		resources.Add(edsResources...)
 
 		// generate LDS resource
-		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoint.DataplaneIP, endpoint.DataplanePort)
+		outboundListenerName := fmt.Sprintf("outbound:%s:%d", endpoints[i].DataplaneIP, endpoints[i].DataplanePort)
 		destinationService := oface.Service
 
 		listener, err := envoy_listeners.NewListenerBuilder().
-			Configure(envoy_listeners.OutboundListener(outboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
+			Configure(envoy_listeners.OutboundListener(outboundListenerName, endpoints[i].DataplaneIP, endpoints[i].DataplanePort)).
 			Configure(envoy_listeners.TcpProxy(oface.Service, clusters...)).
 			Configure(envoy_listeners.NetworkAccessLog(sourceService, destinationService, proxy.Logs[oface.Service], proxy)).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).

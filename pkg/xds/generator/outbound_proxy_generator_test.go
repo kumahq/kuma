@@ -391,7 +391,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
                     service: backend
 `,
 				chaos:              noExtraChaos,
-				expectedErrMatcher: HavePrefix(`dataplane.networking.outbound[0].interface: value is not valid: "127:not-a-port"`),
+				expectedErrMatcher: HavePrefix(`invalid DATAPLANE_IP in "127:not-a-port": "127" is not a valid IP address`),
 			}),
 			Entry("dataplane with an outbound interface that has no route", testCase{
 				ctx: plainCtx,

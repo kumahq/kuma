@@ -29,7 +29,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 	}
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
-		for _, inbound := range dataplane.Spec.Networking.GetInbound() {
+		for i, inbound := range dataplane.Spec.Networking.GetInbound() {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			selectors, ok := destinations[service]
 			if !ok {
@@ -45,7 +45,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 			if !matches {
 				continue
 			}
-			iface, err := mesh_proto.ParseInboundInterface(inbound.Interface)
+			iface, err := dataplane.Spec.Networking.GetInboundInterfaceByIdx(i)
 			if err != nil {
 				// skip dataplanes with invalid configuration
 				continue
