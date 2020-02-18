@@ -9,8 +9,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
@@ -20,8 +20,8 @@ import (
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
 
-func NetworkAccessLog(sourceService string, destinationService string, backend *v1alpha1.LoggingBackend, proxy *core_xds.Proxy) ListenerBuilderOpt {
-	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+func NetworkAccessLog(sourceService string, destinationService string, backend *v1alpha1.LoggingBackend, proxy *core_xds.Proxy) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		if backend != nil {
 			config.Add(&NetworkAccessLogConfigurer{
 				sourceService:      sourceService,
@@ -40,13 +40,13 @@ type NetworkAccessLogConfigurer struct {
 	proxy              *core_xds.Proxy
 }
 
-func (c *NetworkAccessLogConfigurer) Configure(l *v2.Listener) error {
+func (c *NetworkAccessLogConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	accessLog, err := convertLoggingBackend(c.sourceService, c.destinationService, c.backend, c.proxy)
 	if err != nil {
 		return err
 	}
 
-	return UpdateFilterConfig(l, envoy_wellknown.TCPProxy, func(filterConfig proto.Message) error {
+	return UpdateFilterConfig(filterChain, envoy_wellknown.TCPProxy, func(filterConfig proto.Message) error {
 		proxy, ok := filterConfig.(*envoy_tcp.TcpProxy)
 		if !ok {
 			return NewUnexpectedFilterConfigTypeError(filterConfig, &envoy_tcp.TcpProxy{})

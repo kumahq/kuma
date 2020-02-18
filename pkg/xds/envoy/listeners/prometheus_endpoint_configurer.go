@@ -12,9 +12,10 @@ import (
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
-func PrometheusEndpoint(path string, clusterName string) ListenerBuilderOpt {
-	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+func PrometheusEndpoint(statsName string, path string, clusterName string) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.Add(&PrometheusEndpointConfigurer{
+			statsName:   statsName,
 			path:        path,
 			clusterName: clusterName,
 		})
@@ -22,13 +23,14 @@ func PrometheusEndpoint(path string, clusterName string) ListenerBuilderOpt {
 }
 
 type PrometheusEndpointConfigurer struct {
+	statsName   string
 	path        string
 	clusterName string
 }
 
-func (c *PrometheusEndpointConfigurer) Configure(l *v2.Listener) error {
+func (c *PrometheusEndpointConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	config := &envoy_hcm.HttpConnectionManager{
-		StatPrefix: util_xds.SanitizeMetric(l.Name),
+		StatPrefix: util_xds.SanitizeMetric(c.statsName),
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
 		HttpFilters: []*envoy_hcm.HttpFilter{{
 			Name: envoy_wellknown.Router,
@@ -62,14 +64,11 @@ func (c *PrometheusEndpointConfigurer) Configure(l *v2.Listener) error {
 		return err
 	}
 
-	for i := range l.FilterChains {
-		l.FilterChains[i].Filters = append(l.FilterChains[i].Filters, &envoy_listener.Filter{
-			Name: envoy_wellknown.HTTPConnectionManager,
-			ConfigType: &envoy_listener.Filter_TypedConfig{
-				TypedConfig: pbst,
-			},
-		})
-	}
-
+	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
+		Name: envoy_wellknown.HTTPConnectionManager,
+		ConfigType: &envoy_listener.Filter_TypedConfig{
+			TypedConfig: pbst,
+		},
+	})
 	return nil
 }

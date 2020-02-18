@@ -8,6 +8,7 @@ import (
 	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("TcpProxyConfigurer", func() {
@@ -17,7 +18,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
-		clusters        []ClusterInfo
+		clusters        []envoy_common.ClusterInfo
 		expected        string
 	}
 
@@ -26,7 +27,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(TcpProxy(given.statsName, given.clusters...)).
+				Configure(FilterChain(NewFilterChainBuilder().
+					Configure(TcpProxy(given.statsName, given.clusters...)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -42,7 +44,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters: []ClusterInfo{
+			clusters: []envoy_common.ClusterInfo{
 				{Name: "localhost:8080", Weight: 200},
 			},
 			expected: `
@@ -65,7 +67,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
-			clusters: []ClusterInfo{{
+			clusters: []envoy_common.ClusterInfo{{
 				Name:   "db{version=v1}",
 				Weight: 10,
 				Tags:   map[string]string{"service": "db", "version": "v1"},

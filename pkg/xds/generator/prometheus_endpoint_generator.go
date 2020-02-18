@@ -62,7 +62,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 
 	listener, err := envoy_listeners.NewListenerBuilder().
 		Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
-		Configure(envoy_listeners.PrometheusEndpoint(prometheusEndpoint.Path, envoyAdminClusterName)).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+			Configure(envoy_listeners.PrometheusEndpoint(prometheusListenerName, prometheusEndpoint.Path, envoyAdminClusterName)))).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Build()
 	if err != nil {

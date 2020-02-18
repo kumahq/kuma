@@ -3,7 +3,6 @@ package listeners
 import (
 	"github.com/golang/protobuf/ptypes"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -11,8 +10,8 @@ import (
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
-func HttpConnectionManager(statsName string) ListenerBuilderOpt {
-	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+func HttpConnectionManager(statsName string) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.Add(&HttpConnectionManagerConfigurer{
 			statsName: statsName,
 		})
@@ -23,7 +22,7 @@ type HttpConnectionManagerConfigurer struct {
 	statsName string
 }
 
-func (c *HttpConnectionManagerConfigurer) Configure(l *v2.Listener) error {
+func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	config := &envoy_hcm.HttpConnectionManager{
 		StatPrefix: util_xds.SanitizeMetric(c.statsName),
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
@@ -38,14 +37,11 @@ func (c *HttpConnectionManagerConfigurer) Configure(l *v2.Listener) error {
 		return err
 	}
 
-	for i := range l.FilterChains {
-		l.FilterChains[i].Filters = append(l.FilterChains[i].Filters, &envoy_listener.Filter{
-			Name: envoy_wellknown.HTTPConnectionManager,
-			ConfigType: &envoy_listener.Filter_TypedConfig{
-				TypedConfig: pbst,
-			},
-		})
-	}
-
+	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
+		Name: envoy_wellknown.HTTPConnectionManager,
+		ConfigType: &envoy_listener.Filter_TypedConfig{
+			TypedConfig: pbst,
+		},
+	})
 	return nil
 }

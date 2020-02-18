@@ -3,22 +3,16 @@ package listeners
 import (
 	"github.com/golang/protobuf/ptypes"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
 
-type ClusterInfo struct {
-	Name   string
-	Weight uint32
-	Tags   map[string]string
-}
-
-func TcpProxy(statsName string, clusters ...ClusterInfo) ListenerBuilderOpt {
-	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+func TcpProxy(statsName string, clusters ...envoy_common.ClusterInfo) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.Add(&TcpProxyConfigurer{
 			statsName: statsName,
 			clusters:  clusters,
@@ -29,10 +23,10 @@ func TcpProxy(statsName string, clusters ...ClusterInfo) ListenerBuilderOpt {
 type TcpProxyConfigurer struct {
 	statsName string
 	// Clusters to forward traffic to.
-	clusters []ClusterInfo
+	clusters []envoy_common.ClusterInfo
 }
 
-func (c *TcpProxyConfigurer) Configure(l *v2.Listener) error {
+func (c *TcpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	tcpProxy := c.tcpProxy()
 
 	pbst, err := ptypes.MarshalAny(tcpProxy)
@@ -40,15 +34,12 @@ func (c *TcpProxyConfigurer) Configure(l *v2.Listener) error {
 		return err
 	}
 
-	for i := range l.FilterChains {
-		l.FilterChains[i].Filters = append(l.FilterChains[i].Filters, &envoy_listener.Filter{
-			Name: envoy_wellknown.TCPProxy,
-			ConfigType: &envoy_listener.Filter_TypedConfig{
-				TypedConfig: pbst,
-			},
-		})
-	}
-
+	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
+		Name: envoy_wellknown.TCPProxy,
+		ConfigType: &envoy_listener.Filter_TypedConfig{
+			TypedConfig: pbst,
+		},
+	})
 	return nil
 }
 

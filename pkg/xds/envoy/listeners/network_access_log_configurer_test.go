@@ -12,6 +12,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/xds"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("NetworkAccessLogConfigurer", func() {
@@ -21,7 +22,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
-		clusters        []ClusterInfo
+		clusters        []envoy_common.ClusterInfo
 		backend         *mesh_proto.LoggingBackend
 		expected        string
 	}
@@ -59,8 +60,9 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(TcpProxy(given.statsName, given.clusters...)).
-				Configure(NetworkAccessLog(sourceService, destinationService, given.backend, proxy)).
+				Configure(FilterChain(NewFilterChainBuilder().
+					Configure(TcpProxy(given.statsName, given.clusters...)).
+					Configure(NetworkAccessLog(sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -76,7 +78,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
-			clusters:        []ClusterInfo{{Name: "db", Weight: 200}},
+			clusters:        []envoy_common.ClusterInfo{{Name: "db", Weight: 200}},
 			backend:         nil,
 			expected: `
             name: outbound:127.0.0.1:5432
@@ -98,7 +100,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
-			clusters:        []ClusterInfo{{Name: "db", Weight: 200}},
+			clusters:        []envoy_common.ClusterInfo{{Name: "db", Weight: 200}},
 			backend: &mesh_proto.LoggingBackend{
 				Name: "file",
 				Type: &mesh_proto.LoggingBackend_File_{
@@ -134,7 +136,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
-			clusters:        []ClusterInfo{{Name: "db", Weight: 200}},
+			clusters:        []envoy_common.ClusterInfo{{Name: "db", Weight: 200}},
 			backend: &mesh_proto.LoggingBackend{
 				Name:   "tcp",
 				Format: "custom format",

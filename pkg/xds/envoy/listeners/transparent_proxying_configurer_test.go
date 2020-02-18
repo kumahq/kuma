@@ -53,8 +53,6 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
                 portValue: 8080
             deprecatedV1:
               bindToPort: false
-            filterChains:
-            - {}
 `,
 		}),
 		Entry("basic listener without transparent proxying", testCase{
@@ -68,8 +66,6 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            filterChains:
-            - {}
 `,
 		}),
 	)

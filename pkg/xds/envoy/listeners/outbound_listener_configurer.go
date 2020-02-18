@@ -3,7 +3,6 @@ package listeners
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 )
 
 func OutboundListener(listenerName string, address string, port uint32) ListenerBuilderOpt {
@@ -35,9 +34,7 @@ func (c *OutboundListenerConfigurer) Configure(l *v2.Listener) error {
 			},
 		},
 	}
-	l.FilterChains = []*envoy_listener.FilterChain{
-		{}, // 1 filter chain that will be configured later on
-	}
+	// notice that filter chain configuration is left up to other configurers
 
 	return nil
 }

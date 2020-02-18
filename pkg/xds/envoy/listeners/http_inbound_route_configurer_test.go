@@ -8,6 +8,7 @@ import (
 	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("HttpInboundRouteConfigurer", func() {
@@ -18,7 +19,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 		listenerPort    uint32
 		statsName       string
 		service         string
-		cluster         ClusterInfo
+		cluster         envoy_common.ClusterInfo
 		expected        string
 	}
 
@@ -27,8 +28,9 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(HttpConnectionManager(given.statsName)).
-				Configure(HttpInboundRoute(given.service, given.cluster)).
+				Configure(FilterChain(NewFilterChainBuilder().
+					Configure(HttpConnectionManager(given.statsName)).
+					Configure(HttpInboundRoute(given.service, given.cluster)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -45,7 +47,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			service:         "backend",
-			cluster:         ClusterInfo{Name: "localhost:8080", Weight: 200},
+			cluster:         envoy_common.ClusterInfo{Name: "localhost:8080", Weight: 200},
 			expected: `
             name: inbound:192.168.0.1:8080
             address:

@@ -13,6 +13,7 @@ import (
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("NetworkRbacConfigurer", func() {
@@ -22,7 +23,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
-		clusters        []ClusterInfo
+		clusters        []envoy_common.ClusterInfo
 		rbacEnabled     bool
 		permissions     *mesh_core.TrafficPermissionResourceList
 		expected        string
@@ -33,8 +34,9 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(TcpProxy(given.statsName, given.clusters...)).
-				Configure(NetworkRBAC(given.rbacEnabled, given.permissions)).
+				Configure(FilterChain(NewFilterChainBuilder().
+					Configure(TcpProxy(given.statsName, given.clusters...)).
+					Configure(NetworkRBAC(given.listenerName, given.rbacEnabled, given.permissions)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -50,7 +52,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []ClusterInfo{{Name: "localhost:8080", Weight: 200}},
+			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
 			rbacEnabled:     true,
 			permissions: &mesh_core.TrafficPermissionResourceList{
 				Items: []*mesh_core.TrafficPermissionResource{
@@ -113,7 +115,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []ClusterInfo{{Name: "localhost:8080", Weight: 200}},
+			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
 			rbacEnabled:     false,
 			permissions: &mesh_core.TrafficPermissionResourceList{
 				Items: []*mesh_core.TrafficPermissionResource{
