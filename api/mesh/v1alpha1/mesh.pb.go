@@ -296,7 +296,7 @@ var xxx_messageInfo_CertificateAuthority_Provided proto.InternalMessageInfo
 type Tracing struct {
 	// Name of the default backend
 	DefaultBackend string `protobuf:"bytes,1,opt,name=defaultBackend,proto3" json:"defaultBackend,omitempty"`
-	// List of available logging backends
+	// List of available tracing backends
 	Backends             []*TracingBackend `protobuf:"bytes,2,rep,name=backends,proto3" json:"backends,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -342,7 +342,7 @@ func (m *Tracing) GetBackends() []*TracingBackend {
 	return nil
 }
 
-// TracingBackend defines logging backend available to mesh. Backends can be
+// TracingBackend defines tracing backend available to mesh. Backends can be
 // used in TrafficTrace rules.
 type TracingBackend struct {
 	// Name of the backend, can be then used in Mesh.tracing.defaultBackend or in
