@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: TracingTrace entity
+  [#582](https://github.com/Kong/kuma/pull/582)
 * feature: Tracing section in Mesh entity
   [#581](https://github.com/Kong/kuma/pull/581)
 * chore: use new Dataplane format across the project
