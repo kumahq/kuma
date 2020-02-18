@@ -174,15 +174,12 @@ func ParseIP(text string) (string, error) {
 }
 
 func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInterface, error) {
-	ifaces, err := n.GetInboundInterfaces()
-	if err != nil {
-		return nil, err
-	}
 	for i, inbound := range n.Inbound {
 		if inbound.Tags[ServiceTag] != service {
 			continue
 		}
-		return &ifaces[i], nil
+		iface, err := n.GetInboundInterfaceByIdx(i)
+		return &iface, err
 	}
 	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
 }
@@ -192,31 +189,39 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 		return nil, nil
 	}
 	ifaces := make([]InboundInterface, len(n.Inbound))
-	for i, inbound := range n.Inbound {
-		if inbound.Interface != "" {
-			iface, err := ParseInboundInterface(inbound.Interface)
-			if err != nil {
-				return nil, err
-			}
-			ifaces[i] = iface
-		} else {
-			iface := InboundInterface{
-				DataplanePort: inbound.Port,
-			}
-			if inbound.Address != "" {
-				iface.DataplaneIP = inbound.Address
-			} else {
-				iface.DataplaneIP = n.Address
-			}
-			if inbound.ServicePort != 0 {
-				iface.WorkloadPort = inbound.ServicePort
-			} else {
-				iface.WorkloadPort = inbound.Port
-			}
-			ifaces[i] = iface
+	for i, _ := range n.Inbound {
+		iface, err := n.GetInboundInterfaceByIdx(i)
+		if err != nil {
+			return nil, err
 		}
+		ifaces[i] = iface
 	}
 	return ifaces, nil
+}
+
+func (n *Dataplane_Networking) GetInboundInterfaceByIdx(idx int) (InboundInterface, error) {
+	if idx >= len(n.Inbound) {
+		return InboundInterface{}, errors.Errorf("there is no inbound for index %d. Dataplane has %d inbounds", idx, len(n.Inbound))
+	}
+	inbound := n.Inbound[idx]
+	if inbound.Interface != "" {
+		return ParseInboundInterface(inbound.Interface)
+	} else {
+		iface := InboundInterface{
+			DataplanePort: inbound.Port,
+		}
+		if inbound.Address != "" {
+			iface.DataplaneIP = inbound.Address
+		} else {
+			iface.DataplaneIP = n.Address
+		}
+		if inbound.ServicePort != 0 {
+			iface.WorkloadPort = inbound.ServicePort
+		} else {
+			iface.WorkloadPort = inbound.Port
+		}
+		return iface, nil
+	}
 }
 
 // Matches is simply an alias for MatchTags to make source code more aesthetic.

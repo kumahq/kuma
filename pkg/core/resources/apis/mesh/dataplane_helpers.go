@@ -117,12 +117,12 @@ func (d *DataplaneResource) GetIP() string {
 		return d.Spec.Networking.Address
 	}
 	// fallback to legacy format
-	ifaces, err := d.Spec.Networking.GetInboundInterfaces()
+	if len(d.Spec.Networking.Inbound) == 0 {
+		return ""
+	}
+	iface, err := d.Spec.Networking.GetInboundInterfaceByIdx(0)
 	if err != nil {
 		return ""
 	}
-	if len(ifaces) == 0 {
-		return ""
-	}
-	return ifaces[0].DataplaneIP
+	return iface.DataplaneIP
 }

@@ -412,12 +412,12 @@ var _ = Describe("Dataplane", func() {
 				dataplane: `
                 networking:
                   inbound:
-                  - interface: 192.168.0.1:80:8080
-                    tags:
-                      service: backend
                   - interface: x.y.z.0
                     tags:
                       service: backend-https
+                  - interface: 192.168.0.1:80:8080
+                    tags:
+                      service: backend
 `,
 				expected: "",
 			}),
