@@ -11,4 +11,3 @@ networking:
   outbound:
   - interface: :30000
     service: postgres
-    servicePort: 5432

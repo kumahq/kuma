@@ -125,6 +125,8 @@ func (m *Dataplane_Networking) Validate() error {
 		return nil
 	}
 
+	// no validation rules for Address
+
 	for idx, item := range m.GetInbound() {
 		_, _ = idx, item
 
@@ -242,12 +244,13 @@ func (m *Dataplane_Networking_Inbound) Validate() error {
 		return nil
 	}
 
-	if utf8.RuneCountInString(m.GetInterface()) < 2 {
-		return Dataplane_Networking_InboundValidationError{
-			field:  "Interface",
-			reason: "value length must be at least 2 runes",
-		}
-	}
+	// no validation rules for Interface
+
+	// no validation rules for Port
+
+	// no validation rules for ServicePort
+
+	// no validation rules for Address
 
 	if len(m.GetTags()) < 1 {
 		return Dataplane_Networking_InboundValidationError{
@@ -324,25 +327,17 @@ func (m *Dataplane_Networking_Outbound) Validate() error {
 		return nil
 	}
 
-	if utf8.RuneCountInString(m.GetInterface()) < 2 {
-		return Dataplane_Networking_OutboundValidationError{
-			field:  "Interface",
-			reason: "value length must be at least 2 runes",
-		}
-	}
+	// no validation rules for Interface
+
+	// no validation rules for Address
+
+	// no validation rules for Port
 
 	if err := m._validateHostname(m.GetService()); err != nil {
 		return Dataplane_Networking_OutboundValidationError{
 			field:  "Service",
 			reason: "value must be a valid hostname",
 			cause:  err,
-		}
-	}
-
-	if val := m.GetServicePort(); val < 1 || val > 65535 {
-		return Dataplane_Networking_OutboundValidationError{
-			field:  "ServicePort",
-			reason: "value must be inside range [1, 65535]",
 		}
 	}
 

@@ -24,10 +24,8 @@ var _ = Describe("Dataplane", func() {
           outbound:
           - interface: :30000
             service: postgres
-            servicePort: 5432
           - interface: :50000
             service: redis.default.svc
-            servicePort: 8000
 `
 		// when
 		dataplane := &Dataplane{}
@@ -51,9 +49,7 @@ var _ = Describe("Dataplane", func() {
 		Expect(dataplane.Networking.Outbound).To(HaveLen(2))
 		Expect(dataplane.Networking.Outbound[0].Interface).To(Equal(":30000"))
 		Expect(dataplane.Networking.Outbound[0].Service).To(Equal("postgres"))
-		Expect(dataplane.Networking.Outbound[0].ServicePort).To(Equal(uint32(5432)))
 		Expect(dataplane.Networking.Outbound[1].Interface).To(Equal(":50000"))
 		Expect(dataplane.Networking.Outbound[1].Service).To(Equal("redis.default.svc"))
-		Expect(dataplane.Networking.Outbound[1].ServicePort).To(Equal(uint32(8000)))
 	})
 })
