@@ -12,15 +12,18 @@ var _ = Describe("Matcher", func() {
 	It("should match only proper permissions", func() {
 		dataplane := mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 					{
-						Interface: "192.168.0.1:8080:80",
+						Port:        8080,
+						ServicePort: 80,
 						Tags: map[string]string{
 							"service": "backend",
 						},
 					},
 					{
-						Interface: "192.168.0.1:8090:90",
+						Port:        8090,
+						ServicePort: 90,
 						Tags: map[string]string{
 							"service": "web",
 						},

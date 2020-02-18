@@ -54,14 +54,18 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
 		Expect(resource.Meta.GetMesh()).To(Equal("default"))
 		// and
+		Expect(resource.Spec.Networking.Address).To(Equal("2.2.2.2"))
+		//and
 		Expect(resource.Spec.Networking.Inbound).To(HaveLen(1))
-		Expect(resource.Spec.Networking.Inbound[0].Interface).To(Equal("1.1.1.1:80:8080"))
+		Expect(resource.Spec.Networking.Inbound[0].Address).To(Equal("1.1.1.1"))
+		Expect(resource.Spec.Networking.Inbound[0].Port).To(Equal(uint32(80)))
+		Expect(resource.Spec.Networking.Inbound[0].ServicePort).To(Equal(uint32(8080)))
 		Expect(resource.Spec.Networking.Inbound[0].Tags).To(HaveKeyWithValue("service", "web"))
 		Expect(resource.Spec.Networking.Inbound[0].Tags).To(HaveKeyWithValue("version", "1.0"))
 		Expect(resource.Spec.Networking.Inbound[0].Tags).To(HaveKeyWithValue("env", "production"))
 		// and
 		Expect(resource.Spec.Networking.Outbound).To(HaveLen(1))
-		Expect(resource.Spec.Networking.Outbound[0].Interface).To(Equal(":30000"))
+		Expect(resource.Spec.Networking.Outbound[0].Port).To(Equal(uint32(3000)))
 		Expect(resource.Spec.Networking.Outbound[0].Service).To(Equal("postgres"))
 	}
 
@@ -128,9 +132,11 @@ var _ = Describe("kumactl apply", func() {
 		newResource := mesh.DataplaneResource{
 			Spec: v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{
+					Address: "8.8.8.8",
 					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 						{
-							Interface: "8.8.8.8:443:8443",
+							Port:        443,
+							ServicePort: 8443,
 							Tags: map[string]string{
 								"service": "default",
 								"version": "default",

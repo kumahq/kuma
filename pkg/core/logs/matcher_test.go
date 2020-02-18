@@ -51,15 +51,18 @@ var _ = Describe("Matcher", func() {
 		dpRes = core_mesh.DataplaneResource{
 			Spec: mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "127.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Interface: "127.0.0.1:8080:8081",
+							Port:        8080,
+							ServicePort: 8081,
 							Tags: map[string]string{
 								"service": "kong",
 							},
 						},
 						{
-							Interface: "127.0.0.1:8090:8091",
+							Port:        8090,
+							ServicePort: 8091,
 							Tags: map[string]string{
 								"service": "kong-admin",
 							},
@@ -67,12 +70,12 @@ var _ = Describe("Matcher", func() {
 					},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
-							Interface: ":9091",
-							Service:   "backend",
+							Port:    9091,
+							Service: "backend",
 						},
 						{
-							Interface: ":9092",
-							Service:   "web",
+							Port:    9092,
+							Service: "web",
 						},
 					},
 				},

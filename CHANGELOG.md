@@ -4,6 +4,8 @@
 
 Changes:
 
+* chore: use new Dataplane format across the project
+  [#578](https://github.com/Kong/kuma/pull/580)
 * feature: support new format of the Dataplane including scraping metrics from Gateway Dataplane
   [#578](https://github.com/Kong/kuma/pull/579)
 * feature: new Dataplane format

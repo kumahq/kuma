@@ -1,12 +1,15 @@
 items:
   - dataplane:
       networking:
+        address: 127.0.0.1
         inbound:
-          - interface: 127.0.0.1:8080:80
+          - port: 8080
+            servicePort: 80
             tags:
               service: mobile
               version: v1
-          - interface: 127.0.0.1:8090:90
+          - port: 8090
+            servicePort: 90
             tags:
               service: metrics
               version: v1
@@ -16,10 +19,6 @@ items:
           controlPlaneInstanceId: node-001
           id: "1"
           status:
-            cds: {}
-            eds: {}
-            lds: {}
-            rds: {}
             total:
               responsesRejected: "1"
               responsesSent: "10"
@@ -27,10 +26,6 @@ items:
           controlPlaneInstanceId: node-002
           id: "2"
           status:
-            cds: {}
-            eds: {}
-            lds: {}
-            rds: {}
             total:
               responsesRejected: "2"
               responsesSent: "20"
@@ -39,36 +34,20 @@ items:
     type: DataplaneOverview
   - dataplane:
       networking:
+        address: 127.0.0.1
         inbound:
-          - interface: 127.0.0.1:8080:80
+          - port: 8080
+            servicePort: 80
             tags:
               service: example
     dataplaneInsight:
       subscriptions:
         - controlPlaneInstanceId: node-001
           id: "1"
-          status:
-            cds: {}
-            eds: {}
-            lds: {}
-            rds: {}
-            total: {}
         - controlPlaneInstanceId: node-002
           id: "2"
-          status:
-            cds: {}
-            eds: {}
-            lds: {}
-            rds: {}
-            total: {}
         - controlPlaneInstanceId: node-003
           id: "3"
-          status:
-            cds: {}
-            eds: {}
-            lds: {}
-            rds: {}
-            total: {}
     mesh: default
     name: example
     type: DataplaneOverview

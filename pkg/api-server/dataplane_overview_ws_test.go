@@ -54,9 +54,11 @@ var _ = Describe("Dataplane Overview WS", func() {
 		dpResource := mesh_core.DataplaneResource{
 			Spec: v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{
+					Address: "127.0.0.1",
 					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 						{
-							Interface: "127.0.0.1:9090:9091",
+							Port:        9090,
+							ServicePort: 9091,
 							Tags: map[string]string{
 								"service": "sample",
 								"version": "v1",
@@ -93,9 +95,11 @@ var _ = Describe("Dataplane Overview WS", func() {
 	"mesh": "mesh1",
 	"dataplane": {
 		"networking": {
+			"address": "127.0.0.1",
 			"inbound": [
 				{
-					"interface": "127.0.0.1:9090:9091",
+					"port": 9090,
+					"servicePort": 9091,
 					"tags": {
 						"service": "sample",
 						"version": "v1"

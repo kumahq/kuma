@@ -89,8 +89,10 @@ type: Dataplane
 mesh: default
 name: kuma-example-app
 networking:
+  address: {{ IP }}
   inbound:
-  - interface: {{ IP }}:{{ PUBLIC_PORT }}:{{ LOCAL_PORT }}
+  - port: {{ PUBLIC_PORT }}
+    servicePort: {{ LOCAL_PORT }}
     tags:
       service: kuma-example-app
       protocol: http
@@ -105,12 +107,14 @@ type: Dataplane
 mesh: default
 name: kuma-example-client
 networking:
+  address: {{ IP }}
   inbound:
-  - interface: {{ IP }}:{{ PUBLIC_PORT }}:{{ LOCAL_PORT }}
+  - port: {{ PUBLIC_PORT }}
+    servicePort: {{ LOCAL_PORT }}
     tags:
       service: kuma-example-client
   outbound:
-  - interface: :4000
+  - port: 4000
     service: kuma-example-app"
 
 #
@@ -122,14 +126,16 @@ type: Dataplane
 mesh: default
 name: kuma-example-web
 networking:
+  address: {{ IP }}
   inbound:
-  - interface: {{ IP }}:{{ PUBLIC_PORT }}:{{ LOCAL_PORT }}
+  - port: {{ PUBLIC_PORT }}
+    servicePort: {{ LOCAL_PORT }}
     tags:
       service: kuma-example-web
       version: v8
       env: prod
   outbound:
-  - interface: :5000
+  - port: 5000
     service: kuma-example-backend"
 
 #
@@ -141,8 +147,10 @@ type: Dataplane
 mesh: default
 name: kuma-example-backend-v1
 networking:
+  address: {{ IP }}
   inbound:
-  - interface: {{ IP }}:{{ PUBLIC_PORT }}:{{ LOCAL_PORT }}
+  - port: {{ PUBLIC_PORT }}
+    servicePort: {{ LOCAL_PORT }}
     tags:
       service: kuma-example-backend
       protocol: http
@@ -158,8 +166,10 @@ type: Dataplane
 mesh: default
 name: kuma-example-backend-v2
 networking:
+  address: {{ IP }}
   inbound:
-  - interface: {{ IP }}:{{ PUBLIC_PORT }}:{{ LOCAL_PORT }}
+  - port: {{ PUBLIC_PORT }}
+    servicePort: {{ LOCAL_PORT }}
     tags:
       service: kuma-example-backend
       protocol: http

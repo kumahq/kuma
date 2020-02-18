@@ -150,7 +150,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			dataplane: `
             networking:
               outbound:
-              - interface: :18080
+              - port: 18080
                 service: backend
 `,
 			expected: "03.envoy.golden.yaml",
@@ -160,7 +160,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			dataplane: `
             networking:
               outbound:
-              - interface: :18080
+              - port: 18080
                 service: backend
               transparentProxying:
                 redirectPort: 15001
@@ -172,7 +172,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			dataplane: `
             networking:
               outbound:
-              - interface: :18080
+              - port: 18080
                 service: backend
 `,
 			expected: "05.envoy.golden.yaml",
@@ -182,7 +182,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			dataplane: `
             networking:
               outbound:
-              - interface: :18080
+              - port: 18080
                 service: backend
               transparentProxying:
                 redirectPort: 15001
@@ -194,9 +194,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			dataplane: `
             networking:
               outbound:
-              - interface: :18080
+              - port: 18080
                 service: backend
-              - interface: :54321
+              - port: 54321
                 service: db
 `,
 			expected: "07.envoy.golden.yaml",
@@ -206,9 +206,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			dataplane: `
             networking:
               outbound:
-              - interface: :18080
+              - port: 18080
                 service: backend
-              - interface: :54321
+              - port: 54321
                 service: db
               transparentProxying:
                 redirectPort: 15001
@@ -223,9 +223,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		dp := `
         networking:
           outbound:
-          - interface: :18080
+          - port: 18080
             service: backend.kuma-system
-          - interface: :54321
+          - port: 54321
             service: db.kuma-system`
 
 		dataplane := mesh_proto.Dataplane{}
@@ -398,7 +398,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				dataplane: `
                 networking:
                   outbound:
-                  - interface: :18080
+                  - port: 18080
                     service: backend
 `,
 				chaos: func(proxy *model.Proxy) {
@@ -412,7 +412,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				dataplane: `
                 networking:
                   outbound:
-                  - interface: :18080
+                  - port: 18080
                     service: backend
 `,
 				chaos: func(proxy *model.Proxy) {

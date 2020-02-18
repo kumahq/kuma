@@ -59,16 +59,19 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				Spec: mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "127.0.0.1",
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{
-									Interface: "127.0.0.1:8080:80",
+									Port:        8080,
+									ServicePort: 80,
 									Tags: map[string]string{
 										"service": "mobile",
 										"version": "v1",
 									},
 								},
 								{
-									Interface: "127.0.0.1:8090:90",
+									Port:        8090,
+									ServicePort: 90,
 									Tags: map[string]string{
 										"service": "metrics",
 										"version": "v1",
@@ -113,9 +116,11 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				Spec: mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "127.0.0.1",
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{
-									Interface: "127.0.0.1:8080:80",
+									Port:        8080,
+									ServicePort: 80,
 									Tags: map[string]string{
 										"service": "example",
 									},
@@ -144,7 +149,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 		}
 	})
 
-	Describe("GetDataplanesCmd", func() {
+	Describe("InspectDataplanesCmd", func() {
 
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
@@ -183,7 +188,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "dataplanes"}, given.outputFormat))
+					"inspect", "dataplanes"}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()
@@ -228,7 +233,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// given
 				rootCmd.SetArgs([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "dataplanes", "--tag", "service=mobile", "--tag", "version=v1"})
+					"inspect", "dataplanes", "--tag", "service=mobile", "--tag", "version=v1"})
 
 				// when
 				err := rootCmd.Execute()

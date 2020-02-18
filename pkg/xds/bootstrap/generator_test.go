@@ -35,9 +35,11 @@ var _ = Describe("bootstrapGenerator", func() {
 		dataplane := mesh.DataplaneResource{
 			Spec: mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Interface: "8.8.8.8:443:8443",
+							Port:        443,
+							ServicePort: 8443,
 							Tags: map[string]string{
 								"service": "backend",
 							},

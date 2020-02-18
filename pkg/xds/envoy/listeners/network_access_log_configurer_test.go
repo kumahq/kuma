@@ -39,15 +39,17 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 				Dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-								Interface: "192.168.0.1:1234:8765",
+								Port:        1234,
+								ServicePort: 8765,
 								Tags: map[string]string{
 									"service": "backend",
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
-								Interface: ":15432",
-								Service:   "db",
+								Port:    15432,
+								Service: "db",
 							}},
 						},
 					},

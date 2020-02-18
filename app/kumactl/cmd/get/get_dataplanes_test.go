@@ -40,16 +40,19 @@ var _ = Describe("kumactl get dataplanes", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Interface: "127.0.0.1:8080:80",
+								Port:        8080,
+								ServicePort: 80,
 								Tags: map[string]string{
 									"service": "mobile",
 									"version": "v1",
 								},
 							},
 							{
-								Interface: "127.0.0.1:8090:90",
+								Port:        8090,
+								ServicePort: 90,
 								Tags: map[string]string{
 									"service": "metrics",
 									"version": "v1",
@@ -66,9 +69,11 @@ var _ = Describe("kumactl get dataplanes", func() {
 				},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.2",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Interface: "127.0.0.2:8080:80",
+								Port:        8080,
+								ServicePort: 80,
 								Tags: map[string]string{
 									"service": "web",
 									"version": "v2",

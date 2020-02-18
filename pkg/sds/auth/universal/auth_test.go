@@ -41,9 +41,11 @@ var _ = Describe("Authentication flow", func() {
 		dpRes := core_mesh.DataplaneResource{
 			Spec: v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{
+					Address: "127.0.0.1",
 					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 						{
-							Interface: "127.0.0.1:8080:8081",
+							Port:        8080,
+							ServicePort: 8081,
 							Tags: map[string]string{
 								"service": "web",
 							},

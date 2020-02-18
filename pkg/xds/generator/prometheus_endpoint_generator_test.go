@@ -400,12 +400,14 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			Entry("should not overshadow inbound listener port", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                  - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
                 metrics:
                   prometheus:
@@ -415,12 +417,14 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			Entry("should not overshadow application port", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                  - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
                 metrics:
                   prometheus:
@@ -430,12 +434,14 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			Entry("should not overshadow outbound listener port", testCase{
 				dataplane: `
                 networking:
+                  address: 192.168.0.1
                   inbound:
-                  - interface: 192.168.0.1:80:8080
+                  - port: 80
+                    servicePort: 8080
                   outbound:
-                  - interface: :54321
+                  - port: 54321
                     service: db
-                  - interface: :59200
+                  - port: 59200
                     service: elastic
                 metrics:
                   prometheus:

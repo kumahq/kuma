@@ -90,8 +90,10 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-									Interface: "192.168.0.1:80:8080",
+									Port:        80,
+									ServicePort: 8080,
 									Tags: map[string]string{
 										"service": "backend",
 									},
@@ -133,8 +135,10 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-									Interface: "192.168.0.1:80:8080",
+									Port:        80,
+									ServicePort: 8080,
 									Tags: map[string]string{
 										"service": "backend",
 									},
@@ -176,8 +180,10 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-									Interface: "192.168.0.1:80:8080",
+									Port:        80,
+									ServicePort: 8080,
 									Tags: map[string]string{
 										"service": "backend",
 										"env":     "prod",
@@ -193,8 +199,10 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-									Interface: "192.168.0.2:443:8443",
+									Port:        443,
+									ServicePort: 8443,
 									Tags: map[string]string{
 										"service": "backend",
 										"env":     "intg",
