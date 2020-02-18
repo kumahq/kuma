@@ -29,6 +29,18 @@ var _ = Describe("Mesh", func() {
                 tcp:
                   address: kibana:1234
               defaultBackend: tcp-1
+            tracing:
+              backends:
+              - name: zipkin-us
+                sampling: 80.0
+                zipkin:
+                  url: http://zipkin.local/v2/spans
+                  traceId128bit: true
+                  apiVersion: httpProto
+              - name: zipkin-eu
+                zipkin:
+                  url: http://zipkin.local/v2/spans
+              defaultBackend: zipkin-us
 `
 			mesh := MeshResource{}
 
@@ -152,6 +164,96 @@ var _ = Describe("Mesh", func() {
                 violations:
                 - field: logging.defaultBackend
                   message: has to be set to one of the logging backend in mesh`,
+			}),
+			Entry("tracing backend with empty name", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name:
+                    zipkin:
+                      url: http://zipkin.local/v2/spans`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].name
+                  message: cannot be empty`,
+			}),
+			Entry("multiple tracing backend with the same name", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: zipkin-us
+                    zipkin:
+                      url: http://zipkin.local/v2/spans
+                  - name: zipkin-us
+                    zipkin:
+                      url: http://zipkin.local/v2/spans`,
+				expected: `
+                violations:
+                - field: tracing.backends[1].name
+                  message: '"zipkin-us" name is already used for another backend'`,
+			}),
+			Entry("tracing with invalid sampling", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: zipkin-us
+                    sampling: 100.1
+                    zipkin:
+                      url: http://zipkin-us.local/v2/spans`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].sampling
+                  message: has to be in [0.0 - 100.0] range`,
+			}),
+			Entry("tracing with zipkin without url", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: zipkin-us
+                    zipkin:
+                      url: ""`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].zipkin.url
+                  message: cannot be empty`,
+			}),
+			Entry("tracing with zipkin with invalid url", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: zipkin-us
+                    zipkin:
+                      url: invalid-url`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].zipkin.url
+                  message: invalid URL`,
+			}),
+			Entry("tracing with zipkin with invalid apiVersion", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: zipkin-us
+                    zipkin:
+                      url: http://zipkin-us.local/v2/spans
+                      apiVersion: invalid`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].zipkin.apiVersion
+                  message: has to be either "httpJson" or "httpProto"`,
+			}),
+			Entry("default backend has to be set to one of the backends", testCase{
+				mesh: `
+                tracing:
+                  defaultBackend: non-existent
+                  backends:
+                  - name: zipkin-us
+                    zipkin:
+                      url: http://zipkin.local/v2/spans`,
+				expected: `
+                violations:
+                - field: tracing.defaultBackend
+                  message: has to be set to one of the tracing backend in mesh`,
 			}),
 			Entry("multiple errors", testCase{
 				mesh: `

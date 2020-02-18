@@ -130,7 +130,16 @@ var _ = Describe("Resource WS", func() {
 				},
 				Spec: &v1alpha1.Mesh{
 					Tracing: &v1alpha1.Tracing{
-						Type: &v1alpha1.Tracing_Zipkin_{},
+						Backends: []*v1alpha1.TracingBackend{
+							{
+								Name: "zipkin-us",
+								Type: &v1alpha1.TracingBackend_Zipkin_{
+									Zipkin: &v1alpha1.TracingBackend_Zipkin{
+										Url: "http://zipkin-us/v2/spans",
+									},
+								},
+							},
+						},
 					},
 				},
 			}
@@ -141,7 +150,7 @@ var _ = Describe("Resource WS", func() {
 			resource := mesh.MeshResource{}
 			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, name))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resource.Spec.Tracing.Type).To(Equal(&v1alpha1.Tracing_Zipkin_{}))
+			Expect(resource.Spec.Tracing.Backends[0].Name).To(Equal("zipkin-us"))
 		})
 
 		It("should return 400 on the type in url that is different from request", func() {

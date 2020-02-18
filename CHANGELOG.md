@@ -4,12 +4,14 @@
 
 Changes:
 
+* feature: Tracing section in Mesh entity
+  [#581](https://github.com/Kong/kuma/pull/581)
 * chore: use new Dataplane format across the project
-  [#578](https://github.com/Kong/kuma/pull/580)
+  [#580](https://github.com/Kong/kuma/pull/580)
 * feature: support new format of the Dataplane including scraping metrics from Gateway Dataplane
-  [#578](https://github.com/Kong/kuma/pull/579)
+  [#579](https://github.com/Kong/kuma/pull/579)
 * feature: new Dataplane format
-  [#578](https://github.com/Kong/kuma/pull/576)
+  [#578](https://github.com/Kong/kuma/pull/578)
 * feature: validate value of `protocol` tag on a Dataplane resource
   [#576](https://github.com/Kong/kuma/pull/576)
 * feature: support `<port>.service.kuma.io/protocol` annotation on k8s as a way for users to indicate protocol of a service
