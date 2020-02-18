@@ -240,7 +240,7 @@ var _ = Describe("Mesh", func() {
 				expected: `
                 violations:
                 - field: tracing.backends[0].zipkin.apiVersion
-                  message: has to be either "httpJson" or "httpProto"`,
+                  message: 'has to be one of the following values: "httpJsonV1", "httpJson" or "httpProto"'`,
 			}),
 			Entry("default backend has to be set to one of the backends", testCase{
 				mesh: `

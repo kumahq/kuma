@@ -1,0 +1,74 @@
+dynamicResources:
+  adsConfig:
+    apiType: GRPC
+    grpcServices:
+      - envoyGrpc:
+          clusterName: ads_cluster
+  cdsConfig:
+    ads: {}
+  ldsConfig:
+    ads: {}
+node:
+  cluster: backend
+  id: mesh.name.namespace
+staticResources:
+  clusters:
+    - connectTimeout: 1s
+      http2ProtocolOptions: {}
+      loadAssignment:
+        clusterName: ads_cluster
+        endpoints:
+          - lbEndpoints:
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: 127.0.0.1
+                      portValue: 5678
+      name: ads_cluster
+      type: STRICT_DNS
+      upstreamConnectionOptions:
+        tcpKeepalive: {}
+    - connectTimeout: 1s
+      http2ProtocolOptions: {}
+      loadAssignment:
+        clusterName: access_log_sink
+        endpoints:
+          - lbEndpoints:
+              - endpoint:
+                  address:
+                    pipe:
+                      path: /tmp/kuma-access-logs-name.namespace-mesh.sock
+      name: access_log_sink
+      type: STATIC
+      upstreamConnectionOptions:
+        tcpKeepalive: {}
+    - connectTimeout: 10s
+      loadAssignment:
+        clusterName: zipkin-us
+        endpoints:
+          - lbEndpoints:
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: zipkin.us
+                      portValue: 9090
+      name: zipkin-us
+      type: STRICT_DNS
+statsConfig:
+  statsTags:
+    - regex: ^grpc\.((.+)\.)
+      tagName: name
+    - regex: ^grpc.*streams_closed(_([0-9]+))
+      tagName: status
+    - regex: (worker_([0-9]+)\.)
+      tagName: worker
+    - regex: ((.+?)\.)rbac\.
+      tagName: listener
+tracing:
+  http:
+    name: envoy.zipkin
+    typedConfig:
+      '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
+      collectorCluster: zipkin-us
+      collectorEndpoint: /v2/spans
+      collectorEndpointVersion: HTTP_JSON

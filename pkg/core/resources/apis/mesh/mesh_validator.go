@@ -120,8 +120,8 @@ func validateZipkin(zipkin *mesh_proto.TracingBackend_Zipkin) validators.Validat
 	} else if _, err := url.ParseRequestURI(zipkin.Url); err != nil {
 		verr.AddViolation("url", "invalid URL")
 	}
-	if zipkin.ApiVersion != "" && zipkin.ApiVersion != "httpJson" && zipkin.ApiVersion != "httpProto" {
-		verr.AddViolation("apiVersion", `has to be either "httpJson" or "httpProto"`)
+	if zipkin.ApiVersion != "" && zipkin.ApiVersion != "httpJsonV1" && zipkin.ApiVersion != "httpJson" && zipkin.ApiVersion != "httpProto" {
+		verr.AddViolation("apiVersion", `has to be one of the following values: "httpJsonV1", "httpJson" or "httpProto"`)
 	}
 	return verr
 }
