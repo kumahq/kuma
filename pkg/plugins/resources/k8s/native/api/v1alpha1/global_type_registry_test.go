@@ -74,6 +74,11 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &TrafficRoute{},
 				expectedKind: "TrafficRoute",
 			}),
+			Entry("TrafficTrace", testCase{
+				inputType:    &mesh_proto.TrafficTrace{},
+				expectedType: &TrafficTrace{},
+				expectedKind: "TrafficTrace",
+			}),
 		)
 	})
 
@@ -135,6 +140,11 @@ var _ = Describe("global TypeRegistry", func() {
 				inputType:    &mesh_proto.TrafficRoute{},
 				expectedType: &TrafficRouteList{},
 				expectedKind: "TrafficRouteList",
+			}),
+			Entry("TrafficTraceList", testCase{
+				inputType:    &mesh_proto.TrafficTrace{},
+				expectedType: &TrafficTraceList{},
+				expectedKind: "TrafficTraceList",
 			}),
 		)
 	})

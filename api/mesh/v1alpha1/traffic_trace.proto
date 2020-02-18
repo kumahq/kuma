@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+import "mesh/v1alpha1/selector.proto";
+
+// TrafficTrace defines trace configuration for selected dataplanes.
+message TrafficTrace {
+
+  // List of selectors to match dataplanes.
+  repeated Selector selectors = 1;
+
+  // Configuration defines settings of the tracing.
+  message Conf {
+    // Backend defined in the Mesh entity.
+    string backend = 1;
+  }
+
+  // Configuration of the tracing.
+  Conf conf = 3;
+}

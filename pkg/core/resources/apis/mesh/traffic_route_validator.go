@@ -15,6 +15,10 @@ func (d *TrafficRouteResource) Validate() error {
 func (d *TrafficRouteResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
+		ValidateSelectorOpts: ValidateSelectorOpts{
+			RequireAtLeastOneTag: true,
+			RequireService:       true,
+		},
 	})
 }
 
@@ -28,7 +32,10 @@ func (d *TrafficRouteResource) validateConf() (err validators.ValidationError) {
 		err.AddViolationAt(root, "must have at least one element")
 	}
 	for i, routeEntry := range d.Spec.Conf {
-		err.Add(ValidateSelector(root.Index(i).Field("destination"), routeEntry.GetDestination(), ValidateSelectorOpts{}))
+		err.Add(ValidateSelector(root.Index(i).Field("destination"), routeEntry.GetDestination(), ValidateSelectorOpts{
+			RequireAtLeastOneTag: true,
+			RequireService:       true,
+		}))
 	}
 	return
 }

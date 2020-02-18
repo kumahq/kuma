@@ -209,6 +209,7 @@ webhooks:
           - trafficlogs
           - trafficpermissions
           - trafficroutes
+          - traffictraces
           - dataplanes
           - healthchecks
           - meshes
