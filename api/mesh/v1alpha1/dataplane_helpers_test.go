@@ -447,7 +447,7 @@ var _ = Describe("Dataplane_Networking", func() {
 								Port: 80,
 							},
 							{
-								Address:     "192.168.0.1",
+								Address:     "192.168.0.2",
 								Port:        443,
 								ServicePort: 8443,
 							},
@@ -455,7 +455,7 @@ var _ = Describe("Dataplane_Networking", func() {
 					},
 					expected: []InboundInterface{
 						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadPort: 80},
-						{DataplaneIP: "192.168.0.1", DataplanePort: 443, WorkloadPort: 8443},
+						{DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadPort: 8443},
 					},
 				}),
 			)

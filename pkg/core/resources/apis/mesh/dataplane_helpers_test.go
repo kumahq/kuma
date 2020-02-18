@@ -379,6 +379,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   inbound:
                   - port: 8080
+                    address: 192.168.0.2
                     tags:
                       service: backend
 `,
