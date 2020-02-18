@@ -16,7 +16,7 @@ func (d *TrafficLogResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
-			RequireService: true,
+			RequireService:       true,
 			RequireAtLeastOneTag: true,
 		},
 	})

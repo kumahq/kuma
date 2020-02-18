@@ -24,7 +24,7 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 type TrafficTrace struct {
 	// List of selectors to match dataplanes.
 	Selectors []*Selector `protobuf:"bytes,1,rep,name=selectors,proto3" json:"selectors,omitempty"`
-	// Configuration of the logging.
+	// Configuration of the tracing.
 	Conf                 *TrafficTrace_Conf `protobuf:"bytes,3,opt,name=conf,proto3" json:"conf,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`

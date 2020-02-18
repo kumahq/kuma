@@ -71,7 +71,7 @@ func ValidateSelector(path validators.PathBuilder, selector map[string]string, o
 var OnlyServiceTagAllowed = ValidateSelectorsOpts{
 	RequireAtLeastOneSelector: true,
 	ValidateSelectorOpts: ValidateSelectorOpts{
-		RequireService:       true,
+		RequireService: true,
 		ExtraSelectorValidators: []SelectorValidatorFunc{
 			func(path validators.PathBuilder, selector map[string]string) (err validators.ValidationError) {
 				_, defined := selector[mesh_proto.ServiceTag]

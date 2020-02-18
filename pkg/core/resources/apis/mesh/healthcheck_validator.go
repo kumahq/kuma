@@ -30,7 +30,7 @@ func (d *HealthCheckResource) validateSources() validators.ValidationError {
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
-			RequireService: true,
+			RequireService:       true,
 		},
 	})
 }

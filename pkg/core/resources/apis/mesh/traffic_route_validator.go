@@ -17,7 +17,7 @@ func (d *TrafficRouteResource) validateSources() validators.ValidationError {
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
-			RequireService: true,
+			RequireService:       true,
 		},
 	})
 }
@@ -34,7 +34,7 @@ func (d *TrafficRouteResource) validateConf() (err validators.ValidationError) {
 	for i, routeEntry := range d.Spec.Conf {
 		err.Add(ValidateSelector(root.Index(i).Field("destination"), routeEntry.GetDestination(), ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
-			RequireService: true,
+			RequireService:       true,
 		}))
 	}
 	return
