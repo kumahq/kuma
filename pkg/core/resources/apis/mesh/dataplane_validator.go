@@ -28,7 +28,7 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		err.AddViolationAt(path, "inbound cannot be defined both with gateway")
 	}
 	// backwards compatibility validate networking.address only when all inbounds are in new format
-	if !hasLegacyInbound(networking) {
+	if networking.Address != "" || !hasLegacyInbound(networking) {
 		if net.ParseIP(networking.Address) == nil {
 			err.AddViolationAt(path.Field("address"), "address has to be valid IP address")
 		}
