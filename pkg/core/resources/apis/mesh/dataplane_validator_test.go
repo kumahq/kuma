@@ -81,6 +81,7 @@ var _ = Describe("Dataplane", func() {
             name: dp-1
             mesh: default
             networking:
+              address: 192.168.0.1
               gateway:
                 tags:
                   service: backend
@@ -154,6 +155,27 @@ var _ = Describe("Dataplane", func() {
                 - field: networking
                   message: inbound cannot be defined both with gateway`,
 		}),
+		Entry("networking: invalid address", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: invalid
+                  inbound:
+                    - port: 8080
+                      servicePort: 7777
+                      tags:
+                        service: backend
+                        version: "1"
+                  outbound:
+                    - port: 3333
+                      service: redis`,
+			expected: `
+                violations:
+                - field: networking.address
+                  message: address has to be valid IP address`,
+		}),
 		Entry("networking.inbound: port of the range", testCase{
 			dataplane: `
                 type: Dataplane
@@ -174,9 +196,9 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.inbound[0].port
-                  message: port has to in range of [1, 65535]
+                  message: port has to be in range of [1, 65535]
                 - field: networking.inbound[1].port
-                  message: port has to in range of [1, 65535]`,
+                  message: port has to be in range of [1, 65535]`,
 		}),
 		Entry("networking.inbound: servicePort out of the range", testCase{
 			dataplane: `
@@ -196,7 +218,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.inbound[0].servicePort
-                  message: servicePort has to in range of [1, 65535]`,
+                  message: servicePort has to be in range of [0, 65535]`,
 		}),
 		Entry("networking.inbound: invalid address", testCase{
 			dataplane: `
@@ -374,9 +396,9 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.outbound[0].port
-                  message: port has to in range of [1, 65535]
+                  message: port has to be in range of [1, 65535]
                 - field: networking.outbound[1].port
-                  message: port has to in range of [1, 65535]`,
+                  message: port has to be in range of [1, 65535]`,
 		}),
 		Entry("networking.outbound: invalid address", testCase{
 			dataplane: `
@@ -399,7 +421,26 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.outbound[0].address
                   message: address has to be valid IP address`,
 		}),
-		Entry("networking: invalid address", testCase{
+		Entry("legacy - networking.outbound: invalid interface", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  inbound:
+                    - interface: 192.168.0.1:1234:5678
+                      tags:
+                        service: backend
+                        version: "v1"
+                  outbound:
+                    - interface: invalid
+                      service: elastic`,
+			expected: `
+                violations:
+                - field: networking.outbound[0].interface
+                  message: 'invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT where DATAPLANE_IP is optional. E.g. 127.0.0.1:9090, :9090, [::1]:8080'`,
+		}),
+		Entry("networking.outbound: invalid address", testCase{
 			dataplane: `
                 type: Dataplane
                 name: dp-1

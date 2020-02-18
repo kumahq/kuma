@@ -15,10 +15,9 @@ func (d *DataplaneResource) Validate() error {
 }
 
 // For networking section validation we need to take into account our legacy model.
-// Legacy model is detected by having interface defined either on inbound listeners.
+// Legacy model is detected by having interface defined on inbound listeners.
 // We do not allow networking.address with the old format. Instead, we recommend switching to the new format.
-// When we've got dataplane in the new format, we require networking.address field to be defined unless it is Gateway
-// then for the backward compatibility for the old format we cannot require it yet.
+// When we've got dataplane in the new format, we require networking.address field to be defined.
 func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
 	var err validators.ValidationError
 	path := validators.RootedAt("networking")
@@ -29,7 +28,7 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		err.AddViolationAt(path, "inbound cannot be defined both with gateway")
 	}
 	// backwards compatibility validate networking.address only when all inbounds are in new format
-	if !hasLegacyInbound(networking) && networking.Gateway == nil {
+	if !hasLegacyInbound(networking) {
 		if net.ParseIP(networking.Address) == nil {
 			err.AddViolationAt(path.Field("address"), "address has to be valid IP address")
 		}
@@ -78,10 +77,10 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 		}
 	} else {
 		if inbound.Port < 1 || inbound.Port > 65535 {
-			result.AddViolationAt(validators.RootedAt("port"), `port has to in range of [1, 65535]`)
+			result.AddViolationAt(validators.RootedAt("port"), `port has to be in range of [1, 65535]`)
 		}
 		if inbound.ServicePort > 65535 {
-			result.AddViolationAt(validators.RootedAt("servicePort"), `servicePort has to in range of [1, 65535]`)
+			result.AddViolationAt(validators.RootedAt("servicePort"), `servicePort has to be in range of [0, 65535]`)
 		}
 		if inbound.Address != "" && net.ParseIP(inbound.Address) == nil {
 			result.AddViolationAt(validators.RootedAt("address"), `address has to be valid IP address`)
@@ -117,7 +116,7 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		}
 	} else {
 		if outbound.Port < 1 || outbound.Port > 65535 {
-			result.AddViolation("port", "port has to in range of [1, 65535]")
+			result.AddViolation("port", "port has to be in range of [1, 65535]")
 		}
 		if outbound.Address != "" && net.ParseIP(outbound.Address) == nil {
 			result.AddViolation("address", "address has to be valid IP address")
