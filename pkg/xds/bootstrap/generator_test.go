@@ -50,7 +50,23 @@ var _ = Describe("bootstrapGenerator", func() {
 		}
 
 		// when
-		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh", "mesh"))
+		meshRes := mesh.MeshResource{
+			Spec: mesh_proto.Mesh{
+				Tracing: &mesh_proto.Tracing{
+					Backends: []*mesh_proto.TracingBackend{
+						{
+							Name: "zipkin-us",
+							Type: &mesh_proto.TracingBackend_Zipkin_{
+								Zipkin: &mesh_proto.TracingBackend_Zipkin{
+									Url: "http://zipkin.us:9090/v2/spans",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		err := resManager.Create(context.Background(), &meshRes, store.CreateByKey("mesh", "mesh"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -153,4 +169,54 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.custom-config.golden.yaml",
 		}),
 	)
+
+	It("should generate bootstrap configuration with zipkin tracing", func() {
+		// setup
+		trafficTrace := mesh.TrafficTraceResource{
+			Spec: mesh_proto.TrafficTrace{
+				Selectors: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service": "backend",
+						},
+					},
+				},
+				Conf: &mesh_proto.TrafficTrace_Conf{
+					Backend: "zipkin-us",
+				},
+			},
+		}
+		err := resManager.Create(context.Background(), &trafficTrace, store.CreateByKey("tt", "mesh"))
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		params := bootstrap_config.DefaultBootstrapParamsConfig()
+		params.XdsHost = "127.0.0.1"
+		params.XdsPort = 5678
+
+		generator := NewDefaultBootstrapGenerator(resManager, params)
+		request := types.BootstrapRequest{
+			Mesh: "mesh",
+			Name: "name.namespace",
+		}
+
+		// when
+		bootstrapConfig, err := generator.Generate(context.Background(), request)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		actual, err := util_proto.ToYAML(bootstrapConfig)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		expected, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap.tracing.yaml"))
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// expect
+		Expect(actual).To(MatchYAML(expected))
+	})
 })
