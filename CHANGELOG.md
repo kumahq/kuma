@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: TracingTrace in Kuma REST API
+  [#583](https://github.com/Kong/kuma/pull/583)
 * feature: TracingTrace entity
   [#582](https://github.com/Kong/kuma/pull/582)
 * feature: Tracing section in Mesh entity

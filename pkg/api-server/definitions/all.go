@@ -9,4 +9,5 @@ var All = []ResourceWsDefinition{
 	TrafficPermissionWsDefinition,
 	TrafficLogWsDefinition,
 	TrafficRouteWsDefinition,
+	TrafficTraceWsDefinition,
 }
