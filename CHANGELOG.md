@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: support new format of the Dataplane including scraping metrics from Gateway Dataplane
+  [#578](https://github.com/Kong/kuma/pull/579)
 * feature: new Dataplane format
   [#578](https://github.com/Kong/kuma/pull/576)
 * feature: validate value of `protocol` tag on a Dataplane resource
