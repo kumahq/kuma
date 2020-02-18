@@ -11,7 +11,6 @@ import (
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )

@@ -67,6 +67,22 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					Spec: dataplane,
 				},
 				TrafficRoutes: model.RouteMap{
+					"api-http": &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      100,
+								Destination: mesh_proto.MatchService("api-http"),
+							}},
+						},
+					},
+					"api-tcp": &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      100,
+								Destination: mesh_proto.MatchService("api-tcp"),
+							}},
+						},
+					},
 					"backend": &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
@@ -91,6 +107,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 				OutboundSelectors: model.DestinationMap{
+					"api-http": model.TagSelectorSet{
+						{"service": "api-http"},
+					},
+					"api-tcp": model.TagSelectorSet{
+						{"service": "api-tcp"},
+					},
 					"backend": model.TagSelectorSet{
 						{"service": "backend"},
 					},
@@ -101,7 +123,15 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 				OutboundTargets: model.EndpointMap{
-					"backend": []model.Endpoint{
+					"api-http": []model.Endpoint{ // notice that all endpoints have tag `protocol: http`
+						{Target: "192.168.0.4", Port: 8084, Tags: map[string]string{"service": "api-http", "protocol": "http", "region": "us"}},
+						{Target: "192.168.0.5", Port: 8085, Tags: map[string]string{"service": "api-http", "protocol": "http", "region": "eu"}},
+					},
+					"api-tcp": []model.Endpoint{ // notice that not every endpoint has a `protocol: http` tag
+						{Target: "192.168.0.6", Port: 8086, Tags: map[string]string{"service": "api-tcp", "protocol": "http", "region": "us"}},
+						{Target: "192.168.0.7", Port: 8087, Tags: map[string]string{"service": "api-tcp", "region": "eu"}},
+					},
+					"backend": []model.Endpoint{ // notice that not every endpoint has a tag `protocol: http`
 						{Target: "192.168.0.1", Port: 8081, Tags: map[string]string{"service": "backend", "region": "us"}},
 						{Target: "192.168.0.2", Port: 8082},
 					},
@@ -214,6 +244,40 @@ var _ = Describe("OutboundProxyGenerator", func() {
                 redirectPort: 15001
 `,
 			expected: "08.envoy.golden.yaml",
+		}),
+		Entry("09. transparent_proxying=false, mtls=false, outbound=4", testCase{
+			ctx: plainCtx,
+			dataplane: `
+            networking:
+              outbound:
+              - port: 18080
+                service: backend
+              - port: 54321
+                service: db
+              - port: 40001
+                service: api-http
+              - port: 40002
+                service: api-tcp
+`,
+			expected: "09.envoy.golden.yaml",
+		}),
+		Entry("10. transparent_proxying=true, mtls=true, outbound=4", testCase{
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              outbound:
+              - port: 18080
+                service: backend
+              - port: 54321
+                service: db
+              - port: 40001
+                service: api-http
+              - port: 40002
+                service: api-tcp
+              transparentProxying:
+                redirectPort: 15001
+`,
+			expected: "10.envoy.golden.yaml",
 		}),
 	)
 

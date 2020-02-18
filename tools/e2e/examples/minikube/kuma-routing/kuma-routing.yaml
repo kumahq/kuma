@@ -89,11 +89,14 @@ metadata:
   name: kuma-example-backend
   namespace: kuma-example
   annotations:
-    7070.service.kuma.io/protocol: http
+    8080.service.kuma.io/protocol: http
 spec:
   ports:
   - port: 7070
+    name: tcp
+  - port: 8080
     name: http
+    targetPort: 7070
   selector:
     app: kuma-example-backend
 ---
