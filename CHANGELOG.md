@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: new Dataplane format
+  [#578](https://github.com/Kong/kuma/pull/576)
 * feature: validate value of `protocol` tag on a Dataplane resource
   [#576](https://github.com/Kong/kuma/pull/576)
 * feature: support `<port>.service.kuma.io/protocol` annotation on k8s as a way for users to indicate protocol of a service
