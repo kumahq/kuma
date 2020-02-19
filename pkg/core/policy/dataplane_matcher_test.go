@@ -2,6 +2,7 @@ package policy_test
 
 import (
 	"sort"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -64,88 +65,7 @@ var _ = Describe("Dataplane matcher", func() {
 		)
 	})
 
-	Describe("ScoreMatch()", func() {
-
-		type testCase struct {
-			selector      map[string]string
-			target        map[string]string
-			expectedMatch bool
-			expectedScore int
-		}
-
-		DescribeTable("should match and score properly",
-			func(given testCase) {
-				// when
-				match, score := policy.ScoreMatch(given.selector, given.target)
-				// then
-				Expect(match).To(Equal(given.expectedMatch))
-				Expect(score).To(Equal(given.expectedScore))
-			},
-			Entry("both selector and target are nil", testCase{
-				selector:      nil,
-				target:        nil,
-				expectedMatch: true,
-				expectedScore: 0,
-			}),
-			Entry("both selector and target are empty", testCase{
-				selector:      map[string]string{},
-				target:        map[string]string{},
-				expectedMatch: true,
-				expectedScore: 0,
-			}),
-			Entry("empty selector and non-empty target", testCase{
-				selector: nil,
-				target: map[string]string{
-					"app": "example",
-				},
-				expectedMatch: true,
-				expectedScore: 0,
-			}),
-			Entry("non-empty selector and empty target", testCase{
-				selector: map[string]string{
-					"app": "example",
-				},
-				target:        nil,
-				expectedMatch: false,
-				expectedScore: 0,
-			}),
-			Entry("selector with more tags than target", testCase{
-				selector: map[string]string{
-					"app":     "example",
-					"version": "0.1",
-				},
-				target: map[string]string{
-					"app": "example",
-				},
-				expectedMatch: false,
-				expectedScore: 0,
-			}),
-			Entry("selector with the same tags as target", testCase{
-				selector: map[string]string{
-					"app": "example",
-				},
-				target: map[string]string{
-					"app": "example",
-				},
-				expectedMatch: true,
-				expectedScore: 1,
-			}),
-			Entry("selector with the same 2 tags as target", testCase{
-				selector: map[string]string{
-					"app":     "example",
-					"version": "0.1",
-				},
-				target: map[string]string{
-					"app":     "example",
-					"version": "0.1",
-				},
-				expectedMatch: true,
-				expectedScore: 2,
-			}),
-		)
-	})
-
-	Describe("FindBestMatch()", func() {
+	Describe("SelectDataplanePolicy()", func() {
 
 		type testCase struct {
 			proxy    *model.Proxy
@@ -156,7 +76,7 @@ var _ = Describe("Dataplane matcher", func() {
 		DescribeTable("should find the best match (the one with the highest number of matching key-value pairs)",
 			func(given testCase) {
 				// when
-				actual := policy.FindBestMatch(given.proxy.Dataplane, given.policies)
+				actual := policy.SelectDataplanePolicy(given.proxy.Dataplane, given.policies)
 				// then
 				if given.expected == nil {
 					Expect(actual).To(BeNil())
@@ -169,36 +89,40 @@ var _ = Describe("Dataplane matcher", func() {
 				policies: nil,
 				expected: nil,
 			}),
-			Entry("policies have no selectors (the first one should become the best match)", testCase{
+			Entry("policies have no selectors (latest should be selected)", testCase{
 				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
 				policies: []policy.DataplanePolicy{
 					&mesh_core.ProxyTemplateResource{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "last",
+							Mesh:         "demo",
+							Name:         "b",
+							CreationTime: time.Unix(1, 1),
 						},
 					},
 					&mesh_core.ProxyTemplateResource{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "first",
+							Mesh:         "demo",
+							Name:         "a",
+							CreationTime: time.Unix(0, 0),
 						},
 					},
 				},
 				expected: &mesh_core.ProxyTemplateResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh: "demo",
-						Name: "first",
+						Mesh:         "demo",
+						Name:         "b",
+						CreationTime: time.Unix(1, 1),
 					},
 				},
 			}),
-			Entry("policies have empty selectors (the first one should become the best match)", testCase{
+			Entry("policies have empty selectors (latest should be selected)", testCase{
 				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
 				policies: []policy.DataplanePolicy{
 					&mesh_core.ProxyTemplateResource{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "last",
+							Mesh:         "demo",
+							Name:         "b",
+							CreationTime: time.Unix(1, 1),
 						},
 						Spec: mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
@@ -208,8 +132,9 @@ var _ = Describe("Dataplane matcher", func() {
 					},
 					&mesh_core.ProxyTemplateResource{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "first",
+							Mesh:         "demo",
+							Name:         "a",
+							CreationTime: time.Unix(0, 0),
 						},
 						Spec: mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
@@ -220,8 +145,9 @@ var _ = Describe("Dataplane matcher", func() {
 				},
 				expected: &mesh_core.ProxyTemplateResource{
 					Meta: &test_model.ResourceMeta{
-						Mesh: "demo",
-						Name: "first",
+						Mesh:         "demo",
+						Name:         "b",
+						CreationTime: time.Unix(1, 1),
 					},
 					Spec: mesh_proto.ProxyTemplate{
 						Selectors: []*mesh_proto.Selector{
@@ -310,6 +236,122 @@ var _ = Describe("Dataplane matcher", func() {
 									"app":     "example",
 									"version": "1.0",
 									"env":     "prod",
+								},
+							},
+						},
+					},
+				},
+			}),
+			Entry("two policies with the same rank (latest should be picked)", testCase{
+				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Tags: map[string]string{
+										"app":     "example",
+										"version": "1.0",
+										"env":     "prod",
+									},
+								},
+							},
+						},
+					},
+				}},
+				policies: []policy.DataplanePolicy{
+					&mesh_core.ProxyTemplateResource{
+						Meta: &test_model.ResourceMeta{
+							Mesh:         "demo",
+							Name:         "b",
+							CreationTime: time.Unix(1, 1),
+						},
+						Spec: mesh_proto.ProxyTemplate{
+							Selectors: []*mesh_proto.Selector{
+								{
+									Match: map[string]string{
+										"app": "example",
+									},
+								},
+							},
+						},
+					},
+					&mesh_core.ProxyTemplateResource{
+						Meta: &test_model.ResourceMeta{
+							Mesh:         "demo",
+							Name:         "a",
+							CreationTime: time.Unix(0, 0),
+						},
+						Spec: mesh_proto.ProxyTemplate{
+							Selectors: []*mesh_proto.Selector{
+								{
+									Match: map[string]string{
+										"app": "example",
+									},
+								},
+							},
+						},
+					},
+				},
+				expected: &mesh_core.ProxyTemplateResource{
+					Meta: &test_model.ResourceMeta{
+						Mesh:         "demo",
+						Name:         "b",
+						CreationTime: time.Unix(1, 1),
+					},
+					Spec: mesh_proto.ProxyTemplate{
+						Selectors: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"app": "example",
+								},
+							},
+						},
+					},
+				},
+			}),
+			Entry("gateway dataplane matches policies", testCase{
+				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+								Tags: map[string]string{
+									"app":     "example",
+									"version": "1.0",
+									"env":     "prod",
+								},
+							},
+						},
+					},
+				}},
+				policies: []policy.DataplanePolicy{
+					&mesh_core.ProxyTemplateResource{
+						Meta: &test_model.ResourceMeta{
+							Mesh:         "demo",
+							Name:         "first",
+							CreationTime: time.Unix(1, 1),
+						},
+						Spec: mesh_proto.ProxyTemplate{
+							Selectors: []*mesh_proto.Selector{
+								{
+									Match: map[string]string{
+										"app": "example",
+									},
+								},
+							},
+						},
+					},
+				},
+				expected: &mesh_core.ProxyTemplateResource{
+					Meta: &test_model.ResourceMeta{
+						Mesh:         "demo",
+						Name:         "first",
+						CreationTime: time.Unix(1, 1),
+					},
+					Spec: mesh_proto.ProxyTemplate{
+						Selectors: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"app": "example",
 								},
 							},
 						},
