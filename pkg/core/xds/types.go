@@ -63,6 +63,8 @@ type Proxy struct {
 	OutboundSelectors  DestinationMap
 	OutboundTargets    EndpointMap
 	HealthChecks       HealthCheckMap
+	TrafficTrace       *mesh_core.TrafficTraceResource
+	TracingBackend     *mesh_proto.TracingBackend
 	Metadata           *DataplaneMetadata
 }
 

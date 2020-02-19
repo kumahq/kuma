@@ -83,6 +83,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			},
 			expected: `
             name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 192.168.0.1
@@ -146,6 +147,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			},
 			expected: `
             name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 192.168.0.1

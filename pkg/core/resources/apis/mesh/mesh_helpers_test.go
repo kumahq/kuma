@@ -51,4 +51,126 @@ var _ = Describe("MeshResource", func() {
 			}),
 		)
 	})
+
+	Describe("GetTracingBackend", func() {
+
+		type testCase struct {
+			mesh     *MeshResource
+			name     string
+			expected string
+		}
+
+		DescribeTable("should return tracing backend",
+			func(given testCase) {
+				// when
+				backend := given.mesh.GetTracingBackend(given.name)
+
+				// then
+				if given.expected == "" {
+					Expect(backend).To(BeNil())
+				} else {
+					Expect(backend.Name).To(Equal(given.expected))
+				}
+			},
+			Entry("two backends and name that exists", testCase{
+				mesh: &MeshResource{
+					Spec: mesh_proto.Mesh{
+						Tracing: &mesh_proto.Tracing{
+							DefaultBackend: "zipkin-us",
+							Backends: []*mesh_proto.TracingBackend{
+								{
+									Name: "zipkin-us",
+									Type: &mesh_proto.TracingBackend_Zipkin_{
+										Zipkin: &mesh_proto.TracingBackend_Zipkin{
+											Url: "http://zipkin.us:8080/v1/spans",
+										},
+									},
+								},
+								{
+									Name: "zipkin-eu",
+									Type: &mesh_proto.TracingBackend_Zipkin_{
+										Zipkin: &mesh_proto.TracingBackend_Zipkin{
+											Url: "http://zipkin.eu:8080/v1/spans",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				name:     "zipkin-eu",
+				expected: "zipkin-eu",
+			}),
+			Entry("nil when backend does not exist", testCase{
+				mesh: &MeshResource{
+					Spec: mesh_proto.Mesh{
+						Tracing: &mesh_proto.Tracing{
+							DefaultBackend: "zipkin-us",
+							Backends: []*mesh_proto.TracingBackend{
+								{
+									Name: "zipkin-us",
+									Type: &mesh_proto.TracingBackend_Zipkin_{
+										Zipkin: &mesh_proto.TracingBackend_Zipkin{
+											Url: "http://zipkin.us:8080/v1/spans",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				name:     "non-existing-backend",
+				expected: "",
+			}),
+			Entry("default backend when name is not specified", testCase{
+				mesh: &MeshResource{
+					Spec: mesh_proto.Mesh{
+						Tracing: &mesh_proto.Tracing{
+							DefaultBackend: "zipkin-eu",
+							Backends: []*mesh_proto.TracingBackend{
+								{
+									Name: "zipkin-us",
+									Type: &mesh_proto.TracingBackend_Zipkin_{
+										Zipkin: &mesh_proto.TracingBackend_Zipkin{
+											Url: "http://zipkin.us:8080/v1/spans",
+										},
+									},
+								},
+								{
+									Name: "zipkin-eu",
+									Type: &mesh_proto.TracingBackend_Zipkin_{
+										Zipkin: &mesh_proto.TracingBackend_Zipkin{
+											Url: "http://zipkin.eu:8080/v1/spans",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				name:     "",
+				expected: "zipkin-eu",
+			}),
+			Entry("nil when name and default backend are not specified", testCase{
+				mesh: &MeshResource{
+					Spec: mesh_proto.Mesh{
+						Tracing: &mesh_proto.Tracing{
+							Backends: []*mesh_proto.TracingBackend{
+								{
+									Name: "zipkin-us",
+									Type: &mesh_proto.TracingBackend_Zipkin_{
+										Zipkin: &mesh_proto.TracingBackend_Zipkin{
+											Url: "http://zipkin.us:8080/v1/spans",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				name:     "",
+				expected: "",
+			}),
+		)
+	})
 })

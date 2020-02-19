@@ -46,6 +46,7 @@ var _ = Describe("PrometheusEndpointConfigurer", func() {
 			clusterName:     "kuma:envoy:admin",
 			expected: `
             name: kuma:metrics:prometheus
+            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 192.168.0.1

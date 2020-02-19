@@ -79,6 +79,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
         - name: catch_all
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
+            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 0.0.0.0

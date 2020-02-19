@@ -72,3 +72,7 @@ func init() {
 	registry.RegisterType(&TrafficTraceResource{})
 	registry.RegistryListType(&TrafficTraceResourceList{})
 }
+
+func (t *TrafficTraceResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.GetSelectors()
+}

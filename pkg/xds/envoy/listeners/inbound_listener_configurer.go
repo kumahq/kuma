@@ -23,6 +23,7 @@ type InboundListenerConfigurer struct {
 
 func (c *InboundListenerConfigurer) Configure(l *v2.Listener) error {
 	l.Name = c.listenerName
+	l.TrafficDirection = envoy_core.TrafficDirection_INBOUND
 	l.Address = &envoy_core.Address{
 		Address: &envoy_core.Address_SocketAddress{
 			SocketAddress: &envoy_core.SocketAddress{

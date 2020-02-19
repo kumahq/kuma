@@ -25,3 +25,14 @@ func (m *MeshResource) HasProvidedCA() bool {
 func (m *MeshResource) HasPrometheusMetricsEnabled() bool {
 	return m != nil && m.Spec.GetMetrics().GetPrometheus() != nil
 }
+
+func (m *MeshResource) GetTracingBackend(name string) *mesh_proto.TracingBackend {
+	backends := map[string]*mesh_proto.TracingBackend{}
+	for _, backend := range m.Spec.GetTracing().GetBackends() {
+		backends[backend.Name] = backend
+	}
+	if name == "" {
+		return backends[m.Spec.GetTracing().GetDefaultBackend()]
+	}
+	return backends[name]
+}

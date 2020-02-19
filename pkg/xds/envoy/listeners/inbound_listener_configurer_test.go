@@ -40,6 +40,7 @@ var _ = Describe("InboundListenerConfigurer", func() {
 			listenerPort:    8080,
 			expected: `
             name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 192.168.0.1

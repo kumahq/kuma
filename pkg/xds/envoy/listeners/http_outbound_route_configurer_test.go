@@ -47,6 +47,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 			routeName:       "outbound:backend",
 			expected: `
             name: outbound:127.0.0.1:18080
+            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 127.0.0.1
