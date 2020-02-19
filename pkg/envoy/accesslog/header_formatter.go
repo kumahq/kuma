@@ -24,7 +24,7 @@ type HeaderFormatter struct {
 func (f *HeaderFormatter) Format(headers Headers) (string, error) {
 	value, exists := headers.Get(f.Header)
 	if !exists && f.AltHeader != "" {
-		value, exists = headers.Get(f.AltHeader)
+		value, _ = headers.Get(f.AltHeader)
 	}
 	if f.MaxLength > 0 && len(value) > f.MaxLength {
 		return value[:f.MaxLength], nil

@@ -94,9 +94,9 @@ func (f FieldFormatter) formatAccessLogCommon(entry *accesslog_data.AccessLogCom
 	case "ROUTE_NAME":
 		return entry.GetRouteName(), nil
 	case "DOWNSTREAM_PEER_URI_SAN":
-		return f.formatSans(entry.GetTlsProperties().GetPeerCertificateProperties().GetSubjectAltName())
+		return f.formatUriSans(entry.GetTlsProperties().GetPeerCertificateProperties().GetSubjectAltName())
 	case "DOWNSTREAM_LOCAL_URI_SAN":
-		return f.formatSans(entry.GetTlsProperties().GetLocalCertificateProperties().GetSubjectAltName())
+		return f.formatUriSans(entry.GetTlsProperties().GetLocalCertificateProperties().GetSubjectAltName())
 	case "DOWNSTREAM_PEER_SUBJECT":
 		return entry.GetTlsProperties().GetPeerCertificateProperties().GetSubject(), nil
 	case "DOWNSTREAM_LOCAL_SUBJECT":
@@ -106,8 +106,7 @@ func (f FieldFormatter) formatAccessLogCommon(entry *accesslog_data.AccessLogCom
 	case "DOWNSTREAM_TLS_CIPHER":
 		return f.formatTlsCipherSuite(entry.GetTlsProperties().GetTlsCipherSuite())
 	case "DOWNSTREAM_TLS_VERSION":
-		return entry.GetTlsProperties().GetTlsVersion().String(), nil
-	// the following fields have no equivalents in GrpcAccessLog
+		return f.formatTlsVersion(entry.GetTlsProperties().GetTlsVersion())
 	case "DOWNSTREAM_PEER_FINGERPRINT_256",
 		"DOWNSTREAM_PEER_SERIAL",
 		"DOWNSTREAM_PEER_ISSUER",
@@ -115,7 +114,7 @@ func (f FieldFormatter) formatAccessLogCommon(entry *accesslog_data.AccessLogCom
 		"DOWNSTREAM_PEER_CERT_V_START",
 		"DOWNSTREAM_PEER_CERT_V_END",
 		"HOSTNAME":
-		fallthrough
+		fallthrough // these fields have no equivalents in GrpcAccessLog
 	default:
 		// make it clear to the user what is happening
 		return fmt.Sprintf("UNSUPPORTED_FIELD(%s)", f), nil
@@ -249,12 +248,10 @@ func (f FieldFormatter) formatAddress(address *envoy_core.Address, includePort b
 	}
 }
 
-func (f FieldFormatter) formatSans(sans []*accesslog_data.TLSProperties_CertificateProperties_SubjectAltName) (string, error) {
+func (f FieldFormatter) formatUriSans(sans []*accesslog_data.TLSProperties_CertificateProperties_SubjectAltName) (string, error) {
 	values := make([]string, 0, len(sans))
 	for _, san := range sans {
 		switch typ := san.GetSan().(type) {
-		case *accesslog_data.TLSProperties_CertificateProperties_SubjectAltName_Dns:
-			values = append(values, typ.Dns)
 		case *accesslog_data.TLSProperties_CertificateProperties_SubjectAltName_Uri:
 			values = append(values, typ.Uri)
 		}
@@ -267,4 +264,21 @@ func (f FieldFormatter) formatTlsCipherSuite(value *wrappers.UInt32Value) (strin
 		return "", nil
 	}
 	return TlsCipherSuite(value.GetValue()).String(), nil
+}
+
+func (f FieldFormatter) formatTlsVersion(value accesslog_data.TLSProperties_TLSVersion) (string, error) {
+	switch value {
+	case accesslog_data.TLSProperties_VERSION_UNSPECIFIED:
+		return "", nil
+	case accesslog_data.TLSProperties_TLSv1:
+		return "TLSv1", nil
+	case accesslog_data.TLSProperties_TLSv1_1:
+		return "TLSv1.1", nil
+	case accesslog_data.TLSProperties_TLSv1_2:
+		return "TLSv1.2", nil
+	case accesslog_data.TLSProperties_TLSv1_3:
+		return "TLSv1.3", nil
+	default:
+		return value.String(), nil
+	}
 }

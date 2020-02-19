@@ -66,10 +66,8 @@ func (p formatParser) Parse(format string) (_ LogConfigureFormatter, err error) 
 			}
 			formaters = append(formaters, formatter)
 			pos += len(match) - 1
-		} else {
-			if textLiteralStart < 0 {
-				textLiteralStart = pos
-			}
+		} else if textLiteralStart < 0 {
+			textLiteralStart = pos
 		}
 	}
 
