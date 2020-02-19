@@ -29,7 +29,9 @@ func (f *HeaderFormatter) Format(headers Headers) (string, error) {
 }
 
 func (f *HeaderFormatter) AppendTo(headers []string) []string {
-	headers = append(headers, f.Header)
+	if f.Header != "" {
+		headers = append(headers, f.Header)
+	}
 	if f.AltHeader != "" {
 		headers = append(headers, f.AltHeader)
 	}

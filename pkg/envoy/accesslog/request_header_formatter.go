@@ -1,6 +1,8 @@
 package accesslog
 
 import (
+	"strings"
+
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 
@@ -49,7 +51,7 @@ func (h *RequestHeaders) Get(name string) (string, bool) {
 	case "X-ENVOY-ORIGINAL-PATH":
 		return h.optionalString(h.GetOriginalPath())
 	default:
-		value, exists := h.GetRequestHeaders()[name]
+		value, exists := h.GetRequestHeaders()[strings.ToLower(name)] // Envoy keeps all headers in lower case
 		return value, exists
 	}
 }
