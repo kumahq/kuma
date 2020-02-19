@@ -234,6 +234,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
             - name: kuma:metrics:prometheus
               resource:
                 '@type': type.googleapis.com/envoy.api.v2.Listener
+                trafficDirection: INBOUND
                 address:
                   socketAddress:
                     address: 0.0.0.0
@@ -319,6 +320,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
             - name: kuma:metrics:prometheus
               resource:
                 '@type': type.googleapis.com/envoy.api.v2.Listener
+                trafficDirection: INBOUND
                 address:
                   socketAddress:
                     address: 0.0.0.0

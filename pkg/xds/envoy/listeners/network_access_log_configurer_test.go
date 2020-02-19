@@ -82,6 +82,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			backend:         nil,
 			expected: `
             name: outbound:127.0.0.1:5432
+            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -111,6 +112,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			},
 			expected: `
             name: outbound:127.0.0.1:5432
+            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -148,6 +150,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			},
 			expected: `
             name: outbound:127.0.0.1:5432
+            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 127.0.0.1

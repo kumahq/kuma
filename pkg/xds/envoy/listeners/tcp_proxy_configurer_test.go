@@ -49,6 +49,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			},
 			expected: `
         name: inbound:192.168.0.1:8080
+        trafficDirection: INBOUND
         address:
           socketAddress:
             address: 192.168.0.1
@@ -63,7 +64,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 `,
 		}),
 		Entry("basic tcp_proxy with weighted destination clusters", testCase{
-			listenerName:    "outbound:127.0.0.1:5432",
+			listenerName:    "inbound:127.0.0.1:5432",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
@@ -77,7 +78,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
 				Tags:   map[string]string{"service": "db", "version": "v2"},
 			}},
 			expected: `
-            name: outbound:127.0.0.1:5432
+            name: inbound:127.0.0.1:5432
+            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 127.0.0.1

@@ -4,8 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
-
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/logs"
 	"github.com/Kong/kuma/pkg/core/permissions"
@@ -97,17 +96,14 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					return err
 				}
 
-				meshList := mesh_core.MeshResourceList{}
-				if err := rt.ResourceManager().List(ctx, &meshList, core_store.ListByMesh(proxyID.Mesh)); err != nil {
+				mesh := &mesh_core.MeshResource{}
+				if err := rt.ResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
-				}
-				if len(meshList.Items) != 1 {
-					return errors.Errorf("there should be a mesh of name %s. Found %d meshes of given name", proxyID.Mesh, len(meshList.Items))
 				}
 				envoyCtx := xds_context.Context{
 					ControlPlane: envoyCpCtx,
 					Mesh: xds_context.MeshContext{
-						Resource: meshList.Items[0],
+						Resource: mesh,
 					},
 				}
 
@@ -131,6 +127,15 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					return err
 				}
 
+				trafficTrace, err := xds_topology.GetTrafficTrace(ctx, dataplane, rt.ResourceManager())
+				if err != nil {
+					return err
+				}
+				var tracingBackend *mesh_proto.TracingBackend
+				if trafficTrace != nil {
+					tracingBackend = mesh.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
+				}
+
 				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane)
 				if err != nil {
 					return err
@@ -150,6 +155,8 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					OutboundTargets:    outbound,
 					HealthChecks:       healthChecks,
 					Logs:               matchedLogs,
+					TrafficTrace:       trafficTrace,
+					TracingBackend:     tracingBackend,
 					Metadata:           metadataTracker.Metadata(streamId),
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
