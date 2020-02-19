@@ -335,6 +335,7 @@ Available Commands:
   traffic-logs        Show TrafficLogs
   traffic-permissions Show TrafficPermissions
   traffic-routes      Show TrafficRoutes
+  traffic-traces      Show TrafficTraces
 
 Flags:
   -h, --help            help for get
@@ -466,6 +467,24 @@ Usage:
 
 Flags:
   -h, --help   help for traffic-routes
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get traffic-traces
+
+```
+Show TrafficTrace entities.
+
+Usage:
+  kumactl get traffic-traces [flags]
+
+Flags:
+  -h, --help   help for traffic-traces
 
 Global Flags:
       --config-file string   path to the configuration file to use

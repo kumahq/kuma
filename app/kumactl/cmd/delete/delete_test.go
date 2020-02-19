@@ -78,9 +78,9 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route`))
+			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace`))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
@@ -171,6 +171,12 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return &mesh_core.TrafficRouteResource{} },
 					expectedMessage: "deleted TrafficRoute \"web-to-backend\"\n",
 				}),
+				Entry("traffic-traces", testCase{
+					typ:             "traffic-trace",
+					name:            "web",
+					resource:        func() core_model.Resource { return &mesh_core.TrafficTraceResource{} },
+					expectedMessage: "deleted TrafficTrace \"web\"\n",
+				}),
 			)
 
 			DescribeTable("should fail if resource doesn't exist",
@@ -219,6 +225,12 @@ var _ = Describe("kumactl delete ", func() {
 					name:            "web-to-backend",
 					resource:        func() core_model.Resource { return &mesh_core.TrafficRouteResource{} },
 					expectedMessage: "Error: there is no TrafficRoute with name \"web-to-backend\"\n",
+				}),
+				Entry("traffic-traces", testCase{
+					typ:             "traffic-trace",
+					name:            "web",
+					resource:        func() core_model.Resource { return &mesh_core.TrafficRouteResource{} },
+					expectedMessage: "Error: there is no TrafficTrace with name \"web\"\n",
 				}),
 			)
 		})

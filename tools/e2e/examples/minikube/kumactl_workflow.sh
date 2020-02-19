@@ -53,6 +53,11 @@ function workflow() {
     run kumactl get traffic-routes -oyaml
     run kumactl get traffic-routes -ojson
 
+    run kumactl get traffic-traces
+    run kumactl get traffic-traces -otable
+    run kumactl get traffic-traces -oyaml
+    run kumactl get traffic-traces -ojson
+
     run kumactl inspect dataplanes
     run kumactl inspect dataplanes -otable
     run kumactl inspect dataplanes -oyaml
