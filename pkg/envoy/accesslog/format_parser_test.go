@@ -9,13 +9,11 @@ import (
 
 	. "github.com/Kong/kuma/pkg/envoy/accesslog"
 
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 
-	util_error "github.com/Kong/kuma/pkg/util/error"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("ParseFormat()", func() {
@@ -23,11 +21,7 @@ var _ = Describe("ParseFormat()", func() {
 	Context("valid format string", func() {
 
 		commonProperties := &accesslog_data.AccessLogCommon{
-			StartTime: func() *timestamp.Timestamp {
-				value, err := ptypes.TimestampProto(time.Unix(1582062737, 987654321))
-				util_error.MustNot(err)
-				return value
-			}(),
+			StartTime: util_proto.MustTimestampProto(time.Unix(1582062737, 987654321)),
 		}
 
 		httpLogEntry := &accesslog_data.HTTPAccessLogEntry{
@@ -91,23 +85,23 @@ var _ = Describe("ParseFormat()", func() {
 			}),
 			Entry("%START_TIME%", testCase{
 				format:       `%START_TIME%`,
-				expectedHTTP: `2020-02-18T21:52:17.987+0000`,
-				expectedTCP:  `2020-02-18T21:52:17.987+0000`,
+				expectedHTTP: `2020-02-18T21:52:17.987Z`,
+				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),
 			Entry("%START_TIME()%", testCase{
 				format:       `%START_TIME%`,
-				expectedHTTP: `2020-02-18T21:52:17.987+0000`,
-				expectedTCP:  `2020-02-18T21:52:17.987+0000`,
+				expectedHTTP: `2020-02-18T21:52:17.987Z`,
+				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),
 			Entry("%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%", testCase{
 				format:       `%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%`,
-				expectedHTTP: `2020-02-18T21:52:17.987+0000`,
-				expectedTCP:  `2020-02-18T21:52:17.987+0000`,
+				expectedHTTP: `2020-02-18T21:52:17.987Z`,
+				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),
 			Entry("%START_TIME(%s.%3f)%", testCase{
 				format:       `%START_TIME(%s.%3f)%`,
-				expectedHTTP: `2020-02-18T21:52:17.987+0000`,
-				expectedTCP:  `2020-02-18T21:52:17.987+0000`,
+				expectedHTTP: `2020-02-18T21:52:17.987Z`,
+				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),
 			Entry("%BYTES_RECEIVED%", testCase{
 				format:       `%BYTES_RECEIVED%`,
