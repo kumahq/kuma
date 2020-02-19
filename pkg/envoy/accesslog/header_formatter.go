@@ -1,15 +1,26 @@
 package accesslog
 
+type Headers interface {
+	Get(name string) (value string, exists bool)
+}
+
+type HeaderMap map[string]string
+
+func (m HeaderMap) Get(name string) (value string, exists bool) {
+	value, exists = m[name]
+	return
+}
+
 type HeaderFormatter struct {
 	Header    string
 	AltHeader string
 	MaxLength int
 }
 
-func (f *HeaderFormatter) Format(headers map[string]string) (string, error) {
-	value, exist := headers[f.Header]
-	if !exist && f.AltHeader != "" {
-		value = headers[f.AltHeader]
+func (f *HeaderFormatter) Format(headers Headers) (string, error) {
+	value, exists := headers.Get(f.Header)
+	if !exists && f.AltHeader != "" {
+		value, exists = headers.Get(f.AltHeader)
 	}
 	if f.MaxLength > 0 && len(value) > f.MaxLength {
 		return value[:f.MaxLength], nil

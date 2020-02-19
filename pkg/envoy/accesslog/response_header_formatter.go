@@ -10,7 +10,7 @@ type ResponseHeaderFormatter struct {
 }
 
 func (f *ResponseHeaderFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
-	return f.Format(entry.GetResponse().GetResponseHeaders())
+	return f.Format(HeaderMap(entry.GetResponse().GetResponseHeaders()))
 }
 
 func (f *ResponseHeaderFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error) {

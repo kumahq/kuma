@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// defaultStartTimeFormat is a Golang's quivalent of "%Y-%m-%dT%H:%M:%E3SZ" in C++.
+	// defaultStartTimeFormat is a Golang's equivalent of "%Y-%m-%dT%H:%M:%E3SZ" in C++.
 	defaultStartTimeFormat = "2006-01-02T15:04:05.000-0700"
 )
 

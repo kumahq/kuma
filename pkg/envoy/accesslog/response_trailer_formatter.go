@@ -10,7 +10,7 @@ type ResponseTrailerFormatter struct {
 }
 
 func (f *ResponseTrailerFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
-	return f.Format(entry.GetResponse().GetResponseTrailers())
+	return f.Format(HeaderMap(entry.GetResponse().GetResponseTrailers()))
 }
 
 func (f *ResponseTrailerFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error) {
