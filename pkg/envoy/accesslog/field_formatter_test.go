@@ -13,8 +13,6 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
 var _ = Describe("FieldFormatter", func() {
@@ -124,6 +122,64 @@ var _ = Describe("FieldFormatter", func() {
 				},
 				expected: `response code details`,
 			}),
+			Entry("REQUEST_DURATION: ``", testCase{
+				field:    "REQUEST_DURATION",
+				expected: ``,
+			}),
+			Entry("REQUEST_DURATION: `57` millis", testCase{
+				field: "REQUEST_DURATION",
+				entry: &accesslog_data.HTTPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToLastRxByte: ptypes.DurationProto(57000 * time.Microsecond),
+					},
+				},
+				expected: `57`, // time in millis
+			}),
+			Entry("RESPONSE_DURATION: ``", testCase{
+				field:    "RESPONSE_DURATION",
+				expected: ``,
+			}),
+			Entry("RESPONSE_DURATION: `102` millis", testCase{
+				field: "RESPONSE_DURATION",
+				entry: &accesslog_data.HTTPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
+					},
+				},
+				expected: `102`, // time in millis
+			}),
+			Entry("RESPONSE_TX_DURATION: ``", testCase{
+				field:    "RESPONSE_TX_DURATION",
+				expected: ``,
+			}),
+			Entry("RESPONSE_TX_DURATION: no TimeToFirstUpstreamRxByte", testCase{
+				field: "RESPONSE_TX_DURATION",
+				entry: &accesslog_data.HTTPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+					},
+				},
+				expected: ``,
+			}),
+			Entry("RESPONSE_TX_DURATION: no TimeToLastDownstreamTxByte", testCase{
+				field: "RESPONSE_TX_DURATION",
+				entry: &accesslog_data.HTTPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
+					},
+				},
+				expected: ``,
+			}),
+			Entry("RESPONSE_TX_DURATION: `23` millis", testCase{
+				field: "RESPONSE_TX_DURATION",
+				entry: &accesslog_data.HTTPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToFirstUpstreamRxByte:  ptypes.DurationProto(102000 * time.Microsecond),
+						TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+					},
+				},
+				expected: `21`, // time in millis
+			}),
 		)
 	})
 
@@ -174,33 +230,78 @@ var _ = Describe("FieldFormatter", func() {
 			}),
 			Entry("PROTOCOL", testCase{
 				field:    "PROTOCOL",
-				expected: ``,
+				expected: ``, // replicate Envoy's behaviour
 			}),
 			Entry("RESPONSE_CODE", testCase{
 				field:    "RESPONSE_CODE",
-				expected: `0`, // TODO: is it consistent with file access log?
+				expected: `0`, // replicate Envoy's behaviour
 			}),
 			Entry("RESPONSE_CODE_DETAILS", testCase{
 				field:    "RESPONSE_CODE_DETAILS",
-				expected: ``,
+				expected: ``, // replicate Envoy's behaviour
+			}),
+			Entry("REQUEST_DURATION: ``", testCase{
+				field:    "REQUEST_DURATION",
+				expected: ``, // replicate Envoy's behaviour
+			}),
+			Entry("REQUEST_DURATION: `57` millis", testCase{
+				field: "REQUEST_DURATION",
+				entry: &accesslog_data.TCPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToLastRxByte: ptypes.DurationProto(57000 * time.Microsecond),
+					},
+				},
+				expected: ``, // replicate Envoy's behaviour
+			}),
+			Entry("RESPONSE_DURATION: ``", testCase{
+				field:    "RESPONSE_DURATION",
+				expected: ``, // replicate Envoy's behaviour
+			}),
+			Entry("RESPONSE_DURATION: `102` millis", testCase{
+				field: "RESPONSE_DURATION",
+				entry: &accesslog_data.TCPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
+					},
+				},
+				expected: ``, // replicate Envoy's behaviour
+			}),
+			Entry("RESPONSE_TX_DURATION: ``", testCase{
+				field:    "RESPONSE_TX_DURATION",
+				expected: ``, // replicate Envoy's behaviour
+			}),
+			Entry("RESPONSE_TX_DURATION: no TimeToFirstUpstreamRxByte", testCase{
+				field: "RESPONSE_TX_DURATION",
+				entry: &accesslog_data.TCPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+					},
+				},
+				expected: ``, // replicate Envoy's behaviour
+			}),
+			Entry("RESPONSE_TX_DURATION: no TimeToLastDownstreamTxByte", testCase{
+				field: "RESPONSE_TX_DURATION",
+				entry: &accesslog_data.TCPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
+					},
+				},
+				expected: ``, // replicate Envoy's behaviour
+			}),
+			Entry("RESPONSE_TX_DURATION: `23` millis", testCase{
+				field: "RESPONSE_TX_DURATION",
+				entry: &accesslog_data.TCPAccessLogEntry{
+					CommonProperties: &accesslog_data.AccessLogCommon{
+						TimeToFirstUpstreamRxByte:  ptypes.DurationProto(102000 * time.Microsecond),
+						TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+					},
+				},
+				expected: ``, // replicate Envoy's behaviour
 			}),
 		)
 	})
 
 	Describe("FormatHttpLogEntry() and FormatHttpLogEntry()", func() {
-
-		EnvoySocketAddress := func(address string, port uint32) *envoy_core.Address {
-			return &envoy_core.Address{
-				Address: &envoy_core.Address_SocketAddress{
-					SocketAddress: &envoy_core.SocketAddress{
-						Address: address,
-						PortSpecifier: &envoy_core.SocketAddress_PortValue{
-							PortValue: port,
-						},
-					},
-				},
-			}
-		}
 
 		type testCase struct {
 			field            string
@@ -241,54 +342,6 @@ var _ = Describe("FieldFormatter", func() {
 					UpstreamTransportFailureReason: "mystery",
 				},
 				expected: `mystery`,
-			}),
-			Entry("REQUEST_DURATION: ``", testCase{
-				field:    "REQUEST_DURATION",
-				expected: ``,
-			}),
-			Entry("REQUEST_DURATION: `57` millis", testCase{
-				field: "REQUEST_DURATION",
-				commonProperties: &accesslog_data.AccessLogCommon{
-					TimeToLastRxByte: ptypes.DurationProto(57000 * time.Microsecond),
-				},
-				expected: `57`, // time in millis
-			}),
-			Entry("RESPONSE_DURATION: ``", testCase{
-				field:    "RESPONSE_DURATION",
-				expected: ``,
-			}),
-			Entry("RESPONSE_DURATION: `102` millis", testCase{
-				field: "RESPONSE_DURATION",
-				commonProperties: &accesslog_data.AccessLogCommon{
-					TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
-				},
-				expected: `102`, // time in millis
-			}),
-			Entry("RESPONSE_TX_DURATION: ``", testCase{
-				field:    "RESPONSE_TX_DURATION",
-				expected: ``,
-			}),
-			Entry("RESPONSE_TX_DURATION: no TimeToFirstUpstreamRxByte", testCase{
-				field: "RESPONSE_TX_DURATION",
-				commonProperties: &accesslog_data.AccessLogCommon{
-					TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
-				},
-				expected: ``,
-			}),
-			Entry("RESPONSE_TX_DURATION: no TimeToLastDownstreamTxByte", testCase{
-				field: "RESPONSE_TX_DURATION",
-				commonProperties: &accesslog_data.AccessLogCommon{
-					TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
-				},
-				expected: ``,
-			}),
-			Entry("RESPONSE_TX_DURATION: `23` millis", testCase{
-				field: "RESPONSE_TX_DURATION",
-				commonProperties: &accesslog_data.AccessLogCommon{
-					TimeToFirstUpstreamRxByte:  ptypes.DurationProto(102000 * time.Microsecond),
-					TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
-				},
-				expected: `21`, // time in millis
 			}),
 			Entry("DURATION: ``", testCase{
 				field:    "DURATION",
@@ -544,12 +597,12 @@ var _ = Describe("FieldFormatter", func() {
 				field:    "UPSTREAM_LOCAL_ADDRESS",
 				expected: ``,
 			}),
-			Entry("UPSTREAM_LOCAL_ADDRESS: `127.0.0.1:10001`", testCase{
+			Entry("UPSTREAM_LOCAL_ADDRESS: `127.0.0.2:10001`", testCase{
 				field: "UPSTREAM_LOCAL_ADDRESS",
 				commonProperties: &accesslog_data.AccessLogCommon{
-					UpstreamLocalAddress: EnvoySocketAddress("127.0.0.1", 10001),
+					UpstreamLocalAddress: EnvoySocketAddress("127.0.0.2", 10001),
 				},
-				expected: `127.0.0.1:10001`,
+				expected: `127.0.0.2:10001`,
 			}),
 			Entry("DOWNSTREAM_LOCAL_ADDRESS: ``", testCase{
 				field:    "DOWNSTREAM_LOCAL_ADDRESS",
@@ -577,23 +630,23 @@ var _ = Describe("FieldFormatter", func() {
 				field:    "DOWNSTREAM_REMOTE_ADDRESS",
 				expected: ``,
 			}),
-			Entry("DOWNSTREAM_REMOTE_ADDRESS: `127.0.0.1:53165`", testCase{
+			Entry("DOWNSTREAM_REMOTE_ADDRESS: `127.0.0.3:53165`", testCase{
 				field: "DOWNSTREAM_REMOTE_ADDRESS",
 				commonProperties: &accesslog_data.AccessLogCommon{
-					DownstreamRemoteAddress: EnvoySocketAddress("127.0.0.1", 53165),
+					DownstreamRemoteAddress: EnvoySocketAddress("127.0.0.3", 53165),
 				},
-				expected: `127.0.0.1:53165`,
+				expected: `127.0.0.3:53165`,
 			}),
 			Entry("DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT: ``", testCase{
 				field:    "DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT",
 				expected: ``,
 			}),
-			Entry("DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT: `127.0.0.1`", testCase{
+			Entry("DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT: `127.0.0.3`", testCase{
 				field: "DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT",
 				commonProperties: &accesslog_data.AccessLogCommon{
-					DownstreamRemoteAddress: EnvoySocketAddress("127.0.0.1", 53165),
+					DownstreamRemoteAddress: EnvoySocketAddress("127.0.0.3", 53165),
 				},
-				expected: `127.0.0.1`,
+				expected: `127.0.0.3`,
 			}),
 			Entry("DOWNSTREAM_DIRECT_REMOTE_ADDRESS: ``", testCase{
 				field:    "DOWNSTREAM_DIRECT_REMOTE_ADDRESS",
@@ -610,12 +663,12 @@ var _ = Describe("FieldFormatter", func() {
 				field:    "DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT",
 				expected: ``,
 			}),
-			Entry("DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT: `127.0.0.1`", testCase{
+			Entry("DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT: `127.0.0.4`", testCase{
 				field: "DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT",
 				commonProperties: &accesslog_data.AccessLogCommon{
-					DownstreamDirectRemoteAddress: EnvoySocketAddress("127.0.0.1", 53166),
+					DownstreamDirectRemoteAddress: EnvoySocketAddress("127.0.0.4", 53166),
 				},
-				expected: `127.0.0.1`,
+				expected: `127.0.0.4`,
 			}),
 			Entry("REQUESTED_SERVER_NAME: ``", testCase{
 				field:    "REQUESTED_SERVER_NAME",
@@ -634,12 +687,12 @@ var _ = Describe("FieldFormatter", func() {
 				field:    "ROUTE_NAME",
 				expected: ``,
 			}),
-			Entry("ROUTE_NAME: `backend`", testCase{
+			Entry("ROUTE_NAME: `outbound:backend`", testCase{
 				field: "ROUTE_NAME",
 				commonProperties: &accesslog_data.AccessLogCommon{
-					RouteName: "backend",
+					RouteName: "outbound:backend",
 				},
-				expected: `backend`,
+				expected: `outbound:backend`,
 			}),
 			Entry("DOWNSTREAM_PEER_URI_SAN: ``", testCase{
 				field:    "DOWNSTREAM_PEER_URI_SAN",

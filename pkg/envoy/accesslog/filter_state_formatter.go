@@ -27,7 +27,6 @@ func (f *FilterStateFormatter) ConfigureHttpLog(config *accesslog_config.HttpGrp
 	if config.CommonConfig == nil {
 		config.CommonConfig = &accesslog_config.CommonGrpcAccessLogConfig{}
 	}
-	config.CommonConfig.FilterStateObjectsToLog = append(config.CommonConfig.FilterStateObjectsToLog, f.Key)
 	return f.configure(config.CommonConfig)
 }
 
@@ -39,6 +38,8 @@ func (f *FilterStateFormatter) ConfigureTcpLog(config *accesslog_config.TcpGrpcA
 }
 
 func (f *FilterStateFormatter) configure(config *accesslog_config.CommonGrpcAccessLogConfig) error {
-	config.FilterStateObjectsToLog = append(config.FilterStateObjectsToLog, f.Key)
+	if f.Key != "" && !stringSet(config.FilterStateObjectsToLog).Contains(f.Key) {
+		config.FilterStateObjectsToLog = append(config.FilterStateObjectsToLog, f.Key)
+	}
 	return nil
 }

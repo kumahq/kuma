@@ -35,6 +35,12 @@ func (f FieldFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEn
 		return f.formatUint(uint64(entry.GetResponse().GetResponseCode().GetValue()))
 	case CMD_RESPONSE_CODE_DETAILS:
 		return entry.GetResponse().GetResponseCodeDetails(), nil
+	case CMD_REQUEST_DURATION:
+		return f.formatDuration(entry.GetCommonProperties().GetTimeToLastRxByte())
+	case CMD_RESPONSE_DURATION:
+		return f.formatDuration(entry.GetCommonProperties().GetTimeToFirstUpstreamRxByte())
+	case CMD_RESPONSE_TX_DURATION:
+		return f.formatDurationDelta(entry.GetCommonProperties().GetTimeToLastDownstreamTxByte(), entry.GetCommonProperties().GetTimeToFirstUpstreamRxByte())
 	default:
 		return f.formatAccessLogCommon(entry.GetCommonProperties())
 	}
@@ -47,11 +53,17 @@ func (f FieldFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntr
 	case CMD_BYTES_SENT:
 		return f.formatUint(entry.GetConnectionProperties().GetSentBytes())
 	case CMD_PROTOCOL:
-		return "", nil
+		return "", nil // replicate Envoy's behaviour
 	case CMD_RESPONSE_CODE:
-		return "0", nil
+		return "0", nil // replicate Envoy's behaviour
 	case CMD_RESPONSE_CODE_DETAILS:
-		return "", nil
+		return "", nil // replicate Envoy's behaviour
+	case CMD_REQUEST_DURATION:
+		return "", nil // replicate Envoy's behaviour
+	case CMD_RESPONSE_DURATION:
+		return "", nil // replicate Envoy's behaviour
+	case CMD_RESPONSE_TX_DURATION:
+		return "", nil // replicate Envoy's behaviour
 	default:
 		return f.formatAccessLogCommon(entry.GetCommonProperties())
 	}
@@ -61,12 +73,6 @@ func (f FieldFormatter) formatAccessLogCommon(entry *accesslog_data.AccessLogCom
 	switch f {
 	case CMD_UPSTREAM_TRANSPORT_FAILURE_REASON:
 		return entry.GetUpstreamTransportFailureReason(), nil
-	case CMD_REQUEST_DURATION:
-		return f.formatDuration(entry.GetTimeToLastRxByte())
-	case CMD_RESPONSE_DURATION:
-		return f.formatDuration(entry.GetTimeToFirstUpstreamRxByte())
-	case CMD_RESPONSE_TX_DURATION:
-		return f.formatDurationDelta(entry.GetTimeToLastDownstreamTxByte(), entry.GetTimeToFirstUpstreamRxByte())
 	case CMD_DURATION:
 		return f.formatDuration(entry.GetTimeToLastDownstreamTxByte())
 	case CMD_RESPONSE_FLAGS:

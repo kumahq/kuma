@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	commandWithArgsRE = regexp.MustCompile(`^%(?P<command>[A-Z_]+)(?:\((?P<args>[^\)]*)\))?(?:[:](?P<limit>[0-9]+))?%`)
+	commandWithArgsRE = regexp.MustCompile(`^%(?P<command>[A-Z_0-9]+)(?:\((?P<args>[^\)]*)\))?(?:[:](?P<limit>[0-9]+))?%`)
 	newlineRE         = regexp.MustCompile(`[\x00\r\n]`)
 	// TODO(yskopets): no idea how the following regexp correlates with the comment
 	// "The formatted string may be destined for a header, and should not contain invalid characters {NUL, LR, CF}."
@@ -77,37 +77,37 @@ func (p formatParser) splitMatch(match []string) (token string, command string, 
 func (p formatParser) parseCommandOperator(token, command, args, limit string) (LogEntryFormatter, error) {
 	switch command {
 	case CMD_REQ:
-		header, altHeader, maxLen, err := p.parseHeaderOperator(token, args, limit)
+		header, altHeader, maxLen, err := p.parseHeaderOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &RequestHeaderFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
 	case CMD_RESP:
-		header, altHeader, maxLen, err := p.parseHeaderOperator(token, args, limit)
+		header, altHeader, maxLen, err := p.parseHeaderOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &ResponseHeaderFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
 	case CMD_TRAILER:
-		header, altHeader, maxLen, err := p.parseHeaderOperator(token, args, limit)
+		header, altHeader, maxLen, err := p.parseHeaderOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &ResponseTrailerFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
 	case CMD_DYNAMIC_METADATA:
-		namespace, path, maxLen, err := p.parseDynamicMetadataOperator(token, args, limit)
+		namespace, path, maxLen, err := p.parseDynamicMetadataOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &DynamicMetadataFormatter{FilterNamespace: namespace, Path: path, MaxLength: maxLen}, nil
 	case CMD_FILTER_STATE:
-		key, maxLen, err := p.parseFilterStateOperator(token, args, limit)
+		key, maxLen, err := p.parseFilterStateOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &FilterStateFormatter{Key: key, MaxLength: maxLen}, nil
 	case CMD_START_TIME:
-		format, err := p.parseStartTimeOperator(token, args)
+		format, err := p.parseStartTimeOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +121,10 @@ func (p formatParser) parseCommandOperator(token, command, args, limit string) (
 	}
 }
 
-func (p formatParser) parseHeaderOperator(token, args, limit string) (header string, altHeader string, maxLen int, err error) {
+func (p formatParser) parseHeaderOperator(token, command, args, limit string) (header string, altHeader string, maxLen int, err error) {
+	if p.hasNoArguments(token, command, args, limit) {
+		return "", "", 0, errors.Errorf(`command "%%%s%%" requires a header and optional alternative header names as its arguments, instead got %q`, command, token)
+	}
 	header, altHeaders, maxLen, err := p.parseOperator(token, args, limit, "?")
 	if err != nil {
 		return "", "", 0, err
@@ -140,22 +143,29 @@ func (p formatParser) parseHeaderOperator(token, args, limit string) (header str
 	return strings.ToLower(header), strings.ToLower(altHeader), maxLen, nil // Envoy emits log entries with all headers in lower case
 }
 
-func (p formatParser) parseDynamicMetadataOperator(token, args, limit string) (namespace string, path []string, maxLen int, err error) {
-	return p.parseOperator(token, args, limit, ":")
+func (p formatParser) parseDynamicMetadataOperator(token, command, args, limit string) (namespace string, path []string, maxLen int, err error) {
+	namespace, path, maxLen, err = p.parseOperator(token, args, limit, ":")
+	if err != nil {
+		return "", nil, 0, err
+	}
+	if p.hasNoArguments(token, command, args, limit) {
+		return "", nil, 0, errors.Errorf(`command "%%%s%%" requires a filter namespace and optional path as its arguments, instead got %q`, command, token)
+	}
+	return namespace, path, maxLen, err
 }
 
-func (p formatParser) parseFilterStateOperator(token, args, limit string) (key string, maxLen int, err error) {
+func (p formatParser) parseFilterStateOperator(token, command, args, limit string) (key string, maxLen int, err error) {
 	key, _, maxLen, err = p.parseOperator(token, args, limit, "")
 	if err != nil {
 		return "", 0, err
 	}
-	if key == "" {
-		return "", 0, errors.Errorf("expected a non-empty 'key' in the filter state configuration %q", token)
+	if p.hasNoArguments(token, command, args, limit) || key == "" {
+		return "", 0, errors.Errorf(`command "%%%s%%" requires a key as its argument, instead got %q`, command, token)
 	}
 	return key, maxLen, nil
 }
 
-func (p formatParser) parseStartTimeOperator(token, args string) (format string, err error) {
+func (p formatParser) parseStartTimeOperator(token, command, args, limit string) (format string, err error) {
 	// Validate the input specifier here. The formatted string may be destined for a header, and
 	// should not contain invalid characters {NUL, LR, CF}.
 	if startTimeNewlineRE.MatchString(args) {
@@ -185,4 +195,10 @@ func (p formatParser) parseOperator(token, args, limit string, separator string)
 		firstArg = args
 	}
 	return firstArg, otherArgs, maxLen, err
+}
+
+func (p formatParser) hasNoArguments(token, command, args, limit string) bool {
+	return args == "" &&
+		((limit == "" && token[1:len(token)-1] == command) ||
+			(limit != "" && token[1:len(token)-1-(len(limit)+1)] == command))
 }

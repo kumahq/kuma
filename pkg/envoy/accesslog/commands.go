@@ -19,12 +19,12 @@ const (
 	CMD_PROTOCOL              = "PROTOCOL"
 	CMD_RESPONSE_CODE         = "RESPONSE_CODE"
 	CMD_RESPONSE_CODE_DETAILS = "RESPONSE_CODE_DETAILS"
+	CMD_REQUEST_DURATION      = "REQUEST_DURATION"
+	CMD_RESPONSE_DURATION     = "RESPONSE_DURATION"
+	CMD_RESPONSE_TX_DURATION  = "RESPONSE_TX_DURATION"
 
 	// Commands that are the same for HTTP and TCP log entries.
 
-	CMD_REQUEST_DURATION                              = "REQUEST_DURATION"
-	CMD_RESPONSE_DURATION                             = "RESPONSE_DURATION"
-	CMD_RESPONSE_TX_DURATION                          = "RESPONSE_TX_DURATION"
 	CMD_DURATION                                      = "DURATION"
 	CMD_RESPONSE_FLAGS                                = "RESPONSE_FLAGS"
 	CMD_UPSTREAM_HOST                                 = "UPSTREAM_HOST"
