@@ -1,5 +1,9 @@
 package accesslog
 
+import (
+	"fmt"
+)
+
 // List of supported command operators.
 const (
 
@@ -58,3 +62,101 @@ const (
 	CMD_DOWNSTREAM_PEER_CERT_V_END      = "DOWNSTREAM_PEER_CERT_V_END"
 	CMD_HOSTNAME                        = "HOSTNAME"
 )
+
+// CommandOperatorName represents a reference name of an Envoy access log command operator.
+//
+// See https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators
+type CommandOperatorName string
+
+// String returns the reference name of an Envoy access log command operator
+// as it appears on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators
+func (o CommandOperatorName) String() string {
+	switch string(o) {
+	case CMD_REQ:
+		return "%REQ(X?Y):Z%"
+	case CMD_RESP:
+		return "%RESP(X?Y):Z%"
+	case CMD_TRAILER:
+		return "%TRAILER(X?Y):Z%"
+	case CMD_DYNAMIC_METADATA:
+		return "%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%"
+	case CMD_FILTER_STATE:
+		return "%FILTER_STATE(KEY):Z%"
+	case CMD_START_TIME:
+		return "%START_TIME%"
+	case CMD_BYTES_RECEIVED:
+		return "%BYTES_RECEIVED%"
+	case CMD_BYTES_SENT:
+		return "%BYTES_SENT%"
+	case CMD_PROTOCOL:
+		return "%PROTOCOL%"
+	case CMD_RESPONSE_CODE:
+		return "%RESPONSE_CODE%"
+	case CMD_RESPONSE_CODE_DETAILS:
+		return "%RESPONSE_CODE_DETAILS%"
+	case CMD_REQUEST_DURATION:
+		return "%REQUEST_DURATION%"
+	case CMD_RESPONSE_DURATION:
+		return "%RESPONSE_DURATION%"
+	case CMD_RESPONSE_TX_DURATION:
+		return "%RESPONSE_TX_DURATION%"
+	case CMD_DURATION:
+		return "%DURATION%"
+	case CMD_RESPONSE_FLAGS:
+		return "%RESPONSE_FLAGS%"
+	case CMD_UPSTREAM_HOST:
+		return "%UPSTREAM_HOST%"
+	case CMD_UPSTREAM_CLUSTER:
+		return "%UPSTREAM_CLUSTER%"
+	case CMD_UPSTREAM_LOCAL_ADDRESS:
+		return "%UPSTREAM_LOCAL_ADDRESS%"
+	case CMD_DOWNSTREAM_LOCAL_ADDRESS:
+		return "%DOWNSTREAM_LOCAL_ADDRESS%"
+	case CMD_DOWNSTREAM_LOCAL_ADDRESS_WITHOUT_PORT:
+		return "%DOWNSTREAM_LOCAL_ADDRESS_WITHOUT_PORT%"
+	case CMD_DOWNSTREAM_REMOTE_ADDRESS:
+		return "%DOWNSTREAM_REMOTE_ADDRESS%"
+	case CMD_DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT:
+		return "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
+	case CMD_DOWNSTREAM_DIRECT_REMOTE_ADDRESS:
+		return "%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%"
+	case CMD_DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT:
+		return "%DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT%"
+	case CMD_REQUESTED_SERVER_NAME:
+		return "%REQUESTED_SERVER_NAME%"
+	case CMD_ROUTE_NAME:
+		return "%ROUTE_NAME%"
+	case CMD_DOWNSTREAM_PEER_URI_SAN:
+		return "%DOWNSTREAM_PEER_URI_SAN%"
+	case CMD_DOWNSTREAM_LOCAL_URI_SAN:
+		return "%DOWNSTREAM_LOCAL_URI_SAN%"
+	case CMD_DOWNSTREAM_PEER_SUBJECT:
+		return "%DOWNSTREAM_PEER_SUBJECT%"
+	case CMD_DOWNSTREAM_LOCAL_SUBJECT:
+		return "%DOWNSTREAM_LOCAL_SUBJECT%"
+	case CMD_DOWNSTREAM_TLS_SESSION_ID:
+		return "%DOWNSTREAM_TLS_SESSION_ID%"
+	case CMD_DOWNSTREAM_TLS_CIPHER:
+		return "%DOWNSTREAM_TLS_CIPHER%"
+	case CMD_DOWNSTREAM_TLS_VERSION:
+		return "%DOWNSTREAM_TLS_VERSION%"
+	case CMD_UPSTREAM_TRANSPORT_FAILURE_REASON:
+		return "%UPSTREAM_TRANSPORT_FAILURE_REASON%"
+	case CMD_DOWNSTREAM_PEER_FINGERPRINT_256:
+		return "%DOWNSTREAM_PEER_FINGERPRINT_256%"
+	case CMD_DOWNSTREAM_PEER_SERIAL:
+		return "%DOWNSTREAM_PEER_SERIAL%"
+	case CMD_DOWNSTREAM_PEER_ISSUER:
+		return "%DOWNSTREAM_PEER_ISSUER%"
+	case CMD_DOWNSTREAM_PEER_CERT:
+		return "%DOWNSTREAM_PEER_CERT%"
+	case CMD_DOWNSTREAM_PEER_CERT_V_START:
+		return "%DOWNSTREAM_PEER_CERT_V_START%"
+	case CMD_DOWNSTREAM_PEER_CERT_V_END:
+		return "%DOWNSTREAM_PEER_CERT_V_END%"
+	case CMD_HOSTNAME:
+		return "%HOSTNAME%"
+	default:
+		return fmt.Sprintf("%%%s%%", string(o))
+	}
+}

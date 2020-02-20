@@ -25,6 +25,9 @@ func (f *RequestHeaderFormatter) ConfigureHttpLog(config *accesslog_config.HttpG
 	return nil
 }
 
+// RequestHeaders represents a set of HTTP request headers
+// that includes both regular headers, such as `referer` and `user-agent`,
+// and pseudo headers, such as `:method`, `:authority` and `:path`.
 type RequestHeaders struct {
 	*accesslog_data.HTTPRequestProperties
 }

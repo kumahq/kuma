@@ -624,11 +624,11 @@ UF,URX
 			}),
 			Entry("%REQ%", testCase{
 				format:      `%REQ%`,
-				expectedErr: `format string is not valid: command "%REQ%" requires a header and optional alternative header names as its arguments, instead got "%REQ%"`,
+				expectedErr: `format string is not valid: command "%REQ(X?Y):Z%" requires a header and optional alternative header names as its arguments, instead got "%REQ%"`,
 			}),
 			Entry("%REQ:10%", testCase{
 				format:      `%REQ:10%`,
-				expectedErr: `format string is not valid: command "%REQ%" requires a header and optional alternative header names as its arguments, instead got "%REQ:10%"`,
+				expectedErr: `format string is not valid: command "%REQ(X?Y):Z%" requires a header and optional alternative header names as its arguments, instead got "%REQ:10%"`,
 			}),
 			Entry("%REQ(header-1?header-2?header-3)%", testCase{
 				format:      `%REQ(header-1?header-2?header-3)%`,
@@ -652,11 +652,11 @@ UF,URX
 			}),
 			Entry("%RESP%", testCase{
 				format:      `%RESP%`,
-				expectedErr: `format string is not valid: command "%RESP%" requires a header and optional alternative header names as its arguments, instead got "%RESP%"`,
+				expectedErr: `format string is not valid: command "%RESP(X?Y):Z%" requires a header and optional alternative header names as its arguments, instead got "%RESP%"`,
 			}),
 			Entry("%RESP:10%", testCase{
 				format:      `%RESP:10%`,
-				expectedErr: `format string is not valid: command "%RESP%" requires a header and optional alternative header names as its arguments, instead got "%RESP:10%"`,
+				expectedErr: `format string is not valid: command "%RESP(X?Y):Z%" requires a header and optional alternative header names as its arguments, instead got "%RESP:10%"`,
 			}),
 			Entry("%RESP(header-1?header-2?header-3)%", testCase{
 				format:      `%RESP(header-1?header-2?header-3)%`,
@@ -680,11 +680,11 @@ UF,URX
 			}),
 			Entry("%TRAILER%", testCase{
 				format:      `%TRAILER%`,
-				expectedErr: `format string is not valid: command "%TRAILER%" requires a header and optional alternative header names as its arguments, instead got "%TRAILER%"`,
+				expectedErr: `format string is not valid: command "%TRAILER(X?Y):Z%" requires a header and optional alternative header names as its arguments, instead got "%TRAILER%"`,
 			}),
 			Entry("%TRAILER:10%", testCase{
 				format:      `%TRAILER:10%`,
-				expectedErr: `format string is not valid: command "%TRAILER%" requires a header and optional alternative header names as its arguments, instead got "%TRAILER:10%"`,
+				expectedErr: `format string is not valid: command "%TRAILER(X?Y):Z%" requires a header and optional alternative header names as its arguments, instead got "%TRAILER:10%"`,
 			}),
 			Entry("%TRAILER(header-1?header-2?header-3)%", testCase{
 				format:      `%TRAILER(header-1?header-2?header-3)%`,
@@ -708,27 +708,27 @@ UF,URX
 			}),
 			Entry("%DYNAMIC_METADATA%", testCase{
 				format:      `%DYNAMIC_METADATA%`,
-				expectedErr: `format string is not valid: command "%DYNAMIC_METADATA%" requires a filter namespace and optional path as its arguments, instead got "%DYNAMIC_METADATA%"`,
+				expectedErr: `format string is not valid: command "%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%" requires a filter namespace and optional path as its arguments, instead got "%DYNAMIC_METADATA%"`,
 			}),
 			Entry("%DYNAMIC_METADATA:10%", testCase{
 				format:      `%DYNAMIC_METADATA:10%`,
-				expectedErr: `format string is not valid: command "%DYNAMIC_METADATA%" requires a filter namespace and optional path as its arguments, instead got "%DYNAMIC_METADATA:10%"`,
+				expectedErr: `format string is not valid: command "%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%" requires a filter namespace and optional path as its arguments, instead got "%DYNAMIC_METADATA:10%"`,
 			}),
 			Entry("%FILTER_STATE%", testCase{
 				format:      `%FILTER_STATE%`,
-				expectedErr: `format string is not valid: command "%FILTER_STATE%" requires a key as its argument, instead got "%FILTER_STATE%"`,
+				expectedErr: `format string is not valid: command "%FILTER_STATE(KEY):Z%" requires a key as its argument, instead got "%FILTER_STATE%"`,
 			}),
 			Entry("%FILTER_STATE:10%", testCase{
 				format:      `%FILTER_STATE:10%`,
-				expectedErr: `format string is not valid: command "%FILTER_STATE%" requires a key as its argument, instead got "%FILTER_STATE:10%"`,
+				expectedErr: `format string is not valid: command "%FILTER_STATE(KEY):Z%" requires a key as its argument, instead got "%FILTER_STATE:10%"`,
 			}),
 			Entry("%FILTER_STATE()%", testCase{
 				format:      `%FILTER_STATE()%`,
-				expectedErr: `format string is not valid: command "%FILTER_STATE%" requires a key as its argument, instead got "%FILTER_STATE()%"`,
+				expectedErr: `format string is not valid: command "%FILTER_STATE(KEY):Z%" requires a key as its argument, instead got "%FILTER_STATE()%"`,
 			}),
 			Entry("%FILTER_STATE():10%", testCase{
 				format:      `%FILTER_STATE():10%`,
-				expectedErr: `format string is not valid: command "%FILTER_STATE%" requires a key as its argument, instead got "%FILTER_STATE():10%"`,
+				expectedErr: `format string is not valid: command "%FILTER_STATE(KEY):Z%" requires a key as its argument, instead got "%FILTER_STATE():10%"`,
 			}),
 		)
 	})
