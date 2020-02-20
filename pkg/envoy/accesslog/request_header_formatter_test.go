@@ -55,6 +55,12 @@ var _ = Describe("RequestHeaderFormatter", func() {
 				// and
 				Expect(actual).To(Equal(given.expected))
 			},
+			Entry("no header or altHeader", testCase{
+				header:    "",
+				altHeader: "",
+				entry:     example,
+				expected:  ``, // apparently, Envoy allows both `Header` and `AltHeader` to be empty
+			}),
 			Entry(":method - `POST`", testCase{
 				header:   ":method",
 				entry:    example,

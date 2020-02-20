@@ -136,7 +136,7 @@ func (p formatParser) parseHeaderOperator(token, args, limit string) (header str
 	if newlineRE.MatchString(header) || newlineRE.MatchString(altHeader) {
 		return "", "", 0, errors.Errorf("header name contains a newline in %q", token)
 	}
-	// apparently, Envoy allows both `header` and `altHeader` to be empty
+	// apparently, Envoy allows both `Header` and `AltHeader` to be empty
 	return strings.ToLower(header), strings.ToLower(altHeader), maxLen, nil // Envoy emits log entries with all headers in lower case
 }
 

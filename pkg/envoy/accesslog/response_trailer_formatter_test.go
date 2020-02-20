@@ -43,6 +43,12 @@ var _ = Describe("ResponseTrailerFormatter", func() {
 				// and
 				Expect(actual).To(Equal(given.expected))
 			},
+			Entry("no header or altHeader", testCase{
+				header:    "",
+				altHeader: "",
+				entry:     example,
+				expected:  ``, // apparently, Envoy allows both `Header` and `AltHeader` to be empty
+			}),
 			Entry("grpc-message", testCase{
 				header:   "grpc-message",
 				entry:    example,

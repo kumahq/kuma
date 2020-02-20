@@ -94,12 +94,12 @@ var _ = Describe("ParseFormat()", func() {
 				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),
 			Entry("%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%", testCase{
-				format:       `%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%`, // not supported yet
+				format:       `%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%`, // user-defined format is not supported yet
 				expectedHTTP: `2020-02-18T21:52:17.987Z`,
 				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),
 			Entry("%START_TIME(%s.%3f)%", testCase{
-				format:       `%START_TIME(%s.%3f)%`, // not supported yet
+				format:       `%START_TIME(%s.%3f)%`, // user-defined format is not supported yet
 				expectedHTTP: `2020-02-18T21:52:17.987Z`,
 				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),

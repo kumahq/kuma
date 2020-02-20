@@ -43,6 +43,12 @@ var _ = Describe("ResponseHeaderFormatter", func() {
 				// and
 				Expect(actual).To(Equal(given.expected))
 			},
+			Entry("no header or altHeader", testCase{
+				header:    "",
+				altHeader: "",
+				entry:     example,
+				expected:  ``, // apparently, Envoy allows both `Header` and `AltHeader` to be empty
+			}),
 			Entry("content-type", testCase{
 				header:   "content-type",
 				entry:    example,
