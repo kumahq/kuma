@@ -9,8 +9,10 @@ import (
 )
 
 var (
-	commandWithArgsRE  = regexp.MustCompile(`^%(?P<command>[A-Z_]+)(?:\((?P<args>[^\)]*)\))?(?:[:](?P<limit>[0-9]+))?%`)
-	newlineRE          = regexp.MustCompile(`\n`)
+	commandWithArgsRE = regexp.MustCompile(`^%(?P<command>[A-Z_]+)(?:\((?P<args>[^\)]*)\))?(?:[:](?P<limit>[0-9]+))?%`)
+	newlineRE         = regexp.MustCompile(`[\x00\r\n]`)
+	// TODO(yskopets): no idea how the following regexp correlates with the comment
+	// "The formatted string may be destined for a header, and should not contain invalid characters {NUL, LR, CF}."
 	startTimeNewlineRE = regexp.MustCompile(`%[-_0^#]*[1-9]*n`)
 )
 
@@ -134,6 +136,7 @@ func (p formatParser) parseHeaderOperator(token, args, limit string) (header str
 	if newlineRE.MatchString(header) || newlineRE.MatchString(altHeader) {
 		return "", "", 0, errors.Errorf("header name contains a newline in %q", token)
 	}
+	// apparently, Envoy allows both `header` and `altHeader` to be empty
 	return strings.ToLower(header), strings.ToLower(altHeader), maxLen, nil // Envoy emits log entries with all headers in lower case
 }
 
