@@ -18,7 +18,11 @@ type HeaderFormatter struct {
 }
 
 func (f *HeaderFormatter) Format(headers Headers) (string, error) {
-	value, exists := headers.Get(f.Header)
+	value, exists := "", false
+	// apparently, Envoy allows both `Header` and `AltHeader` to be empty
+	if f.Header != "" {
+		value, exists = headers.Get(f.Header)
+	}
 	if !exists && f.AltHeader != "" {
 		value, _ = headers.Get(f.AltHeader)
 	}
