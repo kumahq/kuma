@@ -134,7 +134,7 @@ func (p formatParser) parseHeaderOperator(token, args, limit string) (header str
 	if newlineRE.MatchString(header) || newlineRE.MatchString(altHeader) {
 		return "", "", 0, errors.Errorf("header name contains a newline in %q", token)
 	}
-	return header, altHeader, maxLen, nil
+	return strings.ToLower(header), strings.ToLower(altHeader), maxLen, nil // Envoy emits log entries with all headers in lower case
 }
 
 func (p formatParser) parseDynamicMetadataOperator(token, args, limit string) (namespace string, path []string, maxLen int, err error) {

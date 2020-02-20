@@ -43,38 +43,38 @@ var _ = Describe("ResponseHeaderFormatter", func() {
 				// and
 				Expect(actual).To(Equal(given.expected))
 			},
-			Entry("CONTENT-TYPE", testCase{
-				header:   "CONTENT-TYPE",
+			Entry("content-type", testCase{
+				header:   "content-type",
 				entry:    example,
 				expected: `application/json`,
 			}),
-			Entry("CACHE-CONTROL", testCase{
-				header:   "CACHE-CONTROL", // missing header
+			Entry("cache-control", testCase{
+				header:   "cache-control", // missing header
 				entry:    example,
 				expected: ``,
 			}),
-			Entry("CACHE-CONTROL or CONTENT-TYPE", testCase{
-				header:    "CACHE-CONTROL", // missing header
-				altHeader: "CONTENT-TYPE",
+			Entry("cache-control or content-type", testCase{
+				header:    "cache-control", // missing header
+				altHeader: "content-type",
 				entry:     example,
 				expected:  `application/json`,
 			}),
-			Entry("CACHE-CONTROL or CONTENT-TYPE w/ MaxLength", testCase{
-				header:    "CACHE-CONTROL", // missing header
-				altHeader: "CONTENT-TYPE",
+			Entry("cache-control or content-type w/ MaxLength", testCase{
+				header:    "cache-control", // missing header
+				altHeader: "content-type",
 				maxLength: 3,
 				entry:     example,
 				expected:  `app`,
 			}),
-			Entry("SERVER or CONTENT-TYPE", testCase{
-				header:    "SERVER",
-				altHeader: "CONTENT-TYPE",
+			Entry("server or content-type", testCase{
+				header:    "server",
+				altHeader: "content-type",
 				entry:     example,
 				expected:  `Tomcat`,
 			}),
-			Entry("SERVER or CONTENT-TYPE w/ MaxLength", testCase{
-				header:    "SERVER",
-				altHeader: "CONTENT-TYPE",
+			Entry("server or content-type w/ MaxLength", testCase{
+				header:    "server",
+				altHeader: "content-type",
 				maxLength: 3,
 				entry:     example,
 				expected:  `Tom`,
@@ -86,7 +86,7 @@ var _ = Describe("ResponseHeaderFormatter", func() {
 		It("should always return an empty string", func() {
 			// setup
 			formatter := &ResponseHeaderFormatter{HeaderFormatter{
-				Header: "CONTENT-TYPE", AltHeader: "SERVER", MaxLength: 123}}
+				Header: "content-type", AltHeader: "server", MaxLength: 123}}
 			// when
 			actual, err := formatter.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{})
 			// then
@@ -124,67 +124,67 @@ var _ = Describe("ResponseHeaderFormatter", func() {
 				expected:  &accesslog_config.HttpGrpcAccessLogConfig{},
 			}),
 			Entry("header", testCase{
-				header:    "CONTENT-TYPE",
+				header:    "content-type",
 				altHeader: "",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CONTENT-TYPE"},
+					AdditionalResponseHeadersToLog: []string{"content-type"},
 				},
 			}),
 			Entry("altHeader", testCase{
 				header:    "",
-				altHeader: "SERVER",
+				altHeader: "server",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"SERVER"},
+					AdditionalResponseHeadersToLog: []string{"server"},
 				},
 			}),
 			Entry("header and altHeader", testCase{
-				header:    "CONTENT-TYPE",
-				altHeader: "SERVER",
+				header:    "content-type",
+				altHeader: "server",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CONTENT-TYPE", "SERVER"},
+					AdditionalResponseHeadersToLog: []string{"content-type", "server"},
 				},
 			}),
 			Entry("none w/ initial config", testCase{
 				header:    "",
 				altHeader: "",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CACHE-CONTROL", "EXPIRES"},
+					AdditionalResponseHeadersToLog: []string{"cache-control", "expires"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CACHE-CONTROL", "EXPIRES"},
+					AdditionalResponseHeadersToLog: []string{"cache-control", "expires"},
 				},
 			}),
 			Entry("header w/ initial config", testCase{
-				header:    "CONTENT-TYPE",
+				header:    "content-type",
 				altHeader: "",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CACHE-CONTROL", "EXPIRES"},
+					AdditionalResponseHeadersToLog: []string{"cache-control", "expires"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CACHE-CONTROL", "EXPIRES", "CONTENT-TYPE"},
+					AdditionalResponseHeadersToLog: []string{"cache-control", "expires", "content-type"},
 				},
 			}),
 			Entry("altHeader w/ initial config", testCase{
 				header:    "",
-				altHeader: "SERVER",
+				altHeader: "server",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CACHE-CONTROL", "EXPIRES"},
+					AdditionalResponseHeadersToLog: []string{"cache-control", "expires"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CACHE-CONTROL", "EXPIRES", "SERVER"},
+					AdditionalResponseHeadersToLog: []string{"cache-control", "expires", "server"},
 				},
 			}),
 			Entry("header and altHeader w/ initial config", testCase{
-				header:    "CONTENT-TYPE",
-				altHeader: "SERVER",
+				header:    "content-type",
+				altHeader: "server",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CACHE-CONTROL", "EXPIRES"},
+					AdditionalResponseHeadersToLog: []string{"cache-control", "expires"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseHeadersToLog: []string{"CACHE-CONTROL", "EXPIRES", "CONTENT-TYPE", "SERVER"},
+					AdditionalResponseHeadersToLog: []string{"cache-control", "expires", "content-type", "server"},
 				},
 			}),
 		)

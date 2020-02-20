@@ -43,38 +43,38 @@ var _ = Describe("ResponseTrailerFormatter", func() {
 				// and
 				Expect(actual).To(Equal(given.expected))
 			},
-			Entry("GRPC-MESSAGE", testCase{
-				header:   "GRPC-MESSAGE",
+			Entry("grpc-message", testCase{
+				header:   "grpc-message",
 				entry:    example,
 				expected: `unavailable`,
 			}),
-			Entry("X-TRAILER", testCase{
-				header:   "X-TRAILER", // missing header
+			Entry("x-trailer", testCase{
+				header:   "x-trailer", // missing header
 				entry:    example,
 				expected: ``,
 			}),
-			Entry("X-TRAILER or GRPC-MESSAGE", testCase{
-				header:    "X-TRAILER", // missing header
-				altHeader: "GRPC-MESSAGE",
+			Entry("x-trailer or grpc-message", testCase{
+				header:    "x-trailer", // missing header
+				altHeader: "grpc-message",
 				entry:     example,
 				expected:  `unavailable`,
 			}),
-			Entry("X-TRAILER or GRPC-MESSAGE w/ MaxLength", testCase{
-				header:    "X-TRAILER", // missing header
-				altHeader: "GRPC-MESSAGE",
+			Entry("x-trailer or grpc-message w/ MaxLength", testCase{
+				header:    "x-trailer", // missing header
+				altHeader: "grpc-message",
 				maxLength: 2,
 				entry:     example,
 				expected:  `un`,
 			}),
-			Entry("GRPC-STATUS or GRPC-MESSAGE", testCase{
-				header:    "GRPC-STATUS",
-				altHeader: "GRPC-MESSAGE",
+			Entry("grpc-status or grpc-message", testCase{
+				header:    "grpc-status",
+				altHeader: "grpc-message",
 				entry:     example,
 				expected:  `14`,
 			}),
-			Entry("GRPC-STATUS or GRPC-MESSAGE", testCase{
-				header:    "GRPC-STATUS",
-				altHeader: "GRPC-MESSAGE",
+			Entry("grpc-status or grpc-message", testCase{
+				header:    "grpc-status",
+				altHeader: "grpc-message",
 				maxLength: 1,
 				entry:     example,
 				expected:  `1`,
@@ -86,7 +86,7 @@ var _ = Describe("ResponseTrailerFormatter", func() {
 		It("should always return an empty string", func() {
 			// setup
 			formatter := &ResponseTrailerFormatter{HeaderFormatter{
-				Header: "GRPC-STATUS", AltHeader: "GRPC-MESSAGE", MaxLength: 123}}
+				Header: "grpc-status", AltHeader: "grpc-message", MaxLength: 123}}
 			// when
 			actual, err := formatter.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{})
 			// then
@@ -124,67 +124,67 @@ var _ = Describe("ResponseTrailerFormatter", func() {
 				expected:  &accesslog_config.HttpGrpcAccessLogConfig{},
 			}),
 			Entry("header", testCase{
-				header:    "GRPC-STATUS",
+				header:    "grpc-status",
 				altHeader: "",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"GRPC-STATUS"},
+					AdditionalResponseTrailersToLog: []string{"grpc-status"},
 				},
 			}),
 			Entry("altHeader", testCase{
 				header:    "",
-				altHeader: "GRPC-MESSAGE",
+				altHeader: "grpc-message",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"GRPC-MESSAGE"},
+					AdditionalResponseTrailersToLog: []string{"grpc-message"},
 				},
 			}),
 			Entry("header and altHeader", testCase{
-				header:    "GRPC-STATUS",
-				altHeader: "GRPC-MESSAGE",
+				header:    "grpc-status",
+				altHeader: "grpc-message",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"GRPC-STATUS", "GRPC-MESSAGE"},
+					AdditionalResponseTrailersToLog: []string{"grpc-status", "grpc-message"},
 				},
 			}),
 			Entry("none w/ initial config", testCase{
 				header:    "",
 				altHeader: "",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"X-TRAILER", "X-BYE"},
+					AdditionalResponseTrailersToLog: []string{"x-trailer", "x-bye"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"X-TRAILER", "X-BYE"},
+					AdditionalResponseTrailersToLog: []string{"x-trailer", "x-bye"},
 				},
 			}),
 			Entry("header w/ initial config", testCase{
-				header:    "GRPC-STATUS",
+				header:    "grpc-status",
 				altHeader: "",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"X-TRAILER", "X-BYE"},
+					AdditionalResponseTrailersToLog: []string{"x-trailer", "x-bye"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"X-TRAILER", "X-BYE", "GRPC-STATUS"},
+					AdditionalResponseTrailersToLog: []string{"x-trailer", "x-bye", "grpc-status"},
 				},
 			}),
 			Entry("altHeader w/ initial config", testCase{
 				header:    "",
-				altHeader: "GRPC-MESSAGE",
+				altHeader: "grpc-message",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"X-TRAILER", "X-BYE"},
+					AdditionalResponseTrailersToLog: []string{"x-trailer", "x-bye"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"X-TRAILER", "X-BYE", "GRPC-MESSAGE"},
+					AdditionalResponseTrailersToLog: []string{"x-trailer", "x-bye", "grpc-message"},
 				},
 			}),
 			Entry("header and altHeader w/ initial config", testCase{
-				header:    "GRPC-STATUS",
-				altHeader: "GRPC-MESSAGE",
+				header:    "grpc-status",
+				altHeader: "grpc-message",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"X-TRAILER", "X-BYE"},
+					AdditionalResponseTrailersToLog: []string{"x-trailer", "x-bye"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalResponseTrailersToLog: []string{"X-TRAILER", "X-BYE", "GRPC-STATUS", "GRPC-MESSAGE"},
+					AdditionalResponseTrailersToLog: []string{"x-trailer", "x-bye", "grpc-status", "grpc-message"},
 				},
 			}),
 		)

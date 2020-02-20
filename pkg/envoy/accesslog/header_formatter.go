@@ -1,9 +1,5 @@
 package accesslog
 
-import (
-	"strings"
-)
-
 type Headers interface {
 	Get(name string) (value string, exists bool)
 }
@@ -11,7 +7,7 @@ type Headers interface {
 type HeaderMap map[string]string
 
 func (m HeaderMap) Get(name string) (value string, exists bool) {
-	value, exists = m[strings.ToLower(name)] // Envoy keeps all headers in lower case
+	value, exists = m[name]
 	return
 }
 

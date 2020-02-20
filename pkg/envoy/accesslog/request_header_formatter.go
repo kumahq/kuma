@@ -1,8 +1,6 @@
 package accesslog
 
 import (
-	"strings"
-
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 
@@ -32,26 +30,26 @@ type RequestHeaders struct {
 
 func (h *RequestHeaders) Get(name string) (string, bool) {
 	switch name {
-	case ":METHOD":
+	case ":method":
 		return h.formatHttpMethod(h.GetRequestMethod())
-	case ":SCHEME":
+	case ":scheme":
 		return h.optionalString(h.GetScheme())
-	case ":AUTHORITY":
+	case ":authority":
 		return h.optionalString(h.GetAuthority())
-	case ":PATH":
+	case ":path":
 		return h.optionalString(h.GetPath())
-	case "USER-AGENT":
+	case "user-agent":
 		return h.optionalString(h.GetUserAgent())
-	case "REFERER":
+	case "referer":
 		return h.optionalString(h.GetReferer())
-	case "X-FORWARDED-FOR":
+	case "x-forwarded-for":
 		return h.optionalString(h.GetForwardedFor())
-	case "X-REQUEST-ID":
+	case "x-request-id":
 		return h.optionalString(h.GetRequestId())
-	case "X-ENVOY-ORIGINAL-PATH":
+	case "x-envoy-original-path":
 		return h.optionalString(h.GetOriginalPath())
 	default:
-		value, exists := h.GetRequestHeaders()[strings.ToLower(name)] // Envoy keeps all headers in lower case
+		value, exists := h.GetRequestHeaders()[name]
 		return value, exists
 	}
 }

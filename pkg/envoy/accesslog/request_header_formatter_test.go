@@ -55,93 +55,93 @@ var _ = Describe("RequestHeaderFormatter", func() {
 				// and
 				Expect(actual).To(Equal(given.expected))
 			},
-			Entry(":METHOD - `POST`", testCase{
-				header:   ":METHOD",
+			Entry(":method - `POST`", testCase{
+				header:   ":method",
 				entry:    example,
 				expected: `POST`,
 			}),
-			Entry(":METHOD - ``", testCase{
-				header:   ":METHOD",
+			Entry(":method - ``", testCase{
+				header:   ":method",
 				entry:    &accesslog_data.HTTPAccessLogEntry{},
 				expected: ``,
 			}),
-			Entry(":SCHEME", testCase{
-				header:   ":SCHEME",
+			Entry(":scheme", testCase{
+				header:   ":scheme",
 				entry:    example,
 				expected: `https`,
 			}),
-			Entry(":AUTHORITY", testCase{
-				header:   ":AUTHORITY",
+			Entry(":authority", testCase{
+				header:   ":authority",
 				entry:    example,
 				expected: `backend.internal:8080`,
 			}),
-			Entry(":PATH", testCase{
-				header:   ":PATH",
+			Entry(":path", testCase{
+				header:   ":path",
 				entry:    example,
 				expected: `/api/version`,
 			}),
-			Entry("USER-AGENT", testCase{
-				header:   "USER-AGENT",
+			Entry("user-agent", testCase{
+				header:   "user-agent",
 				entry:    example,
 				expected: `curl`,
 			}),
-			Entry("REFERER", testCase{
-				header:   "REFERER",
+			Entry("referer", testCase{
+				header:   "referer",
 				entry:    example,
 				expected: `www.google.com`,
 			}),
-			Entry("X-FORWARDED-FOR", testCase{
-				header:   "X-FORWARDED-FOR",
+			Entry("x-forwarded-for", testCase{
+				header:   "x-forwarded-for",
 				entry:    example,
 				expected: `10.0.0.1`,
 			}),
-			Entry("X-REQUEST-ID", testCase{
-				header:   "X-REQUEST-ID",
+			Entry("x-request-id", testCase{
+				header:   "x-request-id",
 				entry:    example,
 				expected: `025169aa-8317-4ebd-b0dd-2f0872ec444a`,
 			}),
-			Entry("X-ENVOY-ORIGINAL-PATH", testCase{
-				header:   "X-ENVOY-ORIGINAL-PATH",
+			Entry("x-envoy-original-path", testCase{
+				header:   "x-envoy-original-path",
 				entry:    example,
 				expected: `/xyz`,
 			}),
-			Entry("X-ENVOY-ORIGINAL-PATH", testCase{
-				header:   "X-ENVOY-ORIGINAL-PATH",
+			Entry("x-envoy-original-path", testCase{
+				header:   "x-envoy-original-path",
 				entry:    example,
 				expected: `/xyz`,
 			}),
-			Entry("CONTENT-TYPE", testCase{
-				header:   "CONTENT-TYPE",
+			Entry("content-type", testCase{
+				header:   "content-type",
 				entry:    example,
 				expected: `application/json`,
 			}),
-			Entry("ORIGIN", testCase{
-				header:   "ORIGIN", // missing header
+			Entry("origin", testCase{
+				header:   "origin", // missing header
 				entry:    example,
 				expected: ``,
 			}),
-			Entry("ORIGIN or :AUTHORITY", testCase{
-				header:    "ORIGIN", // missing header
-				altHeader: ":AUTHORITY",
+			Entry("origin or :authority", testCase{
+				header:    "origin", // missing header
+				altHeader: ":authority",
 				entry:     example,
 				expected:  `backend.internal:8080`,
 			}),
-			Entry("ORIGIN or :AUTHORITY w/ MaxLength", testCase{
-				header:    "ORIGIN", // missing header
-				altHeader: ":AUTHORITY",
+			Entry("origin or :authority w/ MaxLength", testCase{
+				header:    "origin", // missing header
+				altHeader: ":authority",
 				maxLength: 7,
 				entry:     example,
 				expected:  `backend`,
 			}),
-			Entry(":PATH or X-ENVOY-ORIGINAL-PATH", testCase{
-				header:    ":PATH",
-				altHeader: "X-ENVOY-ORIGINAL-PATH",
+			Entry(":path or x-envoy-original-path", testCase{
+				header:    ":path",
+				altHeader: "x-envoy-original-path",
 				entry:     example,
 				expected:  `/api/version`,
 			}),
-			Entry(":PATH or X-ENVOY-ORIGINAL-PATH w/ MaxLength", testCase{
-				header:    ":PATH",
-				altHeader: "X-ENVOY-ORIGINAL-PATH",
+			Entry(":path or x-envoy-original-path w/ MaxLength", testCase{
+				header:    ":path",
+				altHeader: "x-envoy-original-path",
 				maxLength: 5,
 				entry:     example,
 				expected:  `/api/`,
@@ -153,7 +153,7 @@ var _ = Describe("RequestHeaderFormatter", func() {
 		It("should always return an empty string", func() {
 			// setup
 			formatter := &RequestHeaderFormatter{HeaderFormatter{
-				Header: ":PATH", AltHeader: "X-ENVOY-ORIGINAL-PATH", MaxLength: 123}}
+				Header: ":path", AltHeader: "x-envoy-original-path", MaxLength: 123}}
 			// when
 			actual, err := formatter.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{})
 			// then
@@ -191,67 +191,67 @@ var _ = Describe("RequestHeaderFormatter", func() {
 				expected:  &accesslog_config.HttpGrpcAccessLogConfig{},
 			}),
 			Entry("header", testCase{
-				header:    ":PATH",
+				header:    ":path",
 				altHeader: "",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":PATH"},
+					AdditionalRequestHeadersToLog: []string{":path"},
 				},
 			}),
 			Entry("altHeader", testCase{
 				header:    "",
-				altHeader: "X-ENVOY-ORIGINAL-PATH",
+				altHeader: "x-envoy-original-path",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{"X-ENVOY-ORIGINAL-PATH"},
+					AdditionalRequestHeadersToLog: []string{"x-envoy-original-path"},
 				},
 			}),
 			Entry("header and altHeader", testCase{
-				header:    ":PATH",
-				altHeader: "X-ENVOY-ORIGINAL-PATH",
+				header:    ":path",
+				altHeader: "x-envoy-original-path",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":PATH", "X-ENVOY-ORIGINAL-PATH"},
+					AdditionalRequestHeadersToLog: []string{":path", "x-envoy-original-path"},
 				},
 			}),
 			Entry("none w/ initial config", testCase{
 				header:    "",
 				altHeader: "",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":SCHEME", ":AUTHORITY"},
+					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":SCHEME", ":AUTHORITY"},
+					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
 				},
 			}),
 			Entry("header w/ initial config", testCase{
-				header:    ":PATH",
+				header:    ":path",
 				altHeader: "",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":SCHEME", ":AUTHORITY"},
+					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":SCHEME", ":AUTHORITY", ":PATH"},
+					AdditionalRequestHeadersToLog: []string{":scheme", ":authority", ":path"},
 				},
 			}),
 			Entry("altHeader w/ initial config", testCase{
 				header:    "",
-				altHeader: "X-ENVOY-ORIGINAL-PATH",
+				altHeader: "x-envoy-original-path",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":SCHEME", ":AUTHORITY"},
+					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":SCHEME", ":AUTHORITY", "X-ENVOY-ORIGINAL-PATH"},
+					AdditionalRequestHeadersToLog: []string{":scheme", ":authority", "x-envoy-original-path"},
 				},
 			}),
 			Entry("header and altHeader w/ initial config", testCase{
-				header:    ":PATH",
-				altHeader: "X-ENVOY-ORIGINAL-PATH",
+				header:    ":path",
+				altHeader: "x-envoy-original-path",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":SCHEME", ":AUTHORITY"},
+					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":SCHEME", ":AUTHORITY", ":PATH", "X-ENVOY-ORIGINAL-PATH"},
+					AdditionalRequestHeadersToLog: []string{":scheme", ":authority", ":path", "x-envoy-original-path"},
 				},
 			}),
 		)
