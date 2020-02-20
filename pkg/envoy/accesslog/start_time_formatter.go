@@ -11,6 +11,7 @@ const (
 	defaultStartTimeFormat = "2006-01-02T15:04:05.000Z"
 )
 
+// StartTimeFormatter represents a `%START_TIME%` command operator.
 type StartTimeFormatter string
 
 func (f StartTimeFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {

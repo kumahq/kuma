@@ -4,6 +4,7 @@ import (
 	"strconv"
 )
 
+// TlsCipherSuite represents a registered TLS cipher suite.
 type TlsCipherSuite uint16
 
 // List of the most commonly used TLS cipher suites.

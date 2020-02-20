@@ -4,6 +4,7 @@ import (
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
 
+// DynamicMetadataFormatter represents a `%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%` command operator.
 type DynamicMetadataFormatter struct {
 	FilterNamespace string
 	Path            []string

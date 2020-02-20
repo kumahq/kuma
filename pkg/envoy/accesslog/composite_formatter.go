@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	unspecifiedValue = "-"
+	unspecifiedValue = "-" // to replicate Envoy behaviour
 )
 
+// CompositeLogConfigureFormatter represents the entire access log format string.
 type CompositeLogConfigureFormatter struct {
 	Formatters []LogEntryFormatter
 }
@@ -45,7 +46,7 @@ func (c *CompositeLogConfigureFormatter) FormatHttpLogEntry(entry *accesslog_dat
 			return "", err
 		}
 		if value == "" {
-			value = unspecifiedValue
+			value = unspecifiedValue // to replicate Envoy behaviour
 		}
 		values[i] = value
 	}
@@ -60,7 +61,7 @@ func (c *CompositeLogConfigureFormatter) FormatTcpLogEntry(entry *accesslog_data
 			return "", err
 		}
 		if value == "" {
-			value = unspecifiedValue
+			value = unspecifiedValue // to replicate Envoy behaviour
 		}
 		values[i] = value
 	}

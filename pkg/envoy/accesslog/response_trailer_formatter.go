@@ -5,6 +5,7 @@ import (
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
 
+// ResponseTrailerFormatter represents a `%TRAILER(X?Y):Z%` command operator.
 type ResponseTrailerFormatter struct {
 	HeaderFormatter
 }

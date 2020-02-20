@@ -7,6 +7,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
+// RequestHeaderFormatter represents a `%REQ(X?Y):Z%` command operator.
 type RequestHeaderFormatter struct {
 	HeaderFormatter
 }

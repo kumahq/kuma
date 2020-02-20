@@ -21,6 +21,8 @@ const (
 	excludePort = false
 )
 
+// DynamicMetadataFormatter represents a simple field command operator,
+// such as `%BYTES_RECEIVED%` or `%PROTOCOL%`.
 type FieldFormatter string
 
 func (f FieldFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {

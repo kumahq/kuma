@@ -1,9 +1,12 @@
 package accesslog
 
+// Headers represents a set of headers
+// that might include both regular and pseudo headers.
 type Headers interface {
 	Get(name string) (value string, exists bool)
 }
 
+// HeaderMap represents a set of regular headers.
 type HeaderMap map[string]string
 
 func (m HeaderMap) Get(name string) (value string, exists bool) {
@@ -11,6 +14,9 @@ func (m HeaderMap) Get(name string) (value string, exists bool) {
 	return
 }
 
+// HeaderFormatter represents reusable logic that is
+// shared by `%REQ(X?Y):Z%`, `%RESP(X?Y):Z%` and `%TRAILER(X?Y):Z%`
+// command operators.
 type HeaderFormatter struct {
 	Header    string
 	AltHeader string

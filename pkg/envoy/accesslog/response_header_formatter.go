@@ -5,6 +5,7 @@ import (
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
 
+// ResponseHeaderFormatter represents a `%RESP(X?Y):Z%` command operator.
 type ResponseHeaderFormatter struct {
 	HeaderFormatter
 }

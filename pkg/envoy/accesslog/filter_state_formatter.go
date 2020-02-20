@@ -5,6 +5,7 @@ import (
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
 
+// DynamicMetadataFormatter represents a `%FILTER_STATE(KEY):Z%` command operator.
 type FilterStateFormatter struct {
 	Key       string
 	MaxLength int
@@ -24,22 +25,28 @@ func (f *FilterStateFormatter) format(entry *accesslog_data.AccessLogCommon) (st
 }
 
 func (f *FilterStateFormatter) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
-	if config.CommonConfig == nil {
-		config.CommonConfig = &accesslog_config.CommonGrpcAccessLogConfig{}
+	if objects := f.appendTo(config.GetCommonConfig().GetFilterStateObjectsToLog()); objects != nil {
+		if config.CommonConfig == nil {
+			config.CommonConfig = &accesslog_config.CommonGrpcAccessLogConfig{}
+		}
+		config.CommonConfig.FilterStateObjectsToLog = objects
 	}
-	return f.configure(config.CommonConfig)
+	return nil
 }
 
 func (f *FilterStateFormatter) ConfigureTcpLog(config *accesslog_config.TcpGrpcAccessLogConfig) error {
-	if config.CommonConfig == nil {
-		config.CommonConfig = &accesslog_config.CommonGrpcAccessLogConfig{}
-	}
-	return f.configure(config.CommonConfig)
-}
-
-func (f *FilterStateFormatter) configure(config *accesslog_config.CommonGrpcAccessLogConfig) error {
-	if f.Key != "" && !stringSet(config.FilterStateObjectsToLog).Contains(f.Key) {
-		config.FilterStateObjectsToLog = append(config.FilterStateObjectsToLog, f.Key)
+	if objects := f.appendTo(config.GetCommonConfig().GetFilterStateObjectsToLog()); objects != nil {
+		if config.CommonConfig == nil {
+			config.CommonConfig = &accesslog_config.CommonGrpcAccessLogConfig{}
+		}
+		config.CommonConfig.FilterStateObjectsToLog = objects
 	}
 	return nil
+}
+
+func (f *FilterStateFormatter) appendTo(values []string) []string {
+	if f.Key != "" && !stringSet(values).Contains(f.Key) {
+		return append(values, f.Key)
+	}
+	return values
 }
