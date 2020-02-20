@@ -9,25 +9,9 @@ import (
 )
 
 var (
-	commandWithArgsRE  = regexp.MustCompile(`%([A-Z]|_)+(\([^\)]*\))?(:[0-9]+)?(%)`)
+	commandWithArgsRE  = regexp.MustCompile(`^%(?P<command>[A-Z_]+)(?:\((?P<args>[^\)]*)\))?(?:[:](?P<limit>[0-9]+))?%`)
 	newlineRE          = regexp.MustCompile(`\n`)
 	startTimeNewlineRE = regexp.MustCompile(`%[-_0^#]*[1-9]*n`)
-)
-
-const (
-	requestHeaderPrefix   = "REQ("
-	responseHeaderPrefix  = "RESP("
-	responseTrailerPrefix = "TRAILER("
-	dynamicMetadataPrefix = "DYNAMIC_METADATA("
-	filterStatePrefix     = "FILTER_STATE("
-	startTimePrefix       = "START_TIME"
-
-	requestHeaderPrefixLen   = len(requestHeaderPrefix)
-	responseHeaderPrefixLen  = len(responseHeaderPrefix)
-	responseTrailerPrefixLen = len(responseTrailerPrefix)
-	dynamicMetadataPrefixLen = len(dynamicMetadataPrefix)
-	filterStatePrefixLen     = len(filterStatePrefix)
-	startTimePrefixLen       = len(startTimePrefix)
 )
 
 var parser = formatParser{}
@@ -50,22 +34,25 @@ func (p formatParser) Parse(format string) (_ LogConfigureFormatter, err error) 
 
 	for pos := 0; pos < len(format); pos++ {
 		if format[pos] == '%' {
-			if textLiteralStart >= 0 {
+			if textLiteralStart > -1 {
 				formaters = append(formaters, TextLiteralFormatter(format[textLiteralStart:pos]))
 				textLiteralStart = -1
 			}
 
-			match := string(commandWithArgsRE.Find([]byte(format[pos:])))
-			if len(match) == 0 {
+			match := commandWithArgsRE.FindStringSubmatch(format[pos:])
+			if match == nil {
 				return nil, errors.Errorf("expected a command operator at position %d", pos)
 			}
-			token := match[1 : len(match)-1]
-			formatter, err := p.parseFormatToken(token)
+			token, command, args, limit, err := p.splitMatch(match)
+			if err != nil {
+				return nil, err
+			}
+			formatter, err := p.parseCommandOperator(token, command, args, limit)
 			if err != nil {
 				return nil, err
 			}
 			formaters = append(formaters, formatter)
-			pos += len(match) - 1
+			pos += len(token) - 1
 		} else if textLiteralStart < 0 {
 			textLiteralStart = pos
 		}
@@ -78,51 +65,62 @@ func (p formatParser) Parse(format string) (_ LogConfigureFormatter, err error) 
 	return &CompositeLogConfigureFormatter{formaters}, nil
 }
 
-func (p formatParser) parseFormatToken(token string) (LogEntryFormatter, error) {
-	switch {
-	case strings.HasPrefix(token, requestHeaderPrefix):
-		header, altHeader, maxLen, err := p.parseCommandHeader(token, requestHeaderPrefixLen)
+func (p formatParser) splitMatch(match []string) (token string, command string, args string, limit string, err error) {
+	if len(match) != 4 {
+		return "", "", "", "", errors.Errorf("expected a command operator that consists of a command, args and limit, got %q", match)
+	}
+	return match[0], match[1], match[2], match[3], nil
+}
+
+func (p formatParser) parseCommandOperator(token, command, args, limit string) (LogEntryFormatter, error) {
+	switch command {
+	case "REQ":
+		header, altHeader, maxLen, err := p.parseHeaderOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &RequestHeaderFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
-	case strings.HasPrefix(token, responseHeaderPrefix):
-		header, altHeader, maxLen, err := p.parseCommandHeader(token, responseHeaderPrefixLen)
+	case "RESP":
+		header, altHeader, maxLen, err := p.parseHeaderOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &ResponseHeaderFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
-	case strings.HasPrefix(token, responseTrailerPrefix):
-		header, altHeader, maxLen, err := p.parseCommandHeader(token, responseTrailerPrefixLen)
+	case "TRAILER":
+		header, altHeader, maxLen, err := p.parseHeaderOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &ResponseTrailerFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
-	case strings.HasPrefix(token, dynamicMetadataPrefix):
-		namespace, path, maxLen, err := p.parseCommand(token, dynamicMetadataPrefixLen, ":")
+	case "DYNAMIC_METADATA":
+		namespace, path, maxLen, err := p.parseDynamicMetadataOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &DynamicMetadataFormatter{FilterNamespace: namespace, Path: path, MaxLength: maxLen}, nil
-	case strings.HasPrefix(token, filterStatePrefix):
-		key, maxLen, err := p.parseFilterState(token, filterStatePrefixLen)
+	case "FILTER_STATE":
+		key, maxLen, err := p.parseFilterStateOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &FilterStateFormatter{Key: key, MaxLength: maxLen}, nil
-	case strings.HasPrefix(token, startTimePrefix):
-		args, err := p.parseStartTime(token, startTimePrefixLen)
+	case "START_TIME":
+		format, err := p.parseStartTimeOperator(token, args)
 		if err != nil {
 			return nil, err
 		}
-		return StartTimeFormatter(args), nil
+		return StartTimeFormatter(format), nil
 	default:
-		return FieldFormatter(token), nil
+		field, err := p.parseFieldOperator(token, command, args, limit)
+		if err != nil {
+			return nil, err
+		}
+		return FieldFormatter(field), nil
 	}
 }
 
-func (p formatParser) parseCommandHeader(token string, prefixLen int) (header string, altHeader string, maxLen int, err error) {
-	header, altHeaders, maxLen, err := p.parseCommand(token, prefixLen, "?")
+func (p formatParser) parseHeaderOperator(token, args, limit string) (header string, altHeader string, maxLen int, err error) {
+	header, altHeaders, maxLen, err := p.parseOperator(token, args, limit, "?")
 	if err != nil {
 		return "", "", 0, err
 	}
@@ -133,42 +131,18 @@ func (p formatParser) parseCommandHeader(token string, prefixLen int) (header st
 		altHeader = altHeaders[0]
 	}
 	// The main and alternative header should not contain invalid characters {NUL, LR, CF}.
-	if newlineRE.Match([]byte(header)) || newlineRE.Match([]byte(altHeader)) {
+	if newlineRE.MatchString(header) || newlineRE.MatchString(altHeader) {
 		return "", "", 0, errors.Errorf("header name contains a newline in %q", token)
 	}
 	return header, altHeader, maxLen, nil
 }
 
-func (p formatParser) parseCommand(token string, prefixLen int, separator string) (name string, extraNames []string, maxLen int, err error) {
-	bracketPos := strings.Index(token, ")")
-	if bracketPos == -1 {
-		return "", nil, 0, errors.Errorf("expected ')' in the end of %q", token)
-	}
-	if bracketPos != len(token)-1 {
-		// Closing bracket should be either last one or followed by ':' to denote limitation.
-		if token[bracketPos+1] != ':' {
-			return "", nil, 0, errors.Errorf("incorrect position of ')' in %q", token)
-		}
-
-		maxLenArg := token[bracketPos+2:]
-		maxLen, err = strconv.Atoi(maxLenArg)
-		if err != nil {
-			return "", nil, 0, errors.Errorf("length must be an integer, instead got %q in %q", maxLenArg, token)
-		}
-	}
-	nameArg := token[prefixLen:bracketPos]
-	if separator != "" {
-		names := strings.Split(nameArg, separator)
-		name = names[0]
-		extraNames = names[1:]
-	} else {
-		name = nameArg
-	}
-	return name, extraNames, maxLen, err
+func (p formatParser) parseDynamicMetadataOperator(token, args, limit string) (namespace string, path []string, maxLen int, err error) {
+	return p.parseOperator(token, args, limit, ":")
 }
 
-func (p formatParser) parseFilterState(token string, prefixLen int) (key string, maxLen int, err error) {
-	key, _, maxLen, err = p.parseCommand(token, prefixLen, "")
+func (p formatParser) parseFilterStateOperator(token, args, limit string) (key string, maxLen int, err error) {
+	key, _, maxLen, err = p.parseOperator(token, args, limit, "")
 	if err != nil {
 		return "", 0, err
 	}
@@ -178,20 +152,34 @@ func (p formatParser) parseFilterState(token string, prefixLen int) (key string,
 	return key, maxLen, nil
 }
 
-func (p formatParser) parseStartTime(token string, prefixLen int) (args string, err error) {
-	if len(token) != prefixLen {
-		if token[prefixLen] != '(' {
-			return "", errors.Errorf("expected a '(' in %q at position %d", token, prefixLen)
-		}
-		if token[len(token)-1] != ')' {
-			return "", errors.Errorf("expected a ')' in %q at position %d", token, len(token)-1)
-		}
-		args = token[prefixLen+1 : len(token)-1]
-	}
+func (p formatParser) parseStartTimeOperator(token, args string) (format string, err error) {
 	// Validate the input specifier here. The formatted string may be destined for a header, and
 	// should not contain invalid characters {NUL, LR, CF}.
-	if startTimeNewlineRE.Match([]byte(args)) {
+	if startTimeNewlineRE.MatchString(args) {
 		return "", errors.Errorf("start time format string contains a newline in %q", token)
 	}
 	return args, nil
+}
+
+func (p formatParser) parseFieldOperator(token, command, args, limit string) (field string, err error) {
+	if token[1:len(token)-1] != command {
+		return "", errors.Errorf(`command "%%%s%%" doesn't support arguments or max length constraint, instead got %q`, command, token)
+	}
+	return command, nil
+}
+
+func (p formatParser) parseOperator(token, args, limit string, separator string) (firstArg string, otherArgs []string, maxLen int, err error) {
+	if limit != "" {
+		maxLen, err = strconv.Atoi(limit)
+		if err != nil {
+			return "", nil, 0, errors.Errorf("length must be an integer, instead got %q in %q", limit, token)
+		}
+	}
+	if separator != "" {
+		allArgs := strings.Split(args, separator)
+		firstArg, otherArgs = allArgs[0], allArgs[1:]
+	} else {
+		firstArg = args
+	}
+	return firstArg, otherArgs, maxLen, err
 }

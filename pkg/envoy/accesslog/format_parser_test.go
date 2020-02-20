@@ -24,7 +24,7 @@ var _ = Describe("ParseFormat()", func() {
 			StartTime: util_proto.MustTimestampProto(time.Unix(1582062737, 987654321)),
 		}
 
-		httpLogEntry := &accesslog_data.HTTPAccessLogEntry{
+		httpExample := &accesslog_data.HTTPAccessLogEntry{
 			CommonProperties: commonProperties,
 			Request: &accesslog_data.HTTPRequestProperties{
 				RequestBodyBytes: 123,
@@ -38,7 +38,7 @@ var _ = Describe("ParseFormat()", func() {
 			},
 		}
 
-		tcpLogEntry := &accesslog_data.TCPAccessLogEntry{
+		tcpExample := &accesslog_data.TCPAccessLogEntry{
 			CommonProperties: commonProperties,
 			ConnectionProperties: &accesslog_data.ConnectionProperties{
 				ReceivedBytes: 123,
@@ -60,14 +60,14 @@ var _ = Describe("ParseFormat()", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				actual, err := formatter.FormatHttpLogEntry(httpLogEntry)
+				actual, err := formatter.FormatHttpLogEntry(httpExample)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				Expect(actual).To(Equal(given.expectedHTTP))
 
 				// when
-				actual, err = formatter.FormatTcpLogEntry(tcpLogEntry)
+				actual, err = formatter.FormatTcpLogEntry(tcpExample)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -94,12 +94,12 @@ var _ = Describe("ParseFormat()", func() {
 				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),
 			Entry("%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%", testCase{
-				format:       `%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%`,
+				format:       `%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%`, // not supported yet
 				expectedHTTP: `2020-02-18T21:52:17.987Z`,
 				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),
 			Entry("%START_TIME(%s.%3f)%", testCase{
-				format:       `%START_TIME(%s.%3f)%`,
+				format:       `%START_TIME(%s.%3f)%`, // not supported yet
 				expectedHTTP: `2020-02-18T21:52:17.987Z`,
 				expectedTCP:  `2020-02-18T21:52:17.987Z`,
 			}),
@@ -107,11 +107,6 @@ var _ = Describe("ParseFormat()", func() {
 				format:       `%BYTES_RECEIVED%`,
 				expectedHTTP: `123`,
 				expectedTCP:  `123`,
-			}),
-			Entry("%BYTES_RECEIVED()%", testCase{
-				format:       `%BYTES_RECEIVED()%`,
-				expectedHTTP: `UNSUPPORTED_FIELD(BYTES_RECEIVED())`, // TODO: how is it comparable to file access log?
-				expectedTCP:  `UNSUPPORTED_FIELD(BYTES_RECEIVED())`, // TODO: how is it comparable to file access log?
 			}),
 			Entry("%RESPONSE_CODE%", testCase{
 				format:       `%RESPONSE_CODE%`,
@@ -156,6 +151,10 @@ var _ = Describe("ParseFormat()", func() {
 			Entry("%START_TIME(%", testCase{
 				format:      `%START_TIME(%`,
 				expectedErr: `format string is not valid: expected a command operator at position 0`,
+			}),
+			Entry("%BYTES_RECEIVED()%", testCase{
+				format:      `%BYTES_RECEIVED()%`,
+				expectedErr: `format string is not valid: command "%BYTES_RECEIVED%" doesn't support arguments or max length constraint, instead got "%BYTES_RECEIVED()%"`,
 			}),
 		)
 	})
