@@ -73,10 +73,6 @@ func init() {
 	registry.RegistryListType(&TrafficLogResourceList{})
 }
 
-func (t *TrafficLogResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
-}
-
-func (t *TrafficLogResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (t *TrafficLogResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.Selectors
 }

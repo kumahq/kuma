@@ -6,7 +6,6 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/logs"
 	"github.com/Kong/kuma/pkg/core/permissions"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -73,7 +72,6 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 
 func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ResourceManager()}
-	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ResourceManager()}
 	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
 	if err != nil {
 		return nil, err
@@ -136,12 +134,16 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					tracingBackend = mesh.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
 				}
 
-				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane)
+				trafficLog, err := xds_topology.GetTrafficLog(ctx, dataplane, rt.ResourceManager())
 				if err != nil {
 					return err
 				}
+				var loggingBackend *mesh_proto.LoggingBackend
+				if trafficLog != nil {
+					loggingBackend = mesh.GetLoggingBackend(trafficLog.Spec.GetConf().GetBackend())
+				}
 
-				matchedLogs, err := logsMatcher.Match(ctx, dataplane)
+				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane)
 				if err != nil {
 					return err
 				}
@@ -154,9 +156,10 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					OutboundSelectors:  destinations,
 					OutboundTargets:    outbound,
 					HealthChecks:       healthChecks,
-					Logs:               matchedLogs,
 					TrafficTrace:       trafficTrace,
 					TracingBackend:     tracingBackend,
+					TrafficLog:         trafficLog,
+					LoggingBackend:     loggingBackend,
 					Metadata:           metadataTracker.Metadata(streamId),
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)

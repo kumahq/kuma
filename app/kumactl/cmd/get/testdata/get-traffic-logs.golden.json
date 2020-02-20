@@ -3,19 +3,11 @@
     {
       "mesh": "default",
       "name": "web1-to-backend1",
-      "sources": [
+      "selectors": [
         {
           "match": {
             "service": "web1",
             "version": "1.0"
-          }
-        }
-      ],
-      "destinations": [
-        {
-          "match": {
-            "service": "backend1",
-            "env": "dev"
           }
         }
       ],
@@ -27,19 +19,11 @@
     {
       "mesh": "default",
       "name": "web2-to-backend2",
-      "sources": [
+      "selectors": [
         {
           "match": {
             "service": "web2",
             "version": "1.0"
-          }
-        }
-      ],
-      "destinations": [
-        {
-          "match": {
-            "service": "backend2",
-            "env": "dev"
           }
         }
       ],

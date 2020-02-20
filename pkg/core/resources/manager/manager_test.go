@@ -81,14 +81,7 @@ var _ = Describe("Resource Manager", func() {
 			}
 			trafficLog := &mesh.TrafficLogResource{
 				Spec: mesh_proto.TrafficLog{
-					Sources: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"service": "*",
-							},
-						},
-					},
-					Destinations: []*mesh_proto.Selector{
+					Selectors: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
 								"service": "*",

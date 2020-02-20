@@ -13,6 +13,43 @@ import (
 
 var _ = Describe("TrafficLog", func() {
 	Describe("Validate()", func() {
+		DescribeTable("should pass validation",
+			func(trafficLogYAML string) {
+				// setup
+				trafficLog := TrafficLogResource{}
+
+				// when
+				err := util_proto.FromYAML([]byte(trafficLogYAML), &trafficLog.Spec)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				verr := trafficLog.Validate()
+
+				// then
+				Expect(verr).ToNot(HaveOccurred())
+			},
+			Entry("full example", `
+                selectors:
+                - match:
+                    region: eu
+                conf:
+                  backend: file`,
+			),
+			Entry("empty backend", `
+                selectors:
+                - match:
+                    region: eu
+                conf:
+                  backend: # backend can be empty, default backend from mesh is chosen`,
+			),
+			Entry("empty conf", `
+                selectors:
+                - match:
+                    region: eu`,
+			),
+		)
+
 		type testCase struct {
 			trafficLog string
 			expected   string
@@ -41,66 +78,39 @@ var _ = Describe("TrafficLog", func() {
 				trafficLog: ``,
 				expected: `
                 violations:
-                - field: sources
-                  message: must have at least one element
-                - field: destinations
+                - field: selectors
                   message: must have at least one element
 `,
 			}),
 			Entry("selectors without tags", testCase{
 				trafficLog: `
-                sources:
-                - match: {}
-                destinations:
+                selectors:
                 - match: {}
 `,
 				expected: `
                 violations:
-                - field: sources[0].match
+                - field: selectors[0].match
                   message: must have at least one tag
-                - field: sources[0].match
-                  message: mandatory tag "service" is missing
-                - field: destinations[0].match
-                  message: must consist of exactly one tag "service"
-                - field: destinations[0].match
-                  message: mandatory tag "service" is missing
 `,
 			}),
 			Entry("selectors with empty tags values", testCase{
 				trafficLog: `
-                sources:
-                - match:
-                    service:
-                    region:
-                destinations:
+                selectors:
                 - match:
                     service:
                     region:
 `,
 				expected: `
                 violations:
-                - field: sources[0].match["region"]
+                - field: selectors[0].match["region"]
                   message: tag value must be non-empty
-                - field: sources[0].match["service"]
-                  message: tag value must be non-empty
-                - field: destinations[0].match
-                  message: must consist of exactly one tag "service"
-                - field: destinations[0].match["region"]
-                  message: tag "region" is not allowed
-                - field: destinations[0].match["region"]
-                  message: tag value must be non-empty
-                - field: destinations[0].match["service"]
+                - field: selectors[0].match["service"]
                   message: tag value must be non-empty
 `,
 			}),
 			Entry("multiple selectors", testCase{
 				trafficLog: `
-                sources:
-                - match:
-                    service:
-                    region:
-                - match: {}
-                destinations:
+                selectors:
                 - match:
                     service:
                     region:
@@ -108,26 +118,12 @@ var _ = Describe("TrafficLog", func() {
 `,
 				expected: `
                 violations:
-                - field: sources[0].match["region"]
+                - field: selectors[0].match["region"]
                   message: tag value must be non-empty
-                - field: sources[0].match["service"]
+                - field: selectors[0].match["service"]
                   message: tag value must be non-empty
-                - field: sources[1].match
+                - field: selectors[1].match
                   message: must have at least one tag
-                - field: sources[1].match
-                  message: mandatory tag "service" is missing
-                - field: destinations[0].match
-                  message: must consist of exactly one tag "service"
-                - field: destinations[0].match["region"]
-                  message: tag "region" is not allowed
-                - field: destinations[0].match["region"]
-                  message: tag value must be non-empty
-                - field: destinations[0].match["service"]
-                  message: tag value must be non-empty
-                - field: destinations[1].match
-                  message: must consist of exactly one tag "service"
-                - field: destinations[1].match
-                  message: mandatory tag "service" is missing
 `,
 			}),
 		)

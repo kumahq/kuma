@@ -48,9 +48,6 @@ type EndpointList []Endpoint
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
 
-// LogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
-type LogMap map[ServiceName]*mesh_proto.LoggingBackend
-
 // HealthCheckMap holds the most specific HealthCheck for each reachable service.
 type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
 
@@ -58,13 +55,14 @@ type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
 	TrafficPermissions permissions.MatchedPermissions
-	Logs               LogMap
 	TrafficRoutes      RouteMap
 	OutboundSelectors  DestinationMap
 	OutboundTargets    EndpointMap
 	HealthChecks       HealthCheckMap
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
+	TrafficLog         *mesh_core.TrafficLogResource
+	LoggingBackend     *mesh_proto.LoggingBackend
 	Metadata           *DataplaneMetadata
 }
 

@@ -205,7 +205,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 				filterChainBuilder.Configure(envoy_listeners.TcpProxy(outbound.Service, clusters...))
 			}
 			// TODO(yskopets): configure NetworkAccessLog only for non-HTTP cases
-			return filterChainBuilder.Configure(envoy_listeners.NetworkAccessLog(sourceService, destinationService, proxy.Logs[outbound.Service], proxy))
+			return filterChainBuilder.Configure(envoy_listeners.NetworkAccessLog(sourceService, destinationService, proxy.LoggingBackend, proxy))
 		}()
 		listener, err := envoy_listeners.NewListenerBuilder().
 			Configure(envoy_listeners.OutboundListener(outboundListenerName, ofaces[i].DataplaneIP, ofaces[i].DataplanePort)).

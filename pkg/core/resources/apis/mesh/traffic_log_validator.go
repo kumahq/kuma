@@ -6,22 +6,16 @@ import (
 
 func (d *TrafficLogResource) Validate() error {
 	var err validators.ValidationError
-	err.Add(d.validateSources())
-	err.Add(d.validateDestinations())
+	err.Add(d.validateSelectors())
 	// d.Spec.Conf and d.Spec.Conf.DefaultBackend can be empty, then default backend of the mesh is chosen.
 	return err.OrNil()
 }
 
-func (d *TrafficLogResource) validateSources() validators.ValidationError {
-	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
+func (d *TrafficLogResource) validateSelectors() validators.ValidationError {
+	return ValidateSelectors(validators.RootedAt("selectors"), d.Spec.Selectors, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
-			RequireService:       true,
 			RequireAtLeastOneTag: true,
 		},
 	})
-}
-
-func (d *TrafficLogResource) validateDestinations() (err validators.ValidationError) {
-	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.Destinations, OnlyServiceTagAllowed)
 }

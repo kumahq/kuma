@@ -29,19 +29,11 @@ var _ = Describe("kumactl get traffic-logs", func() {
 	trafficLoggingResources := []*mesh.TrafficLogResource{
 		{
 			Spec: v1alpha1.TrafficLog{
-				Sources: []*v1alpha1.Selector{
+				Selectors: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
 							"service": "web1",
 							"version": "1.0",
-						},
-					},
-				},
-				Destinations: []*v1alpha1.Selector{
-					{
-						Match: map[string]string{
-							"service": "backend1",
-							"env":     "dev",
 						},
 					},
 				},
@@ -56,19 +48,11 @@ var _ = Describe("kumactl get traffic-logs", func() {
 		},
 		{
 			Spec: v1alpha1.TrafficLog{
-				Sources: []*v1alpha1.Selector{
+				Selectors: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
 							"service": "web2",
 							"version": "1.0",
-						},
-					},
-				},
-				Destinations: []*v1alpha1.Selector{
-					{
-						Match: map[string]string{
-							"service": "backend2",
-							"env":     "dev",
 						},
 					},
 				},
