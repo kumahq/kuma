@@ -1,5 +1,6 @@
 package accesslog
 
+// List of supported response flags.
 const (
 	ResponseFlagDownstreamConnectionTermination = "DC"
 	ResponseFlagFailedLocalHealthCheck          = "LH"

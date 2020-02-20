@@ -6,7 +6,9 @@ import (
 
 type TlsCipherSuite uint16
 
-// see https://www.iana.org/assignments/tls-parameters/tls-parameters.xml
+// List of the most commonly used TLS cipher suites.
+//
+// See https://www.iana.org/assignments/tls-parameters/tls-parameters.xml
 const (
 	// TLS 1.0 - 1.2 cipher suites.
 	TLS_RSA_WITH_RC4_128_SHA                TlsCipherSuite = 0x0005
@@ -42,7 +44,7 @@ const (
 	TLS_FALLBACK_SCSV TlsCipherSuite = 0x5600
 )
 
-// String returns an Envoy-compatible name of a given TLS cipher suite.
+// String returns an Envoy-compatible name of a TLS cipher suite.
 func (s TlsCipherSuite) String() string {
 	switch s {
 	// TLS 1.0 - 1.2 cipher suites.

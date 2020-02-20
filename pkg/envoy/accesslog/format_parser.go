@@ -74,37 +74,37 @@ func (p formatParser) splitMatch(match []string) (token string, command string, 
 
 func (p formatParser) parseCommandOperator(token, command, args, limit string) (LogEntryFormatter, error) {
 	switch command {
-	case "REQ":
+	case CMD_REQ:
 		header, altHeader, maxLen, err := p.parseHeaderOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &RequestHeaderFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
-	case "RESP":
+	case CMD_RESP:
 		header, altHeader, maxLen, err := p.parseHeaderOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &ResponseHeaderFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
-	case "TRAILER":
+	case CMD_TRAILER:
 		header, altHeader, maxLen, err := p.parseHeaderOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &ResponseTrailerFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
-	case "DYNAMIC_METADATA":
+	case CMD_DYNAMIC_METADATA:
 		namespace, path, maxLen, err := p.parseDynamicMetadataOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &DynamicMetadataFormatter{FilterNamespace: namespace, Path: path, MaxLength: maxLen}, nil
-	case "FILTER_STATE":
+	case CMD_FILTER_STATE:
 		key, maxLen, err := p.parseFilterStateOperator(token, args, limit)
 		if err != nil {
 			return nil, err
 		}
 		return &FilterStateFormatter{Key: key, MaxLength: maxLen}, nil
-	case "START_TIME":
+	case CMD_START_TIME:
 		format, err := p.parseStartTimeOperator(token, args)
 		if err != nil {
 			return nil, err

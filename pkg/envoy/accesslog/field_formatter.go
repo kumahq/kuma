@@ -25,15 +25,15 @@ type FieldFormatter string
 
 func (f FieldFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
 	switch f {
-	case "BYTES_RECEIVED":
+	case CMD_BYTES_RECEIVED:
 		return f.formatUint(entry.GetRequest().GetRequestBodyBytes())
-	case "BYTES_SENT":
+	case CMD_BYTES_SENT:
 		return f.formatUint(entry.GetResponse().GetResponseBodyBytes())
-	case "PROTOCOL":
+	case CMD_PROTOCOL:
 		return f.formatHttpVersion(entry.GetProtocolVersion())
-	case "RESPONSE_CODE":
+	case CMD_RESPONSE_CODE:
 		return f.formatUint(uint64(entry.GetResponse().GetResponseCode().GetValue()))
-	case "RESPONSE_CODE_DETAILS":
+	case CMD_RESPONSE_CODE_DETAILS:
 		return entry.GetResponse().GetResponseCodeDetails(), nil
 	default:
 		return f.formatAccessLogCommon(entry.GetCommonProperties())
@@ -42,15 +42,15 @@ func (f FieldFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEn
 
 func (f FieldFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error) {
 	switch f {
-	case "BYTES_RECEIVED":
+	case CMD_BYTES_RECEIVED:
 		return f.formatUint(entry.GetConnectionProperties().GetReceivedBytes())
-	case "BYTES_SENT":
+	case CMD_BYTES_SENT:
 		return f.formatUint(entry.GetConnectionProperties().GetSentBytes())
-	case "PROTOCOL":
+	case CMD_PROTOCOL:
 		return "", nil
-	case "RESPONSE_CODE":
+	case CMD_RESPONSE_CODE:
 		return "0", nil
-	case "RESPONSE_CODE_DETAILS":
+	case CMD_RESPONSE_CODE_DETAILS:
 		return "", nil
 	default:
 		return f.formatAccessLogCommon(entry.GetCommonProperties())
@@ -59,62 +59,62 @@ func (f FieldFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntr
 
 func (f FieldFormatter) formatAccessLogCommon(entry *accesslog_data.AccessLogCommon) (string, error) {
 	switch f {
-	case "UPSTREAM_TRANSPORT_FAILURE_REASON":
+	case CMD_UPSTREAM_TRANSPORT_FAILURE_REASON:
 		return entry.GetUpstreamTransportFailureReason(), nil
-	case "REQUEST_DURATION":
+	case CMD_REQUEST_DURATION:
 		return f.formatDuration(entry.GetTimeToLastRxByte())
-	case "RESPONSE_DURATION":
+	case CMD_RESPONSE_DURATION:
 		return f.formatDuration(entry.GetTimeToFirstUpstreamRxByte())
-	case "RESPONSE_TX_DURATION":
+	case CMD_RESPONSE_TX_DURATION:
 		return f.formatDurationDelta(entry.GetTimeToLastDownstreamTxByte(), entry.GetTimeToFirstUpstreamRxByte())
-	case "DURATION":
+	case CMD_DURATION:
 		return f.formatDuration(entry.GetTimeToLastDownstreamTxByte())
-	case "RESPONSE_FLAGS":
+	case CMD_RESPONSE_FLAGS:
 		return f.formatResponseFlags(entry.GetResponseFlags())
-	case "UPSTREAM_HOST":
+	case CMD_UPSTREAM_HOST:
 		return f.formatAddress(entry.GetUpstreamRemoteAddress(), includePort)
-	case "UPSTREAM_CLUSTER":
+	case CMD_UPSTREAM_CLUSTER:
 		return entry.GetUpstreamCluster(), nil
-	case "UPSTREAM_LOCAL_ADDRESS":
+	case CMD_UPSTREAM_LOCAL_ADDRESS:
 		return f.formatAddress(entry.GetUpstreamLocalAddress(), includePort)
-	case "DOWNSTREAM_LOCAL_ADDRESS":
+	case CMD_DOWNSTREAM_LOCAL_ADDRESS:
 		return f.formatAddress(entry.GetDownstreamLocalAddress(), includePort)
-	case "DOWNSTREAM_LOCAL_ADDRESS_WITHOUT_PORT":
+	case CMD_DOWNSTREAM_LOCAL_ADDRESS_WITHOUT_PORT:
 		return f.formatAddress(entry.GetDownstreamLocalAddress(), excludePort)
-	case "DOWNSTREAM_REMOTE_ADDRESS":
+	case CMD_DOWNSTREAM_REMOTE_ADDRESS:
 		return f.formatAddress(entry.GetDownstreamRemoteAddress(), includePort)
-	case "DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT":
+	case CMD_DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT:
 		return f.formatAddress(entry.GetDownstreamRemoteAddress(), excludePort)
-	case "DOWNSTREAM_DIRECT_REMOTE_ADDRESS":
+	case CMD_DOWNSTREAM_DIRECT_REMOTE_ADDRESS:
 		return f.formatAddress(entry.GetDownstreamDirectRemoteAddress(), includePort)
-	case "DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT":
+	case CMD_DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT:
 		return f.formatAddress(entry.GetDownstreamDirectRemoteAddress(), excludePort)
-	case "REQUESTED_SERVER_NAME":
+	case CMD_REQUESTED_SERVER_NAME:
 		return entry.GetTlsProperties().GetTlsSniHostname(), nil
-	case "ROUTE_NAME":
+	case CMD_ROUTE_NAME:
 		return entry.GetRouteName(), nil
-	case "DOWNSTREAM_PEER_URI_SAN":
+	case CMD_DOWNSTREAM_PEER_URI_SAN:
 		return f.formatUriSans(entry.GetTlsProperties().GetPeerCertificateProperties().GetSubjectAltName())
-	case "DOWNSTREAM_LOCAL_URI_SAN":
+	case CMD_DOWNSTREAM_LOCAL_URI_SAN:
 		return f.formatUriSans(entry.GetTlsProperties().GetLocalCertificateProperties().GetSubjectAltName())
-	case "DOWNSTREAM_PEER_SUBJECT":
+	case CMD_DOWNSTREAM_PEER_SUBJECT:
 		return entry.GetTlsProperties().GetPeerCertificateProperties().GetSubject(), nil
-	case "DOWNSTREAM_LOCAL_SUBJECT":
+	case CMD_DOWNSTREAM_LOCAL_SUBJECT:
 		return entry.GetTlsProperties().GetLocalCertificateProperties().GetSubject(), nil
-	case "DOWNSTREAM_TLS_SESSION_ID":
+	case CMD_DOWNSTREAM_TLS_SESSION_ID:
 		return entry.GetTlsProperties().GetTlsSessionId(), nil
-	case "DOWNSTREAM_TLS_CIPHER":
+	case CMD_DOWNSTREAM_TLS_CIPHER:
 		return f.formatTlsCipherSuite(entry.GetTlsProperties().GetTlsCipherSuite())
-	case "DOWNSTREAM_TLS_VERSION":
+	case CMD_DOWNSTREAM_TLS_VERSION:
 		return f.formatTlsVersion(entry.GetTlsProperties().GetTlsVersion())
-	case "DOWNSTREAM_PEER_FINGERPRINT_256",
-		"DOWNSTREAM_PEER_SERIAL",
-		"DOWNSTREAM_PEER_ISSUER",
-		"DOWNSTREAM_PEER_CERT",
-		"DOWNSTREAM_PEER_CERT_V_START",
-		"DOWNSTREAM_PEER_CERT_V_END",
-		"HOSTNAME":
-		fallthrough // these fields have no equivalents in GrpcAccessLog
+	case CMD_DOWNSTREAM_PEER_FINGERPRINT_256,
+		CMD_DOWNSTREAM_PEER_SERIAL,
+		CMD_DOWNSTREAM_PEER_ISSUER,
+		CMD_DOWNSTREAM_PEER_CERT,
+		CMD_DOWNSTREAM_PEER_CERT_V_START,
+		CMD_DOWNSTREAM_PEER_CERT_V_END,
+		CMD_HOSTNAME:
+		fallthrough // these fields have no equivalent data in GrpcAccessLog
 	default:
 		// make it clear to the user what is happening
 		return fmt.Sprintf("UNSUPPORTED_FIELD(%s)", f), nil
