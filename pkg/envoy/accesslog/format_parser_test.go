@@ -540,6 +540,26 @@ var _ = Describe("ParseFormat()", func() {
 				expectedHTTP: `UNSUPPORTED_COMMAND(%HOSTNAME%)`,
 				expectedTCP:  `UNSUPPORTED_COMMAND(%HOSTNAME%)`,
 			}),
+			Entry("%KUMA_SOURCE_ADDRESS%", testCase{
+				format:       `%KUMA_SOURCE_ADDRESS%`,
+				expectedHTTP: `%KUMA_SOURCE_ADDRESS%`, // placeholder must be rendered "as is"
+				expectedTCP:  `%KUMA_SOURCE_ADDRESS%`,
+			}),
+			Entry("%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%", testCase{
+				format:       `%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%`,
+				expectedHTTP: `%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%`, // placeholder must be rendered "as is"
+				expectedTCP:  `%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%`,
+			}),
+			Entry("%KUMA_SOURCE_SERVICE%", testCase{
+				format:       `%KUMA_SOURCE_SERVICE%`,
+				expectedHTTP: `%KUMA_SOURCE_SERVICE%`, // placeholder must be rendered "as is"
+				expectedTCP:  `%KUMA_SOURCE_SERVICE%`,
+			}),
+			Entry("%KUMA_DESTINATION_SERVICE%", testCase{
+				format:       `%KUMA_DESTINATION_SERVICE%`,
+				expectedHTTP: `%KUMA_DESTINATION_SERVICE%`, // placeholder must be rendered "as is"
+				expectedTCP:  `%KUMA_DESTINATION_SERVICE%`,
+			}),
 			Entry("composite", testCase{
 				format:       `[%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%"`,
 				expectedHTTP: `[2020-02-18T21:52:17.987Z] "- /api HTTP/1.1" 200 UF,URX 234 567 123 - "-" "-" "-" "backend.internal:8080"`,
@@ -795,6 +815,8 @@ UF,URX
 "%TRAILER(GRPC-STATUS):1%" "%TRAILER(grpc-message):2%" "%TRAILER(grpc-status):3%"
 "%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key_1):1%" "%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key_2):2%" "%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key_1):3%"
 "%FILTER_STATE(filter.state.key1):1%" "%FILTER_STATE(filter.state.key2):2%" "%FILTER_STATE(filter.state.key1):3%"
+%BYTES_SENT%
+%KUMA_SOURCE_SERVICE%
 `,
 				expectedHTTP: &accesslog_config.HttpGrpcAccessLogConfig{
 					CommonConfig: &accesslog_config.CommonGrpcAccessLogConfig{
@@ -830,7 +852,6 @@ UF,URX
 				actual := format.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
-
 			},
 			Entry("composite", testCase{
 				format:   `[%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%"`,
@@ -882,6 +903,10 @@ UF,URX
 %DOWNSTREAM_PEER_CERT_V_START%
 %DOWNSTREAM_PEER_CERT_V_END%
 %HOSTNAME%
+%KUMA_SOURCE_ADDRESS%
+%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%
+%KUMA_SOURCE_SERVICE%
+%KUMA_DESTINATION_SERVICE%
 `,
 				expected: `
 %START_TIME%
@@ -928,6 +953,92 @@ UF,URX
 %DOWNSTREAM_PEER_CERT_V_START%
 %DOWNSTREAM_PEER_CERT_V_END%
 %HOSTNAME%
+%KUMA_SOURCE_ADDRESS%
+%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%
+%KUMA_SOURCE_SERVICE%
+%KUMA_DESTINATION_SERVICE%
+`,
+			}),
+		)
+	})
+
+	Describe("support Interpolate()", func() {
+		type testCase struct {
+			format   string
+			context  map[string]string
+			expected string
+		}
+
+		DescribeTable("should bind to a given context",
+			func(given testCase) {
+				// when
+				format, err := ParseFormat(given.format)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				interpolatedFormat, err := format.Interpolate(InterpolationVariables(given.context))
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				actual := interpolatedFormat.String()
+				// then
+				Expect(actual).To(Equal(given.expected))
+			},
+			Entry("multi-line w/ empty context", testCase{
+				format: `
+%START_TIME%
+%KUMA_SOURCE_ADDRESS%
+%DURATION%
+%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%
+%BYTES_RECEIVED%
+%KUMA_SOURCE_SERVICE%
+%BYTES_SENT%
+%KUMA_DESTINATION_SERVICE%
+%PROTOCOL%
+`,
+				context: nil,
+				expected: `
+%START_TIME%
+
+%DURATION%
+
+%BYTES_RECEIVED%
+
+%BYTES_SENT%
+
+%PROTOCOL%
+`,
+			}),
+			Entry("multi-line w/ full context", testCase{
+				format: `
+%START_TIME%
+%KUMA_SOURCE_ADDRESS%
+%DURATION%
+%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%
+%BYTES_RECEIVED%
+%KUMA_SOURCE_SERVICE%
+%BYTES_SENT%
+%KUMA_DESTINATION_SERVICE%
+%PROTOCOL%
+`,
+				context: map[string]string{
+					"KUMA_SOURCE_ADDRESS":              "10.0.0.3:0",
+					"KUMA_SOURCE_ADDRESS_WITHOUT_PORT": "10.0.0.3",
+					"KUMA_SOURCE_SERVICE":              "web",
+					"KUMA_DESTINATION_SERVICE":         "backend",
+				},
+				expected: `
+%START_TIME%
+10.0.0.3:0
+%DURATION%
+10.0.0.3
+%BYTES_RECEIVED%
+web
+%BYTES_SENT%
+backend
+%PROTOCOL%
 `,
 			}),
 		)

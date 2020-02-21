@@ -64,6 +64,27 @@ func (f *AccessLogFormat) ConfigureTcpLog(config *accesslog_config.TcpGrpcAccess
 	return nil
 }
 
+func (f *AccessLogFormat) Interpolate(context InterpolationContext) (*AccessLogFormat, error) {
+	newFragments := make([]AccessLogFragment, len(f.Fragments))
+	interpolated := false
+	for i, fragment := range f.Fragments {
+		if interpolator, ok := fragment.(AccessLogFragmentInterpolator); ok {
+			newFragment, err := interpolator.Interpolate(context)
+			if err != nil {
+				return nil, err
+			}
+			newFragments[i] = newFragment
+			interpolated = interpolated || newFragment != fragment
+		} else {
+			newFragments[i] = fragment
+		}
+	}
+	if interpolated {
+		return &AccessLogFormat{Fragments: newFragments}, nil
+	}
+	return f, nil
+}
+
 // String returns the canonical representation of this format string.
 func (f *AccessLogFormat) String() string {
 	fragments := make([]string, len(f.Fragments))
