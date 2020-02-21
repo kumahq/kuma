@@ -1,6 +1,8 @@
 package accesslog
 
 import (
+	"fmt"
+
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 
@@ -23,6 +25,11 @@ func (f *RequestHeaderFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAcce
 func (f *RequestHeaderFormatter) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
 	config.AdditionalRequestHeadersToLog = f.AppendTo(config.AdditionalRequestHeadersToLog)
 	return nil
+}
+
+// String returns the canonical representation of this command operator.
+func (f *RequestHeaderFormatter) String() string {
+	return fmt.Sprintf("%%REQ%s%%", f.HeaderFormatter.String())
 }
 
 // RequestHeaders represents a set of HTTP request headers

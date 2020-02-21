@@ -1,5 +1,10 @@
 package accesslog
 
+import (
+	"strconv"
+	"strings"
+)
+
 // Headers represents a set of headers
 // that might include both regular and pseudo headers.
 type Headers interface {
@@ -47,4 +52,24 @@ func (f *HeaderFormatter) AppendTo(headers []string) []string {
 		headers = append(headers, f.AltHeader)
 	}
 	return headers
+}
+
+// String returns the canonical representation of a header command operator
+// arguments and max length constraint.
+func (f *HeaderFormatter) String() string {
+	var builder []string
+	builder = append(builder, "(")
+	if f.Header != "" || f.AltHeader != "" {
+		builder = append(builder, f.Header)
+		if f.AltHeader != "" {
+			builder = append(builder, "?")
+			builder = append(builder, f.AltHeader)
+		}
+	}
+	builder = append(builder, ")")
+	if f.MaxLength != 0 {
+		builder = append(builder, ":")
+		builder = append(builder, strconv.FormatInt(int64(f.MaxLength), 10))
+	}
+	return strings.Join(builder, "")
 }

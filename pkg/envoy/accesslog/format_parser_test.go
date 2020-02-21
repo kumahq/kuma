@@ -367,53 +367,53 @@ var _ = Describe("ParseFormat()", func() {
 			}),
 			Entry("%DYNAMIC_METADATA()%", testCase{ // apparently, Envoy allows both `FilterNamespace` and `Path` to be empty
 				format:       `%DYNAMIC_METADATA()%`,
-				expectedHTTP: `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
 			}),
 			Entry("%DYNAMIC_METADATA():10%", testCase{ // apparently, Envoy allows both `FilterNamespace` and `Path` to be empty
 				format:       `%DYNAMIC_METADATA():10%`,
-				expectedHTTP: `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
 			}),
 			Entry("%DYNAMIC_METADATA(com.test.my_filter)%", testCase{
 				format:       `%DYNAMIC_METADATA(com.test.my_filter)%`,
-				expectedHTTP: `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
 			}),
 			Entry("%DYNAMIC_METADATA(com.test.my_filter):10%", testCase{
 				format:       `%DYNAMIC_METADATA(com.test.my_filter):10%`,
-				expectedHTTP: `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
 			}),
 			Entry("%DYNAMIC_METADATA(com.test.my_filter:test_key)%", testCase{
 				format:       `%DYNAMIC_METADATA(com.test.my_filter:test_key)%`,
-				expectedHTTP: `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
 			}),
 			Entry("%DYNAMIC_METADATA(com.test.my_filter:test_key):10%", testCase{
 				format:       `%DYNAMIC_METADATA(com.test.my_filter:test_key):10%`,
-				expectedHTTP: `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
 			}),
 			Entry("%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key)%", testCase{
 				format:       `%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key)%`,
-				expectedHTTP: `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
 			}),
 			Entry("%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key):10%", testCase{
 				format:       `%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key):10%`,
-				expectedHTTP: `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(DYNAMIC_METADATA)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DYNAMIC_METADATA(NAMESPACE:KEY*):Z%)`, // not supported yet
 			}),
 			Entry("%FILTER_STATE(key)%", testCase{
 				format:       `%FILTER_STATE(key)%`,
-				expectedHTTP: `UNSUPPORTED(FILTER_STATE)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(FILTER_STATE)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%FILTER_STATE(KEY):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%FILTER_STATE(KEY):Z%)`, // not supported yet
 			}),
 			Entry("%FILTER_STATE(key):10%", testCase{
 				format:       `%FILTER_STATE(key):10%`,
-				expectedHTTP: `UNSUPPORTED(FILTER_STATE)`, // not supported yet
-				expectedTCP:  `UNSUPPORTED(FILTER_STATE)`, // not supported yet
+				expectedHTTP: `UNSUPPORTED_COMMAND(%FILTER_STATE(KEY):Z%)`, // not supported yet
+				expectedTCP:  `UNSUPPORTED_COMMAND(%FILTER_STATE(KEY):Z%)`, // not supported yet
 			}),
 			Entry("%UPSTREAM_HOST%", testCase{
 				format:       `%UPSTREAM_HOST%`,
@@ -507,38 +507,38 @@ var _ = Describe("ParseFormat()", func() {
 			}),
 			Entry("%DOWNSTREAM_PEER_FINGERPRINT_256%", testCase{
 				format:       `%DOWNSTREAM_PEER_FINGERPRINT_256%`,
-				expectedHTTP: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_FINGERPRINT_256)`,
-				expectedTCP:  `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_FINGERPRINT_256)`,
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_FINGERPRINT_256%)`,
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_FINGERPRINT_256%)`,
 			}),
 			Entry("%DOWNSTREAM_PEER_SERIAL%", testCase{
 				format:       `%DOWNSTREAM_PEER_SERIAL%`,
-				expectedHTTP: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_SERIAL)`,
-				expectedTCP:  `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_SERIAL)`,
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_SERIAL%)`,
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_SERIAL%)`,
 			}),
 			Entry("%DOWNSTREAM_PEER_ISSUER%", testCase{
 				format:       `%DOWNSTREAM_PEER_ISSUER%`,
-				expectedHTTP: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_ISSUER)`,
-				expectedTCP:  `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_ISSUER)`,
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_ISSUER%)`,
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_ISSUER%)`,
 			}),
 			Entry("%DOWNSTREAM_PEER_CERT%", testCase{
 				format:       `%DOWNSTREAM_PEER_CERT%`,
-				expectedHTTP: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_CERT)`,
-				expectedTCP:  `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_CERT)`,
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_CERT%)`,
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_CERT%)`,
 			}),
 			Entry("%DOWNSTREAM_PEER_CERT_V_START%", testCase{
 				format:       `%DOWNSTREAM_PEER_CERT_V_START%`,
-				expectedHTTP: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_CERT_V_START)`,
-				expectedTCP:  `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_CERT_V_START)`,
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_CERT_V_START%)`,
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_CERT_V_START%)`,
 			}),
 			Entry("%DOWNSTREAM_PEER_CERT_V_END%", testCase{
 				format:       `%DOWNSTREAM_PEER_CERT_V_END%`,
-				expectedHTTP: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_CERT_V_END)`,
-				expectedTCP:  `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_CERT_V_END)`,
+				expectedHTTP: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_CERT_V_END%)`,
+				expectedTCP:  `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_CERT_V_END%)`,
 			}),
 			Entry("%HOSTNAME%", testCase{
 				format:       `%HOSTNAME%`,
-				expectedHTTP: `UNSUPPORTED_FIELD(HOSTNAME)`,
-				expectedTCP:  `UNSUPPORTED_FIELD(HOSTNAME)`,
+				expectedHTTP: `UNSUPPORTED_COMMAND(%HOSTNAME%)`,
+				expectedTCP:  `UNSUPPORTED_COMMAND(%HOSTNAME%)`,
 			}),
 			Entry("composite", testCase{
 				format:       `[%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%"`,
@@ -808,6 +808,126 @@ UF,URX
 						FilterStateObjectsToLog: []string{"filter.state.key1", "filter.state.key2"},
 					},
 				},
+			}),
+		)
+	})
+
+	Describe("support String()", func() {
+		type testCase struct {
+			format   string
+			expected string
+		}
+
+		DescribeTable("should return correct canonical representation",
+			func(given testCase) {
+				// when
+				formatter, err := ParseFormat(given.format)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				actual := formatter.String()
+				// then
+				Expect(actual).To(Equal(given.expected))
+
+			},
+			Entry("composite", testCase{
+				format:   `[%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%"`,
+				expected: `[%START_TIME%] "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%"`,
+			}),
+			Entry("multi-line", testCase{
+				format: `
+%START_TIME%
+%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%
+%REQ(:METHOD)%
+%RESP(content-type?SERVER):10%
+%TRAILER(PROTOCOL)%
+%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key):10%
+%FILTER_STATE(filter.state.key):10%
+%BYTES_RECEIVED%
+%BYTES_RECEIVED%
+%BYTES_SENT%
+%PROTOCOL%
+%RESPONSE_CODE%
+%RESPONSE_CODE_DETAILS%
+%REQUEST_DURATION%
+%RESPONSE_DURATION%
+%RESPONSE_TX_DURATION%
+%DURATION%
+%RESPONSE_FLAGS%
+%UPSTREAM_HOST%
+%UPSTREAM_CLUSTER%
+%UPSTREAM_LOCAL_ADDRESS%
+%DOWNSTREAM_LOCAL_ADDRESS%
+%DOWNSTREAM_LOCAL_ADDRESS_WITHOUT_PORT%
+%DOWNSTREAM_REMOTE_ADDRESS%
+%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%
+%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%
+%DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT%
+%REQUESTED_SERVER_NAME%
+%ROUTE_NAME%
+%DOWNSTREAM_PEER_URI_SAN%
+%DOWNSTREAM_LOCAL_URI_SAN%
+%DOWNSTREAM_PEER_SUBJECT%
+%DOWNSTREAM_LOCAL_SUBJECT%
+%DOWNSTREAM_TLS_SESSION_ID%
+%DOWNSTREAM_TLS_CIPHER%
+%DOWNSTREAM_TLS_VERSION%
+%UPSTREAM_TRANSPORT_FAILURE_REASON%
+%DOWNSTREAM_PEER_FINGERPRINT_256%
+%DOWNSTREAM_PEER_SERIAL%
+%DOWNSTREAM_PEER_ISSUER%
+%DOWNSTREAM_PEER_CERT%
+%DOWNSTREAM_PEER_CERT_V_START%
+%DOWNSTREAM_PEER_CERT_V_END%
+%HOSTNAME%
+`,
+				expected: `
+%START_TIME%
+%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%
+%REQ(:method)%
+%RESP(content-type?server):10%
+%TRAILER(protocol)%
+%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key):10%
+%FILTER_STATE(filter.state.key):10%
+%BYTES_RECEIVED%
+%BYTES_RECEIVED%
+%BYTES_SENT%
+%PROTOCOL%
+%RESPONSE_CODE%
+%RESPONSE_CODE_DETAILS%
+%REQUEST_DURATION%
+%RESPONSE_DURATION%
+%RESPONSE_TX_DURATION%
+%DURATION%
+%RESPONSE_FLAGS%
+%UPSTREAM_HOST%
+%UPSTREAM_CLUSTER%
+%UPSTREAM_LOCAL_ADDRESS%
+%DOWNSTREAM_LOCAL_ADDRESS%
+%DOWNSTREAM_LOCAL_ADDRESS_WITHOUT_PORT%
+%DOWNSTREAM_REMOTE_ADDRESS%
+%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%
+%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%
+%DOWNSTREAM_DIRECT_REMOTE_ADDRESS_WITHOUT_PORT%
+%REQUESTED_SERVER_NAME%
+%ROUTE_NAME%
+%DOWNSTREAM_PEER_URI_SAN%
+%DOWNSTREAM_LOCAL_URI_SAN%
+%DOWNSTREAM_PEER_SUBJECT%
+%DOWNSTREAM_LOCAL_SUBJECT%
+%DOWNSTREAM_TLS_SESSION_ID%
+%DOWNSTREAM_TLS_CIPHER%
+%DOWNSTREAM_TLS_VERSION%
+%UPSTREAM_TRANSPORT_FAILURE_REASON%
+%DOWNSTREAM_PEER_FINGERPRINT_256%
+%DOWNSTREAM_PEER_SERIAL%
+%DOWNSTREAM_PEER_ISSUER%
+%DOWNSTREAM_PEER_CERT%
+%DOWNSTREAM_PEER_CERT_V_START%
+%DOWNSTREAM_PEER_CERT_V_END%
+%HOSTNAME%
+`,
 			}),
 		)
 	})

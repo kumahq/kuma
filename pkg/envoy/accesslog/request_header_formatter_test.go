@@ -262,4 +262,63 @@ var _ = Describe("RequestHeaderFormatter", func() {
 			}),
 		)
 	})
+
+	Describe("String()", func() {
+		type testCase struct {
+			header    string
+			altHeader string
+			maxLength int
+			expected  string
+		}
+
+		DescribeTable("should return correct canonical representation",
+			func(given testCase) {
+				// setup
+				formatter := &RequestHeaderFormatter{HeaderFormatter{
+					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength}}
+
+				// when
+				actual := formatter.String()
+				// then
+				Expect(actual).To(Equal(given.expected))
+
+			},
+			Entry("%REQ()%", testCase{
+				expected: `%REQ()%`,
+			}),
+			Entry("%REQ():10%", testCase{
+				maxLength: 10,
+				expected:  `%REQ():10%`,
+			}),
+			Entry("%REQ(:authority)%", testCase{
+				header:   `:authority`,
+				expected: `%REQ(:authority)%`,
+			}),
+			Entry("%REQ(:authority):10%", testCase{
+				header:    `:authority`,
+				maxLength: 10,
+				expected:  `%REQ(:authority):10%`,
+			}),
+			Entry("%REQ(?origin)%", testCase{
+				altHeader: `origin`,
+				expected:  `%REQ(?origin)%`,
+			}),
+			Entry("%REQ(?origin):10%", testCase{
+				altHeader: `origin`,
+				maxLength: 10,
+				expected:  `%REQ(?origin):10%`,
+			}),
+			Entry("%REQ(:authority?origin)%", testCase{
+				header:    ":authority",
+				altHeader: `origin`,
+				expected:  `%REQ(:authority?origin)%`,
+			}),
+			Entry("%REQ(:authority?origin):10%", testCase{
+				header:    ":authority",
+				altHeader: `origin`,
+				maxLength: 10,
+				expected:  `%REQ(:authority?origin):10%`,
+			}),
+		)
+	})
 })

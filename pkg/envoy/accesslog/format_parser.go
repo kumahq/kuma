@@ -133,7 +133,7 @@ func (p formatParser) parseCommandOperator(token, command, args, limit string) (
 
 func (p formatParser) parseHeaderOperator(token, command, args, limit string) (header string, altHeader string, maxLen int, err error) {
 	if p.hasNoArguments(token, command, args, limit) {
-		return "", "", 0, errors.Errorf(`command %q requires a header and optional alternative header names as its arguments, instead got %q`, CommandOperatorName(command), token)
+		return "", "", 0, errors.Errorf(`command %q requires a header and optional alternative header names as its arguments, instead got %q`, CommandOperatorDescriptor(command), token)
 	}
 	header, altHeaders, maxLen, err := p.parseOperator(token, args, limit, "?")
 	if err != nil {
@@ -159,7 +159,7 @@ func (p formatParser) parseDynamicMetadataOperator(token, command, args, limit s
 		return "", nil, 0, err
 	}
 	if p.hasNoArguments(token, command, args, limit) {
-		return "", nil, 0, errors.Errorf(`command %q requires a filter namespace and optional path as its arguments, instead got %q`, CommandOperatorName(command), token)
+		return "", nil, 0, errors.Errorf(`command %q requires a filter namespace and optional path as its arguments, instead got %q`, CommandOperatorDescriptor(command), token)
 	}
 	return namespace, path, maxLen, err
 }
@@ -170,7 +170,7 @@ func (p formatParser) parseFilterStateOperator(token, command, args, limit strin
 		return "", 0, err
 	}
 	if p.hasNoArguments(token, command, args, limit) || key == "" {
-		return "", 0, errors.Errorf(`command %q requires a key as its argument, instead got %q`, CommandOperatorName(command), token)
+		return "", 0, errors.Errorf(`command %q requires a key as its argument, instead got %q`, CommandOperatorDescriptor(command), token)
 	}
 	return key, maxLen, nil
 }
@@ -186,7 +186,7 @@ func (p formatParser) parseStartTimeOperator(token, command, args, limit string)
 
 func (p formatParser) parseFieldOperator(token, command, args, limit string) (field string, err error) {
 	if token[1:len(token)-1] != command {
-		return "", errors.Errorf(`command %q doesn't support arguments or max length constraint, instead got %q`, CommandOperatorName(command), token)
+		return "", errors.Errorf(`command %q doesn't support arguments or max length constraint, instead got %q`, CommandOperatorDescriptor(command), token)
 	}
 	return command, nil
 }

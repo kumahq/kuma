@@ -195,4 +195,63 @@ var _ = Describe("ResponseTrailerFormatter", func() {
 			}),
 		)
 	})
+
+	Describe("String()", func() {
+		type testCase struct {
+			header    string
+			altHeader string
+			maxLength int
+			expected  string
+		}
+
+		DescribeTable("should return correct canonical representation",
+			func(given testCase) {
+				// setup
+				formatter := &ResponseTrailerFormatter{HeaderFormatter{
+					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength}}
+
+				// when
+				actual := formatter.String()
+				// then
+				Expect(actual).To(Equal(given.expected))
+
+			},
+			Entry("%TRAILER()%", testCase{
+				expected: `%TRAILER()%`,
+			}),
+			Entry("%TRAILER():10%", testCase{
+				maxLength: 10,
+				expected:  `%TRAILER():10%`,
+			}),
+			Entry("%TRAILER(grpc-status)%", testCase{
+				header:   `grpc-status`,
+				expected: `%TRAILER(grpc-status)%`,
+			}),
+			Entry("%TRAILER(grpc-status):10%", testCase{
+				header:    `grpc-status`,
+				maxLength: 10,
+				expected:  `%TRAILER(grpc-status):10%`,
+			}),
+			Entry("%TRAILER(?grpc-message)%", testCase{
+				altHeader: `grpc-message`,
+				expected:  `%TRAILER(?grpc-message)%`,
+			}),
+			Entry("%TRAILER(?grpc-message):10%", testCase{
+				altHeader: `grpc-message`,
+				maxLength: 10,
+				expected:  `%TRAILER(?grpc-message):10%`,
+			}),
+			Entry("%TRAILER(grpc-status?grpc-message)%", testCase{
+				header:    "grpc-status",
+				altHeader: `grpc-message`,
+				expected:  `%TRAILER(grpc-status?grpc-message)%`,
+			}),
+			Entry("%TRAILER(grpc-status?grpc-message):10%", testCase{
+				header:    "grpc-status",
+				altHeader: `grpc-message`,
+				maxLength: 10,
+				expected:  `%TRAILER(grpc-status?grpc-message):10%`,
+			}),
+		)
+	})
 })

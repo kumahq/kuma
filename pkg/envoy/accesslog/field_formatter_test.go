@@ -856,31 +856,55 @@ var _ = Describe("FieldFormatter", func() {
 			}),
 			Entry("DOWNSTREAM_PEER_FINGERPRINT_256", testCase{
 				field:    "DOWNSTREAM_PEER_FINGERPRINT_256",
-				expected: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_FINGERPRINT_256)`,
+				expected: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_FINGERPRINT_256%)`,
 			}),
 			Entry("DOWNSTREAM_PEER_SERIAL", testCase{
 				field:    "DOWNSTREAM_PEER_SERIAL",
-				expected: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_SERIAL)`,
+				expected: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_SERIAL%)`,
 			}),
 			Entry("DOWNSTREAM_PEER_ISSUER", testCase{
 				field:    "DOWNSTREAM_PEER_ISSUER",
-				expected: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_ISSUER)`,
+				expected: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_ISSUER%)`,
 			}),
 			Entry("DOWNSTREAM_PEER_CERT", testCase{
 				field:    "DOWNSTREAM_PEER_CERT",
-				expected: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_CERT)`,
+				expected: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_CERT%)`,
 			}),
 			Entry("DOWNSTREAM_PEER_CERT_V_START", testCase{
 				field:    "DOWNSTREAM_PEER_CERT_V_START",
-				expected: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_CERT_V_START)`,
+				expected: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_CERT_V_START%)`,
 			}),
 			Entry("DOWNSTREAM_PEER_CERT_V_END", testCase{
 				field:    "DOWNSTREAM_PEER_CERT_V_END",
-				expected: `UNSUPPORTED_FIELD(DOWNSTREAM_PEER_CERT_V_END)`,
+				expected: `UNSUPPORTED_COMMAND(%DOWNSTREAM_PEER_CERT_V_END%)`,
 			}),
 			Entry("HOSTNAME", testCase{
 				field:    "HOSTNAME",
-				expected: `UNSUPPORTED_FIELD(HOSTNAME)`,
+				expected: `UNSUPPORTED_COMMAND(%HOSTNAME%)`,
+			}),
+		)
+	})
+
+	Describe("String()", func() {
+		type testCase struct {
+			field    string
+			expected string
+		}
+
+		DescribeTable("should return correct canonical representation",
+			func(given testCase) {
+				// setup
+				formatter := FieldFormatter(given.field)
+
+				// when
+				actual := formatter.String()
+				// then
+				Expect(actual).To(Equal(given.expected))
+
+			},
+			Entry("%BYTES_RECEIVED%", testCase{
+				field:    "BYTES_RECEIVED",
+				expected: `%BYTES_RECEIVED%`,
 			}),
 		)
 	})

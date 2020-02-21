@@ -25,6 +25,11 @@ const (
 // such as `%BYTES_RECEIVED%` or `%PROTOCOL%`.
 type FieldFormatter string
 
+// String returns the canonical representation of this command operator.
+func (f FieldFormatter) String() string {
+	return CommandOperatorDescriptor(f).String()
+}
+
 func (f FieldFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
 	switch f {
 	case CMD_BYTES_RECEIVED:
@@ -125,7 +130,7 @@ func (f FieldFormatter) formatAccessLogCommon(entry *accesslog_data.AccessLogCom
 		fallthrough // these fields have no equivalent data in GrpcAccessLog
 	default:
 		// make it clear to the user what is happening
-		return fmt.Sprintf("UNSUPPORTED_FIELD(%s)", f), nil
+		return fmt.Sprintf("UNSUPPORTED_COMMAND(%s)", f), nil
 	}
 }
 

@@ -5,6 +5,14 @@ import (
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
 
+// CommandOperator represents an Envoy access log command operator.
+//
+// See https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators
+type CommandOperator interface {
+	// String returns the canonical representation of this command operator.
+	String() string
+}
+
 // LogConfigurer adjusts configuration of
 // `envoy.http_grpc_access_log` and `envoy.tcp_grpc_access_log`
 // according to the format string, e.g. to capture additional HTTP headers.
@@ -18,6 +26,7 @@ type LogConfigurer interface {
 type LogEntryFormatter interface {
 	HttpLogEntryFormatter
 	TcpLogEntryFormatter
+	CommandOperator
 }
 
 // LogConfigureFormatter is a convenience type.

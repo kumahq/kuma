@@ -95,4 +95,36 @@ var _ = Describe("StartTimeFormatter", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
+
+	Describe("String()", func() {
+		type testCase struct {
+			timeFormat string
+			expected   string
+		}
+
+		DescribeTable("should return correct canonical representation",
+			func(given testCase) {
+				// setup
+				formatter := StartTimeFormatter(given.timeFormat)
+
+				// when
+				actual := formatter.String()
+				// then
+				Expect(actual).To(Equal(given.expected))
+
+			},
+			Entry("%START_TIME%", testCase{
+				timeFormat: "", // default time format
+				expected:   `%START_TIME%`,
+			}),
+			Entry("%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%", testCase{
+				timeFormat: "%Y/%m/%dT%H:%M:%S%z %s",
+				expected:   `%START_TIME(%Y/%m/%dT%H:%M:%S%z %s)%`,
+			}),
+			Entry("%START_TIME(%s.%3f)%", testCase{
+				timeFormat: "%s.%3f",
+				expected:   `%START_TIME(%s.%3f)%`,
+			}),
+		)
+	})
 })

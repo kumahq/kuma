@@ -195,4 +195,63 @@ var _ = Describe("ResponseHeaderFormatter", func() {
 			}),
 		)
 	})
+
+	Describe("String()", func() {
+		type testCase struct {
+			header    string
+			altHeader string
+			maxLength int
+			expected  string
+		}
+
+		DescribeTable("should return correct canonical representation",
+			func(given testCase) {
+				// setup
+				formatter := &ResponseHeaderFormatter{HeaderFormatter{
+					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength}}
+
+				// when
+				actual := formatter.String()
+				// then
+				Expect(actual).To(Equal(given.expected))
+
+			},
+			Entry("%RESP()%", testCase{
+				expected: `%RESP()%`,
+			}),
+			Entry("%RESP():10%", testCase{
+				maxLength: 10,
+				expected:  `%RESP():10%`,
+			}),
+			Entry("%RESP(content-type)%", testCase{
+				header:   `content-type`,
+				expected: `%RESP(content-type)%`,
+			}),
+			Entry("%RESP(content-type):10%", testCase{
+				header:    `content-type`,
+				maxLength: 10,
+				expected:  `%RESP(content-type):10%`,
+			}),
+			Entry("%RESP(?server)%", testCase{
+				altHeader: `server`,
+				expected:  `%RESP(?server)%`,
+			}),
+			Entry("%RESP(?server):10%", testCase{
+				altHeader: `server`,
+				maxLength: 10,
+				expected:  `%RESP(?server):10%`,
+			}),
+			Entry("%RESP(content-type?server)%", testCase{
+				header:    "content-type",
+				altHeader: `server`,
+				expected:  `%RESP(content-type?server)%`,
+			}),
+			Entry("%RESP(content-type?server):10%", testCase{
+				header:    "content-type",
+				altHeader: `server`,
+				maxLength: 10,
+				expected:  `%RESP(content-type?server):10%`,
+			}),
+		)
+	})
 })

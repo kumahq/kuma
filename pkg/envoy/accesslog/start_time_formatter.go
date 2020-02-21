@@ -1,6 +1,8 @@
 package accesslog
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/ptypes"
 
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
@@ -32,4 +34,12 @@ func (f StartTimeFormatter) format(entry *accesslog_data.AccessLogCommon) (strin
 	}
 	// TODO(yskopets): take format string parameter into account
 	return startTime.Format(defaultStartTimeFormat), nil
+}
+
+// String returns the canonical representation of this command operator.
+func (f StartTimeFormatter) String() string {
+	if f == "" {
+		return CommandOperatorDescriptor(CMD_START_TIME).String()
+	}
+	return fmt.Sprintf("%%START_TIME(%s)%%", string(f))
 }

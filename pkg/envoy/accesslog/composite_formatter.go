@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	unspecifiedValue = "-" // to replicate Envoy behaviour
+	unspecifiedValue = "-" // to replicate Envoy's behaviour
 )
 
 // CompositeLogConfigureFormatter represents the entire access log format string.
@@ -46,7 +46,7 @@ func (c *CompositeLogConfigureFormatter) FormatHttpLogEntry(entry *accesslog_dat
 			return "", err
 		}
 		if value == "" {
-			value = unspecifiedValue // to replicate Envoy behaviour
+			value = unspecifiedValue // to replicate Envoy's behaviour
 		}
 		values[i] = value
 	}
@@ -61,9 +61,18 @@ func (c *CompositeLogConfigureFormatter) FormatTcpLogEntry(entry *accesslog_data
 			return "", err
 		}
 		if value == "" {
-			value = unspecifiedValue // to replicate Envoy behaviour
+			value = unspecifiedValue // to replicate Envoy's behaviour
 		}
 		values[i] = value
 	}
 	return strings.Join(values, ""), nil
+}
+
+// String returns the canonical representation of this format string.
+func (f *CompositeLogConfigureFormatter) String() string {
+	fragments := make([]string, len(f.Formatters))
+	for i, formatter := range f.Formatters {
+		fragments[i] = formatter.String()
+	}
+	return strings.Join(fragments, "")
 }

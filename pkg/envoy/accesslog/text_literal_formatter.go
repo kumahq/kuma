@@ -18,3 +18,8 @@ func (f TextLiteralFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessL
 func (f TextLiteralFormatter) format() (string, error) {
 	return string(f), nil
 }
+
+// String returns the canonical representation of this command operator.
+func (f TextLiteralFormatter) String() string {
+	return string(f)
+}
