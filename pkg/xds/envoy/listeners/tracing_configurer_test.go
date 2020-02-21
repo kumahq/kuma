@@ -1,12 +1,14 @@
 package listeners
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("TracingConfigurer", func() {
@@ -37,7 +39,7 @@ var _ = Describe("TracingConfigurer", func() {
 		Entry("backend specified with sampling", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name:     "zipkin",
-				Sampling: 30.5,
+				Sampling: &wrappers.DoubleValue{Value: 30.5},
 				Type: &mesh_proto.TracingBackend_Zipkin_{
 					Zipkin: &mesh_proto.TracingBackend_Zipkin{
 						Url: "http://zipkin.us:9090/v2/spans",

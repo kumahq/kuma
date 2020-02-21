@@ -5,6 +5,7 @@ package kuma.mesh.v1alpha1;
 option go_package = "v1alpha1";
 
 import "mesh/v1alpha1/metrics.proto";
+import "google/protobuf/wrappers.proto";
 
 // Mesh defines configuration of a single mesh.
 message Mesh {
@@ -81,8 +82,9 @@ message TracingBackend {
   // TrafficTrace
   string name = 1;
 
-  // Percentage of traces that will be sent to the backend (range 0.0 - 100.0)
-  double sampling = 2;
+  // Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
+  // Empty value defaults to 100.0%
+  google.protobuf.DoubleValue sampling = 2;
 
   // Zipkin defined configuration of Zipkin tracer.
   message Zipkin {

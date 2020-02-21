@@ -27,9 +27,9 @@ func (c *TracingConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 
 	return UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 		hcm.Tracing = &envoy_hcm.HttpConnectionManager_Tracing{}
-		if c.backend.Sampling != 0.0 {
+		if c.backend.Sampling != nil {
 			hcm.Tracing.OverallSampling = &envoy_type.Percent{
-				Value: c.backend.Sampling,
+				Value: c.backend.Sampling.Value,
 			}
 		}
 		return nil

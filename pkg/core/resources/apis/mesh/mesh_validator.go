@@ -104,7 +104,7 @@ func validateTracingBackend(backend *mesh_proto.TracingBackend) validators.Valid
 	if backend.Name == "" {
 		verr.AddViolation("name", "cannot be empty")
 	}
-	if backend.Sampling < 0.0 || backend.Sampling > 100.0 {
+	if backend.Sampling.GetValue() < 0.0 || backend.Sampling.GetValue() > 100.0 {
 		verr.AddViolation("sampling", "has to be in [0.0 - 100.0] range")
 	}
 	if zipkin, ok := backend.GetType().(*mesh_proto.TracingBackend_Zipkin_); ok {
