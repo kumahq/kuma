@@ -25,7 +25,15 @@ var _ = Describe("Mesh", func() {
               - name: file-1
                 file:
                   path: /path/to/file
+              - name: file-2
+                format: '%START_TIME% %KUMA_SOURCE_SERVICE%'
+                file:
+                  path: /path/to/file2
               - name: tcp-1
+                tcp:
+                  address: kibana:1234
+              - name: tcp-2
+                format: '%START_TIME% %KUMA_DESTINATION_SERVICE%'
                 tcp:
                   address: kibana:1234
               defaultBackend: tcp-1
@@ -151,6 +159,20 @@ var _ = Describe("Mesh", func() {
                 violations:
                 - field: logging.backends[0].file.path
                   message: cannot be empty`,
+			}),
+			Entry("invalid access log format", testCase{
+				mesh: `
+                logging:
+                  backends:
+                  - name: backend-1
+                    format: "%START_TIME% %sent_bytes%"
+                    file:
+                      path: /var/logs
+                  defaultBackend: backend-1`,
+				expected: `
+                violations:
+                - field: logging.backends[0].format
+                  message: 'format string is not valid: expected a command operator to start at position 14, instead got: "%sent_bytes%"'`,
 			}),
 			Entry("default backend has to be set to one of the backends", testCase{
 				mesh: `

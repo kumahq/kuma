@@ -2,10 +2,12 @@ package mesh
 
 import (
 	"fmt"
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/validators"
 	"net"
 	"net/url"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/validators"
+	"github.com/Kong/kuma/pkg/envoy/accesslog"
 )
 
 func (m *MeshResource) Validate() error {
@@ -50,6 +52,9 @@ func validateLoggingBackend(backend *mesh_proto.LoggingBackend) validators.Valid
 	var verr validators.ValidationError
 	if backend.Name == "" {
 		verr.AddViolation("name", "cannot be empty")
+	}
+	if err := accesslog.ValidateFormat(backend.Format); err != nil {
+		verr.AddViolation("format", err.Error())
 	}
 	if file, ok := backend.GetType().(*mesh_proto.LoggingBackend_File_); ok {
 		verr.AddError("file", validateLoggingFile(file))
