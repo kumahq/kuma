@@ -4,33 +4,23 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strconv"
-	"strings"
 	"sync/atomic"
-	"time"
 
-	"github.com/go-logr/logr"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/pkg/errors"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
-	v2 "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 )
 
 var logger = core.Log.WithName("accesslogs-server")
 
-const (
-	defaultConnectTimeout = 5 * time.Second
-)
-
 type accessLogServer struct {
-	server *grpc.Server
+	server     *grpc.Server
+	newHandler logHandlerFactoryFunc
+	newSender  logSenderFactoryFunc
 
 	// streamCount for counting streams
 	streamCount int64
@@ -38,11 +28,13 @@ type accessLogServer struct {
 
 func NewAccessLogServer() *accessLogServer {
 	return &accessLogServer{
-		server: grpc.NewServer(),
+		server:     grpc.NewServer(),
+		newHandler: defaultHandler,
+		newSender:  defaultSender,
 	}
 }
 
-func (s *accessLogServer) StreamAccessLogs(stream v2.AccessLogService_StreamAccessLogsServer) (err error) {
+func (s *accessLogServer) StreamAccessLogs(stream envoy_accesslog.AccessLogService_StreamAccessLogsServer) (err error) {
 	// increment stream count
 	streamID := atomic.AddInt64(&s.streamCount, 1)
 
@@ -58,8 +50,7 @@ func (s *accessLogServer) StreamAccessLogs(stream v2.AccessLogService_StreamAcce
 	}()
 
 	initialized := false
-	var address, format string
-	var conn net.Conn
+	var handler logHandler
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
@@ -74,86 +65,21 @@ func (s *accessLogServer) StreamAccessLogs(stream v2.AccessLogService_StreamAcce
 		if !initialized {
 			initialized = true
 
-			parts := strings.SplitN(msg.Identifier.GetLogName(), ";", 2)
-			if len(parts) != 2 {
-				return errors.Errorf("failed to initialize Access Logs stream: invalid log name %q: expected %d components, got %d", msg.Identifier.GetLogName(), 2, len(parts))
-			}
-			address = parts[0]
-			format = parts[1]
-			conn, err = s.connect(address, log)
+			handler, err = s.newHandler(log, msg, s.newSender)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "failed to initialize Access Logs stream")
 			}
-			defer conn.Close()
+			defer handler.Close()
 		}
 
-		var httpLogs []*envoy_data_accesslog_v2.HTTPAccessLogEntry
-		switch logEntries := msg.LogEntries.(type) {
-		case *v2.StreamAccessLogsMessage_HttpLogs:
-			httpLogs = logEntries.HttpLogs.GetLogEntry()
-		case *v2.StreamAccessLogsMessage_TcpLogs:
-			return errors.New("TcpLogs entries are not supported yet")
-		default:
-			return errors.Errorf("unknown type of log entries: %T", msg.LogEntries)
-		}
-
-		for _, httpLogEntry := range httpLogs {
-			entry := formatEntry(httpLogEntry, format)
-			if err := s.sendLog(conn, entry); err != nil {
-				return errors.Wrap(err, "could not send log entry to a TCP logging backend")
-			}
+		if err := handler.Handle(msg); err != nil {
+			return err
 		}
 	}
-}
-
-func formatEntry(entry *envoy_data_accesslog_v2.HTTPAccessLogEntry, format string) string {
-	addrToString := func(addr *envoy_core.Address) string {
-		return fmt.Sprintf("%s:%d", addr.GetSocketAddress().GetAddress(), addr.GetSocketAddress().GetPortValue())
-	}
-	connectionTime := int64(0)
-	if entry.GetCommonProperties().GetTimeToLastDownstreamTxByte() != nil {
-		t, err := ptypes.Duration(entry.GetCommonProperties().GetTimeToLastDownstreamTxByte())
-		if err == nil {
-			connectionTime = int64(t / time.Millisecond)
-		}
-	}
-	placeholders := map[string]string{
-		"%START_TIME%":                util_proto.TimestampString(entry.GetCommonProperties().GetStartTime(), time.RFC3339),
-		"%DOWNSTREAM_REMOTE_ADDRESS%": addrToString(entry.GetCommonProperties().GetDownstreamRemoteAddress()),
-		"%DOWNSTREAM_LOCAL_ADDRESS%":  addrToString(entry.GetCommonProperties().GetDownstreamLocalAddress()),
-		"%UPSTREAM_HOST%":             addrToString(entry.GetCommonProperties().GetUpstreamRemoteAddress()),
-		"%UPSTREAM_REMOTE_ADDRESS%":   addrToString(entry.GetCommonProperties().GetUpstreamRemoteAddress()),
-		"%UPSTREAM_LOCAL_ADDRESS%":    addrToString(entry.GetCommonProperties().GetUpstreamLocalAddress()),
-		"%UPSTREAM_CLUSTER%":          entry.GetCommonProperties().GetUpstreamCluster(),
-		"%BYTES_RECEIVED%":            strconv.FormatUint(entry.GetResponse().GetResponseBodyBytes(), 10),
-		"%BYTES_SENT%":                strconv.FormatUint(entry.GetRequest().GetRequestBodyBytes(), 10),
-		"%DURATION%":                  strconv.FormatInt(connectionTime, 10),
-		"%RESPONSE_TX_DURATION%":      strconv.FormatInt(connectionTime, 10),
-	}
-	log := format
-	for placeholder, value := range placeholders {
-		log = strings.ReplaceAll(log, placeholder, value)
-	}
-	return log
-}
-
-func (s *accessLogServer) sendLog(conn net.Conn, log string) error {
-	_, err := conn.Write(append([]byte(log), byte('\n')))
-	return err
-}
-
-func (s *accessLogServer) connect(address string, log logr.Logger) (net.Conn, error) {
-	conn, err := net.DialTimeout("tcp", address, defaultConnectTimeout)
-	if err != nil {
-		log.Error(err, "failed to connect to TCP logging backend", "address", address)
-		return nil, err
-	}
-	log.Info("connected to TCP logging backend", "address", address)
-	return conn, nil
 }
 
 func (s *accessLogServer) Start(dataplane kumadp.Dataplane) error {
-	v2.RegisterAccessLogServiceServer(s.server, s)
+	envoy_accesslog.RegisterAccessLogServiceServer(s.server, s)
 	address := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", dataplane.Name, dataplane.Mesh)
 	lis, err := net.Listen("unix", address)
 	if err != nil {
@@ -171,4 +97,4 @@ func (s *accessLogServer) Close() {
 	s.server.GracefulStop()
 }
 
-var _ v2.AccessLogServiceServer = &accessLogServer{}
+var _ envoy_accesslog.AccessLogServiceServer = &accessLogServer{}
