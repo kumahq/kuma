@@ -8,7 +8,7 @@ import (
 	. "github.com/Kong/kuma/pkg/envoy/accesslog"
 )
 
-var _ = Describe("FilterStateFormatter", func() {
+var _ = Describe("FilterStateOperator", func() {
 
 	Describe("String()", func() {
 		type testCase struct {
@@ -20,10 +20,10 @@ var _ = Describe("FilterStateFormatter", func() {
 		DescribeTable("should return correct canonical representation",
 			func(given testCase) {
 				// setup
-				formatter := &FilterStateFormatter{Key: given.key, MaxLength: given.maxLength}
+				fragment := &FilterStateOperator{Key: given.key, MaxLength: given.maxLength}
 
 				// when
-				actual := formatter.String()
+				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
 

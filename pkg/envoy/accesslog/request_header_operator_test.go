@@ -13,7 +13,7 @@ import (
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
 
-var _ = Describe("RequestHeaderFormatter", func() {
+var _ = Describe("RequestHeaderOperator", func() {
 
 	Describe("FormatHttpLogEntry()", func() {
 		example := &accesslog_data.HTTPAccessLogEntry{
@@ -46,10 +46,10 @@ var _ = Describe("RequestHeaderFormatter", func() {
 		DescribeTable("should format properly",
 			func(given testCase) {
 				// setup
-				formatter := &RequestHeaderFormatter{HeaderFormatter{
+				fragment := &RequestHeaderOperator{HeaderFormatter{
 					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength}}
 				// when
-				actual, err := formatter.FormatHttpLogEntry(given.entry)
+				actual, err := fragment.FormatHttpLogEntry(given.entry)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -158,10 +158,10 @@ var _ = Describe("RequestHeaderFormatter", func() {
 	Describe("FormatTcpLogEntry()", func() {
 		It("should always return an empty string", func() {
 			// setup
-			formatter := &RequestHeaderFormatter{HeaderFormatter{
+			fragment := &RequestHeaderOperator{HeaderFormatter{
 				Header: ":path", AltHeader: "x-envoy-original-path", MaxLength: 123}}
 			// when
-			actual, err := formatter.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{})
+			actual, err := fragment.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{})
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -181,10 +181,10 @@ var _ = Describe("RequestHeaderFormatter", func() {
 		DescribeTable("should configure properly",
 			func(given testCase) {
 				// setup
-				formatter := &RequestHeaderFormatter{HeaderFormatter{
+				fragment := &RequestHeaderOperator{HeaderFormatter{
 					Header: given.header, AltHeader: given.altHeader}}
 				// when
-				err := formatter.ConfigureHttpLog(given.config)
+				err := fragment.ConfigureHttpLog(given.config)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -274,11 +274,11 @@ var _ = Describe("RequestHeaderFormatter", func() {
 		DescribeTable("should return correct canonical representation",
 			func(given testCase) {
 				// setup
-				formatter := &RequestHeaderFormatter{HeaderFormatter{
+				fragment := &RequestHeaderOperator{HeaderFormatter{
 					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength}}
 
 				// when
-				actual := formatter.String()
+				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
 

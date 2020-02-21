@@ -15,7 +15,7 @@ import (
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
 
-var _ = Describe("FieldFormatter", func() {
+var _ = Describe("FieldOperator", func() {
 
 	Describe("FormatHttpLogEntry()", func() {
 
@@ -28,9 +28,9 @@ var _ = Describe("FieldFormatter", func() {
 		DescribeTable("should format properly",
 			func(given testCase) {
 				// given
-				formatter := FieldFormatter(given.field)
+				fragment := FieldOperator(given.field)
 				// when
-				actual, err := formatter.FormatHttpLogEntry(given.entry)
+				actual, err := fragment.FormatHttpLogEntry(given.entry)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -194,9 +194,9 @@ var _ = Describe("FieldFormatter", func() {
 		DescribeTable("should format properly",
 			func(given testCase) {
 				// given
-				formatter := FieldFormatter(given.field)
+				fragment := FieldOperator(given.field)
 				// when
-				actual, err := formatter.FormatTcpLogEntry(given.entry)
+				actual, err := fragment.FormatTcpLogEntry(given.entry)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -312,10 +312,10 @@ var _ = Describe("FieldFormatter", func() {
 		DescribeTable("should format properly",
 			func(given testCase) {
 				// given
-				formatter := FieldFormatter(given.field)
+				fragment := FieldOperator(given.field)
 
 				// when
-				actual, err := formatter.FormatHttpLogEntry(&accesslog_data.HTTPAccessLogEntry{
+				actual, err := fragment.FormatHttpLogEntry(&accesslog_data.HTTPAccessLogEntry{
 					CommonProperties: given.commonProperties,
 				})
 				// then
@@ -324,7 +324,7 @@ var _ = Describe("FieldFormatter", func() {
 				Expect(actual).To(Equal(given.expected))
 
 				// when
-				actual, err = formatter.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{
+				actual, err = fragment.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{
 					CommonProperties: given.commonProperties,
 				})
 				// then
@@ -894,10 +894,10 @@ var _ = Describe("FieldFormatter", func() {
 		DescribeTable("should return correct canonical representation",
 			func(given testCase) {
 				// setup
-				formatter := FieldFormatter(given.field)
+				fragment := FieldOperator(given.field)
 
 				// when
-				actual := formatter.String()
+				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
 

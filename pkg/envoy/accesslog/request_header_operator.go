@@ -9,26 +9,31 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
-// RequestHeaderFormatter represents a `%REQ(X?Y):Z%` command operator.
-type RequestHeaderFormatter struct {
+// RequestHeaderOperator represents a `%REQ(X?Y):Z%` command operator.
+type RequestHeaderOperator struct {
 	HeaderFormatter
 }
 
-func (f *RequestHeaderFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
+func (f *RequestHeaderOperator) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
 	return f.Format(&RequestHeaders{entry.GetRequest()})
 }
 
-func (f *RequestHeaderFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error) {
+func (f *RequestHeaderOperator) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error) {
 	return "", nil
 }
 
-func (f *RequestHeaderFormatter) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
+func (f *RequestHeaderOperator) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
 	config.AdditionalRequestHeadersToLog = f.AppendTo(config.AdditionalRequestHeadersToLog)
 	return nil
 }
 
-// String returns the canonical representation of this command operator.
-func (f *RequestHeaderFormatter) String() string {
+func (f *RequestHeaderOperator) ConfigureTcpLog(config *accesslog_config.TcpGrpcAccessLogConfig) error {
+	// has no effect on TcpGrpcAccessLogConfig
+	return nil
+}
+
+// String returns the canonical representation of this access log fragment.
+func (f *RequestHeaderOperator) String() string {
 	return fmt.Sprintf("%%REQ%s%%", f.HeaderFormatter.String())
 }
 

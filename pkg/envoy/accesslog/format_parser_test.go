@@ -112,19 +112,19 @@ var _ = Describe("ParseFormat()", func() {
 		DescribeTable("should succefully parse valid format string",
 			func(given testCase) {
 				// when
-				formatter, err := ParseFormat(given.format)
+				format, err := ParseFormat(given.format)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				actual, err := formatter.FormatHttpLogEntry(httpExample)
+				actual, err := format.FormatHttpLogEntry(httpExample)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				Expect(actual).To(Equal(given.expectedHTTP))
 
 				// when
-				actual, err = formatter.FormatTcpLogEntry(tcpExample)
+				actual, err = format.FormatTcpLogEntry(tcpExample)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -602,9 +602,9 @@ UF,URX
 		DescribeTable("should reject an invalid format string",
 			func(given testCase) {
 				// when
-				formatter, err := ParseFormat(given.format)
+				format, err := ParseFormat(given.format)
 				// then
-				Expect(formatter).To(BeNil())
+				Expect(format).To(BeNil())
 				// and
 				Expect(err).To(HaveOccurred())
 				// and
@@ -744,14 +744,14 @@ UF,URX
 		DescribeTable("should configure properly",
 			func(given testCase) {
 				// when
-				formatter, err := ParseFormat(given.format)
+				format, err := ParseFormat(given.format)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// given
 				actualHTTP := &accesslog_config.HttpGrpcAccessLogConfig{}
 				// when
-				err = formatter.ConfigureHttpLog(actualHTTP)
+				err = format.ConfigureHttpLog(actualHTTP)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -760,7 +760,7 @@ UF,URX
 				// given
 				actualTCP := &accesslog_config.TcpGrpcAccessLogConfig{}
 				// when
-				err = formatter.ConfigureTcpLog(actualTCP)
+				err = format.ConfigureTcpLog(actualTCP)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -821,12 +821,12 @@ UF,URX
 		DescribeTable("should return correct canonical representation",
 			func(given testCase) {
 				// when
-				formatter, err := ParseFormat(given.format)
+				format, err := ParseFormat(given.format)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				actual := formatter.String()
+				actual := format.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
 

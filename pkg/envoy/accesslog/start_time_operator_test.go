@@ -16,7 +16,7 @@ import (
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
-var _ = Describe("StartTimeFormatter", func() {
+var _ = Describe("StartTimeOperator", func() {
 
 	Describe("FormatHttpLogEntry() and FormatTcpLogEntry()", func() {
 		type testCase struct {
@@ -28,10 +28,10 @@ var _ = Describe("StartTimeFormatter", func() {
 		DescribeTable("should format properly",
 			func(given testCase) {
 				// setup
-				formatter := StartTimeFormatter(given.timeFormat)
+				fragment := StartTimeOperator(given.timeFormat)
 
 				// when
-				actual, err := formatter.FormatHttpLogEntry(&accesslog_data.HTTPAccessLogEntry{
+				actual, err := fragment.FormatHttpLogEntry(&accesslog_data.HTTPAccessLogEntry{
 					CommonProperties: given.commonProperties,
 				})
 				// then
@@ -40,7 +40,7 @@ var _ = Describe("StartTimeFormatter", func() {
 				Expect(actual).To(Equal(given.expected))
 
 				// when
-				actual, err = formatter.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{
+				actual, err = fragment.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{
 					CommonProperties: given.commonProperties,
 				})
 				// then
@@ -71,7 +71,7 @@ var _ = Describe("StartTimeFormatter", func() {
 
 		It("should fail if start time is not valid", func() {
 			// setup
-			formatter := StartTimeFormatter("")
+			fragment := StartTimeOperator("")
 
 			// given
 			commonProperties := &accesslog_data.AccessLogCommon{
@@ -81,14 +81,14 @@ var _ = Describe("StartTimeFormatter", func() {
 			}
 
 			// when
-			_, err := formatter.FormatHttpLogEntry(&accesslog_data.HTTPAccessLogEntry{
+			_, err := fragment.FormatHttpLogEntry(&accesslog_data.HTTPAccessLogEntry{
 				CommonProperties: commonProperties,
 			})
 			// then
 			Expect(err).To(HaveOccurred())
 
 			// when
-			_, err = formatter.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{
+			_, err = fragment.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{
 				CommonProperties: commonProperties,
 			})
 			// then
@@ -105,10 +105,10 @@ var _ = Describe("StartTimeFormatter", func() {
 		DescribeTable("should return correct canonical representation",
 			func(given testCase) {
 				// setup
-				formatter := StartTimeFormatter(given.timeFormat)
+				fragment := StartTimeOperator(given.timeFormat)
 
 				// when
-				actual := formatter.String()
+				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
 

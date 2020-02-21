@@ -10,7 +10,7 @@ import (
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
 
-var _ = Describe("TextLiteralFormatter", func() {
+var _ = Describe("TextSpan", func() {
 
 	Describe("FormatHttpLogEntry() and FormatTcpLogEntry()", func() {
 		type testCase struct {
@@ -21,17 +21,17 @@ var _ = Describe("TextLiteralFormatter", func() {
 		DescribeTable("should format properly",
 			func(given testCase) {
 				// setup
-				formatter := TextLiteralFormatter(given.text)
+				fragment := TextSpan(given.text)
 
 				// when
-				actual, err := formatter.FormatHttpLogEntry(&accesslog_data.HTTPAccessLogEntry{})
+				actual, err := fragment.FormatHttpLogEntry(&accesslog_data.HTTPAccessLogEntry{})
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				Expect(actual).To(Equal(given.expected))
 
 				// when
-				actual, err = formatter.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{})
+				actual, err = fragment.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{})
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -57,10 +57,10 @@ var _ = Describe("TextLiteralFormatter", func() {
 		DescribeTable("should return correct canonical representation",
 			func(given testCase) {
 				// setup
-				formatter := TextLiteralFormatter(given.text)
+				fragment := TextSpan(given.text)
 
 				// when
-				actual := formatter.String()
+				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
 

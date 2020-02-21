@@ -28,13 +28,13 @@ var parser = formatParser{}
 //   4. (not implemented yet) To bind `%KUMA_*%` placeholders to concrete context-dependent values
 //   5. (not implemented yet) To render back into the format string, e.g.
 //      after `%KUMA_*%` placeholders have been bound to concrete context-dependent values
-func ParseFormat(format string) (LogConfigureFormatter, error) {
+func ParseFormat(format string) (AccessLogFragment, error) {
 	return parser.Parse(format)
 }
 
 type formatParser struct{}
 
-func (p formatParser) Parse(format string) (_ LogConfigureFormatter, err error) {
+func (p formatParser) Parse(format string) (_ AccessLogFragment, err error) {
 	defer func() {
 		if err != nil {
 			err = errors.Wrap(err, "format string is not valid")
@@ -42,12 +42,12 @@ func (p formatParser) Parse(format string) (_ LogConfigureFormatter, err error) 
 	}()
 
 	var textLiteralStart = -1
-	var formaters []LogEntryFormatter
+	var fragments []AccessLogFragment
 
 	for pos := 0; pos < len(format); pos++ {
 		if format[pos] == '%' {
 			if textLiteralStart > -1 {
-				formaters = append(formaters, TextLiteralFormatter(format[textLiteralStart:pos]))
+				fragments = append(fragments, TextSpan(format[textLiteralStart:pos]))
 				textLiteralStart = -1
 			}
 
@@ -59,11 +59,11 @@ func (p formatParser) Parse(format string) (_ LogConfigureFormatter, err error) 
 			if err != nil {
 				return nil, err
 			}
-			formatter, err := p.parseCommandOperator(token, command, args, limit)
+			operator, err := p.parseCommandOperator(token, command, args, limit)
 			if err != nil {
 				return nil, err
 			}
-			formaters = append(formaters, formatter)
+			fragments = append(fragments, operator)
 			pos += len(token) - 1
 		} else if textLiteralStart < 0 {
 			textLiteralStart = pos
@@ -71,10 +71,10 @@ func (p formatParser) Parse(format string) (_ LogConfigureFormatter, err error) 
 	}
 
 	if textLiteralStart >= 0 {
-		formaters = append(formaters, TextLiteralFormatter(format[textLiteralStart:]))
+		fragments = append(fragments, TextSpan(format[textLiteralStart:]))
 	}
 
-	return &CompositeLogConfigureFormatter{formaters}, nil
+	return &AccessLogFormat{fragments}, nil
 }
 
 func (p formatParser) splitMatch(match []string) (token string, command string, args string, limit string, err error) {
@@ -84,50 +84,50 @@ func (p formatParser) splitMatch(match []string) (token string, command string, 
 	return match[0], match[1], match[2], match[3], nil
 }
 
-func (p formatParser) parseCommandOperator(token, command, args, limit string) (LogEntryFormatter, error) {
+func (p formatParser) parseCommandOperator(token, command, args, limit string) (AccessLogFragment, error) {
 	switch command {
 	case CMD_REQ:
 		header, altHeader, maxLen, err := p.parseHeaderOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
-		return &RequestHeaderFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
+		return &RequestHeaderOperator{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
 	case CMD_RESP:
 		header, altHeader, maxLen, err := p.parseHeaderOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
-		return &ResponseHeaderFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
+		return &ResponseHeaderOperator{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
 	case CMD_TRAILER:
 		header, altHeader, maxLen, err := p.parseHeaderOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
-		return &ResponseTrailerFormatter{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
+		return &ResponseTrailerOperator{HeaderFormatter{Header: header, AltHeader: altHeader, MaxLength: maxLen}}, nil
 	case CMD_DYNAMIC_METADATA:
 		namespace, path, maxLen, err := p.parseDynamicMetadataOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
-		return &DynamicMetadataFormatter{FilterNamespace: namespace, Path: path, MaxLength: maxLen}, nil
+		return &DynamicMetadataOperator{FilterNamespace: namespace, Path: path, MaxLength: maxLen}, nil
 	case CMD_FILTER_STATE:
 		key, maxLen, err := p.parseFilterStateOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
-		return &FilterStateFormatter{Key: key, MaxLength: maxLen}, nil
+		return &FilterStateOperator{Key: key, MaxLength: maxLen}, nil
 	case CMD_START_TIME:
 		format, err := p.parseStartTimeOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
-		return StartTimeFormatter(format), nil
+		return StartTimeOperator(format), nil
 	default:
 		field, err := p.parseFieldOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
 		}
-		return FieldFormatter(field), nil
+		return FieldOperator(field), nil
 	}
 }
 

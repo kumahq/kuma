@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
+	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -21,16 +22,26 @@ const (
 	excludePort = false
 )
 
-// DynamicMetadataFormatter represents a simple field command operator,
+// FieldOperator represents a simple field command operator,
 // such as `%BYTES_RECEIVED%` or `%PROTOCOL%`.
-type FieldFormatter string
+type FieldOperator string
 
-// String returns the canonical representation of this command operator.
-func (f FieldFormatter) String() string {
+// String returns the canonical representation of this access log fragment.
+func (f FieldOperator) String() string {
 	return CommandOperatorDescriptor(f).String()
 }
 
-func (f FieldFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
+func (f FieldOperator) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
+	// has no effect on HttpGrpcAccessLogConfig
+	return nil
+}
+
+func (f FieldOperator) ConfigureTcpLog(config *accesslog_config.TcpGrpcAccessLogConfig) error {
+	// has no effect on TcpGrpcAccessLogConfig
+	return nil
+}
+
+func (f FieldOperator) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
 	switch f {
 	case CMD_BYTES_RECEIVED:
 		return f.formatUint(entry.GetRequest().GetRequestBodyBytes())
@@ -53,7 +64,7 @@ func (f FieldFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEn
 	}
 }
 
-func (f FieldFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error) {
+func (f FieldOperator) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error) {
 	switch f {
 	case CMD_BYTES_RECEIVED:
 		return f.formatUint(entry.GetConnectionProperties().GetReceivedBytes())
@@ -76,7 +87,7 @@ func (f FieldFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntr
 	}
 }
 
-func (f FieldFormatter) formatAccessLogCommon(entry *accesslog_data.AccessLogCommon) (string, error) {
+func (f FieldOperator) formatAccessLogCommon(entry *accesslog_data.AccessLogCommon) (string, error) {
 	switch f {
 	case CMD_UPSTREAM_TRANSPORT_FAILURE_REASON:
 		return entry.GetUpstreamTransportFailureReason(), nil
@@ -134,15 +145,15 @@ func (f FieldFormatter) formatAccessLogCommon(entry *accesslog_data.AccessLogCom
 	}
 }
 
-func (f FieldFormatter) formatUint(value uint64) (string, error) {
+func (f FieldOperator) formatUint(value uint64) (string, error) {
 	return strconv.FormatUint(value, 10), nil
 }
 
-func (f FieldFormatter) formatInt(value int64) (string, error) {
+func (f FieldOperator) formatInt(value int64) (string, error) {
 	return strconv.FormatInt(value, 10), nil
 }
 
-func (f FieldFormatter) formatDuration(dur *duration.Duration) (string, error) {
+func (f FieldOperator) formatDuration(dur *duration.Duration) (string, error) {
 	if dur == nil {
 		return "", nil
 	}
@@ -153,7 +164,7 @@ func (f FieldFormatter) formatDuration(dur *duration.Duration) (string, error) {
 	return f.formatInt(int64(durNanos / time.Millisecond))
 }
 
-func (f FieldFormatter) formatDurationDelta(outer *duration.Duration, inner *duration.Duration) (string, error) {
+func (f FieldOperator) formatDurationDelta(outer *duration.Duration, inner *duration.Duration) (string, error) {
 	if outer == nil || inner == nil {
 		return "", nil
 	}
@@ -168,7 +179,7 @@ func (f FieldFormatter) formatDurationDelta(outer *duration.Duration, inner *dur
 	return f.formatInt(int64((outerNanos - innerNanos) / time.Millisecond))
 }
 
-func (f FieldFormatter) formatHttpVersion(value accesslog_data.HTTPAccessLogEntry_HTTPVersion) (string, error) {
+func (f FieldOperator) formatHttpVersion(value accesslog_data.HTTPAccessLogEntry_HTTPVersion) (string, error) {
 	switch value {
 	case accesslog_data.HTTPAccessLogEntry_PROTOCOL_UNSPECIFIED:
 		return "", nil
@@ -185,7 +196,7 @@ func (f FieldFormatter) formatHttpVersion(value accesslog_data.HTTPAccessLogEntr
 	}
 }
 
-func (f FieldFormatter) formatResponseFlags(flags *accesslog_data.ResponseFlags) (string, error) {
+func (f FieldOperator) formatResponseFlags(flags *accesslog_data.ResponseFlags) (string, error) {
 	values := make([]string, 0)
 	if flags.GetFailedLocalHealthcheck() {
 		values = append(values, ResponseFlagFailedLocalHealthCheck)
@@ -247,7 +258,7 @@ func (f FieldFormatter) formatResponseFlags(flags *accesslog_data.ResponseFlags)
 	return strings.Join(values, ","), nil
 }
 
-func (f FieldFormatter) formatAddress(address *envoy_core.Address, includePort bool) (string, error) {
+func (f FieldOperator) formatAddress(address *envoy_core.Address, includePort bool) (string, error) {
 	switch typ := address.GetAddress().(type) {
 	case *envoy_core.Address_SocketAddress:
 		if includePort {
@@ -261,7 +272,7 @@ func (f FieldFormatter) formatAddress(address *envoy_core.Address, includePort b
 	}
 }
 
-func (f FieldFormatter) formatUriSans(sans []*accesslog_data.TLSProperties_CertificateProperties_SubjectAltName) (string, error) {
+func (f FieldOperator) formatUriSans(sans []*accesslog_data.TLSProperties_CertificateProperties_SubjectAltName) (string, error) {
 	values := make([]string, 0, len(sans))
 	for _, san := range sans {
 		switch typ := san.GetSan().(type) {
@@ -272,14 +283,14 @@ func (f FieldFormatter) formatUriSans(sans []*accesslog_data.TLSProperties_Certi
 	return strings.Join(values, ","), nil
 }
 
-func (f FieldFormatter) formatTlsCipherSuite(value *wrappers.UInt32Value) (string, error) {
+func (f FieldOperator) formatTlsCipherSuite(value *wrappers.UInt32Value) (string, error) {
 	if value == nil || value.GetValue() == 0xFFFF {
 		return "", nil
 	}
 	return TlsCipherSuite(value.GetValue()).String(), nil
 }
 
-func (f FieldFormatter) formatTlsVersion(value accesslog_data.TLSProperties_TLSVersion) (string, error) {
+func (f FieldOperator) formatTlsVersion(value accesslog_data.TLSProperties_TLSVersion) (string, error) {
 	switch value {
 	case accesslog_data.TLSProperties_VERSION_UNSPECIFIED:
 		return "", nil

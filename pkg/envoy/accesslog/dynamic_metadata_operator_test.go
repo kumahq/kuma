@@ -8,7 +8,7 @@ import (
 	. "github.com/Kong/kuma/pkg/envoy/accesslog"
 )
 
-var _ = Describe("DynamicMetadataFormatter", func() {
+var _ = Describe("DynamicMetadataOperator", func() {
 
 	Describe("String()", func() {
 		type testCase struct {
@@ -21,10 +21,10 @@ var _ = Describe("DynamicMetadataFormatter", func() {
 		DescribeTable("should return correct canonical representation",
 			func(given testCase) {
 				// setup
-				formatter := &DynamicMetadataFormatter{FilterNamespace: given.filterNamespace, Path: given.path, MaxLength: given.maxLength}
+				fragment := &DynamicMetadataOperator{FilterNamespace: given.filterNamespace, Path: given.path, MaxLength: given.maxLength}
 
 				// when
-				actual := formatter.String()
+				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
 

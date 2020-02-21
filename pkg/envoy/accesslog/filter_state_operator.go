@@ -8,26 +8,26 @@ import (
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
 
-// DynamicMetadataFormatter represents a `%FILTER_STATE(KEY):Z%` command operator.
-type FilterStateFormatter struct {
+// FilterStateOperator represents a `%FILTER_STATE(KEY):Z%` command operator.
+type FilterStateOperator struct {
 	Key       string
 	MaxLength int
 }
 
-func (f *FilterStateFormatter) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
+func (f *FilterStateOperator) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEntry) (string, error) {
 	return f.format(entry.GetCommonProperties())
 }
 
-func (f *FilterStateFormatter) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error) {
+func (f *FilterStateOperator) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error) {
 	return f.format(entry.GetCommonProperties())
 }
 
-func (f *FilterStateFormatter) format(entry *accesslog_data.AccessLogCommon) (string, error) {
+func (f *FilterStateOperator) format(entry *accesslog_data.AccessLogCommon) (string, error) {
 	// TODO(yskopets): implement
 	return "UNSUPPORTED_COMMAND(%FILTER_STATE(KEY):Z%)", nil
 }
 
-func (f *FilterStateFormatter) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
+func (f *FilterStateOperator) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
 	if objects := f.appendTo(config.GetCommonConfig().GetFilterStateObjectsToLog()); objects != nil {
 		if config.CommonConfig == nil {
 			config.CommonConfig = &accesslog_config.CommonGrpcAccessLogConfig{}
@@ -37,7 +37,7 @@ func (f *FilterStateFormatter) ConfigureHttpLog(config *accesslog_config.HttpGrp
 	return nil
 }
 
-func (f *FilterStateFormatter) ConfigureTcpLog(config *accesslog_config.TcpGrpcAccessLogConfig) error {
+func (f *FilterStateOperator) ConfigureTcpLog(config *accesslog_config.TcpGrpcAccessLogConfig) error {
 	if objects := f.appendTo(config.GetCommonConfig().GetFilterStateObjectsToLog()); objects != nil {
 		if config.CommonConfig == nil {
 			config.CommonConfig = &accesslog_config.CommonGrpcAccessLogConfig{}
@@ -47,15 +47,15 @@ func (f *FilterStateFormatter) ConfigureTcpLog(config *accesslog_config.TcpGrpcA
 	return nil
 }
 
-func (f *FilterStateFormatter) appendTo(values []string) []string {
+func (f *FilterStateOperator) appendTo(values []string) []string {
 	if f.Key != "" && !stringSet(values).Contains(f.Key) {
 		return append(values, f.Key)
 	}
 	return values
 }
 
-// String returns the canonical representation of this command operator.
-func (f *FilterStateFormatter) String() string {
+// String returns the canonical representation of this access log fragment.
+func (f *FilterStateOperator) String() string {
 	var builder []string
 	builder = append(builder, "%FILTER_STATE(")
 	builder = append(builder, f.Key)

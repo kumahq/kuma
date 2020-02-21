@@ -19,7 +19,7 @@ func (m HeaderMap) Get(name string) (value string, exists bool) {
 	return
 }
 
-// HeaderFormatter represents reusable logic that is
+// HeaderFormatter represents reusable formatting logic that is
 // shared by `%REQ(X?Y):Z%`, `%RESP(X?Y):Z%` and `%TRAILER(X?Y):Z%`
 // command operators.
 type HeaderFormatter struct {
