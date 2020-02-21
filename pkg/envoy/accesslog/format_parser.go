@@ -16,6 +16,12 @@ var (
 	startTimeNewlineRE = regexp.MustCompile(`%[-_0^#]*[1-9]*n`)
 )
 
+// ValidateFormat validates whether a given format string is valid.
+func ValidateFormat(format string) error {
+	_, err := ParseFormat(format)
+	return err
+}
+
 var parser = formatParser{}
 
 // ParseFormat parses a given format string.
@@ -51,9 +57,10 @@ func (p formatParser) Parse(format string) (_ AccessLogFragment, err error) {
 				textLiteralStart = -1
 			}
 
-			match := commandWithArgsRE.FindStringSubmatch(format[pos:])
+			tail := format[pos:]
+			match := commandWithArgsRE.FindStringSubmatch(tail)
 			if match == nil {
-				return nil, errors.Errorf("expected a command operator at position %d", pos)
+				return nil, errors.Errorf("expected a command operator to start at position %d, instead got: %q", pos+1, tail)
 			}
 			token, command, args, limit, err := p.splitMatch(match)
 			if err != nil {

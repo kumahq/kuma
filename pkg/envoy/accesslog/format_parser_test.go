@@ -612,11 +612,11 @@ UF,URX
 			},
 			Entry("unbalanced %", testCase{
 				format:      `text with % character`,
-				expectedErr: `format string is not valid: expected a command operator at position 10`,
+				expectedErr: `format string is not valid: expected a command operator to start at position 11, instead got: "% character"`,
 			}),
 			Entry("%START_TIME(%", testCase{
 				format:      `%START_TIME(%`,
-				expectedErr: `format string is not valid: expected a command operator at position 0`,
+				expectedErr: `format string is not valid: expected a command operator to start at position 1, instead got: "%START_TIME(%"`,
 			}),
 			Entry("%BYTES_RECEIVED()%", testCase{
 				format:      `%BYTES_RECEIVED()%`,
