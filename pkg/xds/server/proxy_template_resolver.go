@@ -2,12 +2,11 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"sort"
-
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
+	core_policy "github.com/Kong/kuma/pkg/core/policy"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	model "github.com/Kong/kuma/pkg/core/xds"
@@ -32,65 +31,18 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 	templateList := &mesh_core.ProxyTemplateResourceList{}
 	if err := r.ResourceManager.List(ctx, templateList, core_store.ListByMesh(proxy.Dataplane.Meta.GetMesh())); err != nil {
 		templateResolverLog.Error(err, "failed to list ProxyTemplates")
+		return nil
 	}
-	if bestMatchTemplate := FindBestMatch(proxy, templateList.Items); bestMatchTemplate != nil {
-		log.V(2).Info("found the best matching ProxyTemplate", "proxytemplate", core_model.MetaToResourceKey(bestMatchTemplate.Meta))
-		return &bestMatchTemplate.Spec
+
+	policies := make([]core_policy.DataplanePolicy, len(templateList.Items))
+	for i, proxyTemplate := range templateList.Items {
+		policies[i] = proxyTemplate
+	}
+
+	if bestMatchTemplate := core_policy.SelectDataplanePolicy(proxy.Dataplane, policies); bestMatchTemplate != nil {
+		log.V(2).Info("found the best matching ProxyTemplate", "proxytemplate", core_model.MetaToResourceKey(bestMatchTemplate.GetMeta()))
+		return &bestMatchTemplate.(*mesh_core.ProxyTemplateResource).Spec
 	}
 	log.V(2).Info("falling back to the default ProxyTemplate since there is no best match", "templates", templateList.Items)
 	return r.DefaultProxyTemplate
-}
-
-// FindBestMatch given a Dataplane definition and a list of ProxyTemplates returns the "best matching" ProxyTemplate.
-// A ProxyTemplate is considered a match if one of the inbound interfaces of a Dataplane has all tags of ProxyTemplate's selector.
-// Every matching ProxyTemplate gets a rank (score) defined as a maximum number of tags in a matching selector.
-// ProxyTemplate with an empty list of selectors is considered a match with a rank (score) of 0.
-// ProxyTemplate with an empty selector (one that has no tags) is considered a match with a rank (score) of 0.
-// In case if there are multiple ProxyTemplates with the same rank (score), templates are sorted alphabetically by Name
-// and the first one is considered the "best match".
-func FindBestMatch(proxy *model.Proxy, templates []*mesh_core.ProxyTemplateResource) *mesh_core.ProxyTemplateResource {
-	sort.Stable(ProxyTemplatesByName(templates)) // sort to avoid flakiness
-
-	var bestMatch *mesh_core.ProxyTemplateResource
-	var bestScore int
-	for _, template := range templates {
-		if 0 == len(template.Spec.Selectors) { // match everything
-			if bestMatch == nil {
-				bestMatch = template
-			}
-			continue
-		}
-		for _, selector := range template.Spec.Selectors {
-			if 0 == len(selector.Match) { // match everything
-				if bestMatch == nil {
-					bestMatch = template
-				}
-				continue
-			}
-			for _, inbound := range proxy.Dataplane.Spec.Networking.GetInbound() {
-				if matches, score := ScoreMatch(selector.Match, inbound.Tags); matches && bestScore < score {
-					bestMatch = template
-					bestScore = score
-				}
-			}
-		}
-	}
-	return bestMatch
-}
-
-func ScoreMatch(selector map[string]string, target map[string]string) (bool, int) {
-	for key, requiredValue := range selector {
-		if actualValue, hasKey := target[key]; !hasKey || actualValue != requiredValue {
-			return false, 0
-		}
-	}
-	return true, len(selector)
-}
-
-type ProxyTemplatesByName []*mesh_core.ProxyTemplateResource
-
-func (a ProxyTemplatesByName) Len() int      { return len(a) }
-func (a ProxyTemplatesByName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ProxyTemplatesByName) Less(i, j int) bool {
-	return a[i].Meta.GetName() < a[j].Meta.GetName()
 }

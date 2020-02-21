@@ -4,6 +4,8 @@
 
 Changes:
 
+* chore: generify proxy template matching (it now supports Gateway dataplane and '*' selector)
+  [#588](https://github.com/Kong/kuma/pull/588)
 * feature: generate HTTP-specific outbound listeners for services tagged with `protocol: http`
   [#585](https://github.com/Kong/kuma/pull/585)
 * feature: TracingTrace in kumactl

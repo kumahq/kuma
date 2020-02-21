@@ -15,3 +15,9 @@ type ConnectionPolicy interface {
 
 // ConnectionPolicyMap holds the most specific ConnectionPolicy for each outbound interface of a Dataplane.
 type ConnectionPolicyMap map[core_xds.ServiceName]ConnectionPolicy
+
+// DataplanePolicy is a Policy that is applied on a selected Dataplane
+type DataplanePolicy interface {
+	core_model.Resource
+	Selectors() []*mesh_proto.Selector
+}
