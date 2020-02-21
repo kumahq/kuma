@@ -161,13 +161,11 @@ var _ = Describe("Dataplane matcher", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{},
 								{
 									Tags: map[string]string{
 										"app": "example",
 									},
 								},
-								{},
 								{
 									Tags: map[string]string{
 										"app":     "example",
