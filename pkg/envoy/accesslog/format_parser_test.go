@@ -777,7 +777,7 @@ UF,URX
 					CommonConfig: &accesslog_config.CommonGrpcAccessLogConfig{
 						FilterStateObjectsToLog: []string{"filter.state.key"},
 					},
-					AdditionalRequestHeadersToLog:   []string{"x-missing-header", ":authority"},
+					AdditionalRequestHeadersToLog:   []string{"x-missing-header"}, // `:authority` header is captured by default and should not be added as an additional request header to log
 					AdditionalResponseHeadersToLog:  []string{"date", "server"},
 					AdditionalResponseTrailersToLog: []string{"grpc-status", "grpc-message"},
 				},
@@ -790,6 +790,7 @@ UF,URX
 			Entry("config should not contain duplicate values", testCase{
 				format: `
 "%REQ(:AUTHORITY):1%" "%REQ(:path):2%" "%REQ(:authority):3%" 
+"%REQ(CONTENT-TYPE):1%" "%REQ(origin):2%" "%REQ(content-type):3%"
 "%RESP(SERVER):1%" "%RESP(content-type):2%" "%RESP(server):3%"
 "%TRAILER(GRPC-STATUS):1%" "%TRAILER(grpc-message):2%" "%TRAILER(grpc-status):3%"
 "%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key_1):1%" "%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key_2):2%" "%DYNAMIC_METADATA(com.test.my_filter:test_object:inner_key_1):3%"
@@ -799,7 +800,7 @@ UF,URX
 					CommonConfig: &accesslog_config.CommonGrpcAccessLogConfig{
 						FilterStateObjectsToLog: []string{"filter.state.key1", "filter.state.key2"},
 					},
-					AdditionalRequestHeadersToLog:   []string{":authority", ":path"},
+					AdditionalRequestHeadersToLog:   []string{"content-type", "origin"}, // only those headers that are not captured by default should be added as additional request headers to log
 					AdditionalResponseHeadersToLog:  []string{"server", "content-type"},
 					AdditionalResponseTrailersToLog: []string{"grpc-status", "grpc-message"},
 				},

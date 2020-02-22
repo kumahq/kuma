@@ -21,7 +21,7 @@ func (f *ResponseHeaderOperator) FormatTcpLogEntry(entry *accesslog_data.TCPAcce
 }
 
 func (f *ResponseHeaderOperator) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
-	config.AdditionalResponseHeadersToLog = f.AppendTo(config.AdditionalResponseHeadersToLog)
+	config.AdditionalResponseHeadersToLog = stringList(f.GetOperandHeaders()).AppendToSet(config.AdditionalResponseHeadersToLog)
 	return nil
 }
 

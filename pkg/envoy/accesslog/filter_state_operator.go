@@ -28,7 +28,7 @@ func (f *FilterStateOperator) format(entry *accesslog_data.AccessLogCommon) (str
 }
 
 func (f *FilterStateOperator) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
-	if objects := f.appendTo(config.GetCommonConfig().GetFilterStateObjectsToLog()); objects != nil {
+	if objects := f.appendToSet(config.GetCommonConfig().GetFilterStateObjectsToLog()); objects != nil {
 		if config.CommonConfig == nil {
 			config.CommonConfig = &accesslog_config.CommonGrpcAccessLogConfig{}
 		}
@@ -38,7 +38,7 @@ func (f *FilterStateOperator) ConfigureHttpLog(config *accesslog_config.HttpGrpc
 }
 
 func (f *FilterStateOperator) ConfigureTcpLog(config *accesslog_config.TcpGrpcAccessLogConfig) error {
-	if objects := f.appendTo(config.GetCommonConfig().GetFilterStateObjectsToLog()); objects != nil {
+	if objects := f.appendToSet(config.GetCommonConfig().GetFilterStateObjectsToLog()); objects != nil {
 		if config.CommonConfig == nil {
 			config.CommonConfig = &accesslog_config.CommonGrpcAccessLogConfig{}
 		}
@@ -47,11 +47,11 @@ func (f *FilterStateOperator) ConfigureTcpLog(config *accesslog_config.TcpGrpcAc
 	return nil
 }
 
-func (f *FilterStateOperator) appendTo(values []string) []string {
-	if f.Key != "" && !stringSet(values).Contains(f.Key) {
-		return append(values, f.Key)
+func (f *FilterStateOperator) appendToSet(dest []string) []string {
+	if f.Key == "" {
+		return dest
 	}
-	return values
+	return stringList{f.Key}.AppendToSet(dest)
 }
 
 // String returns the canonical representation of this access log fragment.

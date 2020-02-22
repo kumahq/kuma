@@ -196,68 +196,134 @@ var _ = Describe("RequestHeaderOperator", func() {
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected:  &accesslog_config.HttpGrpcAccessLogConfig{},
 			}),
-			Entry("header", testCase{
-				header:    ":path",
+			Entry("header that is not captured by default", testCase{
+				header:    "content-type",
 				altHeader: "",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":path"},
+					AdditionalRequestHeadersToLog: []string{"content-type"},
 				},
 			}),
-			Entry("altHeader", testCase{
-				header:    "",
-				altHeader: "x-envoy-original-path",
+			Entry("header that is captured by default: `:method`", testCase{
+				header:    ":method",
+				altHeader: "",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
-				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{"x-envoy-original-path"},
-				},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
 			}),
-			Entry("header and altHeader", testCase{
+			Entry("header that is captured by default: `:scheme`", testCase{
+				header:    ":scheme",
+				altHeader: "",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
+			}),
+			Entry("header that is captured by default: `:authority`", testCase{
+				header:    ":authority",
+				altHeader: "",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
+			}),
+			Entry("header that is captured by default: `:path`", testCase{
 				header:    ":path",
-				altHeader: "x-envoy-original-path",
+				altHeader: "",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
+			}),
+			Entry("header that is captured by default: `user-agent`", testCase{
+				header:    "user-agent",
+				altHeader: "",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
+			}),
+			Entry("header that is captured by default: `referer`", testCase{
+				header:    "referer",
+				altHeader: "",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
+			}),
+			Entry("header that is captured by default: `x-forwarded-for`", testCase{
+				header:    "x-forwarded-for",
+				altHeader: "",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
+			}),
+			Entry("header that is captured by default: `x-request-id`", testCase{
+				header:    "x-request-id",
+				altHeader: "",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
+			}),
+			Entry("header that is captured by default: `x-envoy-original-path`", testCase{
+				header:    "x-envoy-original-path",
+				altHeader: "",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
+			}),
+			Entry("altHeader that is not captured by default", testCase{
+				header:    "",
+				altHeader: "origin",
 				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":path", "x-envoy-original-path"},
+					AdditionalRequestHeadersToLog: []string{"origin"},
 				},
+			}),
+			Entry("altHeader that is captured by default", testCase{
+				header:    "",
+				altHeader: ":authority",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
+			}),
+			Entry("header and altHeader that are not captured by default", testCase{
+				header:    "content-type",
+				altHeader: "origin",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected: &accesslog_config.HttpGrpcAccessLogConfig{
+					AdditionalRequestHeadersToLog: []string{"content-type", "origin"},
+				},
+			}),
+			Entry("header and altHeader that are captured by default", testCase{
+				header:    ":authority",
+				altHeader: ":path",
+				config:    &accesslog_config.HttpGrpcAccessLogConfig{},
+				expected:  &accesslog_config.HttpGrpcAccessLogConfig{}, // should not be added as an additional request header to log
 			}),
 			Entry("none w/ initial config", testCase{
 				header:    "",
 				altHeader: "",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
+					AdditionalRequestHeadersToLog: []string{"x-custom-header-1", "x-custom-header-2"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
+					AdditionalRequestHeadersToLog: []string{"x-custom-header-1", "x-custom-header-2"},
 				},
 			}),
 			Entry("header w/ initial config", testCase{
-				header:    ":path",
+				header:    "content-type",
 				altHeader: "",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
+					AdditionalRequestHeadersToLog: []string{"x-custom-header-1", "x-custom-header-2"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":scheme", ":authority", ":path"},
+					AdditionalRequestHeadersToLog: []string{"x-custom-header-1", "x-custom-header-2", "content-type"},
 				},
 			}),
 			Entry("altHeader w/ initial config", testCase{
 				header:    "",
-				altHeader: "x-envoy-original-path",
+				altHeader: "origin",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
+					AdditionalRequestHeadersToLog: []string{"x-custom-header-1", "x-custom-header-2"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":scheme", ":authority", "x-envoy-original-path"},
+					AdditionalRequestHeadersToLog: []string{"x-custom-header-1", "x-custom-header-2", "origin"},
 				},
 			}),
 			Entry("header and altHeader w/ initial config", testCase{
-				header:    ":path",
-				altHeader: "x-envoy-original-path",
+				header:    "content-type",
+				altHeader: "origin",
 				config: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":scheme", ":authority"},
+					AdditionalRequestHeadersToLog: []string{"x-custom-header-1", "x-custom-header-2"},
 				},
 				expected: &accesslog_config.HttpGrpcAccessLogConfig{
-					AdditionalRequestHeadersToLog: []string{":scheme", ":authority", ":path", "x-envoy-original-path"},
+					AdditionalRequestHeadersToLog: []string{"x-custom-header-1", "x-custom-header-2", "content-type", "origin"},
 				},
 			}),
 		)

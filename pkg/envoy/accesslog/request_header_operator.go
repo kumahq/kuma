@@ -9,6 +9,40 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
+const (
+	HeaderMethod             = ":method"
+	HeaderScheme             = ":scheme"
+	HeaderAuthority          = ":authority"
+	HeaderPath               = ":path"
+	HeaderUserAgent          = "user-agent"
+	HeaderReferer            = "referer"
+	HeaderXForwardedFor      = "x-forwarded-for"
+	HeaderXRequestID         = "x-request-id"
+	HeaderXEnvoyOriginalPath = "x-envoy-original-path"
+)
+
+var (
+	isAlwaysCapturedRequestHeader = func(header string) bool {
+		switch header {
+		case HeaderMethod,
+			HeaderScheme,
+			HeaderAuthority,
+			HeaderPath,
+			HeaderUserAgent,
+			HeaderReferer,
+			HeaderXForwardedFor,
+			HeaderXRequestID,
+			HeaderXEnvoyOriginalPath:
+			return true
+		default:
+			return false
+		}
+	}
+	isNotCapturedByDefaultRequestHeader = func(header string) bool {
+		return !isAlwaysCapturedRequestHeader(header)
+	}
+)
+
 // RequestHeaderOperator represents a `%REQ(X?Y):Z%` command operator.
 type RequestHeaderOperator struct {
 	HeaderFormatter
@@ -23,7 +57,9 @@ func (f *RequestHeaderOperator) FormatTcpLogEntry(entry *accesslog_data.TCPAcces
 }
 
 func (f *RequestHeaderOperator) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
-	config.AdditionalRequestHeadersToLog = f.AppendTo(config.AdditionalRequestHeadersToLog)
+	config.AdditionalRequestHeadersToLog = stringList(f.GetOperandHeaders()).
+		Filter(isNotCapturedByDefaultRequestHeader).
+		AppendToSet(config.AdditionalRequestHeadersToLog)
 	return nil
 }
 
@@ -46,23 +82,23 @@ type RequestHeaders struct {
 
 func (h *RequestHeaders) Get(name string) (string, bool) {
 	switch name {
-	case ":method":
+	case HeaderMethod:
 		return h.formatHttpMethod(h.GetRequestMethod())
-	case ":scheme":
+	case HeaderScheme:
 		return h.optionalString(h.GetScheme())
-	case ":authority":
+	case HeaderAuthority:
 		return h.optionalString(h.GetAuthority())
-	case ":path":
+	case HeaderPath:
 		return h.optionalString(h.GetPath())
-	case "user-agent":
+	case HeaderUserAgent:
 		return h.optionalString(h.GetUserAgent())
-	case "referer":
+	case HeaderReferer:
 		return h.optionalString(h.GetReferer())
-	case "x-forwarded-for":
+	case HeaderXForwardedFor:
 		return h.optionalString(h.GetForwardedFor())
-	case "x-request-id":
+	case HeaderXRequestID:
 		return h.optionalString(h.GetRequestId())
-	case "x-envoy-original-path":
+	case HeaderXEnvoyOriginalPath:
 		return h.optionalString(h.GetOriginalPath())
 	default:
 		value, exists := h.GetRequestHeaders()[name]

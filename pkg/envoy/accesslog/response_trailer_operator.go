@@ -21,7 +21,7 @@ func (f *ResponseTrailerOperator) FormatTcpLogEntry(entry *accesslog_data.TCPAcc
 }
 
 func (f *ResponseTrailerOperator) ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error {
-	config.AdditionalResponseTrailersToLog = f.AppendTo(config.AdditionalResponseTrailersToLog)
+	config.AdditionalResponseTrailersToLog = stringList(f.GetOperandHeaders()).AppendToSet(config.AdditionalResponseTrailersToLog)
 	return nil
 }
 

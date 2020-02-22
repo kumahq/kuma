@@ -43,12 +43,12 @@ func (f *HeaderFormatter) Format(headers Headers) (string, error) {
 	return value, nil
 }
 
-func (f *HeaderFormatter) AppendTo(headers []string) []string {
+func (f *HeaderFormatter) GetOperandHeaders() (headers []string) {
 	// apparently, Envoy allows both `Header` and `AltHeader` to be empty
-	if f.Header != "" && !stringSet(headers).Contains(f.Header) {
+	if f.Header != "" {
 		headers = append(headers, f.Header)
 	}
-	if f.AltHeader != "" && !stringSet(headers).Contains(f.AltHeader) {
+	if f.AltHeader != "" {
 		headers = append(headers, f.AltHeader)
 	}
 	return headers
