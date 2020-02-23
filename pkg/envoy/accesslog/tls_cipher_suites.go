@@ -1,7 +1,7 @@
 package accesslog
 
 import (
-	"strconv"
+	"fmt"
 )
 
 // TlsCipherSuite represents a registered TLS cipher suite.
@@ -52,7 +52,7 @@ func (s TlsCipherSuite) String() string {
 	case TLS_RSA_WITH_RC4_128_SHA:
 		return "RSA-RC4-128-SHA"
 	case TLS_RSA_WITH_3DES_EDE_CBC_SHA:
-		return "RSA_3DES_EDE-CBC-SHA"
+		return "RSA-3DES-EDE-CBC-SHA"
 	case TLS_RSA_WITH_AES_128_CBC_SHA:
 		return "RSA-AES-128-CBC-SHA"
 	case TLS_RSA_WITH_AES_256_CBC_SHA:
@@ -72,7 +72,7 @@ func (s TlsCipherSuite) String() string {
 	case TLS_ECDHE_RSA_WITH_RC4_128_SHA:
 		return "ECDHE-RSA-RC4-128-SHA"
 	case TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA:
-		return "ECDHE_RSA_3DES_EDE-CBC-SHA"
+		return "ECDHE-RSA-3DES-EDE-CBC-SHA"
 	case TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA:
 		return "ECDHE-RSA-AES-128-CBC-SHA"
 	case TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA:
@@ -104,6 +104,6 @@ func (s TlsCipherSuite) String() string {
 	case TLS_FALLBACK_SCSV:
 		return "FALLBACK-SCSV"
 	default:
-		return strconv.FormatUint(uint64(s), 16)
+		return fmt.Sprintf("%#x", uint16(s))
 	}
 }
