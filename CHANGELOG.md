@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add support for the entire Envoy access log command operator syntax
+  [#589](https://github.com/Kong/kuma/pull/589)
 * feature: generate tracing configuration in boostrap configuration
   [#592](https://github.com/Kong/kuma/pull/592)
 * feature: generate tracing configuration on listeners
