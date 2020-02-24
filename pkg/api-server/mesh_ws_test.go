@@ -135,7 +135,7 @@ var _ = Describe("Resource WS", func() {
 								Name: "zipkin-us",
 								Type: &v1alpha1.TracingBackend_Zipkin_{
 									Zipkin: &v1alpha1.TracingBackend_Zipkin{
-										Url: "http://zipkin-us/v2/spans",
+										Url: "http://zipkin-us:9090/v2/spans",
 									},
 								},
 							},
