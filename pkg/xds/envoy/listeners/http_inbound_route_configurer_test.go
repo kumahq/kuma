@@ -50,6 +50,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			cluster:         envoy_common.ClusterInfo{Name: "localhost:8080", Weight: 200},
 			expected: `
             name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 192.168.0.1

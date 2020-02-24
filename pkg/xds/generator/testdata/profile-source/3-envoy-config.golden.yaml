@@ -18,6 +18,7 @@ resources:
 - name: kuma:metrics:prometheus
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Listener
+    trafficDirection: INBOUND
     address:
       socketAddress:
         address: 0.0.0.0
@@ -61,6 +62,7 @@ resources:
 - name: inbound:192.168.0.1:80
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Listener
+    trafficDirection: INBOUND
     address:
       socketAddress:
         address: 192.168.0.1
@@ -176,6 +178,7 @@ resources:
 - name: outbound:127.0.0.1:54321
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Listener
+    trafficDirection: OUTBOUND
     address:
       socketAddress:
         address: 127.0.0.1
@@ -249,6 +252,7 @@ resources:
 - name: outbound:127.0.0.1:59200
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Listener
+    trafficDirection: OUTBOUND
     address:
       socketAddress:
         address: 127.0.0.1

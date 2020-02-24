@@ -40,6 +40,7 @@ var _ = Describe("OutboundListenerConfigurer", func() {
 			listenerPort:    8080,
 			expected: `
             name: outbound:192.168.0.1:8080
+            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 192.168.0.1

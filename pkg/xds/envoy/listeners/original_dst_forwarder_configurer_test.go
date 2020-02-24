@@ -48,6 +48,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			clusters:        []envoy_common.ClusterInfo{{Name: "pass_through", Weight: 200}},
 			expected: `
             name: catch_all
+            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 0.0.0.0
