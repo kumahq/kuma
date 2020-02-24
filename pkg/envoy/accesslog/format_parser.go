@@ -31,16 +31,16 @@ var parser = formatParser{}
 //   2. To adjust configuration of `envoy.http_grpc_access_log` and `envoy.tcp_grpc_access_log`
 //      according to the format string, e.g. to capture additional HTTP headers
 //   3. To format a given HTTP or TCP log entry according to the format string
-//   4. (not implemented yet) To bind `%KUMA_*%` placeholders to concrete context-dependent values
-//   5. (not implemented yet) To render back into the format string, e.g.
+//   4. To bind `%KUMA_*%` placeholders to concrete context-dependent values
+//   5. To render back into the format string, e.g.
 //      after `%KUMA_*%` placeholders have been bound to concrete context-dependent values
-func ParseFormat(format string) (AccessLogFragment, error) {
+func ParseFormat(format string) (*AccessLogFormat, error) {
 	return parser.Parse(format)
 }
 
 type formatParser struct{}
 
-func (p formatParser) Parse(format string) (_ AccessLogFragment, err error) {
+func (p formatParser) Parse(format string) (_ *AccessLogFormat, err error) {
 	defer func() {
 		if err != nil {
 			err = errors.Wrap(err, "format string is not valid")
@@ -81,7 +81,7 @@ func (p formatParser) Parse(format string) (_ AccessLogFragment, err error) {
 		fragments = append(fragments, TextSpan(format[textLiteralStart:]))
 	}
 
-	return &AccessLogFormat{fragments}, nil
+	return &AccessLogFormat{Fragments: fragments}, nil
 }
 
 func (p formatParser) splitMatch(match []string) (token string, command string, args string, limit string, err error) {
@@ -133,6 +133,9 @@ func (p formatParser) parseCommandOperator(token, command, args, limit string) (
 		field, err := p.parseFieldOperator(token, command, args, limit)
 		if err != nil {
 			return nil, err
+		}
+		if CommandOperatorDescriptor(field).IsPlaceholder() {
+			return Placeholder(field), nil
 		}
 		return FieldOperator(field), nil
 	}

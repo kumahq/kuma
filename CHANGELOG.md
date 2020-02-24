@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add support for Kuma-specific placeholders, such as `%KUMA_SOURCE_SERVICE%`, inside Envoy access log format
+  [#594](https://github.com/Kong/kuma/pull/594)
 * feature: add support for the entire Envoy access log command operator syntax
   [#589](https://github.com/Kong/kuma/pull/589)
 * feature: generate tracing configuration in boostrap configuration

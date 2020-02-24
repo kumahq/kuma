@@ -2,6 +2,7 @@ package accesslog
 
 import (
 	"fmt"
+	"strings"
 )
 
 // List of supported command operators.
@@ -61,6 +62,13 @@ const (
 	CMD_DOWNSTREAM_PEER_CERT_V_START    = "DOWNSTREAM_PEER_CERT_V_START"
 	CMD_DOWNSTREAM_PEER_CERT_V_END      = "DOWNSTREAM_PEER_CERT_V_END"
 	CMD_HOSTNAME                        = "HOSTNAME"
+
+	// Commands unique to Kuma.
+
+	CMD_KUMA_SOURCE_ADDRESS              = "KUMA_SOURCE_ADDRESS"
+	CMD_KUMA_SOURCE_ADDRESS_WITHOUT_PORT = "KUMA_SOURCE_ADDRESS_WITHOUT_PORT"
+	CMD_KUMA_SOURCE_SERVICE              = "KUMA_SOURCE_SERVICE"
+	CMD_KUMA_DESTINATION_SERVICE         = "KUMA_DESTINATION_SERVICE"
 )
 
 // CommandOperatorDescriptor represents a descriptor of an Envoy access log command operator.
@@ -156,7 +164,24 @@ func (o CommandOperatorDescriptor) String() string {
 		return "%DOWNSTREAM_PEER_CERT_V_END%"
 	case CMD_HOSTNAME:
 		return "%HOSTNAME%"
+	case CMD_KUMA_SOURCE_ADDRESS:
+		return "%KUMA_SOURCE_ADDRESS%"
+	case CMD_KUMA_SOURCE_ADDRESS_WITHOUT_PORT:
+		return "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%"
+	case CMD_KUMA_SOURCE_SERVICE:
+		return "%KUMA_SOURCE_SERVICE%"
+	case CMD_KUMA_DESTINATION_SERVICE:
+		return "%KUMA_DESTINATION_SERVICE%"
 	default:
 		return fmt.Sprintf("%%%s%%", string(o))
 	}
+}
+
+// IsPlaceholder returns true if this command is a placeholder
+// that must be resolved before configuring Envoy with that format string.
+// E.g., %KUMA_SOURCE_ADDRESS%, %KUMA_SOURCE_ADDRESS_WITHOUT_PORT%,
+// %KUMA_SOURCE_SERVICE% and %KUMA_DESTINATION_SERVICE%
+// are examples of such placeholders.
+func (o CommandOperatorDescriptor) IsPlaceholder() bool {
+	return strings.HasPrefix(string(o), "KUMA_")
 }
