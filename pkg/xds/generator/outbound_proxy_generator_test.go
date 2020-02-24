@@ -139,6 +139,24 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
 					},
 				},
+				Logs: model.LogMap{
+					"api-http": &mesh_proto.LoggingBackend{
+						Name: "file",
+						Type: &mesh_proto.LoggingBackend_File_{
+							File: &mesh_proto.LoggingBackend_File{
+								Path: "/var/log",
+							},
+						},
+					},
+					"api-tcp": &mesh_proto.LoggingBackend{
+						Name: "elk",
+						Type: &mesh_proto.LoggingBackend_Tcp_{
+							Tcp: &mesh_proto.LoggingBackend_Tcp{
+								Address: "logstash:1234",
+							},
+						},
+					},
+				},
 				Metadata: &model.DataplaneMetadata{},
 			}
 
@@ -179,6 +197,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			ctx: plainCtx,
 			dataplane: `
             networking:
+              address: 10.0.0.1
               outbound:
               - port: 18080
                 service: backend
@@ -189,6 +208,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			ctx: mtlsCtx,
 			dataplane: `
             networking:
+              address: 10.0.0.1
               outbound:
               - port: 18080
                 service: backend
@@ -201,6 +221,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			ctx: plainCtx,
 			dataplane: `
             networking:
+              address: 10.0.0.1
               outbound:
               - port: 18080
                 service: backend
@@ -211,6 +232,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			ctx: mtlsCtx,
 			dataplane: `
             networking:
+              address: 10.0.0.1
               outbound:
               - port: 18080
                 service: backend
@@ -223,6 +245,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			ctx: plainCtx,
 			dataplane: `
             networking:
+              address: 10.0.0.1
               outbound:
               - port: 18080
                 service: backend
@@ -235,6 +258,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			ctx: mtlsCtx,
 			dataplane: `
             networking:
+              address: 10.0.0.1
               outbound:
               - port: 18080
                 service: backend
@@ -249,6 +273,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			ctx: plainCtx,
 			dataplane: `
             networking:
+              address: 10.0.0.1
+              gateway:
+                tags:
+                  service: gateway
               outbound:
               - port: 18080
                 service: backend
@@ -265,6 +293,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			ctx: mtlsCtx,
 			dataplane: `
             networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  service: web
               outbound:
               - port: 18080
                 service: backend

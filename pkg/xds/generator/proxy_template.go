@@ -197,15 +197,17 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(outbound.Service)).
 					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
+					Configure(envoy_listeners.HttpAccessLog(sourceService, destinationService, proxy.Logs[outbound.Service], proxy)).
 					Configure(envoy_listeners.HttpOutboundRoute(outboundRouteName))
 			case mesh_core.ProtocolTCP:
 				fallthrough
 			default:
 				// configuration for non-HTTP cases
-				filterChainBuilder.Configure(envoy_listeners.TcpProxy(outbound.Service, clusters...))
+				filterChainBuilder.
+					Configure(envoy_listeners.TcpProxy(outbound.Service, clusters...)).
+					Configure(envoy_listeners.NetworkAccessLog(sourceService, destinationService, proxy.Logs[outbound.Service], proxy))
 			}
-			// TODO(yskopets): configure NetworkAccessLog only for non-HTTP cases
-			return filterChainBuilder.Configure(envoy_listeners.NetworkAccessLog(sourceService, destinationService, proxy.Logs[outbound.Service], proxy))
+			return filterChainBuilder
 		}()
 		listener, err := envoy_listeners.NewListenerBuilder().
 			Configure(envoy_listeners.OutboundListener(outboundListenerName, ofaces[i].DataplaneIP, ofaces[i].DataplanePort)).

@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: generate HTTP-specific configuration of access log
+  [#590](https://github.com/Kong/kuma/pull/590)
 * feature: add support for Kuma-specific placeholders, such as `%KUMA_SOURCE_SERVICE%`, inside Envoy access log format
   [#594](https://github.com/Kong/kuma/pull/594)
 * feature: add support for the entire Envoy access log command operator syntax
