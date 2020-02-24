@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: generate tracing configuration in boostrap configuration
+  [#592](https://github.com/Kong/kuma/pull/592)
 * feature: generate tracing configuration on listeners
   [#591](https://github.com/Kong/kuma/pull/591)
 * chore: generify proxy template matching (it now supports Gateway dataplane and '*' selector)
