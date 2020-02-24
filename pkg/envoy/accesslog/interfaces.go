@@ -42,12 +42,6 @@ type TcpLogConfigurer interface {
 	ConfigureTcpLog(config *accesslog_config.TcpGrpcAccessLogConfig) error
 }
 
-// InterpolationContext represents a context of Interpolate() operation.
-type InterpolationContext interface {
-	// Get returns a variable value in this context.
-	Get(variable string) string
-}
-
 // AccessLogFragmentInterpolator interpolates placeholders
 // added to an access log format string.
 // E.g. %KUMA_SOURCE_SERVICE%, %KUMA_DESTINATION_SERVICE%,
@@ -55,7 +49,7 @@ type InterpolationContext interface {
 // are examples of such placeholders.
 type AccessLogFragmentInterpolator interface {
 	// Interpolate returns an access log fragment with all placeholders resolved.
-	Interpolate(context InterpolationContext) (AccessLogFragment, error)
+	Interpolate(variables InterpolationVariables) (AccessLogFragment, error)
 }
 
 // InterpolationVariables represents a context of Interpolate() operation

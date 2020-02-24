@@ -37,7 +37,7 @@ func (f Placeholder) String() string {
 }
 
 // Interpolate returns an access log fragment with all placeholders resolved.
-func (f Placeholder) Interpolate(context InterpolationContext) (AccessLogFragment, error) {
-	value := context.Get(string(f))
+func (f Placeholder) Interpolate(variables InterpolationVariables) (AccessLogFragment, error) {
+	value := variables.Get(string(f))
 	return TextSpan(value), nil // turn placeholder into a text literal
 }
