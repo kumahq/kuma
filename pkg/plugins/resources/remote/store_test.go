@@ -158,7 +158,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(bytes)).To(Equal(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute"}`))
+				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute"}`))
 			})
 
 			// when
@@ -180,7 +180,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(bytes)).To(Equal(`{"mesh":"someMesh","name":"someMesh","type":"Mesh"}`))
+				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","name":"someMesh","type":"Mesh"}`))
 			})
 
 			// when
@@ -234,7 +234,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(bytes)).To(Equal(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute"}`))
+				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute"}`))
 			})
 
 			// when
@@ -260,7 +260,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(bytes)).To(Equal(`{"mesh":"someMesh","mtls":{"ca":{"builtin":{}}},"name":"someMesh","type":"Mesh"}`))
+				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","mtls":{"ca":{"builtin":{}}},"name":"someMesh","type":"Mesh"}`))
 			})
 
 			// when

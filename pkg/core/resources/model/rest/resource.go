@@ -3,17 +3,17 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
-
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/golang/protobuf/jsonpb"
+	"reflect"
 
 	"github.com/pkg/errors"
 )
 
 type ResourceMeta struct {
 	Type string `json:"type"`
-	Name string `json:"name"`
 	Mesh string `json:"mesh,omitempty"`
+	Name string `json:"name"`
 }
 
 type Resource struct {
@@ -29,28 +29,26 @@ var _ json.Marshaler = &Resource{}
 var _ json.Unmarshaler = &Resource{}
 
 func (r *Resource) MarshalJSON() ([]byte, error) {
-	meta, err := json.Marshal(&r.Meta)
+	var specBytes []byte
+	if r.Spec != nil {
+		var buf bytes.Buffer
+		if err := (&jsonpb.Marshaler{}).Marshal(&buf, r.Spec); err != nil {
+			return nil, err
+		}
+		specBytes = buf.Bytes()
+	}
+
+	metaJSON, err := json.Marshal(r.Meta)
 	if err != nil {
 		return nil, err
 	}
-	if r.Spec == nil {
-		return meta, nil
-	}
 
-	var buf bytes.Buffer
-	if err := (&jsonpb.Marshaler{}).Marshal(&buf, r.Spec); err != nil {
-		return nil, err
+	if len(specBytes) == 0 || reflect.DeepEqual(specBytes, []byte{'{', '}'}) { // spec is nil or empty
+		return metaJSON, nil
+	} else {
+		// remove the } of meta JSON, { of spec JSON and join it by ,
+		return append(append(metaJSON[:len(metaJSON)-1], byte(',')), specBytes[1:]...), nil
 	}
-	spec := buf.Bytes()
-
-	var obj map[string]json.RawMessage
-	if err := json.Unmarshal(meta, &obj); err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(spec, &obj); err != nil {
-		return nil, err
-	}
-	return json.Marshal(obj)
 }
 
 func (r *Resource) UnmarshalJSON(data []byte) error {

@@ -2,7 +2,6 @@ package rest_test
 
 import (
 	"encoding/json"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -14,6 +13,53 @@ import (
 )
 
 var _ = Describe("ResourceListReceiver", func() {
+	Describe("MarshalJSON", func() {
+		It("should marshal JSON with proper field order", func() {
+			// given
+			res := &rest.Resource{
+				Meta: rest.ResourceMeta{
+					Type: "TrafficRoute",
+					Mesh: "default",
+					Name: "one",
+				},
+				Spec: &sample_proto.TrafficRoute{
+					Path: "/example",
+				},
+			}
+
+			// when
+			bytes, err := json.Marshal(res)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and
+			expected := `{"type":"TrafficRoute","mesh":"default","name":"one","path":"/example"}`
+			Expect(string(bytes)).To(Equal(expected))
+		})
+
+		It("should marshal JSON with proper field order and empty spec", func() {
+			// given
+			res := &rest.Resource{
+				Meta: rest.ResourceMeta{
+					Type: "TrafficRoute",
+					Mesh: "default",
+					Name: "one",
+				},
+			}
+
+			// when
+			bytes, err := json.Marshal(res)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and
+			expected := `{"type":"TrafficRoute","mesh":"default","name":"one"}`
+			Expect(string(bytes)).To(Equal(expected))
+		})
+	})
+
 	Describe("UnmarshalJSON", func() {
 		It("it should be possible to unmarshal JSON response from Kuma API Server", func() {
 			// given
