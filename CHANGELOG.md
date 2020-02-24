@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: extend embedded gRPC Access Log Server to support the entire Envoy access log format
+  [#595](https://github.com/Kong/kuma/pull/595)
 * feature: generate HTTP-specific configuration of access log
   [#590](https://github.com/Kong/kuma/pull/590)
 * feature: add support for Kuma-specific placeholders, such as `%KUMA_SOURCE_SERVICE%`, inside Envoy access log format
