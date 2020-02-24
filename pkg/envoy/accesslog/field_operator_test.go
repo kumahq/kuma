@@ -301,7 +301,7 @@ var _ = Describe("FieldOperator", func() {
 		)
 	})
 
-	Describe("FormatHttpLogEntry() and FormatHttpLogEntry()", func() {
+	Describe("FormatHttpLogEntry() and FormatTcpLogEntry()", func() {
 
 		type testCase struct {
 			field            string
