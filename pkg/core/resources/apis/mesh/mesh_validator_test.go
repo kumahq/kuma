@@ -34,12 +34,12 @@ var _ = Describe("Mesh", func() {
               - name: zipkin-us
                 sampling: 80.0
                 zipkin:
-                  url: http://zipkin.local/v2/spans
+                  url: http://zipkin.local:9411/v2/spans
                   traceId128bit: true
                   apiVersion: httpProto
               - name: zipkin-eu
                 zipkin:
-                  url: http://zipkin.local/v2/spans
+                  url: http://zipkin.local:9411/v2/spans
               defaultBackend: zipkin-us
 `
 			mesh := MeshResource{}
@@ -171,7 +171,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name:
                     zipkin:
-                      url: http://zipkin.local/v2/spans`,
+                      url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
                 - field: tracing.backends[0].name
@@ -183,10 +183,10 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     zipkin:
-                      url: http://zipkin.local/v2/spans
+                      url: http://zipkin.local:9411/v2/spans
                   - name: zipkin-us
                     zipkin:
-                      url: http://zipkin.local/v2/spans`,
+                      url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
                 - field: tracing.backends[1].name
@@ -199,7 +199,7 @@ var _ = Describe("Mesh", func() {
                   - name: zipkin-us
                     sampling: 100.1
                     zipkin:
-                      url: http://zipkin-us.local/v2/spans`,
+                      url: http://zipkin-us.local:9411/v2/spans`,
 				expected: `
                 violations:
                 - field: tracing.backends[0].sampling
@@ -229,18 +229,30 @@ var _ = Describe("Mesh", func() {
                 - field: tracing.backends[0].zipkin.url
                   message: invalid URL`,
 			}),
+			Entry("tracing with zipkin with valid url but without port", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: zipkin-us
+                    zipkin:
+                      url: http://zipkin-us.local/v2/spans`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].zipkin.url
+                  message: port has to be explicitly specified`,
+			}),
 			Entry("tracing with zipkin with invalid apiVersion", testCase{
 				mesh: `
                 tracing:
                   backends:
                   - name: zipkin-us
                     zipkin:
-                      url: http://zipkin-us.local/v2/spans
+                      url: http://zipkin-us.local:9411/v2/spans
                       apiVersion: invalid`,
 				expected: `
                 violations:
                 - field: tracing.backends[0].zipkin.apiVersion
-                  message: has to be either "httpJson" or "httpProto"`,
+                  message: 'has invalid value. Allowed values: httpJsonV1, httpJson, httpProto'`,
 			}),
 			Entry("default backend has to be set to one of the backends", testCase{
 				mesh: `
@@ -249,7 +261,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     zipkin:
-                      url: http://zipkin.local/v2/spans`,
+                      url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
                 - field: tracing.defaultBackend

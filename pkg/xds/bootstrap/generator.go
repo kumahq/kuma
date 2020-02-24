@@ -6,16 +6,19 @@ import (
 	"fmt"
 	"text/template"
 
+	"github.com/Kong/kuma/pkg/xds/topology"
+	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/xds"
+	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
+	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 )
 
 type BootstrapGenerator interface {
@@ -23,7 +26,7 @@ type BootstrapGenerator interface {
 }
 
 func NewDefaultBootstrapGenerator(
-	resManager manager.ResourceManager,
+	resManager core_manager.ResourceManager,
 	config *bootstrap_config.BootstrapParamsConfig) BootstrapGenerator {
 	return &bootstrapGenerator{
 		resManager: resManager,
@@ -32,12 +35,12 @@ func NewDefaultBootstrapGenerator(
 }
 
 type bootstrapGenerator struct {
-	resManager manager.ResourceManager
+	resManager core_manager.ResourceManager
 	config     *bootstrap_config.BootstrapParamsConfig
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
-	proxyId, err := xds.BuildProxyId(request.Mesh, request.Name)
+	proxyId, err := core_xds.BuildProxyId(request.Mesh, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -45,10 +48,21 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err != nil {
 		return nil, err
 	}
-	return b.GenerateFor(*proxyId, dataplane, request)
+	bootstrapCfg, err := b.generateFor(*proxyId, dataplane, request)
+	if err != nil {
+		return nil, err
+	}
+	tracingBackend, err := b.fetchTracingBackend(ctx, dataplane)
+	if err != nil {
+		return nil, err
+	}
+	if err := AddTracingConfig(bootstrapCfg, tracingBackend); err != nil {
+		return nil, err
+	}
+	return bootstrapCfg, nil
 }
 
-func (b *bootstrapGenerator) GenerateFor(proxyId xds.ProxyId, dataplane *mesh.DataplaneResource, request types.BootstrapRequest) (proto.Message, error) {
+func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *core_mesh.DataplaneResource, request types.BootstrapRequest) (*envoy_bootstrap.Bootstrap, error) {
 	// if dataplane has no service - fill this with placeholder. Otherwise take the first service
 	service := dataplane.Spec.GetIdentifyingService()
 
@@ -70,18 +84,35 @@ func (b *bootstrapGenerator) GenerateFor(proxyId xds.ProxyId, dataplane *mesh.Da
 		DataplaneTokenPath: request.DataplaneTokenPath,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
-	return b.ConfigForParameters(params)
+	return b.configForParameters(params)
 }
 
-func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, proxyId *xds.ProxyId) (*mesh.DataplaneResource, error) {
-	res := mesh.DataplaneResource{}
-	if err := b.resManager.Get(ctx, &res, store.GetBy(proxyId.ToResourceKey())); err != nil {
+func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
+	res := core_mesh.DataplaneResource{}
+	if err := b.resManager.Get(ctx, &res, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
 		return nil, err
 	}
 	return &res, nil
 }
 
-func (b *bootstrapGenerator) ConfigForParameters(params configParameters) (proto.Message, error) {
+func (b *bootstrapGenerator) fetchTracingBackend(ctx context.Context, dataplane *core_mesh.DataplaneResource) (*mesh_proto.TracingBackend, error) {
+	mesh := core_mesh.MeshResource{}
+	if err := b.resManager.Get(context.Background(), &mesh, core_store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
+		return nil, err
+	}
+
+	trafficTrace, err := topology.GetTrafficTrace(ctx, dataplane, b.resManager)
+	if err != nil {
+		return nil, err
+	}
+	if trafficTrace == nil {
+		return nil, nil
+	}
+
+	return mesh.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend()), nil
+}
+
+func (b *bootstrapGenerator) configForParameters(params configParameters) (*envoy_bootstrap.Bootstrap, error) {
 	tmpl, err := template.New("bootstrap").Parse(configTemplate)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse config template")
