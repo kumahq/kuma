@@ -436,7 +436,9 @@ type TracingBackend_Zipkin struct {
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	// Generate 128bit traces. Default: false
 	TraceId128Bit bool `protobuf:"varint,2,opt,name=traceId128bit,proto3" json:"traceId128bit,omitempty"`
-	// Version of the API. values: httpJson, httpProto. Default: httpJson
+	// Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
+	// httpJson see
+	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
 	ApiVersion           string   `protobuf:"bytes,3,opt,name=apiVersion,proto3" json:"apiVersion,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
