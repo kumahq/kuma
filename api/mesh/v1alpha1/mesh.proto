@@ -95,7 +95,8 @@ message TracingBackend {
     // Generate 128bit traces. Default: false
     bool traceId128bit = 2;
 
-    // Version of the API. values: httpJson, httpProto. Default: httpJson
+    // Version of the API. values: httpJson, httpJsonV1, httpProto. Default: httpJson
+    // see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
     string apiVersion = 3;
   }
 

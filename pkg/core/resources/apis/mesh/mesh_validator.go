@@ -117,11 +117,16 @@ func validateZipkin(zipkin *mesh_proto.TracingBackend_Zipkin) validators.Validat
 	var verr validators.ValidationError
 	if zipkin.Url == "" {
 		verr.AddViolation("url", "cannot be empty")
-	} else if _, err := url.ParseRequestURI(zipkin.Url); err != nil {
-		verr.AddViolation("url", "invalid URL")
+	} else {
+		uri, err := url.ParseRequestURI(zipkin.Url)
+		if err != nil {
+			verr.AddViolation("url", "invalid URL")
+		} else if uri.Port() == "" {
+			verr.AddViolation("url", "port has to be explicitly specified")
+		}
 	}
 	if zipkin.ApiVersion != "" && zipkin.ApiVersion != "httpJsonV1" && zipkin.ApiVersion != "httpJson" && zipkin.ApiVersion != "httpProto" {
-		verr.AddViolation("apiVersion", `has to be one of the following values: "httpJsonV1", "httpJson" or "httpProto"`)
+		verr.AddViolation("apiVersion", fmt.Sprintf(`has invalid value. %s`, AllowedValuesHint("httpJsonV1", "httpJson", "httpProto")))
 	}
 	return verr
 }
