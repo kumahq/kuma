@@ -12,7 +12,7 @@ import (
 	"github.com/Kong/kuma/pkg/envoy/accesslog"
 )
 
-func defaultHandler(log logr.Logger, msg *envoy_accesslog.StreamAccessLogsMessage, newSender logSenderFactoryFunc) (logHandler, error) {
+func defaultHandler(log logr.Logger, msg *envoy_accesslog.StreamAccessLogsMessage) (logHandler, error) {
 	parts := strings.SplitN(msg.GetIdentifier().GetLogName(), ";", 2)
 	if len(parts) != 2 {
 		return nil, errors.Errorf("log name %q has invalid format: expected %d components separated by ';', got %d", msg.GetIdentifier().GetLogName(), 2, len(parts))
@@ -24,7 +24,7 @@ func defaultHandler(log logr.Logger, msg *envoy_accesslog.StreamAccessLogsMessag
 		return nil, err
 	}
 
-	sender, err := newSender(log, address)
+	sender, err := defaultSender(log, address)
 	if err != nil {
 		return nil, err
 	}

@@ -22,7 +22,4 @@ type logSender interface {
 }
 
 // logHandlerFactoryFunc represents a factory of log handler implementations.
-type logHandlerFactoryFunc = func(log logr.Logger, msg *envoy_accesslog.StreamAccessLogsMessage, newSender logSenderFactoryFunc) (logHandler, error)
-
-// logSenderFactoryFunc represents a factory of log sender implementations.
-type logSenderFactoryFunc = func(log logr.Logger, address string) (logSender, error)
+type logHandlerFactoryFunc = func(log logr.Logger, msg *envoy_accesslog.StreamAccessLogsMessage) (logHandler, error)

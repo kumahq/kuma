@@ -20,7 +20,6 @@ var logger = core.Log.WithName("accesslogs-server")
 type accessLogServer struct {
 	server     *grpc.Server
 	newHandler logHandlerFactoryFunc
-	newSender  logSenderFactoryFunc
 
 	// streamCount for counting streams
 	streamCount int64
@@ -30,7 +29,6 @@ func NewAccessLogServer() *accessLogServer {
 	return &accessLogServer{
 		server:     grpc.NewServer(),
 		newHandler: defaultHandler,
-		newSender:  defaultSender,
 	}
 }
 
@@ -65,7 +63,7 @@ func (s *accessLogServer) StreamAccessLogs(stream envoy_accesslog.AccessLogServi
 		if !initialized {
 			initialized = true
 
-			handler, err = s.newHandler(log, msg, s.newSender)
+			handler, err = s.newHandler(log, msg)
 			if err != nil {
 				return errors.Wrap(err, "failed to initialize Access Logs stream")
 			}
