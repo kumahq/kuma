@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: include `k8s` namespace into a set of labels that describe a `Dataplane` to `Prometheus`
+  [#601](https://github.com/Kong/kuma/pull/601)
 * feature: provision Grafana with Kuma Dashboards
   [#608](https://github.com/Kong/kuma/pull/608)
 * feature: add support for `kuma.io/sidecar-injection: disabled` annotation on `Pods` to let users selectively opt out of side-car injection on `k8s`
