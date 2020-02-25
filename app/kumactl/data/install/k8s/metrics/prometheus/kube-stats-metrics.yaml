@@ -1,28 +1,20 @@
 ---
-# Source: prometheus/templates/kube-state-metrics-serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
     component: "kube-state-metrics"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-kube-state-metrics
+  name: prometheus-kube-state-metrics
   namespace: {{ .Namespace }}
 ---
-# Source: prometheus/templates/kube-state-metrics-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
   labels:
     component: "kube-state-metrics"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-kube-state-metrics
+  name: prometheus-kube-state-metrics
 rules:
   - apiGroups:
       - ""
@@ -117,27 +109,22 @@ rules:
       - list
       - watch
 ---
-# Source: prometheus/templates/kube-state-metrics-clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   labels:
     component: "kube-state-metrics"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-kube-state-metrics
+  name: prometheus-kube-state-metrics
 subjects:
   - kind: ServiceAccount
-    name: my-release-prometheus-kube-state-metrics
+    name: prometheus-kube-state-metrics
     namespace: {{ .Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: my-release-prometheus-kube-state-metrics
+  name: prometheus-kube-state-metrics
 ---
-# Source: prometheus/templates/kube-state-metrics-svc.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -146,10 +133,7 @@ metadata:
   labels:
     component: "kube-state-metrics"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-kube-state-metrics
+  name: prometheus-kube-state-metrics
   namespace: {{ .Namespace }}
 spec:
   clusterIP: None
@@ -165,38 +149,29 @@ spec:
   selector:
     component: "kube-state-metrics"
     app: prometheus
-    release: my-release
   type: "ClusterIP"
 ---
-# Source: prometheus/templates/kube-state-metrics-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     component: "kube-state-metrics"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-kube-state-metrics
+  name: prometheus-kube-state-metrics
   namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:
       component: "kube-state-metrics"
       app: prometheus
-      release: my-release
   replicas: 1
   template:
     metadata:
       labels:
         component: "kube-state-metrics"
         app: prometheus
-        release: my-release
-        chart: prometheus-10.4.0
-        heritage: Helm
     spec:
-      serviceAccountName: my-release-prometheus-kube-state-metrics
+      serviceAccountName: prometheus-kube-state-metrics
       containers:
         - name: prometheus-kube-state-metrics
           image: "quay.io/coreos/kube-state-metrics:v1.9.1"

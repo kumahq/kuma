@@ -1,15 +1,11 @@
 ---
-# Source: prometheus/templates/alertmanager-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
     component: "alertmanager"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-alertmanager
+  name: prometheus-alertmanager
   namespace: {{ .Namespace }}
 data:
   alertmanager.yml: |
@@ -22,17 +18,13 @@ data:
       receiver: default-receiver
       repeat_interval: 3h
 ---
-# Source: prometheus/templates/alertmanager-pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   labels:
     component: "alertmanager"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-alertmanager
+  name: prometheus-alertmanager
   namespace: {{ .Namespace }}
 spec:
   accessModes:
@@ -41,64 +33,48 @@ spec:
     requests:
       storage: "2Gi"
 ---
-# Source: prometheus/templates/alertmanager-serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
     component: "alertmanager"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-alertmanager
+  name: prometheus-alertmanager
   namespace: {{ .Namespace }}
 ---
-# Source: prometheus/templates/alertmanager-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
   labels:
     component: "alertmanager"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-alertmanager
+  name: prometheus-alertmanager
 rules:
   []
 ---
-# Source: prometheus/templates/alertmanager-clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   labels:
     component: "alertmanager"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-alertmanager
+  name: prometheus-alertmanager
 subjects:
   - kind: ServiceAccount
-    name: my-release-prometheus-alertmanager
+    name: prometheus-alertmanager
     namespace: {{ .Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: my-release-prometheus-alertmanager
+  name: prometheus-alertmanager
 ---
-# Source: prometheus/templates/alertmanager-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     component: "alertmanager"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-alertmanager
+  name: prometheus-alertmanager
   namespace: {{ .Namespace }}
 spec:
   ports:
@@ -107,9 +83,8 @@ spec:
       protocol: TCP
       targetPort: 9093
   selector:
-    component: "alertmanager"
+    component: alertmanager
     app: prometheus
-    release: my-release
   sessionAffinity: None
   type: "ClusterIP"
 ---
@@ -120,28 +95,21 @@ metadata:
   labels:
     component: "alertmanager"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-alertmanager
+  name: prometheus-alertmanager
   namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:
       component: "alertmanager"
       app: prometheus
-      release: my-release
   replicas: 1
   template:
     metadata:
       labels:
         component: "alertmanager"
         app: prometheus
-        release: my-release
-        chart: prometheus-10.4.0
-        heritage: Helm
     spec:
-      serviceAccountName: my-release-prometheus-alertmanager
+      serviceAccountName: prometheus-alertmanager
       containers:
         - name: prometheus-alertmanager
           image: "prom/alertmanager:v0.20.0"
@@ -157,7 +125,6 @@ spec:
             - --storage.path=/data
             - --cluster.advertise-address=$(POD_IP):6783
             - --web.external-url=http://localhost:9093
-
           ports:
             - containerPort: 9093
           readinessProbe:
@@ -174,7 +141,6 @@ spec:
             - name: storage-volume
               mountPath: "/data"
               subPath: ""
-
         - name: prometheus-alertmanager-configmap-reload
           image: "jimmidyson/configmap-reload:v0.3.0"
           imagePullPolicy: "IfNotPresent"
@@ -195,7 +161,7 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: my-release-prometheus-alertmanager
+            name: prometheus-alertmanager
         - name: storage-volume
           persistentVolumeClaim:
-            claimName: my-release-prometheus-alertmanager
+            claimName: prometheus-alertmanager

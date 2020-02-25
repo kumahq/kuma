@@ -1,15 +1,11 @@
 ---
-# Source: prometheus/templates/server-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
     component: "server"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-server
+  name: prometheus-server
   namespace: {{ .Namespace }}
 data:
   alerting_rules.yml: |
@@ -289,17 +285,13 @@ data:
   rules: |
     {}
 ---
-# Source: prometheus/templates/server-pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   labels:
     component: "server"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-server
+  name: prometheus-server
   namespace: {{ .Namespace }}
 spec:
   accessModes:
@@ -308,30 +300,22 @@ spec:
     requests:
       storage: "8Gi"
 ---
-# Source: prometheus/templates/server-serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
     component: "server"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-server
+  name: prometheus-server
   namespace: {{ .Namespace }}
 ---
-# Source: prometheus/templates/server-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
   labels:
     component: "server"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-server
+  name: prometheus-server
 rules:
   - apiGroups:
       - ""
@@ -362,37 +346,29 @@ rules:
     verbs:
       - get
 ---
-# Source: prometheus/templates/server-clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   labels:
     component: "server"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-server
+  name: prometheus-server
 subjects:
   - kind: ServiceAccount
-    name: my-release-prometheus-server
+    name: prometheus-server
     namespace: {{ .Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: my-release-prometheus-server
+  name: prometheus-server
 ---
-# Source: prometheus/templates/server-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     component: "server"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-server
+  name: prometheus-server
   namespace: {{ .Namespace }}
 spec:
   ports:
@@ -403,39 +379,30 @@ spec:
   selector:
     component: "server"
     app: prometheus
-    release: my-release
   sessionAffinity: None
   type: "ClusterIP"
 ---
-# Source: prometheus/templates/server-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     component: "server"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-server
+  name: prometheus-server
   namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:
       component: "server"
       app: prometheus
-      release: my-release
   replicas: 1
   template:
     metadata:
       labels:
         component: "server"
         app: prometheus
-        release: my-release
-        chart: prometheus-10.4.0
-        heritage: Helm
     spec:
-      serviceAccountName: my-release-prometheus-server
+      serviceAccountName: prometheus-server
       containers:
         - name: prometheus-server-configmap-reload
           image: "jimmidyson/configmap-reload:v0.3.0"
@@ -449,7 +416,6 @@ spec:
             - name: config-volume
               mountPath: /etc/config
               readOnly: true
-
         - name: prometheus-server
           image: "prom/prometheus:v2.15.2"
           imagePullPolicy: "IfNotPresent"
@@ -495,7 +461,7 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: my-release-prometheus-server
+            name: prometheus-server
         - name: storage-volume
           persistentVolumeClaim:
-            claimName: my-release-prometheus-server
+            claimName: prometheus-server

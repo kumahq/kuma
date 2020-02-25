@@ -1,52 +1,39 @@
 ---
-# Source: prometheus/templates/pushgateway-serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
     component: "pushgateway"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-pushgateway
+  name: prometheus-pushgateway
   namespace: {{ .Namespace }}
 ---
-# Source: prometheus/templates/pushgateway-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
   labels:
     component: "pushgateway"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-pushgateway
+  name: prometheus-pushgateway
 rules:
   []
 ---
-# Source: prometheus/templates/pushgateway-clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   labels:
     component: "pushgateway"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-pushgateway
+  name: prometheus-pushgateway
 subjects:
   - kind: ServiceAccount
-    name: my-release-prometheus-pushgateway
+    name: prometheus-pushgateway
     namespace: {{ .Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: my-release-prometheus-pushgateway
+  name: prometheus-pushgateway
 ---
-# Source: prometheus/templates/pushgateway-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -55,10 +42,7 @@ metadata:
   labels:
     component: "pushgateway"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-pushgateway
+  name: prometheus-pushgateway
   namespace: {{ .Namespace }}
 spec:
   ports:
@@ -69,38 +53,29 @@ spec:
   selector:
     component: "pushgateway"
     app: prometheus
-    release: my-release
   type: "ClusterIP"
 ---
-# Source: prometheus/templates/pushgateway-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     component: "pushgateway"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-pushgateway
+  name: prometheus-pushgateway
   namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:
       component: "pushgateway"
       app: prometheus
-      release: my-release
   replicas: 1
   template:
     metadata:
       labels:
         component: "pushgateway"
         app: prometheus
-        release: my-release
-        chart: prometheus-10.4.0
-        heritage: Helm
     spec:
-      serviceAccountName: my-release-prometheus-pushgateway
+      serviceAccountName: prometheus-pushgateway
       containers:
         - name: prometheus-pushgateway
           image: "prom/pushgateway:v1.0.1"

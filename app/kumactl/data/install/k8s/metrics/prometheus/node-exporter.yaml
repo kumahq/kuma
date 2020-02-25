@@ -1,18 +1,13 @@
 ---
-# Source: prometheus/templates/node-exporter-serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
     component: "node-exporter"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-node-exporter
+  name: prometheus-node-exporter
   namespace: {{ .Namespace }}
 ---
-# Source: prometheus/templates/node-exporter-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -21,10 +16,7 @@ metadata:
   labels:
     component: "node-exporter"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-node-exporter
+  name: prometheus-node-exporter
   namespace: {{ .Namespace }}
 spec:
   clusterIP: None
@@ -36,27 +28,21 @@ spec:
   selector:
     component: "node-exporter"
     app: prometheus
-    release: my-release
   type: "ClusterIP"
 ---
-# Source: prometheus/templates/node-exporter-daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
     component: "node-exporter"
     app: prometheus
-    release: my-release
-    chart: prometheus-10.4.0
-    heritage: Helm
-  name: my-release-prometheus-node-exporter
+  name: prometheus-node-exporter
   namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:
       component: "node-exporter"
       app: prometheus
-      release: my-release
   updateStrategy:
     type: RollingUpdate
   template:
@@ -64,11 +50,8 @@ spec:
       labels:
         component: "node-exporter"
         app: prometheus
-        release: my-release
-        chart: prometheus-10.4.0
-        heritage: Helm
     spec:
-      serviceAccountName: my-release-prometheus-node-exporter
+      serviceAccountName: prometheus-node-exporter
       containers:
         - name: prometheus-node-exporter
           image: "prom/node-exporter:v0.18.1"
