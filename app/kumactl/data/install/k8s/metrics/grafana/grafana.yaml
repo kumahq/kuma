@@ -1,15 +1,11 @@
 ---
-# Source: grafana/templates/podsecuritypolicy.yaml
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: my-grafana
-  namespace: default
+  name: grafana
+  namespace: {{ .Namespace }}
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    heritage: Helm
-    release: my-grafana
   annotations:
     seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default'
     seccomp.security.alpha.kubernetes.io/defaultProfileName:  'docker/default'
@@ -52,34 +48,26 @@ spec:
     rule: 'RunAsAny'
   readOnlyRootFilesystem: false
 ---
-# Source: grafana/templates/secret.yaml
 apiVersion: v1
 kind: Secret
 metadata:
-  name: my-grafana
-  namespace: default
+  name: grafana
+  namespace: {{ .Namespace }}
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    release: my-grafana
-    heritage: Helm
 type: Opaque
 data:
   admin-user: "YWRtaW4="
   admin-password: "YlpBODVWQVIwaURCcFViUHZMYm9qU3lsMnhaUDRqUVRoSzVFVndkdg=="
   ldap-toml: ""
 ---
-# Source: grafana/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: my-grafana
-  namespace: default
+  name: grafana
+  namespace: {{ .Namespace }}
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    release: my-grafana
-    heritage: Helm
 data:
   grafana.ini: |
     [analytics]
@@ -94,97 +82,73 @@ data:
     plugins = /var/lib/grafana/plugins
     provisioning = /etc/grafana/provisioning
 ---
-# Source: grafana/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    heritage: Helm
-    release: my-grafana
-  name: my-grafana
-  namespace: default
+  name: grafana
+  namespace: {{ .Namespace }}
 ---
-# Source: grafana/templates/clusterrole.yaml
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    release: my-grafana
-    heritage: Helm
-  name: my-grafana-clusterrole
+  name: grafana-clusterrole
 rules: []
 ---
-# Source: grafana/templates/clusterrolebinding.yaml
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: my-grafana-clusterrolebinding
+  name: grafana-clusterrolebinding
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    release: my-grafana
-    heritage: Helm
 subjects:
   - kind: ServiceAccount
-    name: my-grafana
-    namespace: default
+    name: grafana
+    namespace: {{ .Namespace }}
 roleRef:
   kind: ClusterRole
-  name: my-grafana-clusterrole
+  name: grafana-clusterrole
   apiGroup: rbac.authorization.k8s.io
 ---
-# Source: grafana/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: Role
 metadata:
-  name: my-grafana
-  namespace: default
+  name: grafana
+  namespace: {{ .Namespace }}
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    heritage: Helm
-    release: my-grafana
 rules:
   - apiGroups:      ['extensions']
     resources:      ['podsecuritypolicies']
     verbs:          ['use']
-    resourceNames:  [my-grafana]
+    resourceNames:  [grafana]
 ---
-# Source: grafana/templates/rolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
-  name: my-grafana
+  name: grafana
   namespace: default
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    heritage: Helm
-    release: my-grafana
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: my-grafana
+  name: grafana
 subjects:
   - kind: ServiceAccount
-    name: my-grafana
-    namespace: default
+    name: grafana
+    namespace: {{ .Namespace }}
 ---
-# Source: grafana/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-grafana
-  namespace: default
+  name: grafana
+  namespace: {{ .Namespace }}
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    release: my-grafana
-    heritage: Helm
 spec:
   type: ClusterIP
   ports:
@@ -192,43 +156,34 @@ spec:
       port: 80
       protocol: TCP
       targetPort: 3000
-
   selector:
     app: grafana
-    release: my-grafana
 ---
-# Source: grafana/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-grafana
-  namespace: default
+  name: grafana
+  namespace: {{ .Namespace }}
   labels:
     app: grafana
-    chart: grafana-4.6.3
-    release: my-grafana
-    heritage: Helm
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: grafana
-      release: my-grafana
   strategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
         app: grafana
-        release: my-grafana
       annotations:
         checksum/config: 4fbce6ca7985bb33289922e68acc9af246f301cf9650f061fbcd0155925665df
         checksum/dashboards-json-config: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
         checksum/sc-dashboard-provider-config: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
         checksum/secret: 281444758252a4bdd272546732dfb8e2be87be71b795d2aadc3726e3524f63e3
     spec:
-
-      serviceAccountName: my-grafana
+      serviceAccountName: grafana
       securityContext:
         fsGroup: 472
         runAsUser: 472
@@ -253,12 +208,12 @@ spec:
             - name: GF_SECURITY_ADMIN_USER
               valueFrom:
                 secretKeyRef:
-                  name: my-grafana
+                  name: grafana
                   key: admin-user
             - name: GF_SECURITY_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: my-grafana
+                  name: grafana
                   key: admin-password
           livenessProbe:
             failureThreshold: 10
@@ -276,6 +231,6 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: my-grafana
+            name: grafana
         - name: storage
           emptyDir: {}
