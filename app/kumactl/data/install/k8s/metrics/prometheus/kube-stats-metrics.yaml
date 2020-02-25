@@ -10,6 +10,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-kube-state-metrics
+  namespace: {{ .Namespace }}
 ---
 # Source: prometheus/templates/kube-state-metrics-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -130,7 +131,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: my-release-prometheus-kube-state-metrics
-    namespace: default
+    namespace: {{ .Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -149,6 +150,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-kube-state-metrics
+  namespace: {{ .Namespace }}
 spec:
   clusterIP: None
   ports:
@@ -177,6 +179,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-kube-state-metrics
+  namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:

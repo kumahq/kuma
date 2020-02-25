@@ -12,7 +12,7 @@ func newInstallMetrics() *cobra.Command {
 	args := struct {
 		Namespace string
 	}{
-		Namespace: "metrics",
+		Namespace: "kuma-metrics",
 	}
 	cmd := &cobra.Command{
 		Use:   "metrics",

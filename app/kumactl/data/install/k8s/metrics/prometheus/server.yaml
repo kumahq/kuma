@@ -10,6 +10,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-server
+  namespace: {{ .Namespace }}
 data:
   alerting_rules.yml: |
     {}
@@ -299,6 +300,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-server
+  namespace: {{ .Namespace }}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -317,6 +319,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-server
+  namespace: {{ .Namespace }}
 ---
 # Source: prometheus/templates/server-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -373,7 +376,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: my-release-prometheus-server
-    namespace: default
+    namespace: {{ .Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -390,6 +393,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-server
+  namespace: {{ .Namespace }}
 spec:
   ports:
     - name: http
@@ -414,6 +418,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-server
+  namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:

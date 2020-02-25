@@ -10,6 +10,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-pushgateway
+  namespace: {{ .Namespace }}
 ---
 # Source: prometheus/templates/pushgateway-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -39,7 +40,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: my-release-prometheus-pushgateway
-    namespace: default
+    namespace: {{ .Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -58,6 +59,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-pushgateway
+  namespace: {{ .Namespace }}
 spec:
   ports:
     - name: http
@@ -81,6 +83,7 @@ metadata:
     chart: prometheus-10.4.0
     heritage: Helm
   name: my-release-prometheus-pushgateway
+  namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:
