@@ -164,6 +164,10 @@ func (g MonitoringAssignmentsGenerator) dataplaneLabels(dataplane *mesh_core.Dat
 		plural := fmt.Sprintf("%ss", key)
 		labels[prom_util.SanitizeLabelName(plural)] = g.multiValue(values)
 	}
+	// then, we turn components of a dimensional name into labels
+	for key, value := range dataplane.GetMeta().GetDimensionalName() {
+		labels[prom_util.SanitizeLabelName(key)] = value
+	}
 	// then, we apply mandatory labels on top
 	labels[prom.SchemeLabel] = "http"
 	labels[prom.MetricsPathLabel] = endpoint.GetPath()

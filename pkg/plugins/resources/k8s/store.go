@@ -3,8 +3,11 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"time"
+
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
+	common_k8s "github.com/Kong/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
@@ -13,7 +16,6 @@ import (
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 var _ store.ResourceStore = &KubernetesStore{}
@@ -170,6 +172,10 @@ func (m *KubernetesMetaAdapter) GetName() string {
 		return m.ObjectMeta.Name
 	}
 	return util_k8s.K8sNamespacedNameToCoreName(m.ObjectMeta.Name, m.ObjectMeta.Namespace)
+}
+
+func (m *KubernetesMetaAdapter) GetDimensionalName() core_model.DimensionalResourceName {
+	return common_k8s.DimensionalResourceName(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {

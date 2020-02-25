@@ -3,11 +3,13 @@ package k8s_test
 import (
 	"context"
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -415,6 +417,11 @@ var _ = Describe("KubernetesStore", func() {
 			// and
 			Expect(actual.Meta.GetName()).To(Equal(coreName))
 			// and
+			Expect(actual.Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+				"k8s.kuma.io/namespace": ns,
+				"k8s.kuma.io/name":      name,
+			}))
+			// and
 			Expect(actual.Spec.Path).To(Equal("/example"))
 		})
 
@@ -443,6 +450,11 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(actual.Meta.GetName()).To(Equal(name))
+			// and
+			Expect(actual.Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+				"k8s.kuma.io/namespace": "",
+				"k8s.kuma.io/name":      name,
+			}))
 			// and
 			Expect(actual.Spec).To(Equal(mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
@@ -564,14 +576,25 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(trl.Items).To(HaveLen(2))
 
 			// when
-			items := map[string]*sample_core.TrafficRouteResource{
+			actualResources := map[string]*sample_core.TrafficRouteResource{
 				trl.Items[0].Meta.GetName(): trl.Items[0],
 				trl.Items[1].Meta.GetName(): trl.Items[1],
 			}
 			// then
-			Expect(items[fmt.Sprintf("one.%s", ns)].Spec.Path).To(Equal("/example"))
+			actualResourceOne := actualResources[fmt.Sprintf("one.%s", ns)]
+			Expect(actualResourceOne.Spec.Path).To(Equal("/example"))
+			Expect(actualResourceOne.Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+				"k8s.kuma.io/namespace": ns,
+				"k8s.kuma.io/name":      "one",
+			}))
+
 			// and
-			Expect(items[fmt.Sprintf("two.%s", ns)].Spec.Path).To(Equal("/another"))
+			actualResourceTwo := actualResources[fmt.Sprintf("two.%s", ns)]
+			Expect(actualResourceTwo.Spec.Path).To(Equal("/another"))
+			Expect(actualResourceTwo.Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+				"k8s.kuma.io/namespace": ns,
+				"k8s.kuma.io/name":      "two",
+			}))
 		})
 
 		It("should return a list of matching Meshes", func() {
@@ -597,11 +620,28 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			err := s.List(context.Background(), meshes)
-
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			// and
 			Expect(meshes.Items).To(HaveLen(2))
-			Expect([]string{meshes.Items[0].Meta.GetName(), meshes.Items[1].Meta.GetName()}).To(ConsistOf("demo-1", "demo-2"))
+
+			// when
+			actualResources := map[string]*core_mesh.MeshResource{
+				meshes.Items[0].Meta.GetName(): meshes.Items[0],
+				meshes.Items[1].Meta.GetName(): meshes.Items[1],
+			}
+			// then
+			Expect(actualResources).To(HaveKey("demo-1"))
+			Expect(actualResources["demo-1"].Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+				"k8s.kuma.io/namespace": "",
+				"k8s.kuma.io/name":      "demo-1",
+			}))
+			// and
+			Expect(actualResources).To(HaveKey("demo-2"))
+			Expect(actualResources["demo-2"].Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+				"k8s.kuma.io/namespace": "",
+				"k8s.kuma.io/name":      "demo-2",
+			}))
 		})
 	})
 })

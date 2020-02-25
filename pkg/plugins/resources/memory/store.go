@@ -36,6 +36,9 @@ type memoryMeta struct {
 func (m memoryMeta) GetName() string {
 	return m.Name
 }
+func (m memoryMeta) GetDimensionalName() model.DimensionalResourceName {
+	return model.DimensionalResourceNameUnsupported
+}
 func (m memoryMeta) GetMesh() string {
 	return m.Mesh
 }

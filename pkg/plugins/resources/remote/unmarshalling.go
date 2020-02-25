@@ -2,9 +2,10 @@ package remote
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"time"
 )
 
 type remoteMeta struct {
@@ -17,6 +18,9 @@ type remoteMeta struct {
 
 func (m remoteMeta) GetName() string {
 	return m.Name
+}
+func (m remoteMeta) GetDimensionalName() model.DimensionalResourceName {
+	return model.DimensionalResourceNameUnsupported
 }
 func (m remoteMeta) GetMesh() string {
 	return m.Mesh

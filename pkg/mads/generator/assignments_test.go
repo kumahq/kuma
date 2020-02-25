@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 
 	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
@@ -503,6 +504,74 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"envs":             ",intg,",
 								"service":          "web",
 								"services":         ",web,",
+							},
+						},
+					},
+				},
+			}),
+			Entry("should include `k8s_kuma_io_namespace` and `k8s_kuma_io_name` labels on Kubernetes", testCase{
+				meshes: []*mesh_core.MeshResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+							Mesh: "demo",
+						},
+						Spec: mesh_proto.Mesh{
+							Metrics: &mesh_proto.Metrics{
+								Prometheus: &mesh_proto.Metrics_Prometheus{
+									Port: 1234,
+									Path: "/non-standard-path",
+								},
+							},
+						},
+					},
+				},
+				dataplanes: []*mesh_core.DataplaneResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "backend-5c89f4d995-85znn.my-namespace",
+							DimensionalName: core_model.DimensionalResourceName{
+								"k8s.kuma.io/namespace": "my-namespace",
+								"k8s.kuma.io/name":      "backend-5c89f4d995-85znn",
+							},
+							Mesh: "demo",
+						},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+									Port:        80,
+									ServicePort: 8080,
+									Tags: map[string]string{
+										"service": "backend",
+									},
+								}},
+							},
+						},
+					},
+				},
+				expected: []*core_xds.Resource{
+					{
+						Name:    "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
+						Version: "",
+						Resource: &observability_proto.MonitoringAssignment{
+							Name: "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
+							Targets: []*observability_proto.MonitoringAssignment_Target{{
+								Labels: map[string]string{
+									"__address__": "192.168.0.1:1234",
+								},
+							}},
+							Labels: map[string]string{
+								"__scheme__":            "http",
+								"__metrics_path__":      "/non-standard-path",
+								"job":                   "backend",
+								"instance":              "backend-5c89f4d995-85znn.my-namespace",
+								"k8s_kuma_io_name":      "backend-5c89f4d995-85znn",
+								"k8s_kuma_io_namespace": "my-namespace",
+								"mesh":                  "demo",
+								"dataplane":             "backend-5c89f4d995-85znn.my-namespace",
+								"service":               "backend",
+								"services":              ",backend,",
 							},
 						},
 					},

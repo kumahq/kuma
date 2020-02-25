@@ -262,6 +262,10 @@ func (r *resourceMetaObject) GetName() string {
 	return r.Name
 }
 
+func (r *resourceMetaObject) GetDimensionalName() model.DimensionalResourceName {
+	return model.DimensionalResourceNameUnsupported
+}
+
 func (r *resourceMetaObject) GetVersion() string {
 	return r.Version
 }
