@@ -174,8 +174,8 @@ func (m *KubernetesMetaAdapter) GetName() string {
 	return util_k8s.K8sNamespacedNameToCoreName(m.ObjectMeta.Name, m.ObjectMeta.Namespace)
 }
 
-func (m *KubernetesMetaAdapter) GetDimensionalName() core_model.DimensionalResourceName {
-	return common_k8s.DimensionalResourceName(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
+func (m *KubernetesMetaAdapter) GetNameExtensions() core_model.ResourceNameExtensions {
+	return common_k8s.ResourceNameExtensions(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {

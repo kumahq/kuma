@@ -530,7 +530,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "backend-5c89f4d995-85znn.my-namespace",
-							DimensionalName: core_model.DimensionalResourceName{
+							NameExtensions: core_model.ResourceNameExtensions{
 								"k8s.kuma.io/namespace": "my-namespace",
 								"k8s.kuma.io/name":      "backend-5c89f4d995-85znn",
 							},

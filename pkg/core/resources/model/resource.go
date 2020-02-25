@@ -13,9 +13,9 @@ const (
 )
 
 var (
-	// DimensionalResourceNameUnsupported is a convenience constant
+	// ResourceNameExtensionsUnsupported is a convenience constant
 	// that is meant to make source code more readable.
-	DimensionalResourceNameUnsupported = DimensionalResourceName(nil)
+	ResourceNameExtensionsUnsupported = ResourceNameExtensions(nil)
 )
 
 type ResourceKey struct {
@@ -34,12 +34,13 @@ type Resource interface {
 
 type ResourceType string
 
-// DimensionalResourceName represents a composite resource name.
+// ResourceNameExtensions represents an composite resource name in environments
+// other than Universal.
 //
 // E.g., name of a Kubernetes resource consists of a namespace component
 // and a name component that is local to that namespace.
 //
-// Technically, DimensionalResourceName is a mapping between
+// Technically, ResourceNameExtensions is a mapping between
 // a component identifier and a component value, e.g.
 //
 //   "k8s.kuma.io/namespace" => "my-namespace"
@@ -52,11 +53,11 @@ type ResourceType string
 // to choose one that is intuitive to users of that particular environment.
 // E.g., on Kubernetes component identifiers should use a label name format,
 // like in "k8s.kuma.io/namespace" and "k8s.kuma.io/name".
-type DimensionalResourceName map[string]string
+type ResourceNameExtensions map[string]string
 
 type ResourceMeta interface {
 	GetName() string
-	GetDimensionalName() DimensionalResourceName
+	GetNameExtensions() ResourceNameExtensions
 	GetVersion() string
 	GetMesh() string
 	GetCreationTime() time.Time

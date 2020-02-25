@@ -5,20 +5,20 @@ import (
 )
 
 const (
-	// k8sNamespaceDimension identifies the namespace component of a resource name on Kubernetes.
+	// k8sNamespaceComponent identifies the namespace component of a resource name on Kubernetes.
 	// The value is considered a part of user-facing Kuma API and should not be changed lightly.
 	// The value has a format of a Kubernetes label name.
-	k8sNamespaceDimension = "k8s.kuma.io/namespace"
+	k8sNamespaceComponent = "k8s.kuma.io/namespace"
 
-	// k8sNameDimension identifies the name component of a resource name on Kubernetes.
+	// k8sNameComponent identifies the name component of a resource name on Kubernetes.
 	// The value is considered a part of user-facing Kuma API and should not be changed lightly.
 	// The value has a format of a Kubernetes label name.
-	k8sNameDimension = "k8s.kuma.io/name"
+	k8sNameComponent = "k8s.kuma.io/name"
 )
 
-func DimensionalResourceName(namespace, name string) core_model.DimensionalResourceName {
-	return core_model.DimensionalResourceName{
-		k8sNamespaceDimension: namespace,
-		k8sNameDimension:      name,
+func ResourceNameExtensions(namespace, name string) core_model.ResourceNameExtensions {
+	return core_model.ResourceNameExtensions{
+		k8sNamespaceComponent: namespace,
+		k8sNameComponent:      name,
 	}
 }

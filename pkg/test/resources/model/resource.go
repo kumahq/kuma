@@ -11,7 +11,7 @@ var _ core_model.ResourceMeta = &ResourceMeta{}
 type ResourceMeta struct {
 	Mesh             string
 	Name             string
-	DimensionalName  core_model.DimensionalResourceName
+	NameExtensions   core_model.ResourceNameExtensions
 	Version          string
 	CreationTime     time.Time
 	ModificationTime time.Time
@@ -23,8 +23,8 @@ func (m *ResourceMeta) GetMesh() string {
 func (m *ResourceMeta) GetName() string {
 	return m.Name
 }
-func (m *ResourceMeta) GetDimensionalName() core_model.DimensionalResourceName {
-	return m.DimensionalName
+func (m *ResourceMeta) GetNameExtensions() core_model.ResourceNameExtensions {
+	return m.NameExtensions
 }
 func (m *ResourceMeta) GetVersion() string {
 	return m.Version

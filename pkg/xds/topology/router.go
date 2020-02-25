@@ -23,8 +23,8 @@ func (m *pseudoMeta) GetMesh() string {
 func (m *pseudoMeta) GetName() string {
 	return m.Name
 }
-func (m *pseudoMeta) GetDimensionalName() core_model.DimensionalResourceName {
-	return core_model.DimensionalResourceNameUnsupported
+func (m *pseudoMeta) GetNameExtensions() core_model.ResourceNameExtensions {
+	return core_model.ResourceNameExtensionsUnsupported
 }
 func (m *pseudoMeta) GetVersion() string {
 	return ""

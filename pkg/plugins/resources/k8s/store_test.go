@@ -417,7 +417,7 @@ var _ = Describe("KubernetesStore", func() {
 			// and
 			Expect(actual.Meta.GetName()).To(Equal(coreName))
 			// and
-			Expect(actual.Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+			Expect(actual.Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
 				"k8s.kuma.io/namespace": ns,
 				"k8s.kuma.io/name":      name,
 			}))
@@ -451,7 +451,7 @@ var _ = Describe("KubernetesStore", func() {
 			// and
 			Expect(actual.Meta.GetName()).To(Equal(name))
 			// and
-			Expect(actual.Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+			Expect(actual.Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
 				"k8s.kuma.io/namespace": "",
 				"k8s.kuma.io/name":      name,
 			}))
@@ -583,7 +583,7 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			actualResourceOne := actualResources[fmt.Sprintf("one.%s", ns)]
 			Expect(actualResourceOne.Spec.Path).To(Equal("/example"))
-			Expect(actualResourceOne.Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+			Expect(actualResourceOne.Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
 				"k8s.kuma.io/namespace": ns,
 				"k8s.kuma.io/name":      "one",
 			}))
@@ -591,7 +591,7 @@ var _ = Describe("KubernetesStore", func() {
 			// and
 			actualResourceTwo := actualResources[fmt.Sprintf("two.%s", ns)]
 			Expect(actualResourceTwo.Spec.Path).To(Equal("/another"))
-			Expect(actualResourceTwo.Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+			Expect(actualResourceTwo.Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
 				"k8s.kuma.io/namespace": ns,
 				"k8s.kuma.io/name":      "two",
 			}))
@@ -632,13 +632,13 @@ var _ = Describe("KubernetesStore", func() {
 			}
 			// then
 			Expect(actualResources).To(HaveKey("demo-1"))
-			Expect(actualResources["demo-1"].Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+			Expect(actualResources["demo-1"].Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
 				"k8s.kuma.io/namespace": "",
 				"k8s.kuma.io/name":      "demo-1",
 			}))
 			// and
 			Expect(actualResources).To(HaveKey("demo-2"))
-			Expect(actualResources["demo-2"].Meta.GetDimensionalName()).To(Equal(core_model.DimensionalResourceName{
+			Expect(actualResources["demo-2"].Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
 				"k8s.kuma.io/namespace": "",
 				"k8s.kuma.io/name":      "demo-2",
 			}))

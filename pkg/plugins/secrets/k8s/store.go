@@ -129,8 +129,8 @@ type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
 }
 
-func (m *KubernetesMetaAdapter) GetDimensionalName() core_model.DimensionalResourceName {
-	return common_k8s.DimensionalResourceName(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
+func (m *KubernetesMetaAdapter) GetNameExtensions() core_model.ResourceNameExtensions {
+	return common_k8s.ResourceNameExtensions(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {

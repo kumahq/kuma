@@ -19,8 +19,8 @@ type remoteMeta struct {
 func (m remoteMeta) GetName() string {
 	return m.Name
 }
-func (m remoteMeta) GetDimensionalName() model.DimensionalResourceName {
-	return model.DimensionalResourceNameUnsupported
+func (m remoteMeta) GetNameExtensions() model.ResourceNameExtensions {
+	return model.ResourceNameExtensionsUnsupported
 }
 func (m remoteMeta) GetMesh() string {
 	return m.Mesh
