@@ -121,8 +121,8 @@ adminServer:
   apis:
     # Dataplane Token API configuration
     dataplaneToken:
-      # If true then Dataplane Token WS and token verification is enabled
-      enabled: true # ENV: KUMA_ADMIN_SERVER_DATAPLANE_TOKEN_WS_ENABLED
+      # If true then Dataplane Token and token verification is enabled
+      enabled: true # ENV: KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED
 
 # Envoy XDS server configuration
 xdsServer:
