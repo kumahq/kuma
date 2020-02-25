@@ -257,6 +257,11 @@ data:
         target_label: kubernetes_pod_name
       scrape_interval: 5m
       scrape_timeout: 30s
+    - job_name: 'kuma-dataplanes'
+      scrape_interval: "5s"
+      file_sd_configs:
+      - files:
+        - /var/run/kuma.io/prometheus-sd/kuma.file_sd.json
     alerting:
       alertmanagers:
       - kubernetes_sd_configs:
@@ -452,6 +457,19 @@ spec:
             - name: storage-volume
               mountPath: /data
               subPath: ""
+            - mountPath: "/var/run/kuma.io/prometheus-sd"
+              name: kuma-prometheus-sd-volume
+        - name: kuma-prometheus-sd
+          image: {{ .KumaPrometheusSdImage }}:{{ .KumaPrometheusSdVersion }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - run
+            - --name=kuma-prometheus-sd
+            - --cp-address={{ .KumaCpAddress }}
+            - --output-file=/var/run/kuma.io/prometheus-sd/kuma.file_sd.json
+          volumeMounts:
+            - mountPath: "/var/run/kuma.io/prometheus-sd"
+              name: kuma-prometheus-sd-volume
       securityContext:
         fsGroup: 65534
         runAsGroup: 65534
@@ -465,3 +483,6 @@ spec:
         - name: storage-volume
           persistentVolumeClaim:
             claimName: prometheus-server
+        - name: kuma-prometheus-sd-volume
+          emptyDir: {}
+

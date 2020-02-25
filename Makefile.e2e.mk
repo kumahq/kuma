@@ -15,6 +15,7 @@
 		wait/traffic-routing/docker-compose/no-web-to-backend-route \
 		build/example/minikube load/example/minikube \
 		deploy/example/minikube wait/example/minikube \
+		deploy/example/minikube/metrics \
 		undeploy/example/minikube \
 		apply/example/minikube/mtls wait/example/minikube/mtls \
 		curl/example/minikube stats/example/minikube \
@@ -60,7 +61,7 @@ define docker_compose
 endef
 
 define kubectl_exec
-	kubectl -n $(1) exec -ti $$( kubectl -n $(1) get pods -l app=$(2) -o=jsonpath='{.items[0].metadata.name}' ) -c $(3) -- 
+	kubectl -n $(1) exec -ti $$( kubectl -n $(1) get pods -l app=$(2) -o=jsonpath='{.items[0].metadata.name}' ) -c $(3) --
 endef
 
 define wait_for_client_service
@@ -323,6 +324,11 @@ deploy/example/minikube: ## Minikube: Deploy example setup
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-client
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-client
+
+deploy/example/minikube/metrics: ## Minikube: Deploy metrics setup
+	eval $$(minikube docker-env) && $(call pull_docker_images)
+	eval $$(minikube docker-env) && docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install metrics $(KUMACTL_INSTALL_METRICS_IMAGES) | kubectl apply -f -
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-metrics pods -l app=prometheus
 
 apply/example/minikube/mtls: ## Minikube: enable mTLS
 	kubectl apply -f tools/e2e/examples/minikube/policies/mtls.yaml
