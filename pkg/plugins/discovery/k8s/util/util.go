@@ -52,14 +52,7 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, error) {
 			}
 		}
 	case kube_intstr.Int:
-		value := portName.IntVal
-		for _, container := range pod.Spec.Containers {
-			for _, port := range container.Ports {
-				if port.ContainerPort == value && givenOrDefault(port.Protocol) == givenOrDefault(svcPort.Protocol) {
-					return int(port.ContainerPort), nil
-				}
-			}
-		}
+		return portName.IntValue(), nil
 	}
 
 	return 0, fmt.Errorf("no suitable port for manifest: %s", pod.UID)

@@ -26,84 +26,81 @@ import (
 var _ = Describe("PodToDataplane(..)", func() {
 
 	type testCase struct {
-		pod           *kube_core.Pod
-		services      []*kube_core.Service
+		pod           string
+		services      []string
 		others        []string
 		serviceGetter fakeReader
 		expected      string
 	}
 
-	pod := &kube_core.Pod{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: "demo",
-			Name:      "example",
-			Labels: map[string]string{
-				"app":     "example",
-				"version": "0.1",
-			},
-		},
-		Spec: kube_core.PodSpec{
-			Containers: []kube_core.Container{
-				{
-					Ports: []kube_core.ContainerPort{
-						{ContainerPort: 8080},
-						{ContainerPort: 8443},
-					},
-				},
-				{
-					Ports: []kube_core.ContainerPort{
-						{ContainerPort: 7070},
-						{ContainerPort: 6060, Name: "metrics"},
-					},
-				},
-			},
-		},
-		Status: kube_core.PodStatus{
-			PodIP: "192.168.0.1",
-		},
-	}
+	pod := `
+    metadata:
+      namespace: demo
+      name: example
+      labels:
+        app: example
+        version: "0.1"
+    spec:
+      containers:
+      - ports: []
+        # when a 'targetPort' in a ServicePort is a number,
+        # it should not be mandatory to list container ports explicitly
+        #
+        # containerPort: 8080
+        # containerPort: 8443
+      - ports:
+        - containerPort: 7070
+        - containerPort: 6060
+          name: metrics
+    status:
+      podIP: 192.168.0.1
+`
 
-	gatewayPod := &kube_core.Pod{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: "demo",
-			Name:      "example",
-			Labels: map[string]string{
-				"app":     "example",
-				"version": "0.1",
-			},
-			Annotations: map[string]string{
-				"kuma.io/gateway": "enabled",
-			},
-		},
-		Spec: kube_core.PodSpec{
-			Containers: []kube_core.Container{
-				{
-					Ports: []kube_core.ContainerPort{
-						{ContainerPort: 8080},
-						{ContainerPort: 8443},
-					},
-				},
-				{
-					Ports: []kube_core.ContainerPort{
-						{ContainerPort: 7070},
-						{ContainerPort: 6060, Name: "metrics"},
-					},
-				},
-			},
-		},
-		Status: kube_core.PodStatus{
-			PodIP: "192.168.0.1",
-		},
+	gatewayPod := `
+    metadata:
+      namespace: demo
+      name: example
+      labels:
+        app: example
+        version: "0.1"
+      annotations:
+        kuma.io/gateway: enabled
+    spec:
+      containers:
+      - ports: []
+        # when a 'targetPort' in a ServicePort is a number,
+        # it should not be mandatory to list container ports explicitly
+        #
+        # containerPort: 8080
+        # containerPort: 8443
+      - ports:
+        - containerPort: 7070
+        - containerPort: 6060
+          name: metrics
+    status:
+      podIP: 192.168.0.1
+`
+
+	ParseServices := func(values []string) ([]*kube_core.Service, error) {
+		services := make([]*kube_core.Service, len(values))
+		for i, value := range values {
+			service := kube_core.Service{}
+			if err := yaml.Unmarshal([]byte(value), &service); err != nil {
+				return nil, err
+			}
+			services[i] = &service
+		}
+		return services, nil
 	}
 
 	ParseDataplanes := func(values []string) ([]*mesh_k8s.Dataplane, error) {
-		dataplanes := make([]*mesh_k8s.Dataplane, 0, len(values))
-		for _, value := range values {
-			dataplane := &mesh_k8s.Dataplane{}
-			if err := yaml.Unmarshal([]byte(value), dataplane); err != nil {
+		dataplanes := make([]*mesh_k8s.Dataplane, len(values))
+		for i, value := range values {
+			dataplane := mesh_k8s.Dataplane{}
+			if err := yaml.Unmarshal([]byte(value), &dataplane); err != nil {
 				return nil, err
 			}
-			dataplanes = append(dataplanes, dataplane)
+			dataplanes[i] = &dataplane
 		}
 		return dataplanes, nil
 	}
@@ -111,13 +108,27 @@ var _ = Describe("PodToDataplane(..)", func() {
 	DescribeTable("should convert Pod into a Dataplane",
 		func(given testCase) {
 			// given
-			dataplane := &mesh_k8s.Dataplane{}
-
-			others, err := ParseDataplanes(given.others)
+			pod := &kube_core.Pod{}
+			// when
+			err := yaml.Unmarshal([]byte(given.pod), pod)
+			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = PodToDataplane(dataplane, given.pod, given.services, others, given.serviceGetter)
+			services, err := ParseServices(given.services)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			others, err := ParseDataplanes(given.others)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// given
+			dataplane := &mesh_k8s.Dataplane{}
+
+			// when
+			err = PodToDataplane(dataplane, pod, services, others, given.serviceGetter)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -142,46 +153,22 @@ var _ = Describe("PodToDataplane(..)", func() {
 		}),
 		Entry("Pod with a Service but mismatching ports", testCase{
 			pod: pod,
-			services: []*kube_core.Service{
-				{
-					Spec: kube_core.ServiceSpec{
-						Ports: []kube_core.ServicePort{
-							{
-								Protocol: "UDP", // all non-TCP ports should be ignored
-								Port:     80,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 8080,
-								},
-							},
-							{
-								Protocol: "SCTP", // all non-TCP ports should be ignored
-								Port:     443,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 8443,
-								},
-							},
-							{
-								Protocol: "TCP",
-								Port:     7070,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 7071,
-								},
-							},
-							{
-								Protocol: "", // defaults to TCP
-								Port:     6060,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.String,
-									StrVal: "diagnostics",
-								},
-							},
-						},
-					},
-				},
-			},
+			services: []string{`
+            spec:
+              ports:
+              - protocol: UDP    # all non-TCP ports should be ignored
+                port: 80
+                targetPort: 8080
+              - protocol: SCTP   # all non-TCP ports should be ignored
+                port: 443
+                targetPort: 8443
+              - protocol: TCP
+                port: 7070
+                targetPort: api
+              - # defaults to TCP protocol
+                port: 6060
+                targetPort: diagnostics
+`},
 			expected: `
             mesh: default
             metadata:
@@ -193,65 +180,37 @@ var _ = Describe("PodToDataplane(..)", func() {
 		}),
 		Entry("Pod with 2 Services", testCase{
 			pod: pod,
-			services: []*kube_core.Service{
-				{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Namespace: "demo",
-						Name:      "example",
-						Annotations: map[string]string{
-							"80.service.kuma.io/protocol": "http",
-						},
-					},
-					Spec: kube_core.ServiceSpec{
-						Ports: []kube_core.ServicePort{
-							{
-								Protocol: "", // defaults to TCP
-								Port:     80,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 8080,
-								},
-							},
-							{
-								Protocol: "TCP",
-								Port:     443,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 8443,
-								},
-							},
-						},
-					},
-				},
-				{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Namespace: "playground",
-						Name:      "sample",
-						Annotations: map[string]string{
-							"7071.service.kuma.io/protocol": "MONGO",
-						},
-					},
-					Spec: kube_core.ServiceSpec{
-						Ports: []kube_core.ServicePort{
-							{
-								Protocol: "TCP",
-								Port:     7071,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 7070,
-								},
-							},
-							{
-								Protocol: "TCP",
-								Port:     6061,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.String,
-									StrVal: "metrics",
-								},
-							},
-						},
-					},
-				},
+			services: []string{
+				`
+                metadata:
+                  namespace: demo
+                  name: example
+                  annotations:
+                    80.service.kuma.io/protocol: http
+                spec:
+                  ports:
+                  - # protocol defaults to TCP
+                    port: 80
+                    targetPort: 8080
+                  - protocol: TCP
+                    port: 443
+                    targetPort: 8443
+`,
+				`
+                metadata:
+                  namespace: playground
+                  name: sample
+                  annotations:
+                    7071.service.kuma.io/protocol: MONGO
+                spec:
+                  ports:
+                  - protocol: TCP
+                    port: 7071
+                    targetPort: 7070
+                  - protocol: TCP
+                    port: 6061
+                    targetPort: metrics
+`,
 			},
 			expected: `
             mesh: default
@@ -289,25 +248,16 @@ var _ = Describe("PodToDataplane(..)", func() {
 		}),
 		Entry("Pod with 1 Service and 1 other Dataplane", testCase{
 			pod: pod,
-			services: []*kube_core.Service{
-				{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Namespace: "demo",
-						Name:      "example",
-					},
-					Spec: kube_core.ServiceSpec{
-						Ports: []kube_core.ServicePort{
-							{
-								Protocol: "", // defaults to TCP
-								Port:     80,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 8080,
-								},
-							},
-						},
-					},
-				},
+			services: []string{`
+            metadata:
+              namespace: demo
+              name: example
+            spec:
+              ports:
+              - # protocol defaults to TCP
+                port: 80
+                targetPort: 8080
+`,
 			},
 			others: []string{`
             apiVersion: kuma.io/v1alpha1
@@ -385,37 +335,21 @@ var _ = Describe("PodToDataplane(..)", func() {
 		}),
 		Entry("pod with gateway annotation and 1 service", testCase{
 			pod: gatewayPod,
-			services: []*kube_core.Service{
-				{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Namespace: "demo",
-						Name:      "example",
-						Annotations: map[string]string{
-							"80.service.kuma.io/protocol": "http", // should be ignored in case of a gateway
-						},
-					},
-					Spec: kube_core.ServiceSpec{
-						Ports: []kube_core.ServicePort{
-							{
-								Protocol: "", // defaults to TCP
-								Port:     80,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 8080,
-								},
-							},
-							{
-								Protocol: "TCP",
-								Port:     443,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 8443,
-								},
-							},
-						},
-					},
-				},
-			},
+			services: []string{`
+            metadata:
+              namespace: demo
+              name: example
+              annotations:
+                80.service.kuma.io/protocol: http # should be ignored in case of a gateway
+            spec:
+              ports:
+              - # protocol defaults to TCP
+                port: 80
+                targetPort: 8080
+              - protocol: TCP
+                port: 443
+                targetPort: 8443
+`},
 			expected: `
             mesh: default
             metadata:
