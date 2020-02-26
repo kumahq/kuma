@@ -197,6 +197,7 @@ Usage:
 Available Commands:
   control-plane   Install Kuma Control Plane on Kubernetes
   database-schema Install Kuma schema on DB
+  metrics         Install Metrics backend in Kubernetes cluster
 
 Flags:
   -h, --help   help for install
@@ -260,6 +261,27 @@ rm $sql_file
 Flags:
   -h, --help            help for database-schema
       --target string   Database type: one of postgres (default "postgres")
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+```
+
+### kumactl install metrics
+
+```
+Install Metrics backend in Kubernetes cluster.
+
+Usage:
+  kumactl install metrics [flags]
+
+Flags:
+  -h, --help                                help for metrics
+      --kuma-cp-address string              the address of Kuma CP (default "http://kuma-control-plane.kuma-system:5681")
+      --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd")
+      --kuma-prometheus-sd-version string   version of Kuma Prometheus SD (default "latest")
+      --namespace string                    namespace to install metrics to (default "kuma-metrics")
 
 Global Flags:
       --config-file string   path to the configuration file to use
