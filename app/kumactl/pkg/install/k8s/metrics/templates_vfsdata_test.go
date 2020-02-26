@@ -17,8 +17,8 @@ import (
 var _ = Describe("Templates", func() {
 
 	kumactlSrcDir := filepath.Join("..", "..", "..", "..")
-	controlplaneTemplatesDir := metrics.TemplatesDir(kumactlSrcDir)
-	controlplaneTemplatesTestEntries := vfsgen.GenerateEntries(controlplaneTemplatesDir)
+	metricsTemplatesDir := metrics.TemplatesDir(kumactlSrcDir)
+	metricsTemplatesTestEntries := vfsgen.GenerateEntries(metricsTemplatesDir)
 
 	DescribeTable("generated Go code must be in sync with the original template files",
 		func(given vfsgen.FileTestCase) {
@@ -32,8 +32,8 @@ var _ = Describe("Templates", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(string(actualContents)).To(Equal(string(given.ExpectedContents)), "generated Go code is no longer in sync with the original template files. To re-generate it, run `make generate/kumactl/install/control-plane`")
+			Expect(string(actualContents)).To(Equal(string(given.ExpectedContents)), "generated Go code is no longer in sync with the original template files. To re-generate it, run `make generate/kumactl/install`")
 		},
-		controlplaneTemplatesTestEntries...,
+		metricsTemplatesTestEntries...,
 	)
 })

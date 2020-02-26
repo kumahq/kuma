@@ -32,7 +32,7 @@ var _ = Describe("Templates", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(string(actualContents)).To(Equal(string(given.ExpectedContents)), "generated Go code is no longer in sync with the original template files. To re-generate it, run `make generate/kumactl/install/control-plane`")
+			Expect(string(actualContents)).To(Equal(string(given.ExpectedContents)), "generated Go code is no longer in sync with the original template files. To re-generate it, run `make generate/kumactl/install`")
 		},
 		controlplaneTemplatesTestEntries...,
 	)

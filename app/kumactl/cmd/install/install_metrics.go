@@ -24,7 +24,7 @@ func newInstallMetrics() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "metrics",
 		Short: "Install Metrics backend in Kubernetes cluster",
-		Long:  `Install Metrics backend in Kubernetes cluster.`,
+		Long:  `Install Metrics backend (Prometheus and Grafana) in Kubernetes cluster.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			templateFiles, err := data.ReadFiles(metrics.Templates)
 			if err != nil {

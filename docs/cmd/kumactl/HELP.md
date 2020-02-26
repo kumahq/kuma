@@ -271,7 +271,7 @@ Global Flags:
 ### kumactl install metrics
 
 ```
-Install Metrics backend in Kubernetes cluster.
+Install Metrics backend (Prometheus and Grafana) in Kubernetes cluster.
 
 Usage:
   kumactl install metrics [flags]
