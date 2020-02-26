@@ -11,15 +11,23 @@ export PATH := $(TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
 PROTOC_PATH := $(TOOLS_DIR)/protoc
 PROTOBUF_WKT_DIR := $(TOOLS_DIR)/protobuf.d
 
+#
+# Re-usable snippets
+#
+
+define go_mod_latest_version
+	find $(GOPATH_DIR)/pkg/mod/$(1) -maxdepth 1 -name '$(2)@*' | xargs -L 1 basename | sort -r | head -1 | awk -F@ '{print $$2}'
+endef
+
 PROTOC_VERSION := 3.6.1
-PROTOC_PGV_VERSION := v0.1.0
+PROTOC_PGV_VERSION := v0.3.0-java
 GOLANG_PROTOBUF_VERSION := v1.3.2
 DATAPLANE_API_LATEST_VERSION := master
-DATAPLANE_API_ACTUAL_VERSION := $(shell find $(GOPATH_DIR)/pkg/mod/github.com/envoyproxy -maxdepth 1 -name 'data-plane-api@*' | xargs -L 1 basename | sort -r | head -1 | awk -F@ '{print $$2}')
+DATAPLANE_API_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/envoyproxy,data-plane-api))
 UDPA_LATEST_VERSION := master
-UDPA_ACTUAL_VERSION := $(shell find $(GOPATH_DIR)/pkg/mod/github.com/cncf -maxdepth 1 -name 'udpa@*' | xargs -L 1 basename | sort -r | head -1 | awk -F@ '{print $$2}')
+UDPA_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/cncf,udpa))
 GOOGLEAPIS_LATEST_VERSION := master
-GOOGLEAPIS_ACTUAL_VERSION := $(shell find $(GOPATH_DIR)/pkg/mod/github.com/googleapis -maxdepth 1 -name 'googleapis@*' | xargs -L 1 basename | sort -r | head -1 | awk -F@ '{print $$2}')
+GOOGLEAPIS_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/googleapis,googleapis))
 
 protoc_search_go_packages := \
 	github.com/golang/protobuf@$(GOLANG_PROTOBUF_VERSION) \
