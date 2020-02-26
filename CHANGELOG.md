@@ -4,6 +4,8 @@
 
 Changes:
 
+* fix: remove the requirement to a `Pod` to explicitly list container ports in a case where a `Service` defines target port by number
+  [#605](https://github.com/Kong/kuma/pull/605)
 * feature: extend embedded gRPC Access Log Server to support the entire Envoy access log format
   [#595](https://github.com/Kong/kuma/pull/595)
 * feature: generate HTTP-specific configuration of access log
