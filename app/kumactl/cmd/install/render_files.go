@@ -6,6 +6,7 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
 	"io"
+	"strings"
 	"text/template"
 )
 
@@ -13,6 +14,9 @@ func renderFiles(templates []data.File, args interface{}, newRenderer func(data.
 	renderedFiles := make([]data.File, len(templates))
 
 	for i, template := range templates {
+		if !strings.HasSuffix(template.Name, ".yaml") { // we should only render YAML files
+			continue
+		}
 		renderer, err := newRenderer(template)
 		if err != nil {
 			return nil, err
