@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: add support for `kuma.io/sidecar-injection: disabled` annotation on `Pods` to let users selectively opt out of side-car injection on `k8s`
+  [#607](https://github.com/Kong/kuma/pull/607)
 * fix: remove the requirement to a `Pod` to explicitly list container ports in a case where a `Service` defines target port by number
   [#605](https://github.com/Kong/kuma/pull/605)
 * feature: extend embedded gRPC Access Log Server to support the entire Envoy access log format
