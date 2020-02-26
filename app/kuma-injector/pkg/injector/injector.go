@@ -44,6 +44,10 @@ type KumaInjector struct {
 }
 
 func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
+	// first, give users a chance to opt out of side-car injection into a given Pod
+	if pod.Annotations[metadata.KumaSidecarInjectionAnnotation] == metadata.KumaSidecarInjectionDisabled {
+		return nil
+	}
 	// sidecar container
 	if pod.Spec.Containers == nil {
 		pod.Spec.Containers = []kube_core.Container{}

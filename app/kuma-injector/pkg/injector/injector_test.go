@@ -3,9 +3,7 @@ package injector_test
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -15,9 +13,12 @@ import (
 	inject "github.com/Kong/kuma/app/kuma-injector/pkg/injector"
 	"github.com/Kong/kuma/pkg/config"
 	conf "github.com/Kong/kuma/pkg/config/app/kuma-injector"
+	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+
+	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"github.com/ghodss/yaml"
-	kube_core "k8s.io/api/core/v1"
 )
 
 var _ = Describe("Injector", func() {
@@ -172,6 +173,24 @@ var _ = Describe("Injector", func() {
                   prometheus:
                     port: 1234
                     path: /metrics`,
+		}),
+		Entry("10. Pod with `kuma.io/sidecar-injection: disabled` annotation", testCase{
+			num: "10",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+		}),
+		Entry("11. Pod with `kuma.io/sidecar-injection: any-value-other-than-disabled` annotation", testCase{
+			num: "11",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
 		}),
 	)
 })
