@@ -104,6 +104,7 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 			}
 			containerPort, err := util_k8s.FindPort(pod, &svcPort)
 			if err != nil {
+				converterLog.Error(err, "failed to find a container port in a given Pod that would match a given Service port", "namespace", pod.Namespace, "podName", pod.Name, "serviceName", svc.Name, "servicePortName", svcPort.Name)
 				// ignore those cases where a Pod doesn't have all the ports a Service has
 				continue
 			}
