@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/golang/protobuf/jsonpb"
-	"reflect"
-
 	"github.com/pkg/errors"
 )
 
@@ -43,7 +41,7 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	if len(specBytes) == 0 || reflect.DeepEqual(specBytes, []byte{'{', '}'}) { // spec is nil or empty
+	if len(specBytes) == 0 || string(specBytes) == "{}" { // spec is nil or empty
 		return metaJSON, nil
 	} else {
 		// remove the } of meta JSON, { of spec JSON and join it by ,
