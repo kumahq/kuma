@@ -85,17 +85,13 @@ func GatewayFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.
 	if err != nil {
 		return nil, err
 	}
-	if len(interfaces) == 0 {
-		return nil, nil // todo(jakubdyszkiewicz) should we throw an error on DP without interfaces
-	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
-		Tags: interfaces[0].Tags,
+		Tags: interfaces[0].Tags, // InboundInterfacesFor() returns either a non-empty list or an error
 	}, nil
 }
 
 func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isGateway bool) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
-
 	for _, svc := range services {
 		for _, svcPort := range svc.Spec.Ports {
 			if svcPort.Protocol != "" && svcPort.Protocol != kube_core.ProtocolTCP {
@@ -109,13 +105,26 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 				continue
 			}
 
-			tags := InboundTagsFor(pod, svc, &svcPort, isGateway)
+			tags, err := InboundTagsFor(pod, svc, &svcPort, isGateway)
+			if err != nil {
+				return nil, err
+			}
 
 			ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 				Port: uint32(containerPort),
 				Tags: tags,
 			})
 		}
+	}
+	if len(ifaces) == 0 {
+		// Notice that here we return an error immediately
+		// instead of leaving validation up to a ValidatingAdmissionWebHook.
+		// We do it this way in order to provide the most descriptive error message.
+		suffix := "However, there are no Services that select this Pod."
+		if len(services) > 0 {
+			suffix = "However, this Pod doesn't have any container ports that would satisfy matching Service(s)."
+		}
+		return nil, errors.Errorf("Kuma requires every Pod in a Mesh to be a part of at least one Service. %s", suffix)
 	}
 	return ifaces, nil
 }
@@ -168,7 +177,7 @@ func OutboundInterfacesFor(others []*mesh_k8s.Dataplane, serviceGetter kube_clie
 	return ofaces, nil
 }
 
-func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) map[string]string {
+func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) (map[string]string, error) {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	if tags == nil {
 		tags = make(map[string]string)
@@ -177,9 +186,13 @@ func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_co
 	// notice that in case of a gateway it might be confusing to see a protocol tag
 	// since gateway proxies multiple services each with its own protocol
 	if !isGateway {
-		tags[mesh_proto.ProtocolTag] = ProtocolTagFor(svc, svcPort)
+		protocolTag, err := ProtocolTagFor(svc, svcPort)
+		if err != nil {
+			return nil, err
+		}
+		tags[mesh_proto.ProtocolTag] = protocolTag
 	}
-	return tags
+	return tags, nil
 }
 
 func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
@@ -187,18 +200,21 @@ func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) strin
 }
 
 // ProtocolTagFor infers service protocol from a `<port>.service.kuma.io/protocol` annotation.
-func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
+func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) (string, error) {
 	protocolAnnotation := fmt.Sprintf("%d.service.kuma.io/protocol", svcPort.Port)
-	protocolValue := svc.Annotations[protocolAnnotation]
-	if protocolValue == "" {
-		// if `<port>.service.kuma.io/protocol` annotation is missing or has an empty value
+	protocolAnnotationValue, exist := svc.Annotations[protocolAnnotation]
+	if !exist {
+		// if `<port>.service.kuma.io/protocol` annotation is missing
 		// we want Dataplane to have a `protocol: tcp` tag in order to get user's attention
-		return mesh_core.ProtocolTCP
+		return mesh_core.ProtocolTCP, nil
 	}
-	// if `<port>.service.kuma.io/protocol` annotation is present but has an invalid value
-	// we still want Dataplane to have a `protocol: <value as is>` tag in order to make it clear
-	// to a user that at least `<port>.service.kuma.io/protocol` has an effect
-	return protocolValue
+	protocol := mesh_core.ParseProtocol(protocolAnnotationValue)
+	if protocol == mesh_core.ProtocolUnknown {
+		// if `<port>.service.kuma.io/protocol` annotation is present but has an invalid value
+		// we want to return back to a user the most descriptive error message possible
+		return "", errors.Errorf(`metadata.annotations[%q]: value %q is not valid. %s`, protocolAnnotation, protocolAnnotationValue, mesh_core.AllowedValuesHint(mesh_core.SupportedProtocols.Strings()...))
+	}
+	return string(protocol), nil
 }
 
 func ParseServiceFQDN(host string) (name string, namespace string, err error) {

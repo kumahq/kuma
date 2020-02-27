@@ -71,6 +71,24 @@ func (v *ValidationError) AddError(rootField string, validationErr ValidationErr
 	}
 }
 
+// Transform returns a new ValidationError with every violation
+// transformed by a given transformFunc.
+func (v *ValidationError) Transform(transformFunc func(Violation) Violation) *ValidationError {
+	if v == nil {
+		return nil
+	}
+	if transformFunc == nil || len(v.Violations) == 0 {
+		return &(*v)
+	}
+	result := ValidationError{
+		Violations: make([]Violation, len(v.Violations)),
+	}
+	for i := range v.Violations {
+		result.Violations[i] = transformFunc(v.Violations[i])
+	}
+	return &result
+}
+
 func IsValidationError(err error) bool {
 	_, ok := err.(*ValidationError)
 	return ok

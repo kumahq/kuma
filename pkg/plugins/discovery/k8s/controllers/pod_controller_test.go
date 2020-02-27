@@ -23,6 +23,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+	kube_record "k8s.io/client-go/tools/record"
 
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
@@ -107,9 +108,10 @@ var _ = Describe("PodReconciler", func() {
 			})
 
 		reconciler = &PodReconciler{
-			Client: kubeClient,
-			Scheme: k8sClientScheme,
-			Log:    core.Log.WithName("test"),
+			Client:        kubeClient,
+			EventRecorder: kube_record.NewFakeRecorder(10),
+			Scheme:        k8sClientScheme,
+			Log:           core.Log.WithName("test"),
 		}
 	})
 

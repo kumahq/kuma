@@ -18,6 +18,7 @@ import (
 
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_record "k8s.io/client-go/tools/record"
 
 	injector_metadata "github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -25,9 +26,22 @@ import (
 	util_k8s "github.com/Kong/kuma/pkg/plugins/discovery/k8s/util"
 )
 
+const (
+	// CreatedKumaDataplaneReason is added to an event when
+	// a new Dataplane is successfully created.
+	CreatedKumaDataplaneReason = "CreatedKumaDataplane"
+	// UpdatedKumaDataplaneReason is added to an event when
+	// an existing Dataplane is successfully updated.
+	UpdatedKumaDataplaneReason = "UpdatedKumaDataplane"
+	// FailedToGenerateKumaDataplaneReason is added to an event when
+	// a Dataplane cannot be generated or is not valid.
+	FailedToGenerateKumaDataplaneReason = "FailedToGenerateKumaDataplane"
+)
+
 // PodReconciler reconciles a Pod object
 type PodReconciler struct {
 	kube_client.Client
+	kube_record.EventRecorder
 	Scheme *kube_runtime.Scheme
 	Log    logr.Logger
 }
@@ -127,7 +141,7 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
 		if err := PodToDataplane(dataplane, pod, services, others, r.Client); err != nil {
-			return errors.Wrap(err, "unable to convert Pod to Dataplane")
+			return errors.Wrap(err, "unable to translate Pod to Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")
@@ -137,7 +151,14 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 	if err != nil {
 		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 		log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
 		return err
+	}
+	switch operationResult {
+	case kube_controllerutil.OperationResultCreated:
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Dataplane: %s", dataplane.Name)
+	case kube_controllerutil.OperationResultUpdated:
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", dataplane.Name)
 	}
 	return nil
 }
