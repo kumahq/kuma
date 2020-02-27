@@ -2,7 +2,7 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector kind/load/kuma-init \
-		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/control-plane generate/kuma-cp/migrations generate/gui \
+		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/k8s/control-plane generate/kumactl/install/k8s/metrics generate/kumactl/install/universal/control-plane/postgres generate/kuma-cp/migrations generate/gui \
 		fmt fmt/go fmt/proto vet golangci-lint check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-prometheus-sd image/kuma-tcp-echo \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-prometheus-sd docker/build/kuma-tcp-echo \
@@ -112,6 +112,11 @@ ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --injector-image=$(KUMA_INJECTOR_DOCKER_IMAGE_NAME) --dataplane-init-image=$(KUMA_INIT_DOCKER_IMAGE_NAME)
 else
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
+endif
+ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
+	KUMACTL_INSTALL_METRICS_IMAGES := --kuma-prometheus-sd-image=$(KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME)
+else
+	KUMACTL_INSTALL_METRICS_IMAGES :=
 endif
 
 PROTOC_VERSION := 3.6.1
@@ -244,8 +249,15 @@ protoc/pkg/test/apis/sample/v1alpha1:
 	$(PROTOC_GO) pkg/test/apis/sample/v1alpha1/*.proto
 
 # Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
-generate/kumactl/install/control-plane:
+generate/kumactl/install/k8s/control-plane:
 	go generate ./app/kumactl/pkg/install/k8s/control-plane/...
+
+# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+generate/kumactl/install/k8s/metrics:
+	go generate ./app/kumactl/pkg/install/k8s/metrics/...
+
+# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+generate/kumactl/install/universal/control-plane/postgres:
 	go generate ./app/kumactl/pkg/install/universal/control-plane/postgres/...
 
 generate/kuma-cp/migrations:

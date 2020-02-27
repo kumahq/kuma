@@ -7,5 +7,5 @@ import (
 )
 
 func TemplatesDir(kumactlSrcDir string) string {
-	return filepath.Join(kumactlSrcDir, "data", "install", "k8s")
+	return filepath.Join(kumactlSrcDir, "data", "install", "k8s", "control-plane")
 }
