@@ -26,7 +26,7 @@ var _ = Describe("Schema file", func() {
 
 		// then both files are identical
 		Expect(err).ToNot(HaveOccurred())
-		Expect(string(actualContents)).To(Equal(string(expectedContents)), "generated Go code is no longer in sync with the original schema file. To re-generate it, run `make generate/kumactl/install`")
+		Expect(string(actualContents)).To(Equal(string(expectedContents)), "generated Go code is no longer in sync with the original schema file. To re-generate it, run `make generate/kumactl/install/universal/control-plane/postgres`")
 	})
 
 })
