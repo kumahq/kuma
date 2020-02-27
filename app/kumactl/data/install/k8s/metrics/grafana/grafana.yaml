@@ -149,10 +149,12 @@ data:
       editable: true
       options:
         path: /etc/grafana/provisioning/dashboards
-binaryData:
-  kuma-dataplane.json: {{ .DashboardDataplane }}
-  kuma-mesh.json: {{ .DashboardMesh }}
-  kuma-service-to-service.json: {{ .DashboardServiceToService }}
+  kuma-dataplane.json: |
+{{ .DashboardDataplane | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
+  kuma-mesh.json: |
+{{ .DashboardMesh | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
+  kuma-service-to-service.json: |
+{{ .DashboardServiceToService | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -267,12 +269,15 @@ spec:
             - name: config
               mountPath: "/etc/grafana/grafana.ini"
               subPath: grafana.ini
+              readOnly: true
             - name: storage
               mountPath: "/var/lib/grafana"
             - name: provisioning-datasource
               mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
             - name: provisioning-dashboards
               mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
           ports:
             - name: service
               containerPort: 80

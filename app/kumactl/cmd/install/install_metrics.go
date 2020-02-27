@@ -1,7 +1,6 @@
 package install
 
 import (
-	"encoding/base64"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -13,15 +12,22 @@ import (
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
 
+type metricsTemplateArgs struct {
+	Namespace                 string
+	KumaPrometheusSdImage     string
+	KumaPrometheusSdVersion   string
+	KumaCpAddress             string
+	DashboardDataplane        string
+	DashboardMesh             string
+	DashboardServiceToService string
+}
+
 func newInstallMetrics() *cobra.Command {
 	args := struct {
-		Namespace                 string
-		KumaPrometheusSdImage     string
-		KumaPrometheusSdVersion   string
-		KumaCpAddress             string
-		DashboardDataplane        string
-		DashboardMesh             string
-		DashboardServiceToService string
+		Namespace               string
+		KumaPrometheusSdImage   string
+		KumaPrometheusSdVersion string
+		KumaCpAddress           string
 	}{
 		Namespace:               "kuma-metrics",
 		KumaPrometheusSdImage:   "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd",
@@ -33,30 +39,43 @@ func newInstallMetrics() *cobra.Command {
 		Short: "Install Metrics backend in Kubernetes cluster",
 		Long:  `Install Metrics backend (Prometheus and Grafana) in Kubernetes cluster.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			templateArgs := metricsTemplateArgs{
+				Namespace:               args.Namespace,
+				KumaPrometheusSdImage:   args.KumaPrometheusSdImage,
+				KumaPrometheusSdVersion: args.KumaPrometheusSdVersion,
+				KumaCpAddress:           args.KumaCpAddress,
+			}
+
 			templateFiles, err := data.ReadFiles(metrics.Templates)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
 			}
+			var yamlTemplateFiles []data.File
+			for _, template := range templateFiles {
+				if strings.HasSuffix(template.Name, ".yaml") {
+					yamlTemplateFiles = append(yamlTemplateFiles, template)
+				}
+			}
 
-			dashboard, err := renderDashboard("/grafana/kuma-dataplane.json")
+			dashboard, err := data.ReadFile(metrics.Templates, "/grafana/kuma-dataplane.json")
 			if err != nil {
 				return err
 			}
-			args.DashboardDataplane = dashboard
+			templateArgs.DashboardDataplane = dashboard.String()
 
-			dashboard, err = renderDashboard("/grafana/kuma-mesh.json")
+			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-mesh.json")
 			if err != nil {
 				return err
 			}
-			args.DashboardMesh = dashboard
+			templateArgs.DashboardMesh = dashboard.String()
 
-			dashboard, err = renderDashboard("/grafana/kuma-service-to-service.json")
+			dashboard, err = data.ReadFile(metrics.Templates, ("/grafana/kuma-service-to-service.json"))
 			if err != nil {
 				return err
 			}
-			args.DashboardServiceToService = dashboard
+			templateArgs.DashboardServiceToService = dashboard.String()
 
-			renderedFiles, err := renderFiles(templateFiles, args, simpleTemplateRenderer)
+			renderedFiles, err := renderFiles(yamlTemplateFiles, templateArgs, simpleTemplateRenderer)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
 			}
@@ -76,15 +95,4 @@ func newInstallMetrics() *cobra.Command {
 	cmd.Flags().StringVar(&args.KumaPrometheusSdVersion, "kuma-prometheus-sd-version", args.KumaPrometheusSdVersion, "version of Kuma Prometheus SD")
 	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
 	return cmd
-}
-
-func renderDashboard(fileName string) (string, error) {
-	file, err := data.ReadFile(metrics.Templates, fileName)
-	if err != nil {
-		return "", err
-	}
-	// Stored dashboards are prepared for upload to online Grafana repo.
-	// We need to replace placeholders with provisioned datasource to use it as provisioned dashboard
-	dashboard := strings.ReplaceAll(file.String(), "${DS_PROMETHEUS}", "Prometheus")
-	return base64.StdEncoding.EncodeToString([]byte(dashboard)), nil
 }
