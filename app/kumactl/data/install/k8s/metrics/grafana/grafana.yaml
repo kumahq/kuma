@@ -98,7 +98,7 @@ data:
         # <int> org id. will default to orgId 1 if not specified
         orgId: 1
         # <string> url
-        url: http://prometheus-server.kuma-metrics
+        url: http://prometheus-server.{{ .Namespace }}
         # <string> database password, if used
         password:
         # <string> database user, if used
@@ -128,6 +128,33 @@ data:
         version: 1
         # <bool> allow users to edit datasources from the UI.
         editable: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provisioning-dashboards
+  namespace: {{ .Namespace }}
+  labels:
+    app: grafana
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+
+    providers:
+    - name: 'Prometheus'
+      orgId: 1
+      folder: ''
+      type: file
+      disableDeletion: false
+      editable: true
+      options:
+        path: /etc/grafana/provisioning/dashboards
+  kuma-dataplane.json: |
+{{ .DashboardDataplane | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
+  kuma-mesh.json: |
+{{ .DashboardMesh | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
+  kuma-service-to-service.json: |
+{{ .DashboardServiceToService | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -242,10 +269,15 @@ spec:
             - name: config
               mountPath: "/etc/grafana/grafana.ini"
               subPath: grafana.ini
+              readOnly: true
             - name: storage
               mountPath: "/var/lib/grafana"
             - name: provisioning-datasource
               mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: provisioning-dashboards
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
           ports:
             - name: service
               containerPort: 80
@@ -273,5 +305,8 @@ spec:
         - name: provisioning-datasource
           configMap:
             name: provisioning-datasource
+        - name: provisioning-dashboards
+          configMap:
+            name: provisioning-dashboards
         - name: storage
           emptyDir: {}

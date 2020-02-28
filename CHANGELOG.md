@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: provision Grafana with Kuma Dashboards
+  [#608](https://github.com/Kong/kuma/pull/608)
 * feature: add support for `kuma.io/sidecar-injection: disabled` annotation on `Pods` to let users selectively opt out of side-car injection on `k8s`
   [#607](https://github.com/Kong/kuma/pull/607)
 * fix: remove the requirement to a `Pod` to explicitly list container ports in a case where a `Service` defines target port by number
