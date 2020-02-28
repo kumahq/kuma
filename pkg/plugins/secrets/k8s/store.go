@@ -11,6 +11,7 @@ import (
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
+	common_k8s "github.com/Kong/kuma/pkg/plugins/common/k8s"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -126,6 +127,10 @@ var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 
 type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
+}
+
+func (m *KubernetesMetaAdapter) GetNameExtensions() core_model.ResourceNameExtensions {
+	return common_k8s.ResourceNameExtensions(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {

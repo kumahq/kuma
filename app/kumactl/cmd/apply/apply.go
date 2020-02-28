@@ -164,6 +164,10 @@ func (m meta) GetName() string {
 	return m.Name
 }
 
+func (m meta) GetNameExtensions() model.ResourceNameExtensions {
+	return model.ResourceNameExtensionsUnsupported
+}
+
 func (m meta) GetVersion() string {
 	return ""
 }
