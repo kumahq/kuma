@@ -4,6 +4,8 @@
 
 Changes:
 
+* feature: on `k8s`, when a Dataplane cannot be generated automatically for a particular `Pod`, emit `k8s` `Events` to make the error state apparent to a user
+  [#609](https://github.com/Kong/kuma/pull/609)
 * feature: include `k8s` namespace into a set of labels that describe a `Dataplane` to `Prometheus`
   [#601](https://github.com/Kong/kuma/pull/601)
 * feature: provision Grafana with Kuma Dashboards
