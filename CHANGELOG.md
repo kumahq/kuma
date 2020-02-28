@@ -1,6 +1,8 @@
 # CHANGELOG
 
-## [master]
+## [0.4.0]
+
+> Released on 2020/02/28
 
 Changes:
 
@@ -76,9 +78,9 @@ Changes:
   [#557](https://github.com/Kong/kuma/pull/557)
 * feature: DB migrations for Postgres
   [#552](https://github.com/Kong/kuma/pull/552)
-* feat: order matching policies by creation time
+* feature: order matching policies by creation time
   [#522](https://github.com/Kong/kuma/pull/522)
-* feat: add creation and modification time to core entities
+* feature: add creation and modification time to core entities
   [#521](https://github.com/Kong/kuma/pull/521)
 
 ## [0.3.2]
