@@ -4,6 +4,12 @@
 
 Changes:
 
+* feature: added a `Traffic Traces` page to `Kuma GUI`
+  [#610](https://github.com/Kong/kuma/pull/610)
+* feature: added styling for `Tags` column on the `Dataplanes` page in `Kuma GUI`
+  [#610](https://github.com/Kong/kuma/pull/610)
+* feature: improved data loading experience in `Kuma GUI`
+  [#610](https://github.com/Kong/kuma/pull/610)
 * feature: on `k8s`, when a Dataplane cannot be generated automatically for a particular `Pod`, emit `k8s` `Events` to make the error state apparent to a user
   [#609](https://github.com/Kong/kuma/pull/609)
 * feature: include `k8s` namespace into a set of labels that describe a `Dataplane` to `Prometheus`
