@@ -105,23 +105,23 @@ jobs:
         command: |
           export PATH=$HOME/go/bin:$PATH
           make dev/tools
-    - run:
-        name: "Install check tools (clang-format, ...)"
-        command: |
-          apt update && apt install -y wget
+    # - run:
+    #     name: "Install check tools (clang-format, ...)"
+    #     command: |
+    #       apt update && apt install -y wget
 
-          # see https://apt.llvm.org/
+    #       # see https://apt.llvm.org/
 
-          cat  >>/etc/apt/sources.list \<<EOF
+    #       cat  >>/etc/apt/sources.list \<<EOF
 
-          deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
-          deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
+    #       deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
+    #       deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
 
-          EOF
+    #       EOF
 
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
+    #       wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
-          apt update && apt install -y clang-format-11
+    #       apt update && apt install -y clang-format-11
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
