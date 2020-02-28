@@ -162,7 +162,7 @@ var _ = Describe("PodToDataplane(..)", func() {
                   namespace: playground
                   name: sample
                   annotations:
-                    7071.service.kuma.io/protocol: TCP
+                    7071.service.kuma.io/protocol: MONGO
                 spec:
                   ports:
                   - protocol: TCP
@@ -196,7 +196,7 @@ var _ = Describe("PodToDataplane(..)", func() {
                 - port: 7070
                   tags:
                     app: example
-                    protocol: tcp
+                    protocol: MONGO
                     service: sample.playground.svc:7071
                     version: "0.1"
                 - port: 6060
@@ -388,25 +388,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 `},
 				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, this Pod doesn't have any container ports that would satisfy matching Service(s).`,
 			}),
-			Entry("Pod with a Service and invalid `<port>.service.kuma.io/protocol` annotation", testCase{
-				pod: pod,
-				services: []string{`
-                metadata:
-                  namespace: demo
-                  name: example
-                  annotations:
-                    80.service.kuma.io/protocol: MONGO
-                spec:
-                  ports:
-                  - # protocol defaults to TCP
-                    port: 80
-                    targetPort: 8080
-                  - protocol: TCP
-                    port: 443
-                    targetPort: 8443
-`},
-				expectedErr: `metadata.annotations["80.service.kuma.io/protocol"]: value "MONGO" is not valid. Allowed values: http, tcp`,
-			}),
 		)
 	})
 })
@@ -490,12 +471,8 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				},
 			}
 
-			// when
-			actual, err := InboundTagsFor(pod, svc, &svc.Spec.Ports[0], given.isGateway)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(actual).To(Equal(given.expected))
+			// expect
+			Expect(InboundTagsFor(pod, svc, &svc.Spec.Ports[0], given.isGateway)).To(Equal(given.expected))
 		},
 		Entry("Pod without labels", testCase{
 			isGateway: false,
@@ -530,6 +507,22 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"version":  "0.1",
 				"service":  "example.demo.svc:80",
 				"protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
+			},
+		}),
+		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and an unknown value", testCase{
+			isGateway: false,
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			svcAnnotations: map[string]string{
+				"80.service.kuma.io/protocol": "not-yet-supported-protocol",
+			},
+			expected: map[string]string{
+				"app":      "example",
+				"version":  "0.1",
+				"service":  "example.demo.svc:80",
+				"protocol": "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
 			},
 		}),
 		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and a known value", testCase{
@@ -576,81 +569,6 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			},
 		}),
 	)
-
-	Context("when InboundTagsFor() cannot be generated", func() {
-
-		type testCase struct {
-			isGateway      bool
-			podLabels      map[string]string
-			svcAnnotations map[string]string
-			expectedErr    string
-		}
-
-		DescribeTable("should return a descriptive error",
-			func(given testCase) {
-				// given
-				pod := &kube_core.Pod{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Labels: given.podLabels,
-					},
-				}
-				// and
-				svc := &kube_core.Service{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Namespace: "demo",
-						Name:      "example",
-						Labels: map[string]string{
-							"more": "labels",
-						},
-						Annotations: given.svcAnnotations,
-					},
-					Spec: kube_core.ServiceSpec{
-						Ports: []kube_core.ServicePort{
-							{
-								Name: "http",
-								Port: 80,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 8080,
-								},
-							},
-						},
-					},
-				}
-
-				// when
-				actual, err := InboundTagsFor(pod, svc, &svc.Spec.Ports[0], given.isGateway)
-				// then
-				Expect(err).To(HaveOccurred())
-				// and
-				Expect(err.Error()).To(Equal(given.expectedErr))
-				// and
-				Expect(actual).To(BeNil())
-			},
-			Entry("Service with a `<port>.service.kuma.io/protocol` annotation and an empty value", testCase{
-				isGateway: false,
-				podLabels: map[string]string{
-					"app":     "example",
-					"version": "0.1",
-				},
-				svcAnnotations: map[string]string{
-					"80.service.kuma.io/protocol": "",
-				},
-				expectedErr: `metadata.annotations["80.service.kuma.io/protocol"]: value "" is not valid. Allowed values: http, tcp`,
-			}),
-			Entry("Service with a `<port>.service.kuma.io/protocol` annotation and an unknown value", testCase{
-				isGateway: false,
-				podLabels: map[string]string{
-					"app":     "example",
-					"version": "0.1",
-				},
-				svcAnnotations: map[string]string{
-					"80.service.kuma.io/protocol": "not-yet-supported-protocol",
-				},
-				expectedErr: `metadata.annotations["80.service.kuma.io/protocol"]: value "not-yet-supported-protocol" is not valid. Allowed values: http, tcp`,
-			}),
-		)
-	})
 })
 
 var _ = Describe("ServiceTagFor(..)", func() {
@@ -710,16 +628,18 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 				},
 			}
 
-			// when
-			actual, err := ProtocolTagFor(svc, &svc.Spec.Ports[0])
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(actual).To(Equal(given.expected))
+			// expect
+			Expect(ProtocolTagFor(svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
 		},
 		Entry("no `<port>.service.kuma.io/protocol` annotation", testCase{
 			annotations: nil,
 			expected:    "tcp", // we want Kuma's default behaviour to be explicit to a user
+		}),
+		Entry("`<port>.service.kuma.io/protocol` annotation has an empty value", testCase{
+			annotations: map[string]string{
+				"80.service.kuma.io/protocol": "",
+			},
+			expected: "tcp", // we want Kuma's default behaviour to be explicit to a user
 		}),
 		Entry("`<port>.service.kuma.io/protocol` annotation is for a different port", testCase{
 			annotations: map[string]string{
@@ -727,11 +647,17 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			},
 			expected: "tcp", // we want Kuma's default behaviour to be explicit to a user
 		}),
+		Entry("`<port>.service.kuma.io/protocol` annotation has an unknown value", testCase{
+			annotations: map[string]string{
+				"80.service.kuma.io/protocol": "not-yet-supported-protocol",
+			},
+			expected: "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
+		}),
 		Entry("`<port>.service.kuma.io/protocol` annotation has a non-lowercase value", testCase{
 			annotations: map[string]string{
 				"80.service.kuma.io/protocol": "HtTp",
 			},
-			expected: "http", // we want Kuma's behaviour to be user-friendly
+			expected: "HtTp", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
 		}),
 		Entry("`<port>.service.kuma.io/protocol` annotation has a known value: http", testCase{
 			annotations: map[string]string{
@@ -746,60 +672,6 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			expected: "tcp",
 		}),
 	)
-
-	Context("when ProtocolTagFor() cannot be generated", func() {
-
-		type testCase struct {
-			annotations map[string]string
-			expectedErr string
-		}
-
-		DescribeTable("should return a descriptive error",
-			func(given testCase) {
-				// given
-				svc := &kube_core.Service{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Namespace:   "demo",
-						Name:        "example",
-						Annotations: given.annotations,
-					},
-					Spec: kube_core.ServiceSpec{
-						Ports: []kube_core.ServicePort{
-							{
-								Name: "http",
-								Port: 80,
-								TargetPort: kube_intstr.IntOrString{
-									Type:   kube_intstr.Int,
-									IntVal: 8080,
-								},
-							},
-						},
-					},
-				}
-
-				// when
-				actual, err := ProtocolTagFor(svc, &svc.Spec.Ports[0])
-				// then
-				Expect(err).To(HaveOccurred())
-				// and
-				Expect(err.Error()).To(Equal(given.expectedErr))
-				// and
-				Expect(actual).To(Equal(""))
-			},
-			Entry("`<port>.service.kuma.io/protocol` annotation has an empty value", testCase{
-				annotations: map[string]string{
-					"80.service.kuma.io/protocol": "",
-				},
-				expectedErr: `metadata.annotations["80.service.kuma.io/protocol"]: value "" is not valid. Allowed values: http, tcp`,
-			}),
-			Entry("`<port>.service.kuma.io/protocol` annotation has an unknown value", testCase{
-				annotations: map[string]string{
-					"80.service.kuma.io/protocol": "not-yet-supported-protocol",
-				},
-				expectedErr: `metadata.annotations["80.service.kuma.io/protocol"]: value "not-yet-supported-protocol" is not valid. Allowed values: http, tcp`,
-			}),
-		)
-	})
 })
 
 type fakeReader map[string]string

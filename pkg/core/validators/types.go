@@ -78,7 +78,7 @@ func (v *ValidationError) Transform(transformFunc func(Violation) Violation) *Va
 		return nil
 	}
 	if transformFunc == nil || len(v.Violations) == 0 {
-		return &(*v)
+		return &(*v) // we want to guarantee that Transform always returns a new object
 	}
 	result := ValidationError{
 		Violations: make([]Violation, len(v.Violations)),

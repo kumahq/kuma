@@ -141,7 +141,7 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
 		if err := PodToDataplane(dataplane, pod, services, others, r.Client); err != nil {
-			return errors.Wrap(err, "unable to translate Pod to Dataplane")
+			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")
