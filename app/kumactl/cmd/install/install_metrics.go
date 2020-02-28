@@ -50,12 +50,9 @@ func newInstallMetrics() *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
 			}
-			var yamlTemplateFiles []data.File
-			for _, template := range templateFiles {
-				if strings.HasSuffix(template.Name, ".yaml") {
-					yamlTemplateFiles = append(yamlTemplateFiles, template)
-				}
-			}
+			yamlTemplateFiles := templateFiles.Filter(func(file data.File) bool {
+				return strings.HasSuffix(file.Name, ".yaml")
+			})
 
 			dashboard, err := data.ReadFile(metrics.Templates, "/grafana/kuma-dataplane.json")
 			if err != nil {
