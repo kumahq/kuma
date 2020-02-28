@@ -139,45 +139,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("Pod without Services", testCase{
-			pod:      pod,
-			services: nil,
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-`,
-		}),
-		Entry("Pod with a Service but mismatching ports", testCase{
-			pod: pod,
-			services: []string{`
-            spec:
-              ports:
-              - protocol: UDP    # all non-TCP ports should be ignored
-                port: 80
-                targetPort: 8080
-              - protocol: SCTP   # all non-TCP ports should be ignored
-                port: 443
-                targetPort: 8443
-              - protocol: TCP
-                port: 7070
-                targetPort: api
-              - # defaults to TCP protocol
-                port: 6060
-                targetPort: diagnostics
-`},
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-`,
-		}),
 		Entry("Pod with 2 Services", testCase{
 			pod: pod,
 			services: []string{
@@ -364,19 +325,71 @@ var _ = Describe("PodToDataplane(..)", func() {
                     version: "0.1"
 `,
 		}),
-		Entry("pod with gateway annotation and 0 services", testCase{
-			pod:      gatewayPod,
-			services: nil,
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-`,
-		}),
 	)
+
+	Context("when Dataplane cannot be generated", func() {
+		type testCase struct {
+			pod         string
+			services    []string
+			expectedErr string
+		}
+
+		DescribeTable("should return a descriptive error",
+			func(given testCase) {
+				// given
+				pod := &kube_core.Pod{}
+				// when
+				err := yaml.Unmarshal([]byte(given.pod), pod)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				services, err := ParseServices(given.services)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// given
+				dataplane := &mesh_k8s.Dataplane{}
+
+				// when
+				err = PodToDataplane(dataplane, pod, services, nil, nil)
+				// then
+				Expect(err).To(HaveOccurred())
+				// and
+				Expect(err.Error()).To(Equal(given.expectedErr))
+			},
+			Entry("regular Pod without Services", testCase{
+				pod:         pod,
+				services:    nil,
+				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, there are no Services that select this Pod.`,
+			}),
+			Entry("gateway Pod without Services", testCase{
+				pod:         gatewayPod,
+				services:    nil,
+				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, there are no Services that select this Pod.`,
+			}),
+			Entry("Pod with a Service but mismatching ports", testCase{
+				pod: pod,
+				services: []string{`
+                spec:
+                  ports:
+                  - protocol: UDP    # all non-TCP ports should be ignored
+                    port: 80
+                    targetPort: 8080
+                  - protocol: SCTP   # all non-TCP ports should be ignored
+                    port: 443
+                    targetPort: 8443
+                  - protocol: TCP
+                    port: 7070
+                    targetPort: api
+                  - # defaults to TCP protocol
+                    port: 6060
+                    targetPort: diagnostics
+`},
+				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, this Pod doesn't have any container ports that would satisfy matching Service(s).`,
+			}),
+		)
+	})
 })
 
 var _ = Describe("MeshFor(..)", func() {
@@ -458,7 +471,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				},
 			}
 
-			// then
+			// expect
 			Expect(InboundTagsFor(pod, svc, &svc.Spec.Ports[0], given.isGateway)).To(Equal(given.expected))
 		},
 		Entry("Pod without labels", testCase{

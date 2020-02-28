@@ -1,7 +1,10 @@
 package validators_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/pkg/core/validators"
@@ -95,6 +98,78 @@ var _ = Describe("Validation Error", func() {
 				},
 			}))
 		})
+	})
+
+	Describe("Transform()", func() {
+		type testCase struct {
+			input         *validators.ValidationError
+			transformFunc func(validators.Violation) validators.Violation
+			expected      *validators.ValidationError
+		}
+
+		DescribeTable("should apply given transformation func to every Violation",
+			func(given testCase) {
+				// when
+				actual := given.input.Transform(given.transformFunc)
+				// then
+				Expect(actual).To(Equal(given.expected))
+			},
+			Entry("`nil` ValidationError", testCase{
+				input:    nil,
+				expected: nil,
+			}),
+			Entry("zero value ValidationError", testCase{
+				input:    &validators.ValidationError{},
+				expected: &validators.ValidationError{},
+			}),
+			Entry("`nil` transformFunc", testCase{
+				input: &validators.ValidationError{
+					Violations: []validators.Violation{
+						{Field: "field", Message: "invalid"},
+					},
+				},
+				expected: &validators.ValidationError{
+					Violations: []validators.Violation{
+						{Field: "field", Message: "invalid"},
+					},
+				},
+			}),
+			Entry("identity transform", testCase{
+				input: &validators.ValidationError{
+					Violations: []validators.Violation{
+						{Field: "field", Message: "invalid"},
+					},
+				},
+				transformFunc: func(v validators.Violation) validators.Violation {
+					return v
+				},
+				expected: &validators.ValidationError{
+					Violations: []validators.Violation{
+						{Field: "field", Message: "invalid"},
+					},
+				},
+			}),
+			Entry("real transform", testCase{
+				input: &validators.ValidationError{
+					Violations: []validators.Violation{
+						{Field: "field1", Message: "invalid1"},
+						{Field: "field2", Message: "invalid2"},
+					},
+				},
+				transformFunc: func(v validators.Violation) validators.Violation {
+					return validators.Violation{
+						Field:   fmt.Sprintf("spec.%s", v.Field),
+						Message: fmt.Sprintf("prefix: %s", v.Message),
+					}
+				},
+				expected: &validators.ValidationError{
+					Violations: []validators.Violation{
+						{Field: "spec.field1", Message: "prefix: invalid1"},
+						{Field: "spec.field2", Message: "prefix: invalid2"},
+					},
+				},
+			}),
+		)
 	})
 })
 

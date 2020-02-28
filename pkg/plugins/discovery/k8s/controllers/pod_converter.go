@@ -85,17 +85,13 @@ func GatewayFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.
 	if err != nil {
 		return nil, err
 	}
-	if len(interfaces) == 0 {
-		return nil, nil // todo(jakubdyszkiewicz) should we throw an error on DP without interfaces
-	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
-		Tags: interfaces[0].Tags,
+		Tags: interfaces[0].Tags, // InboundInterfacesFor() returns either a non-empty list or an error
 	}, nil
 }
 
 func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isGateway bool) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
-
 	for _, svc := range services {
 		for _, svcPort := range svc.Spec.Ports {
 			if svcPort.Protocol != "" && svcPort.Protocol != kube_core.ProtocolTCP {
@@ -116,6 +112,16 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 				Tags: tags,
 			})
 		}
+	}
+	if len(ifaces) == 0 {
+		// Notice that here we return an error immediately
+		// instead of leaving validation up to a ValidatingAdmissionWebHook.
+		// We do it this way in order to provide the most descriptive error message.
+		cause := "However, there are no Services that select this Pod."
+		if len(services) > 0 {
+			cause = "However, this Pod doesn't have any container ports that would satisfy matching Service(s)."
+		}
+		return nil, errors.Errorf("Kuma requires every Pod in a Mesh to be a part of at least one Service. %s", cause)
 	}
 	return ifaces, nil
 }

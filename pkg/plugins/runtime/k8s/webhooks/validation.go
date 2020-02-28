@@ -2,9 +2,11 @@ package webhooks
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+
 	"github.com/Kong/kuma/pkg/core/validators"
 	"k8s.io/api/admission/v1beta1"
-	"net/http"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -71,6 +73,7 @@ func (h *validatingHandler) Supports(admission.Request) bool {
 }
 
 func convertValidationError(kumaErr *validators.ValidationError, obj k8s_model.KubernetesObject) admission.Response {
+	kumaErr = convertFieldNames(kumaErr)
 	details := &metav1.StatusDetails{
 		Name: obj.GetObjectMeta().Name,
 		Kind: obj.GetObjectKind().GroupVersionKind().Kind,
@@ -96,4 +99,16 @@ func convertValidationError(kumaErr *validators.ValidationError, obj k8s_model.K
 		details.Causes = append(details.Causes, cause)
 	}
 	return resp
+}
+
+func convertFieldNames(verr *validators.ValidationError) *validators.ValidationError {
+	return verr.Transform(func(violation validators.Violation) validators.Violation {
+		violation.Field = convertFieldName(violation.Field)
+		return violation
+	})
+}
+
+func convertFieldName(field string) string {
+	// at the moment, all Kuma resources validate only ResourceSpec fields
+	return fmt.Sprintf("spec.%s", field)
 }

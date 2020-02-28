@@ -30,9 +30,10 @@ func (p *plugin) StartDiscovering(pc core_plugins.PluginContext, _ core_plugins.
 
 func addPodReconciler(mgr kube_ctrl.Manager) error {
 	reconciler := &controllers.PodReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		Log:    core.Log.WithName("controllers").WithName("Pod"),
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
+		Scheme:        mgr.GetScheme(),
+		Log:           core.Log.WithName("controllers").WithName("Pod"),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
