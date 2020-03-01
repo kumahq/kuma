@@ -130,6 +130,16 @@ func (m *Dataplane_Networking) Validate() error {
 
 	// no validation rules for Address
 
+	if v, ok := interface{}(m.GetGateway()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return Dataplane_NetworkingValidationError{
+				field:  "Gateway",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	for idx, item := range m.GetInbound() {
 		_, _ = idx, item
 
@@ -158,16 +168,6 @@ func (m *Dataplane_Networking) Validate() error {
 			}
 		}
 
-	}
-
-	if v, ok := interface{}(m.GetGateway()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return Dataplane_NetworkingValidationError{
-				field:  "Gateway",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
 	}
 
 	if v, ok := interface{}(m.GetTransparentProxying()).(interface{ Validate() error }); ok {

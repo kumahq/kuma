@@ -92,14 +92,14 @@ message Dataplane {
       uint32 redirect_port = 1 [ (validate.rules).uint32 = {lte : 65535} ];
     }
 
+    // Gateway describes configuration of gateway of the dataplane.
+    Gateway gateway = 3;
+
     // Inbound describes a list of inbound interfaces of the dataplane.
     repeated Inbound inbound = 1;
 
     // Outbound describes a list of outbound interfaces of the dataplane.
     repeated Outbound outbound = 2;
-
-    // Gateway describes configuration of gateway of the dataplane.
-    Gateway gateway = 3;
 
     // TransparentProxying describes configuration for transparent proxying.
     TransparentProxying transparent_proxying = 4;

@@ -25,6 +25,15 @@ func FromYAML(content []byte, pb proto.Message) error {
 	return FromJSON(json, pb)
 }
 
+func ToJSON(pb proto.Message) ([]byte, error) {
+	var buf bytes.Buffer
+	marshaler := &jsonpb.Marshaler{}
+	if err := marshaler.Marshal(&buf, pb); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 func FromJSON(content []byte, out proto.Message) error {
 	unmarshaler := &jsonpb.Unmarshaler{AllowUnknownFields: true}
 	return unmarshaler.Unmarshal(bytes.NewReader(content), out)
