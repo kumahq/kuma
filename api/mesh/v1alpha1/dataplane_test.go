@@ -1,7 +1,11 @@
 package v1alpha1_test
 
 import (
+	"bytes"
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -58,5 +62,97 @@ var _ = Describe("Dataplane", func() {
 		Expect(dataplane.Networking.Outbound[0].Service).To(Equal("postgres"))
 		Expect(dataplane.Networking.Outbound[1].Port).To(Equal(uint32(50000)))
 		Expect(dataplane.Networking.Outbound[1].Service).To(Equal("redis.default.svc"))
+	})
+
+	Describe("json.Marshal()", func() {
+
+		type testCase struct {
+			input    string
+			expected string
+		}
+
+		DescribeTable("should serialize fields in the correct order",
+			func(given testCase) {
+				// given
+				dataplane := &Dataplane{}
+
+				// when
+				err := util_proto.FromYAML([]byte(given.input), dataplane)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				actual, err := util_proto.ToJSON(dataplane)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// given
+				var pretty bytes.Buffer
+				// when
+				json.Indent(&pretty, actual, "", "  ")
+				// and
+				Expect(pretty.String()).To(Equal(given.expected))
+			},
+			Entry("gateway dataplane", testCase{
+				input: `
+                networking:
+                  outbound:
+                  - service: backend
+                    port: 40001
+                  inbound:
+                  - tags:
+                      service: backend
+                    port: 8080
+                  address: 192.168.0.1
+`,
+				expected: `{
+  "networking": {
+    "address": "192.168.0.1",
+    "inbound": [
+      {
+        "port": 8080,
+        "tags": {
+          "service": "backend"
+        }
+      }
+    ],
+    "outbound": [
+      {
+        "port": 40001,
+        "service": "backend"
+      }
+    ]
+  }
+}`,
+			}),
+			Entry("gateway dataplane", testCase{
+				input: `
+                networking:
+                  outbound:
+                  - service: backend
+                    port: 40001
+                  gateway:
+                    tags:
+                      service: gateway
+                  address: 192.168.0.1
+`,
+				expected: `{
+  "networking": {
+    "address": "192.168.0.1",
+    "gateway": {
+      "tags": {
+        "service": "gateway"
+      }
+    },
+    "outbound": [
+      {
+        "port": 40001,
+        "service": "backend"
+      }
+    ]
+  }
+}`,
+			}),
+		)
 	})
 })
