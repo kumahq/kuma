@@ -6,6 +6,90 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `0.4.0`
+
+### Suggested Upgrade Path on Kubernetes
+
+No additional steps are needed.
+
+### Suggested Upgrade Path on Universal
+
+#### Migrations
+
+Kuma 0.4.0 introduces DB Migrations for Postgres therefore before running the new version of Kuma, run the kuma-cp migration command.
+```
+kuma-cp migrate up
+```
+Remember to provide config just like in `kuma-cp run` command.
+All existing data will be preserved.
+
+#### New Dataplane Entity format
+
+Kuma 0.4.0 introduces new Dataplane entity format to improve readability as well as add support for scraping metrics of Gateway Dataplanes. 
+
+Here is example of migration to the new format.
+
+**Dataplane**
+
+Old format
+```yaml
+type: Dataplane
+mesh: default
+name: web-01
+networking:
+  inbound:
+  - interface: 192.168.0.1:21011:21012
+    tags:
+      service: web
+  outbound:
+  - interface: :3000
+    service: backend
+```
+
+New format
+```yaml
+type: Dataplane
+mesh: default
+name: web-01
+networking:
+  address: 192.168.0.1
+  inbound:
+  - port: 21011
+    servicePort: 21012
+    tags:
+      service: web
+  outbound:
+  - port: 3000
+    service: backend
+```
+
+**Gateway Dataplane**
+
+Old format
+```yaml
+type: Dataplane
+mesh: default
+name: kong-01
+networking:
+  gateway:
+    tags:
+      service: kong
+```
+
+New format
+```yaml
+type: Dataplane
+mesh: default
+name: kong-01
+networking:
+  address: 192.168.0.1
+  gateway:
+    tags:
+      service: kong
+```
+
+Although the old format is still supported, it is recommended to migrate since the support for it will be dropped in the next major version of Kuma.
+
 ## Upgrade to `0.3.1`
 
 ### List of breaking changes
