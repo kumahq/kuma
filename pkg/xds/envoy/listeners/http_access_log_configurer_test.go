@@ -29,6 +29,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// given
+			mesh := "demo"
 			sourceService := "web"
 			destinationService := "backend"
 			proxy := &core_xds.Proxy{
@@ -60,7 +61,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 				Configure(FilterChain(NewFilterChainBuilder().
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpOutboundRoute(given.routeName)).
-					Configure(HttpAccessLog(sourceService, destinationService, given.backend, proxy)))).
+					Configure(HttpAccessLog(mesh, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -129,7 +130,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |
-                        [%START_TIME%] "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "backend" "192.168.0.1" "%UPSTREAM_HOST%"
+                        [%START_TIME%] demo "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "backend" "192.168.0.1" "%UPSTREAM_HOST%"
                       path: /tmp/log
                   httpFilters:
                   - name: envoy.router

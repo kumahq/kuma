@@ -8,14 +8,15 @@ import (
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
 
-const defaultHttpAccessLogFormat = `[%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%KUMA_SOURCE_SERVICE%" "%KUMA_DESTINATION_SERVICE%" "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%" "%UPSTREAM_HOST%"
+const defaultHttpAccessLogFormat = `[%START_TIME%] %KUMA_MESH% "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%KUMA_SOURCE_SERVICE%" "%KUMA_DESTINATION_SERVICE%" "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%" "%UPSTREAM_HOST%"
 ` // intentional newline at the end
 
-func HttpAccessLog(sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy) FilterChainBuilderOpt {
+func HttpAccessLog(mesh string, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		if backend != nil {
 			config.Add(&HttpAccessLogConfigurer{
 				AccessLogConfigurer: AccessLogConfigurer{
+					mesh:               mesh,
 					sourceService:      sourceService,
 					destinationService: destinationService,
 					backend:            backend,
@@ -31,7 +32,7 @@ type HttpAccessLogConfigurer struct {
 }
 
 func (c *HttpAccessLogConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	accessLog, err := convertLoggingBackend(c.AccessLogConfigurer.sourceService, c.AccessLogConfigurer.destinationService, c.AccessLogConfigurer.backend, c.AccessLogConfigurer.proxy, defaultHttpAccessLogFormat)
+	accessLog, err := convertLoggingBackend(c.AccessLogConfigurer.mesh, c.AccessLogConfigurer.sourceService, c.AccessLogConfigurer.destinationService, c.AccessLogConfigurer.backend, c.AccessLogConfigurer.proxy, defaultHttpAccessLogFormat)
 	if err != nil {
 		return err
 	}
