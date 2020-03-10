@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/Kong/kuma/pkg/test/resources/model"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -294,6 +295,50 @@ var _ = Describe("kumactl apply", func() {
 			`Error: Could not process resource (Resource is not valid)
 * path: cannot be empty
 * mesh: cannot be empty
+`))
+	})
+
+	It("should print configuration with resolved variable without applying", func() {
+		// setup
+		err := store.Create(context.Background(), &mesh.DataplaneResource{
+			Meta: &model.ResourceMeta{
+				Name: "sample",
+				Mesh: "default",
+			},
+			Spec: v1alpha1.Dataplane{
+				Networking: &v1alpha1.Dataplane_Networking{
+					Address: "1.1.1.1",
+				},
+			},
+		}, core_store.CreateByKey("sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		rootCmd.SetArgs([]string{
+			"apply", "-f", filepath.Join("testdata", "apply-dataplane-template.yaml"),
+			"-v", "address=2.2.2.2", "--dry-run",
+		})
+		buf := &bytes.Buffer{}
+		rootCmd.SetOut(buf)
+
+		// when
+		err = rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// then
+		var resource mesh.DataplaneResource
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resource.Spec.Networking.Address).To(Equal("1.1.1.1"))
+
+		// then
+		Expect(buf.String()).To(Equal(
+			`Meta:
+  Mesh: default
+  Name: sample
+Spec:
+  networking:
+    address: 2.2.2.2
 `))
 	})
 
