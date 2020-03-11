@@ -36,6 +36,7 @@ Usage:
   kumactl apply [flags]
 
 Flags:
+      --dry-run              Resolve variable and prints result out without actual applying
   -f, --file string          Path to file to apply
   -h, --help                 help for apply
   -v, --var stringToString   Variable to replace in configuration (default [])

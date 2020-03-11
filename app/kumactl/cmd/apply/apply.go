@@ -7,17 +7,21 @@ import (
 	"strings"
 	"time"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/util/proto"
 	"github.com/ghodss/yaml"
 	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	"github.com/Kong/kuma/app/kumactl/pkg/output"
+	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
+	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/Kong/kuma/pkg/core/resources/model/rest"
+	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
+	"github.com/Kong/kuma/pkg/core/resources/registry"
+	"github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/Kong/kuma/pkg/util/proto"
 )
 
 const (
@@ -28,8 +32,9 @@ type applyContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
-		file string
-		vars map[string]string
+		file   string
+		vars   map[string]string
+		dryRun bool
 	}
 }
 
@@ -86,6 +91,18 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "YAML contains invalid resource")
 			}
+
+			if ctx.args.dryRun {
+				p, err := printers.NewGenericPrinter(output.YAMLFormat)
+				if err != nil {
+					return err
+				}
+				if err := p.Print(rest_types.From.Resource(res), cmd.OutOrStdout()); err != nil {
+					return err
+				}
+				return nil
+			}
+
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
@@ -99,6 +116,7 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	}
 	cmd.PersistentFlags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file to apply")
 	cmd.PersistentFlags().StringToStringVarP(&ctx.args.vars, "var", "v", map[string]string{}, "Variable to replace in configuration")
+	cmd.PersistentFlags().BoolVar(&ctx.args.dryRun, "dry-run", false, "Resolve variable and prints result out without actual applying")
 	return cmd
 }
 
