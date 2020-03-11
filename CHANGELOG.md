@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## master
+
+* feature: added flag `--dry-run` for `kumactl apply`
+  [#622](https://github.com/Kong/kuma/pull/622)
+
 ## [0.4.0]
 
 > Released on 2020/02/28
