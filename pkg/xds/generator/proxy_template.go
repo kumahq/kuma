@@ -158,6 +158,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 	resources := &model.ResourceSet{}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
+	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 	ofaces, err := proxy.Dataplane.Spec.Networking.GetOutboundInterfaces()
 	if err != nil {
 		return nil, err
@@ -197,7 +198,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(outbound.Service)).
 					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
-					Configure(envoy_listeners.HttpAccessLog(sourceService, destinationService, proxy.Logs[outbound.Service], proxy)).
+					Configure(envoy_listeners.HttpAccessLog(meshName, sourceService, destinationService, proxy.Logs[outbound.Service], proxy)).
 					Configure(envoy_listeners.HttpOutboundRoute(outboundRouteName))
 			case mesh_core.ProtocolTCP:
 				fallthrough
@@ -205,7 +206,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 				// configuration for non-HTTP cases
 				filterChainBuilder.
 					Configure(envoy_listeners.TcpProxy(outbound.Service, clusters...)).
-					Configure(envoy_listeners.NetworkAccessLog(sourceService, destinationService, proxy.Logs[outbound.Service], proxy))
+					Configure(envoy_listeners.NetworkAccessLog(meshName, sourceService, destinationService, proxy.Logs[outbound.Service], proxy))
 			}
 			return filterChainBuilder
 		}()

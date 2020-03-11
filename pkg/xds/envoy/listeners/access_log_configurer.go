@@ -21,13 +21,14 @@ import (
 const accessLogSink = "access_log_sink"
 
 type AccessLogConfigurer struct {
+	mesh               string
 	sourceService      string
 	destinationService string
 	backend            *mesh_proto.LoggingBackend
 	proxy              *core_xds.Proxy
 }
 
-func convertLoggingBackend(sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*filter_accesslog.AccessLog, error) {
+func convertLoggingBackend(mesh string, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*filter_accesslog.AccessLog, error) {
 	if backend == nil {
 		return nil, nil
 	}
@@ -45,6 +46,7 @@ func convertLoggingBackend(sourceService string, destinationService string, back
 		accesslog.CMD_KUMA_SOURCE_ADDRESS_WITHOUT_PORT: proxy.Dataplane.GetIP(),                        // replacement variable
 		accesslog.CMD_KUMA_SOURCE_SERVICE:              sourceService,
 		accesslog.CMD_KUMA_DESTINATION_SERVICE:         destinationService,
+		accesslog.CMD_KUMA_MESH:                        mesh,
 	}
 
 	format, err = format.Interpolate(variables)

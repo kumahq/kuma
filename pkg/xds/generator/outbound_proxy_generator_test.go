@@ -21,10 +21,16 @@ import (
 
 var _ = Describe("OutboundProxyGenerator", func() {
 
+	meta := &test_model.ResourceMeta{
+		Mesh: "mesh1",
+		Name: "mesh1",
+	}
 	plainCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{},
 		Mesh: xds_context.MeshContext{
-			Resource: &mesh_core.MeshResource{},
+			Resource: &mesh_core.MeshResource{
+				Meta: meta,
+			},
 		},
 	}
 
@@ -40,6 +46,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						Enabled: true,
 					},
 				},
+				Meta: meta,
 			},
 		},
 	}

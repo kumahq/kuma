@@ -30,6 +30,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// given
+			meshName := "demo"
 			sourceService := "backend"
 			destinationService := "db"
 			proxy := &core_xds.Proxy{
@@ -62,7 +63,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder().
 					Configure(TcpProxy(given.statsName, given.clusters...)).
-					Configure(NetworkAccessLog(sourceService, destinationService, given.backend, proxy)))).
+					Configure(NetworkAccessLog(meshName, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -127,7 +128,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |
-                        [%START_TIME%] 192.168.0.1(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                        [%START_TIME%] demo 192.168.0.1(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                       path: /tmp/log
                   cluster: db
                   statPrefix: db
