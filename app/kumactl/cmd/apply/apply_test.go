@@ -333,12 +333,11 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Expect(buf.String()).To(Equal(
-			`Meta:
-  Mesh: default
-  Name: sample
-Spec:
-  networking:
-    address: 2.2.2.2
+			`mesh: default
+name: sample
+networking:
+  address: 2.2.2.2
+type: Dataplane
 `))
 	})
 

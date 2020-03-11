@@ -2,24 +2,26 @@ package apply
 
 import (
 	"context"
-	"github.com/Kong/kuma/app/kumactl/pkg/output"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/util/proto"
 	"github.com/ghodss/yaml"
 	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	"github.com/Kong/kuma/app/kumactl/pkg/output"
+	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
+	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/Kong/kuma/pkg/core/resources/model/rest"
+	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
+	"github.com/Kong/kuma/pkg/core/resources/registry"
+	"github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/Kong/kuma/pkg/util/proto"
 )
 
 const (
@@ -95,7 +97,7 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if err := p.Print(res, cmd.OutOrStdout()); err != nil {
+				if err := p.Print(rest_types.From.Resource(res), cmd.OutOrStdout()); err != nil {
 					return err
 				}
 				return nil
