@@ -1,9 +1,11 @@
 package registry
 
 import (
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/pkg/errors"
 	"reflect"
+
+	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
 type TypeRegistry interface {

@@ -1,13 +1,16 @@
 package config
 
 import (
-	"github.com/Kong/kuma/pkg/core"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/core"
+
 	// we use gopkg.in/yaml.v2 because it supports time.Duration
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
+
+	"gopkg.in/yaml.v2"
 )
 
 func Load(file string, cfg Config) error {

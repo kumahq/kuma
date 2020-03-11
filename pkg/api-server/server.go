@@ -3,8 +3,11 @@ package api_server
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"net/http"
+
+	"github.com/pkg/errors"
+
+	"github.com/emicklei/go-restful"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
 	"github.com/Kong/kuma/pkg/config"
@@ -12,7 +15,6 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/emicklei/go-restful"
 )
 
 var (

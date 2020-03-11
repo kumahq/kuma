@@ -7,14 +7,15 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	xds_model "github.com/Kong/kuma/pkg/core/xds"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 )
 
 var _ = Describe("Reconcile", func() {

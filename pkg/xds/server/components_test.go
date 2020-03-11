@@ -2,9 +2,10 @@ package server_test
 
 import (
 	"context"
+	"time"
+
 	"github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

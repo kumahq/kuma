@@ -2,6 +2,9 @@ package rest
 
 import (
 	"context"
+
+	"github.com/emicklei/go-restful"
+
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
@@ -12,7 +15,6 @@ import (
 	errors_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/tls"
-	"github.com/emicklei/go-restful"
 )
 
 var logger = core.Log.WithName("ca-provided-ws")

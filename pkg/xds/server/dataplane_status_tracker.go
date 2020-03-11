@@ -11,8 +11,9 @@ import (
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/golang/protobuf/proto"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"

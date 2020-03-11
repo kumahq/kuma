@@ -10,12 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	kuma_version "github.com/Kong/kuma/pkg/version"
-	"github.com/pkg/errors"
 )
 
 const (

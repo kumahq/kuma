@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"errors"
+
 	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"

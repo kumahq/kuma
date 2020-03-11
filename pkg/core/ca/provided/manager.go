@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/tls"
-	"github.com/pkg/errors"
 
 	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"

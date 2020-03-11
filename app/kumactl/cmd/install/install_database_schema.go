@@ -1,11 +1,12 @@
 package install
 
 import (
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 	postgres_schema "github.com/Kong/kuma/app/kumactl/pkg/install/universal/control-plane/postgres"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 func newInstallDatabaseSchemaCmd() *cobra.Command {

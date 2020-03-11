@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 
 	config_core "github.com/Kong/kuma/pkg/config/core"

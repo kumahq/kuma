@@ -7,6 +7,8 @@ import (
 
 	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 
+	"github.com/spf13/cobra"
+
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/pkg/catalog"
@@ -16,7 +18,6 @@ import (
 	error_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
 	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
 	"github.com/Kong/kuma/pkg/tls"
-	"github.com/spf13/cobra"
 
 	"github.com/ghodss/yaml"
 

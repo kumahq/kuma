@@ -1,10 +1,11 @@
 package generator_test
 
 import (
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	xds_context "github.com/Kong/kuma/pkg/xds/context"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"

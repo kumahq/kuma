@@ -1,9 +1,10 @@
 package generate
 
 import (
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 )
 
 type generateDataplaneTokenContext struct {

@@ -1,9 +1,10 @@
 package k8s
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/plugins/discovery/k8s/controllers"
-	"github.com/pkg/errors"
 
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"

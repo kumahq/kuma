@@ -3,6 +3,9 @@ package provided_test
 import (
 	"context"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -10,8 +13,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/secrets/manager"
 	"github.com/Kong/kuma/pkg/core/secrets/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("CA Provided Manager", func() {

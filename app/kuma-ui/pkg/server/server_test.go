@@ -10,13 +10,14 @@ import (
 	"strconv"
 	"strings"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+
 	"github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	"github.com/Kong/kuma/app/kuma-ui/pkg/server/types"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/test"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("GUI Server", func() {

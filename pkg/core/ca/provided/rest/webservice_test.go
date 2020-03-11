@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 
+	"github.com/emicklei/go-restful"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 	"github.com/Kong/kuma/pkg/core/ca/provided"
@@ -21,7 +23,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/secrets/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/tls"
-	"github.com/emicklei/go-restful"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

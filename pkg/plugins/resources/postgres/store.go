@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
+
 	config "github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/util/proto"
-	_ "github.com/lib/pq"
-	"github.com/pkg/errors"
 )
 
 const duplicateKeyErrorMsg = "duplicate key value violates unique constraint"

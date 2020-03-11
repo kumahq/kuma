@@ -2,11 +2,13 @@ package install
 
 import (
 	"bytes"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-	"github.com/Masterminds/sprig"
-	"github.com/pkg/errors"
 	"io"
 	"text/template"
+
+	"github.com/Masterminds/sprig"
+	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 )
 
 func renderFiles(templates []data.File, args interface{}, newRenderer func(data.File) (templateRenderer, error)) ([]data.File, error) {

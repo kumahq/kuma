@@ -2,6 +2,7 @@ package rest
 
 import (
 	"fmt"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 

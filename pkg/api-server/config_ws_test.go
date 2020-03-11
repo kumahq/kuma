@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
+	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Config WS", func() {

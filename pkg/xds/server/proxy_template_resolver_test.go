@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"

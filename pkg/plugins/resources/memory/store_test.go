@@ -1,9 +1,10 @@
 package memory_test
 
 import (
+	. "github.com/onsi/ginkgo"
+
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_store "github.com/Kong/kuma/pkg/test/store"
-	. "github.com/onsi/ginkgo"
 )
 
 var _ = Describe("MemoryStore", func() {

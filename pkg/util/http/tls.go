@@ -3,9 +3,10 @@ package http
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 func ConfigureTls(httpClient *http.Client, serverCert string, clientCert string, clientKey string) error {

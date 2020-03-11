@@ -4,13 +4,15 @@ package postgres
 
 import (
 	"fmt"
+	"math/rand"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"github.com/Kong/kuma/pkg/config"
 	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	test_store "github.com/Kong/kuma/pkg/test/store"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"math/rand"
 )
 
 var _ = Describe("postgresResourceStore", func() {

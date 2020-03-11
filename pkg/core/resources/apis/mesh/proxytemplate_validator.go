@@ -2,10 +2,11 @@ package mesh
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/util/envoy"
-	"strings"
 )
 
 var availableProfiles map[string]bool

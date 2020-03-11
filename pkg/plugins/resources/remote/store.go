@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	util_http "github.com/Kong/kuma/pkg/util/http"
-	"io/ioutil"
-	"net/http"
 
 	"github.com/pkg/errors"
 )

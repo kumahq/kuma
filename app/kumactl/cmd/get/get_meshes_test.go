@@ -17,12 +17,13 @@ import (
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
+
+	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 )
 
 var _ = Describe("kumactl get meshes", func() {

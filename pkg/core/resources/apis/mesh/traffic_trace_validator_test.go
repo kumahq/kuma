@@ -7,8 +7,9 @@ import (
 
 	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/ghodss/yaml"
+
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("TrafficTrace", func() {

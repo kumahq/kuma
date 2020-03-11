@@ -17,11 +17,13 @@ limitations under the License.
 package k8s_test
 
 import (
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path/filepath"
 	"testing"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -1,12 +1,13 @@
 package vfsgen
 
 import (
-	"github.com/pkg/errors"
-	"github.com/shurcooL/httpfs/vfsutil"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/pkg/errors"
+	"github.com/shurcooL/httpfs/vfsutil"
 
 	"github.com/onsi/ginkgo/extensions/table"
 )

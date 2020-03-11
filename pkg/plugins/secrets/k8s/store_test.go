@@ -10,10 +10,11 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/secrets/k8s"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
-	"github.com/golang/protobuf/ptypes/wrappers"
 
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/test/resources/model"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,16 +11,19 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Kong/kuma/pkg/test/resources/model"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	"github.com/spf13/cobra"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	test_store "github.com/Kong/kuma/pkg/test/store"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-	"github.com/spf13/cobra"
 
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"

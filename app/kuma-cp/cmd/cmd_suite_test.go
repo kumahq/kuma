@@ -17,11 +17,13 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/Kong/kuma/pkg/core"
+	"testing"
+
 	"github.com/go-logr/logr"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"testing"
+
+	"github.com/Kong/kuma/pkg/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

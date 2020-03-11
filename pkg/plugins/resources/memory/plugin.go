@@ -1,9 +1,10 @@
 package memory
 
 import (
+	"github.com/pkg/errors"
+
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/pkg/errors"
 )
 
 var _ core_plugins.ResourceStorePlugin = &plugin{}

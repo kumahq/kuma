@@ -1,8 +1,9 @@
 package api_server
 
 import (
-	"github.com/Kong/kuma/pkg/config"
 	"github.com/emicklei/go-restful"
+
+	"github.com/Kong/kuma/pkg/config"
 )
 
 func configWs(cfg config.Config) (*restful.WebService, error) {

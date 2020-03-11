@@ -15,10 +15,11 @@ import (
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
+
+	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 )
 
 var _ = Describe("kumactl delete mesh", func() {

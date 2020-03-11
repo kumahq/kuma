@@ -5,10 +5,11 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/Kong/kuma/app/kumactl/cmd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/app/kumactl/cmd"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 )

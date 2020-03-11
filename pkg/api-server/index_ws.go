@@ -1,8 +1,9 @@
 package api_server
 
 import (
-	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/emicklei/go-restful"
+
+	"github.com/Kong/kuma/pkg/api-server/types"
 
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )

@@ -5,10 +5,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	config "github.com/Kong/kuma/pkg/config/api-server"
+	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Catalog WS", func() {

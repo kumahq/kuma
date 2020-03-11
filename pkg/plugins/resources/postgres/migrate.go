@@ -1,13 +1,15 @@
 package postgres
 
 import (
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
+	"strconv"
+	"strings"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	"github.com/pkg/errors"
-	"strconv"
-	"strings"
+
+	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 
 	postgres_cfg "github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"

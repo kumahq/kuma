@@ -1,13 +1,15 @@
 package mesh_test
 
 import (
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+
 	"github.com/ghodss/yaml"
+
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("ProxyTemplate", func() {

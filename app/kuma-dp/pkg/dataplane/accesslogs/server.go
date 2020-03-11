@@ -8,9 +8,10 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/pkg/errors"
+
 	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
-	"github.com/pkg/errors"
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 )

@@ -3,13 +3,14 @@ package delete
 import (
 	"context"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
 	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

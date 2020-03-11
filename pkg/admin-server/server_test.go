@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/emicklei/go-restful"
+
 	admin_server "github.com/Kong/kuma/pkg/admin-server"
 	admin_server_config "github.com/Kong/kuma/pkg/config/admin-server"
 	"github.com/Kong/kuma/pkg/test"
 	util_http "github.com/Kong/kuma/pkg/util/http"
-	"github.com/emicklei/go-restful"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
