@@ -62,4 +62,5 @@ replace (
 	github.com/Kong/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
 
 	github.com/prometheus/prometheus => ./vendor/github.com/prometheus/prometheus
+	gopkg.in/fsnotify.v1 => gopkg.in/fsnotify.v1 v1.4.7
 )
