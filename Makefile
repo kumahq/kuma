@@ -125,7 +125,7 @@ GOLANG_PROTOBUF_VERSION := v1.3.2
 GOLANGCI_LINT_VERSION := v1.21.0
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0
-CI_KIND_VERSION ?= v0.5.1
+CI_KIND_VERSION ?= v0.7.0
 CI_MINIKUBE_VERSION ?= v1.4.0
 CI_KUBERNETES_VERSION ?= v1.15.3
 CI_KUBECTL_VERSION ?= v1.14.0
@@ -194,7 +194,7 @@ start/kind:
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
-	@echo export KUBECONFIG="$$(kind get kubeconfig-path --name=kuma)"
+	@echo "kubectl cluster-info --context kind-kuma"
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
