@@ -12,7 +12,7 @@ require (
 	github.com/emicklei/go-restful v2.9.6+incompatible
 	github.com/emicklei/go-restful-openapi v1.2.0
 	github.com/envoyproxy/go-control-plane v0.9.1-0.20191108215040-b0f2cec0e187
-	github.com/envoyproxy/protoc-gen-validate v0.3.0-java.0.20200220015746-c0a080f4bea5
+	github.com/envoyproxy/protoc-gen-validate v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/glogr v0.1.0 // indirect
 	github.com/go-logr/logr v0.1.0
