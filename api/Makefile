@@ -19,7 +19,7 @@ define go_mod_latest_version
 	find $(GOPATH_DIR)/pkg/mod/$(1) -maxdepth 1 -name '$(2)@*' | xargs -L 1 basename | sort -r | head -1 | awk -F@ '{print $$2}'
 endef
 
-PROTOC_VERSION := 3.6.1
+PROTOC_VERSION := 3.8.0
 PROTOC_PGV_VERSION := v0.3.0-java
 GOLANG_PROTOBUF_VERSION := v1.3.2
 DATAPLANE_API_LATEST_VERSION := master
