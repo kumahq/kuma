@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Kong/kuma/pkg/test/resources/model"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -21,13 +19,13 @@ import (
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/rest/errors/types"
-	test_store "github.com/Kong/kuma/pkg/test/store"
-
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
+	"github.com/Kong/kuma/pkg/test/resources/model"
+	test_store "github.com/Kong/kuma/pkg/test/store"
 )
 
 var _ = Describe("kumactl apply", func() {

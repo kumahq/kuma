@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
-
 	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"

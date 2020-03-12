@@ -1,11 +1,10 @@
 package xds_test
 
 import (
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"

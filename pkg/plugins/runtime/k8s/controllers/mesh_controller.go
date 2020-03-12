@@ -3,17 +3,8 @@ package controllers
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
-	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -21,6 +12,13 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/Kong/kuma/pkg/core/resources/store"
+	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 // MeshReconciler reconciles a Mesh object

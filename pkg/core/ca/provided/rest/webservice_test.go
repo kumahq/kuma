@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/emicklei/go-restful"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/pkg/ca"
@@ -23,9 +25,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/secrets/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/tls"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Provided CA WS", func() {

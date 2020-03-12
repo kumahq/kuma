@@ -3,10 +3,10 @@ package rest
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
-
-	"github.com/pkg/errors"
 )
 
 type Api interface {

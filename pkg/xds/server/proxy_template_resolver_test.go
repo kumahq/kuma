@@ -6,14 +6,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 )
 

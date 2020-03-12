@@ -5,15 +5,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/pkg/errors"
-
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	envoy_config_trace_v2 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v2"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )

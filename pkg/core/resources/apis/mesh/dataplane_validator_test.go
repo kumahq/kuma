@@ -2,13 +2,12 @@ package mesh_test
 
 import (
 	"github.com/ghodss/yaml"
-
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {

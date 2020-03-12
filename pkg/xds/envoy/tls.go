@@ -2,16 +2,13 @@ package envoy
 
 import (
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-
-	"github.com/Kong/kuma/pkg/sds/server"
-
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
-
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	"github.com/Kong/kuma/pkg/sds/server"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 )

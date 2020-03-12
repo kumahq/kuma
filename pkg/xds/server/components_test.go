@@ -4,24 +4,20 @@ import (
 	"context"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "github.com/Kong/kuma/pkg/xds/server"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-
+	"github.com/Kong/kuma/pkg/core/xds"
 	test_runtime "github.com/Kong/kuma/pkg/test/runtime"
+	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	. "github.com/Kong/kuma/pkg/xds/server"
 )
 
 type event struct {

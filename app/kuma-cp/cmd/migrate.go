@@ -2,14 +2,13 @@ package cmd
 
 import (
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	"github.com/Kong/kuma/pkg/version"
-
-	"github.com/spf13/cobra"
 )
 
 var migrateLog = controlPlaneLog.WithName("migrate")

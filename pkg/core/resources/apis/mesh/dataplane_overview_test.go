@@ -6,9 +6,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/test/resources/model"
-
 	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("DataplaneOverview", func() {

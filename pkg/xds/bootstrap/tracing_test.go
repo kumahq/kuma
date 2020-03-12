@@ -2,13 +2,12 @@ package bootstrap
 
 import (
 	envoy_config_bootstrap_v2 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Bootstrap Tracing", func() {

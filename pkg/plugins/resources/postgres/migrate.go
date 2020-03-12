@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-
 	postgres_cfg "github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	"github.com/Kong/kuma/pkg/plugins/resources/postgres/migrations"

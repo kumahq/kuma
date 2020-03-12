@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/app/kumactl/cmd"
-
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 )
 

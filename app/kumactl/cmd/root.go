@@ -3,8 +3,6 @@ package cmd
 import (
 	"os"
 
-	kumactl_config "github.com/Kong/kuma/app/kumactl/pkg/config"
-
 	"github.com/spf13/cobra"
 
 	"github.com/Kong/kuma/app/kumactl/cmd/apply"
@@ -16,10 +14,10 @@ import (
 	"github.com/Kong/kuma/app/kumactl/cmd/install"
 	"github.com/Kong/kuma/app/kumactl/cmd/manage"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/pkg/cmd/version"
-
+	kumactl_config "github.com/Kong/kuma/app/kumactl/pkg/config"
 	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
+	"github.com/Kong/kuma/pkg/cmd/version"
 	"github.com/Kong/kuma/pkg/core"
 	kuma_log "github.com/Kong/kuma/pkg/log"
 )

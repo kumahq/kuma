@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"text/template"
 
+	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-
-	"github.com/Kong/kuma/pkg/xds/topology"
-
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
@@ -21,6 +18,7 @@ import (
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
+	"github.com/Kong/kuma/pkg/xds/topology"
 )
 
 type BootstrapGenerator interface {

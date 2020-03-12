@@ -7,13 +7,13 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	util_http "github.com/Kong/kuma/pkg/util/http"
-
-	"github.com/pkg/errors"
 )
 
 func NewStore(client util_http.Client, api rest.Api) store.ResourceStore {

@@ -4,24 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/secrets/k8s"
-
-	"github.com/golang/protobuf/ptypes/wrappers"
-
-	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
-
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
+	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/Kong/kuma/pkg/core/resources/store"
+	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
+	"github.com/Kong/kuma/pkg/plugins/secrets/k8s"
 )
 
 var _ = Describe("KubernetesStore", func() {

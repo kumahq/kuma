@@ -8,13 +8,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/tls"
-
 	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
+	"github.com/Kong/kuma/pkg/tls"
 )
 
 type SigningCert struct {

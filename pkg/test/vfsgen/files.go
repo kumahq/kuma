@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/onsi/ginkgo/extensions/table"
 	"github.com/pkg/errors"
 	"github.com/shurcooL/httpfs/vfsutil"
-
-	"github.com/onsi/ginkgo/extensions/table"
 )
 
 type FileTestCase struct {

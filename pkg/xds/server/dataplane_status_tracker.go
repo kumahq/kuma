@@ -5,18 +5,16 @@ import (
 	"sync"
 	"time"
 
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	"github.com/golang/protobuf/proto"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-
-	"github.com/golang/protobuf/proto"
-
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
 var (

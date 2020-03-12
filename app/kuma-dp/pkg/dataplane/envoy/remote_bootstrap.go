@@ -7,14 +7,13 @@ import (
 	"net/http"
 	net_url "net/url"
 
-	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
-
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
 )
 
 type remoteBootstrap struct {

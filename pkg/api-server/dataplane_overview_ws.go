@@ -4,9 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-
 	"github.com/emicklei/go-restful"
+	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"

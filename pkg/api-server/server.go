@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
-
 	"github.com/emicklei/go-restful"
+	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
 	"github.com/Kong/kuma/pkg/config"

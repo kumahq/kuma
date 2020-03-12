@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"

@@ -9,7 +9,6 @@ import (
 
 	config "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
 
