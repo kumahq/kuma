@@ -194,7 +194,7 @@ start/kind:
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
-	@echo "kubectl cluster-info --context kind-kuma"
+	@echo "kubectl config use-context kind-kuma"
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
