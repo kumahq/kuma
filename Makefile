@@ -3,7 +3,7 @@
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector kind/load/kuma-init \
 		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/k8s/control-plane generate/kumactl/install/k8s/metrics generate/kumactl/install/universal/control-plane/postgres generate/kuma-cp/migrations generate/gui \
-		fmt fmt/go fmt/proto vet golangci-lint check test integration build run/k8s run/universal/memory run/universal/postgres \
+		fmt fmt/go fmt/proto vet golangci-lint imports check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-prometheus-sd image/kuma-tcp-echo \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-prometheus-sd docker/build/kuma-tcp-echo \
 		docker/save docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-injector docker/save/kuma-init docker/save/kuma-prometheus-sd docker/save/kuma-tcp-echo \
@@ -284,8 +284,7 @@ vet: ## Dev: Run go vet
 golangci-lint: ## Dev: Runs golangci-lint linter
 	$(GOLANGCI_LINT_DIR)/golangci-lint run -v
 
-.PHONY: imports ## Dev: Runs goimports in order to organize imports
-imports:
+imports: ## Dev: Runs goimports in order to organize imports
 	goimports -w -local github.com/Kong/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendor/*'`
 
 check: generate fmt vet docs golangci-lint imports ## Dev: Run code checks (go fmt, go vet, ...)

@@ -4,7 +4,7 @@
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
-		dev/install/golangci-lint
+		dev/install/golangci-lint dev/install/goimports
 
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 
