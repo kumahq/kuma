@@ -46,6 +46,9 @@ var SupportedProtocols = ProtocolList{
 	ProtocolTCP,
 }
 
+// Service that indicates L4 pass through cluster
+const PassThroughService = "pass_through"
+
 var ipv4loopback = net.IPv4(127, 0, 0, 1)
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {

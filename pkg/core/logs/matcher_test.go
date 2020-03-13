@@ -142,6 +142,8 @@ var _ = Describe("Matcher", func() {
 		Expect(log["backend"]).To(Equal(backendFile2))
 		// should match because *->* rule and default backend file1
 		Expect(log["web"]).To(Equal(backendFile1))
+		// should match implicit pass through because service *->* rule and default backend file1
+		Expect(log[core_mesh.PassThroughService]).To(Equal(backendFile1))
 	})
 
 	It("should not match services", func() {
