@@ -118,6 +118,8 @@ spec:
       capabilities:
         add:
         - NET_ADMIN
+      runAsGroup: 0
+      runAsUser: 0
   volumes:
   - name: default-token-w7dxf
     secret:
