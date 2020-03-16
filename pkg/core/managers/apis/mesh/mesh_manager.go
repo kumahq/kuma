@@ -2,9 +2,10 @@ package mesh
 
 import (
 	"context"
+	"time"
+
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"time"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"

@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 	"net"
 	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 	"github.com/Kong/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/Kong/kuma/app/kumactl/pkg/resources"
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"

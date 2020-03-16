@@ -1,6 +1,8 @@
 package bootstrap
 
 import (
+	"github.com/pkg/errors"
+
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
@@ -18,7 +20,6 @@ import (
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
-	"github.com/pkg/errors"
 )
 
 func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {

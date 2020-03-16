@@ -1,8 +1,9 @@
 package mesh
 
 import (
-	"github.com/Kong/kuma/pkg/core/validators"
 	"regexp"
+
+	"github.com/Kong/kuma/pkg/core/validators"
 )
 
 var nameMeshRegexp = regexp.MustCompile("^[0-9a-z-_]*$")

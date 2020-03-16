@@ -6,13 +6,13 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	core_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	"github.com/golang/protobuf/ptypes/wrappers"
-
-	"github.com/pkg/errors"
 )
 
 const defaultRsaBits = 2048

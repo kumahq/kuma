@@ -2,8 +2,9 @@ package k8s
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 func CoreNameToK8sName(coreName string) (string, string, error) {

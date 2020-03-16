@@ -1,11 +1,13 @@
 package kuma_cp
 
 import (
-	"github.com/Kong/kuma/pkg/config"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"os"
 	"strings"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/pkg/config"
 )
 
 var _ = Describe("Default config", func() {

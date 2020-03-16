@@ -1,14 +1,13 @@
 package k8s
 
 import (
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/plugins/discovery/k8s/controllers"
 	"github.com/pkg/errors"
-
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
-	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
-
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/Kong/kuma/pkg/core"
+	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
+	"github.com/Kong/kuma/pkg/plugins/discovery/k8s/controllers"
+	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
 )
 
 var _ core_plugins.DiscoveryPlugin = &plugin{}

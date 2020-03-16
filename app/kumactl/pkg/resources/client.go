@@ -1,12 +1,14 @@
 package resources
 
 import (
-	util_http "github.com/Kong/kuma/pkg/util/http"
-	"github.com/pkg/errors"
 	"net/http"
 	"net/url"
 	"time"
 	"crypto/tls"
+
+	"github.com/pkg/errors"
+
+	util_http "github.com/Kong/kuma/pkg/util/http"
 )
 
 const (

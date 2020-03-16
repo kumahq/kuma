@@ -2,14 +2,9 @@ package controllers
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -18,6 +13,12 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
+	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
+	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 // NamespaceReconciler reconciles a Namespace object

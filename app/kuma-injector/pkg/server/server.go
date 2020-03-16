@@ -1,8 +1,9 @@
 package server
 
 import (
-	"github.com/pkg/errors"
 	"net/http"
+
+	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/app/kuma-injector/pkg/injector"
 	kuma_injector_conf "github.com/Kong/kuma/pkg/config/app/kuma-injector"

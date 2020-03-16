@@ -304,10 +304,13 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	if redirectPort == 0 {
 		return nil, nil
 	}
+	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
+	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 	listener, err := envoy_listeners.NewListenerBuilder().
 		Configure(envoy_listeners.OutboundListener("catch_all", "0.0.0.0", redirectPort)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
-			Configure(envoy_listeners.TcpProxy("pass_through", envoy_common.ClusterInfo{Name: "pass_through"})))).
+			Configure(envoy_listeners.TcpProxy("pass_through", envoy_common.ClusterInfo{Name: "pass_through"})).
+			Configure(envoy_listeners.NetworkAccessLog(meshName, sourceService, "external", proxy.Logs[mesh_core.PassThroughService], proxy)))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {

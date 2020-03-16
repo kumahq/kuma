@@ -2,9 +2,9 @@ package api_server
 
 import (
 	"errors"
-	"github.com/Kong/kuma/pkg/config/api-server/catalog"
 
 	"github.com/Kong/kuma/pkg/config"
+	"github.com/Kong/kuma/pkg/config/api-server/catalog"
 )
 
 var _ config.Config = &ApiServerConfig{}

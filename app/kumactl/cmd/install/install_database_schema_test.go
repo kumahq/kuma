@@ -2,11 +2,13 @@ package install_test
 
 import (
 	"bytes"
-	"github.com/Kong/kuma/app/kumactl/cmd"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"path/filepath"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/app/kumactl/cmd"
 )
 
 var _ = Describe("kumactl install database-schema", func() {

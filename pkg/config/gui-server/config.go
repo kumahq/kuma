@@ -2,6 +2,7 @@ package gui_server
 
 import (
 	"errors"
+
 	"github.com/Kong/kuma/pkg/config"
 )
 

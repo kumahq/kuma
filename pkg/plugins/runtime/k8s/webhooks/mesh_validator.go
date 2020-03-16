@@ -2,15 +2,17 @@ package webhooks
 
 import (
 	"context"
+	"net/http"
+
+	"k8s.io/api/admission/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
 	managers_mesh "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"k8s.io/api/admission/v1beta1"
-	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s.Converter) AdmissionValidator {

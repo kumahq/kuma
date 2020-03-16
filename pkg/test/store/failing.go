@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 )

@@ -3,6 +3,9 @@ package api_server
 import (
 	"context"
 	"fmt"
+
+	"github.com/emicklei/go-restful"
+
 	"github.com/Kong/kuma/pkg/api-server/definitions"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -12,7 +15,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	rest_errors "github.com/Kong/kuma/pkg/core/rest/errors"
 	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/emicklei/go-restful"
 )
 
 type resourceWs struct {

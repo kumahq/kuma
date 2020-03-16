@@ -253,6 +253,8 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 			inboundPortsToIntercept,
 		},
 		SecurityContext: &kube_core.SecurityContext{
+			RunAsUser:  new(int64), // way to get pointer to int64(0)
+			RunAsGroup: new(int64),
 			Capabilities: &kube_core.Capabilities{
 				Add: []kube_core.Capability{
 					kube_core.Capability("NET_ADMIN"),

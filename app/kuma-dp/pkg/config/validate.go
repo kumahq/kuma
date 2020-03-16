@@ -1,8 +1,9 @@
 package config
 
 import (
-	util_files "github.com/Kong/kuma/pkg/util/files"
 	"github.com/pkg/errors"
+
+	util_files "github.com/Kong/kuma/pkg/util/files"
 )
 
 func ValidateTokenPath(path string) error {

@@ -2,14 +2,15 @@ package client
 
 import (
 	"encoding/json"
-	"github.com/Kong/kuma/pkg/catalog"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
 	"crypto/tls"
 
+	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/catalog"
 	util_http "github.com/Kong/kuma/pkg/util/http"
 )
 

@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -9,10 +8,10 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/generator"
-
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	"github.com/Kong/kuma/pkg/xds/generator"
 )
 
 var _ = Describe("ProxyTemplateRawSource", func() {

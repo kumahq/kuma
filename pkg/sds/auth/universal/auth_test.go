@@ -2,6 +2,10 @@ package universal_test
 
 import (
 	"context"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
@@ -12,8 +16,6 @@ import (
 	"github.com/Kong/kuma/pkg/sds/auth/universal"
 	"github.com/Kong/kuma/pkg/sds/server"
 	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Authentication flow", func() {

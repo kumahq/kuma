@@ -3,8 +3,9 @@ package system
 import (
 	"errors"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/golang/protobuf/ptypes/wrappers"
+
+	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
 const (

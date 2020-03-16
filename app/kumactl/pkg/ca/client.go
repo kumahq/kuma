@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"time"
+  tls1 "crypto/tls"
+  
+	"github.com/pkg/errors"
 
 	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
 	error_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
 	"github.com/Kong/kuma/pkg/tls"
 	util_http "github.com/Kong/kuma/pkg/util/http"
-	"github.com/pkg/errors"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"time"
-	tls1 "crypto/tls"
 )
 
 const (

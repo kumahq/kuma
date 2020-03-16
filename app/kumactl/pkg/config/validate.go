@@ -2,13 +2,15 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/Kong/kuma/pkg/api-server/types"
-	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"time"
 	"crypto/tls"
+
+	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/api-server/types"
+	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 )
 
 // overridden by tests

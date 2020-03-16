@@ -4,9 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Kong/kuma/pkg/core/xds"
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	go_cp_server "github.com/envoyproxy/go-control-plane/pkg/server"
+
+	"github.com/Kong/kuma/pkg/core/xds"
 )
 
 type DataplaneMetadataTracker struct {

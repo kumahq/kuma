@@ -2,14 +2,16 @@ package logs_test
 
 import (
 	"context"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/logs"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Matcher", func() {
@@ -142,6 +144,8 @@ var _ = Describe("Matcher", func() {
 		Expect(log["backend"]).To(Equal(backendFile2))
 		// should match because *->* rule and default backend file1
 		Expect(log["web"]).To(Equal(backendFile1))
+		// should match implicit pass through because service *->* rule and default backend file1
+		Expect(log[core_mesh.PassThroughService]).To(Equal(backendFile1))
 	})
 
 	It("should not match services", func() {

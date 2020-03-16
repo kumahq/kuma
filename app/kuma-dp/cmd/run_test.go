@@ -13,23 +13,20 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/Kong/kuma/pkg/catalog"
-
-	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
-	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
-	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/Kong/kuma/pkg/catalog"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
+	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
-
 	"github.com/Kong/kuma/pkg/test"
+	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("run", func() {

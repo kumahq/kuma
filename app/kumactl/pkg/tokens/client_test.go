@@ -2,6 +2,15 @@ package tokens_test
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
 	admin_server "github.com/Kong/kuma/pkg/admin-server"
 	admin_server_config "github.com/Kong/kuma/pkg/config/admin-server"
@@ -11,13 +20,6 @@ import (
 	"github.com/Kong/kuma/pkg/test"
 	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 	"github.com/Kong/kuma/pkg/tokens/builtin/server"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
-	"net/http"
-	"net/http/httptest"
-	"path/filepath"
 )
 
 type staticTokenIssuer struct {

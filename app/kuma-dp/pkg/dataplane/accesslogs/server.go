@@ -6,13 +6,12 @@ import (
 	"net"
 	"sync/atomic"
 
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
-	"github.com/pkg/errors"
-
-	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 )
 
 var logger = core.Log.WithName("accesslogs-server")
