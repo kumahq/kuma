@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	tls1 "crypto/tls"
 )
 
 const (
@@ -38,6 +39,7 @@ func NewProvidedCaClient(address string, config *kumactl_config.Context_AdminApi
 	}
 	httpClient := &http.Client{
 		Timeout: timeout,
+		Transport: &http.Transport{TLSClientConfig: &tls1.Config{InsecureSkipVerify: true},},
 	}
 	if baseURL.Scheme == "https" {
 		if !config.HasClientCert() {

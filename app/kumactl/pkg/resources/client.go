@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"crypto/tls"
 )
 
 const (
@@ -20,6 +21,7 @@ func apiServerClient(apiUrl string) (util_http.Client, error) {
 	}
 	client := &http.Client{
 		Timeout: Timeout,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true},},
 	}
 	return util_http.ClientWithBaseURL(client, baseURL), nil
 }

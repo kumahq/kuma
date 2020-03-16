@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"crypto/tls"
 
 	util_http "github.com/Kong/kuma/pkg/util/http"
 )
@@ -27,6 +28,7 @@ func NewCatalogClient(address string) (CatalogClient, error) {
 	}
 	client := &http.Client{
 		Timeout: timeout,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true},},
 	}
 	return &httpCatalogClient{
 		client: util_http.ClientWithBaseURL(client, baseURL),

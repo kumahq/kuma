@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"crypto/tls"
 
 	"github.com/ghodss/yaml"
 	"github.com/hoisie/mustache"
@@ -57,6 +58,7 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				if strings.HasPrefix(ctx.args.file, "http://") || strings.HasPrefix(ctx.args.file, "https://") {
 					client := &http.Client{
 						Timeout: timeout,
+						Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true},},
 					}
 					req, err := http.NewRequest("GET", ctx.args.file, nil)
 					if err != nil {

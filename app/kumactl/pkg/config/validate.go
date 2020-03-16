@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+	"crypto/tls"
 )
 
 // overridden by tests
@@ -20,6 +21,7 @@ func ValidateCpCoordinates(cp *kumactl_config.ControlPlane) error {
 	}
 	client := http.Client{
 		Timeout: DefaultApiServerTimeout,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true},},
 	}
 	resp, err := client.Do(req)
 	if err != nil {
