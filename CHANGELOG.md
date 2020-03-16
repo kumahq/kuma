@@ -2,6 +2,8 @@
 
 ## master
 
+* feature: log requests to external services
+  [#630](https://github.com/Kong/kuma/pull/630)
 * feature: added flag `--dry-run` for `kumactl apply`
   [#622](https://github.com/Kong/kuma/pull/622)
 
