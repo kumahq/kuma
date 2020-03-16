@@ -40,7 +40,6 @@ GO_TEST := go test $(LD_FLAGS)
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
-BUILD_KUBECONFIG_DIR ?= $(BUILD_DIR)/kubeconfig
 
 GO_TEST_OPTS ?=
 
@@ -69,7 +68,8 @@ ENVOY_ADMIN_PORT ?= 9901
 
 EXAMPLE_NAMESPACE ?= kuma-example
 
-KIND_KUBECONFIG = $(shell pwd)/$(BUILD_KUBECONFIG_DIR)/kuma-config
+KIND_KUBECONFIG_DIR ?= $(HOME)/.kube
+KIND_KUBECONFIG = $(KIND_KUBECONFIG_DIR)/kind-kuma-config
 
 define KIND_EXAMPLE_DATAPLANE_MESH
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
@@ -190,10 +190,10 @@ help: ## Display this help screen
 
 start/k8s: start/kind deploy/example-app/k8s ## Bootstrap: Start Kubernetes locally (KIND) and deploy sample app
 
-${BUILD_KUBECONFIG_DIR}:
-	mkdir -p ${BUILD_KUBECONFIG_DIR}
+${KIND_KUBECONFIG_DIR}:
+	mkdir -p ${KIND_KUBECONFIG_DIR}
 
-start/kind: ${BUILD_KUBECONFIG_DIR}
+start/kind: ${KIND_KUBECONFIG_DIR}
 	kind create cluster --name kuma --image=kindest/node:$(CI_KUBERNETES_VERSION) 2>/dev/null \
 	&& kind get kubeconfig --name kuma > $(KIND_KUBECONFIG)
 	@echo
