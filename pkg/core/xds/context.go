@@ -1,13 +1,13 @@
 package xds
 
 import (
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_log "github.com/envoyproxy/go-control-plane/pkg/log"
 	"github.com/go-logr/logr"
 
 	"github.com/Kong/kuma/pkg/core"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
-	envoy_log "github.com/envoyproxy/go-control-plane/pkg/log"
 )
 
 type XdsContext interface {

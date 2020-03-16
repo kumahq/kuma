@@ -1,13 +1,14 @@
 package errors_test
 
 import (
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
-	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
+	"github.com/Kong/kuma/pkg/core/rest/errors/types"
 )
 
 var _ = Describe("Formatter test", func() {

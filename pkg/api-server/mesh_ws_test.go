@@ -3,16 +3,18 @@ package api_server_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/api-server"
+	api_server "github.com/Kong/kuma/pkg/api-server"
 	config "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"io/ioutil"
 )
 
 var _ = Describe("Resource WS", func() {

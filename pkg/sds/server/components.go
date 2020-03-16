@@ -2,7 +2,11 @@ package server
 
 import (
 	"context"
+
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/pkg/errors"
+	kube_auth "k8s.io/api/authentication/v1"
 
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -18,11 +22,6 @@ import (
 	ca_sds_provider "github.com/Kong/kuma/pkg/sds/provider/ca"
 	identity_sds_provider "github.com/Kong/kuma/pkg/sds/provider/identity"
 	"github.com/Kong/kuma/pkg/tokens/builtin"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-
-	kube_auth "k8s.io/api/authentication/v1"
 )
 
 const (

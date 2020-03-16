@@ -8,6 +8,10 @@ import (
 	"strconv"
 	"strings"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -15,9 +19,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/test"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Bootstrap Server", func() {

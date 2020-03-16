@@ -1,11 +1,12 @@
 package mesh
 
 import (
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Mesh", func() {

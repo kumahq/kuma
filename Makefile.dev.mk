@@ -4,7 +4,7 @@
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
-		dev/install/golangci-lint
+		dev/install/golangci-lint dev/install/goimports
 
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 
@@ -13,7 +13,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/ginkgo \
 	dev/install/kubebuilder dev/install/kustomize \
 	dev/install/kubectl dev/install/kind dev/install/minikube \
-	dev/install/golangci-lint
+	dev/install/golangci-lint \
+	dev/install/goimports
 
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 	@if [ -e $(PROTOC_PATH) ]; then echo "Protoc $$( $(PROTOC_PATH) --version ) is already installed at $(PROTOC_PATH)" ; fi
@@ -128,3 +129,6 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
+
+dev/install/goimports: ## Bootstrap: Install goimports
+	go get -u golang.org/x/tools/cmd/goimports

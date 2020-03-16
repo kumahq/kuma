@@ -3,6 +3,8 @@ package runtime
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
@@ -11,7 +13,6 @@ import (
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/pkg/errors"
 )
 
 // BuilderContext provides access to Builder's interim state.

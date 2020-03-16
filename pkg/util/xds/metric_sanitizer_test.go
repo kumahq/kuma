@@ -1,9 +1,10 @@
 package xds_test
 
 import (
-	"github.com/Kong/kuma/pkg/util/xds"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/pkg/util/xds"
 )
 
 var _ = Describe("Metric sanitizer", func() {

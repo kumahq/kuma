@@ -5,14 +5,16 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io"
+	"io/ioutil"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"github.com/Kong/kuma/pkg/core/ca/provided/rest/types"
 	"github.com/Kong/kuma/pkg/tls"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"io"
-	"io/ioutil"
 )
 
 func newProvidedCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

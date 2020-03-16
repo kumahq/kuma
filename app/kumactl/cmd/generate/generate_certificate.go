@@ -2,12 +2,14 @@ package generate
 
 import (
 	"fmt"
+	"io/ioutil"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
 	"github.com/Kong/kuma/pkg/tls"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"io/ioutil"
 )
 
 var (

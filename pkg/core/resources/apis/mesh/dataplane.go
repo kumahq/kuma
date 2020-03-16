@@ -2,10 +2,10 @@ package mesh
 
 import (
 	"errors"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/Kong/kuma/pkg/core/resources/registry"
 )
 
 const (

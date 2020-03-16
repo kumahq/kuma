@@ -1,10 +1,11 @@
 package inspect
 
 import (
+	"github.com/spf13/cobra"
+
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
-	"github.com/spf13/cobra"
 )
 
 type inspectContext struct {

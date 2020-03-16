@@ -1,13 +1,14 @@
 package api_server_test
 
 import (
-	config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"net/http"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	config "github.com/Kong/kuma/pkg/config/api-server"
+	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
 

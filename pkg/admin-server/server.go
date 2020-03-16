@@ -5,6 +5,15 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
+	"strings"
+
+	"github.com/emicklei/go-restful"
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
+
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
@@ -12,13 +21,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/Kong/kuma/pkg/tokens/builtin/server"
-	"github.com/emicklei/go-restful"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-	"io/ioutil"
-	"net/http"
-	"path/filepath"
-	"strings"
 )
 
 var (

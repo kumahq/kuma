@@ -5,10 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
+
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	util_files "github.com/Kong/kuma/pkg/util/files"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/pkg/errors"
 )
 
 var DefaultConfigFile = filepath.Join(os.Getenv("HOME"), ".kumactl", "config")

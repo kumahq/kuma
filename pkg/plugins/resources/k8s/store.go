@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	common_k8s "github.com/Kong/kuma/pkg/plugins/common/k8s"
@@ -12,10 +17,6 @@ import (
 	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/pkg/errors"
-	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ store.ResourceStore = &KubernetesStore{}

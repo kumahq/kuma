@@ -1,6 +1,9 @@
 package api_server_test
 
 import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	config "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
@@ -8,8 +11,6 @@ import (
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
 	"github.com/Kong/kuma/pkg/test/resources/apis/sample"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Read only Resource WS", func() {

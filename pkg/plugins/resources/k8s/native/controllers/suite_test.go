@@ -22,14 +22,14 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	meshv1alpha1 "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	meshv1alpha1 "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
 

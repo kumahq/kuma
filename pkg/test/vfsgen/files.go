@@ -1,14 +1,14 @@
 package vfsgen
 
 import (
-	"github.com/pkg/errors"
-	"github.com/shurcooL/httpfs/vfsutil"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 
 	"github.com/onsi/ginkgo/extensions/table"
+	"github.com/pkg/errors"
+	"github.com/shurcooL/httpfs/vfsutil"
 )
 
 type FileTestCase struct {

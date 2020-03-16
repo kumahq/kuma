@@ -1,11 +1,11 @@
 package config
 
 import (
-	"github.com/Kong/kuma/app/kumactl/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	"github.com/Kong/kuma/app/kumactl/pkg/config"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 )
 

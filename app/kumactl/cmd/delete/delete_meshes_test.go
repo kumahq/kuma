@@ -6,19 +6,19 @@ import (
 	"path/filepath"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/spf13/cobra"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
+	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/spf13/cobra"
 )
 
 var _ = Describe("kumactl delete mesh", func() {

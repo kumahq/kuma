@@ -1,10 +1,11 @@
 package config
 
 import (
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 func newConfigViewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

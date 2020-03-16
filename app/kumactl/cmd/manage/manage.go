@@ -1,9 +1,10 @@
 package manage
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/Kong/kuma/app/kumactl/cmd/manage/ca"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/spf13/cobra"
 )
 
 func NewManageCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

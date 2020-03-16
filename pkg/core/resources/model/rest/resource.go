@@ -3,9 +3,11 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/Kong/kuma/pkg/core/resources/model"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
 type ResourceMeta struct {

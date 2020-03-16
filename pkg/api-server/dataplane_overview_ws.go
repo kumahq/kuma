@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/emicklei/go-restful"
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -12,7 +13,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	rest_errors "github.com/Kong/kuma/pkg/core/rest/errors"
-	"github.com/emicklei/go-restful"
 )
 
 type overviewWs struct {

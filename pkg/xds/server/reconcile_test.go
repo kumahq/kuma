@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -12,9 +15,6 @@ import (
 	xds_model "github.com/Kong/kuma/pkg/core/xds"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
 )
 
 var _ = Describe("Reconcile", func() {

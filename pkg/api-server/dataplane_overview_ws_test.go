@@ -7,6 +7,10 @@ import (
 	"net/http"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	config "github.com/Kong/kuma/pkg/config/api-server"
@@ -14,9 +18,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/util/proto"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Dataplane Overview WS", func() {

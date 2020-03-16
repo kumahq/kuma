@@ -5,6 +5,9 @@ import (
 	"io"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
@@ -12,8 +15,6 @@ import (
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 type inspectDataplanesContext struct {

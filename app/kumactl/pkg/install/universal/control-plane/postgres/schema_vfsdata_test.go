@@ -3,11 +3,13 @@
 package postgres_test
 
 import (
-	"github.com/Kong/kuma/app/kumactl/pkg/install/universal/control-plane/postgres"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"io/ioutil"
 	"path/filepath"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/app/kumactl/pkg/install/universal/control-plane/postgres"
 )
 
 var _ = Describe("Schema file", func() {

@@ -1,10 +1,11 @@
 package postgres_test
 
 import (
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 )
 
 var _ = Describe("TLSPostgresStoreConfig", func() {

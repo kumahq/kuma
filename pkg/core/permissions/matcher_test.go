@@ -1,11 +1,12 @@
 package permissions
 
 import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/test/resources/model"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Matcher", func() {

@@ -3,13 +3,15 @@ package generate_test
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	"github.com/Kong/kuma/app/kumactl/cmd/generate"
 	"github.com/Kong/kuma/pkg/tls"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"os"
 )
 
 var _ = Describe("kumactl generate tls-certificate", func() {

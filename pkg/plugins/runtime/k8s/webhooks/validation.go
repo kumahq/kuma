@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Kong/kuma/pkg/core/validators"
 	"k8s.io/api/admission/v1beta1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_registry "github.com/Kong/kuma/pkg/core/resources/registry"
+	"github.com/Kong/kuma/pkg/core/validators"
 	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"

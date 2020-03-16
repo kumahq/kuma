@@ -3,9 +3,10 @@ package kuma_prometheus_sd
 import (
 	"net/url"
 
-	"github.com/Kong/kuma/pkg/config"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+
+	"github.com/Kong/kuma/pkg/config"
 )
 
 func DefaultConfig() Config {

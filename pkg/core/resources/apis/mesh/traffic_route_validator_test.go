@@ -1,14 +1,13 @@
 package mesh_test
 
 import (
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/ghodss/yaml"
 )
 
 var _ = Describe("TrafficRoute", func() {

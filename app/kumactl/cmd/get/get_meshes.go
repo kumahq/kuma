@@ -4,14 +4,15 @@ import (
 	"context"
 	"io"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 func newGetMeshesCmd(pctx *getContext) *cobra.Command {

@@ -1,9 +1,10 @@
 package policy
 
 import (
+	"sort"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"sort"
 )
 
 // SelectDataplanePolicy given a Dataplane definition and a list of DataplanePolicy returns the "best matching" DataplanePolicy.

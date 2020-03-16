@@ -1,14 +1,15 @@
 package resources_test
 
 import (
-	"github.com/Kong/kuma/app/kuma-ui/pkg/resources"
-	"github.com/Kong/kuma/pkg/test/vfsgen"
 	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/app/kuma-ui/pkg/resources"
+	"github.com/Kong/kuma/pkg/test/vfsgen"
 )
 
 var _ = Describe("Gui Dir", func() {

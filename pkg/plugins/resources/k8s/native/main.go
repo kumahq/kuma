@@ -20,12 +20,13 @@ import (
 	"flag"
 	"os"
 
-	meshv1alpha1 "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	meshv1alpha1 "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/controllers"
 	// +kubebuilder:scaffold:imports
 )
 

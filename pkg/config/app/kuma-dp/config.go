@@ -4,10 +4,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/Kong/kuma/pkg/config"
-	config_types "github.com/Kong/kuma/pkg/config/types"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+
+	"github.com/Kong/kuma/pkg/config"
+	config_types "github.com/Kong/kuma/pkg/config/types"
 )
 
 func DefaultConfig() Config {
