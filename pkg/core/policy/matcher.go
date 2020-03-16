@@ -21,8 +21,12 @@ func (f ServiceIteratorFunc) Next() (core_xds.ServiceName, bool) {
 func ToOutboundServicesOf(dataplane *mesh_core.DataplaneResource) ServiceIteratorFunc {
 	idx := 0
 	return ServiceIteratorFunc(func() (core_xds.ServiceName, bool) {
-		if len(dataplane.Spec.Networking.GetOutbound()) <= idx {
+		if len(dataplane.Spec.Networking.GetOutbound()) < idx {
 			return "", false
+		}
+		if len(dataplane.Spec.Networking.GetOutbound()) == idx { // add additional implicit pass through service
+			idx++
+			return mesh_core.PassThroughService, true
 		}
 		oface := dataplane.Spec.Networking.GetOutbound()[idx]
 		idx++

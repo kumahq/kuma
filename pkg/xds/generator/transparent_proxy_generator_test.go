@@ -26,7 +26,15 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		func(given testCase) {
 			// setup
 			gen := &generator.TransparentProxyGenerator{}
-			ctx := xds_context.Context{}
+			ctx := xds_context.Context{
+				Mesh: xds_context.MeshContext{
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+					},
+				},
+			}
 
 			// when
 			rs, err := gen.Generate(ctx, given.proxy)
@@ -73,6 +81,16 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
+				Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is not picked
+					"some-service": {
+						Name: "file",
+						Type: &mesh_proto.LoggingBackend_File_{
+							File: &mesh_proto.LoggingBackend_File{
+								Path: "/var/log",
+							},
+						},
+					},
+				},
 			},
 			expected: `
         resources:
@@ -89,6 +107,69 @@ var _ = Describe("TransparentProxyGenerator", func() {
               - name: envoy.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: pass_through
+                  statPrefix: pass_through
+            name: catch_all
+            useOriginalDst: true
+          version: v1
+        - name: pass_through
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            connectTimeout: 5s
+            lbPolicy: ORIGINAL_DST_LB
+            name: pass_through
+            type: ORIGINAL_DST
+          version: v1
+`,
+		}),
+		Entry("transparent_proxying=true with logs", testCase{
+			proxy: &model.Proxy{
+				Id: model.ProxyId{Name: "side-car"},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Version: "v1",
+					},
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+								RedirectPort: 15001,
+							},
+						},
+					},
+				},
+				Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is is not picked
+					"pass_through": {
+						Name: "file",
+						Type: &mesh_proto.LoggingBackend_File_{
+							File: &mesh_proto.LoggingBackend_File{
+								Path: "/var/log",
+							},
+						},
+					},
+				},
+			},
+			expected: `
+        resources:
+        - name: catch_all
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            trafficDirection: OUTBOUND
+            address:
+              socketAddress:
+                address: 0.0.0.0
+                portValue: 15001
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  accessLog:
+                  - name: envoy.file_access_log
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
+                      format: |
+                        [%START_TIME%] default (unknown)->%UPSTREAM_HOST%(external) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                      path: /var/log
                   cluster: pass_through
                   statPrefix: pass_through
             name: catch_all
