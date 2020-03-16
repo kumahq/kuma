@@ -1,7 +1,8 @@
 # CHANGELOG
 
 ## master
-
+* fix: explicitly set parameters in securityContext of kuma-init
+  [#631](https://github.com/Kong/kuma/pull/631)
 * feature: log requests to external services
   [#630](https://github.com/Kong/kuma/pull/630)
 * feature: added flag `--dry-run` for `kumactl apply`
