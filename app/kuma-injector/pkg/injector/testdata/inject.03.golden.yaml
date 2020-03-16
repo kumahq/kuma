@@ -179,6 +179,8 @@ spec:
       capabilities:
         add:
         - NET_ADMIN
+      runAsGroup: 0
+      runAsUser: 0
   nodeSelector:
     beta.kubernetes.io/os: linux
   priority: 2000000000
