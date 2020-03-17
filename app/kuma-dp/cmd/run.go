@@ -1,11 +1,11 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
-	"crypto/tls"
 
 	"github.com/Kong/kuma/pkg/catalog/client"
 
@@ -27,11 +27,11 @@ type CatalogClientFactory func(string) (client.CatalogClient, error)
 var (
 	runLog = dataplaneLog.WithName("run")
 	// overridable by tests
-	bootstrapGenerator   = envoy.NewRemoteBootstrapGenerator(&http.Client{
-							Timeout: 10 * time.Second,
-							Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true},},
-						},
-					)
+	bootstrapGenerator = envoy.NewRemoteBootstrapGenerator(&http.Client{
+		Timeout:   10 * time.Second,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+	},
+	)
 	catalogClientFactory = client.NewCatalogClient
 )
 

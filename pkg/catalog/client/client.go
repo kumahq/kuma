@@ -1,12 +1,12 @@
 package client
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
-	"crypto/tls"
 
 	"github.com/pkg/errors"
 
@@ -28,8 +28,8 @@ func NewCatalogClient(address string) (CatalogClient, error) {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
 	}
 	client := &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true},},
+		Timeout:   timeout,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	}
 	return &httpCatalogClient{
 		client: util_http.ClientWithBaseURL(client, baseURL),

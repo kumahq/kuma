@@ -2,14 +2,14 @@ package ca
 
 import (
 	"bytes"
+	tls1 "crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
-	tls1 "crypto/tls"
-  
+
 	"github.com/pkg/errors"
 
 	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -39,8 +39,8 @@ func NewProvidedCaClient(address string, config *kumactl_config.Context_AdminApi
 		return nil, errors.Wrapf(err, "failed to parse the server URL")
 	}
 	httpClient := &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{TLSClientConfig: &tls1.Config{InsecureSkipVerify: true},},
+		Timeout:   timeout,
+		Transport: &http.Transport{TLSClientConfig: &tls1.Config{InsecureSkipVerify: true}},
 	}
 	if baseURL.Scheme == "https" {
 		if !config.HasClientCert() {
