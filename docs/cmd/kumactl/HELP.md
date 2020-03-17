@@ -196,9 +196,8 @@ Usage:
   kumactl install [command]
 
 Available Commands:
-  control-plane   Install Kuma Control Plane on Kubernetes
-  database-schema Install Kuma schema on DB
-  metrics         Install Metrics backend in Kubernetes cluster
+  control-plane Install Kuma Control Plane on Kubernetes
+  metrics       Install Metrics backend in Kubernetes cluster
 
 Flags:
   -h, --help   help for install
@@ -237,31 +236,6 @@ Flags:
       --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
       --sds-tls-cert string                 TLS certificate for the SDS server
       --sds-tls-key string                  TLS key for the SDS server
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use (default "default")
-```
-
-### kumactl install database-schema
-
-```
-Install Kuma schema on DB.
-
-Usage:
-  kumactl install database-schema [flags]
-
-Examples:
-1. kumactl install database-schema --target=postgres | PGPASSWORD=mysecretpassword psql -h localhost -U postgres
-2. sql_file=$(mktemp) ; \ 
-kumactl install database-schema --target=postgres >$sql_file ; \
-psql --host=localhost --username=postgres --password --file=$sql_file ; \
-rm $sql_file
-
-Flags:
-  -h, --help            help for database-schema
-      --target string   Database type: one of postgres (default "postgres")
 
 Global Flags:
       --config-file string   path to the configuration file to use
