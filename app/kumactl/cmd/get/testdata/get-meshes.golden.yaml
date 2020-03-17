@@ -5,6 +5,12 @@ items:
         builtin: {}
     name: mesh1
     type: Mesh
+  - mtls:
+      enabled: true
+      ca:
+        provided: {}
+    name: mesh2
+    type: Mesh
   - metrics:
       prometheus:
         path: /non-standard-path
@@ -12,5 +18,5 @@ items:
     mtls:
       ca:
         provided: {}
-    name: mesh2
+    name: mesh3
     type: Mesh

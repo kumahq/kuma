@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* chore: merge mTLS and CA status into one column
+  [#637](https://github.com/Kong/kuma/pull/637)
 * feat: read only cached manager
   [#634](https://github.com/Kong/kuma/pull/634)
 * fix: explicitly set parameters in securityContext of kuma-init
