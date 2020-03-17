@@ -11,7 +11,7 @@ import (
 )
 
 // GetOutboundTargets resolves all endpoints reachable from a given dataplane.
-func GetOutboundTargets(ctx context.Context, dataplane *mesh_core.DataplaneResource, destinations core_xds.DestinationMap, manager core_manager.ResourceManager) (core_xds.EndpointMap, error) {
+func GetOutboundTargets(ctx context.Context, dataplane *mesh_core.DataplaneResource, destinations core_xds.DestinationMap, manager core_manager.ReadOnlyResourceManager) (core_xds.EndpointMap, error) {
 	if len(destinations) == 0 {
 		return nil, nil
 	}

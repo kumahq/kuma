@@ -35,11 +35,13 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 		WithResourceStore(resources_memory.NewStore()).
 		WithXdsContext(core_xds.NewXdsContext())
 
-	builder.
-		WithSecretManager(newSecretManager(builder)).
+	builder.WithSecretManager(newSecretManager(builder)).
 		WithBuiltinCaManager(newBuiltinCaManager(builder)).
-		WithProvidedCaManager(newProvidedCaManager(builder)).
-		WithResourceManager(newResourceManager(builder))
+		WithProvidedCaManager(newProvidedCaManager(builder))
+
+	rm := newResourceManager(builder)
+	builder.WithResourceManager(rm).
+		WithReadOnlyResourceManager(rm)
 
 	return builder
 }

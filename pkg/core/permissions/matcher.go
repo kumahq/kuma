@@ -10,7 +10,7 @@ import (
 )
 
 type TrafficPermissionsMatcher struct {
-	ResourceManager manager.ResourceManager
+	ResourceManager manager.ReadOnlyResourceManager
 }
 
 type MatchedPermissions map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResourceList

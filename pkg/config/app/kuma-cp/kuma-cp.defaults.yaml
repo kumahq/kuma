@@ -39,6 +39,13 @@ store:
       # Path to the root certificate. Used in verify-ca and verify-full modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
 
+  # Cache for read only operations. This cache is local to the instance of the control plane.
+  cache:
+    # If true then cache is enabled
+    enabled: true
+    # Expiration time for elements in cache.
+    expirationTime: 1s
+
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
   # Port of Server that provides bootstrap configuration for dataplanes

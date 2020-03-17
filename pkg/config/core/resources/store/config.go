@@ -1,6 +1,8 @@
 package store
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/pkg/config"
@@ -26,6 +28,8 @@ type StoreConfig struct {
 	Postgres *postgres.PostgresStoreConfig `yaml:"postgres"`
 	// Kubernetes Store configuration
 	Kubernetes *k8s.KubernetesStoreConfig `yaml:"kubernetes"`
+	// Cache configuration
+	Cache CacheStoreConfig `yaml:"cache"`
 }
 
 func DefaultStoreConfig() *StoreConfig {
@@ -33,12 +37,14 @@ func DefaultStoreConfig() *StoreConfig {
 		Type:       MemoryStore,
 		Postgres:   postgres.DefaultPostgresStoreConfig(),
 		Kubernetes: k8s.DefaultKubernetesStoreConfig(),
+		Cache:      DefaultCacheStoreConfig(),
 	}
 }
 
 func (s *StoreConfig) Sanitize() {
 	s.Kubernetes.Sanitize()
 	s.Postgres.Sanitize()
+	s.Cache.Sanitize()
 }
 
 func (s *StoreConfig) Validate() error {
@@ -57,5 +63,29 @@ func (s *StoreConfig) Validate() error {
 	default:
 		return errors.Errorf("Type should be either %s, %s or %s", PostgresStore, KubernetesStore, MemoryStore)
 	}
+	if err := s.Cache.Validate(); err != nil {
+		return errors.Wrap(err, "Cache validation failed")
+	}
 	return nil
+}
+
+var _ config.Config = &CacheStoreConfig{}
+
+type CacheStoreConfig struct {
+	Enabled        bool          `yaml:"enabled" envconfig:"kuma_store_cache_enabled"`
+	ExpirationTime time.Duration `yaml:"expirationTime" envconfig:"kuma_store_cache_expiration_time"`
+}
+
+func (c CacheStoreConfig) Sanitize() {
+}
+
+func (c CacheStoreConfig) Validate() error {
+	return nil
+}
+
+func DefaultCacheStoreConfig() CacheStoreConfig {
+	return CacheStoreConfig{
+		Enabled:        true,
+		ExpirationTime: time.Second,
+	}
 }

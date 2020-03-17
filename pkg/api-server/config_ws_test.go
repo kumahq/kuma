@@ -149,6 +149,10 @@ var _ = Describe("Config WS", func() {
               },
               "user": "kuma"
             },
+            "cache": {
+              "enabled": true,
+              "expirationTime": "1s"
+            },
             "type": "memory"
           },
           "xdsServer": {
