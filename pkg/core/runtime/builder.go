@@ -32,6 +32,7 @@ type Builder struct {
 	cm  ComponentManager
 	rs  core_store.ResourceStore
 	rm  core_manager.ResourceManager
+	rom core_manager.ReadOnlyResourceManager
 	sm  secret_manager.SecretManager
 	bcm builtin_ca.BuiltinCaManager
 	pcm provided_ca.ProvidedCaManager
@@ -55,6 +56,11 @@ func (b *Builder) WithResourceStore(rs core_store.ResourceStore) *Builder {
 
 func (b *Builder) WithResourceManager(rm core_manager.ResourceManager) *Builder {
 	b.rm = rm
+	return b
+}
+
+func (b *Builder) WithReadOnlyResourceManager(rom core_manager.ReadOnlyResourceManager) *Builder {
+	b.rom = rom
 	return b
 }
 
@@ -93,6 +99,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.rm == nil {
 		return nil, errors.Errorf("ResourceManager has not been configured")
 	}
+	if b.rom == nil {
+		return nil, errors.Errorf("ReadOnlyResourceManager has not been configured")
+	}
 	if b.sm == nil {
 		return nil, errors.Errorf("SecretManager has not been configured")
 	}
@@ -115,6 +124,7 @@ func (b *Builder) Build() (Runtime, error) {
 		RuntimeContext: &runtimeContext{
 			cfg: b.cfg,
 			rm:  b.rm,
+			rom: b.rom,
 			sm:  b.sm,
 			bcm: b.bcm,
 			pcm: b.pcm,

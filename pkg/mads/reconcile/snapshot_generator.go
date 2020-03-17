@@ -15,7 +15,7 @@ import (
 	"github.com/Kong/kuma/pkg/mads/generator"
 )
 
-func NewSnapshotGenerator(resourceManager core_manager.ResourceManager, resourceGenerator generator.ResourceGenerator) SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator) SnapshotGenerator {
 	return &snapshotGenerator{
 		resourceManager:   resourceManager,
 		resourceGenerator: resourceGenerator,
@@ -23,7 +23,7 @@ func NewSnapshotGenerator(resourceManager core_manager.ResourceManager, resource
 }
 
 type snapshotGenerator struct {
-	resourceManager   core_manager.ResourceManager
+	resourceManager   core_manager.ReadOnlyResourceManager
 	resourceGenerator generator.ResourceGenerator
 }
 

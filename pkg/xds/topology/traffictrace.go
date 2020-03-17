@@ -9,7 +9,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 )
 
-func GetTrafficTrace(ctx context.Context, dataplane *mesh_core.DataplaneResource, manager core_manager.ResourceManager) (*mesh_core.TrafficTraceResource, error) {
+func GetTrafficTrace(ctx context.Context, dataplane *mesh_core.DataplaneResource, manager core_manager.ReadOnlyResourceManager) (*mesh_core.TrafficTraceResource, error) {
 	list := mesh_core.TrafficTraceResourceList{}
 	if err := manager.List(ctx, &list, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, err

@@ -22,7 +22,7 @@ type proxyTemplateResolver interface {
 }
 
 type simpleProxyTemplateResolver struct {
-	manager.ResourceManager
+	manager.ReadOnlyResourceManager
 	DefaultProxyTemplate *mesh_proto.ProxyTemplate
 }
 
@@ -30,7 +30,7 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 	log := templateResolverLog.WithValues("dataplane", core_model.MetaToResourceKey(proxy.Dataplane.Meta))
 	ctx := context.Background()
 	templateList := &mesh_core.ProxyTemplateResourceList{}
-	if err := r.ResourceManager.List(ctx, templateList, core_store.ListByMesh(proxy.Dataplane.Meta.GetMesh())); err != nil {
+	if err := r.ReadOnlyResourceManager.List(ctx, templateList, core_store.ListByMesh(proxy.Dataplane.Meta.GetMesh())); err != nil {
 		templateResolverLog.Error(err, "failed to list ProxyTemplates")
 		return nil
 	}

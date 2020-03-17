@@ -11,7 +11,7 @@ import (
 )
 
 // GetHealthChecks resolves all HealthChecks applicable to a given Dataplane.
-func GetHealthChecks(ctx context.Context, dataplane *mesh_core.DataplaneResource, destinations core_xds.DestinationMap, manager core_manager.ResourceManager) (core_xds.HealthCheckMap, error) {
+func GetHealthChecks(ctx context.Context, dataplane *mesh_core.DataplaneResource, destinations core_xds.DestinationMap, manager core_manager.ReadOnlyResourceManager) (core_xds.HealthCheckMap, error) {
 	if len(destinations) == 0 {
 		return nil, nil
 	}

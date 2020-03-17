@@ -226,6 +226,12 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), builder.ProvidedCaManager(), customizableManager, builder.SecretManager(), registry.Global())
 	customManagers[mesh.MeshType] = meshManager
 	builder.WithResourceManager(customizableManager)
+
+	if builder.Config().Store.Cache.Enabled {
+		builder.WithReadOnlyResourceManager(core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime))
+	} else {
+		builder.WithReadOnlyResourceManager(customizableManager)
+	}
 }
 
 func customizeRuntime(rt core_runtime.Runtime) error {

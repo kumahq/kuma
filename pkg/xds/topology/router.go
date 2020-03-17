@@ -37,7 +37,7 @@ func (m *pseudoMeta) GetModificationTime() time.Time {
 }
 
 // GetRoutes picks a single the most specific route for each outbound interface of a given Dataplane.
-func GetRoutes(ctx context.Context, dataplane *mesh_core.DataplaneResource, manager core_manager.ResourceManager) (core_xds.RouteMap, error) {
+func GetRoutes(ctx context.Context, dataplane *mesh_core.DataplaneResource, manager core_manager.ReadOnlyResourceManager) (core_xds.RouteMap, error) {
 	if len(dataplane.Spec.Networking.GetOutbound()) == 0 {
 		return nil, nil
 	}

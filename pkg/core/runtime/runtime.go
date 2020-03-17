@@ -26,6 +26,7 @@ type RuntimeContext interface {
 	Config() kuma_cp.Config
 	XDS() core_xds.XdsContext
 	ResourceManager() core_manager.ResourceManager
+	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	SecretManager() secret_manager.SecretManager
 	BuiltinCaManager() builtin_ca.BuiltinCaManager
 	ProvidedCaManager() provided_ca.ProvidedCaManager
@@ -55,6 +56,7 @@ var _ RuntimeContext = &runtimeContext{}
 type runtimeContext struct {
 	cfg kuma_cp.Config
 	rm  core_manager.ResourceManager
+	rom core_manager.ReadOnlyResourceManager
 	sm  secret_manager.SecretManager
 	bcm builtin_ca.BuiltinCaManager
 	pcm provided_ca.ProvidedCaManager
@@ -70,6 +72,9 @@ func (rc *runtimeContext) XDS() core_xds.XdsContext {
 }
 func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 	return rc.rm
+}
+func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
+	return rc.rom
 }
 func (rc *runtimeContext) SecretManager() secret_manager.SecretManager {
 	return rc.sm

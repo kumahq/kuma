@@ -19,7 +19,7 @@ import (
 )
 
 func NewSnapshotGenerator(rt core_runtime.Runtime) mads_reconcile.SnapshotGenerator {
-	return mads_reconcile.NewSnapshotGenerator(rt.ResourceManager(), mads_generator.MonitoringAssignmentsGenerator{})
+	return mads_reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), mads_generator.MonitoringAssignmentsGenerator{})
 }
 
 func NewVersioner() util_xds.SnapshotVersioner {
