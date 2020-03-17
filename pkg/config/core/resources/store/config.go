@@ -44,6 +44,7 @@ func DefaultStoreConfig() *StoreConfig {
 func (s *StoreConfig) Sanitize() {
 	s.Kubernetes.Sanitize()
 	s.Postgres.Sanitize()
+	s.Cache.Sanitize()
 }
 
 func (s *StoreConfig) Validate() error {
