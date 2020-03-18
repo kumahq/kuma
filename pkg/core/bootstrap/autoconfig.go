@@ -30,15 +30,23 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 }
 
 func autoconfigureCatalog(cfg *kuma_cp.Config) {
+	bootstrapUrl := cfg.BootstrapServer.PublicUrl
+	if len(bootstrapUrl) == 0 {
+		bootstrapUrl = fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port)
+	}
+	madsUrl := cfg.MonitoringAssignmentServer.PublicUrl
+	if len(madsUrl) == 0 {
+		madsUrl = fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort)
+	}
 	cat := &catalog.CatalogConfig{
 		Bootstrap: catalog.BootstrapApiConfig{
-			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port),
+			Url: bootstrapUrl,
 		},
 		Admin: catalog.AdminApiConfig{
 			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port),
 		},
 		MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
-			Url: fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort),
+			Url: madsUrl,
 		},
 	}
 	if cfg.AdminServer.Public.Enabled {

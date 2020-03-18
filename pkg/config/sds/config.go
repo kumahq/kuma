@@ -8,7 +8,8 @@ import (
 
 func DefaultSdsServerConfig() *SdsServerConfig {
 	return &SdsServerConfig{
-		GrpcPort: 5677,
+		GrpcPort:  5677,
+		PublicUrl: "",
 	}
 }
 
@@ -16,6 +17,8 @@ func DefaultSdsServerConfig() *SdsServerConfig {
 type SdsServerConfig struct {
 	// Port of GRPC server that Envoy connects to
 	GrpcPort int `yaml:"grpcPort" envconfig:"kuma_sds_server_grpc_port"`
+	// Public url to reach SDS server
+	PublicUrl string `yaml:"publicUrl" envconfig:"kuma_sds_server_public_url"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert.
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_sds_server_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.

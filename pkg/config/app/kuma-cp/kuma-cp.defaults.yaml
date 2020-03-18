@@ -43,6 +43,8 @@ store:
 bootstrapServer:
   # Port of Server that provides bootstrap configuration for dataplanes
   port: 5682 # ENV: KUMA_BOOTSTRAP_SERVER_PORT
+  # Public URL to reach Bootstrap server. ex: https://bootstrap.kuma.com:1234, its autoconfigured if blank
+  publicUrl: # ENV: KUMA_BOOTSTRAP_SERVER_PUBLIC_URL
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
@@ -62,6 +64,8 @@ bootstrapServer:
 sdsServer:
   # Port of GRPC server that Envoy connects to
   grpcPort: 5677 # ENV: KUMA_SDS_SERVER_GRPC_PORT
+  # url to reach SDS server. By default its autoconfigured to XDS server
+  publicUrl: # ENV: KUMA_SDS_SERVER_PUBLIC_URL
   # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
   tlsCertFile: # ENV: KUMA_SDS_SERVER_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
@@ -94,6 +98,8 @@ dataplaneTokenServer:
 monitoringAssignmentServer:
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
   grpcPort: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT
+  # Public URL to reach mad server. ex: https://mads.kuma.com:1234, its autoconfigured if blank
+  publicUrl: # ENV: KUMA_MADS_SERVER_PUBLIC_URL
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
 

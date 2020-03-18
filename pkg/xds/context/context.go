@@ -31,7 +31,10 @@ func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, erro
 		}
 		cert = c
 	}
-	sdsLocation := fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.SdsServer.GrpcPort)
+	sdsLocation := config.SdsServer.PublicUrl
+	if len(sdsLocation) == 0 {
+		sdsLocation = fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.SdsServer.GrpcPort)
+	}
 
 	return &ControlPlaneContext{
 		SdsLocation: sdsLocation,

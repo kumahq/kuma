@@ -134,6 +134,36 @@ var _ = Describe("Auto configuration", func() {
 				},
 			},
 		}),
+		Entry("with public settings for bootstrap and mads server", testCase{
+			cpConfig: func() kuma_cp.Config {
+				cfg := kuma_cp.DefaultConfig()
+				cfg.General.AdvertisedHostname = "kuma.internal"
+				cfg.DataplaneTokenServer.Local.Port = 1111
+				cfg.DataplaneTokenServer.Public.Enabled = true
+				cfg.DataplaneTokenServer.Public.Interface = "192.168.0.1"
+				cfg.DataplaneTokenServer.Public.Port = 2222
+				cfg.BootstrapServer.Port = 3333
+				cfg.BootstrapServer.PublicUrl = "https://bootstrap.kuma.com:1234"
+				cfg.MonitoringAssignmentServer.PublicUrl = "grpcs://mads.kuma.com:1234"
+				return cfg
+			},
+			expectedCatalogConfig: catalog.CatalogConfig{
+				Bootstrap: catalog.BootstrapApiConfig{
+					Url: "https://bootstrap.kuma.com:1234",
+				},
+				DataplaneToken: catalog.DataplaneTokenApiConfig{
+					LocalUrl:  "http://localhost:1111",
+					PublicUrl: "https://kuma.internal:2222",
+				},
+				Admin: catalog.AdminApiConfig{
+					LocalUrl:  "http://localhost:1111",
+					PublicUrl: "https://kuma.internal:2222",
+				},
+				MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
+					Url: "grpcs://mads.kuma.com:1234",
+				},
+			},
+		}),
 	)
 
 	It("should autoconfigure gui config", func() {
