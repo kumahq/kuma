@@ -341,6 +341,29 @@ type: Dataplane
 `))
 	})
 
+	It("should support variable names that include dot character", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"apply", "-f", filepath.Join("testdata", "apply-dataplane-template-dots.yaml"),
+			"-v", "var.with.dots.in.the.name=2.2.2.2"},
+		)
+
+		// when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resource := mesh.DataplaneResource{}
+		err = store.Get(context.Background(), &resource, core_store.GetByKey("sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(resource.Meta.GetName()).To(Equal("sample"))
+		Expect(resource.Meta.GetMesh()).To(Equal("default"))
+		Expect(resource.Spec.Networking.Address).To(Equal("2.2.2.2"))
+	})
+
 	type testCase struct {
 		resource string
 		err      string
