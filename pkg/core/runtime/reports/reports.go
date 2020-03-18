@@ -42,7 +42,7 @@ type reportsBuffer struct {
 
 func fetchDataplanes(rt core_runtime.Runtime) (*mesh.DataplaneResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := rt.ResourceManager().List(context.Background(), &dataplanes); err != nil {
+	if err := rt.ReadOnlyResourceManager().List(context.Background(), &dataplanes); err != nil {
 		return nil, errors.Wrap(err, "Could not fetch dataplanes")
 	}
 
@@ -51,7 +51,7 @@ func fetchDataplanes(rt core_runtime.Runtime) (*mesh.DataplaneResourceList, erro
 
 func fetchMeshes(rt core_runtime.Runtime) (*mesh.MeshResourceList, error) {
 	meshes := mesh.MeshResourceList{}
-	if err := rt.ResourceManager().List(context.Background(), &meshes); err != nil {
+	if err := rt.ReadOnlyResourceManager().List(context.Background(), &meshes); err != nil {
 		return nil, errors.Wrap(err, "Could not fetch meshes")
 	}
 

@@ -3,6 +3,8 @@
 ## master
 * fix: `kumactl apply -v ...` support dots in variables name
   [#636](https://github.com/Kong/kuma/pull/636)
+* feat: read only cached manager
+  [#634](https://github.com/Kong/kuma/pull/634)
 * fix: explicitly set parameters in securityContext of kuma-init
   [#631](https://github.com/Kong/kuma/pull/631)
 * feature: log requests to external services

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -138,6 +139,10 @@ func GetByVersion(version string) GetOptionsFunc {
 	}
 }
 
+func (g *GetOptions) HashCode() string {
+	return fmt.Sprintf("%s:%s", g.Name, g.Mesh)
+}
+
 type ListOptions struct {
 	Mesh string
 }
@@ -156,4 +161,8 @@ func ListByMesh(mesh string) ListOptionsFunc {
 	return func(opts *ListOptions) {
 		opts.Mesh = mesh
 	}
+}
+
+func (l *ListOptions) HashCode() string {
+	return l.Mesh
 }

@@ -10,13 +10,17 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 )
 
+type ReadOnlyResourceManager interface {
+	Get(context.Context, model.Resource, ...store.GetOptionsFunc) error
+	List(context.Context, model.ResourceList, ...store.ListOptionsFunc) error
+}
+
 type ResourceManager interface {
+	ReadOnlyResourceManager
 	Create(context.Context, model.Resource, ...store.CreateOptionsFunc) error
 	Update(context.Context, model.Resource, ...store.UpdateOptionsFunc) error
 	Delete(context.Context, model.Resource, ...store.DeleteOptionsFunc) error
 	DeleteAll(context.Context, model.ResourceList, ...store.DeleteAllOptionsFunc) error
-	Get(context.Context, model.Resource, ...store.GetOptionsFunc) error
-	List(context.Context, model.ResourceList, ...store.ListOptionsFunc) error
 }
 
 func NewResourceManager(store store.ResourceStore) ResourceManager {

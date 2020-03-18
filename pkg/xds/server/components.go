@@ -63,8 +63,8 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 	return &reconciler{
 		&templateSnapshotGenerator{
 			ProxyTemplateResolver: &simpleProxyTemplateResolver{
-				ResourceManager:      rt.ResourceManager(),
-				DefaultProxyTemplate: xds_template.DefaultProxyTemplate,
+				ReadOnlyResourceManager: rt.ReadOnlyResourceManager(),
+				DefaultProxyTemplate:    xds_template.DefaultProxyTemplate,
 			},
 		},
 		&simpleSnapshotCacher{rt.XDS().Hasher(), rt.XDS().Cache()},
@@ -72,8 +72,8 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 }
 
 func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
-	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ResourceManager()}
-	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ResourceManager()}
+	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
+	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 				dataplane := &mesh_core.DataplaneResource{}
 				proxyID := xds.FromResourceKey(key)
 
-				if err := rt.ResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
+				if err := rt.ReadOnlyResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
 					if core_store.IsResourceNotFound(err) {
 						return reconciler.Clear(&proxyID)
 					}
@@ -97,7 +97,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 				}
 
 				mesh := &mesh_core.MeshResource{}
-				if err := rt.ResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
+				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
 				envoyCtx := xds_context.Context{
@@ -108,7 +108,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 				}
 
 				// pick a single the most specific route for each outbound interface
-				routes, err := xds_topology.GetRoutes(ctx, dataplane, rt.ResourceManager())
+				routes, err := xds_topology.GetRoutes(ctx, dataplane, rt.ReadOnlyResourceManager())
 				if err != nil {
 					return err
 				}
@@ -117,17 +117,17 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound, err := xds_topology.GetOutboundTargets(ctx, dataplane, destinations, rt.ResourceManager())
+				outbound, err := xds_topology.GetOutboundTargets(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
 				if err != nil {
 					return err
 				}
 
-				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ResourceManager())
+				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
 				if err != nil {
 					return err
 				}
 
-				trafficTrace, err := xds_topology.GetTrafficTrace(ctx, dataplane, rt.ResourceManager())
+				trafficTrace, err := xds_topology.GetTrafficTrace(ctx, dataplane, rt.ReadOnlyResourceManager())
 				if err != nil {
 					return err
 				}
