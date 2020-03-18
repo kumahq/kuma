@@ -47,6 +47,22 @@ var _ = Describe("kumactl get meshes", func() {
 		{
 			Spec: v1alpha1.Mesh{
 				Mtls: &v1alpha1.Mesh_Mtls{
+					Enabled: true,
+					Ca: &v1alpha1.CertificateAuthority{
+						Type: &v1alpha1.CertificateAuthority_Provided_{
+							Provided: &v1alpha1.CertificateAuthority_Provided{},
+						},
+					},
+				},
+			},
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh2",
+				Name: "mesh2",
+			},
+		},
+		{
+			Spec: v1alpha1.Mesh{
+				Mtls: &v1alpha1.Mesh_Mtls{
 					Enabled: false,
 					Ca: &v1alpha1.CertificateAuthority{
 						Type: &v1alpha1.CertificateAuthority_Provided_{
@@ -62,8 +78,8 @@ var _ = Describe("kumactl get meshes", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh2",
-				Name: "mesh2",
+				Mesh: "mesh3",
+				Name: "mesh3",
 			},
 		},
 	}

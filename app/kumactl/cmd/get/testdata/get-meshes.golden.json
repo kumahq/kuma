@@ -11,6 +11,16 @@
       "type": "Mesh"
     },
     {
+      "mtls": {
+        "enabled": true,
+        "ca": {
+          "provided": {}
+        }
+      },
+      "name": "mesh2",
+      "type": "Mesh"
+    },
+    {
       "metrics": {
         "prometheus": {
           "port": 1234,
@@ -22,7 +32,7 @@
           "provided": {}
         }
       },
-      "name": "mesh2",
+      "name": "mesh3",
       "type": "Mesh"
     }
   ]
