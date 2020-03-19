@@ -1,4 +1,5 @@
 port: 5682
+publicUrl: ""
 params:
   adminAccessLogPath: /dev/null
   adminAddress: 127.0.0.1

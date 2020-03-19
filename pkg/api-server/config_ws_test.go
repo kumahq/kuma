@@ -64,7 +64,8 @@ var _ = Describe("Config WS", func() {
               "xdsHost": "",
               "xdsPort": 0
             },
-            "port": 5682
+            "port": 5682,
+            "publicUrl": ""
           },
           "dataplaneTokenServer": {
             "enabled": true,
@@ -111,7 +112,8 @@ var _ = Describe("Config WS", func() {
           },
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
-            "grpcPort": 5676
+            "grpcPort": 5676,
+            "publicUrl": ""
           },
           "reports": {
             "enabled": true
@@ -127,6 +129,7 @@ var _ = Describe("Config WS", func() {
           },
           "sdsServer": {
             "grpcPort": 5677,
+            "publicUrl": "",
             "tlsCertFile": "",
             "tlsKeyFile": ""
           },
