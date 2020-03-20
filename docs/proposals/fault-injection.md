@@ -50,12 +50,18 @@ aggregating of metrics. Also this is performance hit on having such combinations
 
 ### Fault Injection on the destination inbound
 
-More preferable way to implement Fault Injection. But problem with traffic differentiation is 
-still exist. The idea is to implement matching by HTTP Headers.
+More preferable way to implement Fault Injection. But problem with traffic differentiation 
+still has to be solved. The idea is to implement matching by HTTP Headers.
 
 Envoy Fault Injection filter allows to specify regex for headers and be applied only for matched ones.   
 Kuma can reserve header `x-kuma-match` and configure source proxy to set it on every request. We can 
 consider the format for that header, but probably the simplest one is URL-style: `service=frontend&version=0.1`. 
+
+**_Why don't just have separate header for each tag?_**
+
+_Alternatively we could reserve header pattern like `x-kuma-tag-TAG_NAME` and store each tag separately. 
+But in that case we need envoy to have ability to remove headers with specified prefix (or with regex).
+There is no such functionality yet._
 
 On the destination side proxy we will configure regex for matching:
 ```
@@ -70,3 +76,6 @@ So it will match:
 In other words all key-values pairs that necessarily contain provided version and service.
 Also on destination side we will configure HTTP filter that removes specified headers. 
 So application will see the request as it was sent by source. 
+
+_Note: envoy will replace header if some malicious application tries to specify it by itself pretending to be identified like
+another service. So that feature requres to have mTLS enabled._ 
