@@ -41,7 +41,7 @@ There are two possible places to configure Envoy proxy:
 
 ### Fault Injection on the source outbound
 
-Probably will be much easier to implement Fault Injections for external service in the future.
+Probably will be much easier to implement Fault Injections for external services in the future.
 
 **Limitations:** unable to differentiate destinations somehow besides service's name. 
 Potentially could be resolved the same way like `TrafficRouter`, but this is undesirable. 
@@ -49,13 +49,11 @@ Potentially could be resolved the same way like `TrafficRouter`, but this is und
 ### Fault Injection on the destination inbound
 
 More preferable way to implement Fault Injection. But problem with traffic differentiation is 
-still exist. But in that case problem could be solved using HTTP Headers.
+still exist. The idea is to implement Fault Injection gradually by stages:  
 
-Kuma can define and document a set of headers like this:
-```bash
-x-kuma-tag-service: frontend
-x-kuma-tag-region: aws
-x-kuma-tag-version: 3
-```
+1. Use `downstream_nodes` field to differentiate traffic by hosts. So the first implementations 
+will have limitations with source differentiation. 
 
-Source outbound listeners will be configured to set such headers.   
+2. Implement issue [#271](https://github.com/Kong/kuma/issues/271), which is basically a matching 
+enhance for L7. That allow us to remove limitations both for Fault Injections and TrafficLogging.  
+  
