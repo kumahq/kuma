@@ -44,16 +44,29 @@ There are two possible places to configure Envoy proxy:
 Probably will be much easier to implement Fault Injections for external services in the future.
 
 **Limitations:** unable to differentiate destinations somehow besides service's name. 
-Potentially could be resolved the same way like `TrafficRouter`, but this is undesirable. 
+Potentially could be resolved the same way like `TrafficRoute`, but this is undesirable because 
+we have to generate cluster for every destination combination which leads to complexity of reading and
+aggregating of metrics. Also this is performance hit on having such combinations in envoy configs, they become bigger. 
 
 ### Fault Injection on the destination inbound
 
 More preferable way to implement Fault Injection. But problem with traffic differentiation is 
-still exist. The idea is to implement Fault Injection gradually by stages:  
+still exist. The idea is to implement matching by HTTP Headers.
 
-1. Use `downstream_nodes` field to differentiate traffic by hosts. So the first implementations 
-will have limitations with source differentiation. 
+Envoy Fault Injection filter allows to specify regex for headers and be applied only for matched ones.   
+Kuma can reserve header `x-kuma-match` and configure source proxy to set it on every request. We can 
+consider the format for that header, but probably the simplest one is URL-style: `service=frontend&version=0.1`. 
 
-2. Implement issue [#271](https://github.com/Kong/kuma/issues/271), which is basically a matching 
-enhance for L7. That allow us to remove limitations both for Fault Injections and TrafficLogging.  
-  
+On the destination side proxy we will configure regex for matching:
+```
+(?=.*version=0\.1.*)(?=.*service=frontend.*)
+```
+So it will match:
+- `service=frontend&version=0.1` 
+- `version=0.1&service=frontend&version=0.1` 
+- `service=frontend&version=0.1&tag=customtag`
+- ...
+
+In other words all key-values pairs that necessarily contain provided version and service.
+Also on destination side we will configure HTTP filter that removes specified headers. 
+So application will see the request as it was sent by source. 
