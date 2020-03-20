@@ -63,7 +63,7 @@ On the destination side proxy we will configure regex for matching:
 ```
 So it will match:
 - `service=frontend&version=0.1` 
-- `version=0.1&service=frontend&version=0.1` 
+- `version=0.1&service=frontend` 
 - `service=frontend&version=0.1&tag=customtag`
 - ...
 
