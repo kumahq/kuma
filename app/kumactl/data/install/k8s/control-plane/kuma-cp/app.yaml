@@ -206,6 +206,7 @@ webhooks:
           - CREATE
           - UPDATE
         resources:
+          - faultinjection
           - trafficlogs
           - trafficpermissions
           - trafficroutes

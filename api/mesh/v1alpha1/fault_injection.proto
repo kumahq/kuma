@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+import "google/protobuf/duration.proto";
+import "mesh/v1alpha1/selector.proto";
+import "google/protobuf/wrappers.proto";
+
+
+message FaultInjection {
+
+    repeated Selector sources = 1;
+
+    repeated Selector destinations = 2;
+
+    message Conf {
+
+        message Delay {
+            google.protobuf.DoubleValue percentage = 1;
+            google.protobuf.Duration value = 2;
+        }
+        Delay delay = 1;
+
+        message Abort {
+            google.protobuf.DoubleValue percentage = 1;
+            google.protobuf.UInt32Value httpStatus = 2;
+        }
+        Abort abort = 2;
+
+        message ResponseBandwidth {
+            google.protobuf.DoubleValue percentage = 1;
+            google.protobuf.StringValue limit = 2;
+        }
+        ResponseBandwidth response_bandwidth = 3;
+    }
+
+    Conf conf = 3;
+}
