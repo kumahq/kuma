@@ -1,12 +1,14 @@
 package mesh
 
 import (
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"net/http"
 	"reflect"
 	"regexp"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
+
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/validators"
 )
 
 func (f *FaultInjectionResource) Validate() error {

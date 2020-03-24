@@ -1,0 +1,72 @@
+{
+  "items": [
+    {
+      "type": "FaultInjection",
+      "mesh": "default",
+      "name": "fi1",
+      "sources": [
+        {
+          "match": {
+            "service": "frontend",
+            "version": "0.1"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "service": "backend"
+          }
+        }
+      ],
+      "conf": {
+        "delay": {
+          "percentage": 50,
+          "value": "5s"
+        },
+        "abort": {
+          "percentage": 50,
+          "httpStatus": 500
+        },
+        "responseBandwidth": {
+          "percentage": 50,
+          "limit": "50 mbps"
+        }
+      }
+    },
+    {
+      "type": "FaultInjection",
+      "mesh": "default",
+      "name": "fi2",
+      "sources": [
+        {
+          "match": {
+            "service": "web",
+            "version": "0.1"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "service": "redis"
+          }
+        }
+      ],
+      "conf": {
+        "delay": {
+          "percentage": 50,
+          "value": "5s"
+        },
+        "abort": {
+          "percentage": 50,
+          "httpStatus": 500
+        },
+        "responseBandwidth": {
+          "percentage": 50,
+          "limit": "50 mbps"
+        }
+      }
+    }
+  ]
+}
