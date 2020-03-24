@@ -8,16 +8,15 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/Kong/kuma/pkg/catalog"
-
 	"path/filepath"
 
 	"github.com/golang/protobuf/proto"
-
 	"github.com/pkg/errors"
 
+	"github.com/Kong/kuma/pkg/catalog"
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
 
 var (
@@ -42,6 +41,8 @@ type Opts struct {
 func New(opts Opts) *Envoy {
 	return &Envoy{opts: opts}
 }
+
+var _ component.Component = &Envoy{}
 
 type Envoy struct {
 	opts Opts
@@ -90,7 +91,7 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 	return path, nil
 }
 
-func (e *Envoy) Run(stop <-chan struct{}) error {
+func (e *Envoy) Start(stop <-chan struct{}) error {
 	bootstrapConfig, err := e.opts.Generator(e.opts.Catalog.Apis.Bootstrap.Url, e.opts.Config)
 	if err != nil {
 		return errors.Wrapf(err, "failed to generate Envoy bootstrap config")
@@ -126,6 +127,7 @@ func (e *Envoy) Run(stop <-chan struct{}) error {
 	command := exec.CommandContext(ctx, resolvedPath, args...)
 	command.Stdout = e.opts.Stdout
 	command.Stderr = e.opts.Stderr
+	runLog.Info("starting Envoy")
 	if err := command.Start(); err != nil {
 		return err
 	}
@@ -136,6 +138,7 @@ func (e *Envoy) Run(stop <-chan struct{}) error {
 
 	select {
 	case <-stop:
+		runLog.Info("stopping Envoy")
 		cancel()
 		return nil
 	case err := <-done:

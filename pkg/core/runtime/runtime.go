@@ -7,6 +7,7 @@ import (
 	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
 	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
@@ -15,7 +16,7 @@ import (
 type Runtime interface {
 	RuntimeInfo
 	RuntimeContext
-	ComponentManager
+	component.Manager
 }
 
 type RuntimeInfo interface {
@@ -38,7 +39,7 @@ var _ Runtime = &runtime{}
 type runtime struct {
 	RuntimeInfo
 	RuntimeContext
-	ComponentManager
+	component.Manager
 }
 
 var _ RuntimeInfo = &runtimeInfo{}

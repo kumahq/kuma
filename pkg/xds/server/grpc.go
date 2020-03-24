@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/Kong/kuma/pkg/core"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
 
 const grpcMaxConcurrentStreams = 1000000
@@ -25,7 +25,7 @@ type grpcServer struct {
 
 // Make sure that grpcServer implements all relevant interfaces
 var (
-	_ core_runtime.Component = &grpcServer{}
+	_ component.Component = &grpcServer{}
 )
 
 func (s *grpcServer) Start(stop <-chan struct{}) error {

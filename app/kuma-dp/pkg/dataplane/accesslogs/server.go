@@ -12,22 +12,27 @@ import (
 
 	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
 
 var logger = core.Log.WithName("accesslogs-server")
 
+var _ component.Component = &accessLogServer{}
+
 type accessLogServer struct {
 	server     *grpc.Server
+	address    string
 	newHandler logHandlerFactoryFunc
 
 	// streamCount for counting streams
 	streamCount int64
 }
 
-func NewAccessLogServer() *accessLogServer {
+func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
 	return &accessLogServer{
 		server:     grpc.NewServer(),
 		newHandler: defaultHandler,
+		address:    fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", dataplane.Name, dataplane.Mesh),
 	}
 }
 
@@ -75,23 +80,27 @@ func (s *accessLogServer) StreamAccessLogs(stream envoy_accesslog.AccessLogServi
 	}
 }
 
-func (s *accessLogServer) Start(dataplane kumadp.Dataplane) error {
+func (s *accessLogServer) Start(stop <-chan struct{}) error {
 	envoy_accesslog.RegisterAccessLogServiceServer(s.server, s)
-	address := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", dataplane.Name, dataplane.Mesh)
-	lis, err := net.Listen("unix", address)
+	lis, err := net.Listen("unix", s.address)
 	if err != nil {
 		return err
 	}
-	logger.Info("starting", "address", fmt.Sprintf("unix://%s", address))
-	if err := s.server.Serve(lis); err != nil {
-		logger.Error(err, "terminated with an error")
+	logger.Info("starting Access Log Server", "address", fmt.Sprintf("unix://%s", s.address))
+	errCh := make(chan error, 1)
+	go func() {
+		if err := s.server.Serve(lis); err != nil {
+			errCh <- err
+		}
+	}()
+	select {
+	case err := <-errCh:
 		return err
+	case <-stop:
+		logger.Info("stopping Access Log Server")
+		s.server.GracefulStop()
+		return nil
 	}
-	return nil
-}
-
-func (s *accessLogServer) Close() {
-	s.server.GracefulStop()
 }
 
 var _ envoy_accesslog.AccessLogServiceServer = &accessLogServer{}
