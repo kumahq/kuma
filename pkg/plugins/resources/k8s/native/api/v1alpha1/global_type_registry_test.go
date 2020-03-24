@@ -79,6 +79,11 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &TrafficTrace{},
 				expectedKind: "TrafficTrace",
 			}),
+			Entry("FaultInjection", testCase{
+				inputType:    &mesh_proto.FaultInjection{},
+				expectedType: &FaultInjection{},
+				expectedKind: "FaultInjection",
+			}),
 		)
 	})
 

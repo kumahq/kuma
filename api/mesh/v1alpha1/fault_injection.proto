@@ -8,32 +8,52 @@ import "google/protobuf/duration.proto";
 import "mesh/v1alpha1/selector.proto";
 import "google/protobuf/wrappers.proto";
 
+// FaultInjection defines configuration of faults between dataplanes.
 message FaultInjection {
 
+  // List of selectors to match dataplanes that are sources of traffic.
   repeated Selector sources = 1;
 
+  // List of selectors to match services that are destinations of traffic.
   repeated Selector destinations = 2;
 
+  // Configuration defines several types of faults, at least one delay should be
+  // specified
   message Conf {
 
+    // Defines configuration of the delay
     message Delay {
+      // Percentage of requests on which delay will be injected
       google.protobuf.DoubleValue percentage = 1;
+      // Duration, the value of delay
       google.protobuf.Duration value = 2;
     }
+    // Delay if specified makes source side to experience delay during requests
+    // to the destination
     Delay delay = 1;
 
+    // Defines configuration of the abort
     message Abort {
+      // Percentage of requests on which abort will be injected
       google.protobuf.DoubleValue percentage = 1;
+      // HttpStatus code which will be returned to source side
       google.protobuf.UInt32Value httpStatus = 2;
     }
+    // Abort if specified makes source side to receive specified httpStatus code
     Abort abort = 2;
 
+    // Defines configuration of the response bandwidth
     message ResponseBandwidth {
+      // Percentage of requests on which response bandwidth limit will be
+      // injected
       google.protobuf.DoubleValue percentage = 1;
+      // Limit is represented by value measure in gbps, mbps, kbps or bps
       google.protobuf.StringValue limit = 2;
     }
+    // ResponseBandwidth if specified limits the speed of sending response body
     ResponseBandwidth response_bandwidth = 3;
   }
 
+  // Configuration of FaultInjection
   Conf conf = 3;
 }
