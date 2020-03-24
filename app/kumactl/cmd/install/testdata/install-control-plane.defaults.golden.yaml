@@ -4123,7 +4123,7 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - faultinjection
+      - faultinjections
     verbs:
       - get
       - list
@@ -4491,7 +4491,7 @@ webhooks:
           - CREATE
           - UPDATE
         resources:
-          - faultinjection
+          - faultinjections
           - trafficlogs
           - trafficpermissions
           - trafficroutes
