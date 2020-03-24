@@ -91,7 +91,7 @@ var _ = Describe("Envoy", func() {
 			})
 			// and
 			go func() {
-				errCh <- dataplane.Run(stopCh)
+				errCh <- dataplane.Start(stopCh)
 			}()
 
 			By("waiting for mock dataplane to complete")
@@ -157,7 +157,7 @@ var _ = Describe("Envoy", func() {
 			})
 			// and
 			go func() {
-				errCh <- dataplane.Run(stopCh)
+				errCh <- dataplane.Start(stopCh)
 			}()
 
 			By("waiting for mock dataplane to complete")

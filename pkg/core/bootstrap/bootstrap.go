@@ -15,6 +15,7 @@ import (
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 	runtime_reports "github.com/Kong/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
@@ -106,7 +107,7 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 }
 
 func startReporter(runtime core_runtime.Runtime) error {
-	return runtime.Add(core_runtime.ComponentFunc(func(stop <-chan struct{}) error {
+	return runtime.Add(component.ComponentFunc(func(stop <-chan struct{}) error {
 		runtime_reports.Init(runtime, runtime.Config())
 		<-stop
 		return nil

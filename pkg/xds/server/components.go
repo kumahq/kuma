@@ -45,8 +45,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	}
 
 	srv := NewServer(rt.XDS().Cache(), callbacks)
-	return core_runtime.Add(
-		rt,
+	return rt.Add(
 		// xDS gRPC API
 		&grpcServer{srv, rt.Config().XdsServer.GrpcPort},
 		// diagnostics server

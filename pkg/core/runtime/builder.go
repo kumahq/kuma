@@ -11,13 +11,14 @@ import (
 	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
 
 // BuilderContext provides access to Builder's interim state.
 type BuilderContext interface {
-	ComponentManager() ComponentManager
+	ComponentManager() component.Manager
 	ResourceStore() core_store.ResourceStore
 	XdsContext() core_xds.XdsContext
 	Config() kuma_cp.Config
@@ -29,7 +30,7 @@ var _ BuilderContext = &Builder{}
 // Builder represents a multi-step initialization process.
 type Builder struct {
 	cfg kuma_cp.Config
-	cm  ComponentManager
+	cm  component.Manager
 	rs  core_store.ResourceStore
 	rm  core_manager.ResourceManager
 	sm  secret_manager.SecretManager
@@ -43,7 +44,7 @@ func BuilderFor(cfg kuma_cp.Config) *Builder {
 	return &Builder{cfg: cfg, ext: context.Background()}
 }
 
-func (b *Builder) WithComponentManager(cm ComponentManager) *Builder {
+func (b *Builder) WithComponentManager(cm component.Manager) *Builder {
 	b.cm = cm
 	return b
 }
@@ -121,11 +122,11 @@ func (b *Builder) Build() (Runtime, error) {
 			xds: b.xds,
 			ext: b.ext,
 		},
-		ComponentManager: b.cm,
+		Manager: b.cm,
 	}, nil
 }
 
-func (b *Builder) ComponentManager() ComponentManager {
+func (b *Builder) ComponentManager() component.Manager {
 	return b.cm
 }
 func (b *Builder) ResourceStore() core_store.ResourceStore {
