@@ -29,11 +29,11 @@ var _ = Describe("FaultInjection", func() {
 			Entry("full example", `
                 sources:
                 - match:
-                   service: frontend
+                    service: frontend
                 destinations:
                 - match:
-                   service: backend
-                   region: eu
+                    service: backend
+                    region: eu
                 conf:
                   delay:
                     percentage: 50

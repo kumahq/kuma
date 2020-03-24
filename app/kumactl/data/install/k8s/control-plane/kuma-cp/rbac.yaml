@@ -92,7 +92,7 @@ rules:
 - apiGroups:
     - kuma.io
   resources:
-    - faultinjection
+    - faultinjections
   verbs:
     - get
     - list
