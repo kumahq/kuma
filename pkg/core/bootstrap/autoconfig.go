@@ -30,11 +30,11 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 }
 
 func autoconfigureCatalog(cfg *kuma_cp.Config) {
-	bootstrapUrl := cfg.BootstrapServer.PublicUrl
+	bootstrapUrl := cfg.ApiServer.Catalog.Bootstrap.Url
 	if len(bootstrapUrl) == 0 {
 		bootstrapUrl = fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port)
 	}
-	madsUrl := cfg.MonitoringAssignmentServer.PublicUrl
+	madsUrl := cfg.ApiServer.Catalog.MonitoringAssignment.Url
 	if len(madsUrl) == 0 {
 		madsUrl = fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort)
 	}
@@ -65,8 +65,12 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 	// to improve UX, we want to auto-generate TLS cert for SDS if possible
 	if cfg.Environment == config_core.UniversalEnvironment {
 		if cfg.SdsServer.TlsCertFile == "" {
+			sdsHost := cfg.SdsServer.PublicUrl
+			if len(sdsHost) == 0 {
+				sdsHost = cfg.BootstrapServer.Params.XdsHost
+			}
 			hosts := []string{
-				cfg.BootstrapServer.Params.XdsHost,
+				sdsHost,
 				"localhost",
 			}
 			// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server

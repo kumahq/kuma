@@ -20,8 +20,6 @@ func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig
 type MonitoringAssignmentServerConfig struct {
 	// Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
 	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_monitoring_assignment_server_grpc_port"`
-	// Public url to reach the mads server
-	PublicUrl string `yaml:"publicUrl" envconfig:"kuma_mads_server_public_url"`
 
 	// Interval for re-generating monitoring assignments for clients connected to the Control Plane.
 	AssignmentRefreshInterval time.Duration `yaml:"assignmentRefreshInterval" envconfig:"kuma_monitoring_assignment_server_assignment_refresh_interval"`

@@ -49,6 +49,14 @@ var _ = Describe("Config WS", func() {
 		json := fmt.Sprintf(`
         {
           "apiServer": {
+            "catalog": {
+              "bootstrap": {
+                "url": ""
+              },
+              "monitoringAssignment": {
+                "url": ""
+              }
+            },
             "corsAllowedDomains": [
               ".*"
             ],
@@ -64,8 +72,7 @@ var _ = Describe("Config WS", func() {
               "xdsHost": "",
               "xdsPort": 0
             },
-            "port": 5682,
-            "publicUrl": ""
+            "port": 5682
           },
           "dataplaneTokenServer": {
             "enabled": true,
@@ -112,8 +119,7 @@ var _ = Describe("Config WS", func() {
           },
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
-            "grpcPort": 5676,
-            "publicUrl": ""
+            "grpcPort": 5676
           },
           "reports": {
             "enabled": true

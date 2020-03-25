@@ -14,8 +14,6 @@ var _ config.Config = &BootstrapServerConfig{}
 type BootstrapServerConfig struct {
 	// Port of Server that provides bootstrap configuration for dataplanes
 	Port uint32 `yaml:"port" envconfig:"kuma_bootstrap_server_port"`
-	// Public URL to reach bootstrap server
-	PublicUrl string `yaml:"publicUrl" envconfig:"kuma_bootstrap_server_public_url"`
 	// Parameters of bootstrap configuration
 	Params *BootstrapParamsConfig `yaml:"params"`
 }
@@ -36,9 +34,8 @@ func (b *BootstrapServerConfig) Validate() error {
 
 func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 	return &BootstrapServerConfig{
-		Port:      5682,
-		PublicUrl: "",
-		Params:    DefaultBootstrapParamsConfig(),
+		Port:   5682,
+		Params: DefaultBootstrapParamsConfig(),
 	}
 }
 

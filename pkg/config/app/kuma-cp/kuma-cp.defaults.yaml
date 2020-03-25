@@ -43,8 +43,6 @@ store:
 bootstrapServer:
   # Port of Server that provides bootstrap configuration for dataplanes
   port: 5682 # ENV: KUMA_BOOTSTRAP_SERVER_PORT
-  # Public URL to reach Bootstrap server. ex: https://bootstrap.kuma.com:1234, its autoconfigured if blank
-  publicUrl: # ENV: KUMA_BOOTSTRAP_SERVER_PUBLIC_URL
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
@@ -98,8 +96,6 @@ dataplaneTokenServer:
 monitoringAssignmentServer:
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
   grpcPort: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT
-  # Public URL to reach mad server. ex: https://mads.kuma.com:1234, its autoconfigured if blank
-  publicUrl: # ENV: KUMA_MADS_SERVER_PUBLIC_URL
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
 
@@ -150,6 +146,13 @@ apiServer:
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
   corsAllowedDomains:
     - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
+  catalog:
+    bootstrap:
+      # Public URL to reach Bootstrap server. ex: https://bootstrap.kuma.com:1234, its autoconfigured if blank
+      url: # ENV: KUMA_BOOTSTRAP_SERVER_PUBLIC_URL
+    monitoringAssignment:
+      # Public URL to reach mad server. ex: https://mads.kuma.com:1234, its autoconfigured if blank
+      url: # ENV: KUMA_MADS_SERVER_PUBLIC_URL
 
 # Environment-specific configuration
 runtime:

@@ -143,8 +143,8 @@ var _ = Describe("Auto configuration", func() {
 				cfg.DataplaneTokenServer.Public.Interface = "192.168.0.1"
 				cfg.DataplaneTokenServer.Public.Port = 2222
 				cfg.BootstrapServer.Port = 3333
-				cfg.BootstrapServer.PublicUrl = "https://bootstrap.kuma.com:1234"
-				cfg.MonitoringAssignmentServer.PublicUrl = "grpcs://mads.kuma.com:1234"
+				cfg.ApiServer.Catalog.Bootstrap.Url = "https://bootstrap.kuma.com:1234"
+				cfg.ApiServer.Catalog.MonitoringAssignment.Url = "grpcs://mads.kuma.com:1234"
 				return cfg
 			},
 			expectedCatalogConfig: catalog.CatalogConfig{
