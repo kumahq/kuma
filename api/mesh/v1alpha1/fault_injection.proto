@@ -8,7 +8,7 @@ import "google/protobuf/duration.proto";
 import "mesh/v1alpha1/selector.proto";
 import "google/protobuf/wrappers.proto";
 
-// FaultInjection defines configuration of faults between dataplanes.
+// FaultInjection defines the configuration of faults between dataplanes.
 message FaultInjection {
 
   // List of selectors to match dataplanes that are sources of traffic.
@@ -17,37 +17,43 @@ message FaultInjection {
   // List of selectors to match services that are destinations of traffic.
   repeated Selector destinations = 2;
 
-  // Configuration defines several types of faults, at least one delay should be
+  // Conf defines several types of faults, at least one fault should be
   // specified
   message Conf {
 
-    // Defines configuration of the delay
+    // Delay defines configuration of delaying a response from a destination
     message Delay {
-      // Percentage of requests on which delay will be injected
+      // Percentage of requests on which delay will be injected, has to be in
+      // [0.0 - 100.0] range
       google.protobuf.DoubleValue percentage = 1;
-      // Duration, the value of delay
+      // The duration during which the response will be delayed
       google.protobuf.Duration value = 2;
     }
-    // Delay if specified makes source side to experience delay during requests
-    // to the destination
+    // Delay if specified then response from the destination will be delivered
+    // with delay
     Delay delay = 1;
 
-    // Defines configuration of the abort
+    // Abort defines a configuration of not delivering requests to destination
+    // service and replacing the responses from destination dataplane by
+    // predefined status code
     message Abort {
-      // Percentage of requests on which abort will be injected
+      // Percentage of requests on which abort will be injected, has to be in
+      // [0.0 - 100.0] range
       google.protobuf.DoubleValue percentage = 1;
-      // HttpStatus code which will be returned to source side
+      // HTTP status code which will be returned to source side
       google.protobuf.UInt32Value httpStatus = 2;
     }
     // Abort if specified makes source side to receive specified httpStatus code
     Abort abort = 2;
 
-    // Defines configuration of the response bandwidth
+    // ResponseBandwidth defines a configuration to limit the speed of
+    // responding to the requests
     message ResponseBandwidth {
       // Percentage of requests on which response bandwidth limit will be
-      // injected
+      // injected, has to be in [0.0 - 100.0] range
       google.protobuf.DoubleValue percentage = 1;
-      // Limit is represented by value measure in gbps, mbps, kbps or bps
+      // Limit is represented by value measure in gbps, mbps, kbps or bps, e.g.
+      // 10kbps
       google.protobuf.StringValue limit = 2;
     }
     // ResponseBandwidth if specified limits the speed of sending response body
