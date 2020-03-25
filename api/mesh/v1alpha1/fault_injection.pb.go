@@ -84,7 +84,8 @@ func (m *FaultInjection) GetConf() *FaultInjection_Conf {
 // Conf defines several types of faults, at least one fault should be
 // specified
 type FaultInjection_Conf struct {
-	// Delay if specified then response from the destination will be delivered with delay
+	// Delay if specified then response from the destination will be delivered
+	// with delay
 	Delay *FaultInjection_Conf_Delay `protobuf:"bytes,1,opt,name=delay,proto3" json:"delay,omitempty"`
 	// Abort if specified makes source side to receive specified httpStatus code
 	Abort *FaultInjection_Conf_Abort `protobuf:"bytes,2,opt,name=abort,proto3" json:"abort,omitempty"`
@@ -143,7 +144,8 @@ func (m *FaultInjection_Conf) GetResponseBandwidth() *FaultInjection_Conf_Respon
 
 // Delay defines configuration of delaying a response from a destination
 type FaultInjection_Conf_Delay struct {
-	// Percentage of requests on which delay will be injected, has to be in [0.0 - 100.0] range
+	// Percentage of requests on which delay will be injected, has to be in
+	// [0.0 - 100.0] range
 	Percentage *wrappers.DoubleValue `protobuf:"bytes,1,opt,name=percentage,proto3" json:"percentage,omitempty"`
 	// The duration during which the response will be delayed
 	Value                *duration.Duration `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
@@ -191,9 +193,12 @@ func (m *FaultInjection_Conf_Delay) GetValue() *duration.Duration {
 	return nil
 }
 
-// Abort defines a configuration of not delivering requests to destination service and replacing the responses from destination dataplane by predefined status code
+// Abort defines a configuration of not delivering requests to destination
+// service and replacing the responses from destination dataplane by
+// predefined status code
 type FaultInjection_Conf_Abort struct {
-	// Percentage of requests on which abort will be injected, has to be in [0.0 - 100.0] range
+	// Percentage of requests on which abort will be injected, has to be in
+	// [0.0 - 100.0] range
 	Percentage *wrappers.DoubleValue `protobuf:"bytes,1,opt,name=percentage,proto3" json:"percentage,omitempty"`
 	// HTTP status code which will be returned to source side
 	HttpStatus           *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=httpStatus,proto3" json:"httpStatus,omitempty"`
@@ -241,12 +246,14 @@ func (m *FaultInjection_Conf_Abort) GetHttpStatus() *wrappers.UInt32Value {
 	return nil
 }
 
-// ResponseBandwidth defines a configuration to limit the speed of responding to the requests
+// ResponseBandwidth defines a configuration to limit the speed of
+// responding to the requests
 type FaultInjection_Conf_ResponseBandwidth struct {
 	// Percentage of requests on which response bandwidth limit will be
 	// injected, has to be in [0.0 - 100.0] range
 	Percentage *wrappers.DoubleValue `protobuf:"bytes,1,opt,name=percentage,proto3" json:"percentage,omitempty"`
-	// Limit is represented by value measure in gbps, mbps, kbps or bps, e.g. 10kbps
+	// Limit is represented by value measure in gbps, mbps, kbps or bps, e.g.
+	// 10kbps
 	Limit                *wrappers.StringValue `protobuf:"bytes,2,opt,name=limit,proto3" json:"limit,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
