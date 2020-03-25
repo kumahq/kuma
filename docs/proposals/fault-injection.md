@@ -79,3 +79,8 @@ So application will see the request as it was sent by source.
 
 _Note: envoy will replace header if some malicious application tries to specify it by itself pretending to be identified like
 another service. So that feature requres to have mTLS enabled._ 
+
+## Summary
+At that point we decided to move forward with implementation of the second option - Fault Injection on the destination inbound. 
+That gives us more flexibility for traffic management with less efforts. As soon as External Services support will be added 
+to Kuma for L7 traffic, we will come back to Fault Injections and to that proposal.
