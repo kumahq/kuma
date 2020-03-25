@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"reflect"
 
@@ -65,7 +66,7 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 	// to improve UX, we want to auto-generate TLS cert for SDS if possible
 	if cfg.Environment == config_core.UniversalEnvironment {
 		if cfg.SdsServer.TlsCertFile == "" {
-			sdsHost := cfg.SdsServer.PublicUrl
+			sdsHost, _, _ := net.SplitHostPort(cfg.SdsServer.PublicUrl)
 			if len(sdsHost) == 0 {
 				sdsHost = cfg.BootstrapServer.Params.XdsHost
 			}
