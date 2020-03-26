@@ -28,6 +28,7 @@ var _ provider.SecretProvider = &identityCertProvider{}
 
 func (m *identityCertProvider) Get(ctx context.Context, name string, requestor auth.Identity) (provider.Secret, error) {
 	data := map[string]interface{}{
+		"ttl":      "720h",
 		"uri_sans": fmt.Sprintf("spiffe://%s/%s", requestor.Mesh, requestor.Service),
 	}
 	path := fmt.Sprintf("kuma-pki-%s/issue/dp-%s", requestor.Mesh, requestor.Service)
