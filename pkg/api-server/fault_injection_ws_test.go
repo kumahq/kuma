@@ -59,9 +59,11 @@ var _ = Describe("FaultInjection WS", func() {
         sources:
         - match:
             service: web
+            protocol: http
         destinations:
         - match:
             service: backend
+            protocol: http
         conf:
           abort:
             httpStatus: 500
