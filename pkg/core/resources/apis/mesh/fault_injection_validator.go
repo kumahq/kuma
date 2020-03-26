@@ -38,8 +38,8 @@ func (f *FaultInjectionResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), f.Spec.GetSources(), ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
-			RequireAtLeastOneTag: true,
-			RequireService:       true,
+			RequireAtLeastOneTag:    true,
+			ExtraSelectorValidators: []SelectorValidatorFunc{ProtocolValidator("http")},
 		},
 	})
 }
@@ -48,8 +48,8 @@ func (f *FaultInjectionResource) validateDestinations() validators.ValidationErr
 	return ValidateSelectors(validators.RootedAt("destinations"), f.Spec.GetDestinations(), ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
-			RequireAtLeastOneTag: true,
-			RequireService:       true,
+			RequireAtLeastOneTag:    true,
+			ExtraSelectorValidators: []SelectorValidatorFunc{ProtocolValidator("http")},
 		},
 	})
 }

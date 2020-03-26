@@ -30,7 +30,7 @@ message FaultInjection {
       google.protobuf.Duration value = 2;
     }
     // Delay if specified then response from the destination will be delivered
-    // with delay
+    // with a delay
     Delay delay = 1;
 
     // Abort defines a configuration of not delivering requests to destination

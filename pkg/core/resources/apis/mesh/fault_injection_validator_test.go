@@ -31,9 +31,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                     service: frontend
+                    protocol: http
                 destinations:
                 - match:
                     service: backend
+                    protocol: http
                     region: eu
                 conf:
                   delay:
@@ -86,9 +88,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
+                   protocol: http
                 destinations:
                 - match:
                    service: backend
+                   protocol: http
                    region: eu
                 conf:
                   delay: {}
@@ -103,9 +107,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
+                   protocol: http
                 destinations:
                 - match:
                    service: backend
+                   protocol: http
                    region: eu
                 conf:
                   delay:
@@ -127,9 +133,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
+                   protocol: http
                 destinations:
                 - match:
                    service: backend
+                   protocol: http
                    region: eu
                 conf:
                   delay:
@@ -151,9 +159,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
+                   protocol: http
                 destinations:
                 - match:
                    service: backend
+                   protocol: http
                    region: eu
                 conf:
                   abort:
@@ -168,9 +178,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
+                   protocol: http
                 destinations:
                 - match:
                    service: backend
+                   protocol: http
                    region: eu
                 conf:
                   responseBandwidth:
@@ -182,6 +194,26 @@ var _ = Describe("FaultInjection", func() {
                  message: has to be in [0.0 - 100.0] range
                - field: conf.responseBandwidth.limit
                  message: has to be in bps/kbps/mbps/gbps units`}),
+			Entry("protocol: wrong format", testCase{
+				faultInjection: `
+                sources:
+                - match:
+                    service: frontend
+                    protocol: tcp
+                destinations:
+                - match:
+                    service: backend
+                    region: eu
+                conf:
+                  responseBandwidth:
+                    limit: 50mbps
+                    percentage: 100`,
+				expected: `
+               violations:
+               - field: sources[0].match["protocol"]
+                 message: must be one of the [http]
+               - field: destinations[0].match
+                 message: protocol must be specified`}),
 		)
 	})
 })

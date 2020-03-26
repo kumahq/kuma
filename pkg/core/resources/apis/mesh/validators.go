@@ -132,3 +132,21 @@ func AllowedValuesHint(values ...string) string {
 	}
 	return fmt.Sprintf("Allowed values: %s", options)
 }
+
+func ProtocolValidator(protocols ...string) SelectorValidatorFunc {
+	return func(path validators.PathBuilder, selector map[string]string) (err validators.ValidationError) {
+		v, defined := selector[mesh_proto.ProtocolTag]
+		if !defined {
+			err.AddViolationAt(path, "protocol must be specified")
+			return
+		}
+		for _, protocol := range protocols {
+			if v == protocol {
+				return
+			}
+		}
+		err.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("must be one of the [%s]",
+			strings.Join(protocols, ", ")))
+		return
+	}
+}

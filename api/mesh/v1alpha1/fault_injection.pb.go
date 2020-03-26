@@ -85,7 +85,7 @@ func (m *FaultInjection) GetConf() *FaultInjection_Conf {
 // specified
 type FaultInjection_Conf struct {
 	// Delay if specified then response from the destination will be delivered
-	// with delay
+	// with a delay
 	Delay *FaultInjection_Conf_Delay `protobuf:"bytes,1,opt,name=delay,proto3" json:"delay,omitempty"`
 	// Abort if specified makes source side to receive specified httpStatus code
 	Abort *FaultInjection_Conf_Abort `protobuf:"bytes,2,opt,name=abort,proto3" json:"abort,omitempty"`
