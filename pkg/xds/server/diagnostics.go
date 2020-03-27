@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Kong/kuma/pkg/core"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
 
 var (
@@ -19,7 +19,7 @@ type diagnosticsServer struct {
 
 // Make sure that grpcServer implements all relevant interfaces
 var (
-	_ core_runtime.Component = &diagnosticsServer{}
+	_ component.Component = &diagnosticsServer{}
 )
 
 func (s *diagnosticsServer) Start(stop <-chan struct{}) error {

@@ -3,6 +3,7 @@ package k8s
 import (
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
 
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -32,7 +33,22 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 	if err != nil {
 		return err
 	}
-	b.WithComponentManager(mgr)
+	b.WithComponentManager(&kubeComponentManager{mgr})
 	b.WithExtensions(k8s_runtime.NewManagerContext(b.Extensions(), mgr))
+	return nil
+}
+
+type kubeComponentManager struct {
+	kube_ctrl.Manager
+}
+
+var _ component.Manager = &kubeComponentManager{}
+
+func (k *kubeComponentManager) Add(components ...component.Component) error {
+	for _, c := range components {
+		if err := k.Manager.Add(c); err != nil {
+			return err
+		}
+	}
 	return nil
 }

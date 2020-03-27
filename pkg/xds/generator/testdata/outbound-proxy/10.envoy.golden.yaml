@@ -388,7 +388,7 @@ resources:
                   envoyGrpc:
                     clusterName: access_log_sink
                 logName: |
-                  logstash:1234;[%START_TIME%] mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                  logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
           cluster: api-tcp
           statPrefix: api-tcp
     name: outbound:127.0.0.1:40002

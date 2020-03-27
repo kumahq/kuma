@@ -22,8 +22,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 		syncTracker,
 	}
 	srv := NewServer(cache, callbacks, madsServerLog)
-	return core_runtime.Add(
-		rt,
+	return rt.Add(
 		&grpcServer{srv, *rt.Config().MonitoringAssignmentServer},
 	)
 }
