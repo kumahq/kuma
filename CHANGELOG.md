@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feature: builtin SDS server in Kuma DP
+  [#646](https://github.com/Kong/kuma/pull/646)
 * feature: Vault secret providers
   [#644](https://github.com/Kong/kuma/pull/644)
 * chore: merge mTLS and CA status into one column

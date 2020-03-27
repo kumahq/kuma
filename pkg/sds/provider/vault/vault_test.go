@@ -8,9 +8,7 @@ import (
 	vault_api "github.com/hashicorp/vault/api"
 
 	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	"github.com/Kong/kuma/pkg/sds/provider"
-	"github.com/Kong/kuma/pkg/sds/provider/ca"
-	"github.com/Kong/kuma/pkg/sds/provider/identity"
+	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
 	sds_vault "github.com/Kong/kuma/pkg/sds/provider/vault"
 
 	. "github.com/onsi/ginkgo"
@@ -84,7 +82,7 @@ var _ = Describe("Vault Providers", func() {
 	})
 
 	Describe("MeshCaProvider", func() {
-		var secretProvider provider.SecretProvider
+		var secretProvider sds_provider.SecretProvider
 		BeforeEach(func() {
 			secretProvider = sds_vault.NewMeshCaProvider(newClient(token))
 		})
@@ -95,8 +93,8 @@ var _ = Describe("Vault Providers", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(secret.(*ca.MeshCaSecret).PemCerts).To(HaveLen(1))
-			Expect(string(secret.(*ca.MeshCaSecret).PemCerts[0])).To(Equal(rootCaCert))
+			Expect(secret.(*sds_provider.MeshCaSecret).PemCerts).To(HaveLen(1))
+			Expect(string(secret.(*sds_provider.MeshCaSecret).PemCerts[0])).To(Equal(rootCaCert))
 		})
 
 		It("should return an error when PKI for mesh not exist", func() {
@@ -121,7 +119,7 @@ var _ = Describe("Vault Providers", func() {
 
 	Describe("IdentityCertProvider", func() {
 
-		var secretProvider provider.SecretProvider
+		var secretProvider sds_provider.SecretProvider
 
 		BeforeEach(func() {
 			secretProvider = sds_vault.NewIdentityCertProvider(newClient(token))
@@ -134,7 +132,7 @@ var _ = Describe("Vault Providers", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			identityCertSecret := secret.(*identity.IdentityCertSecret)
+			identityCertSecret := secret.(*sds_provider.IdentityCertSecret)
 			Expect(identityCertSecret.PemCerts).To(HaveLen(1))
 			Expect(identityCertSecret.PemKey).ToNot(BeEmpty())
 		})
