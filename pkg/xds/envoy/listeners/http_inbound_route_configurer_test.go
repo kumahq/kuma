@@ -1,8 +1,6 @@
 package listeners_test
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -39,7 +37,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 
 			// when
 			actual, err := util_proto.ToYAML(listener)
-			fmt.Println(string(actual))
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
