@@ -1,8 +1,10 @@
 package api_server_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -56,12 +58,16 @@ var _ = Describe("Index WS", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
-		expected := `
+		hostname, err := os.Hostname()
+		Expect(err).ToNot(HaveOccurred())
+
+		expected := fmt.Sprintf(`
 		{
+			"hostname": "%s",
 			"tagline": "Kuma",
 			"version": "1.2.3"
-		}
-`
+		}`, hostname)
+
 		Expect(body).To(MatchJSON(expected))
 		close(done)
 	}, 5)
