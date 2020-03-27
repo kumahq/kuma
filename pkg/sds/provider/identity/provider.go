@@ -63,7 +63,7 @@ func (s *identityCertProvider) Get(ctx context.Context, name string, requestor s
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to generate a Workload Identity Certificate for %+v", requestor)
 	}
-	return &IdentityCertSecret{
+	return &sds_provider.IdentityCertSecret{
 		PemCerts: [][]byte{workloadCert.CertPEM},
 		PemKey:   workloadCert.KeyPEM,
 	}, nil

@@ -12,7 +12,6 @@ import (
 
 	"github.com/Kong/kuma/pkg/sds/auth"
 	"github.com/Kong/kuma/pkg/sds/provider"
-	"github.com/Kong/kuma/pkg/sds/provider/ca"
 )
 
 func NewMeshCaProvider(client *vault.Client) provider.SecretProvider {
@@ -54,7 +53,7 @@ func (m *meshCaProvider) Get(ctx context.Context, name string, requestor auth.Id
 		return nil, errors.Errorf("error from Vault %d: %s", resp.StatusCode, body)
 	}
 
-	return &ca.MeshCaSecret{
+	return &provider.MeshCaSecret{
 		PemCerts: [][]byte{body},
 	}, nil
 }

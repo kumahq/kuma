@@ -11,7 +11,6 @@ import (
 
 	"github.com/Kong/kuma/pkg/sds/auth"
 	"github.com/Kong/kuma/pkg/sds/provider"
-	"github.com/Kong/kuma/pkg/sds/provider/identity"
 )
 
 func NewIdentityCertProvider(client *vault.Client) provider.SecretProvider {
@@ -51,7 +50,7 @@ func (m *identityCertProvider) Get(ctx context.Context, name string, requestor a
 	cert := secret.Data["certificate"].(string)
 	key := secret.Data["private_key"].(string)
 
-	return &identity.IdentityCertSecret{
+	return &provider.IdentityCertSecret{
 		PemCerts: [][]byte{[]byte(cert)},
 		PemKey:   []byte(key),
 	}, nil

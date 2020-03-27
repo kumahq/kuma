@@ -52,7 +52,7 @@ func (s *meshCaProvider) Get(ctx context.Context, resource string, requestor sds
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to retrieve Root Certificates of a given Builtin CA")
 		}
-		return &MeshCaSecret{
+		return &sds_provider.MeshCaSecret{
 			PemCerts: rootCerts,
 		}, nil
 	case *mesh_proto.CertificateAuthority_Provided_:
@@ -64,7 +64,7 @@ func (s *meshCaProvider) Get(ctx context.Context, resource string, requestor sds
 		for i, rootCert := range rootCerts {
 			certs[i] = rootCert.Cert
 		}
-		return &MeshCaSecret{
+		return &sds_provider.MeshCaSecret{
 			PemCerts: certs,
 		}, nil
 	default:
