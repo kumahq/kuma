@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/Kong/kuma/pkg/catalog"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -59,15 +61,13 @@ func newRunCmd() *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "could retrieve catalog")
 			}
-			if cfg.SDS.Type == kuma_dp.SdsCp {
-				if catalog.Apis.DataplaneToken.Enabled() {
-					if cfg.DataplaneRuntime.TokenPath == "" {
-						return errors.New("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. " +
-							"Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
-					}
-					if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-						return err
-					}
+			if isDpTokenRequired(cfg, catalog) {
+				if cfg.DataplaneRuntime.TokenPath == "" {
+					return errors.New("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. " +
+						"Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
+				}
+				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
+					return err
 				}
 			}
 
@@ -151,4 +151,8 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.TLS.ServerName, "vault-tls-server-name", cfg.SDS.Vault.TLS.ServerName, "If set, it is used to set the SNI host when connecting via TLS")
 	cmd.PersistentFlags().BoolVar(&cfg.SDS.Vault.TLS.SkipVerify, "vault-tls-skip-verify", cfg.SDS.Vault.TLS.SkipVerify, "Disables TLS verification")
 	return cmd
+}
+
+func isDpTokenRequired(cfg kuma_dp.Config, catalog catalog.Catalog) bool {
+	return cfg.SDS.Type == kuma_dp.SdsCp && catalog.Apis.DataplaneToken.Enabled()
 }

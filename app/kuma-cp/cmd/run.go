@@ -3,8 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/Kong/kuma/pkg/sds"
-
 	"github.com/spf13/cobra"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
@@ -15,6 +13,7 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/bootstrap"
 	mads_server "github.com/Kong/kuma/pkg/mads/server"
+	"github.com/Kong/kuma/pkg/sds"
 	xds_server "github.com/Kong/kuma/pkg/xds/server"
 )
 

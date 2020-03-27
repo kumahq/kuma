@@ -100,6 +100,7 @@ const SdsCp string = "cp"
 const SdsDpVault string = "dpVault"
 
 func (s SDS) Sanitize() {
+	s.Vault.Sanitize()
 }
 
 func (s SDS) Validate() error {

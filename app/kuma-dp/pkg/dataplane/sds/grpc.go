@@ -3,6 +3,9 @@ package sds
 import (
 	"fmt"
 	"net"
+	"os"
+
+	"github.com/pkg/errors"
 
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"google.golang.org/grpc"
@@ -35,6 +38,9 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	lis, err := net.Listen("unix", s.address)
 	if err != nil {
 		return err
+	}
+	if err := os.Chmod(s.address, 0700); err != nil {
+		return errors.Wrapf(err, "could not set 700 permissions the socket %s", s.address)
 	}
 
 	// register services
