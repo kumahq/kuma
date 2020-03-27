@@ -20,9 +20,12 @@ type TagsConfigurer struct {
 	tags v1alpha1.MultiValueTagSet
 }
 
-func (r *TagsConfigurer) Configure(rc *envoy_api_v2.RouteConfiguration) error {
+func (t *TagsConfigurer) Configure(rc *envoy_api_v2.RouteConfiguration) error {
+	if len(t.tags) == 0 {
+		return nil
+	}
 	rc.RequestHeadersToAdd = append(rc.RequestHeadersToAdd, &envoy_core.HeaderValueOption{
-		Header: &envoy_core.HeaderValue{Key: TagsHeader, Value: r.tags.String()},
+		Header: &envoy_core.HeaderValue{Key: TagsHeader, Value: t.tags.String()},
 	})
 	return nil
 }
