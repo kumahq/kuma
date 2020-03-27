@@ -1,10 +1,11 @@
 package routes_test
 
 import (
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/envoy/routes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/Kong/kuma/pkg/xds/envoy/routes"
 )
 
 var _ = Describe("ResetTagsConfigurer", func() {

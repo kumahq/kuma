@@ -1,9 +1,10 @@
 package routes
 
 import (
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
 const TagsHeader = "x-kuma-tags"
