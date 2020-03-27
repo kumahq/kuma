@@ -9,11 +9,12 @@ import (
 	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
 )
 
-func HttpInboundRoute(service string, cluster envoy_common.ClusterInfo) FilterChainBuilderOpt {
+func HttpInboundRoute(service string, cluster envoy_common.ClusterInfo, headersToRemove []string) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.Add(&HttpInboundRouteConfigurer{
-			service: service,
-			cluster: cluster,
+			service:         service,
+			cluster:         cluster,
+			headersToRemove: headersToRemove,
 		})
 	})
 }
@@ -21,13 +22,15 @@ func HttpInboundRoute(service string, cluster envoy_common.ClusterInfo) FilterCh
 type HttpInboundRouteConfigurer struct {
 	service string
 	// Cluster to forward traffic to.
-	cluster envoy_common.ClusterInfo
+	cluster         envoy_common.ClusterInfo
+	headersToRemove []string
 }
 
 func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	routeName := envoy_names.GetInboundRouteName(c.service)
 	routeConfig, err := envoy_routes.NewRouteConfigurationBuilder().
 		Configure(envoy_routes.CommonRouteConfiguration(routeName)).
+		Configure(envoy_routes.RequestHeadersToRemove(c.headersToRemove)).
 		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder().
 			Configure(envoy_routes.CommonVirtualHost(c.service)).
 			Configure(envoy_routes.DefaultRoute(c.cluster)))).

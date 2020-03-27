@@ -45,6 +45,8 @@ resources:
                 - name: envoy.router
                 routeConfig:
                   name: inbound:backend1
+                  requestHeadersToRemove:
+                    - x-kuma-match
                   validateClusters: true
                   virtualHosts:
                   - domains:
