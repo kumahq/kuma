@@ -34,5 +34,6 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newGetTrafficRoutesCmd(ctx))
 	cmd.AddCommand(newGetTrafficLogsCmd(ctx))
 	cmd.AddCommand(newGetTrafficTracesCmd(ctx))
+	cmd.AddCommand(newGetFaultInjectionsCmd(ctx))
 	return cmd
 }

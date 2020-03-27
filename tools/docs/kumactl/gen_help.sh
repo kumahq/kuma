@@ -47,6 +47,7 @@ gen_help kumactl get traffic-logs
 gen_help kumactl get traffic-permissions
 gen_help kumactl get traffic-routes
 gen_help kumactl get traffic-traces
+gen_help kumactl get fault-injections
 gen_help kumactl delete
 gen_help kumactl inspect
 gen_help kumactl inspect dataplanes

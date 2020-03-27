@@ -3,13 +3,13 @@ module github.com/Kong/kuma/api
 go 1.12
 
 require (
-	github.com/cncf/udpa v0.0.0-20200124205748-db4b343e48c1 // indirect
-	github.com/envoyproxy/data-plane-api v0.0.0-20200312131804-6b88f378eea9 // indirect
+	github.com/cncf/udpa v0.0.0-20200313221541-5f7e5dd04533 // indirect
+	github.com/envoyproxy/data-plane-api v0.0.0-20200320220137-1f06179b728d // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1-0.20191108215040-b0f2cec0e187
 	github.com/envoyproxy/protoc-gen-validate v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v1.3.2
-	github.com/googleapis/googleapis v0.0.0-20200312153435-83518e18655d // indirect
+	github.com/googleapis/googleapis v0.0.0-20200321041301-0be7105dc525 // indirect
 	github.com/iancoleman/strcase v0.0.0-20190422225806-e506e3ef7365 // indirect
 	github.com/lyft/protoc-gen-star v0.4.12 // indirect
 	github.com/onsi/ginkgo v1.10.2

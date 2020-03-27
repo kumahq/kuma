@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+import "google/protobuf/duration.proto";
+import "mesh/v1alpha1/selector.proto";
+import "google/protobuf/wrappers.proto";
+
+// FaultInjection defines the configuration of faults between dataplanes.
+message FaultInjection {
+
+  // List of selectors to match dataplanes that are sources of traffic.
+  repeated Selector sources = 1;
+
+  // List of selectors to match services that are destinations of traffic.
+  repeated Selector destinations = 2;
+
+  // Conf defines several types of faults, at least one fault should be
+  // specified
+  message Conf {
+
+    // Delay defines configuration of delaying a response from a destination
+    message Delay {
+      // Percentage of requests on which delay will be injected, has to be in
+      // [0.0 - 100.0] range
+      google.protobuf.DoubleValue percentage = 1;
+      // The duration during which the response will be delayed
+      google.protobuf.Duration value = 2;
+    }
+    // Delay if specified then response from the destination will be delivered
+    // with a delay
+    Delay delay = 1;
+
+    // Abort defines a configuration of not delivering requests to destination
+    // service and replacing the responses from destination dataplane by
+    // predefined status code
+    message Abort {
+      // Percentage of requests on which abort will be injected, has to be in
+      // [0.0 - 100.0] range
+      google.protobuf.DoubleValue percentage = 1;
+      // HTTP status code which will be returned to source side
+      google.protobuf.UInt32Value httpStatus = 2;
+    }
+    // Abort if specified makes source side to receive specified httpStatus code
+    Abort abort = 2;
+
+    // ResponseBandwidth defines a configuration to limit the speed of
+    // responding to the requests
+    message ResponseBandwidth {
+      // Percentage of requests on which response bandwidth limit will be
+      // injected, has to be in [0.0 - 100.0] range
+      google.protobuf.DoubleValue percentage = 1;
+      // Limit is represented by value measure in gbps, mbps, kbps or bps, e.g.
+      // 10kbps
+      google.protobuf.StringValue limit = 2;
+    }
+    // ResponseBandwidth if specified limits the speed of sending response body
+    ResponseBandwidth response_bandwidth = 3;
+  }
+
+  // Configuration of FaultInjection
+  Conf conf = 3;
+}

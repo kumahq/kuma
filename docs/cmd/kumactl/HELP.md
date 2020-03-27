@@ -326,6 +326,7 @@ Usage:
 
 Available Commands:
   dataplanes          Show Dataplanes
+  fault-injections    Show FaultInjections
   healthchecks        Show HealthChecks
   meshes              Show Meshes
   proxytemplates      Show ProxyTemplates
@@ -482,6 +483,24 @@ Usage:
 
 Flags:
   -h, --help   help for traffic-traces
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get fault-injections
+
+```
+Show FaultInjection entities.
+
+Usage:
+  kumactl get fault-injections [flags]
+
+Flags:
+  -h, --help   help for fault-injections
 
 Global Flags:
       --config-file string   path to the configuration file to use

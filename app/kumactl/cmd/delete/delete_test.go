@@ -78,9 +78,9 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace`))
+			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection`))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
@@ -177,6 +177,12 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return &mesh_core.TrafficTraceResource{} },
 					expectedMessage: "deleted TrafficTrace \"web\"\n",
 				}),
+				Entry("fault-injections", testCase{
+					typ:             "fault-injection",
+					name:            "web",
+					resource:        func() core_model.Resource { return &mesh_core.FaultInjectionResource{} },
+					expectedMessage: "deleted FaultInjection \"web\"\n",
+				}),
 			)
 
 			DescribeTable("should fail if resource doesn't exist",
@@ -231,6 +237,12 @@ var _ = Describe("kumactl delete ", func() {
 					name:            "web",
 					resource:        func() core_model.Resource { return &mesh_core.TrafficRouteResource{} },
 					expectedMessage: "Error: there is no TrafficTrace with name \"web\"\n",
+				}),
+				Entry("fault-injections", testCase{
+					typ:             "fault-injection",
+					name:            "web",
+					resource:        func() core_model.Resource { return &mesh_core.FaultInjectionResource{} },
+					expectedMessage: "Error: there is no FaultInjection with name \"web\"\n",
 				}),
 			)
 		})
