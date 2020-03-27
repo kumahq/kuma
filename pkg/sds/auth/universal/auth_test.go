@@ -2,7 +2,6 @@ package universal_test
 
 import (
 	"context"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -12,9 +11,9 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/xds"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	"github.com/Kong/kuma/pkg/sds"
 	"github.com/Kong/kuma/pkg/sds/auth"
 	"github.com/Kong/kuma/pkg/sds/auth/universal"
-	"github.com/Kong/kuma/pkg/sds/server"
 	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
 )
 
@@ -29,7 +28,7 @@ var _ = Describe("Authentication flow", func() {
 		resStore = memory.NewStore()
 		authenticator = universal.NewAuthenticator(
 			issuer,
-			server.DefaultDataplaneResolver(manager.NewResourceManager(resStore)),
+			sds.DefaultDataplaneResolver(manager.NewResourceManager(resStore)),
 		)
 	})
 

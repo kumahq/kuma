@@ -6,14 +6,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/Kong/kuma/pkg/catalog/client"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumadp_config "github.com/Kong/kuma/app/kuma-dp/pkg/config"
 	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/sds"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
+	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/Kong/kuma/pkg/config/types"
@@ -22,13 +23,13 @@ import (
 	util_net "github.com/Kong/kuma/pkg/util/net"
 )
 
-type CatalogClientFactory func(string) (client.CatalogClient, error)
+type CatalogClientFactory func(string) (catalog_client.CatalogClient, error)
 
 var (
 	runLog = dataplaneLog.WithName("run")
 	// overridable by tests
 	bootstrapGenerator   = envoy.NewRemoteBootstrapGenerator(&http.Client{Timeout: 10 * time.Second})
-	catalogClientFactory = client.NewCatalogClient
+	catalogClientFactory = catalog_client.NewCatalogClient
 )
 
 func newRunCmd() *cobra.Command {
@@ -58,13 +59,15 @@ func newRunCmd() *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "could retrieve catalog")
 			}
-			if catalog.Apis.DataplaneToken.Enabled() {
-				if cfg.DataplaneRuntime.TokenPath == "" {
-					return errors.New("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. " +
-						"Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
-				}
-				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-					return err
+			if cfg.SDS.Type == kuma_dp.SdsCp {
+				if catalog.Apis.DataplaneToken.Enabled() {
+					if cfg.DataplaneRuntime.TokenPath == "" {
+						return errors.New("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. " +
+							"Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
+					}
+					if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
+						return err
+					}
 				}
 			}
 
@@ -93,18 +96,30 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			bootstrapConfig, err := bootstrapGenerator(catalog.Apis.Bootstrap.Url, cfg)
+			if err != nil {
+				return errors.Wrapf(err, "failed to generate Envoy bootstrap config")
+			}
 			dataplane := envoy.New(envoy.Opts{
-				Catalog:   catalog,
-				Config:    cfg,
-				Generator: bootstrapGenerator,
-				Stdout:    cmd.OutOrStdout(),
-				Stderr:    cmd.OutOrStderr(),
+				Config:          cfg,
+				BootstrapConfig: bootstrapConfig,
+				Stdout:          cmd.OutOrStdout(),
+				Stderr:          cmd.OutOrStderr(),
 			})
 			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
 			componentMgr := component.NewManager()
 			if err := componentMgr.Add(server, dataplane); err != nil {
 				return err
+			}
+			if cfg.SDS.Type == kuma_dp.SdsDpVault {
+				sdsServer, err := sds.NewVaultSdsServer(cfg.Dataplane, cfg.SDS.Vault, bootstrapConfig.Node.Cluster)
+				if err != nil {
+					return errors.Wrap(err, "could not create Vault SDS Server")
+				}
+				if err := componentMgr.Add(sdsServer); err != nil {
+					return err
+				}
 			}
 
 			runLog.Info("starting Kuma DP")
@@ -124,5 +139,16 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Type, "sds-type", cfg.SDS.Type, kuma_cmd.UsageOptions("Type of Secret Discovery Server that DP will work with", kuma_dp.SdsDpVault, kuma_dp.SdsCp))
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.Address, "vault-address", cfg.SDS.Vault.Address, "Address of Vault")
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.AgentAddress, "vault-agent-address", cfg.SDS.Vault.AgentAddress, "Agent Address of Vault")
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.Token, "vault-token", cfg.SDS.Vault.Token, "Token used for authentication with Vault")
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.Namespace, "vault-namespace", cfg.SDS.Vault.Namespace, "Vault namespace")
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.TLS.CaCertPath, "vault-ca-cert-path", cfg.SDS.Vault.TLS.CaCertPath, "Path to TLS certificate that will be used to connect to Vault")
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.TLS.CaCertDir, "vault-ca-cert-dir", cfg.SDS.Vault.TLS.CaCertDir, "Path to directory of TLS certificates that will be used to connect to Vault")
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.TLS.ClientCertPath, "vault-client-cert-path", cfg.SDS.Vault.TLS.ClientCertPath, "Path to client TLS certificate that will be used to connect to Vault")
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.TLS.ClientKeyPath, "vault-client-key-path", cfg.SDS.Vault.TLS.ClientKeyPath, "Path to client TLS key that will be used to connect to Vault")
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.TLS.ServerName, "vault-tls-server-name", cfg.SDS.Vault.TLS.ServerName, "If set, it is used to set the SNI host when connecting via TLS")
+	cmd.PersistentFlags().BoolVar(&cfg.SDS.Vault.TLS.SkipVerify, "vault-tls-skip-verify", cfg.SDS.Vault.TLS.SkipVerify, "Disables TLS verification")
 	return cmd
 }

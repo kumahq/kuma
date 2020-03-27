@@ -1,4 +1,4 @@
-package server
+package sds
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	kube_auth "k8s.io/api/authentication/v1"
 
 	config_core "github.com/Kong/kuma/pkg/config/core"
+	"github.com/Kong/kuma/pkg/core"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -21,12 +22,9 @@ import (
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
 	ca_sds_provider "github.com/Kong/kuma/pkg/sds/provider/ca"
 	identity_sds_provider "github.com/Kong/kuma/pkg/sds/provider/identity"
+	sds_server "github.com/Kong/kuma/pkg/sds/server"
 	"github.com/Kong/kuma/pkg/tokens/builtin"
-)
-
-const (
-	MeshCaResource       = "mesh_ca"
-	IdentityCertResource = "identity_cert"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
 func NewKubeAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, error) {
@@ -86,9 +84,9 @@ func DefaultSecretProviderSelector(rt core_runtime.Runtime) func(string) (sds_pr
 	identityCertProvider := DefaultIdentityCertProvider(rt)
 	return func(resource string) (sds_provider.SecretProvider, error) {
 		switch resource {
-		case MeshCaResource:
+		case sds_server.MeshCaResource:
 			return meshCaProvider, nil
-		case IdentityCertResource:
+		case sds_server.IdentityCertResource:
 			return identityCertProvider, nil
 		default:
 			return nil, errors.Errorf("SDS request for %q resource is not supported", resource)
@@ -96,13 +94,13 @@ func DefaultSecretProviderSelector(rt core_runtime.Runtime) func(string) (sds_pr
 	}
 }
 
-func DefaultSecretDiscoveryHandler(rt core_runtime.Runtime) (SecretDiscoveryHandler, error) {
+func DefaultSecretDiscoveryHandler(rt core_runtime.Runtime) (sds_server.SecretDiscoveryHandler, error) {
 	authenticator, err := DefaultAuthenticator(rt)
 	if err != nil {
 		return nil, err
 	}
 	secretProviderSelector := DefaultSecretProviderSelector(rt)
-	return SecretDiscoveryHandlerFunc(func(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error) {
+	return sds_server.SecretDiscoveryHandlerFunc(func(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error) {
 		resource := req.ResourceNames[0]
 		provider, err := secretProviderSelector(resource)
 		if err != nil {
@@ -131,8 +129,20 @@ func DefaultSecretDiscoveryHandler(rt core_runtime.Runtime) (SecretDiscoveryHand
 	}), nil
 }
 
-type SecretDiscoveryHandlerFunc func(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error)
-
-func (f SecretDiscoveryHandlerFunc) Handle(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error) {
-	return f(ctx, req)
+func SetupServer(rt core_runtime.Runtime) error {
+	handler, err := DefaultSecretDiscoveryHandler(rt)
+	if err != nil {
+		return err
+	}
+	log := core.Log.WithName("sds-server")
+	callbacks := util_xds.CallbacksChain{
+		util_xds.LoggingCallbacks{
+			Log: log,
+		},
+	}
+	srv := sds_server.NewServer(handler, callbacks, log)
+	return rt.Add(&sds_server.GrpcServer{
+		Server: srv,
+		Config: *rt.Config().SdsServer,
+	})
 }

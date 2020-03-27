@@ -1,18 +1,15 @@
-package server
+package sds
 
 import (
 	"fmt"
 	"net"
 
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	"google.golang.org/grpc"
 
-	sds_config "github.com/Kong/kuma/pkg/config/sds"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
+	sds_server "github.com/Kong/kuma/pkg/sds/server"
 )
 
 const grpcMaxConcurrentStreams = 1000000
@@ -21,35 +18,27 @@ var (
 	grpcServerLog = core.Log.WithName("sds-server").WithName("grpc")
 )
 
-type GrpcServer struct {
-	Server Server
-	Config sds_config.SdsServerConfig
+type grpcServer struct {
+	server  sds_server.Server
+	address string
 }
 
 var (
-	_ component.Component = &GrpcServer{}
+	_ component.Component = &grpcServer{}
 )
 
-func (s *GrpcServer) Start(stop <-chan struct{}) error {
+func (s *grpcServer) Start(stop <-chan struct{}) error {
 	var grpcOptions []grpc.ServerOption
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
-	useTLS := s.Config.TlsCertFile != ""
-	if useTLS {
-		creds, err := credentials.NewServerTLSFromFile(s.Config.TlsCertFile, s.Config.TlsKeyFile)
-		if err != nil {
-			return errors.Wrap(err, "failed to load TLS certificate")
-		}
-		grpcOptions = append(grpcOptions, grpc.Creds(creds))
-	}
 	grpcServer := grpc.NewServer(grpcOptions...)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.Config.GrpcPort))
+	lis, err := net.Listen("unix", s.address)
 	if err != nil {
 		return err
 	}
 
 	// register services
-	envoy_discovery.RegisterSecretDiscoveryServiceServer(grpcServer, s.Server)
+	envoy_discovery.RegisterSecretDiscoveryServiceServer(grpcServer, s.server)
 
 	errChan := make(chan error)
 	go func() {
@@ -61,7 +50,7 @@ func (s *GrpcServer) Start(stop <-chan struct{}) error {
 			grpcServerLog.Info("terminated normally")
 		}
 	}()
-	grpcServerLog.Info("starting", "interface", "0.0.0.0", "port", s.Config.GrpcPort, "tls", useTLS)
+	grpcServerLog.Info("starting SDS server", "address", fmt.Sprintf("unix://%s", s.address))
 
 	select {
 	case <-stop:

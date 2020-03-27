@@ -28,6 +28,9 @@ func DefaultConfig() Config {
 			BinaryPath: "envoy",
 			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
 		},
+		SDS: SDS{
+			Type: SdsCp,
+		},
 	}
 }
 
@@ -39,6 +42,8 @@ type Config struct {
 	Dataplane Dataplane `yaml:"dataplane,omitempty"`
 	// DataplaneRuntime defines the context in which dataplane (Envoy) runs.
 	DataplaneRuntime DataplaneRuntime `yaml:"dataplaneRuntime,omitempty"`
+	// SDS defines configuration for local Secret Discovery Service
+	SDS SDS `yaml:"sds"`
 }
 
 func (c *Config) Sanitize() {
@@ -80,6 +85,103 @@ type DataplaneRuntime struct {
 	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
 	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
+}
+
+// SDS defines configuration of SDS that DP will use
+type SDS struct {
+	Type  string `yaml:"type" envconfig:"kuma_sds_type"`
+	Vault Vault  `yaml:"vault"`
+}
+
+// SdsCP defines that DP will use SDS from CP therefore it needs Dataplane Token Server
+const SdsCp string = "cp"
+
+// SdsDpVault defines that DP will use SDS embedded in Kuma DP that connects to Vault
+const SdsDpVault string = "dpVault"
+
+func (s SDS) Sanitize() {
+}
+
+func (s SDS) Validate() error {
+	switch s.Type {
+	case SdsCp:
+	case SdsDpVault:
+		if err := s.Vault.Validate(); err != nil {
+			return errors.Wrapf(err, ".TLS is not valid")
+		}
+	default:
+		return errors.Errorf(".Type has to be either %s or %s", SdsCp, SdsDpVault)
+	}
+	return nil
+}
+
+var _ config.Config = SDS{}
+
+// Vault defines configuration for Vault connections from DP embedded in Kuma DP
+type Vault struct {
+	// Address of Vault
+	Address string `yaml:"address" envconfig:"kuma_sds_vault_address"`
+	// Agent address of Vault
+	AgentAddress string `yaml:"agentAddress" envconfig:"kuma_sds_vault_agent_address"`
+	// Token used for authentication with Vault
+	Token string `yaml:"token" envconfig:"kuma_sds_vault_token"`
+	// Vault namespace
+	Namespace string `yaml:"namespace" envconfig:"kuma_sds_vault_namespace"`
+	// TLS connection configuration
+	TLS VaultTLSConfig `yaml:"tls"`
+}
+
+func (v Vault) Sanitize() {
+	v.TLS.Sanitize()
+}
+
+func (v Vault) Validate() (errs error) {
+	if v.Address != "" && v.AgentAddress != "" {
+		errs = multierr.Append(errs, errors.Errorf("either .Address or .AgentAddress must be non-empty"))
+	}
+	if v.Token != "" {
+		errs = multierr.Append(errs, errors.Errorf(".Token must be non-empty"))
+	}
+	if err := v.TLS.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".TLS is not valid"))
+	}
+	return
+}
+
+var _ config.Config = &Vault{}
+
+var _ config.Config = &VaultTLSConfig{}
+
+// VaultTLSConfig defines configuration for secured TLS connection to Vault
+type VaultTLSConfig struct {
+	// Path to TLS certificate that will be used to connect to Vault
+	CaCertPath string `yaml:"caCertPath" envconfig:"kuma_sds_vault_tls_ca_cert_path"`
+	// Path to directory of TLS certificates that will be used to connect to Vault
+	CaCertDir string `yaml:"caCertDir" envconfig:"kuma_sds_vault_tls_ca_cert_dir"`
+	// Path to client TLS certificate that will be used to connect to Vault
+	ClientCertPath string `yaml:"clientCertPath" envconfig:"kuma_sds_vault_tls_client_cert_path"`
+	// Path to client TLS key that will be used to connect to Vault
+	ClientKeyPath string `yaml:"clientKeyPath" envconfig:"kuma_sds_vault_tls_client_key_path"`
+	// Disables TLS verification
+	SkipVerify bool `yaml:"skipVerify" envconfig:"kuma_sds_vault_tls_skip_verify"`
+	// If set, it is used to set the SNI host when connecting via TLS
+	ServerName string `yaml:"serverName" envconfig:"kuma_sds_vault_tls_server_name"`
+}
+
+func (v VaultTLSConfig) Sanitize() {
+}
+
+func (v VaultTLSConfig) Validate() (errs error) {
+	if v.SkipVerify {
+		return nil
+	}
+	if v.ClientKeyPath != "" && v.ClientCertPath == "" {
+		errs = multierr.Append(errs, errors.New(".ClientCertPath cannot be empty when .ClientKeyPath is set"))
+	}
+	if v.ClientKeyPath == "" && v.ClientCertPath != "" {
+		errs = multierr.Append(errs, errors.New(".ClientKeyPath cannot be empty when .ClientCertPath is set"))
+	}
+	return
 }
 
 var _ config.Config = &Config{}

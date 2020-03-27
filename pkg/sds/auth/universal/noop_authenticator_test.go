@@ -3,18 +3,18 @@ package universal_test
 import (
 	"context"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/xds"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	"github.com/Kong/kuma/pkg/sds"
 	"github.com/Kong/kuma/pkg/sds/auth"
 	"github.com/Kong/kuma/pkg/sds/auth/universal"
-	"github.com/Kong/kuma/pkg/sds/server"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Noop Authenticator", func() {
@@ -24,7 +24,7 @@ var _ = Describe("Noop Authenticator", func() {
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		authenticator = universal.NewNoopAuthenticator(server.DefaultDataplaneResolver(manager.NewResourceManager(resStore)))
+		authenticator = universal.NewNoopAuthenticator(sds.DefaultDataplaneResolver(manager.NewResourceManager(resStore)))
 	})
 
 	It("should allow with any token for existing dataplane", func() {

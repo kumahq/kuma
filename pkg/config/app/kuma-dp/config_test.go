@@ -59,6 +59,18 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": "envoy.sh",
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":  "/var/run/envoy",
 				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":  "/tmp/token",
+				"KUMA_SDS_TYPE":  "dpVault",
+				"KUMA_SDS_VAULT_ADDRESS": "https://vault.local",
+				"KUMA_SDS_VAULT_AGENT_ADDRESS": "https://vault-agent.local",
+				"KUMA_SDS_VAULT_TOKEN": "testToken",
+				"KUMA_SDS_VAULT_NAMESPACE": "testNamespace",
+				"KUMA_SDS_VAULT_TLS_CA_CERT_PATH": "/cert.pem",
+				"KUMA_SDS_VAULT_TLS_CA_CERT_DIR": "/certs",
+				"KUMA_SDS_VAULT_TLS_CLIENT_CERT_PATH": "/client/cert.pem",
+				"KUMA_SDS_VAULT_TLS_CLIENT_KEY_PATH": "/client/key.pem",
+				"KUMA_SDS_VAULT_TLS_SKIP_VERIFY": "true",
+				"KUMA_SDS_VAULT_TLS_SERVER_NAME": "name",
+				// todo
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -82,6 +94,17 @@ var _ = Describe("Config", func() {
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
 			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))
+			Expect(cfg.SDS.Type).To(Equal(kuma_dp.SdsDpVault))
+			Expect(cfg.SDS.Vault.Token).To(Equal("testToken"))
+			Expect(cfg.SDS.Vault.Address).To(Equal("https://vault.local"))
+			Expect(cfg.SDS.Vault.AgentAddress).To(Equal("https://vault-agent.local"))
+			Expect(cfg.SDS.Vault.Namespace).To(Equal("testNamespace"))
+			Expect(cfg.SDS.Vault.TLS.CaCertPath).To(Equal("/cert.pem"))
+			Expect(cfg.SDS.Vault.TLS.CaCertDir).To(Equal("/certs"))
+			Expect(cfg.SDS.Vault.TLS.ClientCertPath).To(Equal("/client/cert.pem"))
+			Expect(cfg.SDS.Vault.TLS.ClientKeyPath).To(Equal("/client/key.pem"))
+			Expect(cfg.SDS.Vault.TLS.SkipVerify).To(BeTrue())
+			Expect(cfg.SDS.Vault.TLS.ServerName).To(Equal("name"))
 		})
 	})
 

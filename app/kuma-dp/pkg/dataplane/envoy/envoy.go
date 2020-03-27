@@ -6,14 +6,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
-	"path/filepath"
-
-	"github.com/golang/protobuf/proto"
+	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/catalog"
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
@@ -28,14 +26,13 @@ var (
 	newConfigFile = GenerateBootstrapFile
 )
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config) (proto.Message, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config) (*envoy_bootstrap.Bootstrap, error)
 
 type Opts struct {
-	Catalog   catalog.Catalog
-	Config    kuma_dp.Config
-	Generator BootstrapConfigFactoryFunc
-	Stdout    io.Writer
-	Stderr    io.Writer
+	Config          kuma_dp.Config
+	BootstrapConfig *envoy_bootstrap.Bootstrap
+	Stdout          io.Writer
+	Stderr          io.Writer
 }
 
 func New(opts Opts) *Envoy {
@@ -92,11 +89,7 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 }
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
-	bootstrapConfig, err := e.opts.Generator(e.opts.Catalog.Apis.Bootstrap.Url, e.opts.Config)
-	if err != nil {
-		return errors.Wrapf(err, "failed to generate Envoy bootstrap config")
-	}
-	configFile, err := newConfigFile(e.opts.Config.DataplaneRuntime, bootstrapConfig)
+	configFile, err := newConfigFile(e.opts.Config.DataplaneRuntime, e.opts.BootstrapConfig)
 	if err != nil {
 		return err
 	}

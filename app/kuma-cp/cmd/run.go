@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/Kong/kuma/pkg/sds"
+
 	"github.com/spf13/cobra"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
@@ -13,7 +15,6 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/bootstrap"
 	mads_server "github.com/Kong/kuma/pkg/mads/server"
-	sds_server "github.com/Kong/kuma/pkg/sds/server"
 	xds_server "github.com/Kong/kuma/pkg/xds/server"
 )
 
@@ -62,7 +63,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
-			if err := sds_server.SetupServer(rt); err != nil {
+			if err := sds.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up SDS server")
 				return err
 			}

@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 
@@ -72,22 +70,21 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
-				return &envoy_bootstrap.Bootstrap{
-					Node: &envoy_core.Node{
-						Id: "example",
-					},
-				}, nil
+			sampleBootstrap := &envoy_bootstrap.Bootstrap{
+				Node: &envoy_core.Node{
+					Id: "example",
+				},
 			}
+
 			expectedConfigFile := filepath.Join(configDir, "bootstrap.yaml")
 
 			By("starting a mock dataplane")
 			// when
 			dataplane := New(Opts{
-				Config:    cfg,
-				Generator: sampleConfig,
-				Stdout:    outWriter,
-				Stderr:    errWriter,
+				Config:          cfg,
+				BootstrapConfig: sampleBootstrap,
+				Stdout:          outWriter,
+				Stderr:          errWriter,
 			})
 			// and
 			go func() {
@@ -143,17 +140,14 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
-				return &envoy_bootstrap.Bootstrap{}, nil
-			}
 
 			By("starting a mock dataplane")
 			// when
 			dataplane := New(Opts{
-				Config:    cfg,
-				Generator: sampleConfig,
-				Stdout:    &bytes.Buffer{},
-				Stderr:    &bytes.Buffer{},
+				Config:          cfg,
+				BootstrapConfig: &envoy_bootstrap.Bootstrap{},
+				Stdout:          &bytes.Buffer{},
+				Stderr:          &bytes.Buffer{},
 			})
 			// and
 			go func() {

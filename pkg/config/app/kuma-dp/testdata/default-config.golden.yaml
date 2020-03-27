@@ -6,3 +6,17 @@ dataplane:
   drainTime: 30s
 dataplaneRuntime:
   binaryPath: envoy
+sds:
+  type: cp
+  vault:
+    address: ""
+    agentAddress: ""
+    namespace: ""
+    tls:
+      caCertDir: ""
+      caCertPath: ""
+      clientCertPath: ""
+      clientKeyPath: ""
+      serverName: ""
+      skipVerify: false
+    token: ""

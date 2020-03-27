@@ -8,7 +8,6 @@ import (
 	net_url "net/url"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
@@ -25,7 +24,7 @@ func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc
 	return rb.Generate
 }
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Message, error) {
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (*envoy_bootstrap.Bootstrap, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, err

@@ -39,8 +39,19 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 )
 
+const (
+	MeshCaResource       = "mesh_ca"
+	IdentityCertResource = "identity_cert"
+)
+
 type SecretDiscoveryHandler interface {
 	Handle(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error)
+}
+
+type SecretDiscoveryHandlerFunc func(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error)
+
+func (f SecretDiscoveryHandlerFunc) Handle(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error) {
+	return f(ctx, req)
 }
 
 type Server interface {

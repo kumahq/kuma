@@ -14,7 +14,6 @@ import (
 	"syscall"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -54,7 +53,7 @@ var _ = Describe("run", func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
 		backupCatalogClientFactory = catalogClientFactory
-		bootstrapGenerator = func(_ string, cfg kumadp.Config) (proto.Message, error) {
+		bootstrapGenerator = func(_ string, cfg kumadp.Config) (*envoy_bootstrap.Bootstrap, error) {
 			bootstrap := envoy_bootstrap.Bootstrap{}
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
