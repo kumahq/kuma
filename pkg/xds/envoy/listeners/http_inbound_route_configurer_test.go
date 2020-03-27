@@ -23,7 +23,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 		service         string
 		cluster         envoy_common.ClusterInfo
 		expected        string
-		headersToRemove []string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -33,7 +32,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder().
 					Configure(HttpConnectionManager(given.statsName)).
-					Configure(HttpInboundRoute(given.service, given.cluster, given.headersToRemove)))).
+					Configure(HttpInboundRoute(given.service, given.cluster)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -52,7 +51,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			statsName:       "localhost:8080",
 			service:         "backend",
 			cluster:         envoy_common.ClusterInfo{Name: "localhost:8080", Weight: 200},
-			headersToRemove: []string{"x-kuma-match"},
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -70,7 +68,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                   routeConfig:
                     name: inbound:backend
                     requestHeadersToRemove:
-                    - x-kuma-match
+                    - x-kuma-tags
                     validateClusters: true
                     virtualHosts:
                     - domains:

@@ -4,7 +4,7 @@ import (
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 )
 
-func RequestHeadersToRemove(headers []string) RouteConfigurationBuilderOpt {
+func RequestHeadersToRemove(headers ...string) RouteConfigurationBuilderOpt {
 	return RouteConfigurationBuilderOptFunc(func(config *RouteConfigurationBuilderConfig) {
 		config.Add(&RequestHeadersToRemoveConfigurer{
 			headers: headers,

@@ -174,7 +174,7 @@ resources:
     name: outbound:api-http
     requestHeadersToAdd:
     - header:
-        key: x-kuma-match
+        key: x-kuma-tags
         value: service=gateway
     validateClusters: true
     virtualHosts:

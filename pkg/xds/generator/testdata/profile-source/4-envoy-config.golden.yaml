@@ -112,7 +112,7 @@ resources:
           routeConfig:
             name: inbound:backend
             requestHeadersToRemove:
-              - x-kuma-match
+              - x-kuma-tags
             validateClusters: true
             virtualHosts:
             - domains:
