@@ -229,7 +229,6 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			return nil, err
 		}
 		resources.Add(rdsResources...)
-
 	}
 
 	return resources.List(), nil

@@ -1,12 +1,13 @@
 package routes_test
 
 import (
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/envoy/routes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/Kong/kuma/pkg/xds/envoy/routes"
 )
 
 var _ = Describe("TagsConfigurer", func() {
