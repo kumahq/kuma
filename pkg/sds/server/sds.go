@@ -39,11 +39,6 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 )
 
-const (
-	MeshCaResource       = "mesh_ca"
-	IdentityCertResource = "identity_cert"
-)
-
 type SecretDiscoveryHandler interface {
 	Handle(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error)
 }

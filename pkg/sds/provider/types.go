@@ -7,6 +7,11 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
+const (
+	MeshCaResource       = "mesh_ca"
+	IdentityCertResource = "identity_cert"
+)
+
 type MeshCaSecret struct {
 	PemCerts [][]byte
 }

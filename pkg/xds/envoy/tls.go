@@ -8,7 +8,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/sds/server"
+	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 )
@@ -41,11 +41,11 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Datapl
 }
 
 func CreateCommonTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) (*envoy_auth.CommonTlsContext, error) {
-	meshCaSecret, err := sdsSecretConfig(ctx, server.MeshCaResource, metadata)
+	meshCaSecret, err := sdsSecretConfig(ctx, sds_provider.MeshCaResource, metadata)
 	if err != nil {
 		return nil, err
 	}
-	identitySecret, err := sdsSecretConfig(ctx, server.IdentityCertResource, metadata)
+	identitySecret, err := sdsSecretConfig(ctx, sds_provider.IdentityCertResource, metadata)
 	if err != nil {
 		return nil, err
 	}

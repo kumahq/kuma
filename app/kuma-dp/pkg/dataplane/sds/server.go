@@ -10,7 +10,6 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
-	sds_server "github.com/Kong/kuma/pkg/sds/server"
 )
 
 var (
@@ -41,9 +40,9 @@ func (d *dpSdsHandler) Handle(ctx context.Context, req envoy.DiscoveryRequest) (
 
 func (d *dpSdsHandler) selectProvider(resource string) (sds_provider.SecretProvider, error) {
 	switch resource {
-	case sds_server.MeshCaResource:
+	case sds_provider.MeshCaResource:
 		return d.meshSecretProvider, nil
-	case sds_server.IdentityCertResource:
+	case sds_provider.IdentityCertResource:
 		return d.identitySecretProvider, nil
 	default:
 		return nil, errors.Errorf("SDS request for %q resource is not supported", resource)

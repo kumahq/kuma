@@ -84,9 +84,9 @@ func DefaultSecretProviderSelector(rt core_runtime.Runtime) func(string) (sds_pr
 	identityCertProvider := DefaultIdentityCertProvider(rt)
 	return func(resource string) (sds_provider.SecretProvider, error) {
 		switch resource {
-		case sds_server.MeshCaResource:
+		case sds_provider.MeshCaResource:
 			return meshCaProvider, nil
-		case sds_server.IdentityCertResource:
+		case sds_provider.IdentityCertResource:
 			return identityCertProvider, nil
 		default:
 			return nil, errors.Errorf("SDS request for %q resource is not supported", resource)
