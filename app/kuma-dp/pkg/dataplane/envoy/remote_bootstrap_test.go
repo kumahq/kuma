@@ -59,7 +59,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.Dataplane.Mesh = "demo"
 				cfg.Dataplane.Name = "sample"
 				cfg.Dataplane.AdminPort = config_types.MustExactPort(4321) // exact port
-				cfg.DataplaneRuntime.TokenPath = "/tmp/token"
+				cfg.SDS.Address = "unix:///tmp/sds.sock"
 
 				return testCase{
 					config: cfg,
@@ -68,7 +68,7 @@ var _ = Describe("Remote Bootstrap", func() {
                       "mesh": "demo",
                       "name": "sample",
                       "adminPort": 4321,
-                      "dataplaneTokenPath": "/tmp/token"
+                      "dataplaneSdsAddress": "unix:///tmp/sds.sock"
                     }
 `,
 				}

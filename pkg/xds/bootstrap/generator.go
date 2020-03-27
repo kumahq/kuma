@@ -72,16 +72,17 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	}
 	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
 	params := configParameters{
-		Id:                 proxyId.String(),
-		Service:            service,
-		AdminAddress:       b.config.AdminAddress,
-		AdminPort:          adminPort,
-		AdminAccessLogPath: b.config.AdminAccessLogPath,
-		XdsHost:            b.config.XdsHost,
-		XdsPort:            b.config.XdsPort,
-		XdsConnectTimeout:  b.config.XdsConnectTimeout,
-		AccessLogPipe:      accessLogPipe,
-		DataplaneTokenPath: request.DataplaneTokenPath,
+		Id:                  proxyId.String(),
+		Service:             service,
+		AdminAddress:        b.config.AdminAddress,
+		AdminPort:           adminPort,
+		AdminAccessLogPath:  b.config.AdminAccessLogPath,
+		XdsHost:             b.config.XdsHost,
+		XdsPort:             b.config.XdsPort,
+		XdsConnectTimeout:   b.config.XdsConnectTimeout,
+		AccessLogPipe:       accessLogPipe,
+		DataplaneSdsAddress: request.DataplaneSdsAddress,
+		DataplaneTokenPath:  request.DataplaneTokenPath,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params)

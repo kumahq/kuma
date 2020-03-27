@@ -13,8 +13,9 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 const (
 	// Supported Envoy node metadata fields.
 
-	fieldDataplaneTokenPath = "dataplaneTokenPath"
-	fieldDataplaneAdminPort = "dataplane.admin.port"
+	fieldDataplaneTokenPath  = "dataplaneTokenPath"
+	fieldDataplaneAdminPort  = "dataplane.admin.port"
+	fieldDataplaneSdsAddress = "dataplane.sds.address"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -32,8 +33,9 @@ const (
 // This way, xDS server will be able to use Envoy node metadata
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
-	DataplaneTokenPath string
-	AdminPort          uint32
+	DataplaneTokenPath  string
+	DataplaneSdsAddress string
+	AdminPort           uint32
 }
 
 func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
@@ -57,6 +59,9 @@ func DataplaneMetadataFromNode(node *envoy_core.Node) *DataplaneMetadata {
 	}
 	if field := node.Metadata.Fields[fieldDataplaneTokenPath]; field != nil {
 		metadata.DataplaneTokenPath = field.GetStringValue()
+	}
+	if field := node.Metadata.Fields[fieldDataplaneSdsAddress]; field != nil {
+		metadata.DataplaneSdsAddress = field.GetStringValue()
 	}
 	if value := node.Metadata.Fields[fieldDataplaneAdminPort]; value != nil {
 		if port, err := strconv.Atoi(value.GetStringValue()); err == nil {

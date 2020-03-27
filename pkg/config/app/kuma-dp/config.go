@@ -2,6 +2,7 @@ package kumadp
 
 import (
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -87,10 +88,14 @@ type DataplaneRuntime struct {
 	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
 }
 
-// SDS defines configuration of SDS that DP will use
+// SDS defines configuration of Secret Discovery Service that DP will use
 type SDS struct {
-	Type  string `yaml:"type" envconfig:"kuma_sds_type"`
-	Vault Vault  `yaml:"vault"`
+	// Type of SDS connection that DP will use
+	Type string `yaml:"type" envconfig:"kuma_sds_type"`
+	// Address of the SDS server. Only Unix socket is supported for now ex. "unix:///tmp/server.sock"
+	Address string `yaml:"address" envconfig:"kuma_sds_address"`
+	// Vault SDS configuration
+	Vault Vault `yaml:"vault"`
 }
 
 // SdsCP defines that DP will use SDS from CP therefore it needs Dataplane Token Server
@@ -112,6 +117,9 @@ func (s SDS) Validate() error {
 		}
 	default:
 		return errors.Errorf(".Type has to be either %s or %s", SdsCp, SdsDpVault)
+	}
+	if s.Address == "" && strings.HasPrefix(s.Address, "unix:///") {
+		return errors.Errorf(".Address should be valit unix socket address")
 	}
 	return nil
 }

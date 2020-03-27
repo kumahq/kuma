@@ -1,9 +1,9 @@
 package sds
 
 import (
-	"fmt"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -35,12 +35,13 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
 	grpcServer := grpc.NewServer(grpcOptions...)
 
-	lis, err := net.Listen("unix", s.address)
+	unixSocketPath := strings.Replace(s.address, "unix://", "", 1)
+	lis, err := net.Listen("unix", unixSocketPath)
 	if err != nil {
 		return err
 	}
-	if err := os.Chmod(s.address, 0700); err != nil {
-		return errors.Wrapf(err, "could not set 700 permissions the socket %s", s.address)
+	if err := os.Chmod(unixSocketPath, 0700); err != nil {
+		return errors.Wrapf(err, "could not set 700 permissions the socket %s", unixSocketPath)
 	}
 
 	// register services
@@ -56,7 +57,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 			grpcServerLog.Info("terminated normally")
 		}
 	}()
-	grpcServerLog.Info("starting SDS server", "address", fmt.Sprintf("unix://%s", s.address))
+	grpcServerLog.Info("starting SDS server", "address", s.address)
 
 	select {
 	case <-stop:

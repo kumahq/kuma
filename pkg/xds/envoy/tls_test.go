@@ -41,6 +41,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 
 		type testCase struct {
 			metadata *core_xds.DataplaneMetadata
+			ca       *mesh_proto.CertificateAuthority
 			expected string
 		}
 
@@ -57,6 +58,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 							Spec: mesh_proto.Mesh{
 								Mtls: &mesh_proto.Mesh_Mtls{
 									Enabled: true,
+									Ca:      given.ca,
 								},
 							},
 						},
@@ -76,6 +78,9 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			},
 			Entry("metadata is `nil`", testCase{
 				metadata: nil,
+				ca: &mesh_proto.CertificateAuthority{
+					Type: &mesh_proto.CertificateAuthority_Builtin_{},
+				},
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
@@ -109,6 +114,9 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			}),
 			Entry("dataplane without a token", testCase{
 				metadata: &core_xds.DataplaneMetadata{},
+				ca: &mesh_proto.CertificateAuthority{
+					Type: &mesh_proto.CertificateAuthority_Builtin_{},
+				},
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
@@ -143,6 +151,9 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			Entry("dataplane with a token", testCase{
 				metadata: &core_xds.DataplaneMetadata{
 					DataplaneTokenPath: "/path/to/token",
+				},
+				ca: &mesh_proto.CertificateAuthority{
+					Type: &mesh_proto.CertificateAuthority_Builtin_{},
 				},
 				expected: `
                 commonTlsContext:
@@ -188,6 +199,36 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                             statPrefix: sds_mesh_ca
                             targetUri: kuma-control-plane:5677
+                requireClientCertificate: true
+`,
+			}),
+			Entry("dataplane of mesh with Vault CA", testCase{
+				metadata: &core_xds.DataplaneMetadata{
+					DataplaneSdsAddress: "unix:///tmp/sds.sock",
+				},
+				ca: &mesh_proto.CertificateAuthority{
+					Type: &mesh_proto.CertificateAuthority_Vault_{},
+				},
+				expected: `
+                commonTlsContext:
+                  tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                        - googleGrpc:
+                            statPrefix: sds_identity_cert
+                            targetUri: unix:///tmp/sds.sock
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                        - googleGrpc:
+                            statPrefix: sds_mesh_ca
+                            targetUri: unix:///tmp/sds.sock
                 requireClientCertificate: true
 `,
 			}),
@@ -221,6 +262,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 
 		type testCase struct {
 			metadata *core_xds.DataplaneMetadata
+			ca       *mesh_proto.CertificateAuthority
 			expected string
 		}
 
@@ -237,6 +279,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 							Spec: mesh_proto.Mesh{
 								Mtls: &mesh_proto.Mesh_Mtls{
 									Enabled: true,
+									Ca:      given.ca,
 								},
 							},
 						},
@@ -256,6 +299,9 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			},
 			Entry("metadata is `nil`", testCase{
 				metadata: nil,
+				ca: &mesh_proto.CertificateAuthority{
+					Type: &mesh_proto.CertificateAuthority_Builtin_{},
+				},
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
@@ -288,6 +334,9 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			}),
 			Entry("dataplane without a token", testCase{
 				metadata: &core_xds.DataplaneMetadata{},
+				ca: &mesh_proto.CertificateAuthority{
+					Type: &mesh_proto.CertificateAuthority_Builtin_{},
+				},
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
@@ -321,6 +370,9 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			Entry("dataplane with a token", testCase{
 				metadata: &core_xds.DataplaneMetadata{
 					DataplaneTokenPath: "/path/to/token",
+				},
+				ca: &mesh_proto.CertificateAuthority{
+					Type: &mesh_proto.CertificateAuthority_Builtin_{},
 				},
 				expected: `
                 commonTlsContext:
@@ -366,6 +418,35 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                             statPrefix: sds_mesh_ca
                             targetUri: kuma-control-plane:5677
+`,
+			}),
+			Entry("dataplane of mesh with Vault CA", testCase{
+				metadata: &core_xds.DataplaneMetadata{
+					DataplaneSdsAddress: "unix:///tmp/sock.sds",
+				},
+				ca: &mesh_proto.CertificateAuthority{
+					Type: &mesh_proto.CertificateAuthority_Vault_{},
+				},
+				expected: `
+                commonTlsContext:
+                  tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                        - googleGrpc:
+                            statPrefix: sds_identity_cert
+                            targetUri: unix:///tmp/sock.sds
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                        - googleGrpc:
+                            statPrefix: sds_mesh_ca
+                            targetUri: unix:///tmp/sock.sds
 `,
 			}),
 		)

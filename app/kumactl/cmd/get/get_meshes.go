@@ -64,6 +64,8 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 						mtls = "provided"
 					case *mesh_proto.CertificateAuthority_Builtin_:
 						mtls = "builtin"
+					case *mesh_proto.CertificateAuthority_Vault_:
+						mtls = "vault"
 					}
 				}
 

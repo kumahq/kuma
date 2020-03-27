@@ -35,8 +35,9 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (*envoy_boots
 		Name: cfg.Dataplane.Name,
 		// if not set in config, the 0 will be sent which will result in providing default admin port
 		// that is set in the control plane bootstrap params
-		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
-		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
+		AdminPort:           cfg.Dataplane.AdminPort.Lowest(),
+		DataplaneTokenPath:  cfg.DataplaneRuntime.TokenPath,
+		DataplaneSdsAddress: cfg.SDS.Address,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {

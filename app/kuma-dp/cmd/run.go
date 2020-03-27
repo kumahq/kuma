@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -96,6 +97,10 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			if cfg.SDS.Address == "" {
+				cfg.SDS.Address = fmt.Sprintf("unix:///tmp/kuma-sds-%s-%s.sock", cfg.Dataplane.Name, cfg.Dataplane.Mesh)
+			}
+
 			bootstrapConfig, err := bootstrapGenerator(catalog.Apis.Bootstrap.Url, cfg)
 			if err != nil {
 				return errors.Wrapf(err, "failed to generate Envoy bootstrap config")
@@ -113,7 +118,7 @@ func newRunCmd() *cobra.Command {
 				return err
 			}
 			if cfg.SDS.Type == kuma_dp.SdsDpVault {
-				sdsServer, err := sds.NewVaultSdsServer(cfg.Dataplane, cfg.SDS.Vault, bootstrapConfig.Node.Cluster)
+				sdsServer, err := sds.NewVaultSdsServer(cfg, bootstrapConfig.Node.Cluster)
 				if err != nil {
 					return errors.Wrap(err, "could not create Vault SDS Server")
 				}
@@ -140,6 +145,7 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.SDS.Type, "sds-type", cfg.SDS.Type, kuma_cmd.UsageOptions("Type of Secret Discovery Server that DP will work with", kuma_dp.SdsDpVault, kuma_dp.SdsCp))
+	cmd.PersistentFlags().StringVar(&cfg.SDS.Address, "sds-address", cfg.SDS.Address, `Address of the SDS server. Only Unix socket is supported for now ex. "unix:///tmp/server.sock"`)
 	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.Address, "vault-address", cfg.SDS.Vault.Address, "Address of Vault")
 	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.AgentAddress, "vault-agent-address", cfg.SDS.Vault.AgentAddress, "Agent Address of Vault")
 	cmd.PersistentFlags().StringVar(&cfg.SDS.Vault.Token, "vault-token", cfg.SDS.Vault.Token, "Token used for authentication with Vault")

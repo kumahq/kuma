@@ -6,6 +6,7 @@ import (
 	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/pkg/errors"
 
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
@@ -60,41 +61,18 @@ func CreateCommonTlsContext(ctx xds_context.Context, metadata *core_xds.Dataplan
 }
 
 func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) (*envoy_auth.SdsSecretConfig, error) {
-	withCallCredentials := func(grpc *envoy_core.GrpcService_GoogleGrpc) (*envoy_core.GrpcService_GoogleGrpc, error) {
-		if metadata.GetDataplaneTokenPath() == "" {
-			return grpc, nil
-		}
-
-		config := &envoy_grpc_credential.FileBasedMetadataConfig{
-			SecretData: &envoy_core.DataSource{
-				Specifier: &envoy_core.DataSource_Filename{
-					Filename: metadata.GetDataplaneTokenPath(),
-				},
-			},
-		}
-		typedConfig, err := ptypes.MarshalAny(config)
-		if err != nil {
-			return nil, err
-		}
-
-		grpc.CallCredentials = append(grpc.CallCredentials, &envoy_core.GrpcService_GoogleGrpc_CallCredentials{
-			CredentialSpecifier: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
-				FromPlugin: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
-					Name: "envoy.grpc_credentials.file_based_metadata",
-					ConfigType: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
-						TypedConfig: typedConfig,
-					},
-				},
-			},
-		})
-		grpc.CredentialsFactoryName = "envoy.grpc_credentials.file_based_metadata"
-
-		return grpc, nil
-	}
-	googleGrpc, err := withCallCredentials(&envoy_core.GrpcService_GoogleGrpc{
-		TargetUri:  context.ControlPlane.SdsLocation,
+	googleGrpc := &envoy_core.GrpcService_GoogleGrpc{
 		StatPrefix: util_xds.SanitizeMetric("sds_" + name),
-		ChannelCredentials: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials{
+	}
+	if context.Mesh.Resource.HasVaultCA() {
+		// In this case SDS is embedded into Kuma DP and exposed via unix socket therefore we don't need any TLS/auth.
+		if metadata.DataplaneSdsAddress == "" {
+			return nil, errors.New("dataplane.sds.path in Envoy metadata cannot be empty when Vault CA is set")
+		}
+		googleGrpc.TargetUri = metadata.DataplaneSdsAddress
+	} else {
+		googleGrpc.TargetUri = context.ControlPlane.SdsLocation
+		googleGrpc.ChannelCredentials = &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials{
 			CredentialSpecifier: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
 				SslCredentials: &envoy_core.GrpcService_GoogleGrpc_SslCredentials{
 					RootCerts: &envoy_core.DataSource{
@@ -104,10 +82,12 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 					},
 				},
 			},
-		},
-	})
-	if err != nil {
-		return nil, err
+		}
+		if metadata.GetDataplaneTokenPath() != "" { // Token path may not be set when token verification is off
+			if err := grpcWithCallCredentials(googleGrpc, metadata.DataplaneTokenPath); err != nil {
+				return nil, err
+			}
+		}
 	}
 	return &envoy_auth.SdsSecretConfig{
 		Name: name,
@@ -126,4 +106,35 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 			},
 		},
 	}, nil
+}
+
+func grpcWithCallCredentials(grpc *envoy_core.GrpcService_GoogleGrpc, credentialPath string) error {
+	if credentialPath == "" {
+		return nil
+	}
+
+	config := &envoy_grpc_credential.FileBasedMetadataConfig{
+		SecretData: &envoy_core.DataSource{
+			Specifier: &envoy_core.DataSource_Filename{
+				Filename: credentialPath,
+			},
+		},
+	}
+	typedConfig, err := ptypes.MarshalAny(config)
+	if err != nil {
+		return err
+	}
+
+	grpc.CallCredentials = append(grpc.CallCredentials, &envoy_core.GrpcService_GoogleGrpc_CallCredentials{
+		CredentialSpecifier: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
+			FromPlugin: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
+				Name: "envoy.grpc_credentials.file_based_metadata",
+				ConfigType: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
+					TypedConfig: typedConfig,
+				},
+			},
+		},
+	})
+	grpc.CredentialsFactoryName = "envoy.grpc_credentials.file_based_metadata"
+	return nil
 }

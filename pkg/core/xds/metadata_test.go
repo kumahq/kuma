@@ -30,22 +30,28 @@ var _ = DescribeTable("DataplaneMetadataFromNode",
 		node: envoy_core.Node{
 			Metadata: &pstruct.Struct{
 				Fields: map[string]*pstruct.Value{
-					"dataplaneTokenPath": &pstruct.Value{
+					"dataplaneTokenPath": {
 						Kind: &pstruct.Value_StringValue{
 							StringValue: "/tmp/token",
 						},
 					},
-					"dataplane.admin.port": &pstruct.Value{
+					"dataplane.admin.port": {
 						Kind: &pstruct.Value_StringValue{
 							StringValue: "1234",
+						},
+					},
+					"dataplane.sds.address": {
+						Kind: &pstruct.Value_StringValue{
+							StringValue: "unix:///tmp/sds-path.sock",
 						},
 					},
 				},
 			},
 		},
 		expected: xds.DataplaneMetadata{
-			DataplaneTokenPath: "/tmp/token",
-			AdminPort:          1234,
+			DataplaneTokenPath:  "/tmp/token",
+			DataplaneSdsAddress: "unix:///tmp/sds-path.sock",
+			AdminPort:           1234,
 		},
 	}),
 )

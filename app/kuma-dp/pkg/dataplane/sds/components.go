@@ -1,8 +1,6 @@
 package sds
 
 import (
-	"fmt"
-
 	config_kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
 	sds_vault "github.com/Kong/kuma/pkg/sds/provider/vault"
@@ -10,18 +8,18 @@ import (
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
-func NewVaultSdsServer(dataplane config_kumadp.Dataplane, vaultCfg config_kumadp.Vault, serviceName string) (*grpcServer, error) {
+func NewVaultSdsServer(config config_kumadp.Config, serviceName string) (*grpcServer, error) {
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: sdsServerLog},
 	}
 
-	client, err := sds_vault.NewVaultClient(convertConfig(vaultCfg))
+	client, err := sds_vault.NewVaultClient(convertConfig(config.SDS.Vault))
 	if err != nil {
 		return nil, err
 	}
 	handler := &dpSdsHandler{
 		dpIdentity: sds_auth.Identity{
-			Mesh:    dataplane.Mesh,
+			Mesh:    config.Dataplane.Mesh,
 			Service: serviceName,
 		},
 		identitySecretProvider: sds_vault.NewIdentityCertProvider(client),
@@ -29,7 +27,7 @@ func NewVaultSdsServer(dataplane config_kumadp.Dataplane, vaultCfg config_kumadp
 	}
 	return &grpcServer{
 		server:  sds_server.NewServer(handler, callbacks, sdsServerLog),
-		address: fmt.Sprintf("/tmp/kuma-sds-%s-%s.sock", dataplane.Name, dataplane.Mesh),
+		address: config.SDS.Address,
 	}, nil
 }
 

@@ -8,6 +8,7 @@ dataplaneRuntime:
   binaryPath: envoy
 sds:
   type: cp
+  address: ""
   vault:
     address: ""
     agentAddress: ""

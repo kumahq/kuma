@@ -60,6 +60,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":   "/var/run/envoy",
 				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":   "/tmp/token",
 				"KUMA_SDS_TYPE":                       "dpVault",
+				"KUMA_SDS_ADDRESS":                    "unix:///tmp/sds.sock",
 				"KUMA_SDS_VAULT_ADDRESS":              "https://vault.local",
 				"KUMA_SDS_VAULT_AGENT_ADDRESS":        "https://vault-agent.local",
 				"KUMA_SDS_VAULT_TOKEN":                "testToken",
@@ -70,7 +71,6 @@ var _ = Describe("Config", func() {
 				"KUMA_SDS_VAULT_TLS_CLIENT_KEY_PATH":  "/client/key.pem",
 				"KUMA_SDS_VAULT_TLS_SKIP_VERIFY":      "true",
 				"KUMA_SDS_VAULT_TLS_SERVER_NAME":      "name",
-				// todo
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -95,6 +95,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
 			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))
 			Expect(cfg.SDS.Type).To(Equal(kuma_dp.SdsDpVault))
+			Expect(cfg.SDS.Address).To(Equal("unix:///tmp/sds.sock"))
 			Expect(cfg.SDS.Vault.Token).To(Equal("testToken"))
 			Expect(cfg.SDS.Vault.Address).To(Equal("https://vault.local"))
 			Expect(cfg.SDS.Vault.AgentAddress).To(Equal("https://vault-agent.local"))

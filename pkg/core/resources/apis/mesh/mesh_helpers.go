@@ -22,6 +22,15 @@ func (m *MeshResource) HasProvidedCA() bool {
 	}
 }
 
+func (m *MeshResource) HasVaultCA() bool {
+	switch m.Spec.GetMtls().GetCa().GetType().(type) {
+	case *mesh_proto.CertificateAuthority_Vault_:
+		return true
+	default:
+		return false
+	}
+}
+
 func (m *MeshResource) HasPrometheusMetricsEnabled() bool {
 	return m != nil && m.Spec.GetMetrics().GetPrometheus() != nil
 }

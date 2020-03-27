@@ -3,16 +3,17 @@ package bootstrap
 import "time"
 
 type configParameters struct {
-	Id                 string
-	Service            string
-	AdminAddress       string
-	AdminPort          uint32
-	AdminAccessLogPath string
-	XdsHost            string
-	XdsPort            uint32
-	XdsConnectTimeout  time.Duration
-	AccessLogPipe      string
-	DataplaneTokenPath string
+	Id                  string
+	Service             string
+	AdminAddress        string
+	AdminPort           uint32
+	AdminAccessLogPath  string
+	XdsHost             string
+	XdsPort             uint32
+	XdsConnectTimeout   time.Duration
+	AccessLogPipe       string
+	DataplaneSdsAddress string
+	DataplaneTokenPath  string
 }
 
 const configTemplate string = `
@@ -25,6 +26,9 @@ node:
 {{end}}
 {{if .AdminPort }}
     dataplane.admin.port: "{{ .AdminPort }}"
+{{ end }}
+{{if .DataplaneSdsAddress }}
+    dataplane.sds.address: {{ .DataplaneSdsAddress }}
 {{ end }}
 
 {{if .AdminPort }}

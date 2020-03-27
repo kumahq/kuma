@@ -51,6 +51,9 @@ message CertificateAuthority {
   // Provided defines configuration of the provided CA.
   message Provided {}
 
+  // Vault defines configuration of the Vault CA
+  message Vault {}
+
   oneof type {
 
     // Use builtin CA.
@@ -62,6 +65,9 @@ message CertificateAuthority {
     // and key, e.g. by using `kumactl manage ca provided certificates add`
     // command.
     Provided provided = 2;
+
+    // Use Vault CA
+    Vault vault = 3;
   }
 }
 
