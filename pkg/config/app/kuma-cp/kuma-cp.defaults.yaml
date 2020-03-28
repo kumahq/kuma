@@ -57,6 +57,10 @@ bootstrapServer:
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
+    # PEM-encoded TLS cert used by envoy
+    xdsClientTlsCertFile: "" # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CLIENT_TLS_CERT_FILE
+    # PEM-encoded TLS key used by envoy
+    xdsClientTlsKeyFile: "" # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CLIENT_TLS_KEY_FILE
 
 # Envoy SDS server configuration
 sdsServer:

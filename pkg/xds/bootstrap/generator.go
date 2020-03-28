@@ -3,7 +3,9 @@ package bootstrap
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"text/template"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
@@ -70,6 +72,15 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	if request.AdminPort != 0 {
 		adminPort = request.AdminPort
 	}
+	var cert, key string = "", ""
+	if b.config.XdsClientTlsCertFile != "" {
+		c, e1 := ioutil.ReadFile(b.config.XdsClientTlsCertFile)
+		k, e2 := ioutil.ReadFile(b.config.XdsClientTlsKeyFile)
+		if e1 == nil && e2 == nil {
+			cert = base64.StdEncoding.EncodeToString([]byte(c))
+			key = base64.StdEncoding.EncodeToString([]byte(k))
+		}
+	}
 	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
 	params := configParameters{
 		Id:                 proxyId.String(),
@@ -82,6 +93,8 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
 		DataplaneTokenPath: request.DataplaneTokenPath,
+		CertBytes:          cert,
+		KeyBytes:           key,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params)

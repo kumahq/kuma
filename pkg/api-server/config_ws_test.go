@@ -70,7 +70,9 @@ var _ = Describe("Config WS", func() {
               "adminPort": 0,
               "xdsConnectTimeout": "1s",
               "xdsHost": "",
-              "xdsPort": 0
+              "xdsPort": 0,
+	      "xdsClientTlsCertFile": "",
+	      "xdsClientTlsKeyFile": ""
             },
             "port": 5682
           },

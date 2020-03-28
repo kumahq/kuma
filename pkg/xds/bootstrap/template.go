@@ -13,6 +13,8 @@ type configParameters struct {
 	XdsConnectTimeout  time.Duration
 	AccessLogPipe      string
 	DataplaneTokenPath string
+	CertBytes          string
+	KeyBytes           string
 }
 
 const configTemplate string = `
@@ -77,6 +79,21 @@ static_resources:
               socket_address:
                 address: {{ .XdsHost }}
                 port_value: {{ .XdsPort }}
+{{ if .CertBytes }}
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+        sni: {{ .XdsHost }}
+        common_tls_context:
+          tls_params:
+            tls_minimum_protocol_version: TLSv1_2
+          tls_certificates:
+          - certificate_chain:
+              inline_bytes: "{{ .CertBytes }}"
+            private_key:
+              inline_bytes: "{{ .KeyBytes }}"
+{{ end }}
   - name: access_log_sink
     connect_timeout: {{ .XdsConnectTimeout }}
     type: STATIC

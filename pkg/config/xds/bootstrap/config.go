@@ -54,6 +54,10 @@ type BootstrapParamsConfig struct {
 	XdsPort uint32 `yaml:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
 	XdsConnectTimeout time.Duration `yaml:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
+	// PEM-encoded TLS cert used by envoy
+	XdsClientTlsCertFile string `yaml:"xdsClientTlsCertFile" envconfig:"kuma_bootstrap_server_params_xds_client_tls_cert_file"`
+	// PEM-encoded TLS key used by envoy
+	XdsClientTlsKeyFile string `yaml:"xdsClientTlsKeyFile" envconfig:"kuma_bootstrap_server_params_xds_client_tls_key_file"`
 }
 
 func (b *BootstrapParamsConfig) Sanitize() {
@@ -78,16 +82,24 @@ func (b *BootstrapParamsConfig) Validate() error {
 	if b.XdsConnectTimeout < 0 {
 		return errors.New("XdsConnectTimeout cannot be negative")
 	}
+	if b.XdsClientTlsCertFile != "" && b.XdsClientTlsKeyFile == "" {
+		return errors.New("xdsClientTlsKeyFile cannot be empty if xdsClientTlsCertFile is set")
+	}
+	if b.XdsClientTlsCertFile == "" && b.XdsClientTlsKeyFile != "" {
+		return errors.New("xdsClientTlsCertFile cannot be empty if xdsClientTlsKeyFile is set")
+	}
 	return nil
 }
 
 func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
-		AdminAddress:       "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
-		AdminPort:          0,           // by default, turn off Admin interface of Envoy
-		AdminAccessLogPath: "/dev/null",
-		XdsHost:            "", // by default it is autoconfigured from KUMA_GENERAL_ADVERTISED_HOSTNAME
-		XdsPort:            0,  // by default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
-		XdsConnectTimeout:  1 * time.Second,
+		AdminAddress:         "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
+		AdminPort:            0,           // by default, turn off Admin interface of Envoy
+		AdminAccessLogPath:   "/dev/null",
+		XdsHost:              "", // by default it is autoconfigured from KUMA_GENERAL_ADVERTISED_HOSTNAME
+		XdsPort:              0,  // by default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
+		XdsConnectTimeout:    1 * time.Second,
+		XdsClientTlsCertFile: "",
+		XdsClientTlsKeyFile:  "",
 	}
 }
