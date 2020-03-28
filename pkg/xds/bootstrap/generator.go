@@ -77,8 +77,8 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		c, e1 := ioutil.ReadFile(b.config.XdsClientTlsCertFile)
 		k, e2 := ioutil.ReadFile(b.config.XdsClientTlsKeyFile)
 		if e1 == nil && e2 == nil {
-			cert = base64.StdEncoding.EncodeToString([]byte(c))
-			key = base64.StdEncoding.EncodeToString([]byte(k))
+			cert = base64.StdEncoding.EncodeToString(c)
+			key = base64.StdEncoding.EncodeToString(k)
 		}
 	}
 	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
