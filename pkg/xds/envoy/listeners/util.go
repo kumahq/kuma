@@ -1,13 +1,14 @@
 package listeners
 
 import (
+	"math"
+	"regexp"
+	"strconv"
+
 	envoy_filter_fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
-	"math"
-	"regexp"
-	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -100,13 +101,10 @@ func ConvertPercentage(percentage *wrappers.DoubleValue) *envoy_type.FractionalP
 	}
 }
 
-func ConvertBandwidth(bandwidth *wrappers.StringValue) (*envoy_filter_fault.FaultRateLimit_FixedLimit_, error) {
-	re, err := regexp.Compile(`(\d*)\s?([gmk]?bps)`)
-	if err != nil {
-		return nil, err
-	}
+var bandwidthRegex = regexp.MustCompile(`(\d*)\s?([gmk]?bps)`)
 
-	match := re.FindStringSubmatch(bandwidth.GetValue())
+func ConvertBandwidth(bandwidth *wrappers.StringValue) (*envoy_filter_fault.FaultRateLimit_FixedLimit_, error) {
+	match := bandwidthRegex.FindStringSubmatch(bandwidth.GetValue())
 	value, err := strconv.Atoi(match[1])
 	if err != nil {
 		return nil, err

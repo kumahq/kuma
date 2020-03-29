@@ -2,8 +2,9 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/faultinjections"
 	"time"
+
+	"github.com/Kong/kuma/pkg/core/faultinjections"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"

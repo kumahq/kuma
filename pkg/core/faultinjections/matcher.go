@@ -3,12 +3,14 @@ package faultinjections
 import (
 	"context"
 	"fmt"
+
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/policy"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/pkg/errors"
 )
 
 type FaultInjectionMatcher struct {

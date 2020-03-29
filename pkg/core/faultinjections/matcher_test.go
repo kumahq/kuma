@@ -2,6 +2,14 @@ package faultinjections_test
 
 import (
 	"context"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/faultinjections"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -9,12 +17,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/test/resources/model"
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-	"time"
 )
 
 var _ = Describe("Match", func() {

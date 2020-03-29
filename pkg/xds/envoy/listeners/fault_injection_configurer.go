@@ -1,13 +1,14 @@
 package listeners
 
 import (
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_filter_fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	envoy_http_fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/golang/protobuf/ptypes"
+
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 )
 
 func FaultInjection(faultInjection *mesh.FaultInjectionResource) FilterChainBuilderOpt {
@@ -32,8 +33,11 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 		Abort: convertAbort(f.faultInjection.Spec.Conf.GetAbort()),
 	}
 
-	var err error
-	config.ResponseRateLimit, err = convertResponseRateLimit(f.faultInjection.Spec.Conf.GetResponseBandwidth())
+	rrl, err := convertResponseRateLimit(f.faultInjection.Spec.Conf.GetResponseBandwidth())
+	if err != nil {
+		return err
+	}
+	config.ResponseRateLimit = rrl
 
 	pbst, err := ptypes.MarshalAny(config)
 	if err != nil {

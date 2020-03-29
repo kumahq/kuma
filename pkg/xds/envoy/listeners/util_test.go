@@ -2,6 +2,7 @@ package listeners_test
 
 import (
 	"errors"
+
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
