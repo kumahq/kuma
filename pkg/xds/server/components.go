@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/faultinjections"
 	"time"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -73,6 +74,7 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
+	faultInjectionMatcher := faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
 	if err != nil {
 		return nil, err
@@ -145,6 +147,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					return err
 				}
 
+				faultInjection, err := faultInjectionMatcher.Match(ctx, dataplane)
+				if err != nil {
+					return err
+				}
+
 				proxy := xds.Proxy{
 					Id:                 proxyID,
 					Dataplane:          dataplane,
@@ -157,6 +164,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					TrafficTrace:       trafficTrace,
 					TracingBackend:     tracingBackend,
 					Metadata:           metadataTracker.Metadata(streamId),
+					FaultInjection:     faultInjection,
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},

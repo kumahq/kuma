@@ -66,6 +66,7 @@ type Proxy struct {
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	Metadata           *DataplaneMetadata
+	FaultInjection     *mesh_core.FaultInjectionResource
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {

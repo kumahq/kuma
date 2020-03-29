@@ -1,7 +1,13 @@
 package listeners
 
 import (
+	envoy_filter_fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
+	"math"
+	"regexp"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -62,4 +68,67 @@ func UpdateFilterConfig(filterChain *envoy_listener.FilterChain, filterName stri
 
 func NewUnexpectedFilterConfigTypeError(actual, expected proto.Message) error {
 	return errors.Errorf("filter config has unexpected type: expected %T, got %T", expected, actual)
+}
+
+func ConvertPercentage(percentage *wrappers.DoubleValue) *envoy_type.FractionalPercent {
+	const tenThousand = 10000
+	const million = 1000000
+
+	isInteger := func(f float64) bool {
+		return math.Floor(f) == f
+	}
+
+	value := percentage.GetValue()
+	if isInteger(value) {
+		return &envoy_type.FractionalPercent{
+			Numerator:   uint32(value),
+			Denominator: envoy_type.FractionalPercent_HUNDRED,
+		}
+	}
+
+	tenThousandTimes := tenThousand * value
+	if isInteger(tenThousandTimes) {
+		return &envoy_type.FractionalPercent{
+			Numerator:   uint32(tenThousandTimes),
+			Denominator: envoy_type.FractionalPercent_TEN_THOUSAND,
+		}
+	}
+
+	return &envoy_type.FractionalPercent{
+		Numerator:   uint32(math.Round(million * value)),
+		Denominator: envoy_type.FractionalPercent_MILLION,
+	}
+}
+
+func ConvertBandwidth(bandwidth *wrappers.StringValue) (*envoy_filter_fault.FaultRateLimit_FixedLimit_, error) {
+	re, err := regexp.Compile(`(\d*)\s?([gmk]?bps)`)
+	if err != nil {
+		return nil, err
+	}
+
+	match := re.FindStringSubmatch(bandwidth.GetValue())
+	value, err := strconv.Atoi(match[1])
+	if err != nil {
+		return nil, err
+	}
+
+	units := match[2]
+
+	var factor int // multiply on factor, to convert into kbps
+	switch units {
+	case "kbps":
+		factor = 1
+	case "mbps":
+		factor = 1000
+	case "gbps":
+		factor = 1000000
+	default:
+		return nil, errors.New("unsupported unit type")
+	}
+
+	return &envoy_filter_fault.FaultRateLimit_FixedLimit_{
+		FixedLimit: &envoy_filter_fault.FaultRateLimit_FixedLimit{
+			LimitKbps: uint64(factor * value),
+		},
+	}, nil
 }

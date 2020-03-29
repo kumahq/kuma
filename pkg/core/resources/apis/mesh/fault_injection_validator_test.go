@@ -193,7 +193,7 @@ var _ = Describe("FaultInjection", func() {
                - field: conf.responseBandwidth.percentage
                  message: has to be in [0.0 - 100.0] range
                - field: conf.responseBandwidth.limit
-                 message: has to be in bps/kbps/mbps/gbps units`}),
+                 message: has to be in kbps/mbps/gbps units`}),
 			Entry("protocol: wrong format", testCase{
 				faultInjection: `
                 sources:
