@@ -71,7 +71,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                     - name: x-kuma-tags
                       safeRegexMatch:
                         googleRe2: {}
-                        regex: \stag1=[^\s]*value1.*\stag2=[^\s]*value2.*
+                        regex: '&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*'
                 statPrefix: stats`,
 		}),
 	)
