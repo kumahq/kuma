@@ -9,7 +9,13 @@ import (
 func MatchingRegex(tags v1alpha1.SingleValueTagSet) (re string) {
 	for _, key := range tags.Keys() {
 		keyIsEqual := fmt.Sprintf(`&%s=`, key)
-		value := fmt.Sprintf(`[^&]*%s[,&]`, tags[key])
+		var value string
+		switch tags[key] {
+		case "*":
+			value = ``
+		default:
+			value = fmt.Sprintf(`[^&]*%s[,&]`, tags[key])
+		}
 		expr := keyIsEqual + value + `.*`
 		re += expr
 	}

@@ -4,6 +4,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/Kong/kuma/pkg/core/permissions"
 
 	. "github.com/onsi/ginkgo"
@@ -89,6 +92,30 @@ var _ = Describe("InboundProxyGenerator", func() {
 										},
 									},
 								},
+							},
+						},
+					},
+				},
+				FaultInjection: &mesh_core.FaultInjectionResource{
+					Spec: mesh_proto.FaultInjection{
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "frontend",
+								},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "backend",
+								},
+							},
+						},
+						Conf: &mesh_proto.FaultInjection_Conf{
+							Delay: &mesh_proto.FaultInjection_Conf_Delay{
+								Percentage: &wrappers.DoubleValue{Value: 50},
+								Value:      &duration.Duration{Seconds: 5},
 							},
 						},
 					},

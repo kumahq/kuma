@@ -7,7 +7,9 @@ import (
 	envoy_http_fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -50,12 +52,14 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 	}
 
 	return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-		manager.HttpFilters = append(manager.HttpFilters, &envoy_hcm.HttpFilter{
-			Name: "envoy.filters.http.fault",
-			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-				TypedConfig: pbst,
+		manager.HttpFilters = append([]*envoy_hcm.HttpFilter{
+			{
+				Name: envoy_wellknown.Fault,
+				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+					TypedConfig: pbst,
+				},
 			},
-		})
+		}, manager.HttpFilters...)
 		return nil
 	})
 }
@@ -67,7 +71,9 @@ func createHeaders(tagSets []v1alpha1.SingleValueTagSet) (matchers []*envoy_api_
 			HeaderMatchSpecifier: &envoy_api_v2_route.HeaderMatcher_SafeRegexMatch{
 				SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
 					EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-						GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+						GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{
+							MaxProgramSize: &wrappers.UInt32Value{Value: 500},
+						},
 					},
 					Regex: tags.MatchingRegex(t),
 				},

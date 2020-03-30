@@ -66,5 +66,23 @@ var _ = Describe("MatchingRegex", func() {
 			},
 			expected: false,
 		}),
+		Entry("should match asterisk tag", testCase{
+			serviceTags: v1alpha1.MultiValueTagSet{
+				"tag1": {"value1": true, "value2": true},
+			},
+			matchTags: v1alpha1.SingleValueTagSet{
+				"tag1": "*",
+			},
+			expected: true,
+		}),
+		Entry("shouldn't match asterisk tag", testCase{
+			serviceTags: v1alpha1.MultiValueTagSet{
+				"tag1": {"value1": true, "value2": true},
+			},
+			matchTags: v1alpha1.SingleValueTagSet{
+				"tag2": "*",
+			},
+			expected: false,
+		}),
 	)
 })
