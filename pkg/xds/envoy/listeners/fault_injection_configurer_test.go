@@ -18,7 +18,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 		input    *mesh.FaultInjectionResource
 		expected string
 	}
-	DescribeTable("",
+	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			filterChain, err := NewFilterChainBuilder().
@@ -37,6 +37,14 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 		Entry("basic input", testCase{
 			input: &mesh.FaultInjectionResource{
 				Spec: v1alpha1.FaultInjection{
+					Sources: []*v1alpha1.Selector{
+						{
+							Match: map[string]string{
+								"tag1": "value1",
+								"tag2": "value2",
+							},
+						},
+					},
 					Conf: &v1alpha1.FaultInjection_Conf{
 						Delay: &v1alpha1.FaultInjection_Conf_Delay{
 							Percentage: &wrappers.DoubleValue{Value: 50},
@@ -59,6 +67,11 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                       fixedDelay: 5s
                       percentage:
                         numerator: 50
+                    headers:
+                    - name: x-kuma-tags
+                      safeRegexMatch:
+                        googleRe2: {}
+                        regex: \stag1=[^\s]*value1.*\stag2=[^\s]*value2.*
                 statPrefix: stats`,
 		}),
 	)

@@ -2,6 +2,8 @@ package listeners_test
 
 import (
 	"errors"
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	"regexp"
 
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -200,7 +202,7 @@ var _ = Describe("ConvertPercentage", func() {
 		input    *wrappers.DoubleValue
 		expected *envoy_type.FractionalPercent
 	}
-	DescribeTable("properly converts from percent to fractional percen",
+	DescribeTable("shoudl properly converts from percent to fractional percen",
 		func(given testCase) {
 			fpercent := ConvertPercentage(given.input)
 			Expect(fpercent).To(Equal(given.expected))
@@ -233,9 +235,11 @@ var _ = Describe("ConvertBandwidth", func() {
 		input    *wrappers.StringValue
 		expected uint64
 	}
-	DescribeTable("properly converts to kbps from gbps, mbps, kbps",
+	DescribeTable("should properly converts to kbps from gbps, mbps, kbps",
 		func(given testCase) {
+			// when
 			limitKbps, err := ConvertBandwidth(given.input)
+			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(limitKbps.FixedLimit.GetLimitKbps()).To(Equal(given.expected))
 		},
@@ -252,4 +256,50 @@ var _ = Describe("ConvertBandwidth", func() {
 			expected: 120000000,
 		}),
 	)
+})
+
+var _ = Describe("ConvertTags", func() {
+	type testCase struct {
+		serviceTags v1alpha1.MultiValueTagSet
+		matchTags   v1alpha1.SingleValueTagSet
+		expected    bool
+	}
+	DescribeTable("should generate regex for matching service's tags",
+		func(given testCase) {
+			// when
+			regexStr := ConvertTags(given.matchTags)
+			re, err := regexp.Compile(regexStr)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// when
+			matched := re.MatchString(" " + given.serviceTags.String())
+			// then
+			Expect(matched).To(Equal(given.expected))
+		},
+		Entry("match without middle tag2", testCase{
+			serviceTags: v1alpha1.MultiValueTagSet{
+				"tag1": {"value1": true, "value2": true},
+				"tag2": {"value2": true, "value3": true},
+				"tag3": {"value3": true, "value4": true},
+			},
+			matchTags: v1alpha1.SingleValueTagSet{
+				"tag1": "value1",
+				"tag3": "value3",
+			},
+			expected: true,
+		}),
+		Entry("doesn't match", testCase{
+			serviceTags: v1alpha1.MultiValueTagSet{
+				"tag1": {"value1": true, "value2": true},
+				"tag2": {"value2": true, "value3": true},
+				"tag3": {"value3": true, "value4": true},
+			},
+			matchTags: v1alpha1.SingleValueTagSet{
+				"tag1": "value1",
+				"tag3": "value5",
+			},
+			expected: false,
+		}),
+	)
+
 })

@@ -36,7 +36,6 @@ func (l list) AsDataplanePolicy() (dataplanePolicies []policy.DataplanePolicy) {
 
 func (f *FaultInjectionMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (*mesh_core.FaultInjectionResource, error) {
 	faultInjections := &mesh_core.FaultInjectionResourceList{}
-	fmt.Println(dataplane.GetMeta())
 	if err := f.ResourceManager.List(ctx, faultInjections, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve fault injections")
 	}

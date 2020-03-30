@@ -335,6 +335,15 @@ func MatchTags(tags map[string]string) TagSelector {
 // Set of tags that only allows a single value per key.
 type SingleValueTagSet map[string]string
 
+func (t SingleValueTagSet) Keys() []string {
+	keys := make([]string, 0, len(t))
+	for key := range t {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 // Set of tags that allows multiple values per key.
 type MultiValueTagSet map[string]map[string]bool
 

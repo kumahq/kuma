@@ -1,14 +1,15 @@
 package listeners
 
 import (
-	"math"
-	"regexp"
-	"strconv"
-
+	"fmt"
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	envoy_filter_fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
+	"math"
+	"regexp"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -129,4 +130,14 @@ func ConvertBandwidth(bandwidth *wrappers.StringValue) (*envoy_filter_fault.Faul
 			LimitKbps: uint64(factor * value),
 		},
 	}, nil
+}
+
+func ConvertTags(tags v1alpha1.SingleValueTagSet) (re string) {
+	for _, key := range tags.Keys() {
+		keyIsEqual := fmt.Sprintf(`\s%s=`, key)
+		value := fmt.Sprintf(`[^\s]*%s`, tags[key])
+		expr := keyIsEqual + value + `.*`
+		re = re + expr
+	}
+	return
 }
