@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/Kong/kuma/pkg/xds/envoy/routes"
 )
@@ -13,7 +13,7 @@ import (
 var _ = Describe("TagsConfigurer", func() {
 
 	type testCase struct {
-		tags     v1alpha1.MultiValueTagSet
+		tags     mesh_proto.MultiValueTagSet
 		expected string
 	}
 
