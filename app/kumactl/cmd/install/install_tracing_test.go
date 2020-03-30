@@ -13,7 +13,7 @@ import (
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 )
 
-var _ = FDescribe("kumactl install metrics", func() {
+var _ = Describe("kumactl install tracing", func() {
 
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
@@ -32,7 +32,7 @@ var _ = FDescribe("kumactl install metrics", func() {
 		func(given testCase) {
 			// given
 			rootCmd := cmd.DefaultRootCmd()
-			rootCmd.SetArgs(append([]string{"install", "metrics"}, given.extraArgs...))
+			rootCmd.SetArgs(append([]string{"install", "tracing"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 
@@ -55,7 +55,7 @@ var _ = FDescribe("kumactl install metrics", func() {
 			// then
 			Expect(actual).To(MatchYAML(expected))
 			// and
-			actualManifests := data.SplitYAML(data.File{Data: expected})
+			actualManifests := data.SplitYAML(data.File{Data: actual})
 
 			// and
 			Expect(len(actualManifests)).To(Equal(len(expectedManifests)))
@@ -66,16 +66,13 @@ var _ = FDescribe("kumactl install metrics", func() {
 		},
 		Entry("should generate Kubernetes resources with default settings", testCase{
 			extraArgs:  nil,
-			goldenFile: "install-metrics.defaults.golden.yaml",
+			goldenFile: "install-tracing.defaults.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources with custom settings", testCase{
 			extraArgs: []string{
 				"--namespace", "kuma",
-				"--kuma-prometheus-sd-image", "kuma-ci/kuma-prometheus-sd",
-				"--kuma-prometheus-sd-version", "greatest",
-				"--kuma-cp-address", "http://kuma.local:5681",
 			},
-			goldenFile: "install-metrics.overrides.golden.yaml",
+			goldenFile: "install-tracing.overrides.golden.yaml",
 		}),
 	)
 })
