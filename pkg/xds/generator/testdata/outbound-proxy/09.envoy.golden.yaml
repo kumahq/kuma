@@ -175,7 +175,7 @@ resources:
     requestHeadersToAdd:
     - header:
         key: x-kuma-tags
-        value: service=gateway
+        value: '&service=gateway&'
     validateClusters: true
     virtualHosts:
     - domains:

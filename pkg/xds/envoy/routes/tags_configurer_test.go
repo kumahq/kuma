@@ -10,7 +10,7 @@ import (
 	"github.com/Kong/kuma/pkg/xds/envoy/routes"
 )
 
-var _ = Describe("TagsConfigurer", func() {
+var _ = Describe("TagsHeaderConfigurer", func() {
 
 	type testCase struct {
 		tags     mesh_proto.MultiValueTagSet
@@ -21,7 +21,7 @@ var _ = Describe("TagsConfigurer", func() {
 		func(given testCase) {
 			// when
 			routeConfiguration, err := routes.NewRouteConfigurationBuilder().
-				Configure(routes.Tags(given.tags)).
+				Configure(routes.TagsHeader(given.tags)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

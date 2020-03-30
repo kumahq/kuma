@@ -8,26 +8,26 @@ import (
 	"github.com/Kong/kuma/pkg/util/http"
 )
 
-const TagsHeader = "x-kuma-tags"
+const TagsHeaderName = "x-kuma-tags"
 
-func Tags(tags mesh_proto.MultiValueTagSet) RouteConfigurationBuilderOpt {
+func TagsHeader(tags mesh_proto.MultiValueTagSet) RouteConfigurationBuilderOpt {
 	return RouteConfigurationBuilderOptFunc(func(config *RouteConfigurationBuilderConfig) {
-		config.Add(&TagsConfigurer{
+		config.Add(&TagsHeaderConfigurer{
 			tags: tags,
 		})
 	})
 }
 
-type TagsConfigurer struct {
+type TagsHeaderConfigurer struct {
 	tags mesh_proto.MultiValueTagSet
 }
 
-func (t *TagsConfigurer) Configure(rc *envoy_api_v2.RouteConfiguration) error {
+func (t *TagsHeaderConfigurer) Configure(rc *envoy_api_v2.RouteConfiguration) error {
 	if len(t.tags) == 0 {
 		return nil
 	}
 	rc.RequestHeadersToAdd = append(rc.RequestHeadersToAdd, &envoy_core.HeaderValueOption{
-		Header: &envoy_core.HeaderValue{Key: TagsHeader, Value: http.SerializeTags(t.tags)},
+		Header: &envoy_core.HeaderValue{Key: TagsHeaderName, Value: http.SerializeTags(t.tags)},
 	})
 	return nil
 }

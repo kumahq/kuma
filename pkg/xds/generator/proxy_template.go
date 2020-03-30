@@ -282,7 +282,7 @@ func (_ OutboundProxyGenerator) generateRds(protocol mesh_core.Protocol, service
 		// generate RDS resource
 		routeConfiguration, err := envoy_routes.NewRouteConfigurationBuilder().
 			Configure(envoy_routes.CommonRouteConfiguration(outboundRouteName)).
-			Configure(envoy_routes.Tags(tags)).
+			Configure(envoy_routes.TagsHeader(tags)).
 			Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder().
 				Configure(envoy_routes.CommonVirtualHost(service)).
 				Configure(envoy_routes.DefaultRoute(clusters...)))).
