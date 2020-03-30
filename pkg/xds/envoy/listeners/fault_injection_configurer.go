@@ -1,9 +1,6 @@
 package listeners
 
 import (
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/xds/envoy/routes"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_api_v2_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_filter_fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
@@ -11,6 +8,11 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	"github.com/golang/protobuf/ptypes"
+
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/xds/envoy/routes"
+	"github.com/Kong/kuma/pkg/xds/envoy/tags"
 )
 
 func FaultInjection(faultInjection *mesh.FaultInjectionResource) FilterChainBuilderOpt {
@@ -58,16 +60,16 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 	})
 }
 
-func createHeaders(tags []v1alpha1.SingleValueTagSet) (matchers []*envoy_api_v2_route.HeaderMatcher) {
-	for _, t := range tags {
+func createHeaders(tagSets []v1alpha1.SingleValueTagSet) (matchers []*envoy_api_v2_route.HeaderMatcher) {
+	for _, t := range tagSets {
 		matchers = append(matchers, &envoy_api_v2_route.HeaderMatcher{
-			Name: routes.TagsHeader,
+			Name: routes.TagsHeaderName,
 			HeaderMatchSpecifier: &envoy_api_v2_route.HeaderMatcher_SafeRegexMatch{
 				SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
 					EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
 						GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
 					},
-					Regex: ConvertTags(t),
+					Regex: tags.MatchingRegex(t),
 				},
 			},
 		})

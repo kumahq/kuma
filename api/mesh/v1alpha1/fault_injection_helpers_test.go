@@ -1,10 +1,11 @@
 package v1alpha1_test
 
 import (
-	. "github.com/Kong/kuma/api/mesh/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	. "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
 var _ = Describe("FaultInjectionHelper", func() {

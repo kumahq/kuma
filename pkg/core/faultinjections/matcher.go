@@ -2,7 +2,6 @@ package faultinjections
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 
