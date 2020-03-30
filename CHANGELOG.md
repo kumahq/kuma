@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* chore: the API root `/` now returns the hostname
+  [#645](https://github.com/Kong/kuma/pull/645) 
 * feat: FaultInjection entity, support in API and `kumactl` 
   [#643](https://github.com/Kong/kuma/pull/643)
 * chore: merge mTLS and CA status into one column
