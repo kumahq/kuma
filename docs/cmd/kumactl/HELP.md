@@ -198,6 +198,7 @@ Usage:
 Available Commands:
   control-plane Install Kuma Control Plane on Kubernetes
   metrics       Install Metrics backend in Kubernetes cluster
+  tracing       Install Tracing backend in Kubernetes cluster
 
 Flags:
   -h, --help   help for install
@@ -257,6 +258,24 @@ Flags:
       --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd")
       --kuma-prometheus-sd-version string   version of Kuma Prometheus SD (default "latest")
       --namespace string                    namespace to install metrics to (default "kuma-metrics")
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+      --mesh string          mesh to use (default "default")
+```
+
+### kumactl install tracing
+
+```
+Install Tracing backend (Jaeger) in Kubernetes cluster.
+
+Usage:
+  kumactl install tracing [flags]
+
+Flags:
+  -h, --help               help for tracing
+      --namespace string   namespace to install tracing to (default "kuma-tracing")
 
 Global Flags:
       --config-file string   path to the configuration file to use
