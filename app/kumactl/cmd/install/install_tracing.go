@@ -12,14 +12,14 @@ import (
 )
 
 type tracingTemplateArgs struct {
-	Namespace                 string
+	Namespace string
 }
 
 func newInstallTracing() *cobra.Command {
 	args := struct {
-		Namespace               string
+		Namespace string
 	}{
-		Namespace:               "kuma-tracing",
+		Namespace: "kuma-tracing",
 	}
 	cmd := &cobra.Command{
 		Use:   "tracing",
@@ -27,7 +27,7 @@ func newInstallTracing() *cobra.Command {
 		Long:  `Install Tracing backend (Jaeger) in Kubernetes cluster.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			templateArgs := tracingTemplateArgs{
-				Namespace:               args.Namespace,
+				Namespace: args.Namespace,
 			}
 
 			templateFiles, err := data.ReadFiles(tracing.Templates)

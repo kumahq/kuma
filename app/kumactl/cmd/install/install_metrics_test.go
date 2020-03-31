@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	kuma_version "github.com/Kong/kuma/pkg/version"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -13,7 +15,7 @@ import (
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 )
 
-var _ = FDescribe("kumactl install metrics", func() {
+var _ = Describe("kumactl install metrics", func() {
 
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
@@ -27,6 +29,15 @@ var _ = FDescribe("kumactl install metrics", func() {
 		extraArgs  []string
 		goldenFile string
 	}
+
+	BeforeEach(func() {
+		kuma_version.Build = kuma_version.BuildInfo{
+			Version:   "0.0.1",
+			GitTag:    "v0.0.1",
+			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+			BuildDate: "2019-08-07T11:26:06Z",
+		}
+	})
 
 	DescribeTable("should generate Kubernetes resources",
 		func(given testCase) {
@@ -55,7 +66,7 @@ var _ = FDescribe("kumactl install metrics", func() {
 			// then
 			Expect(actual).To(MatchYAML(expected))
 			// and
-			actualManifests := data.SplitYAML(data.File{Data: expected})
+			actualManifests := data.SplitYAML(data.File{Data: actual})
 
 			// and
 			Expect(len(actualManifests)).To(Equal(len(expectedManifests)))
