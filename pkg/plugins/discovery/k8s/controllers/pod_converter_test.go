@@ -149,6 +149,7 @@ var _ = Describe("PodToDataplane(..)", func() {
                   annotations:
                     80.service.kuma.io/protocol: http
                 spec:
+                  clusterIP: 192.168.0.1
                   ports:
                   - # protocol defaults to TCP
                     port: 80
@@ -164,6 +165,7 @@ var _ = Describe("PodToDataplane(..)", func() {
                   annotations:
                     7071.service.kuma.io/protocol: MONGO
                 spec:
+                  clusterIP: 192.168.0.1
                   ports:
                   - protocol: TCP
                     port: 7071
@@ -214,6 +216,7 @@ var _ = Describe("PodToDataplane(..)", func() {
               namespace: demo
               name: example
             spec:
+              clusterIP: 192.168.0.1
               ports:
               - # protocol defaults to TCP
                 port: 80
@@ -303,6 +306,7 @@ var _ = Describe("PodToDataplane(..)", func() {
               annotations:
                 80.service.kuma.io/protocol: http # should be ignored in case of a gateway
             spec:
+              clusterIP: 192.168.0.1
               ports:
               - # protocol defaults to TCP
                 port: 80
@@ -372,6 +376,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				pod: pod,
 				services: []string{`
                 spec:
+                  clusterIP: 192.168.0.1
                   ports:
                   - protocol: UDP    # all non-TCP ports should be ignored
                     port: 80
@@ -387,6 +392,21 @@ var _ = Describe("PodToDataplane(..)", func() {
                     targetPort: diagnostics
 `},
 				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, this Pod doesn't have any container ports that would satisfy matching Service(s).`,
+			}),
+			Entry("Pod with a headless Service", testCase{ // Remove after providing support for Headless Services https://github.com/Kong/kuma/issues/561
+				pod: pod,
+				services: []string{`
+                metadata:
+                  name: sample
+                  namespace: demo
+                spec:
+                  clusterIP: None
+                  ports:
+                  - protocol: TCP
+                    port: 80
+                    targetPort: 7070
+`},
+				expectedErr: `Kuma requires Service associated with Pod to has a valid IP address in ClusterIP field. Value of ClusterIP of Service sample.demo is "None". Support for headless services is coming soon. You can either change the Service definition or exclude this Pod from having Dataplane injected https://kuma.io/docs/0.4.0/documentation/dps-and-data-model/#kubernetes`,
 			}),
 		)
 	})

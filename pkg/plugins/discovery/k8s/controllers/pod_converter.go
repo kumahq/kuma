@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 
@@ -103,6 +104,9 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 				converterLog.Error(err, "failed to find a container port in a given Pod that would match a given Service port", "namespace", pod.Namespace, "podName", pod.Name, "serviceName", svc.Name, "servicePortName", svcPort.Name)
 				// ignore those cases where a Pod doesn't have all the ports a Service has
 				continue
+			}
+			if net.ParseIP(svc.Spec.ClusterIP) == nil {
+				return nil, errors.Errorf("Kuma requires Service associated with Pod to has a valid IP address in ClusterIP field. Value of ClusterIP of Service %s.%s is %q. Support for headless services is coming soon. You can either change the Service definition or exclude this Pod from having Dataplane injected https://kuma.io/docs/0.4.0/documentation/dps-and-data-model/#kubernetes", svc.Name, svc.Namespace, svc.Spec.ClusterIP)
 			}
 
 			tags := InboundTagsFor(pod, svc, &svcPort, isGateway)
