@@ -8,7 +8,7 @@ import (
 	"github.com/Kong/kuma/pkg/xds/envoy/routes"
 )
 
-var _ = Describe("ResetTagsConfigurer", func() {
+var _ = Describe("ResetTagsHeaderConfigurer", func() {
 
 	It("should generate proper Envoy config", func() {
 		// when
