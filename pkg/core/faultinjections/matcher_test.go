@@ -84,9 +84,6 @@ var _ = Describe("Match", func() {
 			bestMatched, err := matcher.Match(context.Background(), given.dataplane)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bestMatched).To(Equal(given.expected))
-			//for k, v := range bestMatched {
-			//	Expect(v.GetMeta().GetName()).To(Equal(given.expected[k]))
-			//}
 		},
 		Entry("1 inbound dataplane, 2 policies", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
