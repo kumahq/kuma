@@ -119,7 +119,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 				// configuration for HTTP case
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
-					Configure(envoy_listeners.FaultInjection(proxy.FaultInjection)).
+					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
 					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterInfo{Name: localClusterName}))
 			case mesh_core.ProtocolTCP:

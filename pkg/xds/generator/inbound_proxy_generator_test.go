@@ -96,8 +96,12 @@ var _ = Describe("InboundProxyGenerator", func() {
 						},
 					},
 				},
-				FaultInjection: &mesh_core.FaultInjectionResource{
-					Spec: mesh_proto.FaultInjection{
+				FaultInjections: model.FaultInjectionMap{
+					mesh_proto.InboundInterface{
+						DataplaneIP:   "192.168.0.1",
+						DataplanePort: 80,
+						WorkloadPort:  8080,
+					}: &mesh_proto.FaultInjection{
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{

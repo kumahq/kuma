@@ -165,7 +165,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					TrafficTrace:       trafficTrace,
 					TracingBackend:     tracingBackend,
 					Metadata:           metadataTracker.Metadata(streamId),
-					FaultInjection:     faultInjection,
+					FaultInjections:    faultInjection,
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},

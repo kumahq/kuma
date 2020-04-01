@@ -4,14 +4,16 @@ import (
 	"context"
 	"time"
 
+	core_xds "github.com/Kong/kuma/pkg/core/xds"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/faultinjections"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	. "github.com/Kong/kuma/pkg/core/faultinjections"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -20,32 +22,28 @@ import (
 )
 
 var _ = Describe("Match", func() {
-	dataplaneWithTagsFunc := func(tags map[string]string) *mesh.DataplaneResource {
+	dataplaneWithInboundsFunc := func(inbounds []*mesh_proto.Dataplane_Networking_Inbound) *mesh.DataplaneResource {
 		return &mesh.DataplaneResource{
 			Meta: &model.ResourceMeta{
 				Mesh: "default",
 				Name: "dp1",
 			},
-			Spec: v1alpha1.Dataplane{
-				Networking: &v1alpha1.Dataplane_Networking{
-					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
-						{
-							Tags: tags,
-						},
-					},
+			Spec: mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Inbound: inbounds,
 				},
 			},
 		}
 	}
 
-	policyWithDestinationsFunc := func(name string, creationTime time.Time, destinations map[string]string) *mesh.FaultInjectionResource {
+	policyWithDestinationsFunc := func(name string, creationTime time.Time, destinations []*mesh_proto.Selector) *mesh.FaultInjectionResource {
 		return &mesh.FaultInjectionResource{
 			Meta: &model.ResourceMeta{
 				Name:         name,
 				CreationTime: creationTime,
 			},
-			Spec: v1alpha1.FaultInjection{
-				Sources: []*v1alpha1.Selector{
+			Spec: mesh_proto.FaultInjection{
+				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
 							"service":  "*",
@@ -53,13 +51,9 @@ var _ = Describe("Match", func() {
 						},
 					},
 				},
-				Destinations: []*v1alpha1.Selector{
-					{
-						Match: destinations,
-					},
-				},
-				Conf: &v1alpha1.FaultInjection_Conf{
-					Delay: &v1alpha1.FaultInjection_Conf_Delay{
+				Destinations: destinations,
+				Conf: &mesh_proto.FaultInjection_Conf{
+					Delay: &mesh_proto.FaultInjection_Conf_Delay{
 						Percentage: &wrappers.DoubleValue{Value: 50},
 						Value:      &duration.Duration{Seconds: 5},
 					},
@@ -71,13 +65,13 @@ var _ = Describe("Match", func() {
 	type testCase struct {
 		dataplane *mesh.DataplaneResource
 		policies  []*mesh.FaultInjectionResource
-		expected  string
+		expected  core_xds.FaultInjectionMap
 	}
 
 	DescribeTable("should find best matched policy",
 		func(given testCase) {
 			manager := core_manager.NewResourceManager(memory.NewStore())
-			matcher := faultinjections.FaultInjectionMatcher{ResourceManager: manager}
+			matcher := FaultInjectionMatcher{ResourceManager: manager}
 
 			err := manager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default"))
 			Expect(err).ToNot(HaveOccurred())
@@ -89,25 +83,96 @@ var _ = Describe("Match", func() {
 
 			bestMatched, err := matcher.Match(context.Background(), given.dataplane)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bestMatched.GetMeta().GetName()).To(Equal(given.expected))
+			Expect(bestMatched).To(Equal(given.expected))
+			//for k, v := range bestMatched {
+			//	Expect(v.GetMeta().GetName()).To(Equal(given.expected[k]))
+			//}
 		},
-		Entry("basic", testCase{
-			dataplane: dataplaneWithTagsFunc(map[string]string{
-				"service":  "web",
-				"version":  "0.1",
-				"region":   "eu",
-				"protocol": "http",
+		Entry("1 inbound dataplane, 2 policies", testCase{
+			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
+				{
+					ServicePort: 8080,
+					Tags: map[string]string{
+						"service":  "web",
+						"version":  "0.1",
+						"region":   "eu",
+						"protocol": "http",
+					},
+				},
 			}),
 			policies: []*mesh.FaultInjectionResource{
-				policyWithDestinationsFunc("fi1", time.Unix(1, 0), map[string]string{
-					"region":   "us",
-					"protocol": "http",
+				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"region":   "us",
+							"protocol": "http",
+						},
+					},
 				}),
-				policyWithDestinationsFunc("fi2", time.Unix(1, 0), map[string]string{
-					"service":  "*",
-					"protocol": "http",
+				policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":  "*",
+							"protocol": "http",
+						},
+					},
 				}),
 			},
-			expected: "fi2"}),
+			expected: core_xds.FaultInjectionMap{
+				mesh_proto.InboundInterface{
+					WorkloadPort: 8080,
+				}: &policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":  "*",
+							"protocol": "http",
+						},
+					},
+				}).Spec,
+			}}),
+		Entry("should apply policy only to the first inbound", testCase{
+			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
+				{
+					ServicePort: 8080,
+					Tags: map[string]string{
+						"service":  "web",
+						"version":  "0.1",
+						"region":   "eu",
+						"protocol": "http",
+					},
+				},
+				{
+					ServicePort: 8081,
+					Tags: map[string]string{
+						"service":  "web-api",
+						"version":  "0.1.2",
+						"region":   "us",
+						"protocol": "http",
+					},
+				},
+			}),
+			policies: []*mesh.FaultInjectionResource{
+				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":  "web-api",
+							"protocol": "http",
+						},
+					},
+				}),
+			},
+			expected: core_xds.FaultInjectionMap{
+				mesh_proto.InboundInterface{
+					WorkloadPort: 8081,
+				}: &policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":  "web-api",
+							"protocol": "http",
+						},
+					},
+				}).Spec,
+			},
+		}),
 	)
 })

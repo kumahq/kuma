@@ -11,13 +11,12 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/xds/envoy/routes"
 	"github.com/Kong/kuma/pkg/xds/envoy/tags"
 )
 
-func FaultInjection(faultInjection *mesh.FaultInjectionResource) FilterChainBuilderOpt {
+func FaultInjection(faultInjection *mesh_proto.FaultInjection) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.Add(&FaultInjectionConfigurer{
 			faultInjection: faultInjection,
@@ -26,7 +25,7 @@ func FaultInjection(faultInjection *mesh.FaultInjectionResource) FilterChainBuil
 }
 
 type FaultInjectionConfigurer struct {
-	faultInjection *mesh.FaultInjectionResource
+	faultInjection *mesh_proto.FaultInjection
 }
 
 func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -35,12 +34,14 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 	}
 
 	config := &envoy_http_fault.HTTPFault{
-		Delay:   convertDelay(f.faultInjection.Spec.Conf.GetDelay()),
-		Abort:   convertAbort(f.faultInjection.Spec.Conf.GetAbort()),
-		Headers: createHeaders(f.faultInjection.Spec.SourceTags()),
+		Delay: convertDelay(f.faultInjection.Conf.GetDelay()),
+		Abort: convertAbort(f.faultInjection.Conf.GetAbort()),
+		Headers: []*envoy_api_v2_route.HeaderMatcher{
+			createHeaders(f.faultInjection.SourceTags()),
+		},
 	}
 
-	rrl, err := convertResponseRateLimit(f.faultInjection.Spec.Conf.GetResponseBandwidth())
+	rrl, err := convertResponseRateLimit(f.faultInjection.Conf.GetResponseBandwidth())
 	if err != nil {
 		return err
 	}
@@ -64,26 +65,30 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 	})
 }
 
-func createHeaders(tagSets []v1alpha1.SingleValueTagSet) (matchers []*envoy_api_v2_route.HeaderMatcher) {
-	for _, t := range tagSets {
-		matchers = append(matchers, &envoy_api_v2_route.HeaderMatcher{
-			Name: routes.TagsHeaderName,
-			HeaderMatchSpecifier: &envoy_api_v2_route.HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
-					EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-						GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{
-							MaxProgramSize: &wrappers.UInt32Value{Value: 500},
-						},
-					},
-					Regex: tags.MatchingRegex(t),
-				},
-			},
-		})
+func createHeaders(selectors []mesh_proto.SingleValueTagSet) *envoy_api_v2_route.HeaderMatcher {
+	var rss []string
+	for _, selector := range selectors {
+		rs := tags.MatchingRegex(selector)
+		rss = append(rss, rs)
 	}
-	return
+	regexOR := tags.RegexOR(rss...)
+
+	return &envoy_api_v2_route.HeaderMatcher{
+		Name: routes.TagsHeaderName,
+		HeaderMatchSpecifier: &envoy_api_v2_route.HeaderMatcher_SafeRegexMatch{
+			SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
+				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{
+						MaxProgramSize: &wrappers.UInt32Value{Value: 500},
+					},
+				},
+				Regex: regexOR,
+			},
+		},
+	}
 }
 
-func convertDelay(delay *v1alpha1.FaultInjection_Conf_Delay) *envoy_filter_fault.FaultDelay {
+func convertDelay(delay *mesh_proto.FaultInjection_Conf_Delay) *envoy_filter_fault.FaultDelay {
 	if delay == nil {
 		return nil
 	}
@@ -93,7 +98,7 @@ func convertDelay(delay *v1alpha1.FaultInjection_Conf_Delay) *envoy_filter_fault
 	}
 }
 
-func convertAbort(abort *v1alpha1.FaultInjection_Conf_Abort) *envoy_http_fault.FaultAbort {
+func convertAbort(abort *mesh_proto.FaultInjection_Conf_Abort) *envoy_http_fault.FaultAbort {
 	if abort == nil {
 		return nil
 	}
@@ -103,7 +108,7 @@ func convertAbort(abort *v1alpha1.FaultInjection_Conf_Abort) *envoy_http_fault.F
 	}
 }
 
-func convertResponseRateLimit(responseBandwidth *v1alpha1.FaultInjection_Conf_ResponseBandwidth) (*envoy_filter_fault.FaultRateLimit, error) {
+func convertResponseRateLimit(responseBandwidth *mesh_proto.FaultInjection_Conf_ResponseBandwidth) (*envoy_filter_fault.FaultRateLimit, error) {
 	if responseBandwidth == nil {
 		return nil, nil
 	}

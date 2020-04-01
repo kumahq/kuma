@@ -54,6 +54,9 @@ type LogMap map[ServiceName]*mesh_proto.LoggingBackend
 // HealthCheckMap holds the most specific HealthCheck for each reachable service.
 type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
 
+// FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
+type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
+
 type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
@@ -66,7 +69,7 @@ type Proxy struct {
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	Metadata           *DataplaneMetadata
-	FaultInjection     *mesh_core.FaultInjectionResource
+	FaultInjections    FaultInjectionMap
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {

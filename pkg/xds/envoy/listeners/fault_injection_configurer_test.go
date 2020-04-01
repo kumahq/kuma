@@ -7,15 +7,14 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("FaultInjectionConfigurer", func() {
 	type testCase struct {
-		input    *mesh.FaultInjectionResource
+		input    *mesh_proto.FaultInjection
 		expected string
 	}
 	DescribeTable("should generate proper Envoy config",
@@ -27,7 +26,6 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
-
 			// when
 			actual, err := util_proto.ToYAML(filterChain)
 			Expect(err).ToNot(HaveOccurred())
@@ -35,24 +33,23 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic input", testCase{
-			input: &mesh.FaultInjectionResource{
-				Spec: v1alpha1.FaultInjection{
-					Sources: []*v1alpha1.Selector{
-						{
-							Match: map[string]string{
-								"tag1": "value1",
-								"tag2": "value2",
-							},
-						},
-					},
-					Conf: &v1alpha1.FaultInjection_Conf{
-						Delay: &v1alpha1.FaultInjection_Conf_Delay{
-							Percentage: &wrappers.DoubleValue{Value: 50},
-							Value:      &duration.Duration{Seconds: 5},
+			input: &mesh_proto.FaultInjection{
+				Sources: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"tag1": "value1",
+							"tag2": "value2",
 						},
 					},
 				},
+				Conf: &mesh_proto.FaultInjection_Conf{
+					Delay: &mesh_proto.FaultInjection_Conf_Delay{
+						Percentage: &wrappers.DoubleValue{Value: 50},
+						Value:      &duration.Duration{Seconds: 5},
+					},
+				},
 			},
+
 			expected: `
             filters:
             - name: envoy.http_connection_manager
@@ -72,6 +69,52 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                         googleRe2: 
                           maxProgramSize: 500
                         regex: '&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*'
+                - name: envoy.router
+                statPrefix: stats`,
+		}),
+		Entry("2 policy selectors", testCase{
+			input: &mesh_proto.FaultInjection{
+				Sources: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"tag1": "value1m1",
+							"tag2": "value2m1",
+						},
+					},
+					{
+						Match: map[string]string{
+							"tag1": "value1m2",
+							"tag2": "value2m2",
+						},
+					},
+				},
+				Conf: &mesh_proto.FaultInjection_Conf{
+					Delay: &mesh_proto.FaultInjection_Conf_Delay{
+						Percentage: &wrappers.DoubleValue{Value: 50},
+						Value:      &duration.Duration{Seconds: 5},
+					},
+				},
+			},
+
+			expected: `
+            filters:
+            - name: envoy.http_connection_manager
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                httpFilters:
+                - name: envoy.fault
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.filter.http.fault.v2.HTTPFault
+                    delay:
+                      fixedDelay: 5s
+                      percentage:
+                        numerator: 50
+                    headers:
+                    - name: x-kuma-tags
+                      safeRegexMatch:
+                        googleRe2: 
+                          maxProgramSize: 500
+                        regex: '(&tag1=[^&]*value1m1[,&].*&tag2=[^&]*value2m1[,&].*|&tag1=[^&]*value1m2[,&].*&tag2=[^&]*value2m2[,&].*)'
                 - name: envoy.router
                 statPrefix: stats`,
 		}),
