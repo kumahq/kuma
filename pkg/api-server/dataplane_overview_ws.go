@@ -31,6 +31,7 @@ func (r *overviewWs) AddToWs(ws *restful.WebService) {
 		Doc("Inspect all dataplanes").
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Param(ws.QueryParameter("tag", "Tag to filter in key:value format").DataType("string")).
+		Param(ws.QueryParameter("gateway", "Param to filter gateway planes").DataType("string")).
 		Returns(200, "OK", nil))
 }
 
@@ -80,8 +81,12 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 	}
 
 	tags := parseTags(request.QueryParameters("tag"))
+	gateWayFilterQueryParam := request.QueryParameter("gateway")
+	if gateWayFilterQueryParam == "true" {
+		gatewayFilterTag := map[string]string{"service": "gateway"}
+		overviews.RetainMatchingTags(gatewayFilterTag)
+	}
 	overviews.RetainMatchingTags(tags)
-
 	restList := rest.From.ResourceList(&overviews)
 	if err := response.WriteAsJson(restList); err != nil {
 		rest_errors.HandleError(response, err, "Could not list dataplane overviews")
