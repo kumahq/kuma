@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* chore: migrate deprecated Envoy config to support newest version of Envoy 
+  [#652](https://github.com/Kong/kuma/pull/652)
 * feat: save service's tags to header for L7-traffic
   [#647](https://github.com/Kong/kuma/pull/647/files)
 * chore: the API root `/` now returns the hostname
@@ -26,8 +28,6 @@
 
 Changes:
 
-* chore: migrate deprecated Envoy config to support newest version of Envoy 
-  [#652](https://github.com/Kong/kuma/pull/652)
 * feature: added a `Traffic Traces` page to `Kuma GUI`
   [#610](https://github.com/Kong/kuma/pull/610)
 * feature: added styling for `Tags` column on the `Dataplanes` page in `Kuma GUI`
