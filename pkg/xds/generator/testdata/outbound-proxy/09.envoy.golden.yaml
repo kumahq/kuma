@@ -172,6 +172,10 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
     name: outbound:api-http
+    requestHeadersToAdd:
+    - header:
+        key: x-kuma-tags
+        value: '&service=gateway&'
     validateClusters: true
     virtualHosts:
     - domains:

@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat: save service's tags to header for L7-traffic
+  [#647](https://github.com/Kong/kuma/pull/647/files)
 * chore: the API root `/` now returns the hostname
   [#645](https://github.com/Kong/kuma/pull/645) 
 * feat: FaultInjection entity, support in API and `kumactl` 
