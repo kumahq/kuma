@@ -2,7 +2,6 @@ resources:
   - name: catch_all
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
-      trafficDirection: OUTBOUND
       address:
         socketAddress:
           address: 0.0.0.0
@@ -15,6 +14,7 @@ resources:
                 cluster: pass_through
                 statPrefix: pass_through
       name: catch_all
+      trafficDirection: OUTBOUND
       useOriginalDst: true
     version: "1"
   - name: pass_through
@@ -28,6 +28,7 @@ resources:
   - name: localhost:8080
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
+      altStatName: localhost_8080
       connectTimeout: 5s
       loadAssignment:
         clusterName: localhost:8080
@@ -39,12 +40,10 @@ resources:
                       address: 127.0.0.1
                       portValue: 8080
       name: localhost:8080
-      altStatName: localhost_8080
       type: STATIC
   - name: inbound:192.168.0.1:80
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
-      trafficDirection: INBOUND
       address:
         socketAddress:
           address: 192.168.0.1
@@ -63,10 +62,26 @@ resources:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: localhost:8080
                 statPrefix: localhost_8080
-          tlsContext:
-            commonTlsContext:
-              tlsCertificateSdsSecretConfigs:
-                - name: identity_cert
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+              commonTlsContext:
+                tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_identity_cert
+                              targetUri: kuma-system:5677
+                validationContextSdsSecretConfig:
+                  name: mesh_ca
                   sdsConfig:
                     apiConfigSource:
                       apiType: GRPC
@@ -76,26 +91,15 @@ resources:
                               sslCredentials:
                                 rootCerts:
                                   inlineBytes: MTIzNDU=
-                            statPrefix: sds_identity_cert
+                            statPrefix: sds_mesh_ca
                             targetUri: kuma-system:5677
-              validationContextSdsSecretConfig:
-                name: mesh_ca
-                sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                      - googleGrpc:
-                          channelCredentials:
-                            sslCredentials:
-                              rootCerts:
-                                inlineBytes: MTIzNDU=
-                          statPrefix: sds_mesh_ca
-                          targetUri: kuma-system:5677
-            requireClientCertificate: true
+              requireClientCertificate: true
       name: inbound:192.168.0.1:80
+      trafficDirection: INBOUND
   - name: raw-name
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
+      altStatName: localhost_8443
       connectTimeout: 5s
       loadAssignment:
         clusterName: localhost:8443
@@ -107,6 +111,5 @@ resources:
                       address: 127.0.0.1
                       portValue: 8443
       name: localhost:8443
-      altStatName: localhost_8443
       type: STATIC
     version: raw-version

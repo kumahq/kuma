@@ -123,29 +123,13 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplaneFile:   "2-dataplane.input.yaml",
 			envoyConfigFile: "2-envoy-config.golden.yaml",
 		}),
-		Entry("03. transparent_proxying=false, ip_addresses=1, ports=1", testCase{
+		Entry("03. transparent_proxying=false, ip_addresses=2, ports=2", testCase{
 			dataplaneFile:   "3-dataplane.input.yaml",
 			envoyConfigFile: "3-envoy-config.golden.yaml",
 		}),
-		Entry("04. transparent_proxying=true, ip_addresses=1, ports=1", testCase{
+		Entry("04. transparent_proxying=true, ip_addresses=2, ports=2", testCase{
 			dataplaneFile:   "4-dataplane.input.yaml",
 			envoyConfigFile: "4-envoy-config.golden.yaml",
-		}),
-		Entry("05. transparent_proxying=false, ip_addresses=1, ports=2", testCase{
-			dataplaneFile:   "5-dataplane.input.yaml",
-			envoyConfigFile: "5-envoy-config.golden.yaml",
-		}),
-		Entry("06. transparent_proxying=true, ip_addresses=1, ports=2", testCase{
-			dataplaneFile:   "6-dataplane.input.yaml",
-			envoyConfigFile: "6-envoy-config.golden.yaml",
-		}),
-		Entry("07. transparent_proxying=false, ip_addresses=2, ports=2", testCase{
-			dataplaneFile:   "7-dataplane.input.yaml",
-			envoyConfigFile: "7-envoy-config.golden.yaml",
-		}),
-		Entry("08. transparent_proxying=true, ip_addresses=2, ports=2", testCase{
-			dataplaneFile:   "8-dataplane.input.yaml",
-			envoyConfigFile: "8-envoy-config.golden.yaml",
 		}),
 	)
 })

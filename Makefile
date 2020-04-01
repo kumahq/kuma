@@ -438,25 +438,25 @@ build/kuma-tcp-echo/linux-amd64:
 
 docker/build: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-prometheus-sd docker/build/kuma-tcp-echo
 
-docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp
+docker/build/kuma-cp: build/kuma-cp/linux-amd64
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
-docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp
+docker/build/kuma-dp: build/kuma-dp/linux-amd64
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
-docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl
+docker/build/kumactl: build/kumactl/linux-amd64
 	docker build -t $(KUMACTL_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kumactl .
 
-docker/build/kuma-injector: build/artifacts-linux-amd64/kuma-injector/kuma-injector
+docker/build/kuma-injector: build/kuma-injector/linux-amd64
 	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-injector .
 
 docker/build/kuma-init:
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-init .
 
-docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd
+docker/build/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64
 	docker build -t $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-prometheus-sd .
 
-docker/build/kuma-tcp-echo: build/artifacts-linux-amd64/kuma-tcp-echo/kuma-tcp-echo
+docker/build/kuma-tcp-echo: build/kuma-tcp-echo/linux-amd64
 	docker build -t $(KUMA_TCP_ECHO_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-tcp-echo .
 
 image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Build `kuma-cp` Docker image

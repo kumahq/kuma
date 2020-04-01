@@ -40,3 +40,207 @@ resources:
           cluster: backend
           statPrefix: backend
     name: outbound:127.0.0.1:18080
+- name: db{role=master}
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    altStatName: db_role_master_
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    name: db{role=master}
+    type: EDS
+- name: db{role=master}
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: db{role=master}
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.3
+              portValue: 5432
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              role: master
+              service: db
+- name: db{role=replica}
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    altStatName: db_role_replica_
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    name: db{role=replica}
+    type: EDS
+- name: db{role=replica}
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: db{role=replica}
+    endpoints:
+    - {}
+- name: outbound:127.0.0.1:54321
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    trafficDirection: OUTBOUND
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 54321
+    filterChains:
+    - filters:
+      - name: envoy.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          statPrefix: db
+          weightedClusters:
+            clusters:
+            - name: db{role=master}
+              weight: 10
+            - name: db{role=replica}
+              weight: 90
+    name: outbound:127.0.0.1:54321
+- name: api-http
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    name: api-http
+    type: EDS
+- name: api-http
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: api-http
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.4
+              portValue: 8084
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              protocol: http
+              region: us
+              service: api-http
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.5
+              portValue: 8085
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              protocol: http
+              region: eu
+              service: api-http
+- name: outbound:127.0.0.1:40001
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    trafficDirection: OUTBOUND
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 40001
+    filterChains:
+    - filters:
+      - name: envoy.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          accessLog:
+          - name: envoy.file_access_log
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
+              format: |
+                [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "gateway" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
+              path: /var/log
+          httpFilters:
+          - name: envoy.router
+          rds:
+            configSource:
+              ads: {}
+            routeConfigName: outbound:api-http
+          statPrefix: api-http
+    name: outbound:127.0.0.1:40001
+- name: outbound:api-http
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
+    name: outbound:api-http
+    validateClusters: true
+    virtualHosts:
+    - domains:
+      - '*'
+      name: api-http
+      routes:
+      - match:
+          prefix: /
+        route:
+          cluster: api-http
+- name: api-tcp
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    name: api-tcp
+    type: EDS
+- name: api-tcp
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: api-tcp
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.6
+              portValue: 8086
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              protocol: http
+              region: us
+              service: api-tcp
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.7
+              portValue: 8087
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              region: eu
+              service: api-tcp
+- name: outbound:127.0.0.1:40002
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    trafficDirection: OUTBOUND
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 40002
+    filterChains:
+    - filters:
+      - name: envoy.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          accessLog:
+          - name: envoy.http_grpc_access_log
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
+              commonConfig:
+                grpcService:
+                  envoyGrpc:
+                    clusterName: access_log_sink
+                logName: |
+                  logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(gateway)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+          cluster: api-tcp
+          statPrefix: api-tcp
+    name: outbound:127.0.0.1:40002
