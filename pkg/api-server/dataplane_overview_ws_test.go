@@ -173,6 +173,10 @@ var _ = Describe("Dataplane Overview WS", func() {
 				url:          "/meshes/mesh1/dataplanes+insights",
 				expectedJson: fmt.Sprintf(`{"items": [%s]}`, sampleJson),
 			}),
+			Entry("should list all when no tag is provided", testCase{
+				url:          "/dataplanes+insights",
+				expectedJson: fmt.Sprintf(`{"items": [%s]}`, sampleJson),
+			}),
 			Entry("should list with only one matching tag", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample",
 				expectedJson: fmt.Sprintf(`{"items": [%s]}`, sampleJson),

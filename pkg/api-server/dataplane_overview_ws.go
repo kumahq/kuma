@@ -17,17 +17,18 @@ import (
 
 type overviewWs struct {
 	resManager manager.ResourceManager
+	pathPrefix string
 }
 
 func (r *overviewWs) AddToWs(ws *restful.WebService) {
-	ws.Route(ws.GET("/{mesh}/dataplanes+insights/{name}").To(r.inspectDataplane).
+	ws.Route(ws.GET(r.pathPrefix+"/dataplanes+insights/{name}").To(r.inspectDataplane).
 		Doc("Inspect a dataplane").
 		Param(ws.PathParameter("name", "Name of a dataplane").DataType("string")).
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(404, "Not found", nil))
 
-	ws.Route(ws.GET("/{mesh}/dataplanes+insights").To(r.inspectDataplanes).
+	ws.Route(ws.GET(r.pathPrefix+"/dataplanes+insights").To(r.inspectDataplanes).
 		Doc("Inspect all dataplanes").
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Param(ws.QueryParameter("tag", "Tag to filter in key:value format").DataType("string")).

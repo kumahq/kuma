@@ -125,6 +125,42 @@ var _ = Describe("Resource WS", func() {
 				MatchJSON(fmt.Sprintf(`{"items": [%s,%s]}`, json2, json1)),
 			))
 		})
+
+		It("should list resources from all meshes", func() {
+			// given
+			putSampleResourceIntoStore(resourceStore, "tr-1", "mesh-1")
+			putSampleResourceIntoStore(resourceStore, "tr-2", "mesh-2")
+
+			// when
+			client = resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/sample-traffic-routes",
+			}
+			response := client.list()
+
+			// then
+			Expect(response.StatusCode).To(Equal(200))
+			json1 := `
+			{
+				"type": "SampleTrafficRoute",
+				"name": "tr-1",
+				"mesh": "mesh-1",
+				"path": "/sample-path"
+			}`
+			json2 := `
+			{
+				"type": "SampleTrafficRoute",
+				"name": "tr-2",
+				"mesh": "mesh-2",
+				"path": "/sample-path"
+			}`
+			body, err := ioutil.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(body).To(Or(
+				MatchJSON(fmt.Sprintf(`{"items": [%s,%s]}`, json1, json2)),
+				MatchJSON(fmt.Sprintf(`{"items": [%s,%s]}`, json2, json1)),
+			))
+		})
 	})
 
 	Describe("On PUT", func() {

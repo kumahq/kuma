@@ -3,7 +3,6 @@ package api_server
 import (
 	"context"
 	"fmt"
-
 	"github.com/emicklei/go-restful"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
@@ -20,13 +19,14 @@ import (
 type resourceWs struct {
 	resManager      manager.ResourceManager
 	readOnly        bool
+	pathPrefix      string
 	nameFromRequest func(*restful.Request) string
 	meshFromRequest func(*restful.Request) string
 	definitions.ResourceWsDefinition
 }
 
 func (r *resourceWs) AddToWs(ws *restful.WebService) {
-	pathPrefix := ""
+	//pathPrefix := ""
 	if r.ResourceFactory().GetType() == mesh.MeshType {
 		r.nameFromRequest = func(request *restful.Request) string {
 			return request.PathParameter("name")
@@ -35,7 +35,7 @@ func (r *resourceWs) AddToWs(ws *restful.WebService) {
 			return request.PathParameter("name")
 		}
 	} else {
-		pathPrefix += "/{mesh}/" + r.Path
+		//pathPrefix += "/{mesh}/" + r.Path
 		r.nameFromRequest = func(request *restful.Request) string {
 			return request.PathParameter("name")
 		}
@@ -44,27 +44,27 @@ func (r *resourceWs) AddToWs(ws *restful.WebService) {
 		}
 	}
 
-	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource).
+	ws.Route(ws.GET(r.pathPrefix+"/{name}").To(r.findResource).
 		Doc(fmt.Sprintf("Get a %s", r.Name)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
 		//Writes(r.SpecFactory()).
 		Returns(200, "OK", nil). // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
 		Returns(404, "Not found", nil))
 
-	ws.Route(ws.GET(pathPrefix).To(r.listResources).
+	ws.Route(ws.GET(r.pathPrefix).To(r.listResources).
 		Doc(fmt.Sprintf("List of %s", r.Name)).
 		//Writes(r.SampleListSpec).
 		Returns(200, "OK", nil)) // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
 
 	if !r.readOnly {
-		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
+		ws.Route(ws.PUT(r.pathPrefix+"/{name}").To(r.createOrUpdateResource).
 			Doc(fmt.Sprintf("Updates a %s", r.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
 			//Reads(r.SampleSpec). // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
 			Returns(200, "OK", nil).
 			Returns(201, "Created", nil))
 
-		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
+		ws.Route(ws.DELETE(r.pathPrefix+"/{name}").To(r.deleteResource).
 			Doc(fmt.Sprintf("Deletes a %s", r.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
 			Returns(200, "OK", nil))

@@ -3,6 +3,7 @@ package api_server
 import (
 	"context"
 	"fmt"
+	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -43,17 +44,16 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 
 	ws := new(restful.WebService)
 	ws.
-		Path("/meshes").
+		Path("/").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
 	addToWs(ws, defs, resManager, serverConfig)
 	container.Add(ws)
-	indexWs, err := indexWs()
-	if err != nil {
+
+	if err := addIndexWsEndpoints(ws); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
-	container.Add(indexWs)
 	container.Add(catalogWs(*serverConfig.Catalog))
 	configWs, err := configWs(cfg)
 	if err != nil {
@@ -68,18 +68,43 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 }
 
 func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
-	overviewWs := overviewWs{
+	oWs := overviewWs{
 		resManager: resManager,
+		pathPrefix: "/meshes/{mesh}",
 	}
-	overviewWs.AddToWs(ws)
+	oWs.AddToWs(ws)
+
+	oWs = overviewWs{
+		resManager: resManager,
+		pathPrefix: "",
+	}
+	oWs.AddToWs(ws)
 
 	for _, definition := range defs {
-		resourceWs := resourceWs{
-			resManager:           resManager,
-			readOnly:             config.ReadOnly,
-			ResourceWsDefinition: definition,
+		if definition.ResourceFactory().GetType() != mesh.MeshType {
+			rWs := resourceWs{
+				resManager:           resManager,
+				readOnly:             config.ReadOnly,
+				pathPrefix:           "/meshes/{mesh}/" + definition.Path,
+				ResourceWsDefinition: definition,
+			}
+			rWs.AddToWs(ws)
+
+			rWs = resourceWs{
+				resManager:           resManager,
+				pathPrefix:           "/" + definition.Path,
+				ResourceWsDefinition: definition,
+			}
+			rWs.AddToWs(ws)
+		} else {
+			rWs := resourceWs{
+				resManager:           resManager,
+				readOnly:             config.ReadOnly,
+				pathPrefix:           "/meshes",
+				ResourceWsDefinition: definition,
+			}
+			rWs.AddToWs(ws)
 		}
-		resourceWs.AddToWs(ws)
 	}
 }
 
