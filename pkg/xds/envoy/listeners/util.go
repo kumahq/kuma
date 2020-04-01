@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strconv"
 
-	envoy_filter_fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
@@ -103,11 +102,11 @@ func ConvertPercentage(percentage *wrappers.DoubleValue) *envoy_type.FractionalP
 
 var bandwidthRegex = regexp.MustCompile(`(\d*)\s?([gmk]?bps)`)
 
-func ConvertBandwidth(bandwidth *wrappers.StringValue) (*envoy_filter_fault.FaultRateLimit_FixedLimit_, error) {
-	match := bandwidthRegex.FindStringSubmatch(bandwidth.GetValue())
+func ConvertBandwidthToKbps(bandwidth string) (uint64, error) {
+	match := bandwidthRegex.FindStringSubmatch(bandwidth)
 	value, err := strconv.Atoi(match[1])
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	units := match[2]
@@ -121,12 +120,8 @@ func ConvertBandwidth(bandwidth *wrappers.StringValue) (*envoy_filter_fault.Faul
 	case "gbps":
 		factor = 1000000
 	default:
-		return nil, errors.New("unsupported unit type")
+		return 0, errors.New("unsupported unit type")
 	}
 
-	return &envoy_filter_fault.FaultRateLimit_FixedLimit_{
-		FixedLimit: &envoy_filter_fault.FaultRateLimit_FixedLimit{
-			LimitKbps: uint64(factor * value),
-		},
-	}, nil
+	return uint64(factor * value), nil
 }

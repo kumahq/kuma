@@ -113,13 +113,17 @@ func convertResponseRateLimit(responseBandwidth *mesh_proto.FaultInjection_Conf_
 		return nil, nil
 	}
 
-	limitKbps, err := ConvertBandwidth(responseBandwidth.GetLimit())
+	limitKbps, err := ConvertBandwidthToKbps(responseBandwidth.GetLimit().GetValue())
 	if err != nil {
 		return nil, err
 	}
 
 	return &envoy_filter_fault.FaultRateLimit{
-		LimitType:  limitKbps,
+		LimitType: &envoy_filter_fault.FaultRateLimit_FixedLimit_{
+			FixedLimit: &envoy_filter_fault.FaultRateLimit_FixedLimit{
+				LimitKbps: limitKbps,
+			},
+		},
 		Percentage: ConvertPercentage(responseBandwidth.GetPercentage()),
 	}, nil
 }

@@ -230,27 +230,27 @@ var _ = Describe("ConvertPercentage", func() {
 
 var _ = Describe("ConvertBandwidth", func() {
 	type testCase struct {
-		input    *wrappers.StringValue
+		input    string
 		expected uint64
 	}
 	DescribeTable("should properly converts to kbps from gbps, mbps, kbps",
 		func(given testCase) {
 			// when
-			limitKbps, err := ConvertBandwidth(given.input)
+			limitKbps, err := ConvertBandwidthToKbps(given.input)
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(limitKbps.FixedLimit.GetLimitKbps()).To(Equal(given.expected))
+			Expect(limitKbps).To(Equal(given.expected))
 		},
 		Entry("kbps input", testCase{
-			input:    &wrappers.StringValue{Value: "120 kbps"},
+			input:    "120 kbps",
 			expected: 120,
 		}),
 		Entry("mbps input", testCase{
-			input:    &wrappers.StringValue{Value: "120 mbps"},
+			input:    "120 mbps",
 			expected: 120000,
 		}),
 		Entry("gbps input", testCase{
-			input:    &wrappers.StringValue{Value: "120 gbps"},
+			input:    "120 gbps",
 			expected: 120000000,
 		}),
 	)
