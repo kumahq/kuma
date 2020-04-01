@@ -56,6 +56,8 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().StringToStringVarP(&ctx.tagsArgs.tags, "tag", "", map[string]string{}, "filter by tag in format of key=value. You can provide many tags")
+	cmd.PersistentFlags().StringToStringVarP(&ctx.tagsArgs.tags, "gateway", "", map[string]string{}, "filter gateway dataplanes")
+	cmd.Flag("gateway").NoOptDefVal = "service=gateway"
 	return cmd
 }
 
