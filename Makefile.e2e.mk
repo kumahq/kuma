@@ -97,11 +97,11 @@ endef
 define envoy_active_mtls_listeners_count
 	curl -s localhost:9901/config_dump \
 	| jq ".configs[] \
-    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ListenersConfigDump\") \
-	| .dynamic_active_listeners[] \
-	| select(.listener.name | startswith(\"$(1)\")) \
-	| select(.listener.address.socket_address.port_value == $(2)) \
-	| select(.listener.filter_chains[] \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v3.ListenersConfigDump\") \
+	| .dynamic_listeners[] \
+	| select(.name | startswith(\"$(1)\")) \
+	| select(.active_state.listener.address.socket_address.port_value == $(2)) \
+	| select(.active_state.listener.filter_chains[] \
 		| (.transport_socket.typed_config.common_tls_context \
 			and .transport_socket.typed_config.common_tls_context.tls_certificate_sds_secret_configs[] .name == \"identity_cert\") \
 			and (.transport_socket.typed_config.common_tls_context.validation_context_sds_secret_config.name == \"mesh_ca\") \
@@ -113,7 +113,7 @@ endef
 define envoy_active_mtls_clusters_count
 	curl -s localhost:9901/config_dump \
 	| jq ".configs[] \
-    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ClustersConfigDump\") \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v3.ClustersConfigDump\") \
 	| .dynamic_active_clusters[] \
 	| select(.cluster.name == \"$(1)\") \
 	| select(.cluster.transport_socket.typed_config.common_tls_context) \
@@ -155,11 +155,11 @@ endef
 define envoy_active_routing_listeners_count
 	curl -s localhost:9901/config_dump \
 	| jq ".configs[] \
-    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ListenersConfigDump\") \
-	| .dynamic_active_listeners[] \
-	| select(.listener.name | startswith(\"$(1)\")) \
-	| select(.listener.address.socket_address.port_value == $(2)) \
-	| select(.listener.filter_chains[] | .filters[] \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v3.ListenersConfigDump\") \
+	| .dynamic_listeners[] \
+	| select(.name | startswith(\"$(1)\")) \
+	| select(.active_state.listener.address.socket_address.port_value == $(2)) \
+	| select(.active_state.listener.filter_chains[] | .filters[] \
 		 | select((.name = \"envoy.tcp_proxy\") \
 			and (.typed_config.cluster == \"$(3)\")) \
 	  ) " \
@@ -169,7 +169,7 @@ endef
 define envoy_active_routing_clusters_count
 	curl -s localhost:9901/config_dump \
 	| jq ".configs[] \
-    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ClustersConfigDump\") \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v3.ClustersConfigDump\") \
 	| .dynamic_active_clusters[] \
 	| select(.cluster.name == \"$(1)\")" \
 	| jq -s ". | length"

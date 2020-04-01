@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* chore: upgrade Envoy to 1.13.1 
+  [#653](https://github.com/Kong/kuma/pull/653)
 * chore: replace deprected field ORIGINAL_DST_LB to CLUSTER_PROVIDED 
   [#656](https://github.com/Kong/kuma/pull/656)
 * chore: migrate deprecated Envoy config to support newest version of Envoy 
