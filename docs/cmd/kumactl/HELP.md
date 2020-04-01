@@ -558,8 +558,9 @@ Usage:
   kumactl inspect dataplanes [flags]
 
 Flags:
-  -h, --help                 help for dataplanes
-      --tag stringToString   filter by tag in format of key=value. You can provide many tags (default [])
+      --gateway stringToString[=service=gateway]   filter gateway dataplanes (default [])
+  -h, --help                                       help for dataplanes
+      --tag stringToString                         filter by tag in format of key=value. You can provide many tags (default [])
 
 Global Flags:
       --config-file string   path to the configuration file to use
