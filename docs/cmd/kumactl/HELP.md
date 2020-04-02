@@ -214,7 +214,7 @@ Use "kumactl install [command] --help" for more information about a command.
 ### kumactl install control-plane
 
 ```
-Install Kuma Control Plane on Kubernetes.
+Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.
 
 Usage:
   kumactl install control-plane [flags]
@@ -247,7 +247,7 @@ Global Flags:
 ### kumactl install metrics
 
 ```
-Install Metrics backend (Prometheus and Grafana) in Kubernetes cluster.
+Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in a kuma-metrics namespace
 
 Usage:
   kumactl install metrics [flags]
@@ -268,7 +268,7 @@ Global Flags:
 ### kumactl install tracing
 
 ```
-Install Tracing backend (Jaeger) in Kubernetes cluster.
+Install Tracing backend in Kubernetes cluster (Jaeger) in a 'kuma-tracing' namespace
 
 Usage:
   kumactl install tracing [flags]
