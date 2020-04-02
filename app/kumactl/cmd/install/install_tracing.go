@@ -1,8 +1,6 @@
 package install
 
 import (
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -34,11 +32,8 @@ func newInstallTracing() *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
 			}
-			yamlTemplateFiles := templateFiles.Filter(func(file data.File) bool {
-				return strings.HasSuffix(file.Name, ".yaml")
-			})
 
-			renderedFiles, err := renderFiles(yamlTemplateFiles, templateArgs, simpleTemplateRenderer)
+			renderedFiles, err := renderFiles(templateFiles, templateArgs, simpleTemplateRenderer)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
 			}
