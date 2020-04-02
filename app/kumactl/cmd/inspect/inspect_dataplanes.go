@@ -40,9 +40,8 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 				return errors.Wrap(err, "failed to create a dataplane client")
 			}
 			if ctx.isGateWayDataplanes {
-				ctx.tagsArgs.tags = map[string]string{"service": "*"}
 			}
-			overviews, err := client.List(context.Background(), pctx.CurrentMesh(), ctx.tagsArgs.tags)
+			overviews, err := client.List(context.Background(), pctx.CurrentMesh(), ctx.tagsArgs.tags, ctx.isGateWayDataplanes)
 			if err != nil {
 				return err
 			}

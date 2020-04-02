@@ -96,4 +96,62 @@ var _ = Describe("DataplaneOverview", func() {
 				expected: DataplaneOverviewResourceList{Items: []*DataplaneOverviewResource{}},
 			}))
 	})
+	Describe("RetainGateWayDataPlanes", func() {
+		gateWayDataPlanes := DataplaneOverviewResourceList{
+			Items: []*DataplaneOverviewResource{
+				{
+					Spec: v1alpha1.DataplaneOverview{
+						Dataplane: &v1alpha1.Dataplane{
+							Networking: &v1alpha1.Dataplane_Networking{
+								Gateway: &v1alpha1.Dataplane_Networking_Gateway{
+									Tags: map[string]string{
+										"service": "gateway",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		dataPlanes := DataplaneOverviewResourceList{
+			Items: []*DataplaneOverviewResource{
+				{
+					Spec: v1alpha1.DataplaneOverview{
+						Dataplane: &v1alpha1.Dataplane{
+							Networking: &v1alpha1.Dataplane_Networking{
+								Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
+									{
+										Tags: map[string]string{
+											"service": "mobile",
+											"version": "v1",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		type testCase struct {
+			actual   DataplaneOverviewResourceList
+			expected DataplaneOverviewResourceList
+		}
+		DescribeTable("should retain gateway overviews", func(given testCase) {
+			// when
+			given.actual.RetainGatewayDataPlanes()
+
+			// then
+			Expect(given.actual).To(Equal(given.expected))
+		},
+			Entry("should retain all gateway dataplanes", testCase{
+				actual:   gateWayDataPlanes,
+				expected: gateWayDataPlanes,
+			}),
+			Entry("should retain none if no gateway dataplanes present", testCase{
+				actual:   dataPlanes,
+				expected: DataplaneOverviewResourceList{Items: []*DataplaneOverviewResource{}},
+			}))
+	})
 })

@@ -83,8 +83,7 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 	tags := parseTags(request.QueryParameters("tag"))
 	gateWayFilterQueryParam := request.QueryParameter("gateway")
 	if gateWayFilterQueryParam == "true" {
-		gatewayFilterTag := map[string]string{"service": "*"}
-		overviews.RetainMatchingTags(gatewayFilterTag)
+		overviews.RetainGatewayDataPlanes()
 	}
 	overviews.RetainMatchingTags(tags)
 	restList := rest.From.ResourceList(&overviews)

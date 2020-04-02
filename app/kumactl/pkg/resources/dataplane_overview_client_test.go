@@ -44,7 +44,7 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 			}
 
 			// when
-			list, err := client.List(context.Background(), meshName, tags)
+			list, err := client.List(context.Background(), meshName, tags, false)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -55,7 +55,39 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 
 			Expect(list.Items[0].Spec.DataplaneInsight.Subscriptions).To(HaveLen(2))
 		})
+		It("should create url with filter gateway and parse response", func() {
+			// given
+			meshName := "default"
+			client := httpDataplaneOverviewClient{
+				Client: &http.Client{
+					Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+						Expect(req.URL.String()).To(Or(
+							Equal("/meshes/default/dataplanes+insights?gateway=true"),
+						))
 
+						file, err := os.Open(filepath.Join("testdata", "list-gateway-dataplane-overviews.json"))
+						if err != nil {
+							return nil, err
+						}
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							Body:       ioutil.NopCloser(bufio.NewReader(file)),
+						}, nil
+					}),
+				},
+			}
+
+			// when
+			list, err := client.List(context.Background(), meshName, map[string]string{}, true)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(list.Items).To(HaveLen(1))
+			Expect(list.Items[0].Meta.GetName()).To(Equal("one"))
+			Expect(list.Items[0].Spec.Dataplane.Networking.Gateway.Tags).To(HaveKeyWithValue("service", "kong"))
+
+			Expect(list.Items[0].Spec.DataplaneInsight.Subscriptions).To(HaveLen(2))
+		})
 		It("should return error from the server", func() {
 			// given
 			client := httpDataplaneOverviewClient{
@@ -70,7 +102,7 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 			}
 
 			// when
-			_, err := client.List(context.Background(), "mesh-1", map[string]string{})
+			_, err := client.List(context.Background(), "mesh-1", map[string]string{}, false)
 
 			// then
 			Expect(err).To(MatchError("(400): some error from server"))

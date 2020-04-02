@@ -31,7 +31,7 @@ type testDataplaneOverviewClient struct {
 	overviews    []*mesh_core.DataplaneOverviewResource
 }
 
-func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string) (*mesh_core.DataplaneOverviewResourceList, error) {
+func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gatewayDataPlaneFilter bool) (*mesh_core.DataplaneOverviewResourceList, error) {
 	c.receivedTags = tags
 	return &mesh_core.DataplaneOverviewResourceList{
 		Items: c.overviews,
@@ -257,7 +257,6 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				Expect(testClient.receivedTags).To(HaveKeyWithValue("service", "*"))
 			})
 		})
 	})
