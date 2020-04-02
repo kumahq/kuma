@@ -302,6 +302,10 @@ resources:
     resource:
       '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
       name: outbound:api-http
+      requestHeadersToAdd:
+        - header:
+            key: x-kuma-tags
+            value: '&service=web&'
       validateClusters: true
       virtualHosts:
         - domains:
