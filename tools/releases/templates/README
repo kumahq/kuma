@@ -2,7 +2,9 @@ Welcome to Kuma!
 
 ===============================================================================
 
-This folder contains your download of Kuma:├── NOTICE
+This folder contains your download of Kuma:
+
+├── NOTICE
 ├── README (this file)
 ├── bin
 │   ├── envoy
