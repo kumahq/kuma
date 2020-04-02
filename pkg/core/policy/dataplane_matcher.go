@@ -3,12 +3,10 @@ package policy
 import (
 	"sort"
 
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
-
-type MatchingTags interface {
-	MatchTags(selector mesh_proto.TagSelector) bool
-}
 
 // SelectDataplanePolicy given a something that could be matched (mesh_proto.Dataplane,
 // mesh_proto.Dataplane_Networking_Inbound, etc.) and a list of DataplanePolicy returns the "best matching" DataplanePolicy.
@@ -16,7 +14,7 @@ type MatchingTags interface {
 // DataplanePolicy with an empty list of selectors is considered a match with a rank (score) of 0.
 // DataplanePolicy with an empty selector (one that has no tags) is considered a match with a rank (score) of 0.
 // In case if there are multiple DataplanePolicies with the same rank (score), the policy created last is chosen.
-func SelectDataplanePolicy(matching MatchingTags, policies []DataplanePolicy) DataplanePolicy {
+func SelectDataplanePolicy(dataplane *mesh_core.DataplaneResource, policies []DataplanePolicy) DataplanePolicy {
 	sort.Stable(DataplanePolicyByName(policies)) // sort to avoid flakiness
 
 	var bestPolicy DataplanePolicy
@@ -40,7 +38,7 @@ func SelectDataplanePolicy(matching MatchingTags, policies []DataplanePolicy) Da
 				continue
 			}
 			tagSelector := mesh_proto.TagSelector(selector.Match)
-			if matching.MatchTags(tagSelector) {
+			if dataplane.Spec.Matches(tagSelector) {
 				rank := tagSelector.Rank()
 				if rank.CompareTo(bestRank) > 0 || sameRankCreatedLater(policy, rank) {
 					bestRank = rank

@@ -76,7 +76,7 @@ var _ = Describe("Dataplane matcher", func() {
 		DescribeTable("should find the best match (the one with the highest number of matching key-value pairs)",
 			func(given testCase) {
 				// when
-				actual := policy.SelectDataplanePolicy(&given.proxy.Dataplane.Spec, given.policies)
+				actual := policy.SelectDataplanePolicy(given.proxy.Dataplane, given.policies)
 				// then
 				if given.expected == nil {
 					Expect(actual).To(BeNil())

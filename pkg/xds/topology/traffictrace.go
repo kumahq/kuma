@@ -20,7 +20,7 @@ func GetTrafficTrace(ctx context.Context, dataplane *mesh_core.DataplaneResource
 		policies[i] = trace
 	}
 
-	if policy := core_policy.SelectDataplanePolicy(&dataplane.Spec, policies); policy != nil {
+	if policy := core_policy.SelectDataplanePolicy(dataplane, policies); policy != nil {
 		return policy.(*mesh_core.TrafficTraceResource), nil
 	}
 	return nil, nil
