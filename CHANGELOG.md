@@ -17,6 +17,8 @@
   [#630](https://github.com/Kong/kuma/pull/630)
 * feature: added flag `--dry-run` for `kumactl apply`
   [#622](https://github.com/Kong/kuma/pull/622)
+* feature: filter gateway dataplanes through api and through `kumactl inspect dataplanes --gateway`
+  [#654](https://github.com/Kong/kuma/pull/654)
 
 ## [0.4.0]
 
