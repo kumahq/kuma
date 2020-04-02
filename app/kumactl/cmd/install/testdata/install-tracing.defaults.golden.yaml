@@ -8,7 +8,7 @@ metadata:
 apiVersion: v1
 kind: List
 items:
-  - apiVersion: extensions/v1beta1
+  - apiVersion: apps/v1
     kind: Deployment
     metadata:
       name: jaeger
@@ -18,6 +18,9 @@ items:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: all-in-one
     spec:
+      selector:
+        matchLabels:
+          app: jaeger
       replicas: 1
       strategy:
         type: Recreate
