@@ -106,7 +106,7 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 				continue
 			}
 			if net.ParseIP(svc.Spec.ClusterIP) == nil {
-				return nil, errors.Errorf("Kuma requires Service associated with Pod to has a valid IP address in ClusterIP field. Value of ClusterIP of Service %s.%s is %q. Support for headless services is coming soon. You can either change the Service definition or exclude this Pod from having Dataplane injected https://kuma.io/docs/0.4.0/documentation/dps-and-data-model/#kubernetes", svc.Name, svc.Namespace, svc.Spec.ClusterIP)
+				return nil, errors.Errorf("Kuma requires a Kubernetes Service entity associated with a Pod with a valid IP address in the ClusterIP field. Service %s.%s has a ClusterIP value of %q. At the moment Kuma does not support headless services, to continue please add the missing Service definition or - alternatively - exclude this Pod from the automatic sidecar injection by following the instructions at: https://kuma.io/docs/latest/documentation/dps-and-data-model/#kubernetes", svc.Name, svc.Namespace, svc.Spec.ClusterIP)
 			}
 
 			tags := InboundTagsFor(pod, svc, &svcPort, isGateway)

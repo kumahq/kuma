@@ -406,7 +406,7 @@ var _ = Describe("PodToDataplane(..)", func() {
                     port: 80
                     targetPort: 7070
 `},
-				expectedErr: `Kuma requires Service associated with Pod to has a valid IP address in ClusterIP field. Value of ClusterIP of Service sample.demo is "None". Support for headless services is coming soon. You can either change the Service definition or exclude this Pod from having Dataplane injected https://kuma.io/docs/0.4.0/documentation/dps-and-data-model/#kubernetes`,
+				expectedErr: `Kuma requires a Kubernetes Service entity associated with a Pod with a valid IP address in the ClusterIP field. Service sample.demo has a ClusterIP value of "None". At the moment Kuma does not support headless services, to continue please add the missing Service definition or - alternatively - exclude this Pod from the automatic sidecar injection by following the instructions at: https://kuma.io/docs/latest/documentation/dps-and-data-model/#kubernetes`,
 			}),
 		)
 	})

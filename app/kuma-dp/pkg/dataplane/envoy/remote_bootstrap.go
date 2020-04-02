@@ -50,7 +50,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Messag
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 404 {
-			return nil, errors.New("Dataplane not found. If you are running on Universal, make sure you applied the Dataplane definition. If you are running on Kubernetes check the Control Plane logs why Dataplane was not created.")
+			return nil, errors.New("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection.")
 		}
 		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
