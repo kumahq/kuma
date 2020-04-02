@@ -23,8 +23,8 @@ func newInstallTracing() *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:   "tracing",
-		Short: "Install Tracing backend in Kubernetes cluster",
-		Long:  `Install Tracing backend (Jaeger) in Kubernetes cluster.`,
+		Short: "Install Tracing backend in Kubernetes cluster (Jaeger)",
+		Long:  `Install Tracing backend in Kubernetes cluster (Jaeger) in a 'kuma-tracing' namespace`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			templateArgs := tracingTemplateArgs{
 				Namespace: args.Namespace,

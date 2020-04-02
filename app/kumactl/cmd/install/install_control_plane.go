@@ -58,7 +58,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
-		Long:  `Install Kuma Control Plane on Kubernetes.`,
+		Long:  `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
 				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
