@@ -23,6 +23,7 @@ type inspectDataplanesContext struct {
 	tagsArgs struct {
 		tags map[string]string
 	}
+	isGateWayDataplanes bool
 }
 
 func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
@@ -37,6 +38,9 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 			client, err := pctx.CurrentDataplaneOverviewClient()
 			if err != nil {
 				return errors.Wrap(err, "failed to create a dataplane client")
+			}
+			if ctx.isGateWayDataplanes {
+				ctx.tagsArgs.tags = map[string]string{"service": "*"}
 			}
 			overviews, err := client.List(context.Background(), pctx.CurrentMesh(), ctx.tagsArgs.tags)
 			if err != nil {
@@ -56,8 +60,7 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().StringToStringVarP(&ctx.tagsArgs.tags, "tag", "", map[string]string{}, "filter by tag in format of key=value. You can provide many tags")
-	cmd.PersistentFlags().StringToStringVarP(&ctx.tagsArgs.tags, "gateway", "", map[string]string{}, "filter gateway dataplanes")
-	cmd.Flag("gateway").NoOptDefVal = "service=*"
+	cmd.PersistentFlags().BoolVarP(&ctx.isGateWayDataplanes, "gateway", "", false, "filter gateway dataplanes")
 	return cmd
 }
 
