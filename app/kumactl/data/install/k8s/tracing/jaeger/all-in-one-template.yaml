@@ -1,3 +1,5 @@
+# Based on https://github.com/jaegertracing/jaeger-kubernetes/blob/master/all-in-one/jaeger-all-in-one-template.yml
+
 #
 # Copyright 2017-2019 The Jaeger Authors
 #
@@ -25,10 +27,10 @@ items:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: all-in-one
     spec:
+      replicas: 1
       selector:
         matchLabels:
           app: jaeger
-      replicas: 1
       strategy:
         type: Recreate
       template:
@@ -75,6 +77,9 @@ items:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: query
     spec:
+      selector:
+        matchLabels:
+          app: jaeger-query
       ports:
         - name: query-http
           port: 80
@@ -94,6 +99,9 @@ items:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: collector
     spec:
+      selector:
+        matchLabels:
+          app: jaeger-collector
       ports:
         - name: jaeger-collector-tchannel
           port: 14267
@@ -121,6 +129,9 @@ items:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: agent
     spec:
+      selector:
+        matchLabels:
+          app: jaeger-agent
       ports:
         - name: agent-zipkin-thrift
           port: 5775
@@ -152,6 +163,9 @@ items:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: zipkin
     spec:
+      selector:
+        matchLabels:
+          app: zipkin
       ports:
         - name: jaeger-collector-zipkin
           port: 9411
@@ -161,3 +175,4 @@ items:
       selector:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: all-in-one
+
