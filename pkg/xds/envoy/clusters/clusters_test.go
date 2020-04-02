@@ -132,34 +132,37 @@ var _ = Describe("Clusters", func() {
                     ads: {}
                 name: 192.168.0.1:8080
                 altStatName: "192_168_0_1_8080"
-                tlsContext:
-                  commonTlsContext:
-                    tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_identity_cert
-                              targetUri: kuma-control-plane:5677
-                    validationContextSdsSecretConfig:
-                      name: mesh_ca
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
+                transportSocket:
+                  name: envoy.transport_sockets.tls
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+                    commonTlsContext:
+                      tlsCertificateSdsSecretConfigs:
+                      - name: identity_cert
+                        sdsConfig:
+                          apiConfigSource:
+                            apiType: GRPC
+                            grpcServices:
+                            - googleGrpc:
+                                channelCredentials:
+                                  sslCredentials:
+                                    rootCerts:
+                                      inlineBytes: Q0VSVElGSUNBVEU=
+                                statPrefix: sds_identity_cert
+                                targetUri: kuma-control-plane:5677
+                      validationContextSdsSecretConfig:
+                        name: mesh_ca
+                        sdsConfig:
+                          apiConfigSource:
+                            apiType: GRPC
+                            grpcServices:
+                            - googleGrpc:
+                                channelCredentials:
+                                  sslCredentials:
+                                    rootCerts:
+                                      inlineBytes: Q0VSVElGSUNBVEU=
+                                statPrefix: sds_mesh_ca
+                                targetUri: kuma-control-plane:5677
                 type: EDS
 `,
 			}),
@@ -189,50 +192,53 @@ var _ = Describe("Clusters", func() {
                     ads: {}
                 name: 192.168.0.1:8080
                 altStatName: "192_168_0_1_8080"
-                tlsContext:
-                  commonTlsContext:
-                    tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - googleGrpc:
-                              callCredentials:
-                              - fromPlugin:
-                                  name: envoy.grpc_credentials.file_based_metadata
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
-                                    secretData:
-                                      filename: /var/secret/token
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                              statPrefix: sds_identity_cert
-                              targetUri: kuma-control-plane:5677
-                    validationContextSdsSecretConfig:
-                      name: mesh_ca
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - googleGrpc:
-                              callCredentials:
-                              - fromPlugin:
-                                  name: envoy.grpc_credentials.file_based_metadata
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
-                                    secretData:
-                                      filename: /var/secret/token
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
+                transportSocket:
+                  name: envoy.transport_sockets.tls
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+                    commonTlsContext:
+                      tlsCertificateSdsSecretConfigs:
+                      - name: identity_cert
+                        sdsConfig:
+                          apiConfigSource:
+                            apiType: GRPC
+                            grpcServices:
+                            - googleGrpc:
+                                callCredentials:
+                                - fromPlugin:
+                                    name: envoy.grpc_credentials.file_based_metadata
+                                    typedConfig:
+                                      '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+                                      secretData:
+                                        filename: /var/secret/token
+                                channelCredentials:
+                                  sslCredentials:
+                                    rootCerts:
+                                      inlineBytes: Q0VSVElGSUNBVEU=
+                                credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
+                                statPrefix: sds_identity_cert
+                                targetUri: kuma-control-plane:5677
+                      validationContextSdsSecretConfig:
+                        name: mesh_ca
+                        sdsConfig:
+                          apiConfigSource:
+                            apiType: GRPC
+                            grpcServices:
+                            - googleGrpc:
+                                callCredentials:
+                                - fromPlugin:
+                                    name: envoy.grpc_credentials.file_based_metadata
+                                    typedConfig:
+                                      '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+                                      secretData:
+                                        filename: /var/secret/token
+                                channelCredentials:
+                                  sslCredentials:
+                                    rootCerts:
+                                      inlineBytes: Q0VSVElGSUNBVEU=
+                                credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
+                                statPrefix: sds_mesh_ca
+                                targetUri: kuma-control-plane:5677
                 type: EDS
 `,
 			}),

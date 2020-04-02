@@ -37,7 +37,7 @@ func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *cor
 	if err != nil {
 		return nil, err
 	}
-	return clusterWithAltStatName(&v2.Cluster{
+	cluster := clusterWithAltStatName(&v2.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       ptypes.DurationProto(defaultConnectTimeout),
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_EDS},
@@ -48,8 +48,20 @@ func CreateEdsCluster(ctx xds_context.Context, clusterName string, metadata *cor
 				},
 			},
 		},
-		TlsContext: tlsContext,
-	}), nil
+	})
+	if tlsContext != nil {
+		pbst, err := ptypes.MarshalAny(tlsContext)
+		if err != nil {
+			return nil, err
+		}
+		cluster.TransportSocket = &envoy_core.TransportSocket{
+			Name: "envoy.transport_sockets.tls",
+			ConfigType: &envoy_core.TransportSocket_TypedConfig{
+				TypedConfig: pbst,
+			},
+		}
+	}
+	return cluster, nil
 }
 
 func clusterWithAltStatName(cluster *v2.Cluster) *v2.Cluster {

@@ -102,10 +102,10 @@ define envoy_active_mtls_listeners_count
 	| select(.listener.name | startswith(\"$(1)\")) \
 	| select(.listener.address.socket_address.port_value == $(2)) \
 	| select(.listener.filter_chains[] \
-		| (.tls_context.common_tls_context \
-			and .tls_context.common_tls_context.tls_certificate_sds_secret_configs[] .name == \"identity_cert\") \
-			and (.tls_context.common_tls_context.validation_context_sds_secret_config.name == \"mesh_ca\") \
-			and (.tls_context.require_client_certificate == true) \
+		| (.transport_socket.typed_config.common_tls_context \
+			and .transport_socket.typed_config.common_tls_context.tls_certificate_sds_secret_configs[] .name == \"identity_cert\") \
+			and (.transport_socket.typed_config.common_tls_context.validation_context_sds_secret_config.name == \"mesh_ca\") \
+			and (.transport_socket.typed_config.require_client_certificate == true) \
 	  ) " \
 	| jq -s ". | length"
 endef
@@ -116,8 +116,8 @@ define envoy_active_mtls_clusters_count
     | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ClustersConfigDump\") \
 	| .dynamic_active_clusters[] \
 	| select(.cluster.name == \"$(1)\") \
-	| select(.cluster.tls_context.common_tls_context) \
-	| select(.cluster.tls_context.common_tls_context | \
+	| select(.cluster.transport_socket.typed_config.common_tls_context) \
+	| select(.cluster.transport_socket.typed_config.common_tls_context | \
 		 (.tls_certificate_sds_secret_configs[] | .name == \"identity_cert\") and (.validation_context_sds_secret_config.name == \"mesh_ca\") \
 	  ) " \
 	| jq -s ". | length"
@@ -191,7 +191,7 @@ deploy/example/docker-compose: ## Docker Compose: Run example setup
 	$(call docker_compose) up $(DOCKER_COMPOSE_OPTIONS)
 
 undeploy/example/docker-compose: ## Docker Compose: Remove example setup
-	$(call docker_compose) down
+	$(call docker_compose) down -v
 
 wait/example/docker-compose: ## Docker Compose: Wait for example setup to get ready
 	$(call docker_compose) exec kuma-example-client $(call wait_for_client_service,3000)
