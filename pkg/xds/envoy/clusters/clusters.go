@@ -91,6 +91,6 @@ func CreatePassThroughCluster(clusterName string) *v2.Cluster {
 		Name:                 clusterName,
 		ConnectTimeout:       ptypes.DurationProto(defaultConnectTimeout),
 		ClusterDiscoveryType: &v2.Cluster_Type{Type: v2.Cluster_ORIGINAL_DST},
-		LbPolicy:             v2.Cluster_ORIGINAL_DST_LB,
+		LbPolicy:             v2.Cluster_CLUSTER_PROVIDED,
 	})
 }
