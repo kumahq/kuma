@@ -3,6 +3,7 @@ package api_server
 import (
 	"context"
 	"fmt"
+
 	"github.com/emicklei/go-restful"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
@@ -16,63 +17,30 @@ import (
 	"github.com/Kong/kuma/pkg/core/validators"
 )
 
-type resourceWs struct {
+type meshFromRequestFn = func(*restful.Request) string
+
+func meshFromPathParam(param string) meshFromRequestFn {
+	return func(request *restful.Request) string {
+		return request.PathParameter(param)
+	}
+}
+
+type resourceEndpoints struct {
 	resManager      manager.ResourceManager
-	readOnly        bool
-	pathPrefix      string
-	nameFromRequest func(*restful.Request) string
-	meshFromRequest func(*restful.Request) string
+	meshFromRequest meshFromRequestFn
 	definitions.ResourceWsDefinition
 }
 
-func (r *resourceWs) AddToWs(ws *restful.WebService) {
-	//pathPrefix := ""
-	if r.ResourceFactory().GetType() == mesh.MeshType {
-		r.nameFromRequest = func(request *restful.Request) string {
-			return request.PathParameter("name")
-		}
-		r.meshFromRequest = func(request *restful.Request) string {
-			return request.PathParameter("name")
-		}
-	} else {
-		//pathPrefix += "/{mesh}/" + r.Path
-		r.nameFromRequest = func(request *restful.Request) string {
-			return request.PathParameter("name")
-		}
-		r.meshFromRequest = func(request *restful.Request) string {
-			return request.PathParameter("mesh")
-		}
-	}
-
-	ws.Route(ws.GET(r.pathPrefix+"/{name}").To(r.findResource).
+func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
+	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource).
 		Doc(fmt.Sprintf("Get a %s", r.Name)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
-		//Writes(r.SpecFactory()).
-		Returns(200, "OK", nil). // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
+		Returns(200, "OK", nil).
 		Returns(404, "Not found", nil))
-
-	ws.Route(ws.GET(r.pathPrefix).To(r.listResources).
-		Doc(fmt.Sprintf("List of %s", r.Name)).
-		//Writes(r.SampleListSpec).
-		Returns(200, "OK", nil)) // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
-
-	if !r.readOnly {
-		ws.Route(ws.PUT(r.pathPrefix+"/{name}").To(r.createOrUpdateResource).
-			Doc(fmt.Sprintf("Updates a %s", r.Name)).
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
-			//Reads(r.SampleSpec). // todo(jakubdyszkiewicz) figure out how to expose the doc for ResourceReqResp
-			Returns(200, "OK", nil).
-			Returns(201, "Created", nil))
-
-		ws.Route(ws.DELETE(r.pathPrefix+"/{name}").To(r.deleteResource).
-			Doc(fmt.Sprintf("Deletes a %s", r.Name)).
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
-			Returns(200, "OK", nil))
-	}
 }
 
-func (r *resourceWs) findResource(request *restful.Request, response *restful.Response) {
-	name := r.nameFromRequest(request)
+func (r *resourceEndpoints) findResource(request *restful.Request, response *restful.Response) {
+	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
 
 	resource := r.ResourceFactory()
@@ -87,7 +55,13 @@ func (r *resourceWs) findResource(request *restful.Request, response *restful.Re
 	}
 }
 
-func (r *resourceWs) listResources(request *restful.Request, response *restful.Response) {
+func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
+	ws.Route(ws.GET(pathPrefix).To(r.listResources).
+		Doc(fmt.Sprintf("List of %s", r.Name)).
+		Returns(200, "OK", nil))
+}
+
+func (r *resourceEndpoints) listResources(request *restful.Request, response *restful.Response) {
 	meshName := r.meshFromRequest(request)
 
 	list := r.ResourceListFactory()
@@ -101,8 +75,16 @@ func (r *resourceWs) listResources(request *restful.Request, response *restful.R
 	}
 }
 
-func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *restful.Response) {
-	name := r.nameFromRequest(request)
+func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
+	ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
+		Doc(fmt.Sprintf("Updates a %s", r.Name)).
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
+		Returns(200, "OK", nil).
+		Returns(201, "Created", nil))
+}
+
+func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, response *restful.Response) {
+	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
 
 	resourceRes := rest.Resource{
@@ -131,9 +113,45 @@ func (r *resourceWs) createOrUpdateResource(request *restful.Request, response *
 	}
 }
 
-func (r *resourceWs) validateResourceRequest(request *restful.Request, resource *rest.Resource) error {
+func (r *resourceEndpoints) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
+	res := r.ResourceFactory()
+	_ = res.SetSpec(spec)
+	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
+		rest_errors.HandleError(response, err, "Could not create a resource")
+	} else {
+		response.WriteHeader(201)
+	}
+}
+
+func (r *resourceEndpoints) updateResource(ctx context.Context, res model.Resource, restRes rest.Resource, response *restful.Response) {
+	_ = res.SetSpec(restRes.Spec)
+	if err := r.resManager.Update(ctx, res); err != nil {
+		rest_errors.HandleError(response, err, "Could not update a resource")
+	} else {
+		response.WriteHeader(200)
+	}
+}
+
+func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
+	ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
+		Doc(fmt.Sprintf("Deletes a %s", r.Name)).
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
+		Returns(200, "OK", nil))
+}
+
+func (r *resourceEndpoints) deleteResource(request *restful.Request, response *restful.Response) {
+	name := request.PathParameter("name")
+	meshName := r.meshFromRequest(request)
+
+	resource := r.ResourceFactory()
+	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
+		rest_errors.HandleError(response, err, "Could not delete a resource")
+	}
+}
+
+func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resource *rest.Resource) error {
 	var err validators.ValidationError
-	name := r.nameFromRequest(request)
+	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
 	if name != resource.Meta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
@@ -146,33 +164,4 @@ func (r *resourceWs) validateResourceRequest(request *restful.Request, resource 
 	}
 	err.AddError("", mesh.ValidateMeta(name, meshName))
 	return err.OrNil()
-}
-
-func (r *resourceWs) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
-	res := r.ResourceFactory()
-	_ = res.SetSpec(spec)
-	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
-		rest_errors.HandleError(response, err, "Could not create a resource")
-	} else {
-		response.WriteHeader(201)
-	}
-}
-
-func (r *resourceWs) updateResource(ctx context.Context, res model.Resource, restRes rest.Resource, response *restful.Response) {
-	_ = res.SetSpec(restRes.Spec)
-	if err := r.resManager.Update(ctx, res); err != nil {
-		rest_errors.HandleError(response, err, "Could not update a resource")
-	} else {
-		response.WriteHeader(200)
-	}
-}
-
-func (r *resourceWs) deleteResource(request *restful.Request, response *restful.Response) {
-	name := r.nameFromRequest(request)
-	meshName := r.meshFromRequest(request)
-
-	resource := r.ResourceFactory()
-	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
-		rest_errors.HandleError(response, err, "Could not delete a resource")
-	}
 }

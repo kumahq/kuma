@@ -3,7 +3,6 @@ package api_server
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -13,6 +12,7 @@ import (
 	"github.com/Kong/kuma/pkg/config"
 	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/runtime"
 )
@@ -42,13 +42,16 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		Container:      container,
 	}
 
+	// We create a WebService and set up resources endpoints and index endpoint instead of creating WebService
+	// for every resource like /meshes/{mesh}/traffic-permissions, /meshes/{mesh}/traffic-log etc.
+	// because go-restful detects it as a clash (you cannot register 2 WebServices with path /meshes/)
 	ws := new(restful.WebService)
 	ws.
 		Path("/").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addToWs(ws, defs, resManager, serverConfig)
+	addResourcesEndpoints(ws, defs, resManager, serverConfig)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws); err != nil {
@@ -67,43 +70,38 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	}, nil
 }
 
-func addToWs(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
-	oWs := overviewWs{
-		resManager: resManager,
-		pathPrefix: "/meshes/{mesh}",
-	}
-	oWs.AddToWs(ws)
-
-	oWs = overviewWs{
-		resManager: resManager,
-		pathPrefix: "",
-	}
-	oWs.AddToWs(ws)
+func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
+	endpoints := dataplaneOverviewEndpoints{resManager}
+	endpoints.addListEndpoint(ws, "/meshes/{mesh}")
+	endpoints.addFindEndpoint(ws, "/meshes/{mesh}")
+	endpoints.addListEndpoint(ws, "") // listing all resources in all meshes
 
 	for _, definition := range defs {
 		if definition.ResourceFactory().GetType() != mesh.MeshType {
-			rWs := resourceWs{
+			endpoints := resourceEndpoints{
 				resManager:           resManager,
-				readOnly:             config.ReadOnly,
-				pathPrefix:           "/meshes/{mesh}/" + definition.Path,
 				ResourceWsDefinition: definition,
+				meshFromRequest:      meshFromPathParam("mesh"),
 			}
-			rWs.AddToWs(ws)
-
-			rWs = resourceWs{
-				resManager:           resManager,
-				pathPrefix:           "/" + definition.Path,
-				ResourceWsDefinition: definition,
+			if !config.ReadOnly {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			}
-			rWs.AddToWs(ws)
+			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
 		} else {
-			rWs := resourceWs{
+			endpoints := resourceEndpoints{
 				resManager:           resManager,
-				readOnly:             config.ReadOnly,
-				pathPrefix:           "/meshes",
 				ResourceWsDefinition: definition,
+				meshFromRequest:      meshFromPathParam("name"),
 			}
-			rWs.AddToWs(ws)
+			if !config.ReadOnly {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
+				endpoints.addDeleteEndpoint(ws, "/meshes")
+			}
+			endpoints.addFindEndpoint(ws, "/meshes")
+			endpoints.addListEndpoint(ws, "/meshes")
 		}
 	}
 }
