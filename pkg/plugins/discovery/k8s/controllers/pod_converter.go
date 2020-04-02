@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 
@@ -103,6 +104,9 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 				converterLog.Error(err, "failed to find a container port in a given Pod that would match a given Service port", "namespace", pod.Namespace, "podName", pod.Name, "serviceName", svc.Name, "servicePortName", svcPort.Name)
 				// ignore those cases where a Pod doesn't have all the ports a Service has
 				continue
+			}
+			if net.ParseIP(svc.Spec.ClusterIP) == nil {
+				return nil, errors.Errorf("Kuma requires a Kubernetes Service entity associated with a Pod with a valid IP address in the ClusterIP field. Service %s.%s has a ClusterIP value of %q. At the moment Kuma does not support headless services, to continue please add the missing Service definition or - alternatively - exclude this Pod from the automatic sidecar injection by following the instructions at: https://kuma.io/docs/latest/documentation/dps-and-data-model/#kubernetes", svc.Name, svc.Namespace, svc.Spec.ClusterIP)
 			}
 
 			tags := InboundTagsFor(pod, svc, &svcPort, isGateway)
