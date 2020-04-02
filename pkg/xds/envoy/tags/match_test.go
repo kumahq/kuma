@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	. "github.com/Kong/kuma/pkg/xds/envoy/tags"
+	"github.com/Kong/kuma/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("MatchingRegex", func() {
@@ -22,12 +22,12 @@ var _ = Describe("MatchingRegex", func() {
 	DescribeTable("should generate regex for matching service's tags",
 		func(given testCase) {
 			// when
-			regexStr := MatchingRegex(given.selector)
+			regexStr := tags.MatchingRegex(given.selector)
 			re, err := regexp.Compile(regexStr)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when
-			matched := re.MatchString(Serialize(given.serviceTags))
+			matched := re.MatchString(tags.Serialize(given.serviceTags))
 			// then
 			Expect(matched).To(Equal(given.expected))
 		},
@@ -51,6 +51,15 @@ var _ = Describe("MatchingRegex", func() {
 			selector: mesh_proto.SingleValueTagSet{
 				"tag1": "value1",
 				"tag3": "value3",
+			},
+			expected: true,
+		}),
+		Entry("match the latter valuer", testCase{
+			serviceTags: mesh_proto.MultiValueTagSet{
+				"tag1": {"value1": true, "value2": true},
+			},
+			selector: mesh_proto.SingleValueTagSet{
+				"tag1": "value2",
 			},
 			expected: true,
 		}),
@@ -126,14 +135,14 @@ var _ = Describe("RegexOR", func() {
 		func(given testCase) {
 			var rss []string
 			for _, s := range given.selectors {
-				rss = append(rss, MatchingRegex(s))
+				rss = append(rss, tags.MatchingRegex(s))
 			}
-			regexOR := RegexOR(rss...)
+			regexOR := tags.RegexOR(rss...)
 			re, err := regexp.Compile(regexOR)
 			Expect(err).ToNot(HaveOccurred())
 
 			for i, service := range given.servicesTags {
-				matched := re.MatchString(Serialize(service))
+				matched := re.MatchString(tags.Serialize(service))
 				Expect(matched).To(Equal(given.expected[i]))
 			}
 		},

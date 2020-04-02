@@ -66,12 +66,11 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 }
 
 func createHeaders(selectors []mesh_proto.SingleValueTagSet) *envoy_api_v2_route.HeaderMatcher {
-	var rss []string
+	var selectorRegexs []string
 	for _, selector := range selectors {
-		rs := tags.MatchingRegex(selector)
-		rss = append(rss, rs)
+		selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
 	}
-	regexOR := tags.RegexOR(rss...)
+	regexOR := tags.RegexOR(selectorRegexs...)
 
 	return &envoy_api_v2_route.HeaderMatcher{
 		Name: routes.TagsHeaderName,
