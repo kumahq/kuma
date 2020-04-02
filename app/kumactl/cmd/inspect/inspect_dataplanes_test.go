@@ -246,7 +246,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 		})
 
 		Describe("kumactl inspect dataplanes --gateway", func() {
-			It("gateway should be passed to the client and ", func() {
+			It("gateway should be passed to the client", func() {
 				// given
 				rootCmd.SetArgs([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
@@ -257,7 +257,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				Expect(testClient.receivedTags).To(HaveKeyWithValue("service", "gateway"))
+				Expect(testClient.receivedTags).To(HaveKeyWithValue("service", "*"))
 			})
 		})
 	})
