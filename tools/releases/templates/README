@@ -42,7 +42,7 @@ instead please read the docs:
 
 NEXT STEPS:
 
-You can now explore the Kuma GUI on port 5683! a
+You can now explore the Kuma GUI on port 5683!
 
 Finally, you can start using Kuma by apply traffic policies to any service 
 running in your system:
