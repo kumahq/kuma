@@ -49,7 +49,11 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 
 	addToWs(ws, defs, resManager, serverConfig)
 	container.Add(ws)
-	container.Add(indexWs())
+	indexWs, err := indexWs()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create index webservice")
+	}
+	container.Add(indexWs)
 	container.Add(catalogWs(*serverConfig.Catalog))
 	configWs, err := configWs(cfg)
 	if err != nil {
