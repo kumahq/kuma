@@ -22,7 +22,7 @@ To become a maintainer you need to demonstrate the following:
   * ability to write good code,
   * ability to collaborate with the team,
   * understanding of how the team works (policies, processes for testing and code review, etc), 
-  * understanding of the projects' code base and coding style.
+  * understanding of the project's code base and coding style.
 
 A new maintainer must be proposed by an existing maintainer by opening an issue (with title `Maintainer Nomination`) to the Kuma Github repository (https://github.com/Kong/kuma) containing the following information:
 
