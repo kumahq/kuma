@@ -97,7 +97,7 @@ var _ = Describe("DataplaneOverview", func() {
 			}))
 	})
 	Describe("RetainGateWayDataPlanes", func() {
-		dataPlanes := DataplaneOverviewResourceList{
+		dataplanes := DataplaneOverviewResourceList{
 			Items: []*DataplaneOverviewResource{
 				{
 					Spec: v1alpha1.DataplaneOverview{
@@ -130,7 +130,7 @@ var _ = Describe("DataplaneOverview", func() {
 				},
 			},
 		}
-		gateWayDataPlanes := DataplaneOverviewResourceList{
+		gatewayDataplanes := DataplaneOverviewResourceList{
 			Items: []*DataplaneOverviewResource{
 				{
 					Spec: v1alpha1.DataplaneOverview{
@@ -147,20 +147,9 @@ var _ = Describe("DataplaneOverview", func() {
 				},
 			},
 		}
-		type testCase struct {
-			actual   DataplaneOverviewResourceList
-			expected DataplaneOverviewResourceList
-		}
-		DescribeTable("should retain gateway overviews", func(given testCase) {
-			// when
-			given.actual.RetainGatewayDataPlanes()
-
-			// then
-			Expect(given.actual).To(Equal(given.expected))
-		},
-			Entry("should retain all gateway dataplanes", testCase{
-				actual:   dataPlanes,
-				expected: gateWayDataPlanes,
-			}))
+		It("should retain gateway overviews", func() {
+			dataplanes.RetainGatewayDataplanes()
+			Expect(dataplanes).To(Equal(gatewayDataplanes))
+		})
 	})
 })
