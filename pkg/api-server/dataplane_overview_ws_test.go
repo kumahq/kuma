@@ -103,10 +103,10 @@ var _ = Describe("Dataplane Overview WS", func() {
 		"networking": {
 			"address": "127.0.0.1",
 			"gateway": {
-                "tags": {
-                  "service": "gateway"
-                }
-              },
+				"tags": {
+					"service": "gateway"
+				}
+            },
 			"inbound": [
 				{
 					"port": 9090,
