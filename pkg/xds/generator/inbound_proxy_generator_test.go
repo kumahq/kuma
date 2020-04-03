@@ -112,7 +112,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 						Destinations: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "backend",
+									"service": "backend1",
 								},
 							},
 						},
