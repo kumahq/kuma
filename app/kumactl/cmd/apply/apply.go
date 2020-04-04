@@ -160,7 +160,7 @@ func upsert(rs store.ResourceStore, res model.Resource) error {
 	meta := res.GetMeta()
 	if err := rs.Get(context.Background(), newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
 		if store.IsResourceNotFound(err) {
-			return rs.Create(context.Background(), res, store.CreateByKey(meta.GetName(), meta.GetMesh()))
+			return rs.Create(context.Background(), res, store.CreateByKey(meta.GetName(), meta.GetMesh()), store.CreatedAt(time.Now()))
 		} else {
 			return err
 		}
@@ -168,7 +168,7 @@ func upsert(rs store.ResourceStore, res model.Resource) error {
 	if err := newRes.SetSpec(res.GetSpec()); err != nil {
 		return err
 	}
-	return rs.Update(context.Background(), newRes)
+	return rs.Update(context.Background(), newRes, store.ModifiedAt(time.Now()))
 }
 
 func parseResource(bytes []byte) (model.Resource, error) {
