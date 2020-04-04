@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat(kuma-cp) envoy configs for fault injections
+  [#649](https://github.com/Kong/kuma/pull/649)
 * feature: filter gateway dataplanes through api and through `kumactl inspect dataplanes --gateway`
   [#654](https://github.com/Kong/kuma/pull/654)
 * fix: added shorthand command name for mesh in kumactl
