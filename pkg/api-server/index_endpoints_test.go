@@ -14,7 +14,7 @@ import (
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
 
-var _ = Describe("Index WS", func() {
+var _ = Describe("Index Endpoints", func() {
 
 	var backupBuildInfo kuma_version.BuildInfo
 	BeforeEach(func() {
