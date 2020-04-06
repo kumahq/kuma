@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* fix: make Envoy 1.13.1 work on Kind
+  [#660](https://github.com/Kong/kuma/pull/660)
 * feat: added a new `kumactl install tracing` CLI command
   [#655](https://github.com/Kong/kuma/pull/655)
 * chore: replace deprected field ORIGINAL_DST_LB to CLUSTER_PROVIDED 

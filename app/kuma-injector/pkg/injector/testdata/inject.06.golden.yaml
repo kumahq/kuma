@@ -58,7 +58,7 @@ spec:
         command:
         - wget
         - -qO-
-        - http://localhost:9901
+        - http://127.0.0.1:9901
       failureThreshold: 212
       initialDelaySeconds: 260
       periodSeconds: 25
@@ -70,7 +70,7 @@ spec:
         command:
         - wget
         - -qO-
-        - http://localhost:9901
+        - http://127.0.0.1:9901
       failureThreshold: 112
       initialDelaySeconds: 11
       periodSeconds: 15
