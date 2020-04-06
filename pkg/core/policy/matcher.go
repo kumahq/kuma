@@ -55,12 +55,12 @@ func ToServices(services []core_xds.ServiceName) ServiceIteratorFunc {
 }
 
 // SelectOutboundConnectionPolicies picks a single the most specific policy for each outbound interface of a given Dataplane.
-func SelectOutboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, policies []ConnectionPolicy) ConnectionPolicyMap {
+func SelectOutboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, policies []ConnectionPolicy) OutboundConnectionPolicyMap {
 	return SelectConnectionPolicies(dataplane, ToOutboundServicesOf(dataplane), policies)
 }
 
 // SelectConnectionPolicies picks a single the most specific policy applicable to a connection between a given dataplane and given destination services.
-func SelectConnectionPolicies(dataplane *mesh_core.DataplaneResource, destinations ServiceIterator, policies []ConnectionPolicy) ConnectionPolicyMap {
+func SelectConnectionPolicies(dataplane *mesh_core.DataplaneResource, destinations ServiceIterator, policies []ConnectionPolicy) OutboundConnectionPolicyMap {
 	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
 
 	// First, select only those ConnectionPolicies that have a `source` selector matching a given Dataplane.
@@ -131,11 +131,51 @@ func SelectConnectionPolicies(dataplane *mesh_core.DataplaneResource, destinatio
 		}
 	}
 
-	policyMap := ConnectionPolicyMap{}
+	policyMap := OutboundConnectionPolicyMap{}
 	for service, candidate := range candidatesByDestination {
 		policyMap[service] = candidate.policy
 	}
 	return policyMap
+}
+
+// SelectInboundConnectionPolicies picks a single the most specific policy for each inbound interface of a given Dataplane.
+// For each inbound we pick a policy that matches the most destination tags with inbound tags
+// Sources part of matched policies are later used in Envoy config to apply it only for connection that matches sources
+func SelectInboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, policies []ConnectionPolicy) (InboundConnectionPolicyMap, error) {
+	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
+
+	policiesMap := make(InboundConnectionPolicyMap)
+	ifaces, err := dataplane.Spec.GetNetworking().GetInboundInterfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for i, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
+		var bestPolicy ConnectionPolicy
+		var bestRank mesh_proto.TagSelectorRank
+		sameRankCreatedLater := func(policy ConnectionPolicy, rank mesh_proto.TagSelectorRank) bool {
+			return rank.CompareTo(bestRank) == 0 && policy.GetMeta().GetCreationTime().After(bestPolicy.GetMeta().GetCreationTime())
+		}
+
+		for _, policy := range policies {
+			for _, selector := range policy.Destinations() {
+				tagSelector := mesh_proto.TagSelector(selector.Match)
+				if inbound.MatchTags(tagSelector) {
+					rank := tagSelector.Rank()
+					if rank.CompareTo(bestRank) > 0 || sameRankCreatedLater(policy, rank) {
+						bestRank = rank
+						bestPolicy = policy
+					}
+				}
+			}
+		}
+
+		if bestPolicy != nil {
+			policiesMap[ifaces[i]] = bestPolicy
+		}
+	}
+
+	return policiesMap, nil
 }
 
 type ConnectionPolicyByName []ConnectionPolicy
