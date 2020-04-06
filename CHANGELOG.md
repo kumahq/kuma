@@ -27,6 +27,8 @@
   [#630](https://github.com/Kong/kuma/pull/630)
 * feature: added flag `--dry-run` for `kumactl apply`
   [#622](https://github.com/Kong/kuma/pull/622)
+* fix: added shorthand command name for mesh in kumactl
+  [#664](https://github.com/Kong/kuma/pull/664)
 
 ## [0.4.0]
 
