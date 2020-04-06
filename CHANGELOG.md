@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat: added a new `kumactl install tracing` CLI command
+  [#655](https://github.com/Kong/kuma/pull/655)
 * feat: save service's tags to header for L7-traffic
   [#647](https://github.com/Kong/kuma/pull/647/files)
 * chore: the API root `/` now returns the hostname
