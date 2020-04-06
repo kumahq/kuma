@@ -577,6 +577,7 @@ Usage:
   kumactl inspect dataplanes [flags]
 
 Flags:
+      --gateway              filter gateway dataplanes
   -h, --help                 help for dataplanes
       --tag stringToString   filter by tag in format of key=value. You can provide many tags (default [])
 

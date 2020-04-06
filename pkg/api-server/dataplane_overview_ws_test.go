@@ -66,6 +66,11 @@ var _ = Describe("Dataplane Overview WS", func() {
 							},
 						},
 					},
+					Gateway: &v1alpha1.Dataplane_Networking_Gateway{
+						Tags: map[string]string{
+							"service": "gateway",
+						},
+					},
 				},
 			},
 		}
@@ -97,6 +102,11 @@ var _ = Describe("Dataplane Overview WS", func() {
 	"dataplane": {
 		"networking": {
 			"address": "127.0.0.1",
+			"gateway": {
+				"tags": {
+					"service": "gateway"
+				}
+            },
 			"inbound": [
 				{
 					"port": 9090,
@@ -174,6 +184,10 @@ var _ = Describe("Dataplane Overview WS", func() {
 			Entry("should not list when any tag is not matching", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample&tag=version:v2",
 				expectedJson: `{"items": []}`,
+			}),
+			Entry("should list only gateway dataplanes", testCase{
+				url:          "/meshes/mesh1/dataplanes+insights?gateway=true",
+				expectedJson: fmt.Sprintf(`{"items": [%s]}`, sampleJson),
 			}),
 		)
 	})

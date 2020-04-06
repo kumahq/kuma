@@ -96,4 +96,60 @@ var _ = Describe("DataplaneOverview", func() {
 				expected: DataplaneOverviewResourceList{Items: []*DataplaneOverviewResource{}},
 			}))
 	})
+	Describe("RetainGateWayDataPlanes", func() {
+		dataplanes := DataplaneOverviewResourceList{
+			Items: []*DataplaneOverviewResource{
+				{
+					Spec: v1alpha1.DataplaneOverview{
+						Dataplane: &v1alpha1.Dataplane{
+							Networking: &v1alpha1.Dataplane_Networking{
+								Gateway: &v1alpha1.Dataplane_Networking_Gateway{
+									Tags: map[string]string{
+										"service": "gateway",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Spec: v1alpha1.DataplaneOverview{
+						Dataplane: &v1alpha1.Dataplane{
+							Networking: &v1alpha1.Dataplane_Networking{
+								Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
+									{
+										Tags: map[string]string{
+											"service": "mobile",
+											"version": "v1",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		gatewayDataplanes := DataplaneOverviewResourceList{
+			Items: []*DataplaneOverviewResource{
+				{
+					Spec: v1alpha1.DataplaneOverview{
+						Dataplane: &v1alpha1.Dataplane{
+							Networking: &v1alpha1.Dataplane_Networking{
+								Gateway: &v1alpha1.Dataplane_Networking_Gateway{
+									Tags: map[string]string{
+										"service": "gateway",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		It("should retain gateway overviews", func() {
+			dataplanes.RetainGatewayDataplanes()
+			Expect(dataplanes).To(Equal(gatewayDataplanes))
+		})
+	})
 })
