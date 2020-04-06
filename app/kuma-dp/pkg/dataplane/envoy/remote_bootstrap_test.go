@@ -114,4 +114,26 @@ var _ = Describe("Remote Bootstrap", func() {
 				}
 			}()),
 	)
+
+	It("should return error when DP is not found", func() {
+		// given
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+		defer server.Close()
+		mux.HandleFunc("/bootstrap", func(writer http.ResponseWriter, req *http.Request) {
+			defer GinkgoRecover()
+			writer.WriteHeader(404)
+		})
+		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
+
+		// when
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), kuma_dp.DefaultConfig())
+
+		// then
+		Expect(err).To(MatchError("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
+	})
 })
