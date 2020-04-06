@@ -1,4 +1,5 @@
-NAME    mTLS       METRICS
-mesh1   builtin    off
-mesh2   provided   off
-mesh3   off        prometheus
+NAME    mTLS       METRICS      LOGGING          TRACING
+mesh1   builtin    off          off              off
+mesh2   provided   off          off              off
+mesh3   off        prometheus   logstash, file   zipkin-us, zipkin-eu
+mesh4   off        prometheus   off              off
