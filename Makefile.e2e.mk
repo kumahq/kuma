@@ -319,6 +319,8 @@ deploy/example/minikube: ## Minikube: Deploy example setup
 	eval $$(minikube docker-env) && docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
 	kubectl apply -f tools/e2e/examples/minikube/kuma-demo/
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-app
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app

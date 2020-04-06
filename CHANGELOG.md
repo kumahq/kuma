@@ -35,6 +35,8 @@
   [#630](https://github.com/Kong/kuma/pull/630)
 * feature: added flag `--dry-run` for `kumactl apply`
   [#622](https://github.com/Kong/kuma/pull/622)
+* feature: validate `<port>.service.kuma.io/protocol` annotations on K8S Service objects
+  [#611](https://github.com/Kong/kuma/pull/611)
 
 ## [0.4.0]
 
