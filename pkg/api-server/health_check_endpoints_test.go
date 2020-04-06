@@ -18,7 +18,7 @@ import (
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 )
 
-var _ = Describe("TrafficTrace WS", func() {
+var _ = Describe("HealthCheck Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
@@ -29,7 +29,7 @@ var _ = Describe("TrafficTrace WS", func() {
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
 		client = resourceApiClient{
 			apiServer.Address(),
-			"/meshes/default/traffic-traces",
+			"/meshes/default/health-checks",
 		}
 		stop = make(chan struct{})
 		go func() {
@@ -54,20 +54,29 @@ var _ = Describe("TrafficTrace WS", func() {
 	Describe("PUT => GET", func() {
 
 		given := `
-        type: TrafficTrace
-        name: backends-eu
+        type: HealthCheck
+        name: web-to-backend
         mesh: default
-        selectors:
+        sources:
+        - match:
+            service: web
+        destinations:
         - match:
             service: backend
-            region: eu
         conf:
-          backend: zipkin-eu
+          activeChecks:
+            interval: 10s
+            timeout: 2s
+            unhealthyThreshold: 3
+            healthyThreshold: 1
+          passiveChecks:
+            unhealthyThreshold: 3
+            penaltyInterval: 5s
 `
 		It("GET should return data saved by PUT", func() {
 			// given
 			resource := rest.Resource{
-				Spec: &mesh_proto.TrafficTrace{},
+				Spec: &mesh_proto.HealthCheck{},
 			}
 
 			// when
@@ -81,7 +90,7 @@ var _ = Describe("TrafficTrace WS", func() {
 			Expect(response.StatusCode).To(Equal(201))
 
 			// when
-			response = client.get("backends-eu")
+			response = client.get("web-to-backend")
 			// then
 			Expect(response.StatusCode).To(Equal(200))
 			// when

@@ -13,7 +13,7 @@ import (
 	"github.com/Kong/kuma/pkg/test/resources/apis/sample"
 )
 
-var _ = Describe("Read only Resource WS", func() {
+var _ = Describe("Read only Resource Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient

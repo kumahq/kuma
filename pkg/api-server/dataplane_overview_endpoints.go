@@ -15,19 +15,21 @@ import (
 	rest_errors "github.com/Kong/kuma/pkg/core/rest/errors"
 )
 
-type overviewWs struct {
+type dataplaneOverviewEndpoints struct {
 	resManager manager.ResourceManager
 }
 
-func (r *overviewWs) AddToWs(ws *restful.WebService) {
-	ws.Route(ws.GET("/{mesh}/dataplanes+insights/{name}").To(r.inspectDataplane).
+func (r *dataplaneOverviewEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
+	ws.Route(ws.GET(pathPrefix+"/dataplanes+insights/{name}").To(r.inspectDataplane).
 		Doc("Inspect a dataplane").
 		Param(ws.PathParameter("name", "Name of a dataplane").DataType("string")).
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(404, "Not found", nil))
+}
 
-	ws.Route(ws.GET("/{mesh}/dataplanes+insights").To(r.inspectDataplanes).
+func (r *dataplaneOverviewEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
+	ws.Route(ws.GET(pathPrefix+"/dataplanes+insights").To(r.inspectDataplanes).
 		Doc("Inspect all dataplanes").
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Param(ws.QueryParameter("tag", "Tag to filter in key:value format").DataType("string")).
@@ -35,7 +37,7 @@ func (r *overviewWs) AddToWs(ws *restful.WebService) {
 		Returns(200, "OK", nil))
 }
 
-func (r *overviewWs) inspectDataplane(request *restful.Request, response *restful.Response) {
+func (r *dataplaneOverviewEndpoints) inspectDataplane(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	meshName := request.PathParameter("mesh")
 
@@ -51,7 +53,7 @@ func (r *overviewWs) inspectDataplane(request *restful.Request, response *restfu
 	}
 }
 
-func (r *overviewWs) fetchOverview(ctx context.Context, name string, meshName string) (*mesh.DataplaneOverviewResource, error) {
+func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name string, meshName string) (*mesh.DataplaneOverviewResource, error) {
 	dataplane := mesh.DataplaneResource{}
 	if err := r.resManager.Get(ctx, &dataplane, store.GetByKey(name, meshName)); err != nil {
 		return nil, err
@@ -72,7 +74,7 @@ func (r *overviewWs) fetchOverview(ctx context.Context, name string, meshName st
 	}, nil
 }
 
-func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restful.Response) {
+func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request, response *restful.Response) {
 	meshName := request.PathParameter("mesh")
 	overviews, err := r.fetchOverviews(request.Request.Context(), meshName)
 	if err != nil {
@@ -92,7 +94,7 @@ func (r *overviewWs) inspectDataplanes(request *restful.Request, response *restf
 	}
 }
 
-func (r *overviewWs) fetchOverviews(ctx context.Context, meshName string) (mesh.DataplaneOverviewResourceList, error) {
+func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, meshName string) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
 	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
