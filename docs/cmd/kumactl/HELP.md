@@ -280,7 +280,7 @@ Flags:
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
-      --mesh string          mesh to use (default "default")
+  -m, --mesh string          mesh to use (default "default")
 ```
 
 ### kumactl generate tls-certificate
