@@ -17,7 +17,7 @@ import (
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 )
 
-var _ = Describe("FaultInjection WS", func() {
+var _ = Describe("FaultInjection Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient

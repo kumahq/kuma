@@ -4500,3 +4500,21 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+  - name: service.validator.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: Q0VSVA==
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-service
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - services

@@ -3,6 +3,8 @@
 ## master
 * feat(kuma-cp) envoy configs for fault injections
   [#649](https://github.com/Kong/kuma/pull/649)
+* feat: endpoints for fetching resources from all meshes 
+  [#657](https://github.com/Kong/kuma/pull/657)
 * feature: filter gateway dataplanes through api and through `kumactl inspect dataplanes --gateway`
   [#654](https://github.com/Kong/kuma/pull/654)
 * fix: added shorthand command name for mesh in kumactl
@@ -37,6 +39,8 @@
   [#630](https://github.com/Kong/kuma/pull/630)
 * feature: added flag `--dry-run` for `kumactl apply`
   [#622](https://github.com/Kong/kuma/pull/622)
+* feature: validate `<port>.service.kuma.io/protocol` annotations on K8S Service objects
+  [#611](https://github.com/Kong/kuma/pull/611)
 
 ## [0.4.0]
 

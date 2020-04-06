@@ -20,7 +20,7 @@ import (
 	"github.com/Kong/kuma/pkg/util/proto"
 )
 
-var _ = Describe("Dataplane Overview WS", func() {
+var _ = Describe("Dataplane Overview Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var stop chan struct{}
@@ -171,6 +171,10 @@ var _ = Describe("Dataplane Overview WS", func() {
 			},
 			Entry("should list all when no tag is provided", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights",
+				expectedJson: fmt.Sprintf(`{"items": [%s]}`, sampleJson),
+			}),
+			Entry("should list all when no tag is provided", testCase{
+				url:          "/dataplanes+insights",
 				expectedJson: fmt.Sprintf(`{"items": [%s]}`, sampleJson),
 			}),
 			Entry("should list with only one matching tag", testCase{

@@ -22,6 +22,7 @@ import (
 
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	kuba_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 var (
@@ -122,5 +123,9 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	path := "/validate-kuma-io-v1alpha1"
 	mgr.GetWebhookServer().Register(path, composite.WebHook())
 	log.Info("Registering a validation composite webhook", "path", path)
+
+	mgr.GetWebhookServer().Register("/validate-v1-service", &kuba_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
+	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
+
 	return nil
 }

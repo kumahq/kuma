@@ -9,13 +9,12 @@ import (
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
 
-func indexWs() (*restful.WebService, error) {
+func addIndexWsEndpoints(ws *restful.WebService) error {
 	hostname, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	ws := new(restful.WebService)
-	return ws.Route(ws.GET("/").To(func(req *restful.Request, resp *restful.Response) {
+	ws.Route(ws.GET("/").To(func(req *restful.Request, resp *restful.Response) {
 		response := types.IndexResponse{
 			Hostname: hostname,
 			Tagline:  types.TaglineKuma,
@@ -24,5 +23,6 @@ func indexWs() (*restful.WebService, error) {
 		if err := resp.WriteAsJson(response); err != nil {
 			log.Error(err, "Could not write the index response")
 		}
-	})), nil
+	}))
+	return nil
 }

@@ -4501,3 +4501,21 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+  - name: service.validator.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: QWRtaXNzaW9uQ2VydA==
+      service:
+        namespace: kuma
+        name: kuma-ctrl-plane
+        path: /validate-v1-service
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - services

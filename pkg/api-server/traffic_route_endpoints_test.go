@@ -18,7 +18,7 @@ import (
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 )
 
-var _ = Describe("HealthCheck WS", func() {
+var _ = Describe("TrafficRoute Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
@@ -29,7 +29,7 @@ var _ = Describe("HealthCheck WS", func() {
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
 		client = resourceApiClient{
 			apiServer.Address(),
-			"/meshes/default/health-checks",
+			"/meshes/default/traffic-routes",
 		}
 		stop = make(chan struct{})
 		go func() {
@@ -54,29 +54,32 @@ var _ = Describe("HealthCheck WS", func() {
 	Describe("PUT => GET", func() {
 
 		given := `
-        type: HealthCheck
+        type: TrafficRoute
         name: web-to-backend
         mesh: default
         sources:
         - match:
             service: web
+            region: us-east-1
+            version: v10
         destinations:
         - match:
             service: backend
         conf:
-          activeChecks:
-            interval: 10s
-            timeout: 2s
-            unhealthyThreshold: 3
-            healthyThreshold: 1
-          passiveChecks:
-            unhealthyThreshold: 3
-            penaltyInterval: 5s
+        - weight: 90
+          destination:
+            service: backend
+            region: us-east-1
+            version: v2
+        - weight: 10
+          destination:
+            service: backend
+            version: v3
 `
 		It("GET should return data saved by PUT", func() {
 			// given
 			resource := rest.Resource{
-				Spec: &mesh_proto.HealthCheck{},
+				Spec: &mesh_proto.TrafficRoute{},
 			}
 
 			// when

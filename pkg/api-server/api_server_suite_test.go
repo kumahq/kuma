@@ -9,5 +9,5 @@ import (
 
 func TestWs(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Resource WS")
+	RunSpecs(t, "API Server")
 }
