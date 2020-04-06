@@ -1,6 +1,8 @@
 package mesh
 
 import (
+	"strings"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
@@ -35,4 +37,24 @@ func (m *MeshResource) GetTracingBackend(name string) *mesh_proto.TracingBackend
 		return backends[m.Spec.GetTracing().GetDefaultBackend()]
 	}
 	return backends[name]
+}
+
+// GetLoggingBackends will return logging backends as comma separated strings
+// if empty return empty string
+func (m *MeshResource) GetLoggingBackends() string {
+	var backends []string
+	for _, backend := range m.Spec.GetLogging().GetBackends() {
+		backends = append(backends, backend.GetName())
+	}
+	return strings.Join(backends, ", ")
+}
+
+// GetTracingBackends will return tracing backends as comma separated strings
+// if empty return empty string
+func (m *MeshResource) GetTracingBackends() string {
+	var backends []string
+	for _, backend := range m.Spec.GetTracing().GetBackends() {
+		backends = append(backends, backend.GetName())
+	}
+	return strings.Join(backends, ", ")
 }

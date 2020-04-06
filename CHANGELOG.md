@@ -3,6 +3,8 @@
 ## master
 * feat: endpoints for fetching resources from all meshes 
   [#657](https://github.com/Kong/kuma/pull/657)
+* feat: added logging and tracing information for meshes
+  [#665](https://github.com/Kong/kuma/pull/665)
 * feature: filter gateway dataplanes through api and through `kumactl inspect dataplanes --gateway`
   [#654](https://github.com/Kong/kuma/pull/654)
 * fix: added shorthand command name for mesh in kumactl

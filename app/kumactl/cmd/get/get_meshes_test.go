@@ -76,10 +76,78 @@ var _ = Describe("kumactl get meshes", func() {
 						Path: "/non-standard-path",
 					},
 				},
+				Logging: &v1alpha1.Logging{
+					Backends: []*v1alpha1.LoggingBackend{
+						{
+							Name: "logstash",
+							Type: &v1alpha1.LoggingBackend_Tcp_{
+								Tcp: &v1alpha1.LoggingBackend_Tcp{
+									Address: "127.0.0.1:5000",
+								},
+							},
+						},
+						{
+							Name: "file",
+							Type: &v1alpha1.LoggingBackend_File_{
+								File: &v1alpha1.LoggingBackend_File{
+									Path: "/tmp/service.log",
+								},
+							},
+						},
+					},
+				},
+				Tracing: &v1alpha1.Tracing{
+					Backends: []*v1alpha1.TracingBackend{
+						{
+							Name: "zipkin-us",
+							Type: &v1alpha1.TracingBackend_Zipkin_{
+								Zipkin: &v1alpha1.TracingBackend_Zipkin{
+									Url: "http://zipkin.us:8080/v1/spans",
+								},
+							},
+						},
+						{
+							Name: "zipkin-eu",
+							Type: &v1alpha1.TracingBackend_Zipkin_{
+								Zipkin: &v1alpha1.TracingBackend_Zipkin{
+									Url: "http://zipkin.eu:8080/v1/spans",
+								},
+							},
+						},
+					},
+				},
 			},
 			Meta: &test_model.ResourceMeta{
 				Mesh: "mesh3",
 				Name: "mesh3",
+			},
+		},
+		{
+			Spec: v1alpha1.Mesh{
+				Mtls: &v1alpha1.Mesh_Mtls{
+					Enabled: false,
+					Ca: &v1alpha1.CertificateAuthority{
+						Type: &v1alpha1.CertificateAuthority_Provided_{
+							Provided: &v1alpha1.CertificateAuthority_Provided{},
+						},
+					},
+				},
+				Metrics: &v1alpha1.Metrics{
+					Prometheus: &v1alpha1.Metrics_Prometheus{
+						Port: 1234,
+						Path: "/non-standard-path",
+					},
+				},
+				Logging: &v1alpha1.Logging{
+					Backends: []*v1alpha1.LoggingBackend{},
+				},
+				Tracing: &v1alpha1.Tracing{
+					Backends: []*v1alpha1.TracingBackend{},
+				},
+			},
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh4",
+				Name: "mesh4",
 			},
 		},
 	}

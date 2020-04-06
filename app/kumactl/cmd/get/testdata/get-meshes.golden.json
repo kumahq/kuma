@@ -27,12 +27,65 @@
           "path": "/non-standard-path"
         }
       },
+      "tracing": {
+        "backends": [
+          {
+            "name": "zipkin-us",
+            "zipkin": {
+              "url": "http://zipkin.us:8080/v1/spans"
+            }
+          },
+          {
+            "name": "zipkin-eu",
+            "zipkin": {
+              "url": "http://zipkin.eu:8080/v1/spans"
+            }
+          }
+        ]
+      },
+      "logging": {
+        "backends": [
+          {
+            "name": "logstash",
+            "tcp": {
+              "address": "127.0.0.1:5000"
+            }
+          },
+          {
+            "name": "file",
+            "file": {
+              "path": "/tmp/service.log"
+            }
+          }
+        ]
+      },
       "mtls": {
         "ca": {
           "provided": {}
         }
       },
       "name": "mesh3",
+      "type": "Mesh"
+    },
+    {
+      "metrics": {
+        "prometheus": {
+          "port": 1234,
+          "path": "/non-standard-path"
+        }
+      },
+      "tracing": {
+        "backends": []
+      },
+      "logging": {
+        "backends": []
+      },
+      "mtls": {
+        "ca": {
+          "provided": {}
+        }
+      },
+      "name": "mesh4",
       "type": "Mesh"
     }
   ]

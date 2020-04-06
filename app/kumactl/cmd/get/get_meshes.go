@@ -47,7 +47,7 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 
 func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME", "mTLS", "METRICS"},
+		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -72,11 +72,26 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 				case mesh.HasPrometheusMetricsEnabled():
 					metrics = "prometheus"
 				}
-
+				logging := "off"
+				if mesh.Spec.GetLogging() != nil {
+					logging = mesh.GetLoggingBackends()
+					if len(logging) == 0 {
+						logging = "off"
+					}
+				}
+				tracing := "off"
+				if mesh.Spec.GetTracing() != nil {
+					tracing = mesh.GetTracingBackends()
+					if len(tracing) == 0 {
+						tracing = "off"
+					}
+				}
 				return []string{
 					mesh.GetMeta().GetName(), // NAME
 					mtls,                     // mTLS
 					metrics,                  // METRICS
+					logging,                  // LOGGING
+					tracing,                  // TRACING
 				}
 			}
 		}(),
