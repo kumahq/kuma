@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	kuma_version "github.com/Kong/kuma/pkg/version"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -15,7 +13,7 @@ import (
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 )
 
-var _ = Describe("kumactl install metrics", func() {
+var _ = Describe("kumactl install tracing", func() {
 
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
@@ -30,20 +28,11 @@ var _ = Describe("kumactl install metrics", func() {
 		goldenFile string
 	}
 
-	BeforeEach(func() {
-		kuma_version.Build = kuma_version.BuildInfo{
-			Version:   "0.0.1",
-			GitTag:    "v0.0.1",
-			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
-			BuildDate: "2019-08-07T11:26:06Z",
-		}
-	})
-
 	DescribeTable("should generate Kubernetes resources",
 		func(given testCase) {
 			// given
 			rootCmd := cmd.DefaultRootCmd()
-			rootCmd.SetArgs(append([]string{"install", "metrics"}, given.extraArgs...))
+			rootCmd.SetArgs(append([]string{"install", "tracing"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 
@@ -77,16 +66,13 @@ var _ = Describe("kumactl install metrics", func() {
 		},
 		Entry("should generate Kubernetes resources with default settings", testCase{
 			extraArgs:  nil,
-			goldenFile: "install-metrics.defaults.golden.yaml",
+			goldenFile: "install-tracing.defaults.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources with custom settings", testCase{
 			extraArgs: []string{
 				"--namespace", "kuma",
-				"--kuma-prometheus-sd-image", "kuma-ci/kuma-prometheus-sd",
-				"--kuma-prometheus-sd-version", "greatest",
-				"--kuma-cp-address", "http://kuma.local:5681",
 			},
-			goldenFile: "install-metrics.overrides.golden.yaml",
+			goldenFile: "install-tracing.overrides.golden.yaml",
 		}),
 	)
 })

@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat: added a new `kumactl install tracing` CLI command
+  [#655](https://github.com/Kong/kuma/pull/655)
 * chore: replace deprected field ORIGINAL_DST_LB to CLUSTER_PROVIDED 
   [#656](https://github.com/Kong/kuma/pull/656)
 * chore: upgrade Envoy to 1.13.1 

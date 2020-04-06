@@ -4918,7 +4918,6 @@ spec:
               readOnly: true
             - name: storage
               mountPath: "/var/lib/grafana"
-              readOnly: true
             - name: provisioning-datasource
               mountPath: /etc/grafana/provisioning/datasources
               readOnly: true
