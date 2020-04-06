@@ -28,6 +28,7 @@ func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 	routeName := envoy_names.GetInboundRouteName(c.service)
 	routeConfig, err := envoy_routes.NewRouteConfigurationBuilder().
 		Configure(envoy_routes.CommonRouteConfiguration(routeName)).
+		Configure(envoy_routes.ResetTagsHeader()).
 		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder().
 			Configure(envoy_routes.CommonVirtualHost(c.service)).
 			Configure(envoy_routes.DefaultRoute(c.cluster)))).

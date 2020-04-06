@@ -2,7 +2,7 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector kind/load/kuma-init \
-		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/k8s/control-plane generate/kumactl/install/k8s/metrics generate/kuma-cp/migrations generate/gui \
+		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/k8s/control-plane generate/kumactl/install/k8s/metrics generate/kumactl/install/k8s/tracing generate/kuma-cp/migrations generate/gui \
 		fmt fmt/go fmt/proto vet golangci-lint imports check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-prometheus-sd image/kuma-tcp-echo \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-prometheus-sd docker/build/kuma-tcp-echo \
@@ -261,6 +261,10 @@ generate/kumactl/install/k8s/control-plane:
 generate/kumactl/install/k8s/metrics:
 	go generate ./app/kumactl/pkg/install/k8s/metrics/...
 
+# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+generate/kumactl/install/k8s/tracing:
+	go generate ./app/kumactl/pkg/install/k8s/tracing/...
+
 generate/kuma-cp/migrations:
 	go generate ./pkg/plugins/resources/postgres/migrations/...
 
@@ -416,7 +420,7 @@ run/example/envoy: build/kuma-dp build/kumactl ## Dev: Run Envoy configured agai
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
-images: image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-prometheus-sd image/kuma-tcp-echo ## Dev: Build all Docker images
+images: image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-prometheus-sd image/kuma-tcp-echo ## Dev: Rebuild all Docker images
 
 build/kuma-cp/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cp
@@ -436,42 +440,42 @@ build/kuma-prometheus-sd/linux-amd64:
 build/kuma-tcp-echo/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-tcp-echo
 
-docker/build: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-prometheus-sd docker/build/kuma-tcp-echo
+docker/build: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-prometheus-sd docker/build/kuma-tcp-echo ## Dev: Build all Docker images using existing artifacts from build
 
-docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp
+docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp ## Dev: Build `kuma-cp` Docker image using existing artifact
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
-docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp
+docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp ## Dev: Build `kuma-dp` Docker image using existing artifact
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
-docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl
+docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl ## Dev: Build `kumactl` Docker image using existing artifact
 	docker build -t $(KUMACTL_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kumactl .
 
-docker/build/kuma-injector: build/artifacts-linux-amd64/kuma-injector/kuma-injector
+docker/build/kuma-injector: build/artifacts-linux-amd64/kuma-injector/kuma-injector ## Dev: Build `kuma-injector` Docker image using existing artifact
 	docker build -t $(KUMA_INJECTOR_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-injector .
 
-docker/build/kuma-init:
+docker/build/kuma-init: ## Dev: Build `kuma-init` Docker image using existing artifact
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-init .
 
-docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd
+docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd ## Dev: Build `kuma-prometheus-sd` Docker image using existing artifact
 	docker build -t $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-prometheus-sd .
 
-docker/build/kuma-tcp-echo: build/artifacts-linux-amd64/kuma-tcp-echo/kuma-tcp-echo
+docker/build/kuma-tcp-echo: build/artifacts-linux-amd64/kuma-tcp-echo/kuma-tcp-echo ## Dev: Build `kuma-tcp-echo` Docker image using existing artifact
 	docker build -t $(KUMA_TCP_ECHO_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-tcp-echo .
 
-image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Build `kuma-cp` Docker image
+image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
 
-image/kuma-dp: build/kuma-dp/linux-amd64 docker/build/kuma-dp ## Dev: Build `kuma-dp` Docker image
+image/kuma-dp: build/kuma-dp/linux-amd64 docker/build/kuma-dp ## Dev: Rebuild `kuma-dp` Docker image
 
-image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Build `kumactl` Docker image
+image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Rebuild `kumactl` Docker image
 
-image/kuma-injector: build/kuma-injector/linux-amd64 docker/build/kuma-injector ## Dev: Build `kuma-injector` Docker image
+image/kuma-injector: build/kuma-injector/linux-amd64 docker/build/kuma-injector ## Dev: Rebuild `kuma-injector` Docker image
 
-image/kuma-init: docker/build/kuma-init ## Dev: Build `kuma-init` Docker image
+image/kuma-init: docker/build/kuma-init ## Dev: Rebuild `kuma-init` Docker image
 
-image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64 docker/build/kuma-prometheus-sd ## Dev: Build `kuma-prometheus-sd` Docker image
+image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64 docker/build/kuma-prometheus-sd ## Dev: Rebuild `kuma-prometheus-sd` Docker image
 
-image/kuma-tcp-echo: build/kuma-tcp-echo/linux-amd64 docker/build/kuma-tcp-echo ## Dev: Build `kuma-tcp-echo` Docker image
+image/kuma-tcp-echo: build/kuma-tcp-echo/linux-amd64 docker/build/kuma-tcp-echo ## Dev: Rebuild `kuma-tcp-echo` Docker image
 
 ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}

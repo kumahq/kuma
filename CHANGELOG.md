@@ -1,6 +1,24 @@
 # CHANGELOG
 
 ## master
+* feature: filter gateway dataplanes through api and through `kumactl inspect dataplanes --gateway`
+  [#654](https://github.com/Kong/kuma/pull/654)
+* fix: added shorthand command name for mesh in kumactl
+  [#664](https://github.com/Kong/kuma/pull/664)
+* fix: make Envoy 1.13.1 work on Kind
+  [#660](https://github.com/Kong/kuma/pull/660)
+* feat: added a new `kumactl install tracing` CLI command
+  [#655](https://github.com/Kong/kuma/pull/655)
+* chore: replace deprected field ORIGINAL_DST_LB to CLUSTER_PROVIDED 
+  [#656](https://github.com/Kong/kuma/pull/656)
+* chore: upgrade Envoy to 1.13.1 
+  [#653](https://github.com/Kong/kuma/pull/653)
+* chore: migrate deprecated Envoy config to support newest version of Envoy 
+  [#652](https://github.com/Kong/kuma/pull/652)
+* chore: prevent dataplane creation with a headless services and provide more descriptive error message on pod converter error
+  [#651](https://github.com/Kong/kuma/pull/651)
+* feat: save service's tags to header for L7-traffic
+  [#647](https://github.com/Kong/kuma/pull/647/files)
 * chore: the API root `/` now returns the hostname
   [#645](https://github.com/Kong/kuma/pull/645) 
 * feat: FaultInjection entity, support in API and `kumactl` 
@@ -17,8 +35,6 @@
   [#630](https://github.com/Kong/kuma/pull/630)
 * feature: added flag `--dry-run` for `kumactl apply`
   [#622](https://github.com/Kong/kuma/pull/622)
-* feature: filter gateway dataplanes through api and through `kumactl inspect dataplanes --gateway`
-  [#654](https://github.com/Kong/kuma/pull/654)
 
 ## [0.4.0]
 
