@@ -35,6 +35,6 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newGetTrafficLogsCmd(ctx))
 	cmd.AddCommand(newGetTrafficTracesCmd(ctx))
 	cmd.AddCommand(newGetFaultInjectionsCmd(ctx))
-	cmd.AddCommand(newGetEntitiesCmd(ctx))
+	cmd.AddCommand(newGetMeshCmd(ctx))
 	return cmd
 }

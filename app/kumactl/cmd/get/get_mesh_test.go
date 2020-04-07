@@ -2,6 +2,7 @@ package get_test
 
 import (
 	"bytes"
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -9,21 +10,45 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
+	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 )
 
-var _ = Describe("kumactl get TYPE NAME", func() {
+var _ = Describe("kumactl get mesh NAME", func() {
 	var rootCtx *kumactl_cmd.RootContext
 	var rootCmd *cobra.Command
 	var outbuf, errbuf *bytes.Buffer
 	var store core_store.ResourceStore
-
+	var mesh *mesh_core.MeshResource
 	BeforeEach(func() {
 		// setup
+		mesh = &mesh_core.MeshResource{
+			Spec: v1alpha1.Mesh{
+				Mtls: &v1alpha1.Mesh_Mtls{
+					Enabled: true,
+					Ca: &v1alpha1.CertificateAuthority{
+						Type: &v1alpha1.CertificateAuthority_Builtin_{
+							Builtin: &v1alpha1.CertificateAuthority_Builtin{},
+						},
+					},
+				},
+			},
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh-1",
+				Name: "mesh-1",
+			},
+		}
+		key := core_model.ResourceKey{
+			Mesh: mesh.Meta.GetMesh(),
+			Name: mesh.Meta.GetName(),
+		}
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
 				Now: time.Now,
@@ -33,6 +58,8 @@ var _ = Describe("kumactl get TYPE NAME", func() {
 			},
 		}
 		store = memory_resources.NewStore()
+		err := store.Create(context.Background(), mesh, core_store.CreateBy(key))
+		Expect(err).ToNot(HaveOccurred())
 
 		rootCmd = cmd.NewRootCmd(rootCtx)
 		outbuf = &bytes.Buffer{}
@@ -43,7 +70,7 @@ var _ = Describe("kumactl get TYPE NAME", func() {
 	It("should throw an error in case of no args", func() {
 		// given
 		rootCmd.SetArgs([]string{
-			"get", "resource"})
+			"get", "mesh"})
 
 		// when
 		err := rootCmd.Execute()
@@ -51,16 +78,16 @@ var _ = Describe("kumactl get TYPE NAME", func() {
 		// then
 		Expect(err).To(HaveOccurred())
 		// and
-		Expect(err.Error()).To(Equal("accepts 2 arg(s), received 0"))
+		Expect(err.Error()).To(Equal("requires at least 1 arg(s), only received 0"))
 		// and
-		Expect(outbuf.String()).To(MatchRegexp(`Error: accepts 2 arg\(s\), received 0`))
+		Expect(outbuf.String()).To(MatchRegexp(`Error: requires at least 1 arg\(s\), only received 0`))
 		// and
 		Expect(errbuf.Bytes()).To(BeEmpty())
 	})
-	It("should throw an error in case of unsupported resource type", func() {
-		// given
+	It("should return error message if doesn't exist", func() {
+		//given
 		rootCmd.SetArgs([]string{
-			"get", "resource", "some-type", "some-name"})
+			"get", "mesh", "mesh-2"})
 
 		// when
 		err := rootCmd.Execute()
@@ -68,10 +95,9 @@ var _ = Describe("kumactl get TYPE NAME", func() {
 		// then
 		Expect(err).To(HaveOccurred())
 		// and
-		Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection"))
-		// and
-		Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection`))
+		Expect(outbuf.String()).To(Equal("Error: No resources found in mesh-2 mesh\n"))
 		// and
 		Expect(errbuf.Bytes()).To(BeEmpty())
+
 	})
 })

@@ -347,9 +347,9 @@ Available Commands:
   dataplanes          Show Dataplanes
   fault-injections    Show FaultInjections
   healthchecks        Show HealthChecks
+  mesh                Show Single Mesh Resource
   meshes              Show Meshes
   proxytemplates      Show ProxyTemplates
-  resource            Show Single Resource
   traffic-logs        Show TrafficLogs
   traffic-permissions Show TrafficPermissions
   traffic-routes      Show TrafficRoutes
