@@ -54,12 +54,19 @@ func newGetMeshCmd(pctx *getContext) *cobra.Command {
 func printMesh(mesh *mesh.MeshResource, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
-		NextRow: func() []string {
-			return []string{
-				mesh.Meta.GetMesh(), // MESH
-				mesh.Meta.GetName(), // NAME,
+		NextRow: func() func() []string {
+			i := 0
+			return func() []string {
+				defer func() { i++ }()
+				if i == 1 {
+					return nil
+				}
+				return []string{
+					mesh.GetMeta().GetMesh(), // MESH
+					mesh.GetMeta().GetName(), // NAME,
+				}
 			}
-		},
+		}(),
 	}
 	return printers.NewTablePrinter().Print(data, out)
 }
