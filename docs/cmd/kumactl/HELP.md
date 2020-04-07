@@ -344,6 +344,7 @@ Usage:
   kumactl get [command]
 
 Available Commands:
+  dataplane           Show Single Dataplane Resource
   dataplanes          Show Dataplanes
   fault-injections    Show FaultInjections
   healthchecks        Show HealthChecks
