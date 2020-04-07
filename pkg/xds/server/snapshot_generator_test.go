@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/permissions"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	model "github.com/Kong/kuma/pkg/core/xds"
@@ -66,34 +65,30 @@ var _ = Describe("Reconcile", func() {
 					},
 					Spec: dataplane,
 				},
-				TrafficPermissions: permissions.MatchedPermissions{
+				TrafficPermissions: model.TrafficPermissionMap{
 					mesh_proto.InboundInterface{
 						DataplaneIP:   "192.168.0.1",
 						DataplanePort: 80,
 						WorkloadPort:  8080,
-					}: &mesh_core.TrafficPermissionResourceList{
-						Items: []*mesh_core.TrafficPermissionResource{
-							&mesh_core.TrafficPermissionResource{
-								Meta: &test_model.ResourceMeta{
-									Name: "tp-1",
-									Mesh: "default",
-								},
-								Spec: mesh_proto.TrafficPermission{
-									Sources: []*mesh_proto.Selector{
-										{
-											Match: map[string]string{
-												"service": "web1",
-												"version": "1.0",
-											},
-										},
+					}: &mesh_core.TrafficPermissionResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "tp-1",
+							Mesh: "default",
+						},
+						Spec: mesh_proto.TrafficPermission{
+							Sources: []*mesh_proto.Selector{
+								{
+									Match: map[string]string{
+										"service": "web1",
+										"version": "1.0",
 									},
-									Destinations: []*mesh_proto.Selector{
-										{
-											Match: map[string]string{
-												"service": "backend1",
-												"env":     "dev",
-											},
-										},
+								},
+							},
+							Destinations: []*mesh_proto.Selector{
+								{
+									Match: map[string]string{
+										"service": "backend1",
+										"env":     "dev",
 									},
 								},
 							},

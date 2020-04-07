@@ -69,6 +69,14 @@ func (l *TrafficPermissionResourceList) AddItem(r model.Resource) error {
 	}
 }
 
+func (t *TrafficPermissionResource) Sources() []*mesh_proto.Selector {
+	return t.Spec.GetSources()
+}
+
+func (t *TrafficPermissionResource) Destinations() []*mesh_proto.Selector {
+	return t.Spec.GetDestinations()
+}
+
 func init() {
 	registry.RegisterType(&TrafficPermissionResource{})
 	registry.RegistryListType(&TrafficPermissionResourceList{})
