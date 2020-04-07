@@ -1,7 +1,10 @@
 # CHANGELOG
 
 ## master
-* feat(kuma-cp) envoy configs for fault injections
+* chore: unify matching for TrafficPermission
+  [#668](https://github.com/Kong/kuma/pull/668)
+  ⚠️ warning: breaking change of matching mechanism
+* feat: envoy configs for fault injections
   [#649](https://github.com/Kong/kuma/pull/649)
 * feat: endpoints for fetching resources from all meshes 
   [#657](https://github.com/Kong/kuma/pull/657)
@@ -43,6 +46,12 @@
   [#622](https://github.com/Kong/kuma/pull/622)
 * feature: validate `<port>.service.kuma.io/protocol` annotations on K8S Service objects
   [#611](https://github.com/Kong/kuma/pull/611)
+
+Breaking changes:
+* ⚠️ before the change TrafficPermission worked in cumulative way, which means that all policies that matched a connection were applied.
+  We changed TrafficPermission to work like every other policy so only "most matching" policy is chosen.
+  Consult [docs](https://kuma.io/docs/0.4.0/policies/how-kuma-chooses-the-right-policy-to-apply/) to learn more how Kuma picks the right policy.
+  [668](https://github.com/Kong/kuma/pull/668)
 
 ## [0.4.0]
 
