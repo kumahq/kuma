@@ -56,8 +56,8 @@ func printMesh(mesh *mesh.MeshResource, out io.Writer) error {
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() []string {
 			return []string{
-				mesh.GetMeta().GetMesh(), // MESH
-				mesh.GetMeta().GetName(), // NAME
+				mesh.Meta.GetMesh(), // MESH
+				mesh.Meta.GetName(), // NAME,
 			}
 		},
 	}

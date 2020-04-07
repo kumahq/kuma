@@ -3,10 +3,15 @@ package get_test
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	gomega_types "github.com/onsi/gomega/types"
 
 	"github.com/spf13/cobra"
 
@@ -99,5 +104,40 @@ var _ = Describe("kumactl get mesh NAME", func() {
 		// and
 		Expect(errbuf.Bytes()).To(BeEmpty())
 
+	})
+	Describe("kumactl get mesh NAME -o table|json|yaml", func() {
+
+		type testCase struct {
+			outputFormat string
+			goldenFile   string
+			matcher      func(interface{}) gomega_types.GomegaMatcher
+		}
+
+		DescribeTable("kumactl get dataplanes -o table|json|yaml",
+			func(given testCase) {
+				// given
+				rootCmd.SetArgs(append([]string{
+					"get", "mesh", "mesh-1"}, given.outputFormat))
+
+				// when
+				err := rootCmd.Execute()
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// and
+				Expect(outbuf.String()).To(given.matcher(expected))
+			},
+			Entry("should support Table output by default", testCase{
+				outputFormat: "",
+				goldenFile:   "get-mesh.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+		)
 	})
 })
