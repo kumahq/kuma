@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"strconv"
 	"sync"
 	"time"
@@ -193,12 +194,36 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 	opts := store.NewListOptions(fs...)
 
 	records := c.findRecords(string(rs.GetItemType()), opts.Mesh)
-	for _, record := range records {
+
+	offset := 0
+	pageSize := len(records)
+	if opts.PageSize > 0 {
+		pageSize = opts.PageSize
+		if opts.PageOffset != "" {
+			o, err := strconv.Atoi(opts.PageOffset)
+			if err != nil {
+				return errors.Wrap(err, "invalid offset")
+			}
+			offset = o
+		}
+	}
+
+	for i := offset; i < offset + pageSize && i < len(records); i++ {
 		r := rs.NewItem()
-		if err := c.unmarshalRecord(record, r); err != nil {
+		if err := c.unmarshalRecord(records[i], r); err != nil {
 			return err
 		}
 		_ = rs.AddItem(r)
+	}
+
+	if opts.PageSize > 0 {
+		nextOffset := ""
+		if len(rs.GetItems()) == opts.PageSize { // set new offset only if we did not reach the end of the collection
+			nextOffset += strconv.Itoa(offset + opts.PageSize)
+		}
+		rs.SetPagination(&model.Pagination{
+			NextOffset: nextOffset,
+		})
 	}
 	return nil
 }

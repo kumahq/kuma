@@ -54,6 +54,7 @@ var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {
 	Items []*DataplaneOverviewResource
+	Pagination *model.Pagination
 }
 
 func (l *DataplaneOverviewResourceList) GetItems() []model.Resource {
@@ -77,6 +78,14 @@ func (l *DataplaneOverviewResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*DataplaneOverviewResource)(nil), r)
 	}
+}
+
+func (l *DataplaneOverviewResourceList) GetPagination() *model.Pagination {
+	return l.Pagination
+}
+
+func (l *DataplaneOverviewResourceList) SetPagination(pagination *model.Pagination) {
+	l.Pagination = pagination
 }
 
 func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneInsightResourceList) DataplaneOverviewResourceList {

@@ -84,6 +84,12 @@ type ResourceList interface {
 	GetItems() []Resource
 	NewItem() Resource
 	AddItem(Resource) error
+	GetPagination() *Pagination
+	SetPagination(*Pagination)
+}
+
+type Pagination struct {
+	NextOffset string
 }
 
 func ErrorInvalidItemType(expected, actual interface{}) error {

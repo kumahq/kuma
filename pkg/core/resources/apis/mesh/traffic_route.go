@@ -45,6 +45,7 @@ var _ model.ResourceList = &TrafficRouteResourceList{}
 
 type TrafficRouteResourceList struct {
 	Items []*TrafficRouteResource
+	Pagination *model.Pagination
 }
 
 func (l *TrafficRouteResourceList) GetItems() []model.Resource {
@@ -67,6 +68,12 @@ func (l *TrafficRouteResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*TrafficRouteResource)(nil), r)
 	}
+}
+func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
+	return l.Pagination
+}
+func (l *TrafficRouteResourceList) SetPagination(pagination *model.Pagination) {
+	l.Pagination = pagination
 }
 
 func init() {

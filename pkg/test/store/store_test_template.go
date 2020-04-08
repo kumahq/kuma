@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -318,6 +319,43 @@ func ExecuteStoreTests(
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(list.Items).To(HaveLen(0))
+		})
+
+		Describe("Pagination", func() {
+			It("should list all resources using pagination", func(done Done) {
+				// given
+				offset := ""
+				pageSize := 2
+				numOfResources := 9
+				resourceNames := map[string]bool{}
+
+				// setup - create 9 resources
+				for i := 0; i < numOfResources; i++ {
+					createResource(fmt.Sprintf("res-%d.demo", i))
+				}
+
+				// when iterate collection using pagination
+				for {
+					list := sample_model.TrafficRouteResourceList{}
+					err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(pageSize, offset))
+					Expect(err).ToNot(HaveOccurred())
+					for _, item := range list.Items {
+						resourceNames[item.GetMeta().GetName()] = true
+					}
+					if list.GetPagination().NextOffset == "" {
+						break
+					}
+					offset = list.GetPagination().NextOffset
+				}
+
+				// then
+				Expect(resourceNames).To(HaveLen(numOfResources))
+				for i := 0; i < numOfResources; i++ {
+					Expect(resourceNames).To(HaveKey(fmt.Sprintf("res-%d.demo", i)))
+				}
+
+				close(done)
+			}, 5)
 		})
 	})
 }
