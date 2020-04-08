@@ -1,26 +1,26 @@
 ---
-  logging:
-    backends:
-      - name: logstash
-        tcp:
-          address: 127.0.0.1:5000
-      - file:
-          path: /tmp/service.log
-        name: file
-  metrics:
-    prometheus:
-      path: /non-standard-path
-      port: 1234
-  mtls:
-    ca:
-      provided: {}
-  name: mesh-1
-  tracing:
-    backends:
-      - name: zipkin-us
-        zipkin:
-          url: http://zipkin.us:8080/v1/spans
-      - name: zipkin-eu
-        zipkin:
-          url: http://zipkin.eu:8080/v1/spans
-  type: Mesh
+logging:
+  backends:
+    - name: logstash
+      tcp:
+        address: 127.0.0.1:5000
+    - file:
+        path: /tmp/service.log
+      name: file
+metrics:
+  prometheus:
+    path: /non-standard-path
+    port: 1234
+mtls:
+  ca:
+    provided: {}
+name: mesh-1
+tracing:
+  backends:
+    - name: zipkin-us
+      zipkin:
+        url: http://zipkin.us:8080/v1/spans
+    - name: zipkin-eu
+      zipkin:
+        url: http://zipkin.eu:8080/v1/spans
+type: Mesh
