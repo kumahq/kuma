@@ -1,0 +1,2 @@
+MESH      NAME
+default   proxytemplate-1

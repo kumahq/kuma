@@ -39,5 +39,6 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newGetMeshCmd(ctx))
 	cmd.AddCommand(newGetDataplaneCmd(ctx))
 	cmd.AddCommand(newGetHealthCheckCmd(ctx))
+	cmd.AddCommand(newGetProxyTemplateCmd(ctx))
 	return cmd
 }

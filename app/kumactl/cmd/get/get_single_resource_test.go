@@ -48,6 +48,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		Entry("dataplane", "dataplane"),
 		Entry("mesh", "mesh"),
 		Entry("healthcheck", "healthcheck"),
+		Entry("proxytemplate", "proxytemplate"),
 	}
 
 	DescribeTable("should throw an error in case of no args",

@@ -352,6 +352,7 @@ Available Commands:
   healthchecks        Show HealthChecks
   mesh                Show Single Mesh Resource
   meshes              Show Meshes
+  proxytemplate       Show Single Proxytemplate Resource
   proxytemplates      Show ProxyTemplates
   traffic-logs        Show TrafficLogs
   traffic-permissions Show TrafficPermissions
