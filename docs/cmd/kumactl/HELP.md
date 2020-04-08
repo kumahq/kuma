@@ -354,6 +354,7 @@ Available Commands:
   meshes              Show Meshes
   proxytemplate       Show Single Proxytemplate Resource
   proxytemplates      Show ProxyTemplates
+  traffic-log         Show Single TrafficLog Resource
   traffic-logs        Show TrafficLogs
   traffic-permissions Show TrafficPermissions
   traffic-routes      Show TrafficRoutes
