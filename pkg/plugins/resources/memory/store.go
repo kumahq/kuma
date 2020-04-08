@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
@@ -84,9 +82,6 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	defer c.mu.Unlock()
 
 	opts := store.NewCreateOptions(fs...)
-	if r.GetType() == mesh.MeshType {
-		opts.Mesh = opts.Name
-	}
 
 	// Name must be provided via CreateOptions
 	if _, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh); record != nil {
