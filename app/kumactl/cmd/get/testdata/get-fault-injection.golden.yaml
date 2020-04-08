@@ -1,0 +1,12 @@
+---
+conf:
+  abort:
+    httpStatus: 500
+    percentage: 50
+mesh: default
+name: fault-injection-1
+sources:
+  - match:
+      service: frontend
+      version: "0.1"
+type: FaultInjection

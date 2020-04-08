@@ -346,6 +346,7 @@ Usage:
 Available Commands:
   dataplane           Show Single Dataplane Resource
   dataplanes          Show Dataplanes
+  fault-injection     Show Single Fault-Injection Resource
   fault-injections    Show FaultInjections
   healthchecks        Show HealthChecks
   mesh                Show Single Mesh Resource

@@ -32,7 +32,7 @@ func newGetFaultInjectionsCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printFaultInjection(&faultInjections, cmd.OutOrStdout())
+				return printFaultInjection(faultInjections.Items, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +45,17 @@ func newGetFaultInjectionsCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printFaultInjection(faultInjections *mesh.FaultInjectionResourceList, out io.Writer) error {
+func printFaultInjection(faultInjections []*mesh.FaultInjectionResource, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(faultInjections.Items) <= i {
+				if len(faultInjections) <= i {
 					return nil
 				}
-				faultInjections := faultInjections.Items[i]
+				faultInjections := faultInjections[i]
 
 				return []string{
 					faultInjections.GetMeta().GetMesh(), // MESH
