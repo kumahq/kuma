@@ -348,6 +348,7 @@ Available Commands:
   dataplanes          Show Dataplanes
   fault-injection     Show Single Fault-Injection Resource
   fault-injections    Show FaultInjections
+  healthcheck         Show Single HealthCheck Resource
   healthchecks        Show HealthChecks
   mesh                Show Single Mesh Resource
   meshes              Show Meshes

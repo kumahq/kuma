@@ -38,5 +38,6 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newGetFaultInjectionCmd(ctx))
 	cmd.AddCommand(newGetMeshCmd(ctx))
 	cmd.AddCommand(newGetDataplaneCmd(ctx))
+	cmd.AddCommand(newGetHealthCheckCmd(ctx))
 	return cmd
 }

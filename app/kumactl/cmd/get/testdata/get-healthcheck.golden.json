@@ -1,0 +1,5 @@
+{
+    "type": "HealthCheck",
+    "mesh": "default",
+    "name": "healthcheck-1"
+}

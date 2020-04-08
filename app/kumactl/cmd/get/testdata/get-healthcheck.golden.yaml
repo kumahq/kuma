@@ -1,0 +1,3 @@
+mesh: default
+name: healthcheck-1
+type: HealthCheck
