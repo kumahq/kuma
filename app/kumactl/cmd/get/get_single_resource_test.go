@@ -46,7 +46,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 	entries := []TableEntry{
 		Entry("fault-injection", "fault-injection"),
 		Entry("dataplane", "dataplane"),
-		Entry("mesh", "mesh"),
+		// Entry("mesh", "mesh"),
 		Entry("healthcheck", "healthcheck"),
 		Entry("proxytemplate", "proxytemplate"),
 		Entry("traffic-log", "traffic-log"),
