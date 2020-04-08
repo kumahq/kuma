@@ -2,11 +2,10 @@ package get
 
 import (
 	"context"
-	"io"
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/spf13/cobra"
 
@@ -29,44 +28,25 @@ func newGetMeshCmd(pctx *getContext) *cobra.Command {
 			}
 			name := args[0]
 			currentMesh := name
-			mesh := mesh.MeshResource{}
-			if err := rs.Get(context.Background(), &mesh, store.GetByKey(name, currentMesh)); err != nil {
+			mesh := &core_mesh.MeshResource{}
+			if err := rs.Get(context.Background(), mesh, store.GetByKey(name, currentMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)
 				}
 				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
 			}
+			meshes := []*core_mesh.MeshResource{mesh}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printMesh(&mesh, cmd.OutOrStdout())
+				return printMeshes(meshes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
 					return err
 				}
-				return printer.Print(rest_types.From.Resource(&mesh), cmd.OutOrStdout())
+				return printer.Print(rest_types.From.Resource(mesh), cmd.OutOrStdout())
 			}
 		},
 	}
 	return cmd
-}
-
-func printMesh(mesh *mesh.MeshResource, out io.Writer) error {
-	data := printers.Table{
-		Headers: []string{"MESH", "NAME"},
-		NextRow: func() func() []string {
-			i := 0
-			return func() []string {
-				defer func() { i++ }()
-				if i == 1 {
-					return nil
-				}
-				return []string{
-					mesh.GetMeta().GetMesh(), // MESH
-					mesh.GetMeta().GetName(), // NAME,
-				}
-			}
-		}(),
-	}
-	return printers.NewTablePrinter().Print(data, out)
 }
