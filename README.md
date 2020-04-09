@@ -36,7 +36,7 @@ Modern applications will inevitably make requests over a network to communicate 
 
 Kuma is a better way to build L4/L7 connectivity among your services and applications (Service Mesh) by reducing the code that application teams have to write, enabling to ship products faster and improve the reliability and security of the overall architecture with minimal effort. 
 
-Kuma embraces the sidecar proxy model by bundling Envoy as its sidecar data-plane technology and by providing a platform-agnostic Control Plane that can run on both modern Kubernetes and existing VM/Bare Metal architectures in order to deliver business value across every team in the organization with one comprhensive solution.
+Kuma embraces the sidecar proxy model by bundling Envoy as its sidecar data-plane technology and by providing a platform-agnostic Control Plane that can run on both modern Kubernetes and existing VM/Bare Metal architectures in order to deliver business value across every team in the organization with one comprehensive solution.
 
 [![][kuma-benefits]][kuma-url]
 

@@ -14,6 +14,7 @@ import (
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/core"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
 
 var log = core.Log.WithName("gui-server")
@@ -22,7 +23,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	srv := Server{
 		Config: rt.Config().GuiServer,
 	}
-	if err := core_runtime.Add(rt, &srv); err != nil {
+	if err := rt.Add(&srv); err != nil {
 		return err
 	}
 	return nil
@@ -32,7 +33,7 @@ type Server struct {
 	Config *gui_server.GuiServerConfig
 }
 
-var _ core_runtime.Component = &Server{}
+var _ component.Component = &Server{}
 
 func (g *Server) Start(stop <-chan struct{}) error {
 	fileServer := http.FileServer(resources.GuiDir)

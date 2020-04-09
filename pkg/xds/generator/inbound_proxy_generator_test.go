@@ -4,6 +4,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/Kong/kuma/pkg/core/permissions"
 
 	. "github.com/onsi/ginkgo"
@@ -93,6 +96,34 @@ var _ = Describe("InboundProxyGenerator", func() {
 						},
 					},
 				},
+				FaultInjections: model.FaultInjectionMap{
+					mesh_proto.InboundInterface{
+						DataplaneIP:   "192.168.0.1",
+						DataplanePort: 80,
+						WorkloadPort:  8080,
+					}: &mesh_proto.FaultInjection{
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "frontend",
+								},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"service": "backend1",
+								},
+							},
+						},
+						Conf: &mesh_proto.FaultInjection_Conf{
+							Delay: &mesh_proto.FaultInjection_Conf_Delay{
+								Percentage: &wrappers.DoubleValue{Value: 50},
+								Value:      &duration.Duration{Seconds: 5},
+							},
+						},
+					},
+				},
 				Metadata: &model.DataplaneMetadata{},
 			}
 
@@ -123,29 +154,13 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplaneFile:   "2-dataplane.input.yaml",
 			envoyConfigFile: "2-envoy-config.golden.yaml",
 		}),
-		Entry("03. transparent_proxying=false, ip_addresses=1, ports=1", testCase{
+		Entry("03. transparent_proxying=false, ip_addresses=2, ports=2", testCase{
 			dataplaneFile:   "3-dataplane.input.yaml",
 			envoyConfigFile: "3-envoy-config.golden.yaml",
 		}),
-		Entry("04. transparent_proxying=true, ip_addresses=1, ports=1", testCase{
+		Entry("04. transparent_proxying=true, ip_addresses=2, ports=2", testCase{
 			dataplaneFile:   "4-dataplane.input.yaml",
 			envoyConfigFile: "4-envoy-config.golden.yaml",
-		}),
-		Entry("05. transparent_proxying=false, ip_addresses=1, ports=2", testCase{
-			dataplaneFile:   "5-dataplane.input.yaml",
-			envoyConfigFile: "5-envoy-config.golden.yaml",
-		}),
-		Entry("06. transparent_proxying=true, ip_addresses=1, ports=2", testCase{
-			dataplaneFile:   "6-dataplane.input.yaml",
-			envoyConfigFile: "6-envoy-config.golden.yaml",
-		}),
-		Entry("07. transparent_proxying=false, ip_addresses=2, ports=2", testCase{
-			dataplaneFile:   "7-dataplane.input.yaml",
-			envoyConfigFile: "7-envoy-config.golden.yaml",
-		}),
-		Entry("08. transparent_proxying=true, ip_addresses=2, ports=2", testCase{
-			dataplaneFile:   "8-dataplane.input.yaml",
-			envoyConfigFile: "8-envoy-config.golden.yaml",
 		}),
 	)
 })

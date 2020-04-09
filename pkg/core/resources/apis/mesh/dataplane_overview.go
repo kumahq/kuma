@@ -112,3 +112,14 @@ func (d *DataplaneOverviewResourceList) RetainMatchingTags(tags map[string]strin
 	}
 	d.Items = result
 }
+
+// RetainGatewayDataplanes to get only gateway Dataplanes
+func (l *DataplaneOverviewResourceList) RetainGatewayDataplanes() {
+	result := []*DataplaneOverviewResource{}
+	for _, overview := range l.Items {
+		if overview.Spec.GetDataplane().GetNetworking().GetGateway() != nil {
+			result = append(result, overview)
+		}
+	}
+	l.Items = result
+}

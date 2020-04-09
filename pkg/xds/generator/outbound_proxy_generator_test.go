@@ -200,83 +200,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "02.envoy.golden.yaml",
 		}),
-		Entry("03. transparent_proxying=false, mtls=false, outbound=1", testCase{
-			ctx: plainCtx,
-			dataplane: `
-            networking:
-              address: 10.0.0.1
-              outbound:
-              - port: 18080
-                service: backend
-`,
-			expected: "03.envoy.golden.yaml",
-		}),
-		Entry("04. transparent_proxying=true, mtls=false, outbound=1", testCase{
-			ctx: mtlsCtx,
-			dataplane: `
-            networking:
-              address: 10.0.0.1
-              outbound:
-              - port: 18080
-                service: backend
-              transparentProxying:
-                redirectPort: 15001
-`,
-			expected: "04.envoy.golden.yaml",
-		}),
-		Entry("05. transparent_proxying=false, mtls=true, outbound=1", testCase{
-			ctx: plainCtx,
-			dataplane: `
-            networking:
-              address: 10.0.0.1
-              outbound:
-              - port: 18080
-                service: backend
-`,
-			expected: "05.envoy.golden.yaml",
-		}),
-		Entry("06. transparent_proxying=true, mtls=true, outbound=1", testCase{
-			ctx: mtlsCtx,
-			dataplane: `
-            networking:
-              address: 10.0.0.1
-              outbound:
-              - port: 18080
-                service: backend
-              transparentProxying:
-                redirectPort: 15001
-`,
-			expected: "06.envoy.golden.yaml",
-		}),
-		Entry("07. transparent_proxying=false, mtls=false, outbound=2", testCase{
-			ctx: plainCtx,
-			dataplane: `
-            networking:
-              address: 10.0.0.1
-              outbound:
-              - port: 18080
-                service: backend
-              - port: 54321
-                service: db
-`,
-			expected: "07.envoy.golden.yaml",
-		}),
-		Entry("08. transparent_proxying=true, mtls=true, outbound=2", testCase{
-			ctx: mtlsCtx,
-			dataplane: `
-            networking:
-              address: 10.0.0.1
-              outbound:
-              - port: 18080
-                service: backend
-              - port: 54321
-                service: db
-              transparentProxying:
-                redirectPort: 15001
-`,
-			expected: "08.envoy.golden.yaml",
-		}),
-		Entry("09. transparent_proxying=false, mtls=false, outbound=4", testCase{
+		Entry("03. transparent_proxying=false, mtls=false, outbound=4", testCase{
 			ctx: plainCtx,
 			dataplane: `
             networking:
@@ -294,9 +218,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
               - port: 40002
                 service: api-tcp
 `,
-			expected: "09.envoy.golden.yaml",
+			expected: "03.envoy.golden.yaml",
 		}),
-		Entry("10. transparent_proxying=true, mtls=true, outbound=4", testCase{
+		Entry("4. transparent_proxying=true, mtls=true, outbound=4", testCase{
 			ctx: mtlsCtx,
 			dataplane: `
             networking:
@@ -317,7 +241,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
               transparentProxying:
                 redirectPort: 15001
 `,
-			expected: "10.envoy.golden.yaml",
+			expected: "04.envoy.golden.yaml",
 		}),
 	)
 

@@ -19,8 +19,5 @@ func SetupServer(rt core_runtime.Runtime) error {
 		util_xds.LoggingCallbacks{Log: sdsServerLog},
 	}
 	srv := NewServer(handler, callbacks, sdsServerLog)
-	return core_runtime.Add(
-		rt,
-		&grpcServer{srv, *rt.Config().SdsServer},
-	)
+	return rt.Add(&grpcServer{srv, *rt.Config().SdsServer})
 }

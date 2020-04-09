@@ -82,6 +82,9 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
 
+			Expect(cfg.Store.Cache.Enabled).To(BeFalse())
+			Expect(cfg.Store.Cache.ExpirationTime).To(Equal(3 * time.Second))
+
 			Expect(cfg.Store.Postgres.TLS.Mode).To(Equal(postgres.VerifyFull))
 			Expect(cfg.Store.Postgres.TLS.CertPath).To(Equal("/path/to/cert"))
 			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
@@ -142,6 +145,9 @@ store:
       certPath: /path/to/cert
       keyPath: /path/to/key
       caPath: /path/to/rootCert
+  cache:
+    enabled: false
+    expirationTime: 3s
 xdsServer:
   grpcPort: 5000
   diagnosticsPort: 5003
@@ -220,6 +226,8 @@ guiServer:
 				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                             "/path/to/cert",
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                              "/path/to/key",
 				"KUMA_STORE_POSTGRES_TLS_CA_PATH":                               "/path/to/rootCert",
+				"KUMA_STORE_CACHE_ENABLED":                                      "false",
+				"KUMA_STORE_CACHE_EXPIRATION_TIME":                              "3s",
 				"KUMA_API_SERVER_READ_ONLY":                                     "true",
 				"KUMA_API_SERVER_PORT":                                          "9090",
 				"KUMA_DATAPLANE_TOKEN_SERVER_ENABLED":                           "true",

@@ -1,12 +1,48 @@
 # CHANGELOG
 
 ## master
+* feat(kuma-cp) envoy configs for fault injections
+  [#649](https://github.com/Kong/kuma/pull/649)
+* feat: endpoints for fetching resources from all meshes 
+  [#657](https://github.com/Kong/kuma/pull/657)
+* feat: added logging and tracing information for meshes
+  [#665](https://github.com/Kong/kuma/pull/665)
+* feature: filter gateway dataplanes through api and through `kumactl inspect dataplanes --gateway`
+  [#654](https://github.com/Kong/kuma/pull/654)
+* fix: added shorthand command name for mesh in kumactl
+  [#664](https://github.com/Kong/kuma/pull/664)
+* fix: make Envoy 1.13.1 work on Kind
+  [#660](https://github.com/Kong/kuma/pull/660)
+* feat: added a new `kumactl install tracing` CLI command
+  [#655](https://github.com/Kong/kuma/pull/655)
+* chore: replace deprected field ORIGINAL_DST_LB to CLUSTER_PROVIDED 
+  [#656](https://github.com/Kong/kuma/pull/656)
+* chore: upgrade Envoy to 1.13.1 
+  [#653](https://github.com/Kong/kuma/pull/653)
+* chore: migrate deprecated Envoy config to support newest version of Envoy 
+  [#652](https://github.com/Kong/kuma/pull/652)
+* chore: prevent dataplane creation with a headless services and provide more descriptive error message on pod converter error
+  [#651](https://github.com/Kong/kuma/pull/651)
+* feat: save service's tags to header for L7-traffic
+  [#647](https://github.com/Kong/kuma/pull/647/files)
+* chore: the API root `/` now returns the hostname
+  [#645](https://github.com/Kong/kuma/pull/645) 
+* feat: FaultInjection entity, support in API and `kumactl` 
+  [#643](https://github.com/Kong/kuma/pull/643)
+* chore: merge mTLS and CA status into one column
+  [#637](https://github.com/Kong/kuma/pull/637)
+* fix: `kumactl apply -v ...` support dots in variables name
+  [#636](https://github.com/Kong/kuma/pull/636)
+* feat: read only cached manager
+  [#634](https://github.com/Kong/kuma/pull/634)
 * fix: explicitly set parameters in securityContext of kuma-init
   [#631](https://github.com/Kong/kuma/pull/631)
 * feature: log requests to external services
   [#630](https://github.com/Kong/kuma/pull/630)
 * feature: added flag `--dry-run` for `kumactl apply`
   [#622](https://github.com/Kong/kuma/pull/622)
+* feature: validate `<port>.service.kuma.io/protocol` annotations on K8S Service objects
+  [#611](https://github.com/Kong/kuma/pull/611)
 
 ## [0.4.0]
 

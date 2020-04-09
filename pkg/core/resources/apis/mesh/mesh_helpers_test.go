@@ -173,4 +173,90 @@ var _ = Describe("MeshResource", func() {
 			}),
 		)
 	})
+
+	Describe("should return logging backends", func() {
+		It("should return logging backends if not empty", func() {
+			mesh := &MeshResource{
+				Spec: mesh_proto.Mesh{
+					Logging: &mesh_proto.Logging{
+						Backends: []*mesh_proto.LoggingBackend{
+							{
+								Name: "logstash",
+								Type: &mesh_proto.LoggingBackend_Tcp_{
+									Tcp: &mesh_proto.LoggingBackend_Tcp{
+										Address: "127.0.0.1:5000",
+									},
+								},
+							},
+							{
+								Name: "file",
+								Type: &mesh_proto.LoggingBackend_File_{
+									File: &mesh_proto.LoggingBackend_File{
+										Path: "/tmp/service.log",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			backends := mesh.GetLoggingBackends()
+			Expect(backends).To(Equal("logstash, file"))
+		})
+		It("should return default logging backend if logging backends is empty", func() {
+			mesh := &MeshResource{
+				Spec: mesh_proto.Mesh{
+					Logging: &mesh_proto.Logging{
+						DefaultBackend: "default-backend",
+						Backends:       []*mesh_proto.LoggingBackend{},
+					},
+				},
+			}
+			backends := mesh.GetLoggingBackends()
+			Expect(backends).To(Equal(""))
+		})
+	})
+
+	Describe("should return tracing backends", func() {
+		It("should return tracing backends if not empty", func() {
+			mesh := &MeshResource{
+				Spec: mesh_proto.Mesh{
+					Tracing: &mesh_proto.Tracing{
+						Backends: []*mesh_proto.TracingBackend{
+							{
+								Name: "zipkin-us",
+								Type: &mesh_proto.TracingBackend_Zipkin_{
+									Zipkin: &mesh_proto.TracingBackend_Zipkin{
+										Url: "http://zipkin.us:8080/v1/spans",
+									},
+								},
+							},
+							{
+								Name: "zipkin-eu",
+								Type: &mesh_proto.TracingBackend_Zipkin_{
+									Zipkin: &mesh_proto.TracingBackend_Zipkin{
+										Url: "http://zipkin.eu:8080/v1/spans",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			backends := mesh.GetTracingBackends()
+			Expect(backends).To(Equal("zipkin-us, zipkin-eu"))
+		})
+		It("should return default tracing backend if tracing backends is empty", func() {
+			mesh := &MeshResource{
+				Spec: mesh_proto.Mesh{
+					Tracing: &mesh_proto.Tracing{
+						Backends: []*mesh_proto.TracingBackend{},
+					},
+				},
+			}
+			backends := mesh.GetTracingBackends()
+			Expect(backends).To(Equal(""))
+		})
+	})
 })

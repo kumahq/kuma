@@ -128,7 +128,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |
-                        [%START_TIME%] demo 192.168.0.1(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                        [%START_TIME%] %RESPONSE_FLAGS% demo 192.168.0.1(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                       path: /tmp/log
                   cluster: db
                   statPrefix: db

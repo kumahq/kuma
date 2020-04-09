@@ -9,7 +9,7 @@ import (
 
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/store"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 	"github.com/Kong/kuma/pkg/util/proto"
 	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
 )
@@ -21,7 +21,7 @@ type BootstrapServer struct {
 	Generator BootstrapGenerator
 }
 
-var _ core_runtime.Component = &BootstrapServer{}
+var _ component.Component = &BootstrapServer{}
 
 func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 	mux := http.NewServeMux()

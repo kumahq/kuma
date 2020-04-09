@@ -119,6 +119,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 				// configuration for HTTP case
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
+					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
 					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterInfo{Name: localClusterName}))
 			case mesh_core.ProtocolTCP:
@@ -224,12 +225,13 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		})
 
 		// generate RDS resources
-		rdsResources, err := g.generateRds(protocol, outbound.Service, outboundRouteName, clusters)
+		rdsResources, err := g.generateRds(protocol, outbound.Service, outboundRouteName, clusters, proxy.Dataplane.Spec.Tags())
 		if err != nil {
 			return nil, err
 		}
 		resources.Add(rdsResources...)
 	}
+
 	return resources.List(), nil
 }
 
@@ -274,13 +276,14 @@ func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *mode
 	return
 }
 
-func (_ OutboundProxyGenerator) generateRds(protocol mesh_core.Protocol, service string, outboundRouteName string, clusters []envoy_common.ClusterInfo) ([]*model.Resource, error) {
+func (_ OutboundProxyGenerator) generateRds(protocol mesh_core.Protocol, service string, outboundRouteName string, clusters []envoy_common.ClusterInfo, tags kuma_mesh.MultiValueTagSet) ([]*model.Resource, error) {
 	resources := &model.ResourceSet{}
 	switch protocol {
 	case mesh_core.ProtocolHTTP:
 		// generate RDS resource
 		routeConfiguration, err := envoy_routes.NewRouteConfigurationBuilder().
 			Configure(envoy_routes.CommonRouteConfiguration(outboundRouteName)).
+			Configure(envoy_routes.TagsHeader(tags)).
 			Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder().
 				Configure(envoy_routes.CommonVirtualHost(service)).
 				Configure(envoy_routes.DefaultRoute(clusters...)))).

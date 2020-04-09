@@ -25,8 +25,8 @@ var _ = Describe("Reconcile", func() {
 
 		gen := templateSnapshotGenerator{
 			ProxyTemplateResolver: &simpleProxyTemplateResolver{
-				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
-				DefaultProxyTemplate: template.DefaultProxyTemplate,
+				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
+				DefaultProxyTemplate:    template.DefaultProxyTemplate,
 			},
 		}
 

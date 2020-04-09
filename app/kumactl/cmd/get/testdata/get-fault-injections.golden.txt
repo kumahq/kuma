@@ -1,0 +1,3 @@
+MESH      NAME
+default   fi1
+default   fi2

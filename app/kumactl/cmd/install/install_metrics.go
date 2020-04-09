@@ -36,8 +36,8 @@ func newInstallMetrics() *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:   "metrics",
-		Short: "Install Metrics backend in Kubernetes cluster",
-		Long:  `Install Metrics backend (Prometheus and Grafana) in Kubernetes cluster.`,
+		Short: "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
+		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in a kuma-metrics namespace`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			templateArgs := metricsTemplateArgs{
 				Namespace:               args.Namespace,

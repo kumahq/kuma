@@ -4918,7 +4918,6 @@ spec:
               readOnly: true
             - name: storage
               mountPath: "/var/lib/grafana"
-              readOnly: true
             - name: provisioning-datasource
               mountPath: /etc/grafana/provisioning/datasources
               readOnly: true
@@ -5191,7 +5190,7 @@ spec:
             - mountPath: "/var/run/kuma.io/prometheus-sd"
               name: kuma-prometheus-sd-volume
         - name: kuma-prometheus-sd
-          image: kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd:0.4.0-rc1-14-g8a00fd4a
+          image: kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd:0.0.1
           imagePullPolicy: IfNotPresent
           args:
             - run

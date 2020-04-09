@@ -97,15 +97,15 @@ endef
 define envoy_active_mtls_listeners_count
 	curl -s localhost:9901/config_dump \
 	| jq ".configs[] \
-    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ListenersConfigDump\") \
-	| .dynamic_active_listeners[] \
-	| select(.listener.name | startswith(\"$(1)\")) \
-	| select(.listener.address.socket_address.port_value == $(2)) \
-	| select(.listener.filter_chains[] \
-		| (.tls_context.common_tls_context \
-			and .tls_context.common_tls_context.tls_certificate_sds_secret_configs[] .name == \"identity_cert\") \
-			and (.tls_context.common_tls_context.validation_context_sds_secret_config.name == \"mesh_ca\") \
-			and (.tls_context.require_client_certificate == true) \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v3.ListenersConfigDump\") \
+	| .dynamic_listeners[] \
+	| select(.name | startswith(\"$(1)\")) \
+	| select(.active_state.listener.address.socket_address.port_value == $(2)) \
+	| select(.active_state.listener.filter_chains[] \
+		| (.transport_socket.typed_config.common_tls_context \
+			and .transport_socket.typed_config.common_tls_context.tls_certificate_sds_secret_configs[] .name == \"identity_cert\") \
+			and (.transport_socket.typed_config.common_tls_context.validation_context_sds_secret_config.name == \"mesh_ca\") \
+			and (.transport_socket.typed_config.require_client_certificate == true) \
 	  ) " \
 	| jq -s ". | length"
 endef
@@ -113,11 +113,11 @@ endef
 define envoy_active_mtls_clusters_count
 	curl -s localhost:9901/config_dump \
 	| jq ".configs[] \
-    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ClustersConfigDump\") \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v3.ClustersConfigDump\") \
 	| .dynamic_active_clusters[] \
 	| select(.cluster.name == \"$(1)\") \
-	| select(.cluster.tls_context.common_tls_context) \
-	| select(.cluster.tls_context.common_tls_context | \
+	| select(.cluster.transport_socket.typed_config.common_tls_context) \
+	| select(.cluster.transport_socket.typed_config.common_tls_context | \
 		 (.tls_certificate_sds_secret_configs[] | .name == \"identity_cert\") and (.validation_context_sds_secret_config.name == \"mesh_ca\") \
 	  ) " \
 	| jq -s ". | length"
@@ -155,11 +155,11 @@ endef
 define envoy_active_routing_listeners_count
 	curl -s localhost:9901/config_dump \
 	| jq ".configs[] \
-    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ListenersConfigDump\") \
-	| .dynamic_active_listeners[] \
-	| select(.listener.name | startswith(\"$(1)\")) \
-	| select(.listener.address.socket_address.port_value == $(2)) \
-	| select(.listener.filter_chains[] | .filters[] \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v3.ListenersConfigDump\") \
+	| .dynamic_listeners[] \
+	| select(.name | startswith(\"$(1)\")) \
+	| select(.active_state.listener.address.socket_address.port_value == $(2)) \
+	| select(.active_state.listener.filter_chains[] | .filters[] \
 		 | select((.name = \"envoy.tcp_proxy\") \
 			and (.typed_config.cluster == \"$(3)\")) \
 	  ) " \
@@ -169,7 +169,7 @@ endef
 define envoy_active_routing_clusters_count
 	curl -s localhost:9901/config_dump \
 	| jq ".configs[] \
-    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v2alpha.ClustersConfigDump\") \
+    | select(.[\"@type\"] == \"type.googleapis.com/envoy.admin.v3.ClustersConfigDump\") \
 	| .dynamic_active_clusters[] \
 	| select(.cluster.name == \"$(1)\")" \
 	| jq -s ". | length"
@@ -191,7 +191,7 @@ deploy/example/docker-compose: ## Docker Compose: Run example setup
 	$(call docker_compose) up $(DOCKER_COMPOSE_OPTIONS)
 
 undeploy/example/docker-compose: ## Docker Compose: Remove example setup
-	$(call docker_compose) down
+	$(call docker_compose) down -v
 
 wait/example/docker-compose: ## Docker Compose: Wait for example setup to get ready
 	$(call docker_compose) exec kuma-example-client $(call wait_for_client_service,3000)
@@ -319,6 +319,8 @@ deploy/example/minikube: ## Minikube: Deploy example setup
 	eval $$(minikube docker-env) && docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
+	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
 	kubectl apply -f tools/e2e/examples/minikube/kuma-demo/
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-app
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app

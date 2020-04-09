@@ -12,7 +12,7 @@ DISTRIBUTIONS=(debian:linux ubuntu:linux rhel:linux centos:linux darwin:darwin)
 BINTRAY_ENDPOINT="https://api.bintray.com/"
 BINTRAY_SUBJECT="kong"
 [ -z "$BINTRAY_REPOSITORY" ] && BINTRAY_REPOSITORY="kuma"
-ENVOY_VERSION=1.12.2
+ENVOY_VERSION=1.13.1
 
 function msg_green {
   builtin echo -en "\033[1;32m"
@@ -65,24 +65,26 @@ function create_tarball {
   local distro=$3
 
   local dest_dir=build/kuma-$distro-$arch
+  local kuma_dir=$dest_dir/kuma-$KUMA_VERSION
 
   rm -rf $dest_dir
   mkdir $dest_dir
-  mkdir $dest_dir/bin
-  mkdir $dest_dir/conf
+  mkdir $kuma_dir
+  mkdir $kuma_dir/bin
+  mkdir $kuma_dir/conf
 
   get_envoy $distro
   chmod 755 build/envoy-$distro
 
-  cp -p build/envoy-$distro $dest_dir/bin/envoy
-  cp -p build/artifacts-$system-$arch/kuma-cp/kuma-cp $dest_dir/bin
-  cp -p build/artifacts-$system-$arch/kuma-dp/kuma-dp $dest_dir/bin
-  cp -p build/artifacts-$system-$arch/kumactl/kumactl $dest_dir/bin
-  cp -p build/artifacts-$system-$arch/kuma-prometheus-sd/kuma-prometheus-sd $dest_dir/bin
-  cp -p build/artifacts-$system-$arch/kuma-tcp-echo/kuma-tcp-echo $dest_dir/bin
-  cp -p pkg/config/app/kuma-cp/kuma-cp.defaults.yaml $dest_dir/conf/kuma-cp.conf
+  cp -p build/envoy-$distro $kuma_dir/bin/envoy
+  cp -p build/artifacts-$system-$arch/kuma-cp/kuma-cp $kuma_dir/bin
+  cp -p build/artifacts-$system-$arch/kuma-dp/kuma-dp $kuma_dir/bin
+  cp -p build/artifacts-$system-$arch/kumactl/kumactl $kuma_dir/bin
+  cp -p build/artifacts-$system-$arch/kuma-prometheus-sd/kuma-prometheus-sd $kuma_dir/bin
+  cp -p build/artifacts-$system-$arch/kuma-tcp-echo/kuma-tcp-echo $kuma_dir/bin
+  cp -p pkg/config/app/kuma-cp/kuma-cp.defaults.yaml $kuma_dir/conf/kuma-cp.conf
 
-  cp tools/releases/templates/* $dest_dir
+  cp tools/releases/templates/* $kuma_dir
 
   tar -czf build/artifacts-$system-$arch/kuma-$distro-$arch.tar.gz -C $dest_dir .
 }

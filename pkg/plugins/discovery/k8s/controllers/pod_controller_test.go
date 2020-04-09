@@ -87,6 +87,7 @@ var _ = Describe("PodReconciler", func() {
 					},
 				},
 				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
 					Ports: []kube_core.ServicePort{
 						{
 							Port: 80,

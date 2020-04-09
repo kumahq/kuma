@@ -206,6 +206,7 @@ webhooks:
           - CREATE
           - UPDATE
         resources:
+          - faultinjections
           - trafficlogs
           - trafficpermissions
           - trafficroutes
@@ -214,3 +215,21 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+  - name: service.validator.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: {{ .AdmissionServerTlsCert | b64enc }}
+      service:
+        namespace: {{ .Namespace }}
+        name: {{ .ControlPlaneServiceName }}
+        path: /validate-v1-service
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - services

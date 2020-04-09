@@ -19,6 +19,7 @@ import (
 	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/Kong/kuma/pkg/config/types"
 	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 	util_net "github.com/Kong/kuma/pkg/util/net"
 )
 
@@ -97,8 +98,6 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
-			runLog.Info("starting Dataplane (Envoy) ...")
-
 			dataplane := envoy.New(envoy.Opts{
 				Catalog:   catalog,
 				Config:    cfg,
@@ -106,39 +105,20 @@ func newRunCmd() *cobra.Command {
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 			})
+			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
-			server := accesslogs.NewAccessLogServer()
-			defer server.Close()
-
-			logServerErr := make(chan error)
-			go func() {
-				defer close(logServerErr)
-				if err := server.Start(cfg.Dataplane); err != nil {
-					runLog.Error(err, "problem running Access Log server")
-					logServerErr <- err
-				}
-				runLog.Info("stopped Access Log server")
-			}()
-
-			dataplaneErr := make(chan error)
-			go func() {
-				defer close(dataplaneErr)
-				if err := dataplane.Run(core.SetupSignalHandler()); err != nil {
-					runLog.Error(err, "problem running Dataplane (Envoy)")
-					dataplaneErr <- err
-				}
-				runLog.Info("stopped Dataplane (Envoy)")
-			}()
-
-			select {
-			case err := <-logServerErr:
-				if err == nil {
-					return errors.New("Access Log server terminated unexpectedly")
-				}
-				return err
-			case err := <-dataplaneErr:
+			componentMgr := component.NewManager()
+			if err := componentMgr.Add(server, dataplane); err != nil {
 				return err
 			}
+
+			runLog.Info("starting Kuma DP")
+			if err := componentMgr.Start(core.SetupSignalHandler()); err != nil {
+				runLog.Error(err, "error while running Kuma DP")
+				return err
+			}
+			runLog.Info("stopping Kuma DP")
+			return nil
 		},
 	}
 

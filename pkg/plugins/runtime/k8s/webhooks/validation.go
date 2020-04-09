@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -72,9 +73,13 @@ func (h *validatingHandler) Supports(admission.Request) bool {
 }
 
 func convertValidationError(kumaErr *validators.ValidationError, obj k8s_model.KubernetesObject) admission.Response {
+	return convertValidationErrorOf(kumaErr, obj, obj.GetObjectMeta())
+}
+
+func convertValidationErrorOf(kumaErr *validators.ValidationError, obj kube_runtime.Object, objMeta metav1.Object) admission.Response {
 	kumaErr = convertFieldNames(kumaErr)
 	details := &metav1.StatusDetails{
-		Name: obj.GetObjectMeta().Name,
+		Name: objMeta.GetName(),
 		Kind: obj.GetObjectKind().GroupVersionKind().Kind,
 	}
 	resp := admission.Response{

@@ -53,7 +53,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	}
 	// root flags
 	cmd.PersistentFlags().StringVar(&root.Args.ConfigFile, "config-file", "", "path to the configuration file to use")
-	cmd.PersistentFlags().StringVar(&root.Args.Mesh, "mesh", "default", "mesh to use")
+	cmd.PersistentFlags().StringVarP(&root.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.OffLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	// sub-commands
 	cmd.AddCommand(install.NewInstallCmd(root))

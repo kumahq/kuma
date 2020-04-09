@@ -10,7 +10,6 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
 )
@@ -48,7 +47,7 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 
 func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME", "mTLS", "CA", "METRICS"},
+		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -58,14 +57,14 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 				}
 				mesh := meshes.Items[i]
 
-				ca := ""
-				switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
-				case *mesh_proto.CertificateAuthority_Provided_:
-					ca = "provided"
-				case *mesh_proto.CertificateAuthority_Builtin_:
-					ca = "builtin"
-				default:
-					ca = "unknown"
+				mtls := "off"
+				if mesh.Spec.Mtls.GetEnabled() {
+					switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
+					case *mesh_proto.CertificateAuthority_Provided_:
+						mtls = "provided"
+					case *mesh_proto.CertificateAuthority_Builtin_:
+						mtls = "builtin"
+					}
 				}
 
 				metrics := "off"
@@ -73,12 +72,26 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 				case mesh.HasPrometheusMetricsEnabled():
 					metrics = "prometheus"
 				}
-
+				logging := "off"
+				if mesh.Spec.GetLogging() != nil {
+					logging = mesh.GetLoggingBackends()
+					if len(logging) == 0 {
+						logging = "off"
+					}
+				}
+				tracing := "off"
+				if mesh.Spec.GetTracing() != nil {
+					tracing = mesh.GetTracingBackends()
+					if len(tracing) == 0 {
+						tracing = "off"
+					}
+				}
 				return []string{
-					mesh.GetMeta().GetName(),                 // NAME
-					table.OnOff(mesh.Spec.Mtls.GetEnabled()), // mTLS
-					ca,                                       // CA
-					metrics,                                  // METRICS
+					mesh.GetMeta().GetName(), // NAME
+					mtls,                     // mTLS
+					metrics,                  // METRICS
+					logging,                  // LOGGING
+					tracing,                  // TRACING
 				}
 			}
 		}(),

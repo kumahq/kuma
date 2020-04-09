@@ -9,13 +9,13 @@ import (
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	bootstrap_universal "github.com/Kong/kuma/pkg/plugins/bootstrap/universal"
 	resources_memory "github.com/Kong/kuma/pkg/plugins/resources/memory"
 )
 
@@ -31,15 +31,17 @@ func (i TestRuntimeInfo) GetInstanceId() string {
 
 func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	builder := core_runtime.BuilderFor(cfg).
-		WithComponentManager(bootstrap_universal.NewComponentManager()).
+		WithComponentManager(component.NewManager()).
 		WithResourceStore(resources_memory.NewStore()).
 		WithXdsContext(core_xds.NewXdsContext())
 
-	builder.
-		WithSecretManager(newSecretManager(builder)).
+	builder.WithSecretManager(newSecretManager(builder)).
 		WithBuiltinCaManager(newBuiltinCaManager(builder)).
-		WithProvidedCaManager(newProvidedCaManager(builder)).
-		WithResourceManager(newResourceManager(builder))
+		WithProvidedCaManager(newProvidedCaManager(builder))
+
+	rm := newResourceManager(builder)
+	builder.WithResourceManager(rm).
+		WithReadOnlyResourceManager(rm)
 
 	return builder
 }

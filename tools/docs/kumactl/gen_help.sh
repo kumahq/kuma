@@ -35,8 +35,8 @@ gen_help kumactl config control-planes remove
 gen_help kumactl config control-planes switch
 gen_help kumactl install
 gen_help kumactl install control-plane
-gen_help kumactl install database-schema
 gen_help kumactl install metrics
+gen_help kumactl install tracing
 gen_help kumactl generate tls-certificate
 gen_help kumactl generate dp-token
 gen_help kumactl get
@@ -48,6 +48,7 @@ gen_help kumactl get traffic-logs
 gen_help kumactl get traffic-permissions
 gen_help kumactl get traffic-routes
 gen_help kumactl get traffic-traces
+gen_help kumactl get fault-injections
 gen_help kumactl delete
 gen_help kumactl inspect
 gen_help kumactl inspect dataplanes

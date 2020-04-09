@@ -25,7 +25,7 @@ var logger = core.Log.WithName("logs")
 //    If we define rule kong->backend, it is also applied for kong-admin because there is no way to differentiate
 //    traffic from services that are using one dataplane.
 type TrafficLogsMatcher struct {
-	ResourceManager manager.ResourceManager
+	ResourceManager manager.ReadOnlyResourceManager
 }
 
 func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (core_xds.LogMap, error) {

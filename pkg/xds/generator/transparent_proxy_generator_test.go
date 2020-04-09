@@ -116,7 +116,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
             connectTimeout: 5s
-            lbPolicy: ORIGINAL_DST_LB
+            lbPolicy: CLUSTER_PROVIDED
             name: pass_through
             type: ORIGINAL_DST
           version: v1
@@ -168,7 +168,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |
-                        [%START_TIME%] default (unknown)->%UPSTREAM_HOST%(external) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                        [%START_TIME%] %RESPONSE_FLAGS% default (unknown)->%UPSTREAM_HOST%(external) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                       path: /var/log
                   cluster: pass_through
                   statPrefix: pass_through
@@ -179,7 +179,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
             connectTimeout: 5s
-            lbPolicy: ORIGINAL_DST_LB
+            lbPolicy: CLUSTER_PROVIDED
             name: pass_through
             type: ORIGINAL_DST
           version: v1

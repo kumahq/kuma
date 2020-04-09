@@ -29,8 +29,8 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			resolver := &simpleProxyTemplateResolver{
-				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
-				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
+				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
+				DefaultProxyTemplate:    &mesh_proto.ProxyTemplate{},
 			}
 
 			// when
@@ -93,8 +93,8 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			resolver := &simpleProxyTemplateResolver{
-				ResourceManager:      manager.NewResourceManager(memStore),
-				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
+				ReadOnlyResourceManager: manager.NewResourceManager(memStore),
+				DefaultProxyTemplate:    &mesh_proto.ProxyTemplate{},
 			}
 
 			// when
@@ -120,8 +120,8 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			resolver := &simpleProxyTemplateResolver{
-				ResourceManager:      manager.NewResourceManager(memory.NewStore()),
-				DefaultProxyTemplate: &mesh_proto.ProxyTemplate{},
+				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
+				DefaultProxyTemplate:    &mesh_proto.ProxyTemplate{},
 			}
 
 			// when
