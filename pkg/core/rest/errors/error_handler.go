@@ -18,6 +18,8 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleNotFound(title, response)
 	case store.IsResourcePreconditionFailed(err):
 		handlePreconditionFailed(title, response)
+	case err == store.ErrorInvalidOffset:
+		handleInvalidOffset(title, response)
 	case manager.IsMeshNotFound(err):
 		handleMeshNotFound(title, err.(*manager.MeshNotFoundError), response)
 	case validators.IsValidationError(err):
@@ -67,6 +69,14 @@ func handleValidationError(title string, err *validators.ValidationError, respon
 			Field:   violation.Field,
 			Message: violation.Message,
 		})
+	}
+	writeError(response, 400, kumaErr)
+}
+
+func handleInvalidOffset(title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: "Invalid offset",
 	}
 	writeError(response, 400, kumaErr)
 }

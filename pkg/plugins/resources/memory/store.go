@@ -3,7 +3,6 @@ package memory
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"strconv"
 	"sync"
 	"time"
@@ -203,7 +202,7 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		if opts.PageOffset != "" {
 			o, err := strconv.Atoi(opts.PageOffset)
 			if err != nil {
-				return errors.Wrap(err, "invalid offset")
+				return store.ErrorInvalidOffset
 			}
 			offset = o
 		}

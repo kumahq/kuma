@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -147,6 +148,9 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	}
 
 	if err := s.Client.List(ctx, obj, &kubeOpts); err != nil {
+		if strings.Contains(err.Error(), "invalid continue token") {
+			return store.ErrorInvalidOffset
+		}
 		return errors.Wrap(err, "failed to list k8s resources")
 	}
 	predicate := func(r core_model.Resource) bool {

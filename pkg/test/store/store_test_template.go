@@ -363,7 +363,6 @@ func ExecuteStoreTests(
 				for i := 0; i < numOfResources; i++ {
 					Expect(resourceNames).To(HaveKey(fmt.Sprintf("res-%d.demo", i)))
 				}
-
 			})
 
 			It("next offset should be null when queried collection with less elements than page has", func() {
@@ -403,6 +402,15 @@ func ExecuteStoreTests(
 				Expect(list.Items).To(BeEmpty())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(list.Pagination.NextOffset).To(BeEmpty())
+			})
+
+			It("next offset should return error when query with invalid offset", func() {
+				// when
+				list := sample_model.TrafficRouteResourceList{}
+				err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, "123invalidOffset"))
+
+				// then
+				Expect(err).To(Equal(store.ErrorInvalidOffset))
 			})
 		})
 	})

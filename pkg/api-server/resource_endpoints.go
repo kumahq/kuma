@@ -81,7 +81,8 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 		}
 		pageSize = p
 		if pageSize > maxPageSize {
-			// handle
+			rest_errors.HandleError(response, err, "Could not retrieve resources")
+			return
 		}
 	}
 	offset := request.QueryParameter("offset")

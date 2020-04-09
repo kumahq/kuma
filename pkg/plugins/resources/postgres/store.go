@@ -211,7 +211,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	if opts.PageOffset != "" {
 		o, err := strconv.Atoi(opts.PageOffset)
 		if err != nil {
-			return errors.Wrap(err, "invalid offset")
+			return store.ErrorInvalidOffset
 		}
 		offset = o
 	}
