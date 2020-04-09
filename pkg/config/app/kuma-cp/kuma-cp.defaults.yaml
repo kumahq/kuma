@@ -63,7 +63,7 @@ sdsServer:
   # Port of GRPC server that Envoy connects to
   grpcPort: 5677 # ENV: KUMA_SDS_SERVER_GRPC_PORT
   # url to reach SDS server. By default its autoconfigured to XDS server
-  publicUrl: # ENV: KUMA_SDS_SERVER_PUBLIC_URL
+  publicHostPort: # ENV: KUMA_SDS_SERVER_PUBLIC_HOST_PORT
   # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
   tlsCertFile: # ENV: KUMA_SDS_SERVER_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
