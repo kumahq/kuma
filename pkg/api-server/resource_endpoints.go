@@ -3,9 +3,6 @@ package api_server
 import (
 	"context"
 	"fmt"
-	url2 "net/url"
-	"strconv"
-
 	"github.com/emicklei/go-restful"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
@@ -18,9 +15,6 @@ import (
 	rest_errors "github.com/Kong/kuma/pkg/core/rest/errors"
 	"github.com/Kong/kuma/pkg/core/validators"
 )
-
-const maxPageSize = 1000
-const defaultPageSize = 100
 
 type meshFromRequestFn = func(*restful.Request) string
 
@@ -72,39 +66,23 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 func (r *resourceEndpoints) listResources(request *restful.Request, response *restful.Response) {
 	meshName := r.meshFromRequest(request)
 
-	pageSize := defaultPageSize
-	if request.QueryParameter("size") != "" {
-		p, err := strconv.Atoi(request.QueryParameter("size"))
-		if err != nil {
-			rest_errors.HandleError(response, err, "Could not retrieve resources")
-			return
-		}
-		pageSize = p
-		if pageSize > maxPageSize {
-			rest_errors.HandleError(response, err, "Could not retrieve resources")
-			return
-		}
+	pageSize, offset, err := pagination(request)
+	if err != nil {
+		rest_errors.HandleError(response, err, "Could not retrieve resources")
+		return
 	}
-	offset := request.QueryParameter("offset")
 
 	list := r.ResourceListFactory()
 	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByPage(pageSize, offset)); err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
-		if list.GetPagination() != nil && list.GetPagination().NextOffset != "" {
-			query := request.Request.URL.Query()
-			query.Set("offset", list.GetPagination().NextOffset)
-			url, err := url2.Parse(r.publicURL)
-			if err != nil {
-				// handle
-				return
-			}
-			url.Path = request.Request.URL.Path
-			url.RawQuery = query.Encode()
-			urlString := url.String()
-			restList.Next = &urlString
+		next, err := nextLink(request, r.publicURL, list)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not retrieve resources")
+			return
 		}
+		restList.Next = next
 		if err := response.WriteAsJson(restList); err != nil {
 			rest_errors.HandleError(response, err, "Could not list resources")
 		}

@@ -245,7 +245,67 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(bytes).To(MatchJSON(`
 			{
 				"title": "Could not retrieve resources",
-				"details": "Invalid offset"
+				"details": "Invalid offset",
+				"causes": [
+					{
+						"field": "offset",
+						"message": "Invalid format"
+					}
+				]
+			}
+			`))
+		})
+
+		It("should return 400 with error on invalid size type", func() {
+			// when
+			client = resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/sample-traffic-routes?size=invalid",
+			}
+			response := client.list()
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+			// and
+			bytes, err := ioutil.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(MatchJSON(`
+			{
+				"title": "Could not retrieve resources",
+				"details": "Invalid page size",
+				"causes": [
+					{
+						"field": "size",
+						"message": "Invalid format"
+					}
+				]
+			}
+			`))
+		})
+
+		It("should return 400 with error when page size exceeded the limit", func() {
+			// when
+			client = resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/sample-traffic-routes?size=2000",
+			}
+			response := client.list()
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+			// and
+			bytes, err := ioutil.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(MatchJSON(`
+			{
+				"title": "Could not retrieve resources",
+				"details": "Invalid page size",
+				"causes": [
+					{
+						"field": "size",
+						"message": "Invalid page size of 2000. Maximum page size is 1000"
+					}
+				]
 			}
 			`))
 		})
