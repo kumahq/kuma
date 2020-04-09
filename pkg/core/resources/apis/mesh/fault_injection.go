@@ -49,7 +49,7 @@ func (f *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &FaultInjectionResourceList{}
 
 type FaultInjectionResourceList struct {
-	Items []*FaultInjectionResource
+	Items      []*FaultInjectionResource
 	Pagination *model.Pagination
 }
 

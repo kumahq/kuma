@@ -121,8 +121,8 @@ var _ = Describe("Resource Endpoints", func() {
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(Or(
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s]}`, json1, json2)),
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s]}`, json2, json1)),
+				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json1, json2)),
+				MatchJSON(fmt.Sprintf(`{"items": [%s,%s]}, "next": null`, json2, json1)),
 			))
 		})
 
@@ -157,8 +157,8 @@ var _ = Describe("Resource Endpoints", func() {
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(Or(
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s]}`, json1, json2)),
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s]}`, json2, json1)),
+				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json1, json2)),
+				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json2, json1)),
 			))
 		})
 	})

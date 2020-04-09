@@ -10,5 +10,6 @@
       "name": "another-template",
       "type": "ProxyTemplate"
     }
-  ]
+  ],
+  "next": null
 }

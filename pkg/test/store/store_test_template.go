@@ -322,40 +322,88 @@ func ExecuteStoreTests(
 		})
 
 		Describe("Pagination", func() {
-			It("should list all resources using pagination", func(done Done) {
+			It("should list all resources using pagination", func() {
 				// given
 				offset := ""
 				pageSize := 2
-				numOfResources := 9
+				numOfResources := 5
 				resourceNames := map[string]bool{}
 
-				// setup - create 9 resources
+				// setup create resources
 				for i := 0; i < numOfResources; i++ {
 					createResource(fmt.Sprintf("res-%d.demo", i))
 				}
 
-				// when iterate collection using pagination
-				for {
+				// when list first two pages with 2 elements
+				for i := 1; i <= 2; i++ {
 					list := sample_model.TrafficRouteResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(pageSize, offset))
+
 					Expect(err).ToNot(HaveOccurred())
-					for _, item := range list.Items {
-						resourceNames[item.GetMeta().GetName()] = true
-					}
-					if list.GetPagination().NextOffset == "" {
-						break
-					}
-					offset = list.GetPagination().NextOffset
+					Expect(list.Pagination.NextOffset).ToNot(BeEmpty())
+					Expect(list.Items).To(HaveLen(2))
+
+					resourceNames[list.Items[0].GetMeta().GetName()] = true
+					resourceNames[list.Items[1].GetMeta().GetName()] = true
+					offset = list.Pagination.NextOffset
 				}
 
+				// when list third page with 1 element (less than page size)
+				list := sample_model.TrafficRouteResourceList{}
+				err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(pageSize, offset))
+
 				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(list.Pagination.NextOffset).To(BeEmpty())
+				Expect(list.Items).To(HaveLen(1))
+				resourceNames[list.Items[0].GetMeta().GetName()] = true
+
+				// and all elements were retrieved
 				Expect(resourceNames).To(HaveLen(numOfResources))
 				for i := 0; i < numOfResources; i++ {
 					Expect(resourceNames).To(HaveKey(fmt.Sprintf("res-%d.demo", i)))
 				}
 
-				close(done)
-			}, 5)
+			})
+
+			It("next offset should be null when queried collection with less elements than page has", func() {
+				// setup
+				createResource("res-1.demo")
+
+				// when
+				list := sample_model.TrafficRouteResourceList{}
+				err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(5, ""))
+
+				// then
+				Expect(list.Items).To(HaveLen(1))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(list.Pagination.NextOffset).To(BeEmpty())
+			})
+
+			It("next offset should be null when queried about size equals to elements available", func() {
+				// setup
+				createResource("res-1.demo")
+
+				// when
+				list := sample_model.TrafficRouteResourceList{}
+				err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(1, ""))
+
+				// then
+				Expect(list.Items).To(HaveLen(1))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(list.Pagination.NextOffset).To(BeEmpty())
+			})
+
+			It("next offset should be null when queried empty collection", func() {
+				// when
+				list := sample_model.TrafficRouteResourceList{}
+				err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, ""))
+
+				// then
+				Expect(list.Items).To(BeEmpty())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(list.Pagination.NextOffset).To(BeEmpty())
+			})
 		})
 	})
 }

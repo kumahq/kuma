@@ -40,9 +40,13 @@ var _ = Describe("Auto configuration", func() {
 				cfg.DataplaneTokenServer.Public.Interface = "192.168.0.1"
 				cfg.DataplaneTokenServer.Public.Port = 2222
 				cfg.BootstrapServer.Port = 3333
+				cfg.ApiServer.Port = 1234
 				return cfg
 			},
 			expectedCatalogConfig: catalog.CatalogConfig{
+				ApiServer: catalog.ApiServerConfig{
+					Url: "http://kuma.internal:1234",
+				},
 				Bootstrap: catalog.BootstrapApiConfig{
 					Url: "http://kuma.internal:3333",
 				},
@@ -70,6 +74,9 @@ var _ = Describe("Auto configuration", func() {
 				return cfg
 			},
 			expectedCatalogConfig: catalog.CatalogConfig{
+				ApiServer: catalog.ApiServerConfig{
+					Url: "http://kuma.internal:5681",
+				},
 				Bootstrap: catalog.BootstrapApiConfig{
 					Url: "http://kuma.internal:3333",
 				},
@@ -95,6 +102,9 @@ var _ = Describe("Auto configuration", func() {
 				return cfg
 			},
 			expectedCatalogConfig: catalog.CatalogConfig{
+				ApiServer: catalog.ApiServerConfig{
+					Url: "http://kuma.internal:5681",
+				},
 				Bootstrap: catalog.BootstrapApiConfig{
 					Url: "http://kuma.internal:3333",
 				},
@@ -118,6 +128,9 @@ var _ = Describe("Auto configuration", func() {
 				return cfg
 			},
 			expectedCatalogConfig: catalog.CatalogConfig{
+				ApiServer: catalog.ApiServerConfig{
+					Url: "http://localhost:5681",
+				},
 				Bootstrap: catalog.BootstrapApiConfig{
 					Url: "http://localhost:5682",
 				},
@@ -148,6 +161,9 @@ var _ = Describe("Auto configuration", func() {
 				return cfg
 			},
 			expectedCatalogConfig: catalog.CatalogConfig{
+				ApiServer: catalog.ApiServerConfig{
+					Url: "http://kuma.internal:5681",
+				},
 				Bootstrap: catalog.BootstrapApiConfig{
 					Url: "https://bootstrap.kuma.com:1234",
 				},

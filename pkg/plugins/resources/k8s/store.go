@@ -140,7 +140,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if opts.PageSize > 0 {
 		kubeOpts = kube_client.ListOptions{
 			Raw: &kube_meta.ListOptions{
-				Limit: int64(opts.PageSize),
+				Limit:    int64(opts.PageSize),
 				Continue: opts.PageOffset,
 			},
 		}

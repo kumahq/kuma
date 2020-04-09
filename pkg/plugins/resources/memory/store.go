@@ -197,7 +197,8 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 
 	offset := 0
 	pageSize := len(records)
-	if opts.PageSize > 0 {
+	paginateResults := opts.PageSize != 0
+	if paginateResults {
 		pageSize = opts.PageSize
 		if opts.PageOffset != "" {
 			o, err := strconv.Atoi(opts.PageOffset)
@@ -208,7 +209,7 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		}
 	}
 
-	for i := offset; i < offset + pageSize && i < len(records); i++ {
+	for i := offset; i < offset+pageSize && i < len(records); i++ {
 		r := rs.NewItem()
 		if err := c.unmarshalRecord(records[i], r); err != nil {
 			return err
@@ -216,10 +217,10 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		_ = rs.AddItem(r)
 	}
 
-	if opts.PageSize > 0 {
+	if paginateResults {
 		nextOffset := ""
-		if len(rs.GetItems()) == opts.PageSize { // set new offset only if we did not reach the end of the collection
-			nextOffset += strconv.Itoa(offset + opts.PageSize)
+		if offset+pageSize < len(records) { // set new offset only if we did not reach the end of the collection
+			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
 		rs.SetPagination(&model.Pagination{
 			NextOffset: nextOffset,

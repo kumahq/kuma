@@ -44,7 +44,7 @@ func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &ProxyTemplateResourceList{}
 
 type ProxyTemplateResourceList struct {
-	Items []*ProxyTemplateResource
+	Items      []*ProxyTemplateResource
 	Pagination *model.Pagination
 }
 

@@ -44,7 +44,7 @@ func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &MeshResourceList{}
 
 type MeshResourceList struct {
-	Items []*MeshResource
+	Items      []*MeshResource
 	Pagination *model.Pagination
 }
 

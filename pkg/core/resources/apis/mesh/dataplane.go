@@ -44,7 +44,7 @@ func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &DataplaneResourceList{}
 
 type DataplaneResourceList struct {
-	Items []*DataplaneResource
+	Items      []*DataplaneResource
 	Pagination *model.Pagination
 }
 

@@ -50,7 +50,7 @@ func (t *HealthCheckResource) Destinations() []*mesh_proto.Selector {
 var _ model.ResourceList = &HealthCheckResourceList{}
 
 type HealthCheckResourceList struct {
-	Items []*HealthCheckResource
+	Items      []*HealthCheckResource
 	Pagination *model.Pagination
 }
 

@@ -47,7 +47,7 @@ func (t *SecretResource) Validate() error {
 var _ model.ResourceList = &SecretResourceList{}
 
 type SecretResourceList struct {
-	Items []*SecretResource
+	Items      []*SecretResource
 	Pagination *model.Pagination
 }
 

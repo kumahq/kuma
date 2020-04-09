@@ -53,7 +53,7 @@ func (t *DataplaneOverviewResource) Validate() error {
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {
-	Items []*DataplaneOverviewResource
+	Items      []*DataplaneOverviewResource
 	Pagination *model.Pagination
 }
 

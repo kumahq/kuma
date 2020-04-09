@@ -44,7 +44,7 @@ func (t *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &TrafficLogResourceList{}
 
 type TrafficLogResourceList struct {
-	Items []*TrafficLogResource
+	Items      []*TrafficLogResource
 	Pagination *model.Pagination
 }
 

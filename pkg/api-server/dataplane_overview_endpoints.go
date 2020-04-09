@@ -34,6 +34,7 @@ func (r *dataplaneOverviewEndpoints) addListEndpoint(ws *restful.WebService, pat
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Param(ws.QueryParameter("tag", "Tag to filter in key:value format").DataType("string")).
 		Param(ws.QueryParameter("gateway", "Param to filter gateway planes").DataType("boolean")).
+		// todo pagination is not implemented
 		Returns(200, "OK", nil))
 }
 

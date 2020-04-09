@@ -144,8 +144,8 @@ func (g *GetOptions) HashCode() string {
 }
 
 type ListOptions struct {
-	Mesh string
-	PageSize int
+	Mesh       string
+	PageSize   int
 	PageOffset string
 }
 

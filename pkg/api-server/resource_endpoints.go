@@ -3,6 +3,8 @@ package api_server
 import (
 	"context"
 	"fmt"
+	url2 "net/url"
+	"strconv"
 
 	"github.com/emicklei/go-restful"
 
@@ -17,6 +19,9 @@ import (
 	"github.com/Kong/kuma/pkg/core/validators"
 )
 
+const maxPageSize = 1000
+const defaultPageSize = 100
+
 type meshFromRequestFn = func(*restful.Request) string
 
 func meshFromPathParam(param string) meshFromRequestFn {
@@ -26,6 +31,7 @@ func meshFromPathParam(param string) meshFromRequestFn {
 }
 
 type resourceEndpoints struct {
+	publicURL       string
 	resManager      manager.ResourceManager
 	meshFromRequest meshFromRequestFn
 	definitions.ResourceWsDefinition
@@ -58,17 +64,46 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix).To(r.listResources).
 		Doc(fmt.Sprintf("List of %s", r.Name)).
+		Param(ws.PathParameter("size", "size of page").DataType("int")).
+		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).
 		Returns(200, "OK", nil))
 }
 
 func (r *resourceEndpoints) listResources(request *restful.Request, response *restful.Response) {
 	meshName := r.meshFromRequest(request)
 
+	pageSize := defaultPageSize
+	if request.QueryParameter("size") != "" {
+		p, err := strconv.Atoi(request.QueryParameter("size"))
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not retrieve resources")
+			return
+		}
+		pageSize = p
+		if pageSize > maxPageSize {
+			// handle
+		}
+	}
+	offset := request.QueryParameter("offset")
+
 	list := r.ResourceListFactory()
-	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName)); err != nil {
+	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByPage(pageSize, offset)); err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
+		if list.GetPagination() != nil && list.GetPagination().NextOffset != "" {
+			query := request.Request.URL.Query()
+			query.Set("offset", list.GetPagination().NextOffset)
+			url, err := url2.Parse(r.publicURL)
+			if err != nil {
+				// handle
+				return
+			}
+			url.Path = request.Request.URL.Path
+			url.RawQuery = query.Encode()
+			urlString := url.String()
+			restList.Next = &urlString
+		}
 		if err := response.WriteAsJson(restList); err != nil {
 			rest_errors.HandleError(response, err, "Could not list resources")
 		}

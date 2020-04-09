@@ -48,7 +48,7 @@ func (t *DataplaneInsightResource) Validate() error {
 var _ model.ResourceList = &DataplaneInsightResourceList{}
 
 type DataplaneInsightResourceList struct {
-	Items []*DataplaneInsightResource
+	Items      []*DataplaneInsightResource
 	Pagination *model.Pagination
 }
 

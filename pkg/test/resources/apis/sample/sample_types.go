@@ -52,7 +52,7 @@ func (t *TrafficRouteResource) Validate() error {
 var _ model.ResourceList = &TrafficRouteResourceList{}
 
 type TrafficRouteResourceList struct {
-	Items []*TrafficRouteResource
+	Items      []*TrafficRouteResource
 	Pagination *model.Pagination
 }
 
