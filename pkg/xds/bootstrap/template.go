@@ -14,7 +14,6 @@ type configParameters struct {
 	AccessLogPipe      string
 	DataplaneTokenPath string
 	CertBytes          string
-	KeyBytes           string
 }
 
 const configTemplate string = `
@@ -88,11 +87,9 @@ static_resources:
         common_tls_context:
           tls_params:
             tls_minimum_protocol_version: TLSv1_2
-          tls_certificates:
-          - certificate_chain:
+          validation_context:
+            trusted_ca:
               inline_bytes: "{{ .CertBytes }}"
-            private_key:
-              inline_bytes: "{{ .KeyBytes }}"
 {{ end }}
   - name: access_log_sink
     connect_timeout: {{ .XdsConnectTimeout }}

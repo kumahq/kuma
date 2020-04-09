@@ -29,16 +29,19 @@ type BootstrapGenerator interface {
 
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
-	config *bootstrap_config.BootstrapParamsConfig) BootstrapGenerator {
+	config *bootstrap_config.BootstrapParamsConfig,
+	cacertFile string) BootstrapGenerator {
 	return &bootstrapGenerator{
-		resManager: resManager,
-		config:     config,
+		resManager:  resManager,
+		config:      config,
+		xdsCertFile: cacertFile,
 	}
 }
 
 type bootstrapGenerator struct {
-	resManager core_manager.ResourceManager
-	config     *bootstrap_config.BootstrapParamsConfig
+	resManager  core_manager.ResourceManager
+	config      *bootstrap_config.BootstrapParamsConfig
+	xdsCertFile string
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
@@ -72,13 +75,11 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	if request.AdminPort != 0 {
 		adminPort = request.AdminPort
 	}
-	var cert, key string = "", ""
-	if b.config.XdsClientTlsCertFile != "" {
-		c, e1 := ioutil.ReadFile(b.config.XdsClientTlsCertFile)
-		k, e2 := ioutil.ReadFile(b.config.XdsClientTlsKeyFile)
-		if e1 == nil && e2 == nil {
+	var cert string = ""
+	if b.xdsCertFile != "" {
+		c, e1 := ioutil.ReadFile(b.xdsCertFile)
+		if e1 == nil {
 			cert = base64.StdEncoding.EncodeToString(c)
-			key = base64.StdEncoding.EncodeToString(k)
 		}
 	}
 	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
@@ -94,7 +95,6 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		AccessLogPipe:      accessLogPipe,
 		DataplaneTokenPath: request.DataplaneTokenPath,
 		CertBytes:          cert,
-		KeyBytes:           key,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params)

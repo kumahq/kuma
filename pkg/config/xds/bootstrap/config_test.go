@@ -33,8 +33,6 @@ var _ = Describe("BootstrappServerConfig", func() {
 		Expect(cfg.Params.XdsHost).To(Equal("kuma-control-plane.internal"))
 		Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
 		Expect(cfg.Params.XdsConnectTimeout).To(Equal(2 * time.Second))
-		Expect(cfg.Params.XdsClientTlsCertFile).To(Equal("/tmp/clientcert.pem"))
-		Expect(cfg.Params.XdsClientTlsKeyFile).To(Equal("/tmp/clientkey.pem"))
 	})
 
 	Context("with modified environment variables", func() {
@@ -56,15 +54,13 @@ var _ = Describe("BootstrappServerConfig", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KUMA_BOOTSTRAP_SERVER_PORT":                            "1234",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":            "192.168.0.1",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":               "4321",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH":    "/var/log",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                 "kuma-control-plane.internal",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                 "10101",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":      "2s",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CLIENT_TLS_CERT_FILE": "/tmp/clientcertenv.pem",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CLIENT_TLS_KEY_FILE":  "/tmp/clientkeyenv.pem",
+				"KUMA_BOOTSTRAP_SERVER_PORT":                         "1234",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":         "192.168.0.1",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":            "4321",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH": "/var/log",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":              "kuma-control-plane.internal",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":              "10101",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":   "2s",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -87,8 +83,6 @@ var _ = Describe("BootstrappServerConfig", func() {
 			Expect(cfg.Params.XdsHost).To(Equal("kuma-control-plane.internal"))
 			Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
 			Expect(cfg.Params.XdsConnectTimeout).To(Equal(2 * time.Second))
-			Expect(cfg.Params.XdsClientTlsCertFile).To(Equal("/tmp/clientcertenv.pem"))
-			Expect(cfg.Params.XdsClientTlsKeyFile).To(Equal("/tmp/clientkeyenv.pem"))
 		})
 	})
 

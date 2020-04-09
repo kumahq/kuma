@@ -48,13 +48,13 @@ func SetupServer(rt core_runtime.Runtime) error {
 	return core_runtime.Add(
 		rt,
 		// xDS gRPC API
-		&grpcServer{srv, rt.Config().XdsServer.GrpcPort},
+		&grpcServer{srv, rt.Config().XdsServer.GrpcPort, rt.Config().XdsServer.TlsCertFile, rt.Config().XdsServer.TlsKeyFile},
 		// diagnostics server
 		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort},
 		// bootstrap server
 		&xds_bootstrap.BootstrapServer{
 			Port:      rt.Config().BootstrapServer.Port,
-			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params),
+			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params, rt.Config().XdsServer.TlsCertFile),
 		},
 	)
 }

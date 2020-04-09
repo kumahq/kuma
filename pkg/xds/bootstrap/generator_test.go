@@ -84,7 +84,7 @@ var _ = Describe("bootstrapGenerator", func() {
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator := NewDefaultBootstrapGenerator(resManager, given.config())
+			generator := NewDefaultBootstrapGenerator(resManager, given.config(), "")
 
 			// when
 			bootstrapConfig, err := generator.Generate(context.Background(), given.request)
@@ -195,7 +195,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		params.XdsHost = "127.0.0.1"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params)
+		generator := NewDefaultBootstrapGenerator(resManager, params, "")
 		request := types.BootstrapRequest{
 			Mesh: "mesh",
 			Name: "name.namespace",

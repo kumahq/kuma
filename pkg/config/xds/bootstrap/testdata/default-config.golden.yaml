@@ -6,5 +6,3 @@ params:
   xdsConnectTimeout: 1s
   xdsHost: ""
   xdsPort: 0
-  xdsClientTlsCertFile: ""
-  xdsClientTlsKeyFile: ""

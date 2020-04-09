@@ -70,9 +70,7 @@ var _ = Describe("Config WS", func() {
               "adminPort": 0,
               "xdsConnectTimeout": "1s",
               "xdsHost": "",
-              "xdsPort": 0,
-	      "xdsClientTlsCertFile": "",
-	      "xdsClientTlsKeyFile": ""
+              "xdsPort": 0
             },
             "port": 5682
           },
@@ -166,7 +164,9 @@ var _ = Describe("Config WS", func() {
             "dataplaneConfigurationRefreshInterval": "1s",
             "dataplaneStatusFlushInterval": "1s",
             "diagnosticsPort": 5680,
-            "grpcPort": 5678
+            "grpcPort": 5678,
+            "tlsCertFile": "",
+            "tlsKeyFile": ""
           }
         }
 		`, port)
