@@ -1,5 +1,31 @@
 {
     "type": "HealthCheck",
     "mesh": "default",
-    "name": "healthcheck-1"
+    "name": "healthcheck-1",
+    "sources": [
+        {
+            "match": {
+                "service": "web"
+            }
+        }
+    ],
+    "destinations": [
+        {
+            "match": {
+                "service": "backend"
+            }
+        }
+    ],
+    "conf": {
+        "activeChecks": {
+            "interval": "10s",
+            "timeout": "2s",
+            "unhealthyThreshold": 3,
+            "healthyThreshold": 1
+        },
+        "passiveChecks": {
+            "unhealthyThreshold": 3,
+            "penaltyInterval": "5s"
+        }
+    }
 }
