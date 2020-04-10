@@ -32,7 +32,7 @@ func newGetTrafficPermissionsCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficPermissions(&trafficPermissions, cmd.OutOrStdout())
+				return printTrafficPermissions(trafficPermissions.Items, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +45,17 @@ func newGetTrafficPermissionsCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printTrafficPermissions(trafficPermissions *mesh.TrafficPermissionResourceList, out io.Writer) error {
+func printTrafficPermissions(trafficPermissions []*mesh.TrafficPermissionResource, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(trafficPermissions.Items) <= i {
+				if len(trafficPermissions) <= i {
 					return nil
 				}
-				trafficPermission := trafficPermissions.Items[i]
+				trafficPermission := trafficPermissions[i]
 
 				return []string{
 					trafficPermission.GetMeta().GetMesh(), // MESH

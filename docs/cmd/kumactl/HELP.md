@@ -356,6 +356,7 @@ Available Commands:
   proxytemplates      Show ProxyTemplates
   traffic-log         Show Single TrafficLog Resource
   traffic-logs        Show TrafficLogs
+  traffic-permission  Show Single TrafficPermission Resource
   traffic-permissions Show TrafficPermissions
   traffic-routes      Show TrafficRoutes
   traffic-traces      Show TrafficTraces
