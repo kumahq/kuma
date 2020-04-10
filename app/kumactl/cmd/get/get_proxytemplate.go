@@ -38,7 +38,7 @@ func newGetProxyTemplateCmd(pctx *getContext) *cobra.Command {
 			proxyTemplates := []*mesh.ProxyTemplateResource{proxyTemplate}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return PrintProxyTemplates(proxyTemplates, cmd.OutOrStdout())
+				return printProxyTemplates(proxyTemplates, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
