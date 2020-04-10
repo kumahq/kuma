@@ -3,13 +3,14 @@ package get
 import (
 	"context"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 func newGetTrafficTraceCmd(pctx *getContext) *cobra.Command {
