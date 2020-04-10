@@ -3,7 +3,7 @@
 set -e
 
 [ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="kong-docker-kuma-docker.bintray.io"
-KUMA_COMPONENTS=("kuma-cp" "kuma-dp" "kuma-injector" "kuma-tcp-echo" "kumactl" "kuma-init" "kuma-prometheus-sd")
+KUMA_COMPONENTS=("kuma-cp" "kuma-dp" "kuma-injector" "kumactl" "kuma-init" "kuma-prometheus-sd")
 
 function msg_green {
   builtin echo -en "\033[1;32m"
