@@ -23,6 +23,7 @@ var _ = Describe("Catalog WS", func() {
 		cfg.Catalog.DataplaneToken.PublicUrl = "https://kuma.internal:2222"
 		cfg.Catalog.Bootstrap.Url = "http://kuma.internal:3333"
 		cfg.Catalog.MonitoringAssignment.Url = "grpc://kuma.internal:4444"
+		cfg.Catalog.Sds.HostPort = "sds.kuma.io:5555"
 
 		// setup
 		resourceStore := memory.NewStore()

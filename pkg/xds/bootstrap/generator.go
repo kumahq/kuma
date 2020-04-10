@@ -75,12 +75,13 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	if request.AdminPort != 0 {
 		adminPort = request.AdminPort
 	}
-	var cert string = ""
+	var certBytes string = ""
 	if b.xdsCertFile != "" {
-		c, e1 := ioutil.ReadFile(b.xdsCertFile)
-		if e1 == nil {
-			cert = base64.StdEncoding.EncodeToString(c)
+		cert, err := ioutil.ReadFile(b.xdsCertFile)
+		if err != nil {
+			return nil, err
 		}
+		certBytes = base64.StdEncoding.EncodeToString(cert)
 	}
 	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
 	params := configParameters{
@@ -94,7 +95,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
 		DataplaneTokenPath: request.DataplaneTokenPath,
-		CertBytes:          cert,
+		CertBytes:          certBytes,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params)

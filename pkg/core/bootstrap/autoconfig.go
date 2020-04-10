@@ -66,7 +66,7 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 	// to improve UX, we want to auto-generate TLS cert for SDS if possible
 	if cfg.Environment == config_core.UniversalEnvironment {
 		if cfg.SdsServer.TlsCertFile == "" {
-			sdsHost := strings.Split(cfg.SdsServer.PublicHostPort, ":")[0]
+			sdsHost := strings.Split(cfg.ApiServer.Catalog.Sds.HostPort, ":")[0]
 			hosts := []string{
 				"localhost",
 				cfg.BootstrapServer.Params.XdsHost,

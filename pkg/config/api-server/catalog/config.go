@@ -6,6 +6,7 @@ type CatalogConfig struct {
 	DataplaneToken       DataplaneTokenApiConfig       `yaml:"-"` // DEPRECATED: remove in next major version of Kuma
 	Admin                AdminApiConfig                `yaml:"-"`
 	MonitoringAssignment MonitoringAssignmentApiConfig `yaml:"monitoringAssignment"`
+	Sds                  SdsApiConfig                  `yaml:"sds"`
 }
 
 type BootstrapApiConfig struct {
@@ -24,4 +25,8 @@ type AdminApiConfig struct {
 
 type MonitoringAssignmentApiConfig struct {
 	Url string `yaml:"url" envconfig:"kuma_mads_server_public_url"`
+}
+
+type SdsApiConfig struct {
+	HostPort string `yaml:"hostPort" envconfig:"kuma_sds_server_public_host_port"`
 }

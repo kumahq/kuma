@@ -55,6 +55,9 @@ var _ = Describe("Config WS", func() {
               },
               "monitoringAssignment": {
                 "url": ""
+              },
+              "sds": {
+                "hostPort": ""
               }
             },
             "corsAllowedDomains": [
@@ -135,7 +138,6 @@ var _ = Describe("Config WS", func() {
           },
           "sdsServer": {
             "grpcPort": 5677,
-            "publicHostPort": "",
             "tlsCertFile": "",
             "tlsKeyFile": ""
           },

@@ -69,8 +69,6 @@ bootstrapServer:
 sdsServer:
   # Port of GRPC server that Envoy connects to
   grpcPort: 5677 # ENV: KUMA_SDS_SERVER_GRPC_PORT
-  # url to reach SDS server. By default its autoconfigured to XDS server
-  publicHostPort: # ENV: KUMA_SDS_SERVER_PUBLIC_HOST_PORT
   # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
   tlsCertFile: # ENV: KUMA_SDS_SERVER_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
@@ -159,11 +157,14 @@ apiServer:
     - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
   catalog:
     bootstrap:
-      # Public URL to reach Bootstrap server. ex: https://bootstrap.kuma.com:1234, its autoconfigured if blank
+      # Public URL to reach Bootstrap server. ex: https://bootstrap.kuma.io:1234, its autoconfigured if blank
       url: # ENV: KUMA_BOOTSTRAP_SERVER_PUBLIC_URL
     monitoringAssignment:
-      # Public URL to reach mad server. ex: https://mads.kuma.com:1234, its autoconfigured if blank
+      # Public URL to reach mad server. ex: https://mads.kuma.io:1234, its autoconfigured if blank
       url: # ENV: KUMA_MADS_SERVER_PUBLIC_URL
+    sds:
+      # host port to reach SDS server. ex: sds.kuma.io:1234, its autoconfigured to XDS server if blank
+      hostPort: # ENV: KUMA_SDS_SERVER_PUBLIC_HOST_PORT
 
 # Environment-specific configuration
 runtime:

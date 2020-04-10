@@ -31,7 +31,7 @@ func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, erro
 		}
 		cert = c
 	}
-	sdsLocation := config.SdsServer.PublicHostPort
+	sdsLocation := config.ApiServer.Catalog.Sds.HostPort
 	if len(sdsLocation) == 0 {
 		sdsLocation = fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.SdsServer.GrpcPort)
 	}
