@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat: added `kumactl get` command for individual resources
+  [#667](https://github.com/Kong/kuma/pull/667)
 * feat: endpoints for fetching resources from all meshes 
   [#657](https://github.com/Kong/kuma/pull/657)
 * feat: added logging and tracing information for meshes
