@@ -360,6 +360,7 @@ Available Commands:
   traffic-permissions Show TrafficPermissions
   traffic-route       Show Single TrafficRoute Resource
   traffic-routes      Show TrafficRoutes
+  traffic-trace       Show Single TrafficTrace Resource
   traffic-traces      Show TrafficTraces
 
 Flags:

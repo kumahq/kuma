@@ -52,6 +52,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		Entry("traffic-log", "traffic-log"),
 		Entry("traffic-permission", "traffic-permission"),
 		Entry("traffic-route", "traffic-route"),
+		Entry("traffic-trace", "traffic-trace"),
 	}
 
 	DescribeTable("should throw an error in case of no args",
