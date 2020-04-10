@@ -49,7 +49,7 @@
 
 Breaking changes:
 * ⚠️ before the change TrafficPermission worked in cumulative way, which means that all policies that matched a connection were applied.
-  We changed TrafficPermission to work like every other policy so only "most matching" policy is chosen.
+  We changed TrafficPermission to work like every other policy so only "the most specific" matching policy is chosen.
   Consult [docs](https://kuma.io/docs/0.4.0/policies/how-kuma-chooses-the-right-policy-to-apply/) to learn more how Kuma picks the right policy.
   [668](https://github.com/Kong/kuma/pull/668)
 

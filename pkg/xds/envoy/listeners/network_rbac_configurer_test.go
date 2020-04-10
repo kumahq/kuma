@@ -24,7 +24,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 		statsName       string
 		clusters        []envoy_common.ClusterInfo
 		rbacEnabled     bool
-		permissions     *mesh_core.TrafficPermissionResource
+		permission      *mesh_core.TrafficPermissionResource
 		expected        string
 	}
 
@@ -35,7 +35,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder().
 					Configure(TcpProxy(given.statsName, given.clusters...)).
-					Configure(NetworkRBAC(given.listenerName, given.rbacEnabled, given.permissions)))).
+					Configure(NetworkRBAC(given.listenerName, given.rbacEnabled, given.permission)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -53,7 +53,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			statsName:       "localhost:8080",
 			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
 			rbacEnabled:     true,
-			permissions: &mesh_core.TrafficPermissionResource{
+			permission: &mesh_core.TrafficPermissionResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "tp-1",
 					Mesh: "default",
@@ -113,7 +113,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			statsName:       "localhost:8080",
 			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
 			rbacEnabled:     false,
-			permissions: &mesh_core.TrafficPermissionResource{
+			permission: &mesh_core.TrafficPermissionResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "tp-1",
 					Mesh: "default",
