@@ -358,6 +358,7 @@ Available Commands:
   traffic-logs        Show TrafficLogs
   traffic-permission  Show Single TrafficPermission Resource
   traffic-permissions Show TrafficPermissions
+  traffic-route       Show Single TrafficRoute Resource
   traffic-routes      Show TrafficRoutes
   traffic-traces      Show TrafficTraces
 

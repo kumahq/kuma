@@ -42,5 +42,6 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newGetProxyTemplateCmd(ctx))
 	cmd.AddCommand(newGetTrafficLogCmd(ctx))
 	cmd.AddCommand(newGetTrafficPermissionCmd(ctx))
+	cmd.AddCommand(newGetTrafficRouteCmd(ctx))
 	return cmd
 }

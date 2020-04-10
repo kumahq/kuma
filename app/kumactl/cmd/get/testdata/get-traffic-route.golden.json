@@ -1,0 +1,5 @@
+{
+    "type": "TrafficRoute",
+    "mesh": "default",
+    "name": "traffic-route-1"
+}
