@@ -49,6 +49,9 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 		MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
 			Url: madsUrl,
 		},
+		Sds: catalog.SdsApiConfig{
+			HostPort: cfg.ApiServer.Catalog.Sds.HostPort,
+		},
 	}
 	if cfg.AdminServer.Public.Enabled {
 		cat.Admin.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.AdminServer.Public.Port)
