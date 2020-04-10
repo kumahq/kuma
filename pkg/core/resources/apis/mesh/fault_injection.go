@@ -50,7 +50,7 @@ var _ model.ResourceList = &FaultInjectionResourceList{}
 
 type FaultInjectionResourceList struct {
 	Items      []*FaultInjectionResource
-	Pagination *model.Pagination
+	Pagination model.Pagination
 }
 
 func (l *FaultInjectionResourceList) GetItems() []model.Resource {
@@ -78,11 +78,11 @@ func (l *FaultInjectionResourceList) AddItem(r model.Resource) error {
 	}
 }
 
-func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
+func (l *FaultInjectionResourceList) GetPagination() model.Pagination {
 	return l.Pagination
 }
 
-func (l *FaultInjectionResourceList) SetPagination(pagination *model.Pagination) {
+func (l *FaultInjectionResourceList) SetPagination(pagination model.Pagination) {
 	l.Pagination = pagination
 }
 

@@ -291,7 +291,7 @@ func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model
 			_ = out.AddItem(r)
 		}
 	}
-	out.SetPagination(&core_model.Pagination{
+	out.SetPagination(core_model.Pagination{
 		NextOffset: in.GetContinue(),
 	})
 	return nil

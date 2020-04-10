@@ -3,6 +3,7 @@ package api_server
 import (
 	"context"
 	"fmt"
+
 	"github.com/emicklei/go-restful"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
@@ -66,14 +67,14 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 func (r *resourceEndpoints) listResources(request *restful.Request, response *restful.Response) {
 	meshName := r.meshFromRequest(request)
 
-	pageSize, offset, err := pagination(request)
+	page, err := pagination(request)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve resources")
 		return
 	}
 
 	list := r.ResourceListFactory()
-	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByPage(pageSize, offset)); err != nil {
+	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByPage(page.size, page.offset)); err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)

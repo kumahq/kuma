@@ -45,7 +45,7 @@ var _ model.ResourceList = &ProxyTemplateResourceList{}
 
 type ProxyTemplateResourceList struct {
 	Items      []*ProxyTemplateResource
-	Pagination *model.Pagination
+	Pagination model.Pagination
 }
 
 func (l *ProxyTemplateResourceList) GetItems() []model.Resource {
@@ -69,10 +69,10 @@ func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*ProxyTemplateResource)(nil), r)
 	}
 }
-func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
+func (l *ProxyTemplateResourceList) GetPagination() model.Pagination {
 	return l.Pagination
 }
-func (l *ProxyTemplateResourceList) SetPagination(pagination *model.Pagination) {
+func (l *ProxyTemplateResourceList) SetPagination(pagination model.Pagination) {
 	l.Pagination = pagination
 }
 

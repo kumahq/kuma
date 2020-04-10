@@ -167,7 +167,7 @@ var _ = Describe("Resource Endpoints", func() {
 		})
 
 		It("should list resources using pagination", func() {
-			// given two resources
+			// given three resources
 			putSampleResourceIntoStore(resourceStore, "tr-1", "mesh-1")
 			putSampleResourceIntoStore(resourceStore, "tr-2", "mesh-1")
 			putSampleResourceIntoStore(resourceStore, "tr-3", "mesh-1")
@@ -179,7 +179,7 @@ var _ = Describe("Resource Endpoints", func() {
 			}
 			response := client.list()
 
-			// then one item is returned with next url
+			// then one page is returned with next url
 			Expect(response.StatusCode).To(Equal(200))
 			json := fmt.Sprintf(`
 			{
@@ -210,7 +210,7 @@ var _ = Describe("Resource Endpoints", func() {
 			}
 			response = client.list()
 
-			// then
+			// then another page with one element left is returned
 			Expect(response.StatusCode).To(Equal(200))
 			json = `
 			{

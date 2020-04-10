@@ -45,7 +45,7 @@ var _ model.ResourceList = &MeshResourceList{}
 
 type MeshResourceList struct {
 	Items      []*MeshResource
-	Pagination *model.Pagination
+	Pagination model.Pagination
 }
 
 func (l *MeshResourceList) GetItems() []model.Resource {
@@ -69,10 +69,10 @@ func (l *MeshResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*MeshResource)(nil), r)
 	}
 }
-func (l *MeshResourceList) GetPagination() *model.Pagination {
+func (l *MeshResourceList) GetPagination() model.Pagination {
 	return l.Pagination
 }
-func (l *MeshResourceList) SetPagination(pagination *model.Pagination) {
+func (l *MeshResourceList) SetPagination(pagination model.Pagination) {
 	l.Pagination = pagination
 }
 

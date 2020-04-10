@@ -231,8 +231,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 			return err
 		}
 		if !paginateResults || items < opts.PageSize {
-			err = resources.AddItem(item)
-			if err != nil {
+			if err := resources.AddItem(item); err != nil {
 				return err
 			}
 		}
@@ -244,7 +243,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		if items > opts.PageSize { // set new offset only if there is next page
 			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
-		resources.SetPagination(&model.Pagination{
+		resources.SetPagination(model.Pagination{
 			NextOffset: nextOffset,
 		})
 	}

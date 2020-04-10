@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+
 	"github.com/emicklei/go-restful"
 
 	api_server_types "github.com/Kong/kuma/pkg/api-server/types"
@@ -28,6 +29,8 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleMaxPageSizeExceeded(title, err, response)
 	case err == api_server_types.InvalidPageSize:
 		handleInvalidPageSize(title, response)
+	case err == api_server_types.PaginationNotSupported:
+		handlePaginationNotSupported(title, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
@@ -105,13 +108,12 @@ func handleInvalidOffset(title string, response *restful.Response) {
 	writeError(response, 400, kumaErr)
 }
 
-func handleUnknownError(err error, title string, response *restful.Response) {
-	core.Log.Error(err, title)
+func handlePaginationNotSupported(title string, response *restful.Response) {
 	kumaErr := types.Error{
 		Title:   title,
-		Details: "Internal Server Error",
+		Details: api_server_types.PaginationNotSupported.Error(),
 	}
-	writeError(response, 500, kumaErr)
+	writeError(response, 400, kumaErr)
 }
 
 func handleMaxPageSizeExceeded(title string, err error, response *restful.Response) {
@@ -126,6 +128,15 @@ func handleMaxPageSizeExceeded(title string, err error, response *restful.Respon
 		},
 	}
 	writeError(response, 400, kumaErr)
+}
+
+func handleUnknownError(err error, title string, response *restful.Response) {
+	core.Log.Error(err, title)
+	kumaErr := types.Error{
+		Title:   title,
+		Details: "Internal Server Error",
+	}
+	writeError(response, 500, kumaErr)
 }
 
 func writeError(response *restful.Response, httpStatus int, kumaErr types.Error) {

@@ -84,8 +84,8 @@ type ResourceList interface {
 	GetItems() []Resource
 	NewItem() Resource
 	AddItem(Resource) error
-	GetPagination() *Pagination
-	SetPagination(*Pagination)
+	GetPagination() Pagination
+	SetPagination(Pagination)
 }
 
 type Pagination struct {

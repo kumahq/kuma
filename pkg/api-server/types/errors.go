@@ -1,8 +1,9 @@
 package types
 
 import (
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 func NewMaxPageSizeExceeded(pageSize, limit int) error {
@@ -14,3 +15,5 @@ func IsMaxPageSizeExceeded(err error) bool {
 }
 
 var InvalidPageSize = errors.New("Invalid page size")
+
+var PaginationNotSupported = errors.New("Pagination and filtering at the same time is not supported")

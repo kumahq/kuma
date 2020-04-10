@@ -1,36 +1,47 @@
 package api_server
 
 import (
-	"github.com/Kong/kuma/pkg/api-server/types"
-	"github.com/pkg/errors"
 	"net/url"
 	"strconv"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/api-server/types"
+
 	"github.com/emicklei/go-restful"
+
+	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
 const maxPageSize = 1000
 const defaultPageSize = 100
 
-func pagination(request *restful.Request) (int, string, error) {
+type page struct {
+	size   int
+	offset string
+}
+
+func pagination(request *restful.Request) (page, error) {
 	pageSize := defaultPageSize
 	if request.QueryParameter("size") != "" {
 		p, err := strconv.Atoi(request.QueryParameter("size"))
 		if err != nil {
-			return 0, "", types.InvalidPageSize
+			return page{}, types.InvalidPageSize
 		}
 		pageSize = p
 		if pageSize > maxPageSize {
-			return 0, "", types.NewMaxPageSizeExceeded(pageSize, maxPageSize)
+			return page{}, types.NewMaxPageSizeExceeded(pageSize, maxPageSize)
 		}
 	}
 	offset := request.QueryParameter("offset")
-	return pageSize, offset, nil
+	return page{
+		size:   pageSize,
+		offset: offset,
+	}, nil
 }
 
 func nextLink(request *restful.Request, publicURL string, list model.ResourceList) (*string, error) {
-	if list.GetPagination() == nil || list.GetPagination().NextOffset == "" {
+	if list.GetPagination().NextOffset == "" {
 		return nil, nil
 	}
 	query := request.Request.URL.Query()

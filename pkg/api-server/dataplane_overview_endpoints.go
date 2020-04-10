@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/Kong/kuma/pkg/api-server/types"
+
 	"github.com/emicklei/go-restful"
 	"github.com/golang/protobuf/proto"
 
@@ -16,6 +18,7 @@ import (
 )
 
 type dataplaneOverviewEndpoints struct {
+	publicURL  string
 	resManager manager.ResourceManager
 }
 
@@ -34,7 +37,6 @@ func (r *dataplaneOverviewEndpoints) addListEndpoint(ws *restful.WebService, pat
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Param(ws.QueryParameter("tag", "Tag to filter in key:value format").DataType("string")).
 		Param(ws.QueryParameter("gateway", "Param to filter gateway planes").DataType("boolean")).
-		// todo pagination is not implemented
 		Returns(200, "OK", nil))
 }
 
@@ -77,7 +79,20 @@ func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name str
 
 func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request, response *restful.Response) {
 	meshName := request.PathParameter("mesh")
-	overviews, err := r.fetchOverviews(request.Request.Context(), meshName)
+	page, err := pagination(request)
+	if err != nil {
+		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
+		return
+	}
+
+	// todo(jakubdyszkiewicz) for now pagination + filtering is not supported
+	if (request.QueryParameter("size") != "" || request.QueryParameter("offset") != "") &&
+		(request.QueryParameter("tag") != "" || request.QueryParameter("gateway") != "") {
+		rest_errors.HandleError(response, types.PaginationNotSupported, "Could not retrieve dataplane overviews")
+		return
+	}
+
+	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
@@ -90,17 +105,24 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	}
 	overviews.RetainMatchingTags(tags)
 	restList := rest.From.ResourceList(&overviews)
+	next, err := nextLink(request, r.publicURL, &overviews)
+	if err != nil {
+		rest_errors.HandleError(response, err, "Could not list dataplane overviews")
+		return
+	}
+	restList.Next = next
 	if err := response.WriteAsJson(restList); err != nil {
 		rest_errors.HandleError(response, err, "Could not list dataplane overviews")
 	}
 }
 
-func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, meshName string) (mesh.DataplaneOverviewResourceList, error) {
+func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName)); err != nil {
+	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
+	// we cannot paginate insights since there is no guarantee that the elements will be the same as dataplanes
 	insights := mesh.DataplaneInsightResourceList{}
 	if err := r.resManager.List(ctx, &insights, store.ListByMesh(meshName)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err

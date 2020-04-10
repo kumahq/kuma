@@ -33,6 +33,7 @@ func (a *ApiServer) Address() string {
 }
 
 func init() {
+	// turn off escape & character so the link in "next" fields for resources is user friendly
 	restful.NewEncoder = func(w io.Writer) *json.Encoder {
 		encoder := json.NewEncoder(w)
 		encoder.SetEscapeHTML(false)
@@ -91,7 +92,10 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 }
 
 func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
-	endpoints := dataplaneOverviewEndpoints{resManager}
+	endpoints := dataplaneOverviewEndpoints{
+		publicURL:  config.Catalog.ApiServer.Url,
+		resManager: resManager,
+	}
 	endpoints.addListEndpoint(ws, "/meshes/{mesh}")
 	endpoints.addFindEndpoint(ws, "/meshes/{mesh}")
 	endpoints.addListEndpoint(ws, "") // listing all resources in all meshes

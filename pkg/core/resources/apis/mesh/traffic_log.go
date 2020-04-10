@@ -45,7 +45,7 @@ var _ model.ResourceList = &TrafficLogResourceList{}
 
 type TrafficLogResourceList struct {
 	Items      []*TrafficLogResource
-	Pagination *model.Pagination
+	Pagination model.Pagination
 }
 
 func (l *TrafficLogResourceList) GetItems() []model.Resource {
@@ -69,10 +69,10 @@ func (l *TrafficLogResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*TrafficLogResource)(nil), r)
 	}
 }
-func (l *TrafficLogResourceList) GetPagination() *model.Pagination {
+func (l *TrafficLogResourceList) GetPagination() model.Pagination {
 	return l.Pagination
 }
-func (l *TrafficLogResourceList) SetPagination(pagination *model.Pagination) {
+func (l *TrafficLogResourceList) SetPagination(pagination model.Pagination) {
 	l.Pagination = pagination
 }
 
