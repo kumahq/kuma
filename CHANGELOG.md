@@ -1,8 +1,6 @@
 # CHANGELOG
 
 ## master
-* feat: added `kumactl get` command for individual resources
-  [#667](https://github.com/Kong/kuma/pull/667)
 * feat: endpoints for fetching resources from all meshes 
   [#657](https://github.com/Kong/kuma/pull/657)
 * feat: added logging and tracing information for meshes
@@ -43,7 +41,8 @@
   [#622](https://github.com/Kong/kuma/pull/622)
 * feature: validate `<port>.service.kuma.io/protocol` annotations on K8S Service objects
   [#611](https://github.com/Kong/kuma/pull/611)
-
+* feat: added `kumactl get` command for individual resources
+  [#667](https://github.com/Kong/kuma/pull/667)
 ## [0.4.0]
 
 > Released on 2020/02/28
