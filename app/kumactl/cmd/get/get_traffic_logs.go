@@ -32,7 +32,7 @@ func newGetTrafficLogsCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficLog(trafficLogging.Items, cmd.OutOrStdout())
+				return printTrafficLogs(trafficLogging.Items, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,7 +45,7 @@ func newGetTrafficLogsCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printTrafficLog(trafficLogging []*mesh.TrafficLogResource, out io.Writer) error {
+func printTrafficLogs(trafficLogging []*mesh.TrafficLogResource, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {

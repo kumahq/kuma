@@ -38,7 +38,7 @@ func newGetFaultInjectionCmd(pctx *getContext) *cobra.Command {
 			faultInjections := []*mesh.FaultInjectionResource{faultInjection}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printFaultInjection(faultInjections, cmd.OutOrStdout())
+				return printFaultInjections(faultInjections, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
