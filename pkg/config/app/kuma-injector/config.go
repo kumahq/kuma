@@ -62,7 +62,8 @@ func DefaultConfig() Config {
 				},
 			},
 			InitContainer: InitContainer{
-				Image: "kuma/kuma-init:latest",
+				Image:    "kuma/kuma-init:latest",
+				Disabled: false,
 			},
 		},
 	}
@@ -187,6 +188,8 @@ type SidecarResourceLimits struct {
 
 // InitContainer defines configuration of the Kuma init container.
 type InitContainer struct {
+	// Disabled
+	Disabled bool `yaml:"disabled,omitempty" envconfig:"kuma_injector_init_container_disabled"`
 	// Image name.
 	Image string `yaml:"image,omitempty" envconfig:"kuma_injector_init_container_image"`
 }

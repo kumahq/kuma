@@ -68,10 +68,13 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	}
 
 	// init container
-	if pod.Spec.InitContainers == nil {
-		pod.Spec.InitContainers = []kube_core.Container{}
+	if !i.cfg.InitContainer.Disabled {
+		if pod.Spec.InitContainers == nil {
+			pod.Spec.InitContainers = []kube_core.Container{}
+		}
+		pod.Spec.InitContainers = append(pod.Spec.InitContainers, i.NewInitContainer(pod))
 	}
-	pod.Spec.InitContainers = append(pod.Spec.InitContainers, i.NewInitContainer(pod))
+
 	return nil
 }
 
@@ -280,6 +283,9 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 		metadata.KumaSidecarInjectedAnnotation:         metadata.KumaSidecarInjected,
 		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
 		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
+		metadata.CNCFNetworkAnnotation:                 metadata.KumaCNI,
+		//"sidecar.istio.io/inject":                      "true",
+		//"sidecar.istio.io/status":                      "",
 	}
 	for k, v := range i.prometheusAnnotations(pod, mesh) {
 		annotations[k] = v

@@ -97,6 +97,12 @@ rules:
     - get
     - list
     - watch
+- apiGroups:
+    - ""
+  resources:
+    - pods/finalizers
+  verbs:
+    - "*"
 # validate k8s token before issueing mTLS cert
 - apiGroups:
   - authentication.k8s.io

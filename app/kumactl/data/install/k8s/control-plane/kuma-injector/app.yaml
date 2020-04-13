@@ -100,6 +100,8 @@ spec:
           value: {{ .DataplaneImage }}:{{ .ControlPlaneVersion }}
         - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
           value: {{ .DataplaneInitImage }}:{{ .ControlPlaneVersion }}
+        - name: KUMA_INJECTOR_INIT_CONTAINER_DISABLED
+          value: "{{ .CNIEnabled }}"
         args:
         - run
         - --log-level=info

@@ -6,6 +6,7 @@ metadata:
     kuma.io/sidecar-injected: "true"
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-port: "15001"
+    k8s.v1.cni.cncf.io/networks: kuma-cni
     prometheus.io/path: /appmetrics
     prometheus.io/port: "5678"
     prometheus.io/scrape: "true"
