@@ -158,9 +158,10 @@ var _ = Describe("kumactl get meshes", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-
+		var t1 time.Time
 		BeforeEach(func() {
 			// setup
+			t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
 					Now: time.Now,
@@ -177,7 +178,7 @@ var _ = Describe("kumactl get meshes", func() {
 					Mesh: ds.Meta.GetMesh(),
 					Name: ds.Meta.GetName(),
 				}
-				err := store.Create(context.Background(), ds, core_store.CreateBy(key))
+				err := store.Create(context.Background(), ds, core_store.CreateBy(key), core_store.CreatedAt(t1))
 				Expect(err).ToNot(HaveOccurred())
 			}
 

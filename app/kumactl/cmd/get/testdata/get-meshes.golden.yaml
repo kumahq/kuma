@@ -1,17 +1,22 @@
 items:
-  - mtls:
+  - creationTime: 2018-07-17T16:05:36.995Z
+    modificationTime: 2018-07-17T16:05:36.995Z
+    mtls:
       enabled: true
       ca:
         builtin: {}
     name: mesh1
     type: Mesh
-  - mtls:
+  - creationTime: 2018-07-17T16:05:36.995Z
+    modificationTime: 2018-07-17T16:05:36.995Z
+    mtls:
       enabled: true
       ca:
         provided: {}
     name: mesh2
     type: Mesh
-  - logging:
+  - creationTime: 2018-07-17T16:05:36.995Z
+    logging:
       backends:
         - name: logstash
           tcp:
@@ -23,6 +28,7 @@ items:
       prometheus:
         path: /non-standard-path
         port: 1234
+    modificationTime: 2018-07-17T16:05:36.995Z
     mtls:
       ca:
         provided: {}
@@ -36,12 +42,14 @@ items:
           zipkin:
             url: http://zipkin.eu:8080/v1/spans
     type: Mesh
-  - logging:
+  - creationTime: 2018-07-17T16:05:36.995Z
+    logging:
       backends: []
     metrics:
       prometheus:
         path: /non-standard-path
         port: 1234
+    modificationTime: 2018-07-17T16:05:36.995Z
     mtls:
       ca:
         provided: {}
