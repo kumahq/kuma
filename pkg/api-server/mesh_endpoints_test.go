@@ -58,7 +58,9 @@ var _ = Describe("Resource Endpoints", func() {
 			json := `
 			{
 				"type": "Mesh",
-				"name": "mesh-1"
+				"name": "mesh-1",
+				"creationTime": "0001-01-01T00:00:00Z",
+				"modificationTime": "0001-01-01T00:00:00Z"
 			}`
 			Expect(body).To(MatchJSON(json))
 		})
@@ -84,12 +86,16 @@ var _ = Describe("Resource Endpoints", func() {
 			json1 := `
 			{
 				"type": "Mesh",
-				"name": "mesh-1"
+				"name": "mesh-1",
+				"creationTime": "0001-01-01T00:00:00Z",
+				"modificationTime": "0001-01-01T00:00:00Z"
 			}`
 			json2 := `
 			{
 				"type": "Mesh",
-				"name": "mesh-2"
+				"name": "mesh-2",
+				"creationTime": "0001-01-01T00:00:00Z",
+				"modificationTime": "0001-01-01T00:00:00Z"
 			}`
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())

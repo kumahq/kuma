@@ -56,6 +56,7 @@ var _ = Describe("TrafficRoute Endpoints", func() {
 		given := `
         type: TrafficRoute
         name: web-to-backend
+        modificationTime: "0001-01-01T00:00:00Z"
         mesh: default
         sources:
         - match:
@@ -65,6 +66,7 @@ var _ = Describe("TrafficRoute Endpoints", func() {
         destinations:
         - match:
             service: backend
+        creationTime: "0001-01-01T00:00:00Z"
         conf:
         - weight: 90
           destination:

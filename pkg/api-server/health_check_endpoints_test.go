@@ -56,6 +56,7 @@ var _ = Describe("HealthCheck Endpoints", func() {
 		given := `
         type: HealthCheck
         name: web-to-backend
+        modificationTime: "0001-01-01T00:00:00Z"
         mesh: default
         sources:
         - match:
@@ -63,6 +64,7 @@ var _ = Describe("HealthCheck Endpoints", func() {
         destinations:
         - match:
             service: backend
+        creationTime: "0001-01-01T00:00:00Z"
         conf:
           activeChecks:
             interval: 10s

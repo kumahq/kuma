@@ -57,10 +57,12 @@ var _ = Describe("TrafficTrace Endpoints", func() {
         type: TrafficTrace
         name: backends-eu
         mesh: default
+        modificationTime: "0001-01-01T00:00:00Z"
         selectors:
         - match:
             service: backend
             region: eu
+        creationTime: "0001-01-01T00:00:00Z"
         conf:
           backend: zipkin-eu
 `

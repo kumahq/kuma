@@ -99,6 +99,8 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	"type": "DataplaneOverview",
 	"name": "dp1",
 	"mesh": "mesh1",
+	"creationTime": "0001-01-01T00:00:00Z",
+	"modificationTime": "0001-01-01T00:00:00Z",
 	"dataplane": {
 		"networking": {
 			"address": "127.0.0.1",
