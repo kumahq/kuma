@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,7 +23,7 @@ var _ = Describe("Resource Endpoints", func() {
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
 	var stop chan struct{}
-
+	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
@@ -46,7 +47,7 @@ var _ = Describe("Resource Endpoints", func() {
 	Describe("On GET", func() {
 		It("should return an existing resource", func() {
 			// given
-			putMeshIntoStore(resourceStore, "mesh-1")
+			putMeshIntoStore(resourceStore, "mesh-1", t1)
 
 			// when
 			response := client.get("mesh-1")
@@ -59,8 +60,8 @@ var _ = Describe("Resource Endpoints", func() {
 			{
 				"type": "Mesh",
 				"name": "mesh-1",
-				"creationTime": "0001-01-01T00:00:00Z",
-				"modificationTime": "0001-01-01T00:00:00Z"
+				"creationTime": "2018-07-17T16:05:36.995Z",
+				"modificationTime": "2018-07-17T16:05:36.995Z"
 			}`
 			Expect(body).To(MatchJSON(json))
 		})
@@ -75,8 +76,8 @@ var _ = Describe("Resource Endpoints", func() {
 
 		It("should list resources", func() {
 			// given
-			putMeshIntoStore(resourceStore, "mesh-1")
-			putMeshIntoStore(resourceStore, "mesh-2")
+			putMeshIntoStore(resourceStore, "mesh-1", t1)
+			putMeshIntoStore(resourceStore, "mesh-2", t1)
 
 			// when
 			response := client.list()
@@ -87,15 +88,15 @@ var _ = Describe("Resource Endpoints", func() {
 			{
 				"type": "Mesh",
 				"name": "mesh-1",
-				"creationTime": "0001-01-01T00:00:00Z",
-				"modificationTime": "0001-01-01T00:00:00Z"
+				"creationTime": "2018-07-17T16:05:36.995Z",
+				"modificationTime": "2018-07-17T16:05:36.995Z"
 			}`
 			json2 := `
 			{
 				"type": "Mesh",
 				"name": "mesh-2",
-				"creationTime": "0001-01-01T00:00:00Z",
-				"modificationTime": "0001-01-01T00:00:00Z"
+				"creationTime": "2018-07-17T16:05:36.995Z",
+				"modificationTime": "2018-07-17T16:05:36.995Z"
 			}`
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -128,7 +129,7 @@ var _ = Describe("Resource Endpoints", func() {
 		It("should update a resource when one already exist", func() {
 			// given
 			name := "mesh-1"
-			putMeshIntoStore(resourceStore, name)
+			putMeshIntoStore(resourceStore, name, t1)
 
 			// when
 			res := rest.Resource{
@@ -214,7 +215,7 @@ var _ = Describe("Resource Endpoints", func() {
 		It("should delete existing resource", func() {
 			// given
 			name := "mesh-1"
-			putMeshIntoStore(resourceStore, name)
+			putMeshIntoStore(resourceStore, name, t1)
 
 			// when
 			response := client.delete(name)
@@ -238,8 +239,8 @@ var _ = Describe("Resource Endpoints", func() {
 	})
 })
 
-func putMeshIntoStore(resourceStore store.ResourceStore, name string) {
+func putMeshIntoStore(resourceStore store.ResourceStore, name string, createdAt time.Time) {
 	resource := mesh.MeshResource{}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, name))
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, name), store.CreatedAt(createdAt))
 	Expect(err).NotTo(HaveOccurred())
 }
