@@ -3,12 +3,16 @@
     {
       "mesh": "default",
       "name": "web-to-backend",
-      "type": "HealthCheck"
+      "type": "HealthCheck",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2018-07-17T16:05:36.995Z"
     },
     {
       "mesh": "default",
       "name": "backend-to-db",
-      "type": "HealthCheck"
+      "type": "HealthCheck",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2018-07-17T16:05:36.995Z"
     }
   ]
 }
