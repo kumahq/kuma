@@ -1,7 +1,11 @@
 items:
-- mesh: default
+- creationTime: 2018-07-17T16:05:36.995Z
+  mesh: default
+  modificationTime: 2018-07-17T16:05:36.995Z
   name: web-to-backend
   type: TrafficRoute
-- mesh: default
+- creationTime: 2018-07-17T16:05:36.995Z
+  mesh: default
+  modificationTime: 2018-07-17T16:05:36.995Z
   name: backend-to-db
   type: TrafficRoute

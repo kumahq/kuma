@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -62,10 +63,10 @@ var _ = Describe("kumactl get traffic-routes", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-
+		var t1 time.Time
 		BeforeEach(func() {
 			// setup
-
+			t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
@@ -81,7 +82,7 @@ var _ = Describe("kumactl get traffic-routes", func() {
 					Mesh: pt.Meta.GetMesh(),
 					Name: pt.Meta.GetName(),
 				}
-				err := store.Create(context.Background(), pt, core_store.CreateBy(key))
+				err := store.Create(context.Background(), pt, core_store.CreateBy(key), core_store.CreatedAt(t1))
 				Expect(err).ToNot(HaveOccurred())
 			}
 
