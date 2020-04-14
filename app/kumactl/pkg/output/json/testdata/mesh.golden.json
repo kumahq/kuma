@@ -1,6 +1,8 @@
 {
   "type": "Mesh",
   "name": "demo",
+  "creationTime": "2018-07-17T16:05:36.995Z",
+  "modificationTime": "2019-07-17T16:05:36.995Z",
   "mtls": {
     "ca": {
       "builtin": {}
