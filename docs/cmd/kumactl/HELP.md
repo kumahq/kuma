@@ -344,23 +344,23 @@ Usage:
   kumactl get [command]
 
 Available Commands:
-  dataplane           Show Single Dataplane Resource
+  dataplane           Show a single Dataplane resource
   dataplanes          Show Dataplanes
-  fault-injection     Show Single Fault-Injection Resource
+  fault-injection     Show a single Fault-Injection resource
   fault-injections    Show FaultInjections
-  healthcheck         Show Single HealthCheck Resource
+  healthcheck         Show a single HealthCheck resource
   healthchecks        Show HealthChecks
-  mesh                Show Single Mesh Resource
+  mesh                Show a single Mesh resource
   meshes              Show Meshes
-  proxytemplate       Show Single Proxytemplate Resource
+  proxytemplate       Show a single Proxytemplate resource
   proxytemplates      Show ProxyTemplates
-  traffic-log         Show Single TrafficLog Resource
+  traffic-log         Show a single TrafficLog resource
   traffic-logs        Show TrafficLogs
-  traffic-permission  Show Single TrafficPermission Resource
+  traffic-permission  Show a single TrafficPermission resource
   traffic-permissions Show TrafficPermissions
-  traffic-route       Show Single TrafficRoute Resource
+  traffic-route       Show a single TrafficRoute resource
   traffic-routes      Show TrafficRoutes
-  traffic-trace       Show Single TrafficTrace Resource
+  traffic-trace       Show a single TrafficTrace resource
   traffic-traces      Show TrafficTraces
 
 Flags:

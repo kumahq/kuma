@@ -1,4 +1,3 @@
----
 conf:
   abort:
     httpStatus: 500

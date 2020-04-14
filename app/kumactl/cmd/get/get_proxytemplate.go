@@ -18,8 +18,8 @@ import (
 func newGetProxyTemplateCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "proxytemplate NAME",
-		Short: "Show Single Proxytemplate Resource",
-		Long:  `Show Single Proxytemplate Resource.`,
+		Short: "Show a single Proxytemplate resource",
+		Long:  `Show a single Proxytemplate resource.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()

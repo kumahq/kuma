@@ -18,8 +18,8 @@ import (
 func newGetTrafficPermissionCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-permission NAME",
-		Short: "Show Single TrafficPermission Resource",
-		Long:  `Show Single TrafficPermission Resource.`,
+		Short: "Show a single TrafficPermission resource",
+		Long:  `Show a single TrafficPermission resource.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()

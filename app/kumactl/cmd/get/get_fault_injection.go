@@ -18,8 +18,8 @@ import (
 func newGetFaultInjectionCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fault-injection NAME",
-		Short: "Show Single Fault-Injection Resource",
-		Long:  `Show Single Fault-Injection Resource.`,
+		Short: "Show a single Fault-Injection resource",
+		Long:  `Show a single Fault-Injection resource.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()

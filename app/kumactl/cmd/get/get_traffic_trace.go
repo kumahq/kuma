@@ -16,8 +16,8 @@ import (
 func newGetTrafficTraceCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-trace NAME",
-		Short: "Show Single TrafficTrace Resource",
-		Long:  `Show Single TrafficTrace Resource.`,
+		Short: "Show a single TrafficTrace resource",
+		Long:  `Show a single TrafficTrace resource.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()

@@ -18,8 +18,8 @@ import (
 func newGetTrafficLogCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-log NAME",
-		Short: "Show Single TrafficLog Resource",
-		Long:  `Show Single TrafficLog Resource.`,
+		Short: "Show a single TrafficLog resource",
+		Long:  `Show a single TrafficLog resource.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()

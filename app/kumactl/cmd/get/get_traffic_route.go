@@ -18,8 +18,8 @@ import (
 func newGetTrafficRouteCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-route NAME",
-		Short: "Show Single TrafficRoute Resource",
-		Long:  `Show Single TrafficRoute Resource.`,
+		Short: "Show a single TrafficRoute resource",
+		Long:  `Show a single TrafficRoute resource.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()

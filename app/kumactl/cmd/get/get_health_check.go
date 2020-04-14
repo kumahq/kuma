@@ -16,8 +16,8 @@ import (
 func newGetHealthCheckCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "healthcheck NAME",
-		Short: "Show Single HealthCheck Resource",
-		Long:  `Show Single HealthCheck Resource.`,
+		Short: "Show a single HealthCheck resource",
+		Long:  `Show a single HealthCheck resource.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()

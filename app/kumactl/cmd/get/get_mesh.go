@@ -18,8 +18,8 @@ import (
 func newGetMeshCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mesh NAME",
-		Short: "Show Single Mesh Resource",
-		Long:  `Show Single Mesh Resource.`,
+		Short: "Show a single Mesh resource",
+		Long:  `Show a single Mesh resource.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()
