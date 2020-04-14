@@ -333,7 +333,9 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Expect(buf.String()).To(Equal(
-			`mesh: default
+			`creationTime: "1970-01-01T05:30:00+05:30"
+mesh: default
+modificationTime: "1970-01-01T05:30:00+05:30"
 name: sample
 networking:
   address: 2.2.2.2
