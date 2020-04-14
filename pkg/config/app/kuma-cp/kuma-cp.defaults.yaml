@@ -163,8 +163,8 @@ apiServer:
       # Public URL to reach mad server. ex: https://mads.kuma.io:1234, its autoconfigured if blank
       url: # ENV: KUMA_MADS_SERVER_PUBLIC_URL
     sds:
-      # host port to reach SDS server. ex: sds.kuma.io:1234, its autoconfigured to XDS server if blank
-      hostPort: # ENV: KUMA_SDS_SERVER_PUBLIC_HOST_PORT
+      # Public url to reach SDS server. ex: https://sds.kuma.io:1234, its autoconfigured to XDS server if blank
+      url: # ENV: KUMA_SDS_SERVER_PUBLIC_URL
 
 # Environment-specific configuration
 runtime:

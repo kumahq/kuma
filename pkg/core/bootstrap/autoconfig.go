@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -50,7 +51,7 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 			Url: madsUrl,
 		},
 		Sds: catalog.SdsApiConfig{
-			HostPort: cfg.ApiServer.Catalog.Sds.HostPort,
+			Url: cfg.ApiServer.Catalog.Sds.Url,
 		},
 	}
 	if cfg.AdminServer.Public.Enabled {
@@ -69,7 +70,14 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 	// to improve UX, we want to auto-generate TLS cert for SDS if possible
 	if cfg.Environment == config_core.UniversalEnvironment {
 		if cfg.SdsServer.TlsCertFile == "" {
-			sdsHost := strings.Split(cfg.ApiServer.Catalog.Sds.HostPort, ":")[0]
+			var sdsHost = ""
+			if cfg.ApiServer.Catalog.Sds.Url != "" {
+				u, err := url.Parse(cfg.ApiServer.Catalog.Sds.Url)
+				if err != nil {
+					return errors.Wrap(err, "sds url is malformed")
+				}
+				sdsHost = strings.Split(u.Host, ":")[0]
+			}
 			hosts := []string{
 				"localhost",
 				cfg.BootstrapServer.Params.XdsHost,

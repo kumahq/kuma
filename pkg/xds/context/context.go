@@ -3,6 +3,7 @@ package context
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -31,7 +32,14 @@ func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, erro
 		}
 		cert = c
 	}
-	sdsLocation := config.ApiServer.Catalog.Sds.HostPort
+	var sdsLocation = ""
+	if config.ApiServer.Catalog.Sds.Url != "" {
+		u, err := url.Parse(config.ApiServer.Catalog.Sds.Url)
+		if err != nil {
+			return nil, err
+		}
+		sdsLocation = u.Host
+	}
 	if len(sdsLocation) == 0 {
 		sdsLocation = fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.SdsServer.GrpcPort)
 	}

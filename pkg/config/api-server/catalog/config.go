@@ -28,5 +28,5 @@ type MonitoringAssignmentApiConfig struct {
 }
 
 type SdsApiConfig struct {
-	HostPort string `yaml:"hostPort" envconfig:"kuma_sds_server_public_host_port"`
+	Url string `yaml:"hostPort" envconfig:"kuma_sds_server_public_url"`
 }
