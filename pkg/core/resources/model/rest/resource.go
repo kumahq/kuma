@@ -15,8 +15,8 @@ type ResourceMeta struct {
 	Type             string    `json:"type"`
 	Mesh             string    `json:"mesh,omitempty"`
 	Name             string    `json:"name"`
-	CreationTime     time.Time `json:"creationTime,omitempty"`
-	ModificationTime time.Time `json:"modificationTime,omitempty"`
+	CreationTime     time.Time `json:"creationTime"`
+	ModificationTime time.Time `json:"modificationTime"`
 }
 
 type Resource struct {
