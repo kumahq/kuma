@@ -3,6 +3,7 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/pkg/errors"
@@ -11,9 +12,11 @@ import (
 )
 
 type ResourceMeta struct {
-	Type string `json:"type"`
-	Mesh string `json:"mesh,omitempty"`
-	Name string `json:"name"`
+	Type             string    `json:"type"`
+	Mesh             string    `json:"mesh,omitempty"`
+	Name             string    `json:"name"`
+	CreationTime     time.Time `json:"creationTime,omitempty"`
+	ModificationTime time.Time `json:"modificationTime,omitempty"`
 }
 
 type Resource struct {
