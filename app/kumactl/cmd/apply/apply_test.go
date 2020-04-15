@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -33,10 +34,11 @@ var _ = Describe("kumactl apply", func() {
 	var rootCtx *kumactl_cmd.RootContext
 	var rootCmd *cobra.Command
 	var store core_store.ResourceStore
-
+	now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995Z")
 	BeforeEach(func() {
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
+				Now: func() time.Time { return now },
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
 				},
