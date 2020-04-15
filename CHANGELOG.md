@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat(kuma-cp) envoy configs for fault injections
+  [#649](https://github.com/Kong/kuma/pull/649)
 * feat: endpoints for fetching resources from all meshes 
   [#657](https://github.com/Kong/kuma/pull/657)
 * feat: added logging and tracing information for meshes

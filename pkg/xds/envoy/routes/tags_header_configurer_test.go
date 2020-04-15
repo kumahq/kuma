@@ -43,7 +43,7 @@ var _ = Describe("TagsHeaderConfigurer", func() {
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
-                value: '&tag1=value11,value12&tag2=value21&tag3=value31,value32,value33&'`,
+                value: '&tag1=value11,value12&&tag2=value21&&tag3=value31,value32,value33&'`,
 		}),
 		Entry("empty tags", testCase{
 			tags:     map[string]map[string]bool{},

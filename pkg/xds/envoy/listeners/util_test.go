@@ -3,6 +3,9 @@ package listeners_test
 import (
 	"errors"
 
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -188,6 +191,67 @@ var _ = Describe("NewUnexpectedFilterConfigTypeError()", func() {
 			inputActual:   &envoy_tcp.TcpProxy{},
 			inputExpected: &envoy_hcm.HttpConnectionManager{},
 			expectedErr:   `filter config has unexpected type: expected *envoy_config_filter_network_http_connection_manager_v2.HttpConnectionManager, got *envoy_config_filter_network_tcp_proxy_v2.TcpProxy`,
+		}),
+	)
+})
+
+var _ = Describe("ConvertPercentage", func() {
+	type testCase struct {
+		input    *wrappers.DoubleValue
+		expected *envoy_type.FractionalPercent
+	}
+	DescribeTable("should properly converts from percent to fractional percen",
+		func(given testCase) {
+			fpercent := ConvertPercentage(given.input)
+			Expect(fpercent).To(Equal(given.expected))
+		},
+		Entry("integer input", testCase{
+			input:    &wrappers.DoubleValue{Value: 50},
+			expected: &envoy_type.FractionalPercent{Numerator: 50, Denominator: envoy_type.FractionalPercent_HUNDRED},
+		}),
+		Entry("fractional input with 1 digit after dot", testCase{
+			input:    &wrappers.DoubleValue{Value: 50.1},
+			expected: &envoy_type.FractionalPercent{Numerator: 501000, Denominator: envoy_type.FractionalPercent_TEN_THOUSAND},
+		}),
+		Entry("fractional input with 5 digit after dot", testCase{
+			input:    &wrappers.DoubleValue{Value: 50.12345},
+			expected: &envoy_type.FractionalPercent{Numerator: 50123450, Denominator: envoy_type.FractionalPercent_MILLION},
+		}),
+		Entry("fractional input with 7 digit after dot, last digit less than 5", testCase{
+			input:    &wrappers.DoubleValue{Value: 50.1234561},
+			expected: &envoy_type.FractionalPercent{Numerator: 50123456, Denominator: envoy_type.FractionalPercent_MILLION},
+		}),
+		Entry("fractional input with 7 digit after dot, last digit more than 5", testCase{
+			input:    &wrappers.DoubleValue{Value: 50.1234567},
+			expected: &envoy_type.FractionalPercent{Numerator: 50123457, Denominator: envoy_type.FractionalPercent_MILLION},
+		}),
+	)
+})
+
+var _ = Describe("ConvertBandwidth", func() {
+	type testCase struct {
+		input    string
+		expected uint64
+	}
+	DescribeTable("should properly converts to kbps from gbps, mbps, kbps",
+		func(given testCase) {
+			// when
+			limitKbps, err := ConvertBandwidthToKbps(given.input)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(limitKbps).To(Equal(given.expected))
+		},
+		Entry("kbps input", testCase{
+			input:    "120 kbps",
+			expected: 120,
+		}),
+		Entry("mbps input", testCase{
+			input:    "120 mbps",
+			expected: 120000,
+		}),
+		Entry("gbps input", testCase{
+			input:    "120 gbps",
+			expected: 120000000,
 		}),
 	)
 })

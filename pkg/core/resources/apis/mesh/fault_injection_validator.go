@@ -109,8 +109,8 @@ func validateLimit(path validators.PathBuilder, limit *wrappers.StringValue) (er
 		return
 	}
 
-	if matched, _ := regexp.MatchString(`\d*\s?[gmk]?bps`, limit.GetValue()); !matched {
-		err.AddViolationAt(path.Field("limit"), "has to be in bps/kbps/mbps/gbps units")
+	if matched, _ := regexp.MatchString(`\d*\s?[gmk]bps`, limit.GetValue()); !matched {
+		err.AddViolationAt(path.Field("limit"), "has to be in kbps/mbps/gbps units")
 	}
 	return
 }

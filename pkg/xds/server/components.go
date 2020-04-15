@@ -4,10 +4,14 @@ import (
 	"context"
 	"time"
 
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/faultinjections"
 	"github.com/Kong/kuma/pkg/core/logs"
 	"github.com/Kong/kuma/pkg/core/permissions"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
@@ -19,10 +23,6 @@ import (
 	xds_sync "github.com/Kong/kuma/pkg/xds/sync"
 	xds_template "github.com/Kong/kuma/pkg/xds/template"
 	xds_topology "github.com/Kong/kuma/pkg/xds/topology"
-
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
 var (
@@ -73,6 +73,7 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
+	faultInjectionMatcher := faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
 	if err != nil {
 		return nil, err
@@ -145,6 +146,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					return err
 				}
 
+				faultInjection, err := faultInjectionMatcher.Match(ctx, dataplane)
+				if err != nil {
+					return err
+				}
+
 				proxy := xds.Proxy{
 					Id:                 proxyID,
 					Dataplane:          dataplane,
@@ -157,6 +163,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					TrafficTrace:       trafficTrace,
 					TracingBackend:     tracingBackend,
 					Metadata:           metadataTracker.Metadata(streamId),
+					FaultInjections:    faultInjection,
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},
