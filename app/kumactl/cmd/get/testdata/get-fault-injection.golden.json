@@ -1,0 +1,19 @@
+{
+    "type": "FaultInjection",
+    "mesh": "default",
+    "name": "fault-injection-1",
+    "sources": [
+        {
+            "match": {
+                "service": "frontend",
+                "version": "0.1"
+            }
+        }
+    ],
+    "conf": {
+        "abort": {
+            "percentage": 50,
+            "httpStatus": 500
+        }
+    }
+}

@@ -2,6 +2,7 @@ package apply
 
 import (
 	"context"
+	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -56,7 +57,8 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			} else {
 				if strings.HasPrefix(ctx.args.file, "http://") || strings.HasPrefix(ctx.args.file, "https://") {
 					client := &http.Client{
-						Timeout: timeout,
+						Timeout:   timeout,
+						Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 					}
 					req, err := http.NewRequest("GET", ctx.args.file, nil)
 					if err != nil {

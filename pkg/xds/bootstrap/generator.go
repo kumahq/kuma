@@ -3,7 +3,9 @@ package bootstrap
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"text/template"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
@@ -27,16 +29,19 @@ type BootstrapGenerator interface {
 
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
-	config *bootstrap_config.BootstrapParamsConfig) BootstrapGenerator {
+	config *bootstrap_config.BootstrapParamsConfig,
+	cacertFile string) BootstrapGenerator {
 	return &bootstrapGenerator{
-		resManager: resManager,
-		config:     config,
+		resManager:  resManager,
+		config:      config,
+		xdsCertFile: cacertFile,
 	}
 }
 
 type bootstrapGenerator struct {
-	resManager core_manager.ResourceManager
-	config     *bootstrap_config.BootstrapParamsConfig
+	resManager  core_manager.ResourceManager
+	config      *bootstrap_config.BootstrapParamsConfig
+	xdsCertFile string
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
@@ -70,6 +75,14 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	if request.AdminPort != 0 {
 		adminPort = request.AdminPort
 	}
+	var certBytes string = ""
+	if b.xdsCertFile != "" {
+		cert, err := ioutil.ReadFile(b.xdsCertFile)
+		if err != nil {
+			return nil, err
+		}
+		certBytes = base64.StdEncoding.EncodeToString(cert)
+	}
 	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
 	params := configParameters{
 		Id:                 proxyId.String(),
@@ -82,6 +95,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
 		DataplaneTokenPath: request.DataplaneTokenPath,
+		CertBytes:          certBytes,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params)

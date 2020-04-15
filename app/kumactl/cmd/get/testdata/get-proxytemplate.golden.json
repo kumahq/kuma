@@ -1,0 +1,17 @@
+{
+    "mesh": "default",
+    "name": "proxytemplate-1",
+    "type": "ProxyTemplate",
+    "selectors": [
+        {
+            "match": {
+                "service": "backend"
+            }
+        }
+    ],
+    "conf": {
+        "imports": [
+            "default-proxy"
+        ]
+    }
+}

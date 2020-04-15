@@ -1,0 +1,9 @@
+mesh: default
+name: traffic-trace-1
+selectors:
+  - match:
+      service: web1
+      version: "1.0"
+conf:
+  backend: zipkin
+type: TrafficTrace

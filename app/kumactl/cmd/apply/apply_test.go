@@ -186,7 +186,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
-		Expect(resource.Meta.GetMesh()).To(Equal(""))
+		Expect(resource.Meta.GetMesh()).To(Equal("sample"))
 	})
 
 	It("should apply a new Dataplane resource from URL", func() {
@@ -251,7 +251,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("meshinit"))
-		Expect(resource.Meta.GetMesh()).To(Equal(""))
+		Expect(resource.Meta.GetMesh()).To(Equal("meshinit"))
 	})
 
 	It("should return kuma api server error", func() {

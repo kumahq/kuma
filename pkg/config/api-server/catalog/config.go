@@ -2,14 +2,15 @@ package catalog
 
 // Not yet exposed via YAML and env vars on purpose
 type CatalogConfig struct {
-	Bootstrap            BootstrapApiConfig
-	DataplaneToken       DataplaneTokenApiConfig // DEPRECATED: remove in next major version of Kuma
-	Admin                AdminApiConfig
-	MonitoringAssignment MonitoringAssignmentApiConfig
+	Bootstrap            BootstrapApiConfig            `yaml:"bootstrap"`
+	DataplaneToken       DataplaneTokenApiConfig       `yaml:"-"` // DEPRECATED: remove in next major version of Kuma
+	Admin                AdminApiConfig                `yaml:"-"`
+	MonitoringAssignment MonitoringAssignmentApiConfig `yaml:"monitoringAssignment"`
+	Sds                  SdsApiConfig                  `yaml:"sds"`
 }
 
 type BootstrapApiConfig struct {
-	Url string
+	Url string `yaml:"url" envconfig:"kuma_api_server_catalog_bootstrap_url"`
 }
 
 type DataplaneTokenApiConfig struct {
@@ -23,5 +24,9 @@ type AdminApiConfig struct {
 }
 
 type MonitoringAssignmentApiConfig struct {
-	Url string
+	Url string `yaml:"url" envconfig:"kuma_api_server_catalog_monitoring_assignment_url"`
+}
+
+type SdsApiConfig struct {
+	Url string `yaml:"url" envconfig:"kuma_api_server_catalog_sds_url"`
 }
