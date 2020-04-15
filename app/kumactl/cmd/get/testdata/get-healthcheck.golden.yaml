@@ -1,11 +1,3 @@
-mesh: default
-name: healthcheck-1
-sources:
-  - match:
-      service: web
-destinations:
-  - match:
-      service: backend
 conf:
   activeChecks:
     interval: 10s
@@ -15,4 +7,14 @@ conf:
   passiveChecks:
     unhealthyThreshold: 3
     penaltyInterval: 5s
+creationTime: 2018-07-17T16:05:36.995Z
+destinations:
+  - match:
+      service: backend
+mesh: default
+modificationTime: 2018-07-17T16:05:36.995Z
+name: healthcheck-1
+sources:
+  - match:
+      service: web
 type: HealthCheck

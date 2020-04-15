@@ -1,13 +1,15 @@
-mesh: default
-name: traffic-log-1
+conf:
+  backend: file
+creationTime: 2018-07-17T16:05:36.995Z
 destinations:
   - match:
       env: dev
       service: backend1
+mesh: default
+modificationTime: 2018-07-17T16:05:36.995Z
+name: traffic-log-1
 sources:
   - match:
       service: web1
       version: "1.0"
-conf:
-  backend: file
 type: TrafficLog

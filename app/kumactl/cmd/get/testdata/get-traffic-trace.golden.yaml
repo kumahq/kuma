@@ -1,9 +1,11 @@
+conf:
+  backend: zipkin
+creationTime: 2018-07-17T16:05:36.995Z
 mesh: default
+modificationTime: 2018-07-17T16:05:36.995Z
 name: traffic-trace-1
 selectors:
   - match:
       service: web1
       version: "1.0"
-conf:
-  backend: zipkin
 type: TrafficTrace

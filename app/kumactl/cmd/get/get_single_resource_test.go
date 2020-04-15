@@ -25,11 +25,11 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 	var rootCmd *cobra.Command
 	var outbuf, errbuf *bytes.Buffer
 	var store core_store.ResourceStore
-
+	now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995Z")
 	BeforeEach(func() {
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				Now: time.Now,
+				Now: func() time.Time { return now },
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
 				},
