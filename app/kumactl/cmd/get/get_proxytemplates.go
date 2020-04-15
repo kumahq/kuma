@@ -32,7 +32,7 @@ func newGetProxyTemplatesCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return PrintProxyTemplates(proxyTemplates, cmd.OutOrStdout())
+				return printProxyTemplates(proxyTemplates.Items, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +45,17 @@ func newGetProxyTemplatesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func PrintProxyTemplates(proxyTemplates *mesh_core.ProxyTemplateResourceList, out io.Writer) error {
+func printProxyTemplates(proxyTemplates []*mesh_core.ProxyTemplateResource, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(proxyTemplates.Items) <= i {
+				if len(proxyTemplates) <= i {
 					return nil
 				}
-				proxyTemplate := proxyTemplates.Items[i]
+				proxyTemplate := proxyTemplates[i]
 
 				return []string{
 					proxyTemplate.GetMeta().GetMesh(), // MESH

@@ -1,0 +1,24 @@
+{
+    "type": "TrafficLog",
+    "mesh": "default",
+    "name": "traffic-log-1",
+    "sources": [
+        {
+            "match": {
+                "service": "web1",
+                "version": "1.0"
+            }
+        }
+    ],
+    "destinations": [
+        {
+            "match": {
+                "env": "dev",
+                "service": "backend1"
+            }
+        }
+    ],
+    "conf": {
+        "backend": "file"
+    }
+}

@@ -32,7 +32,7 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printMeshes(&meshes, cmd.OutOrStdout())
+				return printMeshes(meshes.Items, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +45,17 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
+func printMeshes(meshes []*mesh.MeshResource, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(meshes.Items) <= i {
+				if len(meshes) <= i {
 					return nil
 				}
-				mesh := meshes.Items[i]
+				mesh := meshes[i]
 
 				mtls := "off"
 				if mesh.Spec.Mtls.GetEnabled() {
