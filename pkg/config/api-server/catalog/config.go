@@ -10,7 +10,7 @@ type CatalogConfig struct {
 }
 
 type BootstrapApiConfig struct {
-	Url string `yaml:"url" envconfig:"kuma_bootstrap_server_public_url"`
+	Url string `yaml:"url" envconfig:"kuma_api_server_catalog_bootstrap_url"`
 }
 
 type DataplaneTokenApiConfig struct {
@@ -24,9 +24,9 @@ type AdminApiConfig struct {
 }
 
 type MonitoringAssignmentApiConfig struct {
-	Url string `yaml:"url" envconfig:"kuma_mads_server_public_url"`
+	Url string `yaml:"url" envconfig:"kuma_api_server_catalog_monitoring_assignment_url"`
 }
 
 type SdsApiConfig struct {
-	Url string `yaml:"hostPort" envconfig:"kuma_sds_server_public_url"`
+	Url string `yaml:"url" envconfig:"kuma_api_server_catalog_sds_url"`
 }

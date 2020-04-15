@@ -57,7 +57,7 @@ var _ = Describe("Config WS", func() {
                 "url": ""
               },
               "sds": {
-                "hostPort": ""
+                "url": ""
               }
             },
             "corsAllowedDomains": [
