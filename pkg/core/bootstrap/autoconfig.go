@@ -3,8 +3,10 @@ package bootstrap
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"reflect"
+	"strings"
 
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	"github.com/Kong/kuma/pkg/config/api-server/catalog"
@@ -30,15 +32,26 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 }
 
 func autoconfigureCatalog(cfg *kuma_cp.Config) {
+	bootstrapUrl := cfg.ApiServer.Catalog.Bootstrap.Url
+	if len(bootstrapUrl) == 0 {
+		bootstrapUrl = fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port)
+	}
+	madsUrl := cfg.ApiServer.Catalog.MonitoringAssignment.Url
+	if len(madsUrl) == 0 {
+		madsUrl = fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort)
+	}
 	cat := &catalog.CatalogConfig{
 		Bootstrap: catalog.BootstrapApiConfig{
-			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port),
+			Url: bootstrapUrl,
 		},
 		Admin: catalog.AdminApiConfig{
 			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port),
 		},
 		MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
-			Url: fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort),
+			Url: madsUrl,
+		},
+		Sds: catalog.SdsApiConfig{
+			Url: cfg.ApiServer.Catalog.Sds.Url,
 		},
 	}
 	if cfg.AdminServer.Public.Enabled {
@@ -57,8 +70,19 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 	// to improve UX, we want to auto-generate TLS cert for SDS if possible
 	if cfg.Environment == config_core.UniversalEnvironment {
 		if cfg.SdsServer.TlsCertFile == "" {
+			var sdsHost = ""
+			if cfg.ApiServer.Catalog.Sds.Url != "" {
+				u, err := url.Parse(cfg.ApiServer.Catalog.Sds.Url)
+				if err != nil {
+					return errors.Wrap(err, "sds url is malformed")
+				}
+				sdsHost = strings.Split(u.Host, ":")[0]
+			}
+			if len(sdsHost) == 0 {
+				sdsHost = cfg.BootstrapServer.Params.XdsHost
+			}
 			hosts := []string{
-				cfg.BootstrapServer.Params.XdsHost,
+				sdsHost,
 				"localhost",
 			}
 			// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server

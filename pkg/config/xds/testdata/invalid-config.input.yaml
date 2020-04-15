@@ -2,3 +2,5 @@ grpcPort: 1234
 diagnosticsPort: 3456
 dataplaneConfigurationRefreshInterval: 0
 dataplaneStatusFlushInterval: 0
+tlsCertFile: "/tmp/cert.pem"
+tlsKeyFile: ""

@@ -16,7 +16,7 @@ type ApiServerConfig struct {
 	// If true, then API Server will operate in read only mode (serving GET requests)
 	ReadOnly bool `yaml:"readOnly" envconfig:"kuma_api_server_read_only"`
 	// API Catalog
-	Catalog *catalog.CatalogConfig `yaml:"-"`
+	Catalog *catalog.CatalogConfig `yaml:"catalog"`
 	// Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
 	CorsAllowedDomains []string `yaml:"corsAllowedDomains" envconfig:"kuma_api_server_cors_allowed_domains"`
 }
