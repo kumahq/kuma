@@ -2,29 +2,28 @@ package controllers
 
 import (
 	"context"
-	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	"github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
-	k8scnicncfio "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
-	network_v1 "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
+	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8scnicncfio "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
+	network_v1 "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
 )
 
 // NamespaceReconciler reconciles a Namespace object

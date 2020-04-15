@@ -2,9 +2,7 @@ package controllers_test
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core"
-	v1 "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
-	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/controllers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -14,6 +12,10 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/Kong/kuma/pkg/core"
+	v1 "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
+	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/controllers"
 )
 
 var _ = Describe("NamespaceReconciler", func() {
