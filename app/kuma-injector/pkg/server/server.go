@@ -4,13 +4,13 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
+	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/Kong/kuma/app/kuma-injector/pkg/injector"
 	kuma_injector_conf "github.com/Kong/kuma/pkg/config/app/kuma-injector"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-
-	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
-	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
+	k8scnicncfio "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
 )
 
 func Setup(mgr kube_manager.Manager, cfg *kuma_injector_conf.Config) error {
@@ -20,6 +20,10 @@ func Setup(mgr kube_manager.Manager, cfg *kuma_injector_conf.Config) error {
 		CertDir: cfg.WebHookServer.CertDir,
 	}
 	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
+		return errors.Wrap(err, "could not add to scheme")
+	}
+
+	if err := k8scnicncfio.AddToScheme(mgr.GetScheme()); err != nil {
 		return errors.Wrap(err, "could not add to scheme")
 	}
 

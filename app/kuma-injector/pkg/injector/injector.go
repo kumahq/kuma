@@ -283,9 +283,9 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 		metadata.KumaSidecarInjectedAnnotation:         metadata.KumaSidecarInjected,
 		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
 		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
-		metadata.CNCFNetworkAnnotation:                 metadata.KumaCNI,
-		//"sidecar.istio.io/inject":                      "true",
-		//"sidecar.istio.io/status":                      "",
+	}
+	if i.cfg.InitContainer.Disabled {
+		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 	for k, v := range i.prometheusAnnotations(pod, mesh) {
 		annotations[k] = v

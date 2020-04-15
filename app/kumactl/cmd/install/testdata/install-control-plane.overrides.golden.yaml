@@ -4129,6 +4129,27 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
+    verbs:
+      - '*'
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshes/finalizers
+    verbs:
+      - "*"
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - list
+      - watch
+      - create
   # validate k8s token before issueing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -4302,6 +4323,8 @@ spec:
               value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
+            - name: KUMA_KUBERNETES_CNI_ENABLED
+              value: "false"
           args:
             - run
             - --log-level=info
@@ -4385,6 +4408,8 @@ spec:
               value: kuma-ci/kuma-dp:greatest
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: kuma-ci/kuma-init:greatest
+            - name: KUMA_INJECTOR_INIT_CONTAINER_DISABLED
+              value: "false"
           args:
             - run
             - --log-level=info

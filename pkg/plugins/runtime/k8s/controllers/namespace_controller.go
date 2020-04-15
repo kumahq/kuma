@@ -3,6 +3,13 @@ package controllers
 import (
 	"context"
 
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
+	k8scnicncfio "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
+	network_v1 "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -27,17 +34,14 @@ type NamespaceReconciler struct {
 	Log logr.Logger
 
 	SystemNamespace     string
+	CNIEnabled          bool
 	ResourceManager     core_manager.ResourceManager
 	DefaultMeshTemplate mesh_proto.Mesh
 }
 
 func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	if req.Name != r.SystemNamespace {
-		return kube_ctrl.Result{}, nil
-	}
-
-	ctx := context.Background()
 	log := r.Log.WithValues("namespace", req.Name)
+	ctx := context.Background()
 
 	// Fetch the Namespace instance
 	ns := &kube_core.Namespace{}
@@ -47,6 +51,16 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		}
 		log.Error(err, "unable to fetch Namespace")
 		return kube_ctrl.Result{}, err
+	}
+
+	log.WithValues("resource", ns)
+
+	if v, ok := ns.Labels["kuma.io/sidecar-injection"]; ok && v == "enabled" && r.CNIEnabled {
+		return kube_ctrl.Result{}, r.createOrUpdateNetworkAttachmentDefinition(req.Name)
+	}
+
+	if req.Name != r.SystemNamespace {
+		return kube_ctrl.Result{}, nil
 	}
 
 	// Fetch default Mesh instance
@@ -67,12 +81,29 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 	return kube_ctrl.Result{}, nil
 }
 
+func (r *NamespaceReconciler) createOrUpdateNetworkAttachmentDefinition(namespace string) error {
+	nad := &network_v1.NetworkAttachmentDefinition{
+		ObjectMeta: kube_meta.ObjectMeta{
+			Namespace: namespace,
+			Name:      metadata.KumaCNI,
+		},
+	}
+	_, err := kube_controllerutil.CreateOrUpdate(context.Background(), r.Client, nad, func() error {
+		return nil
+	})
+
+	return err
+}
+
 func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
 		return errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
 	}
 	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
 		return errors.Wrapf(err, "could not add %q to scheme", mesh_k8s.GroupVersion)
+	}
+	if err := k8scnicncfio.AddToScheme(mgr.GetScheme()); err != nil {
+		return errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.GroupVersion)
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Namespace{}).

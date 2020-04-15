@@ -122,7 +122,8 @@ var _ = Describe("Config WS", func() {
                 "address": "",
                 "certDir": "",
                 "port": 5443
-              }
+              },
+            "cniEnabled": false
             }
           },
           "sdsServer": {

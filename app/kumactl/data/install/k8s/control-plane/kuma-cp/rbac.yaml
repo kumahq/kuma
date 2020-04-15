@@ -103,6 +103,21 @@ rules:
     - pods/finalizers
   verbs:
     - "*"
+- apiGroups:
+    - kuma.io
+  resources:
+    - meshes/finalizers
+  verbs:
+    - "*"
+- apiGroups:
+    - k8s.cni.cncf.io
+  resources:
+    - network-attachment-definitions
+  verbs:
+    - get
+    - list
+    - watch
+    - create
 # validate k8s token before issueing mTLS cert
 - apiGroups:
   - authentication.k8s.io

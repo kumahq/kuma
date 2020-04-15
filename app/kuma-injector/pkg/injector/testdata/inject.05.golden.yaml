@@ -6,7 +6,6 @@ metadata:
     kuma.io/sidecar-injected: "true"
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-port: "15001"
-    k8s.v1.cni.cncf.io/networks: kuma-cni
   creationTimestamp: null
   labels:
     run: busybox

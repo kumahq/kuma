@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	defaultConnectTimeout = 15 * time.Second
+	defaultConnectTimeout = 5 * time.Second
 )
 
 func CreateLocalCluster(clusterName string, address string, port uint32) *v2.Cluster {
