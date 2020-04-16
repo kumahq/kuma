@@ -32,7 +32,7 @@ func newGetHealthChecksCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return PrintHealthChecks(healthChecks, cmd.OutOrStdout())
+				return printHealthChecks(healthChecks.Items, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +45,17 @@ func newGetHealthChecksCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func PrintHealthChecks(healthChecks *mesh_core.HealthCheckResourceList, out io.Writer) error {
+func printHealthChecks(healthChecks []*mesh_core.HealthCheckResource, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(healthChecks.Items) <= i {
+				if len(healthChecks) <= i {
 					return nil
 				}
-				healthCheck := healthChecks.Items[i]
+				healthCheck := healthChecks[i]
 
 				return []string{
 					healthCheck.Meta.GetMesh(), // MESH

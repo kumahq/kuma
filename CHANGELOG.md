@@ -5,6 +5,11 @@
   [#668](https://github.com/Kong/kuma/pull/668)
   ⚠️ warning: breaking change of matching mechanism
 * feat: envoy configs for fault injections
+* feat kuma-dp and kumactl can communiate with kuma-cp over https
+  [#633](https://github.com/Kong/kuma/pull/633)
+* fix: reduce Prometheus scrape_interval to work with Kong Prometheus plugin 
+  [#674](https://github.com/Kong/kuma/pull/674)
+* feat(kuma-cp) envoy configs for fault injections
   [#649](https://github.com/Kong/kuma/pull/649)
 * feat: endpoints for fetching resources from all meshes 
   [#657](https://github.com/Kong/kuma/pull/657)
@@ -46,6 +51,8 @@
   [#622](https://github.com/Kong/kuma/pull/622)
 * feature: validate `<port>.service.kuma.io/protocol` annotations on K8S Service objects
   [#611](https://github.com/Kong/kuma/pull/611)
+* feat: added `kumactl get` command for individual resources
+  [#667](https://github.com/Kong/kuma/pull/667)
 
 Breaking changes:
 * ⚠️ before the change TrafficPermission worked in cumulative way, which means that all policies that matched a connection were applied.

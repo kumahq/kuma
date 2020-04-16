@@ -32,7 +32,7 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printDataplanes(&dataplanes, cmd.OutOrStdout())
+				return printDataplanes(dataplanes.Items, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +45,17 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printDataplanes(dataplanes *mesh.DataplaneResourceList, out io.Writer) error {
+func printDataplanes(dataplanes []*mesh.DataplaneResource, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME", "TAGS"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(dataplanes.Items) <= i {
+				if len(dataplanes) <= i {
 					return nil
 				}
-				dataplane := dataplanes.Items[i]
+				dataplane := dataplanes[i]
 
 				return []string{
 					dataplane.Meta.GetMesh(),       // MESH

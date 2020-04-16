@@ -1,0 +1,13 @@
+mesh: default
+name: traffic-log-1
+destinations:
+  - match:
+      env: dev
+      service: backend1
+sources:
+  - match:
+      service: web1
+      version: "1.0"
+conf:
+  backend: file
+type: TrafficLog

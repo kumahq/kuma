@@ -21,6 +21,10 @@ type XdsServerConfig struct {
 	DataplaneConfigurationRefreshInterval time.Duration `yaml:"dataplaneConfigurationRefreshInterval" envconfig:"kuma_xds_server_dataplane_configuration_refresh_interval"`
 	// Interval for flushing status of Dataplanes connected to the Control Plane
 	DataplaneStatusFlushInterval time.Duration `yaml:"dataplaneStatusFlushInterval" envconfig:"kuma_xds_server_dataplane_status_flush_interval"`
+	// TlsCertFile defines a path to a file with PEM-encoded TLS cert.
+	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_xds_server_tls_cert_file"`
+	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
+	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_xds_server_tls_key_file"`
 }
 
 func (x *XdsServerConfig) Sanitize() {
@@ -39,6 +43,12 @@ func (x *XdsServerConfig) Validate() error {
 	if x.DataplaneStatusFlushInterval <= 0 {
 		return errors.New("DataplaneStatusFlushInterval must be positive")
 	}
+	if x.TlsCertFile == "" && x.TlsKeyFile != "" {
+		return errors.New("TlsCertFile cannot be empty if TlsKeyFile has been set")
+	}
+	if x.TlsKeyFile == "" && x.TlsCertFile != "" {
+		return errors.New("TlsKeyFile cannot be empty if TlsCertFile has been set")
+	}
 	return nil
 }
 
@@ -48,5 +58,7 @@ func DefaultXdsServerConfig() *XdsServerConfig {
 		DiagnosticsPort:                       5680,
 		DataplaneConfigurationRefreshInterval: 1 * time.Second,
 		DataplaneStatusFlushInterval:          1 * time.Second,
+		TlsCertFile:                           "",
+		TlsKeyFile:                            "",
 	}
 }

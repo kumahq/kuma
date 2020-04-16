@@ -1,0 +1,2 @@
+MESH      NAME
+default   healthcheck-1

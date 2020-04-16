@@ -32,7 +32,7 @@ func newGetTrafficRoutesCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return PrintTrafficRoutes(trafficRoutes, cmd.OutOrStdout())
+				return printTrafficRoutes(trafficRoutes.Items, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,21 +45,21 @@ func newGetTrafficRoutesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func PrintTrafficRoutes(trafficRoutes *mesh_core.TrafficRouteResourceList, out io.Writer) error {
+func printTrafficRoutes(trafficRoutes []*mesh_core.TrafficRouteResource, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(trafficRoutes.Items) <= i {
+				if len(trafficRoutes) <= i {
 					return nil
 				}
-				proxyTemplate := trafficRoutes.Items[i]
+				trafficroute := trafficRoutes[i]
 
 				return []string{
-					proxyTemplate.Meta.GetMesh(), // MESH
-					proxyTemplate.Meta.GetName(), // NAME
+					trafficroute.Meta.GetMesh(), // MESH
+					trafficroute.Meta.GetName(), // NAME
 				}
 			}
 		}(),
