@@ -4,12 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Kong/kuma/pkg/api-server/types"
-
 	"github.com/emicklei/go-restful"
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
