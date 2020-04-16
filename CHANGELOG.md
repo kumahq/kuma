@@ -3,6 +3,8 @@
 ## master
 * feat kuma-dp and kumactl can communiate with kuma-cp over https
   [#633](https://github.com/Kong/kuma/pull/633)
+* fix: reduce Prometheus scrape_interval to work with Kong Prometheus plugin 
+  [#674](https://github.com/Kong/kuma/pull/674)
 * feat(kuma-cp) envoy configs for fault injections
   [#649](https://github.com/Kong/kuma/pull/649)
 * feat: endpoints for fetching resources from all meshes 
