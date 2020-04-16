@@ -87,48 +87,6 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 	return kube_ctrl.Result{}, nil
 }
 
-//func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-//	log := r.Log.WithValues("namespace", req.Name)
-//	ctx := context.Background()
-//
-//	// Fetch the Namespace instance
-//	ns := &kube_core.Namespace{}
-//	if err := r.Get(ctx, req.NamespacedName, ns); err != nil {
-//		if kube_apierrs.IsNotFound(err) {
-//			return kube_ctrl.Result{}, nil
-//		}
-//		log.Error(err, "unable to fetch Namespace")
-//		return kube_ctrl.Result{}, err
-//	}
-//
-//	log.WithValues("resource", ns)
-//
-//	if v, ok := ns.Labels["kuma.io/sidecar-injection"]; ok && v == "enabled" && r.CNIEnabled {
-//		return kube_ctrl.Result{}, r.createOrUpdateNetworkAttachmentDefinition(req.Name)
-//	}
-//
-//	if req.Name != r.SystemNamespace {
-//		return kube_ctrl.Result{}, nil
-//	}
-//
-//	// Fetch default Mesh instance
-//	mesh := &mesh_k8s.Mesh{}
-//	name := kube_types.NamespacedName{Name: core_model.DefaultMesh}
-//	if err := r.Get(ctx, name, mesh); err != nil {
-//		if kube_apierrs.IsNotFound(err) {
-//			err := mesh_managers.CreateDefaultMesh(r.ResourceManager, r.DefaultMeshTemplate)
-//			if err != nil {
-//				log.Error(err, "unable to create default Mesh")
-//			}
-//			return kube_ctrl.Result{}, err
-//		}
-//		log.Error(err, "unable to fetch Mesh", "name", name)
-//		return kube_ctrl.Result{}, err
-//	}
-//
-//	return kube_ctrl.Result{}, nil
-//}
-
 func (r *NamespaceReconciler) createOrUpdateNetworkAttachmentDefinition(namespace string) error {
 	nad := &network_v1.NetworkAttachmentDefinition{
 		ObjectMeta: kube_meta.ObjectMeta{
