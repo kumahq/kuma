@@ -1,6 +1,9 @@
 # CHANGELOG
 
 ## master
+* chore: unify matching for TrafficPermission
+  [#668](https://github.com/Kong/kuma/pull/668)
+  ⚠️ warning: breaking change of matching mechanism
 * feat kuma-dp and kumactl can communiate with kuma-cp over https
   [#633](https://github.com/Kong/kuma/pull/633)
 * fix: reduce Prometheus scrape_interval to work with Kong Prometheus plugin 
@@ -49,6 +52,13 @@
   [#611](https://github.com/Kong/kuma/pull/611)
 * feat: added `kumactl get` command for individual resources
   [#667](https://github.com/Kong/kuma/pull/667)
+
+Breaking changes:
+* ⚠️ before the change TrafficPermission worked in cumulative way, which means that all policies that matched a connection were applied.
+  We changed TrafficPermission to work like every other policy so only "the most specific" matching policy is chosen.
+  Consult [docs](https://kuma.io/docs/0.4.0/policies/how-kuma-chooses-the-right-policy-to-apply/) to learn more how Kuma picks the right policy.
+  [668](https://github.com/Kong/kuma/pull/668)
+
 ## [0.4.0]
 
 > Released on 2020/02/28

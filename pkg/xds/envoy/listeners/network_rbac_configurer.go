@@ -11,30 +11,29 @@ import (
 	envoy_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
-func NetworkRBAC(statsName string, rbacEnabled bool, permissions *mesh_core.TrafficPermissionResourceList) FilterChainBuilderOpt {
+func NetworkRBAC(statsName string, rbacEnabled bool, permission *mesh_core.TrafficPermissionResource) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		if rbacEnabled {
 			config.Add(&NetworkRBACConfigurer{
-				statsName:   statsName,
-				permissions: permissions,
+				statsName:  statsName,
+				permission: permission,
 			})
 		}
 	})
 }
 
 type NetworkRBACConfigurer struct {
-	statsName string
-	// Traffic Permissions to enforce.
-	permissions *mesh_core.TrafficPermissionResourceList
+	statsName  string
+	permission *mesh_core.TrafficPermissionResource
 }
 
 func (c *NetworkRBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	filter, err := createRbacFilter(c.statsName, c.permissions)
+	filter, err := createRbacFilter(c.statsName, c.permission)
 	if err != nil {
 		return err
 	}
@@ -44,8 +43,8 @@ func (c *NetworkRBACConfigurer) Configure(filterChain *envoy_listener.FilterChai
 	return nil
 }
 
-func createRbacFilter(statsName string, permissions *mesh_core.TrafficPermissionResourceList) (*envoy_listener.Filter, error) {
-	rbacRule := createRbacRule(statsName, permissions)
+func createRbacFilter(statsName string, permission *mesh_core.TrafficPermissionResource) (*envoy_listener.Filter, error) {
+	rbacRule := createRbacRule(statsName, permission)
 	rbacMarshalled, err := ptypes.MarshalAny(rbacRule)
 	if err != nil {
 		return nil, err
@@ -58,11 +57,12 @@ func createRbacFilter(statsName string, permissions *mesh_core.TrafficPermission
 	}, nil
 }
 
-func createRbacRule(statsName string, permissions *mesh_core.TrafficPermissionResourceList) *rbac.RBAC {
-	policies := make(map[string]*rbac_config.Policy, len(permissions.Items))
-	for _, permission := range permissions.Items {
-		policyName := permission.Meta.GetName()
-		policies[policyName] = createPolicy(permission)
+func createRbacRule(statsName string, permission *mesh_core.TrafficPermissionResource) *rbac.RBAC {
+	policies := make(map[string]*rbac_config.Policy)
+	// We only create policy if Traffic Permission is selected. Otherwise we still need to build RBAC filter
+	// to restrict all the traffic coming to the dataplane.
+	if permission != nil {
+		policies[permission.GetMeta().GetName()] = createPolicy(permission)
 	}
 
 	return &rbac.RBAC{
@@ -76,11 +76,12 @@ func createRbacRule(statsName string, permissions *mesh_core.TrafficPermissionRe
 
 func createPolicy(permission *mesh_core.TrafficPermissionResource) *rbac_config.Policy {
 	principals := []*rbac_config.Principal{}
+
 	// build principals list: one per sources/destinations rule
 	for _, source := range permission.Spec.Sources {
-		service := source.Match["service"]
+		service := source.Match[mesh_proto.ServiceTag]
 		principal := &rbac_config.Principal{}
-		if service == v1alpha1.MatchAllTag {
+		if service == mesh_proto.MatchAllTag {
 			principal.Identifier = &rbac_config.Principal_Any{
 				Any: true,
 			}
@@ -102,8 +103,6 @@ func createPolicy(permission *mesh_core.TrafficPermissionResource) *rbac_config.
 		Permissions: []*rbac_config.Permission{
 			{
 				Rule: &rbac_config.Permission_Any{
-					// todo(jakubdyszkiewicz) for now it matches on any destination port, which means that
-					// if dataplane has two services ex. web, web-api. Allowing traffic on web will also work on web-api
 					Any: true,
 				},
 			},

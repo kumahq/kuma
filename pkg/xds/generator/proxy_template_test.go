@@ -4,8 +4,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/Kong/kuma/pkg/core/permissions"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -79,7 +77,6 @@ var _ = Describe("TemplateProxyGenerator", func() {
 							},
 						},
 					},
-					TrafficPermissions: permissions.MatchedPermissions{},
 				},
 				template: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
@@ -149,8 +146,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 						},
 						Spec: dataplane,
 					},
-					TrafficPermissions: permissions.MatchedPermissions{},
-					Metadata:           &model.DataplaneMetadata{},
+					Metadata: &model.DataplaneMetadata{},
 				}
 
 				// when
