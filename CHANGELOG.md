@@ -4,7 +4,6 @@
 * chore: unify matching for TrafficPermission
   [#668](https://github.com/Kong/kuma/pull/668)
   ⚠️ warning: breaking change of matching mechanism
-* feat: envoy configs for fault injections
 * feat kuma-dp and kumactl can communiate with kuma-cp over https
   [#633](https://github.com/Kong/kuma/pull/633)
 * fix: reduce Prometheus scrape_interval to work with Kong Prometheus plugin 
