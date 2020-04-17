@@ -11,6 +11,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Kong/kuma/pkg/catalog"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -39,6 +44,20 @@ var _ = Describe("kumactl apply", func() {
 			Runtime: kumactl_cmd.RootRuntime{
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
+				},
+				NewAdminResourceStore: func(string, *config_proto.Context_AdminApiCredentials) (core_store.ResourceStore, error) {
+					return store, nil
+				},
+				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
+					return &test_catalog.StaticCatalogClient{
+						Resp: catalog.Catalog{
+							Apis: catalog.Apis{
+								DataplaneToken: catalog.DataplaneTokenApi{
+									LocalUrl: "http://localhost:1234",
+								},
+							},
+						},
+					}, nil
 				},
 			},
 		}
@@ -187,6 +206,28 @@ var _ = Describe("kumactl apply", func() {
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
 		Expect(resource.Meta.GetMesh()).To(Equal("sample"))
+	})
+
+	It("should apply a Secret resource", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-secret.yaml")},
+		)
+
+		// when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		secret := system.SecretResource{}
+		err = store.Get(context.Background(), &secret, core_store.GetByKey("sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(secret.Meta.GetName()).To(Equal("sample"))
+		Expect(secret.Meta.GetMesh()).To(Equal("default"))
 	})
 
 	It("should apply a new Dataplane resource from URL", func() {
