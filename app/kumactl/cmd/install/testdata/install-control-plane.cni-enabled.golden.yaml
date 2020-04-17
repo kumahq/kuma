@@ -4544,8 +4544,8 @@ spec:
               value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
-            - name: KUMA_INJECTOR_INIT_CONTAINER_DISABLED
-              value: "true"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_ENABLED
+              value: "false"
           args:
             - run
             - --log-level=info

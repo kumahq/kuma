@@ -260,6 +260,10 @@ generate/kumactl/install/k8s/control-plane:
 	go generate ./app/kumactl/pkg/install/k8s/control-plane/...
 
 # Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+generate/kumactl/install/k8s/kuma-cni:
+	go generate ./app/kumactl/pkg/install/k8s/kuma-cni/...
+
+# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
 generate/kumactl/install/k8s/metrics:
 	go generate ./app/kumactl/pkg/install/k8s/metrics/...
 

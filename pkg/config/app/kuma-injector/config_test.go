@@ -55,7 +55,7 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.SidecarContainer.Resources.Limits.Memory).To(Equal("1512Mi"))
 		// and
 		Expect(cfg.Injector.InitContainer.Image).To(Equal("kuma-init:latest"))
-		Expect(cfg.Injector.InitContainer.Disabled).To(Equal(true))
+		Expect(cfg.Injector.InitContainer.Enabled).To(Equal(false))
 	})
 
 	It("should have consistent defaults", func() {

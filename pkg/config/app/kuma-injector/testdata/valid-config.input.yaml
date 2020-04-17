@@ -33,5 +33,5 @@ injector:
         cpu: 1100m
         memory: 1512Mi
   initContainer:
-    disabled: true
+    enabled: false
     image: kuma-init:latest

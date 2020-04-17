@@ -119,7 +119,7 @@ spec:
                   key: cni_network_config
             - name: CNI_NET_DIR
               value: /etc/cni/multus/net.d
-            # Deploy as a standalone CNI plugin or as chained?
+            # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
               value: "false"
           volumeMounts:

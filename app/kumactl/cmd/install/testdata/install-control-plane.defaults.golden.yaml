@@ -4140,15 +4140,6 @@ rules:
       - meshes/finalizers
     verbs:
       - "*"
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - get
-      - list
-      - watch
-      - create
   # validate k8s token before issueing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -4407,8 +4398,8 @@ spec:
               value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
-            - name: KUMA_INJECTOR_INIT_CONTAINER_DISABLED
-              value: "false"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_ENABLED
+              value: "true"
           args:
             - run
             - --log-level=info

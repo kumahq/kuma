@@ -109,6 +109,7 @@ rules:
     - meshes/finalizers
   verbs:
     - "*"
+{{ if .CNIEnabled }}
 - apiGroups:
     - k8s.cni.cncf.io
   resources:
@@ -118,6 +119,7 @@ rules:
     - list
     - watch
     - create
+{{ end }}
 # validate k8s token before issueing mTLS cert
 - apiGroups:
   - authentication.k8s.io
