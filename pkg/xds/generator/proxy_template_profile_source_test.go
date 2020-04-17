@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/permissions"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
@@ -111,7 +110,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 					},
 				},
-				TrafficPermissions: permissions.MatchedPermissions{},
 				Metadata: &model.DataplaneMetadata{
 					AdminPort: 9902,
 				},

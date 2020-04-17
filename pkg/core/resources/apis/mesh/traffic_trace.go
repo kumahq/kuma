@@ -44,7 +44,8 @@ func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &TrafficTraceResourceList{}
 
 type TrafficTraceResourceList struct {
-	Items []*TrafficTraceResource
+	Items      []*TrafficTraceResource
+	Pagination model.Pagination
 }
 
 func (l *TrafficTraceResourceList) GetItems() []model.Resource {
@@ -67,6 +68,12 @@ func (l *TrafficTraceResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*TrafficTraceResource)(nil), r)
 	}
+}
+func (l *TrafficTraceResourceList) GetPagination() model.Pagination {
+	return l.Pagination
+}
+func (l *TrafficTraceResourceList) SetPagination(pagination model.Pagination) {
+	l.Pagination = pagination
 }
 
 func init() {

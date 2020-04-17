@@ -44,7 +44,8 @@ func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &MeshResourceList{}
 
 type MeshResourceList struct {
-	Items []*MeshResource
+	Items      []*MeshResource
+	Pagination model.Pagination
 }
 
 func (l *MeshResourceList) GetItems() []model.Resource {
@@ -67,6 +68,12 @@ func (l *MeshResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*MeshResource)(nil), r)
 	}
+}
+func (l *MeshResourceList) GetPagination() model.Pagination {
+	return l.Pagination
+}
+func (l *MeshResourceList) SetPagination(pagination model.Pagination) {
+	l.Pagination = pagination
 }
 
 func init() {

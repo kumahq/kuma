@@ -26,4 +26,5 @@ type KubernetesObject interface {
 type KubernetesList interface {
 	runtime.Object
 	GetItems() []KubernetesObject
+	GetContinue() string
 }

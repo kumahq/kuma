@@ -41,6 +41,9 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 		madsUrl = fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort)
 	}
 	cat := &catalog.CatalogConfig{
+		ApiServer: catalog.ApiServerConfig{
+			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.Port),
+		},
 		Bootstrap: catalog.BootstrapApiConfig{
 			Url: bootstrapUrl,
 		},

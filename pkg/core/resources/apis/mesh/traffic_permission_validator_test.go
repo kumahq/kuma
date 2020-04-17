@@ -60,7 +60,7 @@ var _ = Describe("TrafficPermission", func() {
                 - field: sources[0].match
                   message: mandatory tag "service" is missing
                 - field: destinations[0].match
-                  message: must consist of exactly one tag "service"
+                  message: must have at least one tag
                 - field: destinations[0].match
                   message: mandatory tag "service" is missing
 `,
@@ -86,10 +86,6 @@ var _ = Describe("TrafficPermission", func() {
                   message: tag value must be non-empty
                 - field: sources[0].match["service"]
                   message: tag value must be non-empty
-                - field: destinations[0].match
-                  message: must consist of exactly one tag "service"
-                - field: destinations[0].match["region"]
-                  message: tag "region" is not allowed
                 - field: destinations[0].match["region"]
                   message: tag value must be non-empty
                 - field: destinations[0].match["service"]
@@ -123,16 +119,12 @@ var _ = Describe("TrafficPermission", func() {
                   message: must consist of exactly one tag "service"
                 - field: sources[1].match
                   message: mandatory tag "service" is missing
-                - field: destinations[0].match
-                  message: must consist of exactly one tag "service"
-                - field: destinations[0].match["region"]
-                  message: tag "region" is not allowed
                 - field: destinations[0].match["region"]
                   message: tag value must be non-empty
                 - field: destinations[0].match["service"]
                   message: tag value must be non-empty
                 - field: destinations[1].match
-                  message: must consist of exactly one tag "service"
+                  message: must have at least one tag
                 - field: destinations[1].match
                   message: mandatory tag "service" is missing
 `,

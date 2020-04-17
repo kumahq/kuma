@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/permissions"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 
@@ -57,10 +56,13 @@ type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
 // FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
 type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
 
+// TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
+type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
+
 type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
-	TrafficPermissions permissions.MatchedPermissions
+	TrafficPermissions TrafficPermissionMap
 	Logs               LogMap
 	TrafficRoutes      RouteMap
 	OutboundSelectors  DestinationMap

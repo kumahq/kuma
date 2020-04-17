@@ -5,6 +5,7 @@ import (
 
 	"github.com/emicklei/go-restful"
 
+	api_server_types "github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -18,13 +19,35 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleNotFound(title, response)
 	case store.IsResourcePreconditionFailed(err):
 		handlePreconditionFailed(title, response)
+	case err == store.ErrorInvalidOffset:
+		handleInvalidOffset(title, response)
 	case manager.IsMeshNotFound(err):
 		handleMeshNotFound(title, err.(*manager.MeshNotFoundError), response)
 	case validators.IsValidationError(err):
 		handleValidationError(title, err.(*validators.ValidationError), response)
+	case api_server_types.IsMaxPageSizeExceeded(err):
+		handleMaxPageSizeExceeded(title, err, response)
+	case err == api_server_types.InvalidPageSize:
+		handleInvalidPageSize(title, response)
+	case err == api_server_types.PaginationNotSupported:
+		handlePaginationNotSupported(title, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
+}
+
+func handleInvalidPageSize(title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: "Invalid page size",
+		Causes: []types.Cause{
+			{
+				Field:   "size",
+				Message: "Invalid format",
+			},
+		},
+	}
+	writeError(response, 400, kumaErr)
 }
 
 func handleNotFound(title string, response *restful.Response) {
@@ -67,6 +90,42 @@ func handleValidationError(title string, err *validators.ValidationError, respon
 			Field:   violation.Field,
 			Message: violation.Message,
 		})
+	}
+	writeError(response, 400, kumaErr)
+}
+
+func handleInvalidOffset(title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: "Invalid offset",
+		Causes: []types.Cause{
+			{
+				Field:   "offset",
+				Message: "Invalid format",
+			},
+		},
+	}
+	writeError(response, 400, kumaErr)
+}
+
+func handlePaginationNotSupported(title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: api_server_types.PaginationNotSupported.Error(),
+	}
+	writeError(response, 400, kumaErr)
+}
+
+func handleMaxPageSizeExceeded(title string, err error, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: "Invalid page size",
+		Causes: []types.Cause{
+			{
+				Field:   "size",
+				Message: err.Error(),
+			},
+		},
 	}
 	writeError(response, 400, kumaErr)
 }

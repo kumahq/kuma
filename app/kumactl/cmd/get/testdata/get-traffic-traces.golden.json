@@ -36,5 +36,6 @@
       },
       "type": "TrafficTrace"
     }
-  ]
+  ],
+  "next": null
 }

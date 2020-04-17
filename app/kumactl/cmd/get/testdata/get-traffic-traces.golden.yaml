@@ -19,5 +19,5 @@ items:
         version: "1.0"
     conf:
       backend: zipkin
-    creationTime: 2018-07-17T16:05:36.995Z
     type: TrafficTrace
+next: null

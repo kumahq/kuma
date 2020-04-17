@@ -6,6 +6,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
@@ -125,6 +127,8 @@ func ErrorResourceConflict(rt model.ResourceType, name, mesh string) error {
 func ErrorResourcePreconditionFailed(rt model.ResourceType, name, mesh string) error {
 	return fmt.Errorf("Resource precondition failed: type=%q name=%q mesh=%q", rt, name, mesh)
 }
+
+var ErrorInvalidOffset = errors.New("invalid offset")
 
 func IsResourceNotFound(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), "Resource not found")

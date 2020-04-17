@@ -26,6 +26,7 @@ type Resource struct {
 
 type ResourceList struct {
 	Items []*Resource `json:"items"`
+	Next  *string     `json:"next"`
 }
 
 var _ json.Marshaler = &Resource{}
