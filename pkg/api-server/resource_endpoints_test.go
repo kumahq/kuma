@@ -198,12 +198,16 @@ var _ = Describe("Resource Endpoints", func() {
 						"type": "SampleTrafficRoute",
 						"name": "tr-1",
 						"mesh": "mesh-1",
+						"creationTime": "0001-01-01T00:00:00Z",
+						"modificationTime": "0001-01-01T00:00:00Z",
 						"path": "/sample-path"
 					},
 					{
 						"type": "SampleTrafficRoute",
 						"name": "tr-2",
 						"mesh": "mesh-1",
+						"creationTime": "0001-01-01T00:00:00Z",
+						"modificationTime": "0001-01-01T00:00:00Z",
 						"path": "/sample-path"
 					}
 				],
@@ -229,6 +233,8 @@ var _ = Describe("Resource Endpoints", func() {
 						"type": "SampleTrafficRoute",
 						"name": "tr-3",
 						"mesh": "mesh-1",
+						"creationTime": "0001-01-01T00:00:00Z",
+				        "modificationTime": "0001-01-01T00:00:00Z",
 						"path": "/sample-path"
 					}
 				],
