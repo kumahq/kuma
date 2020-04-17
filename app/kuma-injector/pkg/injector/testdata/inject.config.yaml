@@ -28,4 +28,5 @@ sidecarContainer:
       cpu: 1100m
       memory: 1512Mi
 initContainer:
+  enabled: true
   image: kuma/kuma-init:latest

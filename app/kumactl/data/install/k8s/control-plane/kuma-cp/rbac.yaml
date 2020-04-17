@@ -97,6 +97,29 @@ rules:
     - get
     - list
     - watch
+- apiGroups:
+    - ""
+  resources:
+    - pods/finalizers
+  verbs:
+    - "*"
+- apiGroups:
+    - kuma.io
+  resources:
+    - meshes/finalizers
+  verbs:
+    - "*"
+{{ if .CNIEnabled }}
+- apiGroups:
+    - k8s.cni.cncf.io
+  resources:
+    - network-attachment-definitions
+  verbs:
+    - get
+    - list
+    - watch
+    - create
+{{ end }}
 # validate k8s token before issueing mTLS cert
 - apiGroups:
   - authentication.k8s.io

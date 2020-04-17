@@ -66,6 +66,7 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 		Client:              mgr.GetClient(),
 		Log:                 core.Log.WithName("controllers").WithName("Namespace"),
 		SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
+		CNIEnabled:          rt.Config().Runtime.Kubernetes.CNIEnabled,
 		ResourceManager:     rt.ResourceManager(),
 		DefaultMeshTemplate: rt.Config().Defaults.MeshProto(),
 	}

@@ -1,45 +1,44 @@
-
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma
+  name: kuma-system
 ---
 apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
   name: kuma-sds-tls-cert
-  namespace: kuma
+  namespace: kuma-system
 data:
-  tls.crt: U2RzQ2VydA==
-  tls.key: U2RzS2V5
+  tls.crt: Q0VSVA==
+  tls.key: S0VZ
 ---
 apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
   name: kuma-admission-server-tls-cert
-  namespace: kuma
+  namespace: kuma-system
 data:
-  tls.crt: QWRtaXNzaW9uQ2VydA==
-  tls.key: QWRtaXNzaW9uS2V5
+  tls.crt: Q0VSVA==
+  tls.key: S0VZ
 ---
 apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
   name: kuma-injector-tls-cert
-  namespace: kuma
+  namespace: kuma-system
 data:
-  tls.crt: SW5qZWN0b3JDZXJ0
-  tls.key: SW5qZWN0b3JLZXk=
+  tls.crt: Q0VSVA==
+  tls.key: S0VZ
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
-  namespace: kuma
+  namespace: kuma-system
 data:
   config.yaml: |
     # use this file to override default configuration of `kuma-cp`
@@ -50,7 +49,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kuma-injector-config
-  namespace: kuma
+  namespace: kuma-system
 data:
   config.yaml: |
     injector:
@@ -80,17 +79,48 @@ data:
             cpu: 1000m
             memory: 512Mi
 ---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kuma-cni-config
+  namespace: kube-system
+  labels:
+    app: kuma-cni
+data:
+  # The CNI network configuration to add to the plugin chain on each node.  The special
+  # values in this config will be automatically populated.
+  cni_network_config: |-
+    {
+      "cniVersion": "0.3.1",
+      "name": "kuma-cni",
+      "type": "kuma-cni",
+      "log_level": "info",
+      "kubernetes": {
+          "kubeconfig": "__KUBECONFIG_FILEPATH__",
+          "cni_bin_dir": "/var/lib/cni/bin",
+          "exclude_namespaces": [ "kube-system" ]
+      }
+    }
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kuma-injector
-  namespace: kuma
+  namespace: kuma-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-cni
+  namespace: kube-system
+  labels:
+    app: kuma-cni
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -4141,6 +4171,15 @@ rules:
       - meshes/finalizers
     verbs:
       - "*"
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - list
+      - watch
+      - create
   # validate k8s token before issueing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -4164,6 +4203,20 @@ rules:
       - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-cni
+  labels:
+    app: kuma-cni
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - nodes
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma:control-plane
@@ -4174,7 +4227,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
-    namespace: kuma
+    namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -4187,13 +4240,28 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kuma-injector
-    namespace: kuma
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-cni
+  labels:
+    app: kuma-cni
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-cni
+subjects:
+  - kind: ServiceAccount
+    name: kuma-cni
+    namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kuma:control-plane
-  namespace: kuma
+  namespace: kuma-system
 rules:
   - apiGroups:
       - ""
@@ -4212,7 +4280,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: kuma:control-plane
-  namespace: kuma
+  namespace: kuma-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -4220,13 +4288,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
-    namespace: kuma
+    namespace: kuma-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-ctrl-plane
-  namespace: kuma
+  name: kuma-control-plane
+  namespace: kuma-system
 spec:
   ports:
     - port: 443
@@ -4253,7 +4321,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kuma-injector
-  namespace: kuma
+  namespace: kuma-system
 spec:
   ports:
     - port: 443
@@ -4262,11 +4330,88 @@ spec:
   selector:
     app: kuma-injector
 ---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: kuma-cni-node
+  namespace: kube-system
+  labels:
+    k8s-app: kuma-cni-node
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kuma-cni-node
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        k8s-app: kuma-cni-node
+      annotations:
+        # This, along with the CriticalAddonsOnly toleration below,
+        # marks the pod as a critical add-on, ensuring it gets
+        # priority scheduling and that its resources are reserved
+        # if it ever gets evicted.
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+      hostNetwork: true
+      tolerations:
+        # Make sure kuma-cni-node gets scheduled on all nodes.
+        - effect: NoSchedule
+          operator: Exists
+        # Mark the pod as a critical add-on for rescheduling.
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+      priorityClassName: system-cluster-critical
+      serviceAccountName: kuma-cni
+      # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
+      # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: install-cni
+          image: "lobkovilya/install-cni:kuma-cni"
+          imagePullPolicy: Always
+          command: ["/install-cni.sh"]
+          env:
+            # Name of the CNI config file to create.
+            - name: CNI_CONF_NAME
+              value: "kuma-cni.conf"
+            # The CNI network config to install on each node.
+            - name: CNI_NETWORK_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  name: kuma-cni-config
+                  key: cni_network_config
+            - name: CNI_NET_DIR
+              value: /etc/cni/multus/net.d
+            # Deploy as a standalone CNI plugin or as chained?
+            - name: CHAINED_CNI_PLUGIN
+              value: "false"
+          volumeMounts:
+            - mountPath: /host/opt/cni/bin
+              name: cni-bin-dir
+            - mountPath: /host/etc/cni/net.d
+              name: cni-net-dir
+      volumes:
+        # Used to install CNI.
+        - name: cni-bin-dir
+          hostPath:
+            path: /var/lib/cni/bin
+        - name: cni-net-dir
+          hostPath:
+            path: /etc/cni/multus/net.d
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
   labels:
     app: kuma-control-plane
 spec:
@@ -4285,17 +4430,17 @@ spec:
       serviceAccountName: kuma-control-plane
       containers:
         - name: control-plane
-          image: kuma-ci/kuma-cp:greatest
-          imagePullPolicy: Never
+          image: kong-docker-kuma-docker.bintray.io/kuma-cp:0.0.1
+          imagePullPolicy: IfNotPresent
           env:
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
             - name: KUMA_STORE_TYPE
               value: "kubernetes"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-              value: kuma
+              value: kuma-system
             - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              value: kuma-ctrl-plane.kuma
+              value: kuma-control-plane.kuma-system
             - name: KUMA_SDS_SERVER_GRPC_PORT
               value: "5677"
             - name: KUMA_XDS_SERVER_GRPC_PORT
@@ -4315,7 +4460,7 @@ spec:
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
             - name: KUMA_KUBERNETES_CNI_ENABLED
-              value: "false"
+              value: "true"
           args:
             - run
             - --log-level=info
@@ -4365,7 +4510,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kuma-injector
-  namespace: kuma
+  namespace: kuma-system
   labels:
     app: kuma-injector
 spec:
@@ -4384,23 +4529,23 @@ spec:
       serviceAccountName: kuma-injector
       containers:
         - name: kuma-injector
-          image: kuma-ci/kuma-injector:greatest
-          imagePullPolicy: Never
+          image: kong-docker-kuma-docker.bintray.io/kuma-injector:0.0.1
+          imagePullPolicy: IfNotPresent
           env:
             - name: KUMA_INJECTOR_WEBHOOK_SERVER_PORT
               value: "8443"
             - name: KUMA_INJECTOR_WEBHOOK_SERVER_CERT_DIR
               value: /var/run/secrets/kuma.io/kuma-injector/tls-cert
             - name: KUMA_INJECTOR_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
-              value: http://kuma-control-plane.kuma:5682
+              value: http://kuma-control-plane.kuma-system:5682
             - name: KUMA_INJECTOR_CONTROL_PLANE_API_SERVER_URL
-              value: http://kuma-control-plane.kuma:5681
+              value: http://kuma-control-plane.kuma-system:5681
             - name: KUMA_INJECTOR_SIDECAR_CONTAINER_IMAGE
-              value: kuma-ci/kuma-dp:greatest
+              value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-              value: kuma-ci/kuma-init:greatest
+              value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
             - name: KUMA_INJECTOR_INIT_CONTAINER_ENABLED
-              value: "true"
+              value: "false"
           args:
             - run
             - --log-level=info
@@ -4444,10 +4589,10 @@ webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
+      caBundle: Q0VSVA==
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /default-kuma-io-v1alpha1-mesh
     rules:
       - apiGroups:
@@ -4469,11 +4614,11 @@ webhooks:
     namespaceSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
-    failurePolicy: Crash
+    failurePolicy: Ignore
     clientConfig:
-      caBundle: SW5qZWN0b3JDZXJ0
+      caBundle: Q0VSVA==
       service:
-        namespace: kuma
+        namespace: kuma-system
         name: kuma-injector
         path: /inject-sidecar
     rules:
@@ -4494,10 +4639,10 @@ webhooks:
   - name: validator.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
+      caBundle: Q0VSVA==
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-kuma-io-v1alpha1
     rules:
       - apiGroups:
@@ -4520,10 +4665,10 @@ webhooks:
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
+      caBundle: Q0VSVA==
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-v1-service
     rules:
       - apiGroups:

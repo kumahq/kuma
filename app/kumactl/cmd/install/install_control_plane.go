@@ -10,6 +10,7 @@ import (
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s"
 	controlplane "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/control-plane"
+	kumacni "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
 	"github.com/Kong/kuma/pkg/tls"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
@@ -37,6 +38,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		DataplaneInitImage      string
 		SdsTlsCert              string
 		SdsTlsKey               string
+		CNIEnabled              bool
 	}{
 		Namespace:               "kuma-system",
 		ImagePullPolicy:         "IfNotPresent",
@@ -110,6 +112,14 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return errors.Wrap(err, "Failed to read template files")
 			}
 
+			if args.CNIEnabled {
+				templateCNI, err := data.ReadFiles(kumacni.Templates)
+				if err != nil {
+					return errors.Wrap(err, "Failed to read template files")
+				}
+				templateFiles = append(templateFiles, templateCNI...)
+			}
+
 			renderedFiles, err := renderFiles(templateFiles, args, simpleTemplateRenderer)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
@@ -143,5 +153,6 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.DataplaneInitImage, "dataplane-init-image", args.DataplaneInitImage, "init image of the Kuma Dataplane component")
 	cmd.Flags().StringVar(&args.SdsTlsCert, "sds-tls-cert", args.SdsTlsCert, "TLS certificate for the SDS server")
 	cmd.Flags().StringVar(&args.SdsTlsKey, "sds-tls-key", args.SdsTlsKey, "TLS key for the SDS server")
+	cmd.Flags().BoolVar(&args.CNIEnabled, "cni-enabled", args.CNIEnabled, "install Kuma with CNI instead of proxy init container")
 	return cmd
 }
