@@ -1,8 +1,11 @@
 package api_server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -27,6 +30,24 @@ type ApiServer struct {
 
 func (a *ApiServer) Address() string {
 	return a.server.Addr
+}
+
+func init() {
+	// turn off escape & character so the link in "next" fields for resources is user friendly
+	restful.NewEncoder = func(w io.Writer) *json.Encoder {
+		encoder := json.NewEncoder(w)
+		encoder.SetEscapeHTML(false)
+		return encoder
+	}
+	restful.MarshalIndent = func(v interface{}, prefix, indent string) ([]byte, error) {
+		var buf bytes.Buffer
+		encoder := restful.NewEncoder(&buf)
+		encoder.SetIndent(prefix, indent)
+		if err := encoder.Encode(v); err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
+	}
 }
 
 func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
@@ -71,7 +92,10 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 }
 
 func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
-	endpoints := dataplaneOverviewEndpoints{resManager}
+	endpoints := dataplaneOverviewEndpoints{
+		publicURL:  config.Catalog.ApiServer.Url,
+		resManager: resManager,
+	}
 	endpoints.addListEndpoint(ws, "/meshes/{mesh}")
 	endpoints.addFindEndpoint(ws, "/meshes/{mesh}")
 	endpoints.addListEndpoint(ws, "") // listing all resources in all meshes
@@ -79,6 +103,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	for _, definition := range defs {
 		if definition.ResourceFactory().GetType() != mesh.MeshType {
 			endpoints := resourceEndpoints{
+				publicURL:            config.Catalog.ApiServer.Url,
 				resManager:           resManager,
 				ResourceWsDefinition: definition,
 				meshFromRequest:      meshFromPathParam("mesh"),
@@ -92,6 +117,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
 		} else {
 			endpoints := resourceEndpoints{
+				publicURL:            config.Catalog.ApiServer.Url,
 				resManager:           resManager,
 				ResourceWsDefinition: definition,
 				meshFromRequest:      meshFromPathParam("name"),

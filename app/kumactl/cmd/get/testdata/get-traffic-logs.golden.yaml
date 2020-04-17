@@ -25,3 +25,4 @@ items:
     conf:
       backend: logstash
     type: TrafficLog
+next: null

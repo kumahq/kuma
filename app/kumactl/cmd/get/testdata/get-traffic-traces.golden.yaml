@@ -17,3 +17,4 @@ items:
     conf:
       backend: zipkin
     type: TrafficTrace
+next: null

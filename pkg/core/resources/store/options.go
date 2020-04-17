@@ -144,7 +144,9 @@ func (g *GetOptions) HashCode() string {
 }
 
 type ListOptions struct {
-	Mesh string
+	Mesh       string
+	PageSize   int
+	PageOffset string
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -160,6 +162,13 @@ func NewListOptions(fs ...ListOptionsFunc) *ListOptions {
 func ListByMesh(mesh string) ListOptionsFunc {
 	return func(opts *ListOptions) {
 		opts.Mesh = mesh
+	}
+}
+
+func ListByPage(size int, offset string) ListOptionsFunc {
+	return func(opts *ListOptions) {
+		opts.PageSize = size
+		opts.PageOffset = offset
 	}
 }
 

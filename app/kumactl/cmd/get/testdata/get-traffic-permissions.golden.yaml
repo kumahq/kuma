@@ -21,3 +21,4 @@ items:
         service: web2
         version: "1.0"
     type: TrafficPermission
+next: null

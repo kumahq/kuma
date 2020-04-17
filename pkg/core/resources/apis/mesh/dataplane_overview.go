@@ -53,7 +53,8 @@ func (t *DataplaneOverviewResource) Validate() error {
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {
-	Items []*DataplaneOverviewResource
+	Items      []*DataplaneOverviewResource
+	Pagination model.Pagination
 }
 
 func (l *DataplaneOverviewResourceList) GetItems() []model.Resource {
@@ -79,6 +80,14 @@ func (l *DataplaneOverviewResourceList) AddItem(r model.Resource) error {
 	}
 }
 
+func (l *DataplaneOverviewResourceList) GetPagination() model.Pagination {
+	return l.Pagination
+}
+
+func (l *DataplaneOverviewResourceList) SetPagination(pagination model.Pagination) {
+	l.Pagination = pagination
+}
+
 func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneInsightResourceList) DataplaneOverviewResourceList {
 	insightsByKey := map[model.ResourceKey]*DataplaneInsightResource{}
 	for _, insight := range insights.Items {
@@ -100,7 +109,10 @@ func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneI
 		}
 		items = append(items, &overview)
 	}
-	return DataplaneOverviewResourceList{Items: items}
+	return DataplaneOverviewResourceList{
+		Pagination: dataplanes.Pagination,
+		Items:      items,
+	}
 }
 
 func (d *DataplaneOverviewResourceList) RetainMatchingTags(tags map[string]string) {

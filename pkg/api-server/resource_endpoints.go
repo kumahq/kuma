@@ -26,6 +26,7 @@ func meshFromPathParam(param string) meshFromRequestFn {
 }
 
 type resourceEndpoints struct {
+	publicURL       string
 	resManager      manager.ResourceManager
 	meshFromRequest meshFromRequestFn
 	definitions.ResourceWsDefinition
@@ -58,17 +59,31 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix).To(r.listResources).
 		Doc(fmt.Sprintf("List of %s", r.Name)).
+		Param(ws.PathParameter("size", "size of page").DataType("int")).
+		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).
 		Returns(200, "OK", nil))
 }
 
 func (r *resourceEndpoints) listResources(request *restful.Request, response *restful.Response) {
 	meshName := r.meshFromRequest(request)
 
+	page, err := pagination(request)
+	if err != nil {
+		rest_errors.HandleError(response, err, "Could not retrieve resources")
+		return
+	}
+
 	list := r.ResourceListFactory()
-	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName)); err != nil {
+	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByPage(page.size, page.offset)); err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
+		next, err := nextLink(request, r.publicURL, list)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not retrieve resources")
+			return
+		}
+		restList.Next = next
 		if err := response.WriteAsJson(restList); err != nil {
 			rest_errors.HandleError(response, err, "Could not list resources")
 		}

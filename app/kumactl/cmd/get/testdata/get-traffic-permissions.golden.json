@@ -42,5 +42,6 @@
       ],
       "type": "TrafficPermission"
     }
-  ]
+  ],
+  "next": null
 }
