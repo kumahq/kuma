@@ -5,3 +5,4 @@ items:
   - mesh: default
     name: another-template
     type: ProxyTemplate
+next: null

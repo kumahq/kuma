@@ -204,20 +204,48 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
 		statementArgs = append(statementArgs, opts.Mesh)
 	}
+	statement += " ORDER BY name, mesh"
+
+	paginateResults := opts.PageSize != 0
+	offset := 0
+	if opts.PageOffset != "" {
+		o, err := strconv.Atoi(opts.PageOffset)
+		if err != nil {
+			return store.ErrorInvalidOffset
+		}
+		offset = o
+	}
+	if paginateResults {
+		statement += fmt.Sprintf(" LIMIT %d OFFSET %d", opts.PageSize+1, offset) // ask for +1 to check if there are any elements left
+	}
+
 	rows, err := r.db.Query(statement, statementArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 	defer rows.Close()
+	items := 0
 	for rows.Next() {
 		item, err := rowToItem(resources, rows)
 		if err != nil {
 			return err
 		}
-		err = resources.AddItem(item)
-		if err != nil {
-			return err
+		if !paginateResults || items < opts.PageSize {
+			if err := resources.AddItem(item); err != nil {
+				return err
+			}
 		}
+		items++
+	}
+
+	if paginateResults {
+		nextOffset := ""
+		if items > opts.PageSize { // set new offset only if there is next page
+			nextOffset = strconv.Itoa(offset + opts.PageSize)
+		}
+		resources.SetPagination(model.Pagination{
+			NextOffset: nextOffset,
+		})
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -135,7 +136,21 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
 	}
-	if err := s.Client.List(ctx, obj); err != nil {
+
+	var kubeOpts kube_client.ListOptions
+	if opts.PageSize > 0 {
+		kubeOpts = kube_client.ListOptions{
+			Raw: &kube_meta.ListOptions{
+				Limit:    int64(opts.PageSize),
+				Continue: opts.PageOffset,
+			},
+		}
+	}
+
+	if err := s.Client.List(ctx, obj, &kubeOpts); err != nil {
+		if strings.Contains(err.Error(), "invalid continue token") {
+			return store.ErrorInvalidOffset
+		}
 		return errors.Wrap(err, "failed to list k8s resources")
 	}
 	predicate := func(r core_model.Resource) bool {
@@ -276,5 +291,8 @@ func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model
 			_ = out.AddItem(r)
 		}
 	}
+	out.SetPagination(core_model.Pagination{
+		NextOffset: in.GetContinue(),
+	})
 	return nil
 }

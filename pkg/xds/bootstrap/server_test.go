@@ -39,7 +39,7 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		server := BootstrapServer{
 			Port:      uint32(port),
-			Generator: NewDefaultBootstrapGenerator(resManager, config),
+			Generator: NewDefaultBootstrapGenerator(resManager, config, ""),
 		}
 		stop = make(chan struct{})
 		go func() {

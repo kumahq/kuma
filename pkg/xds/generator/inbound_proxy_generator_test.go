@@ -7,8 +7,6 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"github.com/Kong/kuma/pkg/core/permissions"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -62,34 +60,30 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				TrafficPermissions: permissions.MatchedPermissions{
+				TrafficPermissions: model.TrafficPermissionMap{
 					mesh_proto.InboundInterface{
 						DataplaneIP:   "192.168.0.1",
 						DataplanePort: 80,
 						WorkloadPort:  8080,
-					}: &mesh_core.TrafficPermissionResourceList{
-						Items: []*mesh_core.TrafficPermissionResource{
-							{
-								Meta: &test_model.ResourceMeta{
-									Name: "tp-1",
-									Mesh: "default",
-								},
-								Spec: mesh_proto.TrafficPermission{
-									Sources: []*mesh_proto.Selector{
-										{
-											Match: map[string]string{
-												"service": "web1",
-												"version": "1.0",
-											},
-										},
+					}: &mesh_core.TrafficPermissionResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "tp-1",
+							Mesh: "default",
+						},
+						Spec: mesh_proto.TrafficPermission{
+							Sources: []*mesh_proto.Selector{
+								{
+									Match: map[string]string{
+										"service": "web1",
+										"version": "1.0",
 									},
-									Destinations: []*mesh_proto.Selector{
-										{
-											Match: map[string]string{
-												"service": "backend1",
-												"env":     "dev",
-											},
-										},
+								},
+							},
+							Destinations: []*mesh_proto.Selector{
+								{
+									Match: map[string]string{
+										"service": "backend1",
+										"env":     "dev",
 									},
 								},
 							},

@@ -48,5 +48,6 @@
       },
       "type": "TrafficLog"
     }
-  ]
+  ],
+  "next": null
 }

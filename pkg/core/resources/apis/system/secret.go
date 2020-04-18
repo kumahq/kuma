@@ -47,7 +47,8 @@ func (t *SecretResource) Validate() error {
 var _ model.ResourceList = &SecretResourceList{}
 
 type SecretResourceList struct {
-	Items []*SecretResource
+	Items      []*SecretResource
+	Pagination model.Pagination
 }
 
 func (l *SecretResourceList) GetItems() []model.Resource {
@@ -70,4 +71,10 @@ func (l *SecretResourceList) AddItem(r model.Resource) error {
 	} else {
 		return model.ErrorInvalidItemType((*SecretResource)(nil), r)
 	}
+}
+func (l *SecretResourceList) GetPagination() model.Pagination {
+	return l.Pagination
+}
+func (l *SecretResourceList) SetPagination(pagination model.Pagination) {
+	l.Pagination = pagination
 }

@@ -127,5 +127,11 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources with CNI plugin", testCase{
+			extraArgs: []string{
+				"--cni-enabled",
+			},
+			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
+		}),
 	)
 })

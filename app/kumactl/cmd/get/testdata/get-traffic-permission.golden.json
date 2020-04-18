@@ -1,0 +1,21 @@
+{
+    "type": "TrafficPermission",
+    "mesh": "default",
+    "name": "traffic-permission-1",
+    "sources": [
+      {
+        "match": {
+          "service": "web1",
+          "version": "1.0"
+        }
+      }
+    ],
+    "destinations": [
+      {
+        "match": {
+          "env": "dev",
+          "service": "backend1"
+        }
+      }
+    ]
+  }

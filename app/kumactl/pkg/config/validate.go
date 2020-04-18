@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -21,7 +22,8 @@ func ValidateCpCoordinates(cp *kumactl_config.ControlPlane) error {
 		return errors.Wrap(err, "could not construct the request")
 	}
 	client := http.Client{
-		Timeout: DefaultApiServerTimeout,
+		Timeout:   DefaultApiServerTimeout,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	}
 	resp, err := client.Do(req)
 	if err != nil {

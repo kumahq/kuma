@@ -1,0 +1,17 @@
+---
+mesh: default
+name: dataplane-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      servicePort: 80
+      tags:
+        service: mobile
+        version: v1
+    - port: 8090
+      servicePort: 90
+      tags:
+        service: metrics
+        version: v1
+type: Dataplane

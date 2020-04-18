@@ -14,6 +14,7 @@
 		delete/traffic-routing/docker-compose/web-to-backend-route \
 		wait/traffic-routing/docker-compose/no-web-to-backend-route \
 		build/example/minikube load/example/minikube \
+		deploy/kuma/minikube \
 		deploy/example/minikube wait/example/minikube \
 		deploy/example/minikube/metrics \
 		undeploy/example/minikube \
@@ -314,13 +315,15 @@ build/example/minikube: ## Minikube: Build Docker images inside Minikube
 load/example/minikube: ## Minikube: Load Docker images into Minikube
 	eval $$(minikube docker-env) && $(MAKE) docker/load
 
-deploy/example/minikube: ## Minikube: Deploy example setup
+deploy/kuma/minikube: ## Minikube: Deploy Kuma with no demo app
 	eval $$(minikube docker-env) && $(call pull_docker_images)
 	eval $$(minikube docker-env) && docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
-	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane	
+
+deploy/example/minikube: deploy/kuma/minikube ## Minikube: Deploy example setup
 	kubectl apply -f tools/e2e/examples/minikube/kuma-demo/
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-app
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app

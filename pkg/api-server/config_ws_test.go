@@ -49,6 +49,17 @@ var _ = Describe("Config WS", func() {
 		json := fmt.Sprintf(`
         {
           "apiServer": {
+            "catalog": {
+              "bootstrap": {
+                "url": ""
+              },
+              "monitoringAssignment": {
+                "url": ""
+              },
+              "sds": {
+                "url": ""
+              }
+            },
             "corsAllowedDomains": [
               ".*"
             ],
@@ -122,7 +133,8 @@ var _ = Describe("Config WS", func() {
                 "address": "",
                 "certDir": "",
                 "port": 5443
-              }
+              },
+            "cniEnabled": false
             }
           },
           "sdsServer": {
@@ -159,7 +171,9 @@ var _ = Describe("Config WS", func() {
             "dataplaneConfigurationRefreshInterval": "1s",
             "dataplaneStatusFlushInterval": "1s",
             "diagnosticsPort": 5680,
-            "grpcPort": 5678
+            "grpcPort": 5678,
+            "tlsCertFile": "",
+            "tlsKeyFile": ""
           }
         }
 		`, port)

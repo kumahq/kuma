@@ -222,6 +222,7 @@ Usage:
 Flags:
       --admission-server-tls-cert string    TLS certificate for the admission web hooks implemented by the Kuma Control Plane
       --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
+      --cni-enabled                         install Kuma with CNI instead of proxy init container
       --control-plane-image string          image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io/kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
       --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
@@ -344,14 +345,23 @@ Usage:
   kumactl get [command]
 
 Available Commands:
+  dataplane           Show a single Dataplane resource
   dataplanes          Show Dataplanes
+  fault-injection     Show a single Fault-Injection resource
   fault-injections    Show FaultInjections
+  healthcheck         Show a single HealthCheck resource
   healthchecks        Show HealthChecks
+  mesh                Show a single Mesh resource
   meshes              Show Meshes
+  proxytemplate       Show a single Proxytemplate resource
   proxytemplates      Show ProxyTemplates
+  traffic-log         Show a single TrafficLog resource
   traffic-logs        Show TrafficLogs
+  traffic-permission  Show a single TrafficPermission resource
   traffic-permissions Show TrafficPermissions
+  traffic-route       Show a single TrafficRoute resource
   traffic-routes      Show TrafficRoutes
+  traffic-trace       Show a single TrafficTrace resource
   traffic-traces      Show TrafficTraces
 
 Flags:

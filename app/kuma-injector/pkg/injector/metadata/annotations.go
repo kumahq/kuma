@@ -31,4 +31,7 @@ const (
 
 	KumaMetricsPrometheusPort = "prometheus.metrics.kuma.io/port"
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
+
+	CNCFNetworkAnnotation = "k8s.v1.cni.cncf.io/networks"
+	KumaCNI               = "kuma-cni"
 )

@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
@@ -82,7 +84,9 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	defer c.mu.Unlock()
 
 	opts := store.NewCreateOptions(fs...)
-
+	if r.GetType() == mesh.MeshType {
+		opts.Mesh = opts.Name
+	}
 	// Name must be provided via CreateOptions
 	if _, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh); record != nil {
 		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
@@ -169,7 +173,9 @@ func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOp
 	defer c.mu.RUnlock()
 
 	opts := store.NewGetOptions(fs...)
-
+	if r.GetType() == mesh.MeshType {
+		opts.Mesh = opts.Name
+	}
 	// Name must be provided via GetOptions
 	_, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh)
 	if record == nil {
@@ -187,12 +193,37 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 	opts := store.NewListOptions(fs...)
 
 	records := c.findRecords(string(rs.GetItemType()), opts.Mesh)
-	for _, record := range records {
+
+	offset := 0
+	pageSize := len(records)
+	paginateResults := opts.PageSize != 0
+	if paginateResults {
+		pageSize = opts.PageSize
+		if opts.PageOffset != "" {
+			o, err := strconv.Atoi(opts.PageOffset)
+			if err != nil {
+				return store.ErrorInvalidOffset
+			}
+			offset = o
+		}
+	}
+
+	for i := offset; i < offset+pageSize && i < len(records); i++ {
 		r := rs.NewItem()
-		if err := c.unmarshalRecord(record, r); err != nil {
+		if err := c.unmarshalRecord(records[i], r); err != nil {
 			return err
 		}
 		_ = rs.AddItem(r)
+	}
+
+	if paginateResults {
+		nextOffset := ""
+		if offset+pageSize < len(records) { // set new offset only if we did not reach the end of the collection
+			nextOffset = strconv.Itoa(offset + opts.PageSize)
+		}
+		rs.SetPagination(model.Pagination{
+			NextOffset: nextOffset,
+		})
 	}
 	return nil
 }

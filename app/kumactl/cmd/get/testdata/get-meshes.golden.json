@@ -88,5 +88,6 @@
       "name": "mesh4",
       "type": "Mesh"
     }
-  ]
+  ],
+  "next": null
 }

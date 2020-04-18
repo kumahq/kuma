@@ -10,5 +10,6 @@
       "name": "backend-to-db",
       "type": "HealthCheck"
     }
-  ]
+  ],
+  "next": null
 }

@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"crypto/tls"
 	"net/http"
 	"net/url"
 	"time"
@@ -21,7 +22,8 @@ func apiServerClient(apiUrl string) (util_http.Client, error) {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
 	}
 	client := &http.Client{
-		Timeout: Timeout,
+		Timeout:   Timeout,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	}
 	return util_http.ClientWithBaseURL(client, baseURL), nil
 }
