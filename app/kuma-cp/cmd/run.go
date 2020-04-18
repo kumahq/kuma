@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	kuma_version "github.com/Kong/kuma/pkg/version"
 
 	"github.com/spf13/cobra"

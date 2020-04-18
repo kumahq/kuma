@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"crypto/tls"
-	kuma_version "github.com/Kong/kuma/pkg/version"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
+
+	kuma_version "github.com/Kong/kuma/pkg/version"
 
 	"github.com/Kong/kuma/pkg/catalog/client"
 
