@@ -1,4 +1,4 @@
-FROM docker.io/istio/proxy_init:1.1.2
+FROM docker.io/istio/proxy_init:1.1.17
 
 RUN mkdir /kuma
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
