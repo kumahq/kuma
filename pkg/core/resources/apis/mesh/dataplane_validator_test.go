@@ -90,6 +90,21 @@ var _ = Describe("Dataplane", func() {
                 - port: 3333
                   service: redis`,
 		),
+		Entry("dataplane with valid tags", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              gateway:
+                tags:
+                  service: backend
+                  version: "1"
+                  valid: abc.0123-789.under_score
+              outbound:
+                - port: 3333
+                  service: redis`,
+		),
 	)
 
 	type testCase struct {
@@ -277,7 +292,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["version"]'
-                  message: tag value cannot be empty`,
+                  message: value cannot be empty`,
 		}),
 		Entry("networking.inbound: `protocol` tag with an empty value", testCase{
 			dataplane: `
@@ -299,7 +314,7 @@ var _ = Describe("Dataplane", func() {
                 - field: 'networking.inbound[0].tags["protocol"]'
                   message: 'tag "protocol" has an invalid value "". Allowed values: http, tcp'
                 - field: 'networking.inbound[0].tags["protocol"]'
-                  message: tag value cannot be empty`,
+                  message: value cannot be empty`,
 		}),
 		Entry("networking.inbound: `protocol` tag with unsupported value", testCase{
 			dataplane: `
@@ -356,7 +371,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.gateway.tags["version"]'
-                  message: tag value cannot be empty`,
+                  message: value cannot be empty`,
 		}),
 		Entry("networking.outbound: empty service tag", testCase{
 			dataplane: `
@@ -554,6 +569,48 @@ var _ = Describe("Dataplane", func() {
                   message: interface cannot be defined with port. Replace it with port and address
                 - field: networking.outbound[0].interface
                   message: interface cannot be defined with address. Replace it with port and address`,
+		}),
+		Entry("networking.inbound: tag name with invalid characters", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 1234
+                      tags:
+                        service: backend
+                        version: "v1"
+                        inv@lidT/gN%me: value
+                  outbound:
+                    - port: 3333
+                      service: redis`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].tags["inv@lidT/gN%me"]
+                  message: key must consist of alphanumeric characters, dots, dashes and underscores`,
+		}),
+		Entry("networking.inbound: tag value with invalid characters", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 1234
+                      tags:
+                        service: backend
+                        version: "v1"
+                        invalidTagValue: inv@lid+t@g
+                  outbound:
+                    - port: 3333
+                      service: redis`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].tags["invalidTagValue"]
+                  message: value must consist of alphanumeric characters, dots, dashes and underscores`,
 		}),
 	)
 

@@ -37,6 +37,27 @@ var _ = Describe("FaultInjection", func() {
                     service: backend
                     protocol: http
                     region: eu
+                    valid: abcd.123-456.under_score_.
+                conf:
+                  delay:
+                    percentage: 50
+                    value: 10ms
+                  abort:
+                    percentage: 40
+                    httpStatus: 500
+                  responseBandwidth:
+                    percentage: 40
+                    limit: 50kbps`),
+			Entry("match any", `
+                sources:
+                - match:
+                    service: frontend
+                    protocol: http
+                destinations:
+                - match:
+                    service: backend
+                    protocol: http
+                    region: "*"
                 conf:
                   delay:
                     percentage: 50
@@ -214,6 +235,50 @@ var _ = Describe("FaultInjection", func() {
                  message: must be one of the [http]
                - field: destinations[0].match
                  message: protocol must be specified`}),
+			Entry("tag value: invalid character set", testCase{
+				faultInjection: `
+                sources:
+                - match:
+                    service: frontend
+                    protocol: http
+                    invalidTag: v@/u^e
+                destinations:
+                - match:
+                    service: backend
+                    protocol: http
+                    invalidTag: v@/u^e#!
+                conf:
+                  responseBandwidth:
+                    limit: 50mbps
+                    percentage: 100`,
+				expected: `
+               violations:
+               - field: sources[0].match["invalidTag"]
+                 message: value must consist of alphanumeric characters, dots, dashes and underscores or be "*"
+               - field: destinations[0].match["invalidTag"]
+                 message: value must consist of alphanumeric characters, dots, dashes and underscores or be "*"`}),
+			Entry("tag name: invalid character set", testCase{
+				faultInjection: `
+                sources:
+                - match:
+                    service: frontend
+                    protocol: http
+                    inv@lidT@g#: value
+                destinations:
+                - match:
+                    service: backend
+                    protocol: http
+                    inv@lidT@g#: value
+                conf:
+                  responseBandwidth:
+                    limit: 50mbps
+                    percentage: 100`,
+				expected: `
+               violations:
+               - field: sources[0].match["inv@lidT@g#"]
+                 message: key must consist of alphanumeric characters, dots, dashes and underscores
+               - field: destinations[0].match["inv@lidT@g#"]
+                 message: key must consist of alphanumeric characters, dots, dashes and underscores`}),
 		)
 	})
 })

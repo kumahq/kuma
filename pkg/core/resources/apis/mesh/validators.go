@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -149,4 +150,23 @@ func ProtocolValidator(protocols ...string) SelectorValidatorFunc {
 			strings.Join(protocols, ", ")))
 		return
 	}
+}
+
+var nameCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_]*$`)
+var selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_]*|\*)$`)
+
+func SelectorCharacterSetValidator(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
+	var result validators.ValidationError
+	for name, value := range selector {
+		if value == "" {
+			result.AddViolationAt(path.Key(name), `value cannot be empty`)
+		}
+		if !nameCharacterSet.MatchString(name) {
+			result.AddViolationAt(path.Key(name), `key must consist of alphanumeric characters, dots, dashes and underscores`)
+		}
+		if !selectorCharacterSet.MatchString(value) {
+			result.AddViolationAt(path.Key(name), `value must consist of alphanumeric characters, dots, dashes and underscores or be "*"`)
+		}
+	}
+	return result
 }

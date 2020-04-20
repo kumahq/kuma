@@ -2,10 +2,9 @@ package mesh
 
 import (
 	"fmt"
-	"net"
-
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
+	"net"
 )
 
 func (d *DataplaneResource) Validate() error {
@@ -94,11 +93,7 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 			result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(SupportedProtocols.Strings()...)))
 		}
 	}
-	for name, value := range inbound.Tags {
-		if value == "" {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value cannot be empty`)
-		}
-	}
+	result.Add(validateTags(inbound.Tags))
 	return result
 }
 
@@ -134,9 +129,21 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 	if _, exist := gateway.Tags[mesh_proto.ServiceTag]; !exist {
 		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
 	}
-	for name, value := range gateway.Tags {
+	result.Add(validateTags(gateway.Tags))
+	return result
+}
+
+func validateTags(tags map[string]string) validators.ValidationError {
+	var result validators.ValidationError
+	for name, value := range tags {
 		if value == "" {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value cannot be empty`)
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `value cannot be empty`)
+		}
+		if !nameCharacterSet.MatchString(name) {
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `key must consist of alphanumeric characters, dots, dashes and underscores`)
+		}
+		if !nameCharacterSet.MatchString(value) {
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `value must consist of alphanumeric characters, dots, dashes and underscores`)
 		}
 	}
 	return result
