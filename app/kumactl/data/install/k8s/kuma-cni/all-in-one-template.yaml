@@ -104,7 +104,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: "lobkovilya/install-cni:kuma-cni"
+          image: {{ .CNIImage }}:{{ .ControlPlaneVersion }}
           imagePullPolicy: Always
           command: ["/install-cni.sh"]
           env:

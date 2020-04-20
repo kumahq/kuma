@@ -39,6 +39,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		SdsTlsCert              string
 		SdsTlsKey               string
 		CNIEnabled              bool
+		CNIImage                string
 	}{
 		Namespace:               "kuma-system",
 		ImagePullPolicy:         "IfNotPresent",
@@ -56,6 +57,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		DataplaneInitImage:      "kong-docker-kuma-docker.bintray.io/kuma-init",
 		SdsTlsCert:              "",
 		SdsTlsKey:               "",
+		CNIImage:                "lobkovilya/install-cni",
 	}
 	cmd := &cobra.Command{
 		Use:   "control-plane",
@@ -154,5 +156,6 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.SdsTlsCert, "sds-tls-cert", args.SdsTlsCert, "TLS certificate for the SDS server")
 	cmd.Flags().StringVar(&args.SdsTlsKey, "sds-tls-key", args.SdsTlsKey, "TLS key for the SDS server")
 	cmd.Flags().BoolVar(&args.CNIEnabled, "cni-enabled", args.CNIEnabled, "install Kuma with CNI instead of proxy init container")
+	cmd.Flags().StringVar(&args.CNIImage, "cni-image", args.CNIImage, "image of Kuma CNI component, if CNIEnabled equals true")
 	return cmd
 }
