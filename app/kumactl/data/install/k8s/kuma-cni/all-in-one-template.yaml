@@ -104,7 +104,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: {{ .CNIImage }}:{{ .ControlPlaneVersion }}
+          image: {{ .CNIImage }}:{{ .CNIVersion }}
           imagePullPolicy: Always
           command: ["/install-cni.sh"]
           env:
