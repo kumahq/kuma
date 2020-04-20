@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	kuma_version "github.com/Kong/kuma/pkg/version"
+
 	"github.com/Kong/kuma/pkg/catalog/client"
 
 	"github.com/pkg/errors"
@@ -112,7 +114,7 @@ func newRunCmd() *cobra.Command {
 				return err
 			}
 
-			runLog.Info("starting Kuma DP")
+			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
 			if err := componentMgr.Start(core.SetupSignalHandler()); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
 				return err

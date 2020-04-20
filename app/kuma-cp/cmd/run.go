@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	kuma_version "github.com/Kong/kuma/pkg/version"
+
 	"github.com/spf13/cobra"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
@@ -87,7 +89,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 
-			runLog.Info("starting Control Plane")
+			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
 			if err := rt.Start(opts.SetupSignalHandler()); err != nil {
 				runLog.Error(err, "problem running Control Plane")
 				return err
