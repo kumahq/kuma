@@ -4375,7 +4375,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: "lobkovilya/install-cni:kuma-cni"
+          image: lobkovilya/install-cni:0.0.1
           imagePullPolicy: Always
           command: ["/install-cni.sh"]
           env:
