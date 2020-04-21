@@ -5,20 +5,20 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	kube_core "k8s.io/api/core/v1"
-	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	kube_types "k8s.io/apimachinery/pkg/types"
-	kube_ctrl "sigs.k8s.io/controller-runtime"
-	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	core_ca "github.com/Kong/kuma/pkg/core/ca"
+	core_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+
+	kube_core "k8s.io/api/core/v1"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	kube_ctrl "sigs.k8s.io/controller-runtime"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MeshReconciler reconciles a Mesh object
@@ -27,11 +27,11 @@ type MeshReconciler struct {
 	Reader kube_client.Reader
 	Log    logr.Logger
 
-	Scheme           *kube_runtime.Scheme
-	Converter        k8s_resources.Converter
-	BuiltinCaManager builtin_ca.BuiltinCaManager
-	SystemNamespace  string
-	ResourceManager  manager.ResourceManager
+	Scheme          *kube_runtime.Scheme
+	Converter       k8s_resources.Converter
+	CaManagers      core_ca.CaManagers
+	SystemNamespace string
+	ResourceManager manager.ResourceManager
 }
 
 func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -55,37 +55,9 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 		return kube_ctrl.Result{}, err
 	}
 
-	if !meshResource.HasBuiltinCA() {
-		return kube_ctrl.Result{}, nil
-	}
-
-	if err := r.BuiltinCaManager.Ensure(ctx, mesh.Name); err != nil {
-		log.Error(err, "unable to create Builtin CA")
-		return kube_ctrl.Result{}, err
-	}
-
-	secretName := kube_types.NamespacedName{Namespace: r.SystemNamespace, Name: r.BuiltinCaManager.GetSecretName(mesh.Name)}
-
-	log = log.WithValues("secret", secretName)
-
-	// Fetch Secret instance
-	secret := &kube_core.Secret{}
-	if err := r.Reader.Get(ctx, secretName, secret); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			log.Error(err, "Builtin CA is not found")
-			return kube_ctrl.Result{}, err
-		}
-		log.Error(err, "unable to fetch Secret")
-		return kube_ctrl.Result{}, err
-	}
-
-	if err := kube_controllerutil.SetControllerReference(mesh, secret, r.Scheme); err != nil {
-		log.Error(err, "unable to set Secret's controller reference to Mesh")
-		return kube_ctrl.Result{}, err
-	}
-
-	if err := r.Client.Update(ctx, secret); err != nil {
-		log.Error(err, "unable to save Secret after updating controller reference")
+	// Ensure CA Managers are created
+	if err := core_managers.EnsureCAs(ctx, r.CaManagers, meshResource, meshResource.Meta.GetName()); err != nil {
+		log.Error(err, "unable to ensure that mesh CAs are created")
 		return kube_ctrl.Result{}, err
 	}
 

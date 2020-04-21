@@ -144,10 +144,12 @@ var _ = Describe("KubernetesStore", func() {
 			mesh := core_mesh.MeshResource{
 				Spec: mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						Enabled: true,
-						Ca: &mesh_proto.CertificateAuthority{
-							Type: &mesh_proto.CertificateAuthority_Builtin_{
-								Builtin: &mesh_proto.CertificateAuthority_Builtin{},
+						Enabled:        true,
+						DefaultBackend: "builtin-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin-1",
+								Type: "builtin",
 							},
 						},
 					},
@@ -162,8 +164,10 @@ var _ = Describe("KubernetesStore", func() {
             spec:
               mtls:
                 enabled: true
-                ca:
-                  builtin: {}
+                defaultBackend: builtin-1
+                backends:
+                - name: builtin-1
+                  type: builtin
 `, name)).(*mesh_k8s.Mesh)
 
 			// when
@@ -262,8 +266,6 @@ var _ = Describe("KubernetesStore", func() {
             spec:
               mtls:
                 enabled: false
-                ca:
-                  builtin: {}
 `, name))
 			backend.Create(initial)
 
@@ -276,8 +278,6 @@ var _ = Describe("KubernetesStore", func() {
             spec:
               mtls:
                 enabled: true
-                ca:
-                  builtin: {}
 `, name)).(*mesh_k8s.Mesh)
 
 			// given
@@ -435,8 +435,6 @@ var _ = Describe("KubernetesStore", func() {
             spec:
               mtls:
                 enabled: false
-                ca:
-                  builtin: {}
 `, name))
 			backend.Create(expected)
 
@@ -459,11 +457,6 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(actual.Spec).To(Equal(mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					Enabled: false,
-					Ca: &mesh_proto.CertificateAuthority{
-						Type: &mesh_proto.CertificateAuthority_Builtin_{
-							Builtin: &mesh_proto.CertificateAuthority_Builtin{},
-						},
-					},
 				},
 			}))
 		})

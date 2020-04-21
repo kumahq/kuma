@@ -63,9 +63,11 @@ var _ = Describe("printer", func() {
 				},
 				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						Ca: &mesh_proto.CertificateAuthority{
-							Type: &mesh_proto.CertificateAuthority_Builtin_{
-								Builtin: &mesh_proto.CertificateAuthority_Builtin{},
+						DefaultBackend: "builtin-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin-1",
+								Type: "builtin",
 							},
 						},
 						Enabled: true,

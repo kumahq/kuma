@@ -4,9 +4,14 @@
     "creationTime": "0001-01-01T00:00:00Z",
     "modificationTime": "0001-01-01T00:00:00Z",
     "mtls": {
-        "ca": {
-            "provided": {}
-        }
+        "enabled": true,
+        "defaultBackend": "builtin-1",
+        "backends": [
+            {
+                "name": "builtin-1",
+                "type": "builtin"
+            }
+        ]
     },
     "tracing": {
         "backends": [

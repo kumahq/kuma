@@ -5,9 +5,11 @@ metadata:
   name: default
 spec:
   mtls:
-    ca:
-      builtin: {}
     enabled: true
+    defaultBackend: builtin-1
+    backends:
+      - name: builtin-1
+        type: builtin
 ---
 apiVersion: kuma.io/v1alpha1
 kind: TrafficPermission

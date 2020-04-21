@@ -256,17 +256,12 @@ K96xPXFnxPS0a5TLvVCcGnA39iZDgaIWCYEEmRRsnYhlKzkNgqJEB8ZZfENwFBuO
 			}))
 		})
 
-		It("should throw an error when mTLS is active and type is provided", func() {
+		XIt("should throw an error when mTLS is active and type is provided", func() { // to be removed with the WS
 			// given mesh with active mTLS and type provided
 			meshName := "demo"
 			meshRes := &core_mesh.MeshResource{
 				Spec: mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						Ca: &mesh_proto.CertificateAuthority{
-							Type: &mesh_proto.CertificateAuthority_Provided_{
-								Provided: &mesh_proto.CertificateAuthority_Provided{},
-							},
-						},
 						Enabled: true,
 					},
 				},

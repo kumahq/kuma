@@ -23,8 +23,18 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	if mtls == nil {
 		return verr
 	}
-	if mtls.Enabled && mtls.Ca == nil {
-		verr.AddViolation("ca", "has to be set when mTLS is enabled")
+	if mtls.Enabled && mtls.DefaultBackend == "" {
+		verr.AddViolation("defaultBackend", "has to be set when mTLS is enabled")
+	}
+	usedNames := map[string]bool{}
+	for i, backend := range mtls.GetBackends() {
+		if usedNames[backend.Name] {
+			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
+		}
+		usedNames[backend.Name] = true
+	}
+	if mtls.DefaultBackend != "" && !usedNames[mtls.DefaultBackend] {
+		verr.AddViolation("defaultBackend", "has to be set to one of the backends in the mesh")
 	}
 	return verr
 }

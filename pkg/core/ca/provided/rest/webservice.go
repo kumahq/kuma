@@ -100,7 +100,7 @@ func (p *providedCAWebservice) validateCaActive(ctx context.Context, mesh string
 		// we ignore error if mesh is not found because the user may want to delete leftovers if something went wrong during mesh removal
 		return err
 	}
-	if meshRes.Spec.GetMtls().GetEnabled() && meshRes.HasProvidedCA() {
+	if meshRes.Spec.GetMtls().GetEnabled() {
 		return &providedCaActiveError{}
 	}
 	return nil

@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
 	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -36,7 +35,6 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 		WithXdsContext(core_xds.NewXdsContext())
 
 	builder.WithSecretManager(newSecretManager(builder)).
-		WithBuiltinCaManager(newBuiltinCaManager(builder)).
 		WithProvidedCaManager(newProvidedCaManager(builder))
 
 	rm := newResourceManager(builder)
@@ -56,15 +54,14 @@ func newProvidedCaManager(builder *core_runtime.Builder) provided_ca.ProvidedCaM
 	return provided_ca.NewProvidedCaManager(builder.SecretManager())
 }
 
-func newBuiltinCaManager(builder *core_runtime.Builder) builtin_ca.BuiltinCaManager {
-	return builtin_ca.NewBuiltinCaManager(builder.SecretManager())
-}
-
 func newResourceManager(builder *core_runtime.Builder) core_manager.ResourceManager {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), builder.ProvidedCaManager(), customizableManager, builder.SecretManager(), registry.Global())
+	validator := mesh_managers.MeshValidator{
+		CaManagers: builder.CaManagers(),
+	}
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.SecretManager(), builder.CaManagers(), registry.Global(), validator)
 	customManagers[core_mesh.MeshType] = meshManager
 	return customizableManager
 }

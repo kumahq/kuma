@@ -20,7 +20,10 @@ var _ = Describe("Mesh", func() {
 			spec := `
             mtls:
               enabled: true
-              ca: {}
+              defaultBackend: builtin-1
+              backends:
+              - name: builtin-1
+                type: builtin
             logging:
               backends:
               - name: file-1
@@ -91,8 +94,36 @@ var _ = Describe("Mesh", func() {
                   enabled: true`,
 				expected: `
                 violations:
-                - field: mtls.ca
+                - field: mtls.defaultBackend
                   message: has to be set when mTLS is enabled`,
+			}),
+			Entry("multiple ca backends of the same name", testCase{
+				mesh: `
+                mtls:
+                  enabled: true
+                  defaultBackend: backend-1
+                  backends:
+                  - name: backend-1
+                    type: builtin
+                  - name: backend-1
+                    type: builtin`,
+				expected: `
+                violations:
+                - field: mtls.backends[1].name
+                  message: '"backend-1" name is already used for another backend'`,
+			}),
+			Entry("defaultBackend of unknown name", testCase{
+				mesh: `
+                mtls:
+                  enabled: true
+                  defaultBackend: backend-2
+                  backends:
+                  - name: backend-1
+                    type: builtin`,
+				expected: `
+                violations:
+                - field: mtls.defaultBackend
+                  message: has to be set to one of the backends in the mesh`,
 			}),
 			Entry("logging backend with empty name", testCase{
 				mesh: `
@@ -308,7 +339,7 @@ var _ = Describe("Mesh", func() {
                   defaultBackend: invalid-backend`,
 				expected: `
                 violations:
-                - field: mtls.ca
+                - field: mtls.defaultBackend
                   message: has to be set when mTLS is enabled
                 - field: logging.backends[0].name
                   message: cannot be empty

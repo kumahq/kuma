@@ -6,7 +6,6 @@ import (
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
 	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
@@ -41,9 +40,11 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	initializeCaManagers(builder)
-
 	initializeResourceManager(builder)
+
+	if err := initializeCaManagers(builder); err != nil {
+		return nil, err
+	}
 
 	initializeXds(builder)
 
@@ -215,16 +216,28 @@ func initializeXds(builder *core_runtime.Builder) {
 	builder.WithXdsContext(core_xds.NewXdsContext())
 }
 
-func initializeCaManagers(builder *core_runtime.Builder) {
-	builder.WithBuiltinCaManager(builtin_ca.NewBuiltinCaManager(builder.SecretManager()))
+func initializeCaManagers(builder *core_runtime.Builder) error {
+	for pluginName, caPlugin := range core_plugins.Plugins().CaPlugins() {
+		caManager, err := caPlugin.NewCaManager(builder, nil)
+		if err != nil {
+			return errors.Wrapf(err, "could not create CA manager for plugin %q", pluginName)
+		}
+		builder.WithCaManager(string(pluginName), caManager)
+	}
+
 	builder.WithProvidedCaManager(provided_ca.NewProvidedCaManager(builder.SecretManager()))
+	return nil
 }
 
 func initializeResourceManager(builder *core_runtime.Builder) {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), builder.ProvidedCaManager(), customizableManager, builder.SecretManager(), registry.Global())
+
+	validator := mesh_managers.MeshValidator{
+		CaManagers: builder.CaManagers(),
+	}
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.SecretManager(), builder.CaManagers(), registry.Global(), validator)
 	customManagers[mesh.MeshType] = meshManager
 	builder.WithResourceManager(customizableManager)
 

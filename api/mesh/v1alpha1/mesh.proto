@@ -6,6 +6,7 @@ option go_package = "v1alpha1";
 
 import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
 
 // Mesh defines configuration of a single mesh.
 message Mesh {
@@ -13,12 +14,11 @@ message Mesh {
   // mTLS settings of a Mesh.
   message Mtls {
 
-    // Certificate Authority of a Mesh.
-    // +optional
-    CertificateAuthority ca = 1;
+    bool enabled = 1;
 
-    // If true, then mTLS will be enabled for given mesh
-    bool enabled = 2;
+    string defaultBackend = 2;
+
+    repeated CertificateAuthorityBackend backends = 3;
   }
 
   // mTLS settings.
@@ -42,27 +42,13 @@ message Mesh {
   Metrics metrics = 4;
 }
 
-// CertificateAuthority defines configuration of a CA.
-message CertificateAuthority {
+message CertificateAuthorityBackend {
 
-  // Builtin defines configuration of the builtin CA.
-  message Builtin {}
+  string name = 1;
 
-  // Provided defines configuration of the provided CA.
-  message Provided {}
+  string type = 2;
 
-  oneof type {
-
-    // Use builtin CA.
-    Builtin builtin = 1;
-
-    // Use provided CA.
-    //
-    // To be able to use provided CA, a user must first upload CA certificate
-    // and key, e.g. by using `kumactl manage ca provided certificates add`
-    // command.
-    Provided provided = 2;
-  }
+  google.protobuf.Struct config = 3;
 }
 
 // Tracing defines tracing configuration of the mesh.

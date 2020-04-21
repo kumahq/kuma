@@ -5,9 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
-	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
+	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -15,18 +13,16 @@ import (
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
 )
 
-func New(resourceManager core_manager.ResourceManager, builtinCaManager builtin_ca.BuiltinCaManager, providedCaManager provided_ca.ProvidedCaManager) sds_provider.SecretProvider {
+func New(resourceManager core_manager.ResourceManager, caManagers core_ca.CaManagers) sds_provider.SecretProvider {
 	return &meshCaProvider{
-		resourceManager:   resourceManager,
-		builtinCaManager:  builtinCaManager,
-		providedCaManager: providedCaManager,
+		resourceManager: resourceManager,
+		caManagers:      caManagers,
 	}
 }
 
 type meshCaProvider struct {
-	resourceManager   core_manager.ResourceManager
-	builtinCaManager  builtin_ca.BuiltinCaManager
-	providedCaManager provided_ca.ProvidedCaManager
+	resourceManager core_manager.ResourceManager
+	caManagers      core_ca.CaManagers
 }
 
 func (s *meshCaProvider) RequiresIdentity() bool {
@@ -35,39 +31,30 @@ func (s *meshCaProvider) RequiresIdentity() bool {
 
 func (s *meshCaProvider) Get(ctx context.Context, resource string, requestor sds_auth.Identity) (sds_provider.Secret, error) {
 	meshName := requestor.Mesh
-	list := &core_mesh.MeshResourceList{}
-	if err := s.resourceManager.List(ctx, list, core_store.ListByMesh(meshName)); err != nil {
+
+	meshRes := &core_mesh.MeshResource{}
+	if err := s.resourceManager.Get(ctx, meshRes, core_store.GetByKey(meshName, meshName)); err != nil {
 		return nil, errors.Wrapf(err, "failed to find a Mesh %q", meshName)
 	}
-	if len(list.Items) == 0 {
-		return nil, errors.Errorf("there is no Mesh %q", meshName)
+
+	backend := meshRes.GetDefaultCertificateAuthorityBackend()
+	if backend == nil {
+		return nil, errors.New("CA backend is nil")
 	}
-	if len(list.Items) != 1 {
-		return nil, errors.Errorf("there are multiple Meshes named %q", meshName)
+
+	caManager, exist := s.caManagers[backend.Type]
+	if !exist {
+		return nil, errors.Errorf("CA manager of type %s not exist", backend.Type)
 	}
-	mesh := list.Items[0]
-	switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
-	case *mesh_proto.CertificateAuthority_Builtin_:
-		rootCerts, err := s.builtinCaManager.GetRootCerts(ctx, mesh.Meta.GetName())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to retrieve Root Certificates of a given Builtin CA")
-		}
-		return &MeshCaSecret{
-			PemCerts: rootCerts,
-		}, nil
-	case *mesh_proto.CertificateAuthority_Provided_:
-		rootCerts, err := s.providedCaManager.GetSigningCerts(ctx, mesh.Meta.GetName())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to retrieve Root Certificates of a given Provided CA")
-		}
-		var certs [][]byte = make([][]byte, len(rootCerts))
-		for i, rootCert := range rootCerts {
-			certs[i] = rootCert.Cert
-		}
-		return &MeshCaSecret{
-			PemCerts: certs,
-		}, nil
-	default:
-		return nil, errors.Errorf("Mesh %q has unsupported CA type", meshName)
+
+	cert, err := caManager.GetRootCert(ctx, meshName, *backend)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get root certs")
 	}
+
+	return &MeshCaSecret{
+		PemCerts: [][]byte{
+			cert,
+		},
+	}, nil
 }

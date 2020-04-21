@@ -7,7 +7,7 @@ import (
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
-	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
+	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -22,6 +22,7 @@ type BuilderContext interface {
 	ResourceStore() core_store.ResourceStore
 	XdsContext() core_xds.XdsContext
 	Config() kuma_cp.Config
+	SecretManager() secret_manager.SecretManager
 	Extensions() context.Context
 }
 
@@ -35,14 +36,18 @@ type Builder struct {
 	rm  core_manager.ResourceManager
 	rom core_manager.ReadOnlyResourceManager
 	sm  secret_manager.SecretManager
-	bcm builtin_ca.BuiltinCaManager
 	pcm provided_ca.ProvidedCaManager
+	cam core_ca.CaManagers
 	xds core_xds.XdsContext
 	ext context.Context
 }
 
 func BuilderFor(cfg kuma_cp.Config) *Builder {
-	return &Builder{cfg: cfg, ext: context.Background()}
+	return &Builder{
+		cfg: cfg,
+		ext: context.Background(),
+		cam: core_ca.CaManagers{},
+	}
 }
 
 func (b *Builder) WithComponentManager(cm component.Manager) *Builder {
@@ -70,13 +75,18 @@ func (b *Builder) WithSecretManager(sm secret_manager.SecretManager) *Builder {
 	return b
 }
 
-func (b *Builder) WithBuiltinCaManager(bcm builtin_ca.BuiltinCaManager) *Builder {
-	b.bcm = bcm
+func (b *Builder) WithProvidedCaManager(pcm provided_ca.ProvidedCaManager) *Builder {
+	b.pcm = pcm
 	return b
 }
 
-func (b *Builder) WithProvidedCaManager(pcm provided_ca.ProvidedCaManager) *Builder {
-	b.pcm = pcm
+func (b *Builder) WithCaManagers(cam core_ca.CaManagers) *Builder {
+	b.cam = cam
+	return b
+}
+
+func (b *Builder) WithCaManager(name string, cam core_ca.CaManager) *Builder {
+	b.cam[name] = cam
 	return b
 }
 
@@ -106,9 +116,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.sm == nil {
 		return nil, errors.Errorf("SecretManager has not been configured")
 	}
-	if b.bcm == nil {
-		return nil, errors.Errorf("BuiltinCaManager has not been configured")
-	}
 	if b.pcm == nil {
 		return nil, errors.Errorf("ProvidedCaManager has not been configured")
 	}
@@ -127,7 +134,7 @@ func (b *Builder) Build() (Runtime, error) {
 			rm:  b.rm,
 			rom: b.rom,
 			sm:  b.sm,
-			bcm: b.bcm,
+			cam: b.cam,
 			pcm: b.pcm,
 			xds: b.xds,
 			ext: b.ext,
@@ -145,8 +152,11 @@ func (b *Builder) ResourceStore() core_store.ResourceStore {
 func (b *Builder) SecretManager() secret_manager.SecretManager {
 	return b.sm
 }
-func (b *Builder) BuiltinCaManager() builtin_ca.BuiltinCaManager {
-	return b.bcm
+func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
+	return b.rom
+}
+func (b *Builder) CaManagers() core_ca.CaManagers {
+	return b.cam
 }
 func (b *Builder) ProvidedCaManager() provided_ca.ProvidedCaManager {
 	return b.pcm

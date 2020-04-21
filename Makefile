@@ -352,7 +352,7 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-injector/cmd/testdata \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
-run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
+run/universal/memory: ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
 	KUMA_ENVIRONMENT=universal \

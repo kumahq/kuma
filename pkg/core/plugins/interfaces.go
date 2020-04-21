@@ -3,6 +3,7 @@ package plugins
 import (
 	"github.com/pkg/errors"
 
+	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
@@ -51,4 +52,10 @@ type DiscoveryPlugin interface {
 type RuntimePlugin interface {
 	Plugin
 	Customize(core_runtime.Runtime) error
+}
+
+// CaPlugin is responsible for providing Certificate Authority Manager
+type CaPlugin interface {
+	Plugin
+	NewCaManager(PluginContext, PluginConfig) (core_ca.CaManager, error)
 }

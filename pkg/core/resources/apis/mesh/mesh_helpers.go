@@ -6,24 +6,6 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
-func (m *MeshResource) HasBuiltinCA() bool {
-	switch m.Spec.GetMtls().GetCa().GetType().(type) {
-	case *mesh_proto.CertificateAuthority_Builtin_:
-		return true
-	default:
-		return false
-	}
-}
-
-func (m *MeshResource) HasProvidedCA() bool {
-	switch m.Spec.GetMtls().GetCa().GetType().(type) {
-	case *mesh_proto.CertificateAuthority_Provided_:
-		return true
-	default:
-		return false
-	}
-}
-
 func (m *MeshResource) HasPrometheusMetricsEnabled() bool {
 	return m != nil && m.Spec.GetMetrics().GetPrometheus() != nil
 }
@@ -57,4 +39,19 @@ func (m *MeshResource) GetTracingBackends() string {
 		backends = append(backends, backend.GetName())
 	}
 	return strings.Join(backends, ", ")
+}
+
+func (m *MeshResource) GetDefaultCertificateAuthorityBackend() *mesh_proto.CertificateAuthorityBackend {
+	return m.GetCertificateAuthorityBackend("")
+}
+
+func (m *MeshResource) GetCertificateAuthorityBackend(name string) *mesh_proto.CertificateAuthorityBackend {
+	backends := map[string]*mesh_proto.CertificateAuthorityBackend{}
+	for _, backend := range m.Spec.GetMtls().GetBackends() {
+		backends[backend.Name] = backend
+	}
+	if name == "" {
+		return backends[m.Spec.GetMtls().GetDefaultBackend()]
+	}
+	return backends[name]
 }
