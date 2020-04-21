@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -30,7 +29,6 @@ import (
 
 var _ = Describe("RemoteStore", func() {
 
-	var t1, t2 time.Time
 	type RequestAssertion = func(req *http.Request)
 
 	setupStore := func(file string, assertion RequestAssertion) core_store.ResourceStore {
@@ -74,10 +72,6 @@ var _ = Describe("RemoteStore", func() {
 		}
 		return remote.NewStore(client, apis)
 	}
-	BeforeEach(func() {
-		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
-		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
-	})
 	Describe("Get()", func() {
 		It("should get resource", func() {
 			// setup
@@ -163,7 +157,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute","creationTime": "2018-07-17T16:05:36.995Z","modificationTime": "0001-01-01T00:00:00Z"}`))
+				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
 
 			// when
@@ -172,7 +166,7 @@ var _ = Describe("RemoteStore", func() {
 					Path: "/some-path",
 				},
 			}
-			err := store.Create(context.Background(), &resource, core_store.CreateByKey(name, "default"), core_store.CreatedAt(t1))
+			err := store.Create(context.Background(), &resource, core_store.CreateByKey(name, "default"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -185,14 +179,14 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","name":"someMesh","type":"Mesh","creationTime": "2018-07-17T16:05:36.995Z","modificationTime": "0001-01-01T00:00:00Z"}`))
+				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
 
 			// when
 			resource := mesh.MeshResource{
 				Spec: v1alpha1.Mesh{},
 			}
-			err := store.Create(context.Background(), &resource, core_store.CreateByKey(meshName, meshName), core_store.CreatedAt(t1))
+			err := store.Create(context.Background(), &resource, core_store.CreateByKey(meshName, meshName))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -239,7 +233,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute","creationTime": "0001-01-01T00:00:00Z","modificationTime": "2019-07-17T16:05:36.995Z"}`))
+				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
 
 			// when
@@ -252,7 +246,7 @@ var _ = Describe("RemoteStore", func() {
 					Name: name,
 				},
 			}
-			err := store.Update(context.Background(), &resource, core_store.ModifiedAt(t2))
+			err := store.Update(context.Background(), &resource)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -265,7 +259,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","mtls":{"ca":{"builtin":{}}},"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "2019-07-17T16:05:36.995Z"}`))
+				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","mtls":{"ca":{"builtin":{}}},"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
 
 			// when
@@ -284,7 +278,7 @@ var _ = Describe("RemoteStore", func() {
 					Name: meshName,
 				},
 			}
-			err := store.Update(context.Background(), &resource, core_store.ModifiedAt(t2))
+			err := store.Update(context.Background(), &resource)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
