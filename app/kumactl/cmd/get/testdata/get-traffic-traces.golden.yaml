@@ -1,6 +1,6 @@
 items:
   - mesh: default
-    modificationTime: 2018-07-17T16:05:36.995Z
+    modificationTime: 0001-01-01T00:00:00Z
     name: web1
     selectors:
     - match:
@@ -8,10 +8,10 @@ items:
         version: "1.0"
     conf:
       backend: zipkin
-    creationTime: 2018-07-17T16:05:36.995Z
+    creationTime: 0001-01-01T00:00:00Z
     type: TrafficTrace
   - mesh: default
-    modificationTime: 2018-07-17T16:05:36.995Z
+    modificationTime: 0001-01-01T00:00:00Z
     name: web2
     selectors:
     - match:
@@ -19,6 +19,6 @@ items:
         version: "1.0"
     conf:
       backend: zipkin
-    creationTime: "2018-07-17T16:05:36.995Z"
+    creationTime: 0001-01-01T00:00:00Z
     type: TrafficTrace
 next: null

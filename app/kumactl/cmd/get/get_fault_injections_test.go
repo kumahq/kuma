@@ -112,10 +112,8 @@ var _ = Describe("kumactl get fault-injections", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-		var t1 time.Time
 		BeforeEach(func() {
 			// setup
-			t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
 					Now: time.Now,
@@ -128,7 +126,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 			store = memory_resources.NewStore()
 
 			for _, ds := range faultInjectionResources {
-				err := store.Create(context.Background(), ds, core_store.CreateBy(core_model.MetaToResourceKey(ds.GetMeta())), core_store.CreatedAt(t1))
+				err := store.Create(context.Background(), ds, core_store.CreateBy(core_model.MetaToResourceKey(ds.GetMeta())))
 				Expect(err).ToNot(HaveOccurred())
 			}
 

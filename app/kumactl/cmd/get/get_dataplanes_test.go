@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/Kong/kuma/app/kumactl/cmd"
 
@@ -31,9 +30,7 @@ import (
 var _ = Describe("kumactl get dataplanes", func() {
 
 	var dataplanes []*mesh_core.DataplaneResource
-	var t1 time.Time
 	BeforeEach(func() {
-		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 
 		dataplanes = []*mesh_core.DataplaneResource{
 			{
@@ -114,7 +111,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 					Mesh: pt.Meta.GetMesh(),
 					Name: pt.Meta.GetName(),
 				}
-				err := store.Create(context.Background(), pt, core_store.CreateBy(key), core_store.CreatedAt(t1))
+				err := store.Create(context.Background(), pt, core_store.CreateBy(key))
 				Expect(err).ToNot(HaveOccurred())
 			}
 

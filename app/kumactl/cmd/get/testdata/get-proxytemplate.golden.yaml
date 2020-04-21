@@ -1,9 +1,9 @@
 conf:
   imports:
     - default-proxy
-creationTime: 2018-07-17T16:05:36.995Z
+creationTime: 0001-01-01T00:00:00Z
 mesh: default
-modificationTime: 2018-07-17T16:05:36.995Z
+modificationTime: 0001-01-01T00:00:00Z
 name: proxytemplate-1
 selectors:
   - match:
