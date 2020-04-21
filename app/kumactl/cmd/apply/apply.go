@@ -110,7 +110,7 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			if err := upsert(pctx.Now(), rs, res); err != nil {
+			if err := upsert(rs, res); err != nil {
 				return err
 			}
 			return nil
@@ -154,7 +154,7 @@ func processConfigTemplate(config string, values map[string]string) ([]byte, err
 	return []byte(data), nil
 }
 
-func upsert(now time.Time, rs store.ResourceStore, res model.Resource) error {
+func upsert(rs store.ResourceStore, res model.Resource) error {
 	newRes, err := registry.Global().NewObject(res.GetType())
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func upsert(now time.Time, rs store.ResourceStore, res model.Resource) error {
 	meta := res.GetMeta()
 	if err := rs.Get(context.Background(), newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
 		if store.IsResourceNotFound(err) {
-			return rs.Create(context.Background(), res, store.CreateByKey(meta.GetName(), meta.GetMesh()), store.CreatedAt(now))
+			return rs.Create(context.Background(), res, store.CreateByKey(meta.GetName(), meta.GetMesh()))
 		} else {
 			return err
 		}
@@ -170,7 +170,7 @@ func upsert(now time.Time, rs store.ResourceStore, res model.Resource) error {
 	if err := newRes.SetSpec(res.GetSpec()); err != nil {
 		return err
 	}
-	return rs.Update(context.Background(), newRes, store.ModifiedAt(now))
+	return rs.Update(context.Background(), newRes)
 }
 
 func parseResource(bytes []byte) (model.Resource, error) {
@@ -224,9 +224,9 @@ func (m meta) GetMesh() string {
 }
 
 func (m meta) GetCreationTime() time.Time {
-	return m.CreationTime
+	return m.CreationTime // the date doesn't matter since it is set on server side anyways
 }
 
 func (m meta) GetModificationTime() time.Time {
-	return m.ModificationTime
+	return m.ModificationTime // the date doesn't matter since it is set on server side anyways
 }
