@@ -115,6 +115,8 @@ spec:
           value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
         - name: KUMA_API_SERVER_READ_ONLY
           value: "true"
+        - name: KUMA_KUBERNETES_CNI_ENABLED
+          value: "{{ .CNIEnabled }}"
         args:
         - run
         - --log-level=info

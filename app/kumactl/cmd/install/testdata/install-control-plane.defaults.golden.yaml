@@ -4128,6 +4128,18 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
+    verbs:
+      - '*'
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshes/finalizers
+    verbs:
+      - "*"
   # validate k8s token before issueing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -4301,6 +4313,8 @@ spec:
               value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
+            - name: KUMA_KUBERNETES_CNI_ENABLED
+              value: "false"
           args:
             - run
             - --log-level=info
@@ -4384,6 +4398,8 @@ spec:
               value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
+            - name: KUMA_INJECTOR_INIT_CONTAINER_ENABLED
+              value: "true"
           args:
             - run
             - --log-level=info

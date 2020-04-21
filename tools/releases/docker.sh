@@ -66,7 +66,7 @@ function push {
   for component in "${KUMA_COMPONENTS[@]}"; do
     msg "Pushing $component..."
       docker push $KUMA_DOCKER_REPO/$component:$KUMA_VERSION
-      docker push $KUMA_DOCKER_REPO/$component:latest
+#      docker push $KUMA_DOCKER_REPO/$component:latest
     msg_green "... done!"
   done
 

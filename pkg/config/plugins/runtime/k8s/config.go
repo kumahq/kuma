@@ -8,6 +8,7 @@ import (
 
 func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 	return &KubernetesRuntimeConfig{
+		CNIEnabled: false,
 		AdmissionServer: AdmissionServerConfig{
 			Address: "", // all addresses
 			Port:    5443,
@@ -19,6 +20,8 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 type KubernetesRuntimeConfig struct {
 	// Admission WebHook Server implemented by the Control Plane.
 	AdmissionServer AdmissionServerConfig `yaml:"admissionServer"`
+	// CNIEnabled if true runs kuma-cp in CNI compatible mode
+	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_kubernetes_cni_enabled"`
 }
 
 // Configuration of the Admission WebHook Server implemented by the Control Plane.
