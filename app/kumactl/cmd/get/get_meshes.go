@@ -2,6 +2,8 @@ package get
 
 import (
 	"context"
+	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
+	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"io"
 
 	"github.com/pkg/errors"
@@ -14,7 +16,7 @@ import (
 	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
 )
 
-func newGetMeshesCmd(pctx *getContext) *cobra.Command {
+func newGetMeshesCmd(pctx *listContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "meshes",
 		Short: "Show Meshes",
@@ -26,13 +28,13 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 			}
 
 			meshes := mesh.MeshResourceList{}
-			if err := rs.List(context.Background(), &meshes); err != nil {
+			if err := rs.List(context.Background(), &meshes, core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
 				return errors.Wrapf(err, "failed to list Meshes")
 			}
 
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printMeshes(meshes.Items, cmd.OutOrStdout())
+				return printMeshes(&meshes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +47,17 @@ func newGetMeshesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printMeshes(meshes []*mesh.MeshResource, out io.Writer) error {
+func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(meshes) <= i {
+				if len(meshes.Items) <= i {
 					return nil
 				}
-				mesh := meshes[i]
+				mesh := meshes.Items[i]
 
 				mtls := "off"
 				if mesh.Spec.Mtls.GetEnabled() {
@@ -95,6 +97,7 @@ func printMeshes(meshes []*mesh.MeshResource, out io.Writer) error {
 				}
 			}
 		}(),
+		Footer: table.PaginationFooter(meshes),
 	}
 	return printers.NewTablePrinter().Print(data, out)
 }

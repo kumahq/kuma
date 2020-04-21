@@ -90,6 +90,7 @@ var _ = Describe("kumactl get proxytemplates", func() {
 
 		type testCase struct {
 			outputFormat string
+			pagination   string
 			goldenFile   string
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
@@ -99,7 +100,7 @@ var _ = Describe("kumactl get proxytemplates", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "proxytemplates"}, given.outputFormat))
+					"get", "proxytemplates"}, given.outputFormat, given.pagination))
 
 				// when
 				err := rootCmd.Execute()
@@ -123,6 +124,14 @@ var _ = Describe("kumactl get proxytemplates", func() {
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "get-proxytemplates.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support pagination", testCase{
+				outputFormat: "-otable",
+				pagination:   "--size=1",
+				goldenFile:   "get-proxytemplates.pagination.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/pkg/errors"
+	"strconv"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
@@ -142,6 +142,15 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 	if err != nil {
 		return err
 	}
+	query := req.URL.Query()
+	if opts.PageOffset != "" {
+		query.Add("offset", opts.PageOffset)
+	}
+	if opts.PageSize != 0 {
+		query.Add("size", strconv.Itoa(opts.PageSize))
+	}
+	req.URL.RawQuery = query.Encode()
+
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
 		return err

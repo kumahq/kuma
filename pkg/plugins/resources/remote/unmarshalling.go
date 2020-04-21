@@ -2,6 +2,8 @@ package remote
 
 import (
 	"encoding/json"
+	"github.com/pkg/errors"
+	"net/url"
 	"time"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -70,6 +72,20 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 			// todo(jakubdyszkiewicz) creation and modification time is not set because it's not exposed in API yet
 		})
 		_ = rs.AddItem(r)
+	}
+	if rsr.Next != nil {
+		uri, err := url.ParseRequestURI(*rsr.Next)
+		if err != nil {
+			return errors.Wrap(err, "invalid next URL from the server")
+		}
+		offset := uri.Query().Get("offset")
+		// we do not preserve here the size of the page, but since it is used in kumactl
+		// user will rerun command with the page size of his choice
+		if offset != "" {
+			rs.SetPagination(model.Pagination{
+				NextOffset: offset,
+			})
+		}
 	}
 	return nil
 }

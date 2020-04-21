@@ -2,7 +2,6 @@ package get
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -35,7 +34,9 @@ func newGetTrafficRouteCmd(pctx *getContext) *cobra.Command {
 				}
 				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
 			}
-			trafficRoutes := []*mesh.TrafficRouteResource{trafficRoute}
+			trafficRoutes := &mesh.TrafficRouteResourceList{
+				Items: []*mesh.TrafficRouteResource{trafficRoute},
+			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
 				return printTrafficRoutes(trafficRoutes, cmd.OutOrStdout())

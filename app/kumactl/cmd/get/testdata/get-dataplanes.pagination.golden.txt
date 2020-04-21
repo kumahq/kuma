@@ -1,0 +1,4 @@
+MESH      NAME         TAGS
+default   experiment   service=metrics,mobile version=v1
+
+Rerun command with --offset=1 argument to retrieve more resources

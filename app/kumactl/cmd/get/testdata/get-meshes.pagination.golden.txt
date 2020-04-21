@@ -1,0 +1,4 @@
+NAME    mTLS      METRICS   LOGGING   TRACING
+mesh1   builtin   off       off       off
+
+Rerun command with --offset=1 argument to retrieve more resources
