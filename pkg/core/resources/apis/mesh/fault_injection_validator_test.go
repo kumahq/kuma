@@ -37,7 +37,7 @@ var _ = Describe("FaultInjection", func() {
                     service: backend
                     protocol: http
                     region: eu
-                    valid: abcd.123-456.under_score_.
+                    valid: abcd.123-456.under_score_.:80
                 conf:
                   delay:
                     percentage: 50

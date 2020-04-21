@@ -100,7 +100,7 @@ var _ = Describe("Dataplane", func() {
                 tags:
                   service: backend
                   version: "1"
-                  valid: abc.0123-789.under_score
+                  valid: abc.0123-789.under_score:90
               outbound:
                 - port: 3333
                   service: redis`,

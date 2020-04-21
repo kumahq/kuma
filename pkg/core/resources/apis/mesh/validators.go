@@ -152,8 +152,8 @@ func ProtocolValidator(protocols ...string) SelectorValidatorFunc {
 	}
 }
 
-var nameCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_]*$`)
-var selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_]*|\*)$`)
+var nameCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:]*$`)
+var selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:]*|\*)$`)
 
 func SelectorCharacterSetValidator(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
 	var result validators.ValidationError
