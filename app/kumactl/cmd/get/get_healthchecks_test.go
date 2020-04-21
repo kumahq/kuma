@@ -132,7 +132,7 @@ var _ = Describe("kumactl get healthchecks", func() {
 			}),
 			Entry("should support pagination", testCase{
 				outputFormat: "-otable",
-				pagination: "--size=1",
+				pagination:   "--size=1",
 				goldenFile:   "get-healthchecks.pagination.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))

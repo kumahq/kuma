@@ -11,7 +11,7 @@ type Printer interface {
 type Table struct {
 	Headers []string
 	NextRow func() []string
-	Footer string
+	Footer  string
 }
 
 func NewPrinter() Printer {

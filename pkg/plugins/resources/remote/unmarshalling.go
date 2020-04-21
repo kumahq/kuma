@@ -2,9 +2,10 @@ package remote
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"net/url"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"

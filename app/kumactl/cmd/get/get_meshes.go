@@ -2,9 +2,10 @@ package get
 
 import (
 	"context"
+	"io"
+
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"io"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

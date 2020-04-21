@@ -19,7 +19,7 @@ type getContext struct {
 type listContext struct {
 	*getContext
 	args struct {
-		size int
+		size   int
 		offset string
 	}
 }

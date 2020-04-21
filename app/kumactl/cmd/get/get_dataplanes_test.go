@@ -163,7 +163,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 			Entry("should support pagination", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "get-dataplanes.pagination.golden.txt",
-				pagination: "--size=1",
+				pagination:   "--size=1",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
