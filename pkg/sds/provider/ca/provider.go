@@ -37,7 +37,7 @@ func (s *meshCaProvider) Get(ctx context.Context, resource string, requestor sds
 		return nil, errors.Wrapf(err, "failed to find a Mesh %q", meshName)
 	}
 
-	backend := meshRes.GetDefaultCertificateAuthorityBackend()
+	backend := meshRes.GetEnabledCertificateAuthorityBackend()
 	if backend == nil {
 		return nil, errors.New("CA backend is nil")
 	}

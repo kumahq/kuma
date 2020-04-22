@@ -31,8 +31,7 @@ var _ = Describe("kumactl get meshes", func() {
 		{
 			Spec: v1alpha1.Mesh{
 				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled:        true,
-					DefaultBackend: "builtin-1",
+					EnabledBackend: "builtin-1",
 					Backends: []*v1alpha1.CertificateAuthorityBackend{
 						{
 							Name: "builtin-1",
@@ -98,9 +97,6 @@ var _ = Describe("kumactl get meshes", func() {
 		},
 		{
 			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: false,
-				},
 				Metrics: &v1alpha1.Metrics{
 					Prometheus: &v1alpha1.Metrics_Prometheus{
 						Port: 1234,

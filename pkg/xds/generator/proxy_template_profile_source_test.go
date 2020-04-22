@@ -137,7 +137,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
 `,
 			dataplane: `
             networking:
@@ -159,7 +162,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
 `,
 			dataplane: `
             networking:
@@ -183,7 +189,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
             metrics:
               prometheus:
                 port: 1234
@@ -210,7 +219,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
             metrics:
               prometheus:
                 port: 1234
@@ -239,7 +251,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true; prometheus_port=inbound_listener_port", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
             metrics:
               prometheus:
                 port: 80
@@ -265,7 +280,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true; prometheus_port=inbound_listener_port", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
             metrics:
               prometheus:
                 port: 80
@@ -293,7 +311,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true; prometheus_port=application_port", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
             metrics:
               prometheus:
                 port: 8080
@@ -319,7 +340,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true; prometheus_port=application_port", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
             metrics:
               prometheus:
                 port: 8080
@@ -347,7 +371,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true; prometheus_port=outbound_listener_port", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
             metrics:
               prometheus:
                 port: 54321
@@ -373,7 +400,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true; prometheus_port=outbound_listener_port", testCase{
 			mesh: `
             mtls:
-              enabled: true
+              enabledBackend: builtin
+              backends:
+              - type: builtin
+                name: builtin
             metrics:
               prometheus:
                 port: 59200

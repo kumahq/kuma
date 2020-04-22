@@ -56,7 +56,7 @@ var _ = Describe("Mesh Manager", func() {
 			mesh := core_mesh.MeshResource{
 				Spec: mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						DefaultBackend: "builtin-1",
+						EnabledBackend: "builtin-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
 							{
 								Name: "builtin-1",
@@ -181,8 +181,7 @@ var _ = Describe("Mesh Manager", func() {
 			mesh := core_mesh.MeshResource{
 				Spec: mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						Enabled:        true,
-						DefaultBackend: "builtin-1",
+						EnabledBackend: "builtin-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
 							{
 								Name: "builtin-1",
@@ -202,7 +201,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to change CA
-			mesh.Spec.Mtls.DefaultBackend = "builtin-2"
+			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
 			err = resManager.Update(context.Background(), &mesh)
 
 			// then
@@ -210,7 +209,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).To(Equal(&validators.ValidationError{
 				Violations: []validators.Violation{
 					{
-						Field:   "mtls.defaultBackend",
+						Field:   "mtls.enabledBackend",
 						Message: "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA",
 					},
 				},
@@ -229,8 +228,7 @@ var _ = Describe("Mesh Manager", func() {
 			mesh := core_mesh.MeshResource{
 				Spec: mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						Enabled:        false,
-						DefaultBackend: "builtin-1",
+						EnabledBackend: "",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
 							{
 								Name: "builtin-1",
@@ -250,7 +248,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to enable mTLS change CA
-			mesh.Spec.Mtls.DefaultBackend = "builtin-2"
+			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
 			err = resManager.Update(context.Background(), &mesh)
 
 			// then
@@ -436,7 +434,7 @@ var _ = Describe("Mesh Manager", func() {
 			mesh := core_mesh.MeshResource{
 				Spec: mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						DefaultBackend: "builtin-1",
+						EnabledBackend: "builtin-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
 							{
 								Name: "builtin-1",

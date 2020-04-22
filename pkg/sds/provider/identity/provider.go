@@ -37,7 +37,7 @@ func (s *identityCertProvider) Get(ctx context.Context, name string, requestor s
 		return nil, errors.Wrapf(err, "failed to find a Mesh %q", meshName)
 	}
 
-	backend := meshRes.GetDefaultCertificateAuthorityBackend()
+	backend := meshRes.GetEnabledCertificateAuthorityBackend()
 	if backend == nil {
 		return nil, errors.Errorf("CA default backend in mesh %q has to be defined", meshName)
 	}

@@ -46,8 +46,8 @@ func (m *MeshValidator) ValidateUpdate(ctx context.Context, previousMesh *core_m
 
 func (m *MeshValidator) validateMTLSBackendChange(previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {
 	verr := validators.ValidationError{}
-	if previousMesh.Spec.GetMtls().GetEnabled() && previousMesh.Spec.GetMtls().GetDefaultBackend() != newMesh.Spec.GetMtls().GetDefaultBackend() {
-		verr.AddViolation("mtls.defaultBackend", "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA")
+	if previousMesh.MTLSEnabled() && newMesh.MTLSEnabled() && previousMesh.Spec.GetMtls().GetEnabledBackend() != newMesh.Spec.GetMtls().GetEnabledBackend() {
+		verr.AddViolation("mtls.enabledBackend", "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA")
 	}
 	return verr.OrNil()
 }

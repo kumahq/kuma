@@ -14,11 +14,11 @@ message Mesh {
   // mTLS settings of a Mesh.
   message Mtls {
 
-    bool enabled = 1;
+    // Name of the enabled backend
+    string enabledBackend = 1;
 
-    string defaultBackend = 2;
-
-    repeated CertificateAuthorityBackend backends = 3;
+    // List of available Certificate Authority backends
+    repeated CertificateAuthorityBackend backends = 2;
   }
 
   // mTLS settings.
@@ -42,12 +42,17 @@ message Mesh {
   Metrics metrics = 4;
 }
 
+// CertificateAuthorityBackend defines Certificate Authority backend
 message CertificateAuthorityBackend {
 
+  // Name of the backend
   string name = 1;
 
+  // Type of the backend. Has to be one of the loaded plugins (Kuma ships with
+  // builtin and provided)
   string type = 2;
 
+  // Configuration of the backend
   google.protobuf.Struct config = 3;
 }
 

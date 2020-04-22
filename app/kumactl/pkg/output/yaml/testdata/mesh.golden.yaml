@@ -4,7 +4,6 @@ mtls:
   backends:
   - name: builtin-1
     type: builtin
-  defaultBackend: builtin-1
-  enabled: true
+  enabledBackend: builtin-1
 name: demo
 type: Mesh

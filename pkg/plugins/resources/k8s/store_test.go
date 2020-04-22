@@ -144,8 +144,7 @@ var _ = Describe("KubernetesStore", func() {
 			mesh := core_mesh.MeshResource{
 				Spec: mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						Enabled:        true,
-						DefaultBackend: "builtin-1",
+						EnabledBackend: "builtin-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
 							{
 								Name: "builtin-1",
@@ -163,8 +162,7 @@ var _ = Describe("KubernetesStore", func() {
               name: %s
             spec:
               mtls:
-                enabled: true
-                defaultBackend: builtin-1
+                enabledBackend: builtin-1
                 backends:
                 - name: builtin-1
                   type: builtin
@@ -264,8 +262,7 @@ var _ = Describe("KubernetesStore", func() {
             metadata:
               name: %s
             spec:
-              mtls:
-                enabled: false
+              mtls: {}
 `, name))
 			backend.Create(initial)
 
@@ -277,7 +274,10 @@ var _ = Describe("KubernetesStore", func() {
               name: %s
             spec:
               mtls:
-                enabled: true
+                enabledBackend: builtin
+                backends:
+                - name: builtin
+                  type: builtin
 `, name)).(*mesh_k8s.Mesh)
 
 			// given
@@ -291,7 +291,13 @@ var _ = Describe("KubernetesStore", func() {
 			version := mesh.Meta.GetVersion()
 
 			// when
-			mesh.Spec.Mtls.Enabled = true
+			mesh.Spec.Mtls.EnabledBackend = "builtin"
+			mesh.Spec.Mtls.Backends = []*mesh_proto.CertificateAuthorityBackend{
+				{
+					Name: "builtin",
+					Type: "builtin",
+				},
+			}
 			err = s.Update(context.Background(), mesh)
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -434,7 +440,10 @@ var _ = Describe("KubernetesStore", func() {
               name: %s
             spec:
               mtls:
-                enabled: false
+                enabledBackend: builtin
+                backends:
+                - name: builtin
+                  type: builtin
 `, name))
 			backend.Create(expected)
 
@@ -456,7 +465,13 @@ var _ = Describe("KubernetesStore", func() {
 			// and
 			Expect(actual.Spec).To(Equal(mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
-					Enabled: false,
+					EnabledBackend: "builtin",
+					Backends: []*mesh_proto.CertificateAuthorityBackend{
+						{
+							Name: "builtin",
+							Type: "builtin",
+						},
+					},
 				},
 			}))
 		})

@@ -10,6 +10,10 @@ func (m *MeshResource) HasPrometheusMetricsEnabled() bool {
 	return m != nil && m.Spec.GetMetrics().GetPrometheus() != nil
 }
 
+func (m *MeshResource) MTLSEnabled() bool {
+	return m != nil && m.Spec.GetMtls().GetEnabledBackend() != ""
+}
+
 func (m *MeshResource) GetTracingBackend(name string) *mesh_proto.TracingBackend {
 	backends := map[string]*mesh_proto.TracingBackend{}
 	for _, backend := range m.Spec.GetTracing().GetBackends() {
@@ -41,17 +45,14 @@ func (m *MeshResource) GetTracingBackends() string {
 	return strings.Join(backends, ", ")
 }
 
-func (m *MeshResource) GetDefaultCertificateAuthorityBackend() *mesh_proto.CertificateAuthorityBackend {
-	return m.GetCertificateAuthorityBackend("")
+func (m *MeshResource) GetEnabledCertificateAuthorityBackend() *mesh_proto.CertificateAuthorityBackend {
+	return m.GetCertificateAuthorityBackend(m.Spec.GetMtls().GetEnabledBackend())
 }
 
 func (m *MeshResource) GetCertificateAuthorityBackend(name string) *mesh_proto.CertificateAuthorityBackend {
 	backends := map[string]*mesh_proto.CertificateAuthorityBackend{}
 	for _, backend := range m.Spec.GetMtls().GetBackends() {
 		backends[backend.Name] = backend
-	}
-	if name == "" {
-		return backends[m.Spec.GetMtls().GetDefaultBackend()]
 	}
 	return backends[name]
 }

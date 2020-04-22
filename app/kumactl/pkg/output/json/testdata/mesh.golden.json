@@ -4,8 +4,7 @@
   "creationTime": "2018-07-17T16:05:36.995Z",
   "modificationTime": "2019-07-17T16:05:36.995Z",
   "mtls": {
-    "enabled": true,
-    "defaultBackend": "builtin-1",
+    "enabledBackend": "builtin-1",
     "backends": [
       {
         "name": "builtin-1",

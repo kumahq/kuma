@@ -1,5 +1,4 @@
 type: Mesh
 mesh: default
 name: default
-mtls:
-  enabled: false
+mtls: {}

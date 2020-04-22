@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -25,22 +24,12 @@ var _ = Describe("kumactl delete mesh", func() {
 
 	sampleMeshes := []*mesh.MeshResource{
 		{
-			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: true,
-				},
-			},
 			Meta: &test_model.ResourceMeta{
 				Mesh: "mesh1",
 				Name: "mesh1",
 			},
 		},
 		{
-			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: false,
-				},
-			},
 			Meta: &test_model.ResourceMeta{
 				Mesh: "mesh2",
 				Name: "mesh2",

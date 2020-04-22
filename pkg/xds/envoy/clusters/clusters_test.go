@@ -118,7 +118,13 @@ var _ = Describe("Clusters", func() {
 						Resource: &mesh_core.MeshResource{
 							Spec: mesh_proto.Mesh{
 								Mtls: &mesh_proto.Mesh_Mtls{
-									Enabled: true,
+									EnabledBackend: "builtin",
+									Backends: []*mesh_proto.CertificateAuthorityBackend{
+										{
+											Name: "builtin",
+											Type: "builtin",
+										},
+									},
 								},
 							},
 						},
@@ -176,7 +182,13 @@ var _ = Describe("Clusters", func() {
 						Resource: &mesh_core.MeshResource{
 							Spec: mesh_proto.Mesh{
 								Mtls: &mesh_proto.Mesh_Mtls{
-									Enabled: true,
+									EnabledBackend: "builtin",
+									Backends: []*mesh_proto.CertificateAuthorityBackend{
+										{
+											Name: "builtin",
+											Type: "builtin",
+										},
+									},
 								},
 							},
 						},

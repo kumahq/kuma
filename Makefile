@@ -246,7 +246,7 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIR) -name '*.pb.go' -delete
 	find $(PROTO_DIR) -name '*.pb.validate.go' -delete
 
-generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 ## Dev: Run code generators
+generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins ## Dev: Run code generators
 
 protoc/pkg/config/app/kumactl/v1alpha1:
 	$(PROTOC_GO) pkg/config/app/kumactl/v1alpha1/*.proto
