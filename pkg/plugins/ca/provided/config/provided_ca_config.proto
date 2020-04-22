@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package kuma.plugins.ca;
+
+option go_package = "config";
+
+import "system/v1alpha1/datasource.proto";
+
+message ProvidedCertificateAuthorityConfig {
+  kuma.system.v1alpha1.DataSource cert = 1;
+  kuma.system.v1alpha1.DataSource key = 2;
+}

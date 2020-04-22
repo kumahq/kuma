@@ -19,4 +19,5 @@ type CaManager interface { // todo drop prefix?
 	GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (KeyPair, error)
 }
 
+// CaManagers hold CaManager instance for each type of backend available (by default: builtin, provided)
 type CaManagers = map[string]CaManager

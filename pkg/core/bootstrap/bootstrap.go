@@ -3,10 +3,11 @@ package bootstrap
 import (
 	"github.com/pkg/errors"
 
+	"github.com/Kong/kuma/pkg/core/datasource"
+
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -41,6 +42,8 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	}
 
 	initializeResourceManager(builder)
+
+	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.SecretManager()))
 
 	if err := initializeCaManagers(builder); err != nil {
 		return nil, err
@@ -224,8 +227,6 @@ func initializeCaManagers(builder *core_runtime.Builder) error {
 		}
 		builder.WithCaManager(string(pluginName), caManager)
 	}
-
-	builder.WithProvidedCaManager(provided_ca.NewProvidedCaManager(builder.SecretManager()))
 	return nil
 }
 

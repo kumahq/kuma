@@ -13,9 +13,9 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
-	. "github.com/Kong/kuma/pkg/core/ca/provided"
+	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
+	. "github.com/Kong/kuma/pkg/plugins/ca/provided"
 
-	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
 	util_tls "github.com/Kong/kuma/pkg/tls"
 )
 
@@ -23,7 +23,7 @@ var _ = Describe("ValidateCaCert()", func() {
 
 	It("should accept proper CA certificates", func() {
 		// when
-		signingPair, err := builtin_issuer.NewRootCA("demo")
+		signingPair, err := ca_issuer.NewRootCA("demo")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -73,7 +73,7 @@ var _ = Describe("ValidateCaCert()", func() {
 			return testCase{
 				expectedErr: `
                 violations:
-                - field: .
+                - field: cert
                   message: 'not a valid TLS key pair: tls: failed to find any PEM data in certificate input'
 `,
 			}
@@ -82,7 +82,7 @@ var _ = Describe("ValidateCaCert()", func() {
 			return testCase{
 				expectedErr: `
                 violations:
-                - field: .
+                - field: cert
                   message: 'not a valid TLS key pair: tls: failed to find any PEM data in certificate input'
 `,
 				input: util_tls.KeyPair{
@@ -95,7 +95,7 @@ var _ = Describe("ValidateCaCert()", func() {
 			return testCase{
 				expectedErr: `
                 violations:
-                - field: .
+                - field: cert
                   message: 'not a valid TLS key pair: tls: private key does not match public key'
 `,
 				input: util_tls.KeyPair{

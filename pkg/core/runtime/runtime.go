@@ -6,7 +6,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/ca"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
@@ -30,7 +29,6 @@ type RuntimeContext interface {
 	ResourceManager() core_manager.ResourceManager
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	SecretManager() secret_manager.SecretManager
-	ProvidedCaManager() provided_ca.ProvidedCaManager
 	CaManagers() ca.CaManagers
 	Extensions() context.Context
 }
@@ -60,7 +58,6 @@ type runtimeContext struct {
 	rm  core_manager.ResourceManager
 	rom core_manager.ReadOnlyResourceManager
 	sm  secret_manager.SecretManager
-	pcm provided_ca.ProvidedCaManager
 	cam ca.CaManagers
 	xds core_xds.XdsContext
 	ext context.Context
@@ -83,9 +80,6 @@ func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourc
 }
 func (rc *runtimeContext) SecretManager() secret_manager.SecretManager {
 	return rc.sm
-}
-func (rc *runtimeContext) ProvidedCaManager() provided_ca.ProvidedCaManager {
-	return rc.pcm
 }
 func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext

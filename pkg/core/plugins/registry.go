@@ -25,7 +25,8 @@ const (
 	Memory     PluginName = "memory"
 	Postgres   PluginName = "postgres"
 
-	CaBuiltin PluginName = "builtin"
+	CaBuiltin  PluginName = "builtin"
+	CaProvided PluginName = "provided"
 )
 
 type Registry interface {

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 
+	pstruct "github.com/golang/protobuf/ptypes/struct"
+
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -58,4 +60,19 @@ func FromMap(in map[string]interface{}, out proto.Message) error {
 		return err
 	}
 	return FromJSON(content, out)
+}
+
+// Converts loosely typed Struct to strongly typed Message
+func ToTyped(protoStruct *pstruct.Struct, message proto.Message) error {
+	if protoStruct == nil {
+		return nil
+	}
+	configBytes, err := ToJSON(protoStruct)
+	if err != nil {
+		return err
+	}
+	if err := FromJSON(configBytes, message); err != nil {
+		return err
+	}
+	return nil
 }

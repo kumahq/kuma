@@ -17,7 +17,6 @@ import (
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
-	ca_provided_rest "github.com/Kong/kuma/pkg/core/ca/provided/rest"
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/Kong/kuma/pkg/tokens/builtin/server"
@@ -157,10 +156,7 @@ func requireClientCerts(certsDir string) (*tls.Config, error) {
 func SetupServer(rt runtime.Runtime) error {
 	var webservices []*restful.WebService
 
-	ws := ca_provided_rest.NewWebservice(rt.ProvidedCaManager(), rt.ResourceManager())
-	webservices = append(webservices, ws)
-
-	ws = new(restful.WebService).
+	ws := new(restful.WebService).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 	endpoints := secretsEndpoints{rt.SecretManager()}

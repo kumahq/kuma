@@ -10,7 +10,7 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/ca"
-	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
+	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
@@ -44,7 +44,7 @@ func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, bac
 }
 
 func (b *builtinCaManager) create(ctx context.Context, mesh string, backendName string) error {
-	keyPair, err := builtin_issuer.NewRootCA(mesh)
+	keyPair, err := ca_issuer.NewRootCA(mesh)
 	if err != nil {
 		return errors.Wrapf(err, "failed to generate a Root CA cert for Mesh %q", mesh)
 	}
@@ -79,20 +79,20 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backendName 
 func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) (ca.Cert, error) {
 	ca, err := b.getCa(ctx, mesh, backend.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
+		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
 	}
 	return ca.CertPEM, nil
 }
 
-func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, dataplane string) (ca.KeyPair, error) {
+func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (ca.KeyPair, error) {
 	meshCa, err := b.getCa(ctx, mesh, backend.Name)
 	if err != nil {
-		return ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q", mesh)
+		return ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
 	}
 
-	keyPair, err := builtin_issuer.NewWorkloadCert(meshCa, mesh, dataplane)
+	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, service)
 	if err != nil {
-		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for workload %q in Mesh %q", dataplane, mesh)
+		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for workload %q in Mesh %q using backend %q", service, mesh, backend)
 	}
 	return *keyPair, nil // todo pointer?
 }

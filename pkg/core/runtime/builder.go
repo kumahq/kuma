@@ -3,12 +3,13 @@ package runtime
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/core/datasource"
+
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
 	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
@@ -23,6 +24,7 @@ type BuilderContext interface {
 	XdsContext() core_xds.XdsContext
 	Config() kuma_cp.Config
 	SecretManager() secret_manager.SecretManager
+	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
 }
 
@@ -36,9 +38,9 @@ type Builder struct {
 	rm  core_manager.ResourceManager
 	rom core_manager.ReadOnlyResourceManager
 	sm  secret_manager.SecretManager
-	pcm provided_ca.ProvidedCaManager
 	cam core_ca.CaManagers
 	xds core_xds.XdsContext
+	dsl datasource.Loader
 	ext context.Context
 }
 
@@ -75,11 +77,6 @@ func (b *Builder) WithSecretManager(sm secret_manager.SecretManager) *Builder {
 	return b
 }
 
-func (b *Builder) WithProvidedCaManager(pcm provided_ca.ProvidedCaManager) *Builder {
-	b.pcm = pcm
-	return b
-}
-
 func (b *Builder) WithCaManagers(cam core_ca.CaManagers) *Builder {
 	b.cam = cam
 	return b
@@ -87,6 +84,11 @@ func (b *Builder) WithCaManagers(cam core_ca.CaManagers) *Builder {
 
 func (b *Builder) WithCaManager(name string, cam core_ca.CaManager) *Builder {
 	b.cam[name] = cam
+	return b
+}
+
+func (b *Builder) WithDataSourceLoader(loader datasource.Loader) *Builder {
+	b.dsl = loader
 	return b
 }
 
@@ -116,11 +118,11 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.sm == nil {
 		return nil, errors.Errorf("SecretManager has not been configured")
 	}
-	if b.pcm == nil {
-		return nil, errors.Errorf("ProvidedCaManager has not been configured")
-	}
 	if b.xds == nil {
 		return nil, errors.Errorf("xDS Context has not been configured")
+	}
+	if b.dsl == nil {
+		return nil, errors.Errorf("DataSourceLoader has not been configured")
 	}
 	if b.ext == nil {
 		return nil, errors.Errorf("Extensions have been misconfigured")
@@ -135,7 +137,6 @@ func (b *Builder) Build() (Runtime, error) {
 			rom: b.rom,
 			sm:  b.sm,
 			cam: b.cam,
-			pcm: b.pcm,
 			xds: b.xds,
 			ext: b.ext,
 		},
@@ -158,14 +159,14 @@ func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 func (b *Builder) CaManagers() core_ca.CaManagers {
 	return b.cam
 }
-func (b *Builder) ProvidedCaManager() provided_ca.ProvidedCaManager {
-	return b.pcm
-}
 func (b *Builder) XdsContext() core_xds.XdsContext {
 	return b.xds
 }
 func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg
+}
+func (b *Builder) DataSourceLoader() datasource.Loader {
+	return b.dsl
 }
 func (b *Builder) Extensions() context.Context {
 	return b.ext
