@@ -3,6 +3,7 @@
 [![CircleCI](https://circleci.com/gh/Kong/kuma.svg?style=svg&circle-token=e3f6c5429ee47ca0eb4bd2542e4b8801a7856373)](https://circleci.com/gh/Kong/kuma)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Kong/kuma/blob/master/LICENSE)
 [![Twitter](https://img.shields.io/twitter/follow/thekonginc.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=thekonginc)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FKong%2Fkuma.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FKong%2Fkuma?ref=badge_shield)
 
 Kuma is a platform agnostic open-source control plane for Service Mesh and Microservices. It can run and be operated natively across both Kubernetes and VM environments, making it easy to adopt by every team in the organization.
 
@@ -102,3 +103,6 @@ limitations under the License.
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo.png
 [kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui.png
 [kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits.jpg
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FKong%2Fkuma.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FKong%2Fkuma?ref=badge_large)
