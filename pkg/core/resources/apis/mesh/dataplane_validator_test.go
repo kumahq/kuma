@@ -292,7 +292,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["version"]'
-                  message: value cannot be empty`,
+                  message: tag value cannot be empty`,
 		}),
 		Entry("networking.inbound: `protocol` tag with an empty value", testCase{
 			dataplane: `
@@ -314,7 +314,7 @@ var _ = Describe("Dataplane", func() {
                 - field: 'networking.inbound[0].tags["protocol"]'
                   message: 'tag "protocol" has an invalid value "". Allowed values: http, tcp'
                 - field: 'networking.inbound[0].tags["protocol"]'
-                  message: value cannot be empty`,
+                  message: tag value cannot be empty`,
 		}),
 		Entry("networking.inbound: `protocol` tag with unsupported value", testCase{
 			dataplane: `
@@ -371,7 +371,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.gateway.tags["version"]'
-                  message: value cannot be empty`,
+                  message: tag value cannot be empty`,
 		}),
 		Entry("networking.outbound: empty service tag", testCase{
 			dataplane: `
@@ -589,7 +589,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.inbound[0].tags["inv@lidT/gN%me"]
-                  message: key must consist of alphanumeric characters, dots, dashes and underscores`,
+                  message: tag name must consist of alphanumeric characters, dots, dashes and underscores`,
 		}),
 		Entry("networking.inbound: tag value with invalid characters", testCase{
 			dataplane: `
@@ -610,7 +610,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.inbound[0].tags["invalidTagValue"]
-                  message: value must consist of alphanumeric characters, dots, dashes and underscores`,
+                  message: tag value must consist of alphanumeric characters, dots, dashes and underscores`,
 		}),
 	)
 

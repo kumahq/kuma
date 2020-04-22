@@ -138,13 +138,13 @@ func validateTags(tags map[string]string) validators.ValidationError {
 	var result validators.ValidationError
 	for name, value := range tags {
 		if value == "" {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `value cannot be empty`)
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value cannot be empty`)
 		}
 		if !nameCharacterSet.MatchString(name) {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `key must consist of alphanumeric characters, dots, dashes and underscores`)
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag name must consist of alphanumeric characters, dots, dashes and underscores`)
 		}
 		if !nameCharacterSet.MatchString(value) {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `value must consist of alphanumeric characters, dots, dashes and underscores`)
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value must consist of alphanumeric characters, dots, dashes and underscores`)
 		}
 	}
 	return result
