@@ -20,7 +20,7 @@ func newGetDataplanesCmd(pctx *listContext) *cobra.Command {
 		Use:   "dataplanes",
 		Short: "Show Dataplanes",
 		Long:  `Show Dataplanes.`,
-		RunE: func(cmd *cobra.Command, x []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err

@@ -59,6 +59,6 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
 func withPaginationArgs(cmd *cobra.Command, ctx *listContext) *cobra.Command {
 	cmd.PersistentFlags().IntVarP(&ctx.args.size, "size", "", 0, "maximum number of elements to return")
-	cmd.PersistentFlags().StringVarP(&ctx.args.offset, "offset", "", "", "next offset")
+	cmd.PersistentFlags().StringVarP(&ctx.args.offset, "offset", "", "", "the offset that indicates starting element of the resources list to retrieve")
 	return cmd
 }

@@ -30,7 +30,7 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 			Scheme: scheme,
 			NewClient: func(_ kube_cache.Cache, config *kube_rest.Config, options kube_client.Options) (kube_client.Client, error) {
 				// Use client without cache for two reasons
-				// 1) K8S Cached client does not support chinking (pagination)
+				// 1) K8S Cached client does not support chunking (pagination)
 				// 2) We maintain our cache in Kuma so we don't want to have duplicated entries in the memory
 				return kube_client.New(config, options)
 			},

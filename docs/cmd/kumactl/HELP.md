@@ -388,7 +388,7 @@ Usage:
 
 Flags:
   -h, --help            help for meshes
-      --offset string   next offset
+      --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
 Global Flags:
@@ -408,7 +408,7 @@ Usage:
 
 Flags:
   -h, --help            help for dataplanes
-      --offset string   next offset
+      --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
 Global Flags:
@@ -428,7 +428,7 @@ Usage:
 
 Flags:
   -h, --help            help for healthchecks
-      --offset string   next offset
+      --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
 Global Flags:
@@ -448,7 +448,7 @@ Usage:
 
 Flags:
   -h, --help            help for proxytemplates
-      --offset string   next offset
+      --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
 Global Flags:
@@ -468,7 +468,7 @@ Usage:
 
 Flags:
   -h, --help            help for traffic-logs
-      --offset string   next offset
+      --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
 Global Flags:
@@ -488,7 +488,7 @@ Usage:
 
 Flags:
   -h, --help            help for traffic-permissions
-      --offset string   next offset
+      --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
 Global Flags:
@@ -508,7 +508,7 @@ Usage:
 
 Flags:
   -h, --help            help for traffic-routes
-      --offset string   next offset
+      --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
 Global Flags:
@@ -528,7 +528,7 @@ Usage:
 
 Flags:
   -h, --help            help for traffic-traces
-      --offset string   next offset
+      --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
 Global Flags:
@@ -548,7 +548,7 @@ Usage:
 
 Flags:
   -h, --help            help for fault-injections
-      --offset string   next offset
+      --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
 Global Flags:
