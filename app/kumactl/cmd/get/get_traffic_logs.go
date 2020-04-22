@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -14,7 +16,7 @@ import (
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 )
 
-func newGetTrafficLogsCmd(pctx *getContext) *cobra.Command {
+func newGetTrafficLogsCmd(pctx *listContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-logs",
 		Short: "Show TrafficLogs",
@@ -26,13 +28,13 @@ func newGetTrafficLogsCmd(pctx *getContext) *cobra.Command {
 			}
 
 			trafficLogging := mesh.TrafficLogResourceList{}
-			if err := rs.List(context.Background(), &trafficLogging, core_store.ListByMesh(pctx.CurrentMesh())); err != nil {
+			if err := rs.List(context.Background(), &trafficLogging, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
 				return errors.Wrapf(err, "failed to list TrafficLog")
 			}
 
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficLogs(trafficLogging.Items, cmd.OutOrStdout())
+				return printTrafficLogs(&trafficLogging, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +47,17 @@ func newGetTrafficLogsCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printTrafficLogs(trafficLogging []*mesh.TrafficLogResource, out io.Writer) error {
+func printTrafficLogs(trafficLogging *mesh.TrafficLogResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(trafficLogging) <= i {
+				if len(trafficLogging.Items) <= i {
 					return nil
 				}
-				trafficLogging := trafficLogging[i]
+				trafficLogging := trafficLogging.Items[i]
 
 				return []string{
 					trafficLogging.GetMeta().GetMesh(), // MESH
@@ -63,6 +65,7 @@ func printTrafficLogs(trafficLogging []*mesh.TrafficLogResource, out io.Writer) 
 				}
 			}
 		}(),
+		Footer: table.PaginationFooter(trafficLogging),
 	}
 	return printers.NewTablePrinter().Print(data, out)
 }

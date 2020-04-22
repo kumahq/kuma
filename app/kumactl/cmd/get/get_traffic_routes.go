@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -14,7 +16,7 @@ import (
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 )
 
-func newGetTrafficRoutesCmd(pctx *getContext) *cobra.Command {
+func newGetTrafficRoutesCmd(pctx *listContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-routes",
 		Short: "Show TrafficRoutes",
@@ -26,13 +28,13 @@ func newGetTrafficRoutesCmd(pctx *getContext) *cobra.Command {
 			}
 
 			trafficRoutes := &mesh_core.TrafficRouteResourceList{}
-			if err := rs.List(context.Background(), trafficRoutes, core_store.ListByMesh(pctx.CurrentMesh())); err != nil {
+			if err := rs.List(context.Background(), trafficRoutes, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
 				return errors.Wrapf(err, "failed to list TrafficRoutes")
 			}
 
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficRoutes(trafficRoutes.Items, cmd.OutOrStdout())
+				return printTrafficRoutes(trafficRoutes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +47,17 @@ func newGetTrafficRoutesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printTrafficRoutes(trafficRoutes []*mesh_core.TrafficRouteResource, out io.Writer) error {
+func printTrafficRoutes(trafficRoutes *mesh_core.TrafficRouteResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(trafficRoutes) <= i {
+				if len(trafficRoutes.Items) <= i {
 					return nil
 				}
-				trafficroute := trafficRoutes[i]
+				trafficroute := trafficRoutes.Items[i]
 
 				return []string{
 					trafficroute.Meta.GetMesh(), // MESH
@@ -63,6 +65,7 @@ func printTrafficRoutes(trafficRoutes []*mesh_core.TrafficRouteResource, out io.
 				}
 			}
 		}(),
+		Footer: table.PaginationFooter(trafficRoutes),
 	}
 	return printers.NewTablePrinter().Print(data, out)
 }

@@ -33,7 +33,9 @@ func newGetHealthCheckCmd(pctx *getContext) *cobra.Command {
 				}
 				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
 			}
-			healthchecks := []*mesh.HealthCheckResource{healthcheck}
+			healthchecks := &mesh.HealthCheckResourceList{
+				Items: []*mesh.HealthCheckResource{healthcheck},
+			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
 				return printHealthChecks(healthchecks, cmd.OutOrStdout())

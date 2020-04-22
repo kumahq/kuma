@@ -11,6 +11,7 @@ type Printer interface {
 type Table struct {
 	Headers []string
 	NextRow func() []string
+	Footer  string
 }
 
 func NewPrinter() Printer {
@@ -31,17 +32,22 @@ func (p *printer) Print(data Table, out io.Writer) error {
 		}
 	}
 
-	if data.NextRow == nil {
-		return nil
+	if data.NextRow != nil {
+		for {
+			row := data.NextRow()
+			if row == nil {
+				break
+			}
+			if err := table.Row(row...); err != nil {
+				return err
+			}
+		}
 	}
 
-	for {
-		row := data.NextRow()
-		if row == nil {
-			return nil
-		}
-		if err := table.Row(row...); err != nil {
+	if data.Footer != "" {
+		if err := table.Footer(data.Footer); err != nil {
 			return err
 		}
 	}
+	return nil
 }

@@ -35,7 +35,9 @@ func newGetTrafficLogCmd(pctx *getContext) *cobra.Command {
 				}
 				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
 			}
-			trafficLogs := []*mesh.TrafficLogResource{trafficLog}
+			trafficLogs := &mesh.TrafficLogResourceList{
+				Items: []*mesh.TrafficLogResource{trafficLog},
+			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
 				return printTrafficLogs(trafficLogs, cmd.OutOrStdout())

@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat: pagination in kumactl
+  [#690](https://github.com/Kong/kuma/pull/690)
 * chore: unify matching for TrafficPermission
   [#668](https://github.com/Kong/kuma/pull/668)
   ⚠️ warning: breaking change of matching mechanism

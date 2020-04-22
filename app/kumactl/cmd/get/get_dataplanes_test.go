@@ -122,6 +122,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 
 		type testCase struct {
 			outputFormat string
+			pagination   string
 			goldenFile   string
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
@@ -131,7 +132,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "dataplanes"}, given.outputFormat))
+					"get", "dataplanes"}, given.outputFormat, given.pagination))
 
 				// when
 				err := rootCmd.Execute()
@@ -155,6 +156,14 @@ var _ = Describe("kumactl get dataplanes", func() {
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "get-dataplanes.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support pagination", testCase{
+				outputFormat: "-otable",
+				goldenFile:   "get-dataplanes.pagination.golden.txt",
+				pagination:   "--size=1",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},

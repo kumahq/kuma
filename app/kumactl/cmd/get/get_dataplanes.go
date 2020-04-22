@@ -9,12 +9,13 @@ import (
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
+	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 )
 
-func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
+func newGetDataplanesCmd(pctx *listContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dataplanes",
 		Short: "Show Dataplanes",
@@ -26,13 +27,13 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 			}
 
 			dataplanes := mesh.DataplaneResourceList{}
-			if err := rs.List(context.Background(), &dataplanes, core_store.ListByMesh(pctx.CurrentMesh())); err != nil {
+			if err := rs.List(context.Background(), &dataplanes, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
 				return errors.Wrapf(err, "failed to list Dataplanes")
 			}
 
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printDataplanes(dataplanes.Items, cmd.OutOrStdout())
+				return printDataplanes(&dataplanes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -45,17 +46,17 @@ func newGetDataplanesCmd(pctx *getContext) *cobra.Command {
 	return cmd
 }
 
-func printDataplanes(dataplanes []*mesh.DataplaneResource, out io.Writer) error {
+func printDataplanes(dataplanes *mesh.DataplaneResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME", "TAGS"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(dataplanes) <= i {
+				if len(dataplanes.Items) <= i {
 					return nil
 				}
-				dataplane := dataplanes[i]
+				dataplane := dataplanes.Items[i]
 
 				return []string{
 					dataplane.Meta.GetMesh(),       // MESH
@@ -64,6 +65,7 @@ func printDataplanes(dataplanes []*mesh.DataplaneResource, out io.Writer) error 
 				}
 			}
 		}(),
+		Footer: table.PaginationFooter(dataplanes),
 	}
 	return printers.NewTablePrinter().Print(data, out)
 }

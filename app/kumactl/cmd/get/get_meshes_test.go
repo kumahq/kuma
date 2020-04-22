@@ -189,6 +189,7 @@ var _ = Describe("kumactl get meshes", func() {
 		type testCase struct {
 			outputFormat string
 			goldenFile   string
+			pagination   string
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
@@ -197,7 +198,7 @@ var _ = Describe("kumactl get meshes", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "meshes"}, given.outputFormat))
+					"get", "meshes"}, given.outputFormat, given.pagination))
 
 				// when
 				err := rootCmd.Execute()
@@ -221,6 +222,14 @@ var _ = Describe("kumactl get meshes", func() {
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "get-meshes.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support pagination", testCase{
+				outputFormat: "-otable",
+				pagination:   "--size=1",
+				goldenFile:   "get-meshes.pagination.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},

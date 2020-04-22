@@ -78,6 +78,7 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 	}
 	type List struct {
 		Items []*json.RawMessage `json:"items"`
+		Next  *string            `json:"next"`
 	}
 	list := List{}
 	if err := json.Unmarshal(data, &list); err != nil {
@@ -99,5 +100,6 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 		}
 		rec.ResourceList.Items[i] = r
 	}
+	rec.ResourceList.Next = list.Next
 	return nil
 }
