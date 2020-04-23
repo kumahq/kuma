@@ -13,6 +13,6 @@ func init() {
 	core_plugins.Register(core_plugins.CaProvided, &plugin{})
 }
 
-func (p plugin) NewCaManager(context core_plugins.PluginContext, config core_plugins.PluginConfig) (ca.CaManager, error) {
+func (p plugin) NewCaManager(context core_plugins.PluginContext, config core_plugins.PluginConfig) (ca.Manager, error) {
 	return NewProvidedCaManager(context.DataSourceLoader()), nil
 }

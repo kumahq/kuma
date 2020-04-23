@@ -60,9 +60,9 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 				mesh := meshes.Items[i]
 
 				mtls := "off"
-				//if mesh.Spec.Mtls.GetEnabled() {
-				// todo establish what is the format
-				//}
+				if mesh.MTLSEnabled() {
+					mtls = mesh.Spec.GetMtls().GetEnabledBackend()
+				}
 
 				metrics := "off"
 				switch {

@@ -2,8 +2,6 @@ package plugins
 
 import (
 	"github.com/pkg/errors"
-
-	"github.com/Kong/kuma/pkg/core"
 )
 
 type pluginType string
@@ -154,9 +152,8 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 		r.runtime[name] = rp
 	}
 	if cp, ok := plugin.(CaPlugin); ok {
-		core.Log.Info("Registering plugin", "name", name, "type", caPlugin)
 		if old, exists := r.ca[name]; exists {
-			return pluginAlreadyRegisteredError(runtimePlugin, name, old, cp)
+			return pluginAlreadyRegisteredError(caPlugin, name, old, cp)
 		}
 		r.ca[name] = cp
 	}

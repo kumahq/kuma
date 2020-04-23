@@ -29,7 +29,7 @@ type RuntimeContext interface {
 	ResourceManager() core_manager.ResourceManager
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	SecretManager() secret_manager.SecretManager
-	CaManagers() ca.CaManagers
+	CaManagers() ca.Managers
 	Extensions() context.Context
 }
 
@@ -58,12 +58,12 @@ type runtimeContext struct {
 	rm  core_manager.ResourceManager
 	rom core_manager.ReadOnlyResourceManager
 	sm  secret_manager.SecretManager
-	cam ca.CaManagers
+	cam ca.Managers
 	xds core_xds.XdsContext
 	ext context.Context
 }
 
-func (rc *runtimeContext) CaManagers() ca.CaManagers {
+func (rc *runtimeContext) CaManagers() ca.Managers {
 	return rc.cam
 }
 func (rc *runtimeContext) Config() kuma_cp.Config {

@@ -176,14 +176,14 @@ var _ = Describe("kumactl get meshes", func() {
 				// and
 				Expect(buf.String()).To(given.matcher(expected))
 			},
-			XEntry("should support Table output by default", testCase{ // todo establish what is the format
+			Entry("should support Table output by default", testCase{ // todo establish what is the format
 				outputFormat: "",
 				goldenFile:   "get-meshes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
-			XEntry("should support Table output explicitly", testCase{ // todo establish what is the format
+			Entry("should support Table output explicitly", testCase{ // todo establish what is the format
 				outputFormat: "-otable",
 				goldenFile:   "get-meshes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {

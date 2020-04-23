@@ -18,9 +18,9 @@ type providedCaManager struct {
 	dataSourceLoader datasource.Loader
 }
 
-var _ ca.CaManager = &providedCaManager{}
+var _ ca.Manager = &providedCaManager{}
 
-func NewProvidedCaManager(dataSourceLoader datasource.Loader) ca.CaManager {
+func NewProvidedCaManager(dataSourceLoader datasource.Loader) ca.Manager {
 	return &providedCaManager{
 		dataSourceLoader: dataSourceLoader,
 	}

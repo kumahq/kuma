@@ -57,5 +57,5 @@ type RuntimePlugin interface {
 // CaPlugin is responsible for providing Certificate Authority Manager
 type CaPlugin interface {
 	Plugin
-	NewCaManager(PluginContext, PluginConfig) (core_ca.CaManager, error)
+	NewCaManager(PluginContext, PluginConfig) (core_ca.Manager, error)
 }

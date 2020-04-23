@@ -13,7 +13,7 @@ import (
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
 )
 
-func New(resourceManager core_manager.ResourceManager, caManagers core_ca.CaManagers) sds_provider.SecretProvider {
+func New(resourceManager core_manager.ResourceManager, caManagers core_ca.Managers) sds_provider.SecretProvider {
 	return &identityCertProvider{
 		resourceManager: resourceManager,
 		caManagers:      caManagers,
@@ -22,7 +22,7 @@ func New(resourceManager core_manager.ResourceManager, caManagers core_ca.CaMana
 
 type identityCertProvider struct {
 	resourceManager core_manager.ResourceManager
-	caManagers      core_ca.CaManagers
+	caManagers      core_ca.Managers
 }
 
 func (s *identityCertProvider) RequiresIdentity() bool {

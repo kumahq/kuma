@@ -312,7 +312,7 @@ var _ = Describe("Mesh", func() {
 			Entry("multiple errors", testCase{
 				mesh: `
                 mtls:
-                  enabledBackend: invalid-backend	
+                  enabledBackend: invalid-backend
                 logging:
                   backends:
                   - name:

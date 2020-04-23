@@ -21,8 +21,12 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+// ProvidedCertificateAuthorityConfig defines configuration for Provided CA
+// plugin
 type ProvidedCertificateAuthorityConfig struct {
-	Cert                 *v1alpha1.DataSource `protobuf:"bytes,1,opt,name=cert,proto3" json:"cert,omitempty"`
+	// Data source for the certificate of CA
+	Cert *v1alpha1.DataSource `protobuf:"bytes,1,opt,name=cert,proto3" json:"cert,omitempty"`
+	// Data source for the key of CA
 	Key                  *v1alpha1.DataSource `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`

@@ -28,13 +28,13 @@ var _ = Describe("Mesh Manager", func() {
 
 	var resManager manager.ResourceManager
 	var resStore store.ResourceStore
-	var builtinCaManager core_ca.CaManager
+	var builtinCaManager core_ca.Manager
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
 		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None())
 		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
-		caManagers := core_ca.CaManagers{
+		caManagers := core_ca.Managers{
 			"builtin": builtinCaManager,
 		}
 
@@ -473,7 +473,7 @@ var _ = Describe("Mesh Manager", func() {
 			// and built-in mesh CA is deleted
 			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, *mesh.Spec.Mtls.Backends[0])
 			Expect(err).ToNot(BeNil())
-			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "mesh-1" and backend "builtin-1": Resource not found: type="Secret" name="ca-builtin-cert-builtin-1" mesh="mesh-1"`)) // todo(jakubdyszkiewicz) make error msg consistent
+			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "mesh-1" and backend "builtin-1": Resource not found: type="Secret" name="mesh-1.ca-builtin-cert-builtin-1" mesh="mesh-1"`)) // todo(jakubdyszkiewicz) make error msg consistent
 		})
 
 		It("should delete all associated resources even if mesh is already removed", func() {

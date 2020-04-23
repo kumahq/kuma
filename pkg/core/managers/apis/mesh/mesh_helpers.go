@@ -35,7 +35,7 @@ func CreateDefaultMesh(resManager core_manager.ResourceManager, template mesh_pr
 	return nil
 }
 
-func EnsureCAs(ctx context.Context, caManagers ca.CaManagers, mesh *mesh_core.MeshResource, meshName string) error {
+func EnsureCAs(ctx context.Context, caManagers ca.Managers, mesh *mesh_core.MeshResource, meshName string) error {
 	for _, backend := range mesh.Spec.GetMtls().GetBackends() {
 		caManager, exist := caManagers[backend.Type]
 		if !exist { // this should be caught by validator earlier

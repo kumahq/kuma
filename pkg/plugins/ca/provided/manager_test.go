@@ -16,8 +16,8 @@ import (
 	"github.com/Kong/kuma/pkg/util/proto"
 )
 
-var _ = Describe("", func() {
-	var caManager ca.CaManager
+var _ = Describe("Provided CA", func() {
+	var caManager ca.Manager
 
 	BeforeEach(func() {
 		caManager = provided.NewProvidedCaManager(datasource.NewDataSourceLoader(nil))

@@ -29,7 +29,7 @@ type MeshReconciler struct {
 
 	Scheme          *kube_runtime.Scheme
 	Converter       k8s_resources.Converter
-	CaManagers      core_ca.CaManagers
+	CaManagers      core_ca.Managers
 	SystemNamespace string
 	ResourceManager manager.ResourceManager
 }

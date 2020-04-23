@@ -3,13 +3,12 @@ package runtime
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/datasource"
-
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
 	core_ca "github.com/Kong/kuma/pkg/core/ca"
+	"github.com/Kong/kuma/pkg/core/datasource"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
@@ -38,7 +37,7 @@ type Builder struct {
 	rm  core_manager.ResourceManager
 	rom core_manager.ReadOnlyResourceManager
 	sm  secret_manager.SecretManager
-	cam core_ca.CaManagers
+	cam core_ca.Managers
 	xds core_xds.XdsContext
 	dsl datasource.Loader
 	ext context.Context
@@ -48,7 +47,7 @@ func BuilderFor(cfg kuma_cp.Config) *Builder {
 	return &Builder{
 		cfg: cfg,
 		ext: context.Background(),
-		cam: core_ca.CaManagers{},
+		cam: core_ca.Managers{},
 	}
 }
 
@@ -77,12 +76,12 @@ func (b *Builder) WithSecretManager(sm secret_manager.SecretManager) *Builder {
 	return b
 }
 
-func (b *Builder) WithCaManagers(cam core_ca.CaManagers) *Builder {
+func (b *Builder) WithCaManagers(cam core_ca.Managers) *Builder {
 	b.cam = cam
 	return b
 }
 
-func (b *Builder) WithCaManager(name string, cam core_ca.CaManager) *Builder {
+func (b *Builder) WithCaManager(name string, cam core_ca.Manager) *Builder {
 	b.cam[name] = cam
 	return b
 }
@@ -156,7 +155,7 @@ func (b *Builder) SecretManager() secret_manager.SecretManager {
 func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return b.rom
 }
-func (b *Builder) CaManagers() core_ca.CaManagers {
+func (b *Builder) CaManagers() core_ca.Managers {
 	return b.cam
 }
 func (b *Builder) XdsContext() core_xds.XdsContext {

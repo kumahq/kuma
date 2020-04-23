@@ -9,7 +9,7 @@ import (
 )
 
 type MeshValidator struct {
-	CaManagers core_ca.CaManagers
+	CaManagers core_ca.Managers
 }
 
 func (m *MeshValidator) ValidateCreate(ctx context.Context, name string, resource *core_mesh.MeshResource) error {

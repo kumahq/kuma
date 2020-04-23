@@ -19,7 +19,7 @@ func NewMeshManager(
 	store core_store.ResourceStore,
 	otherManagers core_manager.ResourceManager,
 	secretManager secrets_manager.SecretManager,
-	caManagers core_ca.CaManagers,
+	caManagers core_ca.Managers,
 	registry core_registry.TypeRegistry,
 	validator MeshValidator,
 ) core_manager.ResourceManager {
@@ -37,7 +37,7 @@ type meshManager struct {
 	store         core_store.ResourceStore
 	otherManagers core_manager.ResourceManager
 	secretManager secrets_manager.SecretManager
-	caManagers    core_ca.CaManagers
+	caManagers    core_ca.Managers
 	registry      core_registry.TypeRegistry
 	meshValidator MeshValidator
 }
