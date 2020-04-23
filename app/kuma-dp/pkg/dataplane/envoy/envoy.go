@@ -38,8 +38,13 @@ type Opts struct {
 	Stderr    io.Writer
 }
 
-func New(opts Opts) *Envoy {
-	return &Envoy{opts: opts}
+func New(opts Opts) (*Envoy, error) {
+	binaryPathConfig := opts.Config.DataplaneRuntime.BinaryPath
+	_, err := lookupEnvoyPath(binaryPathConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &Envoy{opts: opts}, nil
 }
 
 var _ component.Component = &Envoy{}
