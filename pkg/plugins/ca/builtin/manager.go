@@ -47,7 +47,7 @@ func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, bac
 }
 
 func (b *builtinCaManager) create(ctx context.Context, mesh string, backendName string) error {
-	keyPair, err := ca_issuer.NewRootCA(mesh)
+	keyPair, err := newRootCa(mesh)
 	if err != nil {
 		return errors.Wrapf(err, "failed to generate a Root CA cert for Mesh %q", mesh)
 	}
@@ -74,7 +74,6 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backendName 
 		return err
 	}
 	return nil
-
 }
 
 func certSecretResKey(mesh string, backendName string) core_model.ResourceKey {

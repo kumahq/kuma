@@ -112,7 +112,7 @@ func (r *registry) Ca(name PluginName) (CaPlugin, error) {
 	if p, ok := r.ca[name]; ok {
 		return p, nil
 	} else {
-		return nil, noSuchPluginError(runtimePlugin, name)
+		return nil, noSuchPluginError(caPlugin, name)
 	}
 }
 

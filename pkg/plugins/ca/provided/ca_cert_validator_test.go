@@ -4,7 +4,9 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"io/ioutil"
 	"math/big"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -13,7 +15,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
-	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
 	. "github.com/Kong/kuma/pkg/plugins/ca/provided"
 
 	util_tls "github.com/Kong/kuma/pkg/tls"
@@ -23,7 +24,15 @@ var _ = Describe("ValidateCaCert()", func() {
 
 	It("should accept proper CA certificates", func() {
 		// when
-		signingPair, err := ca_issuer.NewRootCA("demo")
+		cert, err := ioutil.ReadFile(filepath.Join("testdata", "ca.pem"))
+		Expect(err).ToNot(HaveOccurred())
+		key, err := ioutil.ReadFile(filepath.Join("testdata", "ca.key"))
+		Expect(err).ToNot(HaveOccurred())
+
+		signingPair := &util_tls.KeyPair{
+			CertPEM: cert,
+			KeyPEM:  key,
+		}
 		// then
 		Expect(err).ToNot(HaveOccurred())
 

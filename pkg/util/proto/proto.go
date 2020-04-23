@@ -76,3 +76,16 @@ func ToTyped(protoStruct *pstruct.Struct, message proto.Message) error {
 	}
 	return nil
 }
+
+// Converts loosely typed Struct to strongly typed Message
+func ToStruct(message proto.Message) (pstruct.Struct, error) {
+	configBytes, err := ToJSON(message)
+	if err != nil {
+		return pstruct.Struct{}, err
+	}
+	str := pstruct.Struct{}
+	if err := FromJSON(configBytes, &str); err != nil {
+		return pstruct.Struct{}, err
+	}
+	return str, nil
+}

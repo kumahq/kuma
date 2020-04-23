@@ -5,7 +5,7 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/ca"
+	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -35,7 +35,7 @@ func CreateDefaultMesh(resManager core_manager.ResourceManager, template mesh_pr
 	return nil
 }
 
-func EnsureCAs(ctx context.Context, caManagers ca.Managers, mesh *mesh_core.MeshResource, meshName string) error {
+func EnsureCAs(ctx context.Context, caManagers core_ca.Managers, mesh *mesh_core.MeshResource, meshName string) error {
 	for _, backend := range mesh.Spec.GetMtls().GetBackends() {
 		caManager, exist := caManagers[backend.Type]
 		if !exist { // this should be caught by validator earlier
