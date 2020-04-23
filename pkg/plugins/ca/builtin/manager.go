@@ -30,20 +30,6 @@ func NewBuiltinCaManager(secretManager secret_manager.SecretManager) core_ca.Man
 
 var _ core_ca.Manager = &builtinCaManager{}
 
-func certSecretResKey(mesh string, backendName string) core_model.ResourceKey {
-	return core_model.ResourceKey{
-		Mesh: mesh,
-		Name: fmt.Sprintf("%s.ca-builtin-cert-%s", mesh, backendName), // we add mesh as a prefix to have uniqueness of Secret names on K8S
-	}
-}
-
-func keySecretResKey(mesh string, backendName string) core_model.ResourceKey {
-	return core_model.ResourceKey{
-		Mesh: mesh,
-		Name: fmt.Sprintf("%s.ca-builtin-key-%s", mesh, backendName), // we add mesh as a prefix to have uniqueness of Secret names on K8S
-	}
-}
-
 func (b *builtinCaManager) Ensure(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error {
 	_, err := b.getCa(ctx, mesh, backend.Name)
 	if core_store.IsResourceNotFound(err) {
@@ -91,12 +77,26 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backendName 
 
 }
 
-func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) (core_ca.Cert, error) {
+func certSecretResKey(mesh string, backendName string) core_model.ResourceKey {
+	return core_model.ResourceKey{
+		Mesh: mesh,
+		Name: fmt.Sprintf("%s.ca-builtin-cert-%s", mesh, backendName), // we add mesh as a prefix to have uniqueness of Secret names on K8S
+	}
+}
+
+func keySecretResKey(mesh string, backendName string) core_model.ResourceKey {
+	return core_model.ResourceKey{
+		Mesh: mesh,
+		Name: fmt.Sprintf("%s.ca-builtin-key-%s", mesh, backendName), // we add mesh as a prefix to have uniqueness of Secret names on K8S
+	}
+}
+
+func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]core_ca.Cert, error) {
 	ca, err := b.getCa(ctx, mesh, backend.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
 	}
-	return ca.CertPEM, nil
+	return []core_ca.Cert{ca.CertPEM}, nil
 }
 
 func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (core_ca.KeyPair, error) {

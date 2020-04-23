@@ -28,7 +28,7 @@ var _ = Describe("Provided CA", func() {
 		expected   string
 	}
 
-	DescribeTable("should throw errors",
+	DescribeTable("should Validate invalid config",
 		func(given testCase) {
 			// given
 			str := structpb.Struct{}

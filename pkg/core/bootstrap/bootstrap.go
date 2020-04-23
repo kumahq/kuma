@@ -3,11 +3,10 @@ package bootstrap
 import (
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/core/datasource"
-
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
+	"github.com/Kong/kuma/pkg/core/datasource"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"

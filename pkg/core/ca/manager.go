@@ -19,7 +19,7 @@ type Manager interface {
 	Ensure(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error
 
 	// Returns root certificates of the CA
-	GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) (Cert, error) // todo list of certs?
+	GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]Cert, error)
 	// Generates cert for a dataplanes with service tag
 	GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (KeyPair, error)
 }

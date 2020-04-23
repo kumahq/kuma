@@ -47,14 +47,12 @@ func (s *meshCaProvider) Get(ctx context.Context, resource string, requestor sds
 		return nil, errors.Errorf("CA manager of type %s not exist", backend.Type)
 	}
 
-	cert, err := caManager.GetRootCert(ctx, meshName, *backend)
+	certs, err := caManager.GetRootCert(ctx, meshName, *backend)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get root certs")
 	}
 
 	return &MeshCaSecret{
-		PemCerts: [][]byte{
-			cert,
-		},
+		PemCerts: certs,
 	}, nil
 }

@@ -82,12 +82,12 @@ func (p *providedCaManager) Ensure(ctx context.Context, mesh string, backend mes
 	return nil // Cert and Key are created by user and pointed in the configuration which is validated first
 }
 
-func (p *providedCaManager) GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) (ca.Cert, error) {
+func (p *providedCaManager) GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]ca.Cert, error) {
 	meshCa, err := p.getCa(ctx, mesh, backend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
 	}
-	return meshCa.CertPEM, nil
+	return []ca.Cert{meshCa.CertPEM}, nil
 }
 
 func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (ca.KeyPair, error) {
