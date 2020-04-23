@@ -108,7 +108,7 @@ func newRunCmd() *cobra.Command {
 				Stderr:    cmd.OutOrStderr(),
 			})
 			if err != nil {
-				runLog.Error(err, "error while running Kuma DP")
+				runLog.Error(err, `could not find the "envoy" executable in your path`)
 				return err
 			}
 			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
