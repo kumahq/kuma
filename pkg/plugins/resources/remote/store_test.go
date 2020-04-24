@@ -406,6 +406,8 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[0].Meta.GetMesh()).To(Equal("default"))
 			Expect(rs.Items[0].Meta.GetVersion()).To(Equal(""))
 			Expect(rs.Items[0].Spec.Path).To(Equal("/example"))
+			Expect(rs.Items[0].Meta.GetCreationTime()).Should(Equal(creationTime))
+			Expect(rs.Items[0].Meta.GetModificationTime()).Should(Equal(modificationTime))
 		})
 
 		It("should list meshes", func() {
