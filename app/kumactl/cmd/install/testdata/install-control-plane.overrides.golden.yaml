@@ -4535,3 +4535,21 @@ webhooks:
           - UPDATE
         resources:
           - services
+  - name: secret.validator.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: QWRtaXNzaW9uQ2VydA==
+      service:
+        namespace: kuma
+        name: kuma-ctrl-plane
+        path: /validate-v1-secret
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - secrets

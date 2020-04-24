@@ -128,5 +128,11 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	mgr.GetWebhookServer().Register("/validate-v1-service", &kuba_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
 	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
 
+	secretValidator := &k8s_webhooks.SecretValidator{
+		Client: mgr.GetClient(),
+	}
+	mgr.GetWebhookServer().Register("/validate-v1-secret", &kuba_webhook.Admission{Handler: secretValidator})
+	log.Info("Registering a validation webhook for v1/Secret", "path", "/validate-v1-secret")
+
 	return nil
 }

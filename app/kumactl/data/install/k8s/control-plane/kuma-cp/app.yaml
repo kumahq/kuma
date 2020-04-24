@@ -235,3 +235,21 @@ webhooks:
           - UPDATE
         resources:
           - services
+  - name: secret.validator.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: {{ .AdmissionServerTlsCert | b64enc }}
+      service:
+        namespace: {{ .Namespace }}
+        name: {{ .ControlPlaneServiceName }}
+        path: /validate-v1-secret
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - secrets
