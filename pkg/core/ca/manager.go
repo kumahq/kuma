@@ -13,14 +13,14 @@ type KeyPair = tls.KeyPair
 
 // Manager manages CAs by creating CAs and generating certificate. It is created per CA type and then may be used for different CA instances of the same type
 type Manager interface {
-	// Validates that backend configuration is correct
+	// ValidateBackend validates that backend configuration is correct
 	ValidateBackend(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error
-	// Ensure that CA of given name is created
+	// Ensure ensures that CA of given name is created
 	Ensure(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error
 
-	// Returns root certificates of the CA
+	// GetRootCert returns root certificates of the CA
 	GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]Cert, error)
-	// Generates cert for a dataplanes with service tag
+	// GenerateDataplaneCert generates cert for a dataplanes with service tag
 	GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (KeyPair, error)
 }
 

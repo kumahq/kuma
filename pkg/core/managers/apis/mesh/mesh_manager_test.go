@@ -2,6 +2,8 @@ package mesh
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/datasource"
+	"github.com/Kong/kuma/pkg/plugins/ca/provided"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -34,8 +36,10 @@ var _ = Describe("Mesh Manager", func() {
 		resStore = memory.NewStore()
 		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None())
 		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
+		providedCaManager := provided.NewProvidedCaManager(datasource.NewDataSourceLoader(secretManager))
 		caManagers := core_ca.Managers{
-			"builtin": builtinCaManager,
+			"builtin":  builtinCaManager,
+			"provided": providedCaManager,
 		}
 
 		manager := manager.NewResourceManager(resStore)
@@ -165,6 +169,38 @@ var _ = Describe("Mesh Manager", func() {
 `,
 				}),
 			)
+		})
+
+		It("should validate all CAs", func() {
+			// given
+			meshName := "mesh-1"
+			resKey := model.ResourceKey{
+				Mesh: meshName,
+				Name: meshName,
+			}
+
+			// when
+			mesh := core_mesh.MeshResource{
+				Spec: mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "ca-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "ca-1",
+								Type: "provided",
+							},
+							{
+								Name: "ca-2",
+								Type: "provided",
+							},
+						},
+					},
+				},
+			}
+			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
+
+			// then
+			Expect(err).To(MatchError("mtls.backends[0].config.cert: has to be defined; mtls.backends[0].config.key: has to be defined; mtls.backends[1].config.cert: has to be defined; mtls.backends[1].config.key: has to be defined"))
 		})
 	})
 

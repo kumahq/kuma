@@ -50,9 +50,10 @@ func (m *MeshResource) GetEnabledCertificateAuthorityBackend() *mesh_proto.Certi
 }
 
 func (m *MeshResource) GetCertificateAuthorityBackend(name string) *mesh_proto.CertificateAuthorityBackend {
-	backends := map[string]*mesh_proto.CertificateAuthorityBackend{}
 	for _, backend := range m.Spec.GetMtls().GetBackends() {
-		backends[backend.Name] = backend
+		if backend.Name == name {
+			return backend
+		}
 	}
-	return backends[name]
+	return nil
 }

@@ -20,18 +20,23 @@ func (m *MeshValidator) ValidateCreate(ctx context.Context, name string, resourc
 }
 
 func (m *MeshValidator) validateMTLSBackends(ctx context.Context, name string, resource *core_mesh.MeshResource) error {
+	verr := validators.ValidationError{}
+	path := validators.RootedAt("mtls").Field("backends")
 	for idx, backend := range resource.Spec.GetMtls().GetBackends() {
 		caManager, exist := m.CaManagers[backend.Type]
 		if !exist {
-			verr := validators.ValidationError{}
-			verr.AddViolationAt(validators.RootedAt("backends").Index(idx).Field("type"), "could not find installed plugin for this type")
+			verr.AddViolationAt(path.Index(idx).Field("type"), "could not find installed plugin for this type")
 			return verr.OrNil()
-		}
-		if err := caManager.ValidateBackend(ctx, name, *backend); err != nil {
-			return err
+		} else if err := caManager.ValidateBackend(ctx, name, *backend); err != nil {
+			if configErr, ok := err.(*validators.ValidationError); ok {
+				verr.AddErrorAt(path.Index(idx).Field("config"), *configErr)
+			} else {
+				verr.AddViolationAt(path.Index(idx), err.Error())
+				return err
+			}
 		}
 	}
-	return nil
+	return verr.OrNil()
 }
 
 func (m *MeshValidator) ValidateUpdate(ctx context.Context, previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {

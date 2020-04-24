@@ -28,7 +28,7 @@ func NewDataSourceLoader(secretManager manager.SecretManager) Loader {
 	}
 }
 
-func (l loader) Load(ctx context.Context, mesh string, source *system_proto.DataSource) ([]byte, error) {
+func (l *loader) Load(ctx context.Context, mesh string, source *system_proto.DataSource) ([]byte, error) {
 	var data []byte
 	var err error
 	switch source.GetType().(type) {
@@ -47,7 +47,7 @@ func (l loader) Load(ctx context.Context, mesh string, source *system_proto.Data
 	return data, nil
 }
 
-func (l loader) loadSecret(ctx context.Context, mesh string, secret string) ([]byte, error) {
+func (l *loader) loadSecret(ctx context.Context, mesh string, secret string) ([]byte, error) {
 	resource := &system.SecretResource{}
 	if err := l.secretManager.Get(ctx, resource, core_store.GetByKey(secret, mesh)); err != nil {
 		return nil, err
