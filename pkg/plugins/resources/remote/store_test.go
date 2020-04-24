@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -29,8 +30,9 @@ import (
 
 var _ = Describe("RemoteStore", func() {
 
+	creationTime, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995Z")
+	modificationTime, _ := time.Parse(time.RFC3339, "2019-07-17T16:05:36.995Z")
 	type RequestAssertion = func(req *http.Request)
-
 	setupStore := func(file string, assertion RequestAssertion) core_store.ResourceStore {
 		client := &http.Client{
 			Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -90,6 +92,8 @@ var _ = Describe("RemoteStore", func() {
 
 			Expect(resource.GetMeta().GetName()).To(Equal("res-1"))
 			Expect(resource.GetMeta().GetMesh()).To(Equal("default"))
+			Expect(resource.GetMeta().GetCreationTime()).Should(Equal(creationTime))
+			Expect(resource.GetMeta().GetModificationTime()).Should(Equal(modificationTime))
 		})
 
 		It("should get mesh resource", func() {
@@ -107,6 +111,8 @@ var _ = Describe("RemoteStore", func() {
 
 			Expect(resource.GetMeta().GetName()).To(Equal(meshName))
 			Expect(resource.GetMeta().GetMesh()).To(Equal(meshName))
+			Expect(resource.GetMeta().GetCreationTime()).Should(Equal(creationTime))
+			Expect(resource.GetMeta().GetModificationTime()).Should(Equal(modificationTime))
 		})
 
 		It("should parse kuma api server error", func() {
@@ -369,11 +375,15 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[0].Meta.GetMesh()).To(Equal("default"))
 			Expect(rs.Items[0].Meta.GetVersion()).To(Equal(""))
 			Expect(rs.Items[0].Spec.Path).To(Equal("/example"))
+			Expect(rs.Items[0].Meta.GetCreationTime()).Should(Equal(creationTime))
+			Expect(rs.Items[0].Meta.GetModificationTime()).Should(Equal(modificationTime))
 			// and
 			Expect(rs.Items[1].Meta.GetName()).To(Equal("two"))
 			Expect(rs.Items[1].Meta.GetMesh()).To(Equal("demo"))
 			Expect(rs.Items[1].Meta.GetVersion()).To(Equal(""))
 			Expect(rs.Items[1].Spec.Path).To(Equal("/another"))
+			Expect(rs.Items[1].Meta.GetCreationTime()).Should(Equal(creationTime))
+			Expect(rs.Items[1].Meta.GetModificationTime()).Should(Equal(modificationTime))
 		})
 
 		It("should list meshes", func() {
@@ -392,9 +402,13 @@ var _ = Describe("RemoteStore", func() {
 
 			Expect(meshes.Items[0].Meta.GetName()).To(Equal("mesh-1"))
 			Expect(meshes.Items[0].Meta.GetMesh()).To(Equal("mesh-1"))
+			Expect(meshes.Items[0].Meta.GetCreationTime()).Should(Equal(creationTime))
+			Expect(meshes.Items[0].Meta.GetModificationTime()).Should(Equal(modificationTime))
 
 			Expect(meshes.Items[1].Meta.GetName()).To(Equal("mesh-2"))
 			Expect(meshes.Items[1].Meta.GetMesh()).To(Equal("mesh-2"))
+			Expect(meshes.Items[1].Meta.GetCreationTime()).Should(Equal(creationTime))
+			Expect(meshes.Items[1].Meta.GetModificationTime()).Should(Equal(modificationTime))
 		})
 
 		It("should return error from the api server", func() {
