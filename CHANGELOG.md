@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat: expose CreationTime and modificationTime
+  [#677](https://github.com/Kong/kuma/pull/677)
 * chore: unify matching for TrafficPermission
   [#668](https://github.com/Kong/kuma/pull/668)
   ⚠️ warning: breaking change of matching mechanism

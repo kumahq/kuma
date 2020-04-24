@@ -201,10 +201,8 @@ func parseResource(bytes []byte) (model.Resource, error) {
 var _ model.ResourceMeta = &meta{}
 
 type meta struct {
-	Name             string
-	Mesh             string
-	CreationTime     time.Time
-	ModificationTime time.Time
+	Name string
+	Mesh string
 }
 
 func (m meta) GetName() string {
@@ -224,9 +222,9 @@ func (m meta) GetMesh() string {
 }
 
 func (m meta) GetCreationTime() time.Time {
-	return m.CreationTime // the date doesn't matter since it is set on server side anyways
+	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
 }
 
 func (m meta) GetModificationTime() time.Time {
-	return m.ModificationTime // the date doesn't matter since it is set on server side anyways
+	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
 }

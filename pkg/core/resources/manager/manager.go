@@ -47,13 +47,13 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 	if err := resource.Validate(); err != nil {
 		return err
 	}
-	opts := store.NewCreateOptions(append(fs, store.CreatedAt(time.Now()))...)
+	opts := store.NewCreateOptions(fs...)
 	if resource.GetType() != mesh.MeshType {
 		if err := r.ensureMeshExists(ctx, opts.Mesh); err != nil {
 			return err
 		}
 	}
-	return r.Store.Create(ctx, resource, fs...)
+	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(time.Now()))...)
 }
 
 func (r *resourcesManager) ensureMeshExists(ctx context.Context, meshName string) error {
