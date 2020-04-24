@@ -9,7 +9,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"github.com/Kong/kuma/api/system/v1alpha1"
+	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	"github.com/Kong/kuma/pkg/catalog"
 	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
@@ -41,7 +41,7 @@ var _ = Describe("kumactl get secrets", func() {
 					Mesh: "default",
 					Name: "sec-1",
 				},
-				Spec: v1alpha1.Secret{
+				Spec: system_proto.Secret{
 					Data: &wrappers.BytesValue{
 						Value: []byte("test"),
 					},
@@ -52,7 +52,7 @@ var _ = Describe("kumactl get secrets", func() {
 					Mesh: "default",
 					Name: "sec-2",
 				},
-				Spec: v1alpha1.Secret{
+				Spec: system_proto.Secret{
 					Data: &wrappers.BytesValue{
 						Value: []byte("test2"),
 					},
