@@ -7,6 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
+	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
@@ -67,8 +70,8 @@ func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, sig
 	}
 
 	providedCa := ProvidedCa{}
-	if len(providedCaSecret.Spec.Value) > 0 {
-		if err := json.Unmarshal(providedCaSecret.Spec.Value, &providedCa); err != nil {
+	if len(providedCaSecret.Spec.GetData().GetValue()) > 0 {
+		if err := json.Unmarshal(providedCaSecret.Spec.GetData().GetValue(), &providedCa); err != nil {
 			return nil, errors.Wrapf(err, "failed to deserialize provided CA for Mesh %q", mesh)
 		}
 	}
@@ -92,7 +95,11 @@ func (p *providedCaManager) AddSigningCert(ctx context.Context, mesh string, sig
 		return nil, errors.Wrap(err, "failed to marshal provided CA")
 	}
 
-	providedCaSecret.Spec.Value = caBytes
+	providedCaSecret.Spec = system_proto.Secret{
+		Data: &wrappers.BytesValue{
+			Value: caBytes,
+		},
+	}
 	if err := p.secretManager.Update(ctx, providedCaSecret); err != nil {
 		return nil, errors.Wrapf(err, "failed to update provided CA for Mesh %q", mesh)
 	}
@@ -105,7 +112,7 @@ func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, 
 		return errors.Wrapf(err, "failed to load provided CA for Mesh %q", mesh)
 	}
 	providedCa := ProvidedCa{}
-	if err := json.Unmarshal(providedCaSecret.Spec.Value, &providedCa); err != nil {
+	if err := json.Unmarshal(providedCaSecret.Spec.GetData().GetValue(), &providedCa); err != nil {
 		return errors.Wrapf(err, "failed to deserialize provided CA for Mesh %q", mesh)
 	}
 
@@ -129,7 +136,11 @@ func (p *providedCaManager) DeleteSigningCert(ctx context.Context, mesh string, 
 		return err
 	}
 
-	providedCaSecret.Spec.Value = newBytes
+	providedCaSecret.Spec = system_proto.Secret{
+		Data: &wrappers.BytesValue{
+			Value: newBytes,
+		},
+	}
 	if err := p.secretManager.Update(ctx, providedCaSecret); err != nil {
 		return errors.Wrapf(err, "failed to update provided CA for Mesh %q", mesh)
 	}
@@ -200,7 +211,7 @@ func (p *providedCaManager) getMeshCa(ctx context.Context, mesh string) (*Provid
 		return nil, err
 	}
 	providedCa := ProvidedCa{}
-	if err := json.Unmarshal(providedCaSecret.Spec.Value, &providedCa); err != nil {
+	if err := json.Unmarshal(providedCaSecret.Spec.GetData().GetValue(), &providedCa); err != nil {
 		return nil, errors.Wrapf(err, "failed to deserialize provided CA for Mesh %q", mesh)
 	}
 	return &providedCa, nil

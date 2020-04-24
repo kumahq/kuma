@@ -160,6 +160,18 @@ func SetupServer(rt runtime.Runtime) error {
 	ws := ca_provided_rest.NewWebservice(rt.ProvidedCaManager(), rt.ResourceManager())
 	webservices = append(webservices, ws)
 
+	ws = new(restful.WebService).
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON)
+	endpoints := secretsEndpoints{rt.SecretManager()}
+	endpoints.addFindEndpoint(ws)
+	endpoints.addListEndpoint(ws)
+	if !rt.Config().ApiServer.ReadOnly {
+		endpoints.addDeleteEndpoint(ws)
+		endpoints.addCreateOrUpdateEndpoint(ws)
+	}
+	webservices = append(webservices, ws)
+
 	ws, err := dataplaneTokenWs(rt)
 	if err != nil {
 		return err

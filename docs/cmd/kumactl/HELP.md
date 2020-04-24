@@ -357,6 +357,8 @@ Available Commands:
   meshes              Show Meshes
   proxytemplate       Show a single Proxytemplate resource
   proxytemplates      Show ProxyTemplates
+  secret              Show a single Secret resource
+  secrets             Show Secrets
   traffic-log         Show a single TrafficLog resource
   traffic-logs        Show TrafficLogs
   traffic-permission  Show a single TrafficPermission resource
@@ -550,6 +552,42 @@ Flags:
   -h, --help            help for fault-injections
       --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get secret
+
+```
+Show a single Secret resource.
+
+Usage:
+  kumactl get secret NAME [flags]
+
+Flags:
+  -h, --help   help for secret
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get secrets
+
+```
+Show Secrets.
+
+Usage:
+  kumactl get secrets [flags]
+
+Flags:
+  -h, --help   help for secrets
 
 Global Flags:
       --config-file string   path to the configuration file to use

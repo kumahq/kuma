@@ -9,6 +9,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 
+	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -51,8 +52,10 @@ func createSigningKey() (system.SecretResource, error) {
 	if err != nil {
 		return res, errors.Wrap(err, "failed to generate rsa key")
 	}
-	res.Spec = wrappers.BytesValue{
-		Value: x509.MarshalPKCS1PrivateKey(key),
+	res.Spec = system_proto.Secret{
+		Data: &wrappers.BytesValue{
+			Value: x509.MarshalPKCS1PrivateKey(key),
+		},
 	}
 	return res, nil
 }
@@ -62,5 +65,5 @@ func GetSigningKey(manager core_manager.SecretManager) ([]byte, error) {
 	if err := manager.Get(context.Background(), &resource, store.GetBy(signingKeyResourceKey)); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve signing key from secret manager")
 	}
-	return resource.Spec.Value, nil
+	return resource.Spec.GetData().GetValue(), nil
 }

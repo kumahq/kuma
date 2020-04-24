@@ -30,6 +30,7 @@ type RootRuntime struct {
 	Config                     config_proto.Configuration
 	Now                        func() time.Time
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
+	NewAdminResourceStore      func(string, *kumactl_config.Context_AdminApiCredentials) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string, *kumactl_config.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error)
 	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
@@ -46,6 +47,7 @@ func DefaultRootContext() *RootContext {
 		Runtime: RootRuntime{
 			Now:                        time.Now,
 			NewResourceStore:           kumactl_resources.NewResourceStore,
+			NewAdminResourceStore:      kumactl_resources.NewAdminResourceStore,
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 			NewCatalogClient:           catalog_client.NewCatalogClient,
@@ -108,6 +110,23 @@ func (rc *RootContext) CurrentResourceStore() (core_store.ResourceStore, error) 
 	rs, err := rc.Runtime.NewResourceStore(controlPlane.Coordinates.ApiServer)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create a client for Control Plane %q", controlPlane.Name)
+	}
+	return rs, nil
+}
+
+func (rc *RootContext) CurrentAdminResourceStore() (core_store.ResourceStore, error) {
+	ctx, err := rc.CurrentContext()
+	if err != nil {
+		return nil, err
+	}
+
+	adminServerUrl, err := rc.adminServerUrl()
+	if err != nil {
+		return nil, err
+	}
+	rs, err := rc.Runtime.NewAdminResourceStore(adminServerUrl, ctx.GetCredentials().GetAdminApi())
+	if err != nil {
+		return nil, err
 	}
 	return rs, nil
 }
