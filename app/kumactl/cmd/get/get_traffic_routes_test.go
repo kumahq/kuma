@@ -90,6 +90,7 @@ var _ = Describe("kumactl get traffic-routes", func() {
 
 		type testCase struct {
 			outputFormat string
+			pagination   string
 			goldenFile   string
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
@@ -99,7 +100,7 @@ var _ = Describe("kumactl get traffic-routes", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "traffic-routes"}, given.outputFormat))
+					"get", "traffic-routes"}, given.outputFormat, given.pagination))
 
 				// when
 				err := rootCmd.Execute()
@@ -123,6 +124,14 @@ var _ = Describe("kumactl get traffic-routes", func() {
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "get-traffic-routes.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support pagination", testCase{
+				outputFormat: "-otable",
+				pagination:   "--size=1",
+				goldenFile:   "get-traffic-routes.pagination.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},

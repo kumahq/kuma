@@ -4,6 +4,6 @@ contexts:
 controlPlanes:
 - coordinates:
     apiServer:
-      url: https://test1.internal:5681
+      url: https://localhost:5681
   name: test
 currentContext: test

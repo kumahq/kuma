@@ -1,0 +1,11 @@
+{
+    "items": [
+        {
+            "type": "TrafficRoute",
+            "mesh": "default",
+            "name": "one",
+            "path": "/example"
+        }
+    ],
+    "next": "http://localhost:5681/meshes/default/traffic-routes?size=1&offset=2"
+}

@@ -91,7 +91,8 @@ var _ = Describe("Rest Resource", func() {
 					"name": "two",
 					"path": "/another"
 				 }
-				]
+				],
+				"next": "http://localhost:5681/meshes/default/traffic-routes?offset=1"
 			}`
 
 				// when
@@ -128,7 +129,9 @@ var _ = Describe("Rest Resource", func() {
 						Spec: &sample_proto.TrafficRoute{
 							Path: "/another",
 						},
-					}))
+					}),
+				)
+				Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/traffic-routes?offset=1"))
 			})
 		})
 	})

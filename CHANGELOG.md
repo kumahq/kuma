@@ -3,6 +3,10 @@
 ## master
 * feat: expose CreationTime and modificationTime
   [#677](https://github.com/Kong/kuma/pull/677)
+* feat: pagination in kumactl
+  [#690](https://github.com/Kong/kuma/pull/690)
+* feat: secret management API
+  [#684](https://github.com/Kong/kuma/pull/684)
 * chore: unify matching for TrafficPermission
   [#668](https://github.com/Kong/kuma/pull/668)
   ⚠️ warning: breaking change of matching mechanism

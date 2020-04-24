@@ -386,6 +386,28 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[1].Meta.GetModificationTime()).Should(Equal(modificationTime))
 		})
 
+		It("should list known resources using pagination", func() {
+			// given
+			store := setupStore("list-pagination.json", func(req *http.Request) {
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/demo/traffic-routes")))
+				Expect(req.URL.Query().Get("size")).To(Equal("1"))
+				Expect(req.URL.Query().Get("offset")).To(Equal("2"))
+			})
+
+			// when
+			rs := sample_core.TrafficRouteResourceList{}
+			err := store.List(context.Background(), &rs, core_store.ListByMesh("demo"), core_store.ListByPage(1, "2"))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(rs.Items).To(HaveLen(1))
+			// and
+			Expect(rs.Items[0].Meta.GetName()).To(Equal("one"))
+			Expect(rs.Items[0].Meta.GetMesh()).To(Equal("default"))
+			Expect(rs.Items[0].Meta.GetVersion()).To(Equal(""))
+			Expect(rs.Items[0].Spec.Path).To(Equal("/example"))
+		})
+
 		It("should list meshes", func() {
 			// given
 			store := setupStore("list-meshes.json", func(req *http.Request) {

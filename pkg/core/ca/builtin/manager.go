@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-
 	"github.com/pkg/errors"
 
+	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -74,8 +74,10 @@ func (m *builtinCaManager) Create(ctx context.Context, mesh string) error {
 		return errors.Wrapf(err, "failed to serialize a Root CA cert for Mesh %q", mesh)
 	}
 	builtinCaSecret := &core_system.SecretResource{
-		Spec: wrappers.BytesValue{
-			Value: data,
+		Spec: system_proto.Secret{
+			Data: &wrappers.BytesValue{
+				Value: data,
+			},
 		},
 	}
 	secretKey := builtinCaSecretKey(mesh)
@@ -133,7 +135,7 @@ func (m *builtinCaManager) getMeshCa(ctx context.Context, mesh string) (*Builtin
 		return nil, err
 	}
 	builtinCa := BuiltinCa{}
-	if err := json.Unmarshal(builtinCaSecret.Spec.Value, &builtinCa); err != nil {
+	if err := json.Unmarshal(builtinCaSecret.Spec.Data.Value, &builtinCa); err != nil {
 		return nil, errors.Wrapf(err, "failed to deserialize a Root CA cert for Mesh %q", mesh)
 	}
 	return &builtinCa, nil

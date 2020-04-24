@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -141,6 +142,15 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 	if err != nil {
 		return err
 	}
+	query := req.URL.Query()
+	if opts.PageOffset != "" {
+		query.Add("offset", opts.PageOffset)
+	}
+	if opts.PageSize != 0 {
+		query.Add("size", strconv.Itoa(opts.PageSize))
+	}
+	req.URL.RawQuery = query.Encode()
+
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
 		return err

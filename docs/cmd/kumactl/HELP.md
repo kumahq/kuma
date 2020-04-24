@@ -357,6 +357,8 @@ Available Commands:
   meshes              Show Meshes
   proxytemplate       Show a single Proxytemplate resource
   proxytemplates      Show ProxyTemplates
+  secret              Show a single Secret resource
+  secrets             Show Secrets
   traffic-log         Show a single TrafficLog resource
   traffic-logs        Show TrafficLogs
   traffic-permission  Show a single TrafficPermission resource
@@ -387,7 +389,9 @@ Usage:
   kumactl get meshes [flags]
 
 Flags:
-  -h, --help   help for meshes
+  -h, --help            help for meshes
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -405,7 +409,9 @@ Usage:
   kumactl get dataplanes [flags]
 
 Flags:
-  -h, --help   help for dataplanes
+  -h, --help            help for dataplanes
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -423,7 +429,9 @@ Usage:
   kumactl get healthchecks [flags]
 
 Flags:
-  -h, --help   help for healthchecks
+  -h, --help            help for healthchecks
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -441,7 +449,9 @@ Usage:
   kumactl get proxytemplates [flags]
 
 Flags:
-  -h, --help   help for proxytemplates
+  -h, --help            help for proxytemplates
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -459,7 +469,9 @@ Usage:
   kumactl get traffic-logs [flags]
 
 Flags:
-  -h, --help   help for traffic-logs
+  -h, --help            help for traffic-logs
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -477,7 +489,9 @@ Usage:
   kumactl get traffic-permissions [flags]
 
 Flags:
-  -h, --help   help for traffic-permissions
+  -h, --help            help for traffic-permissions
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -495,7 +509,9 @@ Usage:
   kumactl get traffic-routes [flags]
 
 Flags:
-  -h, --help   help for traffic-routes
+  -h, --help            help for traffic-routes
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -513,7 +529,9 @@ Usage:
   kumactl get traffic-traces [flags]
 
 Flags:
-  -h, --help   help for traffic-traces
+  -h, --help            help for traffic-traces
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -531,7 +549,45 @@ Usage:
   kumactl get fault-injections [flags]
 
 Flags:
-  -h, --help   help for fault-injections
+  -h, --help            help for fault-injections
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get secret
+
+```
+Show a single Secret resource.
+
+Usage:
+  kumactl get secret NAME [flags]
+
+Flags:
+  -h, --help   help for secret
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get secrets
+
+```
+Show Secrets.
+
+Usage:
+  kumactl get secrets [flags]
+
+Flags:
+  -h, --help   help for secrets
 
 Global Flags:
       --config-file string   path to the configuration file to use

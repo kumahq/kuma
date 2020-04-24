@@ -35,10 +35,12 @@ func newGetDataplaneCmd(pctx *getContext) *cobra.Command {
 				}
 				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
 			}
-			dataplanes := []*mesh.DataplaneResource{dataplane}
+			dataplanes := mesh.DataplaneResourceList{
+				Items: []*mesh.DataplaneResource{dataplane},
+			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printDataplanes(dataplanes, cmd.OutOrStdout())
+				return printDataplanes(&dataplanes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
