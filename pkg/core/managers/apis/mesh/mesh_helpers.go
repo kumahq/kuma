@@ -35,8 +35,9 @@ func CreateDefaultMesh(resManager core_manager.ResourceManager, template mesh_pr
 	return nil
 }
 
-func EnsureCAs(ctx context.Context, caManagers core_ca.Managers, mesh *mesh_core.MeshResource, meshName string) error {
-	for _, backend := range mesh.Spec.GetMtls().GetBackends() {
+func EnsureEnabledCA(ctx context.Context, caManagers core_ca.Managers, mesh *mesh_core.MeshResource, meshName string) error {
+	if mesh.GetEnabledCertificateAuthorityBackend() != nil {
+		backend := mesh.GetEnabledCertificateAuthorityBackend()
 		caManager, exist := caManagers[backend.Type]
 		if !exist { // this should be caught by validator earlier
 			return errors.Errorf("CA manager for type %s does not exist", backend.Type)

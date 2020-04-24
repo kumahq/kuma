@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"context"
+
 	"github.com/Kong/kuma/pkg/core/datasource"
 	"github.com/Kong/kuma/pkg/plugins/ca/provided"
 
@@ -79,10 +80,8 @@ var _ = Describe("Mesh Manager", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			// and defined CAs are created
+			// and enabled CA is created
 			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, *mesh.Spec.Mtls.Backends[0])
-			Expect(err).ToNot(HaveOccurred())
-			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, *mesh.Spec.Mtls.Backends[1])
 			Expect(err).ToNot(HaveOccurred())
 		})
 

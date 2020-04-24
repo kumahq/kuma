@@ -15,7 +15,7 @@ type KeyPair = tls.KeyPair
 type Manager interface {
 	// ValidateBackend validates that backend configuration is correct
 	ValidateBackend(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error
-	// Ensure ensures that CA of given name is created
+	// Ensure ensures that CA of given name is available
 	Ensure(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error
 
 	// GetRootCert returns root certificates of the CA
