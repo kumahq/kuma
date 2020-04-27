@@ -18,7 +18,7 @@ func ValidateCaCert(signingPair util_tls.KeyPair) error {
 func validateCaCert(signingPair util_tls.KeyPair) (verr validators.ValidationError) {
 	tlsKeyPair, err := tls.X509KeyPair(signingPair.CertPEM, signingPair.KeyPEM)
 	if err != nil {
-		verr.AddViolation(".", fmt.Sprintf("not a valid TLS key pair: %s", err))
+		verr.AddViolation("cert", fmt.Sprintf("not a valid TLS key pair: %s", err))
 		return
 	}
 	if len(tlsKeyPair.Certificate) != 1 {

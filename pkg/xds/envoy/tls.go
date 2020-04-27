@@ -14,7 +14,7 @@ import (
 )
 
 func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) (*envoy_auth.DownstreamTlsContext, error) {
-	if !ctx.Mesh.Resource.Spec.GetMtls().GetEnabled() {
+	if !ctx.Mesh.Resource.MTLSEnabled() {
 		return nil, nil
 	}
 	commonTlsContext, err := CreateCommonTlsContext(ctx, metadata)
@@ -28,7 +28,7 @@ func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Data
 }
 
 func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) (*envoy_auth.UpstreamTlsContext, error) {
-	if !ctx.Mesh.Resource.Spec.GetMtls().GetEnabled() {
+	if !ctx.Mesh.Resource.MTLSEnabled() {
 		return nil, nil
 	}
 	commonTlsContext, err := CreateCommonTlsContext(ctx, metadata)

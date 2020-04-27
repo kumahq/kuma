@@ -127,7 +127,13 @@ var _ = Describe("TemplateProxyGenerator", func() {
 							},
 							Spec: mesh_proto.Mesh{
 								Mtls: &mesh_proto.Mesh_Mtls{
-									Enabled: true,
+									EnabledBackend: "builtin",
+									Backends: []*mesh_proto.CertificateAuthorityBackend{
+										{
+											Name: "builtin",
+											Type: "builtin",
+										},
+									},
 								},
 							},
 						},

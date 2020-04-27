@@ -3,7 +3,3 @@ kind: Mesh
 metadata:
   namespace: kuma-system
   name: demo
-spec:
-  mtls:
-    ca:
-      builtin: {}

@@ -7,8 +7,8 @@ import (
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
-	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
-	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
+	core_ca "github.com/Kong/kuma/pkg/core/ca"
+	"github.com/Kong/kuma/pkg/core/datasource"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
@@ -22,6 +22,8 @@ type BuilderContext interface {
 	ResourceStore() core_store.ResourceStore
 	XdsContext() core_xds.XdsContext
 	Config() kuma_cp.Config
+	SecretManager() secret_manager.SecretManager
+	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
 }
 
@@ -35,14 +37,18 @@ type Builder struct {
 	rm  core_manager.ResourceManager
 	rom core_manager.ReadOnlyResourceManager
 	sm  secret_manager.SecretManager
-	bcm builtin_ca.BuiltinCaManager
-	pcm provided_ca.ProvidedCaManager
+	cam core_ca.Managers
 	xds core_xds.XdsContext
+	dsl datasource.Loader
 	ext context.Context
 }
 
 func BuilderFor(cfg kuma_cp.Config) *Builder {
-	return &Builder{cfg: cfg, ext: context.Background()}
+	return &Builder{
+		cfg: cfg,
+		ext: context.Background(),
+		cam: core_ca.Managers{},
+	}
 }
 
 func (b *Builder) WithComponentManager(cm component.Manager) *Builder {
@@ -70,13 +76,18 @@ func (b *Builder) WithSecretManager(sm secret_manager.SecretManager) *Builder {
 	return b
 }
 
-func (b *Builder) WithBuiltinCaManager(bcm builtin_ca.BuiltinCaManager) *Builder {
-	b.bcm = bcm
+func (b *Builder) WithCaManagers(cam core_ca.Managers) *Builder {
+	b.cam = cam
 	return b
 }
 
-func (b *Builder) WithProvidedCaManager(pcm provided_ca.ProvidedCaManager) *Builder {
-	b.pcm = pcm
+func (b *Builder) WithCaManager(name string, cam core_ca.Manager) *Builder {
+	b.cam[name] = cam
+	return b
+}
+
+func (b *Builder) WithDataSourceLoader(loader datasource.Loader) *Builder {
+	b.dsl = loader
 	return b
 }
 
@@ -106,14 +117,11 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.sm == nil {
 		return nil, errors.Errorf("SecretManager has not been configured")
 	}
-	if b.bcm == nil {
-		return nil, errors.Errorf("BuiltinCaManager has not been configured")
-	}
-	if b.pcm == nil {
-		return nil, errors.Errorf("ProvidedCaManager has not been configured")
-	}
 	if b.xds == nil {
 		return nil, errors.Errorf("xDS Context has not been configured")
+	}
+	if b.dsl == nil {
+		return nil, errors.Errorf("DataSourceLoader has not been configured")
 	}
 	if b.ext == nil {
 		return nil, errors.Errorf("Extensions have been misconfigured")
@@ -127,8 +135,7 @@ func (b *Builder) Build() (Runtime, error) {
 			rm:  b.rm,
 			rom: b.rom,
 			sm:  b.sm,
-			bcm: b.bcm,
-			pcm: b.pcm,
+			cam: b.cam,
 			xds: b.xds,
 			ext: b.ext,
 		},
@@ -145,17 +152,20 @@ func (b *Builder) ResourceStore() core_store.ResourceStore {
 func (b *Builder) SecretManager() secret_manager.SecretManager {
 	return b.sm
 }
-func (b *Builder) BuiltinCaManager() builtin_ca.BuiltinCaManager {
-	return b.bcm
+func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
+	return b.rom
 }
-func (b *Builder) ProvidedCaManager() provided_ca.ProvidedCaManager {
-	return b.pcm
+func (b *Builder) CaManagers() core_ca.Managers {
+	return b.cam
 }
 func (b *Builder) XdsContext() core_xds.XdsContext {
 	return b.xds
 }
 func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg
+}
+func (b *Builder) DataSourceLoader() datasource.Loader {
+	return b.dsl
 }
 func (b *Builder) Extensions() context.Context {
 	return b.ext

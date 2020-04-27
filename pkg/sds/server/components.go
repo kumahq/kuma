@@ -74,11 +74,11 @@ func DefaultDataplaneResolver(resourceManager core_manager.ResourceManager) func
 }
 
 func DefaultMeshCaProvider(rt core_runtime.Runtime) sds_provider.SecretProvider {
-	return ca_sds_provider.New(rt.ResourceManager(), rt.BuiltinCaManager(), rt.ProvidedCaManager())
+	return ca_sds_provider.New(rt.ResourceManager(), rt.CaManagers())
 }
 
 func DefaultIdentityCertProvider(rt core_runtime.Runtime) sds_provider.SecretProvider {
-	return identity_sds_provider.New(rt.ResourceManager(), rt.BuiltinCaManager(), rt.ProvidedCaManager())
+	return identity_sds_provider.New(rt.ResourceManager(), rt.CaManagers())
 }
 
 func DefaultSecretProviderSelector(rt core_runtime.Runtime) func(string) (sds_provider.SecretProvider, error) {
