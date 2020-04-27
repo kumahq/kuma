@@ -1,4 +1,4 @@
-package rest_test
+package builtin_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCaProvidedRest(t *testing.T) {
+func TestCaBuiltin(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Rest CA Provided Suite")
+	RunSpecs(t, "CA Builtin Suite")
 }

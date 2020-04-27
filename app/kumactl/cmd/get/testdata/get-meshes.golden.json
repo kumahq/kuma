@@ -1,30 +1,6 @@
 {
   "items": [
     {
-      "mtls": {
-        "enabled": true,
-        "ca": {
-          "builtin": {}
-        }
-      },
-      "name": "mesh1",
-      "type": "Mesh",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
-    },
-    {
-      "mtls": {
-        "enabled": true,
-        "ca": {
-          "provided": {}
-        }
-      },
-      "name": "mesh2",
-      "type": "Mesh",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
-    },
-    {
       "metrics": {
         "prometheus": {
           "port": 1234,
@@ -64,11 +40,19 @@
         ]
       },
       "mtls": {
-        "ca": {
-          "provided": {}
-        }
+        "enabledBackend": "builtin-1",
+        "backends": [
+          {
+            "name": "builtin-1",
+            "type": "builtin"
+          },
+          {
+            "name": "builtin-2",
+            "type": "builtin"
+          }
+        ]
       },
-      "name": "mesh3",
+      "name": "mesh1",
       "type": "Mesh",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"
@@ -86,12 +70,7 @@
       "logging": {
         "backends": []
       },
-      "mtls": {
-        "ca": {
-          "provided": {}
-        }
-      },
-      "name": "mesh4",
+      "name": "mesh2",
       "type": "Mesh",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"

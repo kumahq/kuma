@@ -130,7 +130,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			}
 			return filterChainBuilder.
 				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
-				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.Spec.GetMtls().GetEnabled(), proxy.TrafficPermissions[endpoint]))
+				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.TrafficPermissions[endpoint]))
 		}()
 		inboundListener, err := envoy_listeners.NewListenerBuilder().
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).

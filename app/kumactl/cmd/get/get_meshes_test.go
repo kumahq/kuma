@@ -31,42 +31,15 @@ var _ = Describe("kumactl get meshes", func() {
 		{
 			Spec: v1alpha1.Mesh{
 				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: true,
-					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Builtin_{
-							Builtin: &v1alpha1.CertificateAuthority_Builtin{},
+					EnabledBackend: "builtin-1",
+					Backends: []*v1alpha1.CertificateAuthorityBackend{
+						{
+							Name: "builtin-1",
+							Type: "builtin",
 						},
-					},
-				},
-			},
-			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh1",
-				Name: "mesh1",
-			},
-		},
-		{
-			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: true,
-					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Provided_{
-							Provided: &v1alpha1.CertificateAuthority_Provided{},
-						},
-					},
-				},
-			},
-			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh2",
-				Name: "mesh2",
-			},
-		},
-		{
-			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: false,
-					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Provided_{
-							Provided: &v1alpha1.CertificateAuthority_Provided{},
+						{
+							Name: "builtin-2",
+							Type: "builtin",
 						},
 					},
 				},
@@ -118,20 +91,12 @@ var _ = Describe("kumactl get meshes", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh3",
-				Name: "mesh3",
+				Mesh: "mesh1",
+				Name: "mesh1",
 			},
 		},
 		{
 			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: false,
-					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Provided_{
-							Provided: &v1alpha1.CertificateAuthority_Provided{},
-						},
-					},
-				},
 				Metrics: &v1alpha1.Metrics{
 					Prometheus: &v1alpha1.Metrics_Prometheus{
 						Port: 1234,
@@ -146,8 +111,8 @@ var _ = Describe("kumactl get meshes", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh4",
-				Name: "mesh4",
+				Mesh: "mesh2",
+				Name: "mesh2",
 			},
 		},
 	}

@@ -1,4 +1,4 @@
-package ca_test
+package datasource_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCa(t *testing.T) {
+func TestDataSource(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "CA Suite")
+	RunSpecs(t, "DataSource Suite")
 }

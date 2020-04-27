@@ -4,7 +4,9 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"io/ioutil"
 	"math/big"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -13,9 +15,8 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
-	. "github.com/Kong/kuma/pkg/core/ca/provided"
+	. "github.com/Kong/kuma/pkg/plugins/ca/provided"
 
-	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
 	util_tls "github.com/Kong/kuma/pkg/tls"
 )
 
@@ -23,7 +24,15 @@ var _ = Describe("ValidateCaCert()", func() {
 
 	It("should accept proper CA certificates", func() {
 		// when
-		signingPair, err := builtin_issuer.NewRootCA("demo")
+		cert, err := ioutil.ReadFile(filepath.Join("testdata", "ca.pem"))
+		Expect(err).ToNot(HaveOccurred())
+		key, err := ioutil.ReadFile(filepath.Join("testdata", "ca.key"))
+		Expect(err).ToNot(HaveOccurred())
+
+		signingPair := &util_tls.KeyPair{
+			CertPEM: cert,
+			KeyPEM:  key,
+		}
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -73,7 +82,7 @@ var _ = Describe("ValidateCaCert()", func() {
 			return testCase{
 				expectedErr: `
                 violations:
-                - field: .
+                - field: cert
                   message: 'not a valid TLS key pair: tls: failed to find any PEM data in certificate input'
 `,
 			}
@@ -82,7 +91,7 @@ var _ = Describe("ValidateCaCert()", func() {
 			return testCase{
 				expectedErr: `
                 violations:
-                - field: .
+                - field: cert
                   message: 'not a valid TLS key pair: tls: failed to find any PEM data in certificate input'
 `,
 				input: util_tls.KeyPair{
@@ -95,7 +104,7 @@ var _ = Describe("ValidateCaCert()", func() {
 			return testCase{
 				expectedErr: `
                 violations:
-                - field: .
+                - field: cert
                   message: 'not a valid TLS key pair: tls: private key does not match public key'
 `,
 				input: util_tls.KeyPair{

@@ -265,16 +265,18 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","mtls":{"ca":{"builtin":{}}},"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
+				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","mtls":{"enabledBackend":"builtin","backends":[{"name":"builtin","type":"builtin"}]},"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
 
 			// when
 			resource := mesh.MeshResource{
 				Spec: v1alpha1.Mesh{
 					Mtls: &v1alpha1.Mesh_Mtls{
-						Ca: &v1alpha1.CertificateAuthority{
-							Type: &v1alpha1.CertificateAuthority_Builtin_{
-								Builtin: &v1alpha1.CertificateAuthority_Builtin{},
+						EnabledBackend: "builtin",
+						Backends: []*v1alpha1.CertificateAuthorityBackend{
+							{
+								Name: "builtin",
+								Type: "builtin",
 							},
 						},
 					},

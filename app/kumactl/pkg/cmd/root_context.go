@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/ca"
 	"github.com/Kong/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/Kong/kuma/app/kumactl/pkg/resources"
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
@@ -34,7 +33,6 @@ type RootRuntime struct {
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string, *kumactl_config.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error)
 	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
-	NewProvidedCaClient        func(string, *kumactl_config.Context_AdminApiCredentials) (ca.ProvidedCaClient, error)
 }
 
 type RootContext struct {
@@ -51,7 +49,6 @@ func DefaultRootContext() *RootContext {
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 			NewCatalogClient:           catalog_client.NewCatalogClient,
-			NewProvidedCaClient:        ca.NewProvidedCaClient,
 		},
 	}
 }
@@ -243,17 +240,4 @@ func (rc *RootContext) cpOnTheSameMachine() (bool, error) {
 
 func (rc *RootContext) IsFirstTimeUsage() bool {
 	return rc.Args.ConfigFile == "" && !util_files.FileExists(config.DefaultConfigFile)
-}
-
-func (rc *RootContext) CurrentProvidedCaClient() (ca.ProvidedCaClient, error) {
-	ctx, err := rc.CurrentContext()
-	if err != nil {
-		return nil, err
-	}
-
-	adminServerUrl, err := rc.adminServerUrl()
-	if err != nil {
-		return nil, err
-	}
-	return rc.Runtime.NewProvidedCaClient(adminServerUrl, ctx.GetCredentials().GetAdminApi())
 }
