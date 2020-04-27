@@ -1,4 +1,4 @@
-MESH      NAME         TAGS
-default   experiment   service=metrics,mobile version=v1
+MESH      NAME         TAGS                                AGE
+default   experiment   service=metrics,mobile version=v1   2562047h0m0s
 
 Rerun command with --offset=1 argument to retrieve more resources

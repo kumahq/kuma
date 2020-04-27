@@ -40,7 +40,7 @@ func newGetDataplaneCmd(pctx *getContext) *cobra.Command {
 			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printDataplanes(&dataplanes, cmd.OutOrStdout())
+				return printDataplanes(pctx.Runtime.Now(), &dataplanes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
