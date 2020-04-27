@@ -40,7 +40,7 @@ func newGetFaultInjectionCmd(pctx *getContext) *cobra.Command {
 			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printFaultInjections(faultInjections, cmd.OutOrStdout())
+				return printFaultInjections(pctx.Runtime.Now(), faultInjections, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

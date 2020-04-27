@@ -3,6 +3,7 @@ package get
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 
@@ -34,7 +35,7 @@ func newGetFaultInjectionsCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printFaultInjections(&faultInjections, cmd.OutOrStdout())
+				return printFaultInjections(pctx.Runtime.Now(), &faultInjections, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -47,9 +48,9 @@ func newGetFaultInjectionsCmd(pctx *listContext) *cobra.Command {
 	return cmd
 }
 
-func printFaultInjections(faultInjections *mesh.FaultInjectionResourceList, out io.Writer) error {
+func printFaultInjections(rootTime time.Time, faultInjections *mesh.FaultInjectionResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME"},
+		Headers: []string{"MESH", "NAME", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -60,8 +61,9 @@ func printFaultInjections(faultInjections *mesh.FaultInjectionResourceList, out 
 				faultInjection := faultInjections.Items[i]
 
 				return []string{
-					faultInjection.GetMeta().GetMesh(), // MESH
-					faultInjection.GetMeta().GetName(), // NAME
+					faultInjection.GetMeta().GetMesh(),                            // MESH
+					faultInjection.GetMeta().GetName(),                            // NAME
+					Age(rootTime, faultInjection.GetMeta().GetModificationTime()), // AGE
 				}
 			}
 		}(),
