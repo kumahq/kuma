@@ -168,7 +168,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |
-                        [%START_TIME%] %RESPONSE_FLAGS% default UNSPECIFIED (unknown)->%UPSTREAM_HOST%(external) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                        [%START_TIME%] %RESPONSE_FLAGS% default (unknown)->%UPSTREAM_HOST%(external) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                       path: /var/log
                   cluster: pass_through
                   statPrefix: pass_through
