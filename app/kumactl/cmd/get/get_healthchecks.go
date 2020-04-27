@@ -3,6 +3,7 @@ package get
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 
@@ -34,7 +35,7 @@ func newGetHealthChecksCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printHealthChecks(healthChecks, cmd.OutOrStdout())
+				return printHealthChecks(pctx.RootContext.Runtime.Now(), healthChecks, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -47,9 +48,9 @@ func newGetHealthChecksCmd(pctx *listContext) *cobra.Command {
 	return cmd
 }
 
-func printHealthChecks(healthChecks *mesh_core.HealthCheckResourceList, out io.Writer) error {
+func printHealthChecks(rootTime time.Time, healthChecks *mesh_core.HealthCheckResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME"},
+		Headers: []string{"MESH", "NAME", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -60,8 +61,9 @@ func printHealthChecks(healthChecks *mesh_core.HealthCheckResourceList, out io.W
 				healthCheck := healthChecks.Items[i]
 
 				return []string{
-					healthCheck.Meta.GetMesh(), // MESH
-					healthCheck.Meta.GetName(), // NAME
+					healthCheck.Meta.GetMesh(),                            // MESH
+					healthCheck.Meta.GetName(),                            // NAME
+					Age(rootTime, healthCheck.Meta.GetModificationTime()), //AGE
 				}
 			}
 		}(),
