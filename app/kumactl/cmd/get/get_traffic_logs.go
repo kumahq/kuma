@@ -3,6 +3,7 @@ package get
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 
@@ -34,7 +35,7 @@ func newGetTrafficLogsCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficLogs(&trafficLogging, cmd.OutOrStdout())
+				return printTrafficLogs(pctx.RootContext.Runtime.Now(), &trafficLogging, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -47,9 +48,9 @@ func newGetTrafficLogsCmd(pctx *listContext) *cobra.Command {
 	return cmd
 }
 
-func printTrafficLogs(trafficLogging *mesh.TrafficLogResourceList, out io.Writer) error {
+func printTrafficLogs(rootTime time.Time, trafficLogging *mesh.TrafficLogResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME"},
+		Headers: []string{"MESH", "NAME", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -60,8 +61,9 @@ func printTrafficLogs(trafficLogging *mesh.TrafficLogResourceList, out io.Writer
 				trafficLogging := trafficLogging.Items[i]
 
 				return []string{
-					trafficLogging.GetMeta().GetMesh(), // MESH
-					trafficLogging.GetMeta().GetName(), // NAME
+					trafficLogging.GetMeta().GetMesh(),                            // MESH
+					trafficLogging.GetMeta().GetName(),                            // NAME
+					Age(rootTime, trafficLogging.GetMeta().GetModificationTime()), //AGE
 				}
 			}
 		}(),
