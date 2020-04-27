@@ -146,7 +146,7 @@ var _ = Describe("ProxyTemplate", func() {
 				expected: `
                 violations:
                 - field: selectors[0].match
-                  message: tag key must be non-empty
+                  message: tag name must be non-empty
                 - field: selectors[0].match
                   message: mandatory tag "service" is missing`,
 			}),
