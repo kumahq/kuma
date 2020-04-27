@@ -55,6 +55,7 @@ var _ = Describe("FaultInjection Endpoints", func() {
 		given := `
         type: FaultInjection
         name: web-to-backend
+        modificationTime: "0001-01-01T00:00:00Z"
         mesh: default
         sources:
         - match:
@@ -64,6 +65,7 @@ var _ = Describe("FaultInjection Endpoints", func() {
         - match:
             service: backend
             protocol: http
+        creationTime: "0001-01-01T00:00:00Z"
         conf:
           abort:
             httpStatus: 500

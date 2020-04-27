@@ -8,7 +8,9 @@
         }
       },
       "name": "mesh1",
-      "type": "Mesh"
+      "type": "Mesh",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
       "mtls": {
@@ -18,7 +20,9 @@
         }
       },
       "name": "mesh2",
-      "type": "Mesh"
+      "type": "Mesh",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
       "metrics": {
@@ -65,7 +69,9 @@
         }
       },
       "name": "mesh3",
-      "type": "Mesh"
+      "type": "Mesh",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
       "metrics": {
@@ -86,7 +92,9 @@
         }
       },
       "name": "mesh4",
-      "type": "Mesh"
+      "type": "Mesh",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
     }
   ],
   "next": null

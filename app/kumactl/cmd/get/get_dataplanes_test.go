@@ -30,8 +30,8 @@ import (
 var _ = Describe("kumactl get dataplanes", func() {
 
 	var dataplanes []*mesh_core.DataplaneResource
-
 	BeforeEach(func() {
+		// setup
 		dataplanes = []*mesh_core.DataplaneResource{
 			{
 				Meta: &test_model.ResourceMeta{

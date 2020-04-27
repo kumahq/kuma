@@ -3,6 +3,8 @@
     {
       "mesh": "default",
       "name": "web1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
       "selectors": [
         {
           "match": {
@@ -19,6 +21,8 @@
     {
       "mesh": "default",
       "name": "web2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
       "selectors": [
         {
           "match": {

@@ -1,4 +1,4 @@
----
+creationTime: 0001-01-01T00:00:00Z
 logging:
   backends:
     - name: logstash
@@ -11,6 +11,7 @@ metrics:
   prometheus:
     path: /non-standard-path
     port: 1234
+modificationTime: 0001-01-01T00:00:00Z
 mtls:
   ca:
     provided: {}

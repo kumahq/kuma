@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/Kong/kuma/pkg/catalog"
 	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
@@ -29,11 +28,9 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 	var rootCmd *cobra.Command
 	var outbuf, errbuf *bytes.Buffer
 	var store core_store.ResourceStore
-
 	BeforeEach(func() {
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				Now: time.Now,
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
 				},

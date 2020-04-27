@@ -29,7 +29,6 @@ import (
 var _ = Describe("kumactl get healthchecks", func() {
 
 	var sampleHealthChecks []*mesh_core.HealthCheckResource
-
 	BeforeEach(func() {
 		sampleHealthChecks = []*mesh_core.HealthCheckResource{
 			{
@@ -62,10 +61,8 @@ var _ = Describe("kumactl get healthchecks", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-
 		BeforeEach(func() {
 			// setup
-
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {

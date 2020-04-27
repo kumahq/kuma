@@ -60,10 +60,8 @@ var _ = Describe("kumactl get proxytemplates", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-
 		BeforeEach(func() {
 			// setup
-
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {

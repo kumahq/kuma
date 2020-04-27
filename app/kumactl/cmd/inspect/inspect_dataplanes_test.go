@@ -55,8 +55,10 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 		sampleDataplaneOverview = []*mesh_core.DataplaneOverviewResource{
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh: "default",
-					Name: "experiment",
+					Mesh:             "default",
+					Name:             "experiment",
+					CreationTime:     t1,
+					ModificationTime: now,
 				},
 				Spec: mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
@@ -112,8 +114,10 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh: "default",
-					Name: "example",
+					Mesh:             "default",
+					Name:             "example",
+					CreationTime:     t1,
+					ModificationTime: now,
 				},
 				Spec: mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
