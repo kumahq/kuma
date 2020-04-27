@@ -1,6 +1,8 @@
 package get
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
@@ -64,4 +66,10 @@ func withPaginationArgs(cmd *cobra.Command, ctx *listContext) *cobra.Command {
 	cmd.PersistentFlags().IntVarP(&ctx.args.size, "size", "", 0, "maximum number of elements to return")
 	cmd.PersistentFlags().StringVarP(&ctx.args.offset, "offset", "", "", "the offset that indicates starting element of the resources list to retrieve")
 	return cmd
+}
+
+// Age method to get age of kuma resources
+func Age(rootTime, resourceTime time.Time) string {
+	uptime := time1.Sub(time2)
+	return uptime.Truncate(time.Hour).String()
 }
