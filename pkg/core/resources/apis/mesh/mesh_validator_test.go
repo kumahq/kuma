@@ -26,18 +26,22 @@ var _ = Describe("Mesh", func() {
             logging:
               backends:
               - name: file-1
-                file:
+                type: file
+                config:
                   path: /path/to/file
               - name: file-2
                 format: '%START_TIME% %KUMA_SOURCE_SERVICE%'
-                file:
+                type: file
+                config:
                   path: /path/to/file2
               - name: tcp-1
-                tcp:
+                tyle: tcp
+                config:
                   address: kibana:1234
               - name: tcp-2
                 format: '%START_TIME% %KUMA_DESTINATION_SERVICE%'
-                tcp:
+                type: tcp
+                config:
                   address: kibana:1234
               defaultBackend: tcp-1
             tracing:
@@ -146,12 +150,13 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    tcp:
+                    type: tcp
+                    config:
                       address:
                   defaultBackend: backend-1`,
 				expected: `
                 violations:
-                - field: logging.backends[0].tcp.address
+                - field: logging.backends[0].config.address
                   message: cannot be empty`,
 			}),
 			Entry("tcp logging address is invalid", testCase{
@@ -159,12 +164,13 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    tcp:
+                    type: tcp
+                    config:
                       address: wrong-format:234:234
                   defaultBackend: backend-1`,
 				expected: `
                 violations:
-                - field: logging.backends[0].tcp.address
+                - field: logging.backends[0].config.address
                   message: has to be in format of HOST:PORT`,
 			}),
 			Entry("file logging path is empty", testCase{
@@ -172,12 +178,13 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    file:
+                    type: file
+                    config:
                       path:
                   defaultBackend: backend-1`,
 				expected: `
                 violations:
-                - field: logging.backends[0].file.path
+                - field: logging.backends[0].config.path
                   message: cannot be empty`,
 			}),
 			Entry("invalid access log format", testCase{
@@ -316,12 +323,15 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name:
-                    file:
+                    type: file
+                    config:
                       path: /path
                   - name: tcp-1
-                    file:
-                      tcp: invalid-address
+                    type: file
+                    config:
+                      address: invalid-address
                   - name: tcp-1
+                    type: tcp
                     path:
                       address:
                   defaultBackend: invalid-backend`,
@@ -331,7 +341,9 @@ var _ = Describe("Mesh", func() {
                   message: has to be set to one of the backends in the mesh
                 - field: logging.backends[0].name
                   message: cannot be empty
-                - field: logging.backends[1].file.path
+                - field: logging.backends[1].config.path
+                  message: cannot be empty
+                - field: logging.backends[2].config.address
                   message: cannot be empty
                 - field: logging.backends[2].name
                   message: '"tcp-1" name is already used for another backend'

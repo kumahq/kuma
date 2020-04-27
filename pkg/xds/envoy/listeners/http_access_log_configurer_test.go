@@ -109,11 +109,10 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			routeName:       "outbound:backend",
 			backend: &mesh_proto.LoggingBackend{
 				Name: "file",
-				Type: &mesh_proto.LoggingBackend_File_{
-					File: &mesh_proto.LoggingBackend_File{
-						Path: "/tmp/log",
-					},
-				},
+				Type: mesh_proto.LoggingFileType,
+				Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+					Path: "/tmp/log",
+				}),
 			},
 			expected: `
             name: outbound:127.0.0.1:27070
@@ -155,11 +154,10 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 
 "%RESP(SERVER):5%" "%TRAILER(GRPC-MESSAGE):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
 `, // intentional newline at the end
-				Type: &mesh_proto.LoggingBackend_Tcp_{
-					Tcp: &mesh_proto.LoggingBackend_Tcp{
-						Address: "127.0.0.1:1234",
-					},
-				},
+				Type: mesh_proto.LoggingTcpType,
+				Config: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+					Address: "127.0.0.1:1234",
+				}),
 			},
 			expected: `
             name: outbound:127.0.0.1:27070

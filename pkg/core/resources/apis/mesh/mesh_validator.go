@@ -5,9 +5,12 @@ import (
 	"net"
 	"net/url"
 
+	structpb "github.com/golang/protobuf/ptypes/struct"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/envoy/accesslog"
+	"github.com/Kong/kuma/pkg/util/proto"
 )
 
 func (m *MeshResource) Validate() error {
@@ -63,33 +66,43 @@ func validateLoggingBackend(backend *mesh_proto.LoggingBackend) validators.Valid
 	if err := accesslog.ValidateFormat(backend.Format); err != nil {
 		verr.AddViolation("format", err.Error())
 	}
-	if file, ok := backend.GetType().(*mesh_proto.LoggingBackend_File_); ok {
-		verr.AddError("file", validateLoggingFile(file))
-	} else if tcp, ok := backend.GetType().(*mesh_proto.LoggingBackend_Tcp_); ok {
-		verr.AddError("tcp", validateLoggingTcp(tcp))
+	switch backend.GetType() {
+	case mesh_proto.LoggingFileType:
+		verr.AddError("config", validateLoggingFile(backend.Config))
+	case mesh_proto.LoggingTcpType:
+		verr.AddError("config", validateLoggingTcp(backend.Config))
 	}
 	return verr
 }
 
-func validateLoggingTcp(tcp *mesh_proto.LoggingBackend_Tcp_) validators.ValidationError {
+func validateLoggingTcp(cfgStr *structpb.Struct) validators.ValidationError {
 	var verr validators.ValidationError
-	if tcp.Tcp.Address == "" {
-		verr.AddViolation("address", "cannot be empty")
+	cfg := mesh_proto.TcpLoggingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
 	} else {
-		host, port, err := net.SplitHostPort(tcp.Tcp.Address)
-		if host == "" || port == "" || err != nil {
-			verr.AddViolation("address", "has to be in format of HOST:PORT")
+		if cfg.Address == "" {
+			verr.AddViolation("address", "cannot be empty")
+		} else {
+			host, port, err := net.SplitHostPort(cfg.Address)
+			if host == "" || port == "" || err != nil {
+				verr.AddViolation("address", "has to be in format of HOST:PORT")
+			}
 		}
 	}
+
 	return verr
 }
 
-func validateLoggingFile(file *mesh_proto.LoggingBackend_File_) validators.ValidationError {
-	var veer validators.ValidationError
-	if file.File.Path == "" {
-		veer.AddViolation("path", "cannot be empty")
+func validateLoggingFile(cfgStr *structpb.Struct) validators.ValidationError {
+	var verr validators.ValidationError
+	cfg := mesh_proto.FileLoggingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
+	} else if cfg.Path == "" {
+		verr.AddViolation("path", "cannot be empty")
 	}
-	return veer
+	return verr
 }
 
 func validateTracing(tracing *mesh_proto.Tracing) validators.ValidationError {

@@ -27,13 +27,15 @@
         "backends": [
           {
             "name": "logstash",
-            "tcp": {
+            "type": "tcp",
+            "config": {
               "address": "127.0.0.1:5000"
             }
           },
           {
             "name": "file",
-            "file": {
+            "type": "file",
+            "config": {
               "path": "/tmp/service.log"
             }
           }

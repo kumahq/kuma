@@ -115,13 +115,21 @@ message LoggingBackend {
   // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
   string format = 2;
 
-  // Simple logging to file
-  message File { string path = 1; }
+  // Type of the backend (Kuma ships with 'tcp' and 'file')
+  string type = 3;
 
-  message Tcp { string address = 1; }
+  // Configuration of the backend
+  google.protobuf.Struct config = 4;
+}
 
-  oneof type {
-    File file = 3;
-    Tcp tcp = 4;
-  }
+// FileLoggingBackendConfig defines configuration for file based access logs
+message FileLoggingBackendConfig {
+  // Path to a file that logs will be written to
+  string path = 1;
+}
+
+// TcpLoggingBackendConfig defines configuration for TCP based access logs
+message TcpLoggingBackendConfig {
+  // Address to TCP service that will receive logs
+  string address = 1;
 }

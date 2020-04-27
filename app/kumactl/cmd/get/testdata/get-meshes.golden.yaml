@@ -3,10 +3,12 @@ items:
   logging:
     backends:
       - name: logstash
-        tcp:
+        type: tcp
+        config:
           address: 127.0.0.1:5000
-      - file:
+      - config:
           path: /tmp/service.log
+        type: file
         name: file
   metrics:
     prometheus:

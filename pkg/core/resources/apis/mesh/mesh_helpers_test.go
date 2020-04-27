@@ -181,27 +181,19 @@ var _ = Describe("MeshResource", func() {
 					Logging: &mesh_proto.Logging{
 						Backends: []*mesh_proto.LoggingBackend{
 							{
-								Name: "logstash",
-								Type: &mesh_proto.LoggingBackend_Tcp_{
-									Tcp: &mesh_proto.LoggingBackend_Tcp{
-										Address: "127.0.0.1:5000",
-									},
-								},
+								Name: "logstash-1",
+								Type: "logstash",
 							},
 							{
-								Name: "file",
-								Type: &mesh_proto.LoggingBackend_File_{
-									File: &mesh_proto.LoggingBackend_File{
-										Path: "/tmp/service.log",
-									},
-								},
+								Name: "file-1",
+								Type: "file",
 							},
 						},
 					},
 				},
 			}
 			backends := mesh.GetLoggingBackends()
-			Expect(backends).To(Equal("logstash, file"))
+			Expect(backends).To(Equal("logstash-1, file-1"))
 		})
 		It("should return default logging backend if logging backends is empty", func() {
 			mesh := &MeshResource{
