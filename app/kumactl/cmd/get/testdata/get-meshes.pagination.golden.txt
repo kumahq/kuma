@@ -1,4 +1,4 @@
-NAME    mTLS                METRICS      LOGGING          TRACING
-mesh1   builtin/builtin-1   prometheus   logstash, file   zipkin-us, zipkin-eu
+NAME    mTLS                METRICS      LOGGING          TRACING                AGE
+mesh1   builtin/builtin-1   prometheus   logstash, file   zipkin-us, zipkin-eu   2562047h0m0s
 
 Rerun command with --offset=1 argument to retrieve more resources

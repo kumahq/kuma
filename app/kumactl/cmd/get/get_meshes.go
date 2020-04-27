@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -35,7 +36,7 @@ func newGetMeshesCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printMeshes(&meshes, cmd.OutOrStdout())
+				return printMeshes(pctx.Runtime.Now(), &meshes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -48,9 +49,9 @@ func newGetMeshesCmd(pctx *listContext) *cobra.Command {
 	return cmd
 }
 
-func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
+func printMeshes(rootTime time.Time, meshes *mesh.MeshResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING"},
+		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -91,6 +92,7 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 					metrics,                  // METRICS
 					logging,                  // LOGGING
 					tracing,                  // TRACING
+					Age(rootTime, mesh.GetMeta().GetModificationTime()),
 				}
 			}
 		}(),
