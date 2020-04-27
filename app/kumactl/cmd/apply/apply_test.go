@@ -10,9 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/ghodss/yaml"
 
 	"github.com/Kong/kuma/pkg/catalog"
 	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
@@ -375,20 +372,15 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Spec.Networking.Address).To(Equal("1.1.1.1"))
 
 		// then
-		// we need to marshall time 0 it manually since it seems to produce different results across operating system
-		zeroTime, err := yaml.Marshal(time.Unix(0, 0))
-		Expect(err).ToNot(HaveOccurred())
-		zeroTimeYAML := strings.TrimSpace(string(zeroTime))
-
 		Expect(buf.String()).To(Equal(
-			fmt.Sprintf(`creationTime: %s
+			`creationTime: "1970-01-01T00:00:00Z"
 mesh: default
-modificationTime: %s
+modificationTime: "1970-01-01T00:00:00Z"
 name: sample
 networking:
   address: 2.2.2.2
 type: Dataplane
-`, zeroTimeYAML, zeroTimeYAML)))
+`))
 	})
 
 	It("should support variable names that include dot character", func() {
