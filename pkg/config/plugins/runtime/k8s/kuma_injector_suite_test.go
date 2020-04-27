@@ -1,4 +1,4 @@
-package kumainjector_test
+package k8s_test
 
 import (
 	"testing"

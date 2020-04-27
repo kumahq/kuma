@@ -25,16 +25,6 @@ data:
   tls.key: S0VZ
 ---
 apiVersion: v1
-kind: Secret
-type: kubernetes.io/tls
-metadata:
-  name: kuma-injector-tls-cert
-  namespace: kuma-system
-data:
-  tls.crt: Q0VSVA==
-  tls.key: S0VZ
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
@@ -83,12 +73,6 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kuma-control-plane
-  namespace: kuma-system
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kuma-injector
   namespace: kuma-system
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
@@ -4149,20 +4133,6 @@ rules:
       - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kuma:injector
-rules:
-  - apiGroups:
-      - kuma.io
-    resources:
-      - meshes
-    verbs:
-      - get
-      - list
-      - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma:control-plane
@@ -4173,19 +4143,6 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
-    namespace: kuma-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kuma:injector
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kuma:injector
-subjects:
-  - kind: ServiceAccount
-    name: kuma-injector
     namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -4248,19 +4205,6 @@ spec:
   selector:
     app: kuma-control-plane
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: kuma-injector
-  namespace: kuma-system
-spec:
-  ports:
-    - port: 443
-      name: https
-      targetPort: 8443
-  selector:
-    app: kuma-injector
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -4315,6 +4259,10 @@ spec:
               value: "true"
             - name: KUMA_KUBERNETES_CNI_ENABLED
               value: "false"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_IMAGE
+              value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
+            - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+              value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
           args:
             - run
             - --log-level=info
@@ -4360,81 +4308,6 @@ spec:
           configMap:
             name: kuma-control-plane-config
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kuma-injector
-  namespace: kuma-system
-  labels:
-    app: kuma-injector
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: kuma-injector
-  template:
-    metadata:
-      labels:
-        app: kuma-injector
-    spec:
-      serviceAccountName: kuma-injector
-      containers:
-        - name: kuma-injector
-          image: kong-docker-kuma-docker.bintray.io/kuma-injector:0.0.1
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: KUMA_INJECTOR_WEBHOOK_SERVER_PORT
-              value: "8443"
-            - name: KUMA_INJECTOR_WEBHOOK_SERVER_CERT_DIR
-              value: /var/run/secrets/kuma.io/kuma-injector/tls-cert
-            - name: KUMA_INJECTOR_CONTROL_PLANE_BOOTSTRAP_SERVER_URL
-              value: http://kuma-control-plane.kuma-system:5682
-            - name: KUMA_INJECTOR_CONTROL_PLANE_API_SERVER_URL
-              value: http://kuma-control-plane.kuma-system:5681
-            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_IMAGE
-              value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
-            - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-              value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
-            - name: KUMA_INJECTOR_INIT_CONTAINER_ENABLED
-              value: "true"
-          args:
-            - run
-            - --log-level=info
-            - --config-file=/etc/kuma.io/kuma-injector/config.yaml
-          ports:
-            - containerPort: 8443
-          livenessProbe:
-            httpGet:
-              path: /healthy
-              port: 8443
-              scheme: HTTPS
-          readinessProbe:
-            httpGet:
-              path: /ready
-              port: 8443
-              scheme: HTTPS
-          resources:
-            requests:
-              cpu: 100m
-              memory: 64Mi
-          volumeMounts:
-            - name: kuma-injector-tls-cert
-              mountPath: /var/run/secrets/kuma.io/kuma-injector/tls-cert
-              readOnly: true
-            - name: kuma-injector-config
-              mountPath: /etc/kuma.io/kuma-injector
-              readOnly: true
-      volumes:
-        - name: kuma-injector-tls-cert
-          secret:
-            secretName: kuma-injector-tls-cert
-        - name: kuma-injector-config
-          configMap:
-            name: kuma-injector-config
----
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
@@ -4473,7 +4346,7 @@ webhooks:
       caBundle: Q0VSVA==
       service:
         namespace: kuma-system
-        name: kuma-injector
+        name: kuma-control-plane
         path: /inject-sidecar
     rules:
       - apiGroups:

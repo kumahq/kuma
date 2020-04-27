@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	runtime_k8s "github.com/Kong/kuma/pkg/config/plugins/runtime/k8s"
+
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
-	config "github.com/Kong/kuma/pkg/config/app/kuma-injector"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
@@ -28,7 +29,7 @@ const (
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 )
 
-func New(cfg config.Injector, client kube_client.Client) *KumaInjector {
+func New(cfg runtime_k8s.Injector, client kube_client.Client) *KumaInjector {
 	return &KumaInjector{
 		cfg:       cfg,
 		client:    client,
@@ -37,7 +38,7 @@ func New(cfg config.Injector, client kube_client.Client) *KumaInjector {
 }
 
 type KumaInjector struct {
-	cfg       config.Injector
+	cfg       runtime_k8s.Injector
 	client    kube_client.Client
 	converter k8s_resources.Converter
 }
@@ -67,7 +68,7 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	}
 
 	// init container
-	if i.cfg.InitContainer.Enabled {
+	if !i.cfg.CNIEnabled {
 		if pod.Spec.InitContainers == nil {
 			pod.Spec.InitContainers = []kube_core.Container{}
 		}
@@ -283,7 +284,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
 		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
 	}
-	if !i.cfg.InitContainer.Enabled {
+	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 	return annotations

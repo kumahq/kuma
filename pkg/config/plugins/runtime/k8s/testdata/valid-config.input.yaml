@@ -1,8 +1,9 @@
-webHookServer:
+admissionServer:
   address: 127.0.0.2
   port: 8442
   certDir: /var/secret/kuma-injector
 injector:
+  cniEnabled: true
   controlPlane:
     apiServer:
       url: https://api-server:8765
@@ -33,5 +34,4 @@ injector:
         cpu: 1100m
         memory: 1512Mi
   initContainer:
-    enabled: false
     image: kuma-init:latest

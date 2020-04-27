@@ -1,8 +1,16 @@
 package k8s
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
+
+	kube_core "k8s.io/api/core/v1"
+	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 
 	"github.com/pkg/errors"
 
@@ -22,7 +30,7 @@ import (
 
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	kuba_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
+	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 var (
@@ -51,6 +59,8 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return err
 	}
 
+	addMutators(mgr, rt)
+
 	return addDefaulters(mgr)
 }
 
@@ -66,7 +76,7 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 		Client:              mgr.GetClient(),
 		Log:                 core.Log.WithName("controllers").WithName("Namespace"),
 		SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
-		CNIEnabled:          rt.Config().Runtime.Kubernetes.CNIEnabled,
+		CNIEnabled:          rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
 		ResourceManager:     rt.ResourceManager(),
 		DefaultMeshTemplate: rt.Config().Defaults.MeshProto(),
 	}
@@ -125,7 +135,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	mgr.GetWebhookServer().Register(path, composite.WebHook())
 	log.Info("Registering a validation composite webhook", "path", path)
 
-	mgr.GetWebhookServer().Register("/validate-v1-service", &kuba_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
+	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
 	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
 
 	secretValidator := &k8s_webhooks.SecretValidator{
@@ -135,4 +145,61 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	log.Info("Registering a validation webhook for v1/Secret", "path", "/validate-v1-secret")
 
 	return nil
+}
+
+func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) {
+	mgr.GetWebhookServer().Register("/inject-sidecar",
+		PodMutatingWebhook(injector.New(rt.Config().Runtime.Kubernetes.Injector, mgr.GetClient()).InjectKuma))
+}
+
+//func Setup(mgr kube_manager.Manager, cfg *kuma_injector_conf.Config) error {
+//	webhookServer := &kube_webhook.Server{
+//		Host:    cfg.WebHookServer.Address,
+//		Port:    int(cfg.WebHookServer.Port),
+//		CertDir: cfg.WebHookServer.CertDir,
+//	}
+//	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
+//		return errors.Wrap(err, "could not add to scheme")
+//	}
+//
+//	if err := k8scnicncfio.AddToScheme(mgr.GetScheme()); err != nil {
+//		return errors.Wrap(err, "could not add to scheme")
+//	}
+//
+//	webhookServer.Register("/inject-sidecar", PodMutatingWebhook(injector.New(cfg.Injector, mgr.GetClient()).InjectKuma))
+//	webhookServer.WebhookMux.HandleFunc("/healthy", func(resp http.ResponseWriter, _ *http.Request) {
+//		resp.WriteHeader(http.StatusOK)
+//	})
+//	webhookServer.WebhookMux.HandleFunc("/ready", func(resp http.ResponseWriter, _ *http.Request) {
+//		resp.WriteHeader(http.StatusOK)
+//	})
+//	return mgr.Add(webhookServer)
+//}
+
+type PodMutator func(*kube_core.Pod) error
+
+func PodMutatingWebhook(mutator PodMutator) *kube_admission.Webhook {
+	return &kube_admission.Webhook{
+		Handler: &podMutatingHandler{mutator: mutator},
+	}
+}
+
+type podMutatingHandler struct {
+	mutator PodMutator
+}
+
+func (h *podMutatingHandler) Handle(ctx context.Context, req kube_webhook.AdmissionRequest) kube_webhook.AdmissionResponse {
+	//webhookLog.V(1).Info("received request", "request", req)
+	var pod kube_core.Pod
+	if err := json.Unmarshal(req.Object.Raw, &pod); err != nil {
+		return kube_admission.Errored(http.StatusBadRequest, err)
+	}
+	if err := h.mutator(&pod); err != nil {
+		return kube_admission.Errored(http.StatusInternalServerError, err)
+	}
+	mutatedRaw, err := json.Marshal(pod)
+	if err != nil {
+		return kube_admission.Errored(http.StatusInternalServerError, err)
+	}
+	return kube_admission.PatchResponseFromRaw(req.Object.Raw, mutatedRaw)
 }
