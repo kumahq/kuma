@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -53,7 +54,7 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 			return err
 		}
 	}
-	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(time.Now()))...)
+	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(core.Now()))...)
 }
 
 func (r *resourcesManager) ensureMeshExists(ctx context.Context, meshName string) error {

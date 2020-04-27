@@ -229,9 +229,9 @@ func (m meta) GetMesh() string {
 }
 
 func (m meta) GetCreationTime() time.Time {
-	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
+	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
 }
 
 func (m meta) GetModificationTime() time.Time {
-	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
+	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
 }
