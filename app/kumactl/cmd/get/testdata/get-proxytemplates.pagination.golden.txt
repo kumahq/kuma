@@ -1,4 +1,4 @@
-MESH      NAME
-default   custom-template
+MESH      NAME              AGE
+default   custom-template   2562047h0m0s
 
 Rerun command with --offset=1 argument to retrieve more resources
