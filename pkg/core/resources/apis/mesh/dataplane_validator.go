@@ -94,11 +94,7 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 			result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(SupportedProtocols.Strings()...)))
 		}
 	}
-	for name, value := range inbound.Tags {
-		if value == "" {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value cannot be empty`)
-		}
-	}
+	result.Add(validateTags(inbound.Tags))
 	return result
 }
 
@@ -134,9 +130,21 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 	if _, exist := gateway.Tags[mesh_proto.ServiceTag]; !exist {
 		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
 	}
-	for name, value := range gateway.Tags {
+	result.Add(validateTags(gateway.Tags))
+	return result
+}
+
+func validateTags(tags map[string]string) validators.ValidationError {
+	var result validators.ValidationError
+	for name, value := range tags {
 		if value == "" {
 			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value cannot be empty`)
+		}
+		if !tagNameCharacterSet.MatchString(name) {
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag name must consist of alphanumeric characters, dots, dashes and underscores`)
+		}
+		if !tagValueCharacterSet.MatchString(value) {
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value must consist of alphanumeric characters, dots, dashes and underscores`)
 		}
 	}
 	return result

@@ -3,6 +3,8 @@
 ## master
 * feat include traffic direction in access log
   [#682](https://github.com/Kong/kuma/pull/682)
+* feat: validate tags and selectors
+  [#691](https://github.com/Kong/kuma/pull/691) 
 * feat: refactor CA to plugins
   [#694](https://github.com/Kong/kuma/pull/694)
 * feat: expose CreationTime and modificationTime
