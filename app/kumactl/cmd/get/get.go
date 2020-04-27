@@ -70,6 +70,6 @@ func withPaginationArgs(cmd *cobra.Command, ctx *listContext) *cobra.Command {
 
 // Age method to get age of kuma resources
 func Age(rootTime, resourceTime time.Time) string {
-	uptime := time1.Sub(time2)
+	uptime := rootTime.Sub(resourceTime)
 	return uptime.Truncate(time.Hour).String()
 }
