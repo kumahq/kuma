@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat: refactor CA to plugins
+  [#694](https://github.com/Kong/kuma/pull/694)
 * feat: expose CreationTime and modificationTime
   [#677](https://github.com/Kong/kuma/pull/677)
 * feat: pagination in kumactl
@@ -60,6 +62,25 @@
   [#667](https://github.com/Kong/kuma/pull/667)
 
 Breaking changes:
+* ⚠ Mesh can now have multiple CAs of the same type. Also it can use CA loaded as a plugins. Mesh format changed from
+```
+type: Mesh
+name: default
+mtls:
+  enabled: true
+  ca:
+    builtin: {}
+```
+to
+```
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+```
 * ⚠️ before the change TrafficPermission worked in cumulative way, which means that all policies that matched a connection were applied.
   We changed TrafficPermission to work like every other policy so only "the most specific" matching policy is chosen.
   Consult [docs](https://kuma.io/docs/0.4.0/policies/how-kuma-chooses-the-right-policy-to-apply/) to learn more how Kuma picks the right policy.
