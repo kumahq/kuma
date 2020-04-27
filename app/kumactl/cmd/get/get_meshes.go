@@ -2,6 +2,7 @@ package get
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
@@ -61,7 +62,8 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 
 				mtls := "off"
 				if mesh.MTLSEnabled() {
-					mtls = mesh.Spec.GetMtls().GetEnabledBackend()
+					backend := mesh.GetEnabledCertificateAuthorityBackend()
+					mtls = fmt.Sprintf("%s/%s", backend.Type, backend.Name)
 				}
 
 				metrics := "off"

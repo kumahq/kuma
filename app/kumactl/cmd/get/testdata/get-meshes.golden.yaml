@@ -1,46 +1,45 @@
 items:
-  - creationTime: 0001-01-01T00:00:00Z
-    logging:
-      backends:
-        - name: logstash
-          tcp:
-            address: 127.0.0.1:5000
-        - file:
-            path: /tmp/service.log
-          name: file
-    metrics:
-      prometheus:
-        path: /non-standard-path
-        port: 1234
-    modificationTime: 0001-01-01T00:00:00Z
-    mtls:
-      enabledBackend: builtin-1
-      backends:
-        - name: builtin-1
-          type: builtin
-        - name: builtin-2
-          type: builtin
-    name: mesh1
-    tracing:
-      backends:
-        - name: zipkin-us
-          zipkin:
-            url: http://zipkin.us:8080/v1/spans
-        - name: zipkin-eu
-          zipkin:
-            url: http://zipkin.eu:8080/v1/spans
-    type: Mesh
-  - creationTime: 0001-01-01T00:00:00Z
-    logging:
-      backends: []
-    metrics:
-      prometheus:
-        path: /non-standard-path
-        port: 1234
-    modificationTime: 0001-01-01T00:00:00Z
-    mtls: {}
-    name: mesh2
-    tracing:
-      backends: []
-    type: Mesh
+- creationTime: "0001-01-01T00:00:00Z"
+  logging:
+    backends:
+      - name: logstash
+        tcp:
+          address: 127.0.0.1:5000
+      - file:
+          path: /tmp/service.log
+        name: file
+  metrics:
+    prometheus:
+      path: /non-standard-path
+      port: 1234
+  modificationTime: "0001-01-01T00:00:00Z"
+  mtls:
+    backends:
+      - name: builtin-1
+        type: builtin
+      - name: builtin-2
+        type: builtin
+    enabledBackend: builtin-1
+  name: mesh1
+  tracing:
+    backends:
+      - name: zipkin-us
+        zipkin:
+          url: http://zipkin.us:8080/v1/spans
+      - name: zipkin-eu
+        zipkin:
+          url: http://zipkin.eu:8080/v1/spans
+  type: Mesh
+- creationTime: "0001-01-01T00:00:00Z"
+  logging:
+    backends: []
+  metrics:
+    prometheus:
+      path: /non-standard-path
+      port: 1234
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mesh2
+  tracing:
+    backends: []
+  type: Mesh
 next: null
