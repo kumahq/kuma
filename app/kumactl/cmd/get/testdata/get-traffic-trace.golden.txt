@@ -1,2 +1,2 @@
-MESH      NAME
-default   traffic-trace-1
+MESH      NAME              AGE
+default   traffic-trace-1   2562047h0m0s
