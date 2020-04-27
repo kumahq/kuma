@@ -77,22 +77,24 @@ message TracingBackend {
   // Empty value defaults to 100.0%
   google.protobuf.DoubleValue sampling = 2;
 
-  // Zipkin defined configuration of Zipkin tracer.
-  message Zipkin {
+  // Type of the backend (Kuma ships with 'zipkin')
+  string type = 3;
 
-    // Address of Zipkin collector.
-    string url = 1;
+  // Configuration of the backend
+  google.protobuf.Struct config = 4;
+}
 
-    // Generate 128bit traces. Default: false
-    bool traceId128bit = 2;
+message ZipkinTracingBackendConfig {
+  // Address of Zipkin collector.
+  string url = 1;
 
-    // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
-    // httpJson see
-    // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
-    string apiVersion = 3;
-  }
+  // Generate 128bit traces. Default: false
+  bool traceId128bit = 2;
 
-  oneof type { Zipkin zipkin = 3; }
+  // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
+  // httpJson see
+  // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
+  string apiVersion = 3;
 }
 
 message Logging {

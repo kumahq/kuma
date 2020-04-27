@@ -16,13 +16,15 @@
         "backends": [
             {
                 "name": "zipkin-us",
-                "zipkin": {
+                "type": "zipkin",
+                "config": {
                     "url": "http://zipkin.us:8080/v1/spans"
                 }
             },
             {
                 "name": "zipkin-eu",
-                "zipkin": {
+                "type": "zipkin",
+                "config": {
                     "url": "http://zipkin.eu:8080/v1/spans"
                 }
             }

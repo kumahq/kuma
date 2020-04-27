@@ -132,26 +132,31 @@ func validateTracingBackend(backend *mesh_proto.TracingBackend) validators.Valid
 	if backend.Sampling.GetValue() < 0.0 || backend.Sampling.GetValue() > 100.0 {
 		verr.AddViolation("sampling", "has to be in [0.0 - 100.0] range")
 	}
-	if zipkin, ok := backend.GetType().(*mesh_proto.TracingBackend_Zipkin_); ok {
-		verr.AddError("zipkin", validateZipkin(zipkin.Zipkin))
+	if backend.GetType() == mesh_proto.TracingZipkinType {
+		verr.AddError("config", validateZipkin(backend.Config))
 	}
 	return verr
 }
 
-func validateZipkin(zipkin *mesh_proto.TracingBackend_Zipkin) validators.ValidationError {
+func validateZipkin(cfgStr *structpb.Struct) validators.ValidationError {
 	var verr validators.ValidationError
-	if zipkin.Url == "" {
-		verr.AddViolation("url", "cannot be empty")
+	cfg := mesh_proto.ZipkinTracingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
 	} else {
-		uri, err := url.ParseRequestURI(zipkin.Url)
-		if err != nil {
-			verr.AddViolation("url", "invalid URL")
-		} else if uri.Port() == "" {
-			verr.AddViolation("url", "port has to be explicitly specified")
+		if cfg.Url == "" {
+			verr.AddViolation("url", "cannot be empty")
+		} else {
+			uri, err := url.ParseRequestURI(cfg.Url)
+			if err != nil {
+				verr.AddViolation("url", "invalid URL")
+			} else if uri.Port() == "" {
+				verr.AddViolation("url", "port has to be explicitly specified")
+			}
 		}
-	}
-	if zipkin.ApiVersion != "" && zipkin.ApiVersion != "httpJsonV1" && zipkin.ApiVersion != "httpJson" && zipkin.ApiVersion != "httpProto" {
-		verr.AddViolation("apiVersion", fmt.Sprintf(`has invalid value. %s`, AllowedValuesHint("httpJsonV1", "httpJson", "httpProto")))
+		if cfg.ApiVersion != "" && cfg.ApiVersion != "httpJsonV1" && cfg.ApiVersion != "httpJson" && cfg.ApiVersion != "httpProto" {
+			verr.AddViolation("apiVersion", fmt.Sprintf(`has invalid value. %s`, AllowedValuesHint("httpJsonV1", "httpJson", "httpProto")))
+		}
 	}
 	return verr
 }

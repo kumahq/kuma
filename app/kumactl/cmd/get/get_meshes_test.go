@@ -72,19 +72,17 @@ var _ = Describe("kumactl get meshes", func() {
 					Backends: []*mesh_proto.TracingBackend{
 						{
 							Name: "zipkin-us",
-							Type: &mesh_proto.TracingBackend_Zipkin_{
-								Zipkin: &mesh_proto.TracingBackend_Zipkin{
-									Url: "http://zipkin.us:8080/v1/spans",
-								},
-							},
+							Type: mesh_proto.TracingZipkinType,
+							Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Url: "http://zipkin.us:8080/v1/spans",
+							}),
 						},
 						{
 							Name: "zipkin-eu",
-							Type: &mesh_proto.TracingBackend_Zipkin_{
-								Zipkin: &mesh_proto.TracingBackend_Zipkin{
-									Url: "http://zipkin.eu:8080/v1/spans",
-								},
-							},
+							Type: mesh_proto.TracingZipkinType,
+							Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Url: "http://zipkin.eu:8080/v1/spans",
+							}),
 						},
 					},
 				},

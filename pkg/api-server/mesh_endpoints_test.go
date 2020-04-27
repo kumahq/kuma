@@ -16,6 +16,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Resource Endpoints", func() {
@@ -142,11 +143,10 @@ var _ = Describe("Resource Endpoints", func() {
 						Backends: []*v1alpha1.TracingBackend{
 							{
 								Name: "zipkin-us",
-								Type: &v1alpha1.TracingBackend_Zipkin_{
-									Zipkin: &v1alpha1.TracingBackend_Zipkin{
-										Url: "http://zipkin-us:9090/v2/spans",
-									},
-								},
+								Type: v1alpha1.TracingZipkinType,
+								Config: util_proto.MustToStruct(&v1alpha1.ZipkinTracingBackendConfig{
+									Url: "http://zipkin-us:9090/v2/spans",
+								}),
 							},
 						},
 					},
