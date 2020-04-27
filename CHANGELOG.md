@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat: validate tags and selectors
+  [#691](https://github.com/Kong/kuma/pull/691) 
 * feat: expose CreationTime and modificationTime
   [#677](https://github.com/Kong/kuma/pull/677)
 * feat: pagination in kumactl
