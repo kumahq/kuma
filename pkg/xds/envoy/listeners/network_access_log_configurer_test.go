@@ -33,6 +33,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			meshName := "demo"
 			sourceService := "backend"
 			destinationService := "db"
+			trafficDirection := "OUTBOUND"
 			proxy := &core_xds.Proxy{
 				Id: xds.ProxyId{
 					Name: "backend",
@@ -63,7 +64,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder().
 					Configure(TcpProxy(given.statsName, given.clusters...)).
-					Configure(NetworkAccessLog(meshName, sourceService, destinationService, given.backend, proxy)))).
+					Configure(NetworkAccessLog(meshName, trafficDirection, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

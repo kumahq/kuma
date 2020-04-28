@@ -22,13 +22,14 @@ const accessLogSink = "access_log_sink"
 
 type AccessLogConfigurer struct {
 	mesh               string
+	trafficDirection   string
 	sourceService      string
 	destinationService string
 	backend            *mesh_proto.LoggingBackend
 	proxy              *core_xds.Proxy
 }
 
-func convertLoggingBackend(mesh string, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*filter_accesslog.AccessLog, error) {
+func convertLoggingBackend(mesh string, trafficDirection string, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*filter_accesslog.AccessLog, error) {
 	if backend == nil {
 		return nil, nil
 	}
@@ -47,6 +48,7 @@ func convertLoggingBackend(mesh string, sourceService string, destinationService
 		accesslog.CMD_KUMA_SOURCE_SERVICE:              sourceService,
 		accesslog.CMD_KUMA_DESTINATION_SERVICE:         destinationService,
 		accesslog.CMD_KUMA_MESH:                        mesh,
+		accesslog.CMD_KUMA_TRAFFIC_DIRECTION:           trafficDirection,
 	}
 
 	format, err = format.Interpolate(variables)
