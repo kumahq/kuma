@@ -36,40 +36,6 @@ data:
     # see conf/kuma-cp.conf for available settings
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kuma-injector-config
-  namespace: kuma-system
-data:
-  config.yaml: |
-    injector:
-      sidecarContainer:
-        redirectPort: 15001
-        uid: 5678
-        gid: 5678
-        adminPort: 9901
-        drainTime: 30s
-
-        readinessProbe:
-          initialDelaySeconds: 1
-          timeoutSeconds:      3
-          periodSeconds:       5
-          successThreshold:    1
-          failureThreshold:    12
-        livenessProbe:
-          initialDelaySeconds: 60
-          timeoutSeconds:      3
-          periodSeconds:       5
-          failureThreshold:    12
-        resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          limits:
-            cpu: 1000m
-            memory: 512Mi
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kuma-control-plane
@@ -4331,12 +4297,6 @@ webhooks:
           - UPDATE
         resources:
           - meshes
----
-apiVersion: admissionregistration.k8s.io/v1beta1
-kind: MutatingWebhookConfiguration
-metadata:
-  name: kuma-injector-webhook-configuration
-webhooks:
   - name: kuma-injector.kuma.io
     namespaceSelector:
       matchLabels:

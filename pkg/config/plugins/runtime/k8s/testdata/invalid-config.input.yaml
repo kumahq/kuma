@@ -3,9 +3,6 @@ admissionServer:
   port: 123456
   certDir:
 injector:
-  controlPlane:
-    apiServer:
-      url: api-server
   sidecarContainer:
     image:
     redirectPort: 423456

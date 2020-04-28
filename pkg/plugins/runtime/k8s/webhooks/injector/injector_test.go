@@ -28,7 +28,7 @@ var _ = Describe("Injector", func() {
 	BeforeEach(func() {
 		var cfg conf.Injector
 		Expect(config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
-		injector = inject.New(cfg, k8sClient)
+		injector = inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient)
 	})
 
 	type testCase struct {

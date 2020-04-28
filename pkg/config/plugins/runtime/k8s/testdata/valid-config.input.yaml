@@ -1,12 +1,9 @@
 admissionServer:
   address: 127.0.0.2
   port: 8442
-  certDir: /var/secret/kuma-injector
+  certDir: /var/secret/kuma-cp
 injector:
   cniEnabled: true
-  controlPlane:
-    apiServer:
-      url: https://api-server:8765
   sidecarContainer:
     image: kuma-sidecar:latest
     redirectPort: 1234

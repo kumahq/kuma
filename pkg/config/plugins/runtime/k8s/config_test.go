@@ -27,9 +27,7 @@ var _ = Describe("Config", func() {
 		// and
 		Expect(cfg.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.AdmissionServer.Port).To(Equal(uint32(8442)))
-		Expect(cfg.AdmissionServer.CertDir).To(Equal("/var/secret/kuma-injector"))
-		// and
-		Expect(cfg.Injector.ControlPlane.ApiServer.URL).To(Equal("https://api-server:8765"))
+		Expect(cfg.AdmissionServer.CertDir).To(Equal("/var/secret/kuma-cp"))
 		// and
 		Expect(cfg.Injector.SidecarContainer.Image).To(Equal("kuma-sidecar:latest"))
 		Expect(cfg.Injector.SidecarContainer.RedirectPort).To(Equal(uint32(1234)))
@@ -83,6 +81,6 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err.Error()).To(Equal(`Invalid configuration: .AdmissionServer is not valid: .Port must be in the range [0, 65535]; .CertDir should not be empty; .Injector is not valid: .ControlPlane is not valid: .ApiServer is not valid: .URL must be a valid absolute URI; .SidecarContainer is not valid: .Image must be non-empty; .RedirectPort must be in the range [0, 65535]; .AdminPort must be in the range [0, 65535]; .DrainTime must be positive; .ReadinessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .SuccessThreshold must be >= 1; .FailureThreshold must be >= 1; .LivenessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .FailureThreshold must be >= 1; .Resources is not valid: .Requests is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Limits is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .InitContainer is not valid: .Image must be non-empty`))
+		Expect(err.Error()).To(Equal(`Invalid configuration: .AdmissionServer is not valid: .Port must be in the range [0, 65535]; .CertDir should not be empty; .Injector is not valid: .SidecarContainer is not valid: .Image must be non-empty; .RedirectPort must be in the range [0, 65535]; .AdminPort must be in the range [0, 65535]; .DrainTime must be positive; .ReadinessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .SuccessThreshold must be >= 1; .FailureThreshold must be >= 1; .LivenessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .FailureThreshold must be >= 1; .Resources is not valid: .Requests is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Limits is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .InitContainer is not valid: .Image must be non-empty`))
 	})
 })

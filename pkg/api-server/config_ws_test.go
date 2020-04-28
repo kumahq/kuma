@@ -136,11 +136,6 @@ var _ = Describe("Config WS", func() {
               },
               "injector": {
                 "cniEnabled": false,
-                "controlPlane": {
-                  "apiServer": {
-                    "url": "http://kuma-control-plane.kuma-system:5681"
-                  }
-                },
                 "initContainer": {
                   "image": "kuma/kuma-init:latest"
                 },

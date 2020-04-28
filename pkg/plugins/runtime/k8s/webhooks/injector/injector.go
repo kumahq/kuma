@@ -29,18 +29,20 @@ const (
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 )
 
-func New(cfg runtime_k8s.Injector, client kube_client.Client) *KumaInjector {
+func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Client) *KumaInjector {
 	return &KumaInjector{
-		cfg:       cfg,
-		client:    client,
-		converter: k8s_resources.DefaultConverter(),
+		cfg:             cfg,
+		controlPlaneUrl: controlPlaneUrl,
+		client:          client,
+		converter:       k8s_resources.DefaultConverter(),
 	}
 }
 
 type KumaInjector struct {
-	cfg       runtime_k8s.Injector
-	client    kube_client.Client
-	converter k8s_resources.Converter
+	cfg             runtime_k8s.Injector
+	controlPlaneUrl string
+	client          kube_client.Client
+	converter       k8s_resources.Converter
 }
 
 func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
@@ -131,7 +133,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 			},
 			{
 				Name:  "KUMA_CONTROL_PLANE_API_SERVER_URL",
-				Value: i.cfg.ControlPlane.ApiServer.URL,
+				Value: i.controlPlaneUrl,
 			},
 			{
 				Name:  "KUMA_DATAPLANE_MESH",

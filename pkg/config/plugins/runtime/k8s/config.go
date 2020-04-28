@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,11 +17,6 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		},
 		Injector: Injector{
 			CNIEnabled: false,
-			ControlPlane: ControlPlane{
-				ApiServer: ApiServer{
-					URL: "http://kuma-control-plane.kuma-system:5681",
-				},
-			},
 			SidecarContainer: SidecarContainer{
 				Image:        "kuma/kuma-dp:latest",
 				RedirectPort: 15001,
@@ -66,7 +60,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 type KubernetesRuntimeConfig struct {
 	// Admission WebHook Server implemented by the Control Plane.
 	AdmissionServer AdmissionServerConfig `yaml:"admissionServer"`
-
+	// Injector-specific configuration
 	Injector Injector `yaml:"injector,omitempty"`
 }
 
@@ -84,26 +78,12 @@ type AdmissionServerConfig struct {
 
 // Injector defines configuration of a Kuma Sidecar Injector.
 type Injector struct {
-	// ControlPlane defines coordinates of the Kuma Control Plane.
-	ControlPlane ControlPlane `yaml:"controlPlane,omitempty"`
 	// SidecarContainer defines configuration of the Kuma sidecar container.
 	SidecarContainer SidecarContainer `yaml:"sidecarContainer,omitempty"`
 	// InitContainer defines configuration of the Kuma init container.
 	InitContainer InitContainer `yaml:"initContainer,omitempty"`
 	// CNIEnabled if true runs kuma-cp in CNI compatible mode
-	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_kubernetes_cni_enabled"`
-}
-
-// ControlPlane defines coordinates of the Control Plane.
-type ControlPlane struct {
-	// ApiServer defines coordinates of the Control Plane API Server.
-	ApiServer ApiServer `yaml:"apiServer,omitempty"`
-}
-
-// ApiServer defines coordinates of the Control Plane API Server.
-type ApiServer struct {
-	// URL defines URL of the Control Plane API Server.
-	URL string `yaml:"url,omitempty" envconfig:"kuma_injector_control_plane_api_server_url"`
+	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_kubernetes_injector_cni_enabled"`
 }
 
 // SidecarContainer defines configuration of the Kuma sidecar container.
@@ -217,50 +197,16 @@ func (c *AdmissionServerConfig) Validate() (errs error) {
 var _ config.Config = &Injector{}
 
 func (i *Injector) Sanitize() {
-	i.ControlPlane.Sanitize()
 	i.InitContainer.Sanitize()
 	i.SidecarContainer.Sanitize()
 }
 
 func (i *Injector) Validate() (errs error) {
-	if err := i.ControlPlane.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".ControlPlane is not valid"))
-	}
 	if err := i.SidecarContainer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".SidecarContainer is not valid"))
 	}
 	if err := i.InitContainer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".InitContainer is not valid"))
-	}
-	return
-}
-
-var _ config.Config = &ControlPlane{}
-
-func (c *ControlPlane) Sanitize() {
-	c.ApiServer.Sanitize()
-}
-
-func (c *ControlPlane) Validate() (errs error) {
-	if err := c.ApiServer.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".ApiServer is not valid"))
-	}
-	return
-}
-
-var _ config.Config = &ApiServer{}
-
-func (s *ApiServer) Sanitize() {
-}
-
-func (s *ApiServer) Validate() (errs error) {
-	if s.URL == "" {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
-	}
-	if url, err := url.Parse(s.URL); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".URL must be a valid absolute URI"))
-	} else if !url.IsAbs() {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
 	}
 	return
 }
