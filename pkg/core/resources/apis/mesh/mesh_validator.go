@@ -18,6 +18,7 @@ func (m *MeshResource) Validate() error {
 	verr.AddError("mtls", validateMtls(m.Spec.Mtls))
 	verr.AddError("logging", validateLogging(m.Spec.Logging))
 	verr.AddError("tracing", validateTracing(m.Spec.Tracing))
+	verr.AddError("metrics", validateMetrics(m.Spec.Metrics))
 	return verr.OrNil()
 }
 
@@ -157,6 +158,24 @@ func validateZipkin(cfgStr *structpb.Struct) validators.ValidationError {
 		if cfg.ApiVersion != "" && cfg.ApiVersion != "httpJsonV1" && cfg.ApiVersion != "httpJson" && cfg.ApiVersion != "httpProto" {
 			verr.AddViolation("apiVersion", fmt.Sprintf(`has invalid value. %s`, AllowedValuesHint("httpJsonV1", "httpJson", "httpProto")))
 		}
+	}
+	return verr
+}
+
+func validateMetrics(metrics *mesh_proto.Metrics) validators.ValidationError {
+	var verr validators.ValidationError
+	if metrics == nil {
+		return verr
+	}
+	usedNames := map[string]bool{}
+	for i, backend := range metrics.GetBackends() {
+		if usedNames[backend.Name] {
+			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
+		}
+		usedNames[backend.Name] = true
+	}
+	if metrics.GetEnabledBackend() != "" && !usedNames[metrics.GetEnabledBackend()] {
+		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
 	}
 	return verr
 }

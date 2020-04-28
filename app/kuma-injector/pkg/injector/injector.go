@@ -3,7 +3,6 @@ package injector
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -286,43 +285,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 	}
 	if !i.cfg.InitContainer.Enabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
-	}
-	for k, v := range i.prometheusAnnotations(pod, mesh) {
-		annotations[k] = v
-	}
-	return annotations
-}
-
-const (
-	prometheusScrape = "prometheus.io/scrape"
-	prometheusPath   = "prometheus.io/path"
-	prometheusPort   = "prometheus.io/port"
-)
-
-func (i *KumaInjector) prometheusAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
-	annotations := map[string]string{}
-
-	// we want to ignore adding annotation when there are already prometheus annotation present on the Pod
-	_, scrapeExists := pod.Annotations[prometheusScrape]
-	_, pathExists := pod.Annotations[prometheusPath]
-	_, portExists := pod.Annotations[prometheusPort]
-	if scrapeExists || pathExists || portExists {
-		return annotations
-	}
-
-	if mesh.HasPrometheusMetricsEnabled() {
-		// use mesh defaults
-		annotations[prometheusScrape] = "true"
-		annotations[prometheusPath] = mesh.Spec.Metrics.Prometheus.Path
-		annotations[prometheusPort] = strconv.Itoa(int(mesh.Spec.Metrics.Prometheus.Port))
-
-		// set overrides from custom Kuma Prometheus annotations
-		if port, exists := pod.GetAnnotations()[metadata.KumaMetricsPrometheusPort]; exists {
-			annotations[prometheusPort] = port
-		}
-		if path, exists := pod.GetAnnotations()[metadata.KumaMetricsPrometheusPath]; exists {
-			annotations[prometheusPath] = path
-		}
 	}
 	return annotations
 }

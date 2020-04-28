@@ -5,4 +5,6 @@ const (
 	LoggingFileType = "file"
 
 	TracingZipkinType = "zipkin"
+
+	MetricsPrometheusType = "prometheus"
 )

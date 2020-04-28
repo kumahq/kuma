@@ -13,7 +13,7 @@ import (
 
 type Defaulter interface {
 	core_model.Resource
-	Default()
+	Default() error
 }
 
 func DefaultingWebhookFor(factory func() core_model.Resource, converter k8s_resources.Converter) *admission.Webhook {
@@ -56,7 +56,9 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 	}
 
 	if defaulter, ok := resource.(Defaulter); ok {
-		defaulter.Default()
+		if err := defaulter.Default(); err != nil {
+			return admission.Errored(http.StatusInternalServerError, err)
+		}
 	}
 
 	obj, err = h.converter.ToKubernetesObject(resource)

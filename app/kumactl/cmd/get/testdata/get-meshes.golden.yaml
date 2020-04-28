@@ -11,9 +11,18 @@ items:
         type: file
         name: file
   metrics:
-    prometheus:
-      path: /non-standard-path
-      port: 1234
+    enabledBackend: prometheus-1
+    backends:
+      - name: prometheus-1
+        type: prometheus
+        config:
+          path: /non-standard-path
+          port: 1234
+      - name: prometheus-2
+        type: prometheus
+        config:
+          path: /non-standard-path
+          port: 1235
   modificationTime: "0001-01-01T00:00:00Z"
   mtls:
     backends:
@@ -38,9 +47,7 @@ items:
   logging:
     backends: []
   metrics:
-    prometheus:
-      path: /non-standard-path
-      port: 1234
+    backends: []
   modificationTime: "0001-01-01T00:00:00Z"
   name: mesh2
   tracing:

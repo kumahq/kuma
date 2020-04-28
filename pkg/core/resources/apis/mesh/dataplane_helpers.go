@@ -7,6 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 // Protocol identifies a protocol supported by a service.
@@ -102,14 +103,24 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	return address1.Equal(address2)
 }
 
-func (d *DataplaneResource) GetPrometheusEndpoint(mesh *MeshResource) *mesh_proto.Metrics_Prometheus {
+func (d *DataplaneResource) GetPrometheusEndpoint(mesh *MeshResource) (*mesh_proto.PrometheusMetricsBackendConfig, error) {
 	if d == nil || mesh == nil || mesh.Meta.GetName() != d.Meta.GetMesh() || !mesh.HasPrometheusMetricsEnabled() {
-		return nil
+		return nil, nil
 	}
-	result := &mesh_proto.Metrics_Prometheus{}
-	proto.Merge(result, mesh.Spec.GetMetrics().GetPrometheus())
-	proto.Merge(result, d.Spec.GetMetrics().GetPrometheus())
-	return result
+	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
+	strCfg := mesh.GetEnabledMetricsBackend().Config
+	if err := util_proto.ToTyped(strCfg, &cfg); err != nil {
+		return nil, err
+	}
+
+	if d.Spec.GetMetrics().GetType() == mesh_proto.MetricsPrometheusType {
+		dpCfg := mesh_proto.PrometheusMetricsBackendConfig{}
+		if err := util_proto.ToTyped(d.Spec.Metrics.Config, &dpCfg); err != nil {
+			return nil, err
+		}
+		proto.Merge(&cfg, &dpCfg)
+	}
+	return &cfg, nil
 }
 
 func (d *DataplaneResource) GetIP() string {

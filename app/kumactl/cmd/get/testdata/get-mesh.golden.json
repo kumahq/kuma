@@ -49,9 +49,16 @@
         ]
     },
     "metrics": {
-        "prometheus": {
-            "port": 1234,
-            "path": "/non-standard-path"
-        }
+        "enabledBackend": "prometheus-1",
+        "backends": [
+            {
+                "name": "prometheus-1",
+                "type": "prometheus",
+                "config": {
+                    "port": 1234,
+                    "path": "/non-standard-path"
+                }
+            }
+        ]
     }
 }

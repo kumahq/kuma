@@ -10,9 +10,13 @@ logging:
       type: file
       name: file
 metrics:
-  prometheus:
-    path: /non-standard-path
-    port: 1234
+  enabledBackend: prometheus-1
+  backends:
+    - name: prometheus-1
+      type: prometheus
+      config:
+        path: /non-standard-path
+        port: 1234
 modificationTime: 0001-01-01T00:00:00Z
 mtls:
   enabledBackend: builtin-1

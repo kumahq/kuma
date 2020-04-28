@@ -58,6 +58,14 @@ var _ = Describe("Mesh", func() {
                 config:
                   url: http://zipkin.local:9411/v2/spans
               defaultBackend: zipkin-us
+            metrics:
+              enabledBackend: prom-1
+              backends:
+              - name: prom-1
+                type: prometheus
+                config:
+                  port: 5670
+                  path: /metrics
 `
 			mesh := MeshResource{}
 
@@ -322,6 +330,32 @@ var _ = Describe("Mesh", func() {
                 violations:
                 - field: tracing.defaultBackend
                   message: has to be set to one of the tracing backend in mesh`,
+			}),
+			Entry("multiple metrics backends of the same name", testCase{
+				mesh: `
+                metrics:
+                  enabledBackend: backend-1
+                  backends:
+                  - name: backend-1
+                    type: prometheus
+                  - name: backend-1
+                    type: prometheus`,
+				expected: `
+                violations:
+                - field: metrics.backends[1].name
+                  message: '"backend-1" name is already used for another backend'`,
+			}),
+			Entry("enabledBackend of unknown name", testCase{
+				mesh: `
+                metrics:
+                  enabledBackend: backend-2
+                  backends:
+                  - name: backend-1
+                    type: prometheus`,
+				expected: `
+                violations:
+                - field: metrics.enabledBackend
+                  message: has to be set to one of the backends in the mesh`,
 			}),
 			Entry("multiple errors", testCase{
 				mesh: `

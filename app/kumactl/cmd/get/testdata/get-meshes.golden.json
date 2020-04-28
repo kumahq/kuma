@@ -2,10 +2,25 @@
   "items": [
     {
       "metrics": {
-        "prometheus": {
-          "port": 1234,
-          "path": "/non-standard-path"
-        }
+        "enabledBackend": "prometheus-1",
+        "backends": [
+          {
+            "name": "prometheus-1",
+            "type": "prometheus",
+            "config": {
+              "port": 1234,
+              "path": "/non-standard-path"
+            }
+          },
+          {
+            "name": "prometheus-2",
+            "type": "prometheus",
+            "config": {
+              "port": 1235,
+              "path": "/non-standard-path"
+            }
+          }
+        ]
       },
       "tracing": {
         "backends": [
@@ -63,10 +78,7 @@
     },
     {
       "metrics": {
-        "prometheus": {
-          "port": 1234,
-          "path": "/non-standard-path"
-        }
+        "backends": []
       },
       "tracing": {
         "backends": []

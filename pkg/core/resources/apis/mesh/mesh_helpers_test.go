@@ -44,7 +44,13 @@ var _ = Describe("MeshResource", func() {
 				mesh: &MeshResource{
 					Spec: mesh_proto.Mesh{
 						Metrics: &mesh_proto.Metrics{
-							Prometheus: &mesh_proto.Metrics_Prometheus{},
+							EnabledBackend: "prometheus-1",
+							Backends: []*mesh_proto.MetricsBackend{
+								{
+									Name: "prometheus-1",
+									Type: mesh_proto.MetricsPrometheusType,
+								},
+							},
 						},
 					},
 				},

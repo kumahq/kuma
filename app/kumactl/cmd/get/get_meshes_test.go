@@ -45,9 +45,24 @@ var _ = Describe("kumactl get meshes", func() {
 					},
 				},
 				Metrics: &mesh_proto.Metrics{
-					Prometheus: &mesh_proto.Metrics_Prometheus{
-						Port: 1234,
-						Path: "/non-standard-path",
+					EnabledBackend: "prometheus-1",
+					Backends: []*mesh_proto.MetricsBackend{
+						{
+							Name: "prometheus-1",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Port: 1234,
+								Path: "/non-standard-path",
+							}),
+						},
+						{
+							Name: "prometheus-2",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Port: 1235,
+								Path: "/non-standard-path",
+							}),
+						},
 					},
 				},
 				Logging: &mesh_proto.Logging{
@@ -95,10 +110,7 @@ var _ = Describe("kumactl get meshes", func() {
 		{
 			Spec: mesh_proto.Mesh{
 				Metrics: &mesh_proto.Metrics{
-					Prometheus: &mesh_proto.Metrics_Prometheus{
-						Port: 1234,
-						Path: "/non-standard-path",
-					},
+					Backends: []*mesh_proto.MetricsBackend{},
 				},
 				Logging: &mesh_proto.Logging{
 					Backends: []*mesh_proto.LoggingBackend{},
