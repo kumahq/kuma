@@ -187,9 +187,6 @@ defaults:
   mesh: | # ENV: KUMA_DEFAULTS_MESH
     type: Mesh
     name: default
-    mtls:
-      ca: {}
-      enabled: false
 
 # Reports configuration
 reports:

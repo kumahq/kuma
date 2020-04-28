@@ -35,7 +35,7 @@ var _ = Describe("Mesh", func() {
                 config:
                   path: /path/to/file2
               - name: tcp-1
-                tyle: tcp
+                type: tcp
                 config:
                   address: kibana:1234
               - name: tcp-2
@@ -132,7 +132,8 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name:
-                    tcp:
+                    type: tcp
+                    config: 
                       address: kibana:1234`,
 				expected: `
                 violations:
@@ -144,10 +145,12 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    tcp:
+                    type: tcp
+                    config:
                       address: kibana:1234
                   - name: backend-1
-                    file:
+                    type: file
+                    config:
                       path: /path/to/file
                   defaultBackend: backend-1`,
 				expected: `
@@ -203,7 +206,8 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: backend-1
                     format: "%START_TIME% %sent_bytes%"
-                    file:
+                    type: file
+                    config:
                       path: /var/logs
                   defaultBackend: backend-1`,
 				expected: `
@@ -216,7 +220,8 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    file:
+                    type: file
+                    config:
                       path: /path
                   defaultBackend: non-existing-backend`,
 				expected: `
@@ -229,7 +234,8 @@ var _ = Describe("Mesh", func() {
                 tracing:
                   backends:
                   - name:
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -241,10 +247,12 @@ var _ = Describe("Mesh", func() {
                 tracing:
                   backends:
                   - name: zipkin-us
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin.local:9411/v2/spans
                   - name: zipkin-us
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -257,7 +265,8 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     sampling: 100.1
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin-us.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -356,6 +365,29 @@ var _ = Describe("Mesh", func() {
                 violations:
                 - field: metrics.enabledBackend
                   message: has to be set to one of the backends in the mesh`,
+			}),
+			Entry("unknown backend types", testCase{
+				mesh: `
+                metrics:
+                  backends:
+                  - name: backend-1
+                    type: xxx
+                logging:
+                  backends:
+                  - name: backend-1
+                    type: xxx
+                tracing:
+                  backends:
+                  - name: backend-1
+                    type: xxx
+`,
+				expected: `violations:
+                - field: logging.backends[0].type
+                  message: 'unknown backend type. Available backends: "tcp", "file"'
+                - field: tracing.backends[0].type
+                  message: 'unknown backend type. Available backends: "zipkin"'
+                - field: metrics.backends[0].type
+                  message: 'unknown backend type. Available backends: "prometheus"'`,
 			}),
 			Entry("multiple errors", testCase{
 				mesh: `

@@ -37,6 +37,7 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	if mtls.GetEnabledBackend() != "" && !usedNames[mtls.GetEnabledBackend()] {
 		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
 	}
+	// validation of CA backend type is omitted since it can change when you load plugins
 	return verr
 }
 
@@ -72,6 +73,8 @@ func validateLoggingBackend(backend *mesh_proto.LoggingBackend) validators.Valid
 		verr.AddError("config", validateLoggingFile(backend.Config))
 	case mesh_proto.LoggingTcpType:
 		verr.AddError("config", validateLoggingTcp(backend.Config))
+	default:
+		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q, %q", mesh_proto.LoggingTcpType, mesh_proto.LoggingFileType))
 	}
 	return verr
 }
@@ -130,6 +133,9 @@ func validateTracingBackend(backend *mesh_proto.TracingBackend) validators.Valid
 	if backend.Name == "" {
 		verr.AddViolation("name", "cannot be empty")
 	}
+	if backend.GetType() != mesh_proto.TracingZipkinType {
+		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.TracingZipkinType))
+	}
 	if backend.Sampling.GetValue() < 0.0 || backend.Sampling.GetValue() > 100.0 {
 		verr.AddViolation("sampling", "has to be in [0.0 - 100.0] range")
 	}
@@ -171,6 +177,9 @@ func validateMetrics(metrics *mesh_proto.Metrics) validators.ValidationError {
 	for i, backend := range metrics.GetBackends() {
 		if usedNames[backend.Name] {
 			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
+		}
+		if backend.GetType() != mesh_proto.MetricsPrometheusType {
+			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.MetricsPrometheusType))
 		}
 		usedNames[backend.Name] = true
 	}
