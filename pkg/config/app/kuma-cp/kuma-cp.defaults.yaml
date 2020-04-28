@@ -182,9 +182,6 @@ runtime:
       certDir:
     injector:
       cniEnabled: false
-      controlPlane:
-        apiServer:
-          url: http://kuma-control-plane.kuma-system:5681
       sidecarContainer:
         image: kuma/kuma-dp:latest
         redirectPort: 15001
