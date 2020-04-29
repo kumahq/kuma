@@ -1,7 +1,9 @@
 # CHANGELOG
 
 ## master
-* feat include traffic direction in access log
+* feat: secret validation on K8S
+  [#696](https://github.com/Kong/kuma/pull/696)
+* feat: include traffic direction in access log
   [#682](https://github.com/Kong/kuma/pull/682)
 * feat: validate tags and selectors
   [#691](https://github.com/Kong/kuma/pull/691) 
