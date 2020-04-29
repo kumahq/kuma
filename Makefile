@@ -337,8 +337,8 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUMA_STORE_TYPE=kubernetes \
 	KUMA_SDS_SERVER_TLS_CERT_FILE=app/kuma-cp/cmd/testdata/tls.crt \
 	KUMA_SDS_SERVER_TLS_KEY_FILE=app/kuma-cp/cmd/testdata/tls.key \
-	KUMA_KUBERNETES_ADMISSION_SERVER_PORT=$(CP_K8S_ADMISSION_PORT) \
-	KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-cp/cmd/testdata \
+	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT=$(CP_K8S_ADMISSION_PORT) \
+	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-cp/cmd/testdata \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 run/universal/memory: ## Dev: Run Control Plane locally in universal mode with in-memory store

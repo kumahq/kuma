@@ -67,13 +67,13 @@ type KubernetesRuntimeConfig struct {
 // Configuration of the Admission WebHook Server implemented by the Control Plane.
 type AdmissionServerConfig struct {
 	// Address the Admission WebHook Server should be listening on.
-	Address string `yaml:"address" envconfig:"kuma_kubernetes_admission_server_address"`
+	Address string `yaml:"address" envconfig:"kuma_runtime_kubernetes_admission_server_address"`
 	// Port the Admission WebHook Server should be listening on.
-	Port uint32 `yaml:"port" envconfig:"kuma_kubernetes_admission_server_port"`
+	Port uint32 `yaml:"port" envconfig:"kuma_runtime_kubernetes_admission_server_port"`
 	// Directory with a TLS cert and private key for the Admission WebHook Server.
 	// TLS certificate file must be named `tls.crt`.
 	// TLS key file must be named `tls.key`.
-	CertDir string `yaml:"certDir" envconfig:"kuma_kubernetes_admission_server_cert_dir"`
+	CertDir string `yaml:"certDir" envconfig:"kuma_runtime_kubernetes_admission_server_cert_dir"`
 }
 
 // Injector defines configuration of a Kuma Sidecar Injector.
@@ -83,23 +83,23 @@ type Injector struct {
 	// InitContainer defines configuration of the Kuma init container.
 	InitContainer InitContainer `yaml:"initContainer,omitempty"`
 	// CNIEnabled if true runs kuma-cp in CNI compatible mode
-	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_kubernetes_injector_cni_enabled"`
+	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_runtime_kubernetes_injector_cni_enabled"`
 }
 
 // SidecarContainer defines configuration of the Kuma sidecar container.
 type SidecarContainer struct {
 	// Image name.
-	Image string `yaml:"image,omitempty" envconfig:"kuma_injector_sidecar_container_image"`
+	Image string `yaml:"image,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image"`
 	// Redirect port.
-	RedirectPort uint32 `yaml:"redirectPort,omitempty" envconfig:"kuma_injector_sidecar_container_redirect_port"`
+	RedirectPort uint32 `yaml:"redirectPort,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port"`
 	// User ID.
-	UID int64 `yaml:"uid,omitempty" envconfig:"kuma_injector_sidecar_container_uid"`
+	UID int64 `yaml:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
 	// Group ID.
-	GID int64 `yaml:"gid,omitempty" envconfig:"kuma_injector_sidecar_container_gui"`
+	GID int64 `yaml:"gid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_gui"`
 	// Admin port.
-	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_injector_sidecar_container_admin_port"`
+	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_admin_port"`
 	// Drain time for listeners.
-	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_injector_sidecar_container_drain_time"`
+	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_drain_time"`
 	// Readiness probe.
 	ReadinessProbe SidecarReadinessProbe `yaml:"readinessProbe,omitempty"`
 	// Liveness probe.
@@ -111,27 +111,27 @@ type SidecarContainer struct {
 // SidecarReadinessProbe defines periodic probe of container service readiness.
 type SidecarReadinessProbe struct {
 	// Number of seconds after the container has started before liveness probes are initiated.
-	InitialDelaySeconds int32 `yaml:"initialDelaySeconds,omitempty" envconfig:"kuma_injector_sidecar_container_readiness_probe_initial_delay_seconds"`
+	InitialDelaySeconds int32 `yaml:"initialDelaySeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_initial_delay_seconds"`
 	// How often (in seconds) to perform the probe.
-	TimeoutSeconds int32 `yaml:"timeoutSeconds,omitempty" envconfig:"kuma_injector_sidecar_container_readiness_probe_timeout_seconds"`
+	TimeoutSeconds int32 `yaml:"timeoutSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_timeout_seconds"`
 	// Number of seconds after which the probe times out.
-	PeriodSeconds int32 `yaml:"periodSeconds,omitempty" envconfig:"kuma_injector_sidecar_container_readiness_probe_period_seconds"`
+	PeriodSeconds int32 `yaml:"periodSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_period_seconds"`
 	// Minimum consecutive successes for the probe to be considered successful after having failed.
-	SuccessThreshold int32 `yaml:"successThreshold,omitempty" envconfig:"kuma_injector_sidecar_container_readiness_probe_success_threshold"`
+	SuccessThreshold int32 `yaml:"successThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_success_threshold"`
 	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
-	FailureThreshold int32 `yaml:"failureThreshold,omitempty" envconfig:"kuma_injector_sidecar_container_readiness_probe_failure_threshold"`
+	FailureThreshold int32 `yaml:"failureThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_failure_threshold"`
 }
 
 // SidecarLivenessProbe defines periodic probe of container service liveness.
 type SidecarLivenessProbe struct {
 	// Number of seconds after the container has started before liveness probes are initiated.
-	InitialDelaySeconds int32 `yaml:"initialDelaySeconds,omitempty" envconfig:"kuma_injector_sidecar_container_liveness_probe_initial_delay_seconds"`
+	InitialDelaySeconds int32 `yaml:"initialDelaySeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_initial_delay_seconds"`
 	// Number of seconds after which the probe times out.
-	TimeoutSeconds int32 `yaml:"timeoutSeconds,omitempty" envconfig:"kuma_injector_sidecar_container_liveness_probe_timeout_seconds"`
+	TimeoutSeconds int32 `yaml:"timeoutSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_timeout_seconds"`
 	// How often (in seconds) to perform the probe.
-	PeriodSeconds int32 `yaml:"periodSeconds,omitempty" envconfig:"kuma_injector_sidecar_container_liveness_probe_period_seconds"`
+	PeriodSeconds int32 `yaml:"periodSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_period_seconds"`
 	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
-	FailureThreshold int32 `yaml:"failureThreshold,omitempty" envconfig:"kuma_injector_sidecar_container_liveness_probe_failure_threshold"`
+	FailureThreshold int32 `yaml:"failureThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_failure_threshold"`
 }
 
 // SidecarResources defines compute resource requirements.
