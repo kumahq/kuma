@@ -17,6 +17,7 @@ import (
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	"github.com/Kong/kuma/pkg/util/proto"
 
 	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
 
@@ -119,9 +120,16 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
-								Prometheus: &mesh_proto.Metrics_Prometheus{
-									Port: 1234,
-									Path: "/non-standard-path",
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port: 1234,
+											Path: "/non-standard-path",
+										}),
+									},
 								},
 							},
 						},
@@ -164,9 +172,16 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
-								Prometheus: &mesh_proto.Metrics_Prometheus{
-									Port: 1234,
-									Path: "/non-standard-path",
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port: 1234,
+											Path: "/non-standard-path",
+										}),
+									},
 								},
 							},
 						},
@@ -226,11 +241,13 @@ var _ = Describe("snapshotGenerator", func() {
 									},
 								},
 							},
-							Metrics: &mesh_proto.Metrics{
-								Prometheus: &mesh_proto.Metrics_Prometheus{
+							Metrics: &mesh_proto.MetricsBackend{
+								Name: "prometheus-1",
+								Type: mesh_proto.MetricsPrometheusType,
+								Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 									Port: 8765,
 									Path: "/even-more-non-standard-path",
-								},
+								}),
 							},
 						},
 					},

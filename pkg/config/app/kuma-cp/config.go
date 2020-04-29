@@ -117,9 +117,6 @@ func DefaultConfig() Config {
 		Defaults: &Defaults{
 			Mesh: `type: Mesh
 name: default
-mtls:
-  ca: {}
-  enabled: false
 `,
 		},
 		Reports: &Reports{

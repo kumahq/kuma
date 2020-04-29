@@ -26,32 +26,46 @@ var _ = Describe("Mesh", func() {
             logging:
               backends:
               - name: file-1
-                file:
+                type: file
+                config:
                   path: /path/to/file
               - name: file-2
                 format: '%START_TIME% %KUMA_SOURCE_SERVICE%'
-                file:
+                type: file
+                config:
                   path: /path/to/file2
               - name: tcp-1
-                tcp:
+                type: tcp
+                config:
                   address: kibana:1234
               - name: tcp-2
                 format: '%START_TIME% %KUMA_DESTINATION_SERVICE%'
-                tcp:
+                type: tcp
+                config:
                   address: kibana:1234
               defaultBackend: tcp-1
             tracing:
               backends:
               - name: zipkin-us
                 sampling: 80.0
-                zipkin:
+                type: zipkin
+                config:
                   url: http://zipkin.local:9411/v2/spans
                   traceId128bit: true
                   apiVersion: httpProto
               - name: zipkin-eu
-                zipkin:
+                type: zipkin
+                config:
                   url: http://zipkin.local:9411/v2/spans
               defaultBackend: zipkin-us
+            metrics:
+              enabledBackend: prom-1
+              backends:
+              - name: prom-1
+                type: prometheus
+                config:
+                  port: 5670
+                  path: /metrics
 `
 			mesh := MeshResource{}
 
@@ -118,7 +132,8 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name:
-                    tcp:
+                    type: tcp
+                    config: 
                       address: kibana:1234`,
 				expected: `
                 violations:
@@ -130,10 +145,12 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    tcp:
+                    type: tcp
+                    config:
                       address: kibana:1234
                   - name: backend-1
-                    file:
+                    type: file
+                    config:
                       path: /path/to/file
                   defaultBackend: backend-1`,
 				expected: `
@@ -146,12 +163,13 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    tcp:
+                    type: tcp
+                    config:
                       address:
                   defaultBackend: backend-1`,
 				expected: `
                 violations:
-                - field: logging.backends[0].tcp.address
+                - field: logging.backends[0].config.address
                   message: cannot be empty`,
 			}),
 			Entry("tcp logging address is invalid", testCase{
@@ -159,12 +177,13 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    tcp:
+                    type: tcp
+                    config:
                       address: wrong-format:234:234
                   defaultBackend: backend-1`,
 				expected: `
                 violations:
-                - field: logging.backends[0].tcp.address
+                - field: logging.backends[0].config.address
                   message: has to be in format of HOST:PORT`,
 			}),
 			Entry("file logging path is empty", testCase{
@@ -172,12 +191,13 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    file:
+                    type: file
+                    config:
                       path:
                   defaultBackend: backend-1`,
 				expected: `
                 violations:
-                - field: logging.backends[0].file.path
+                - field: logging.backends[0].config.path
                   message: cannot be empty`,
 			}),
 			Entry("invalid access log format", testCase{
@@ -186,7 +206,8 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: backend-1
                     format: "%START_TIME% %sent_bytes%"
-                    file:
+                    type: file
+                    config:
                       path: /var/logs
                   defaultBackend: backend-1`,
 				expected: `
@@ -199,7 +220,8 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name: backend-1
-                    file:
+                    type: file
+                    config:
                       path: /path
                   defaultBackend: non-existing-backend`,
 				expected: `
@@ -212,7 +234,8 @@ var _ = Describe("Mesh", func() {
                 tracing:
                   backends:
                   - name:
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -224,10 +247,12 @@ var _ = Describe("Mesh", func() {
                 tracing:
                   backends:
                   - name: zipkin-us
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin.local:9411/v2/spans
                   - name: zipkin-us
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -240,7 +265,8 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     sampling: 100.1
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin-us.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -252,11 +278,12 @@ var _ = Describe("Mesh", func() {
                 tracing:
                   backends:
                   - name: zipkin-us
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: ""`,
 				expected: `
                 violations:
-                - field: tracing.backends[0].zipkin.url
+                - field: tracing.backends[0].config.url
                   message: cannot be empty`,
 			}),
 			Entry("tracing with zipkin with invalid url", testCase{
@@ -264,11 +291,12 @@ var _ = Describe("Mesh", func() {
                 tracing:
                   backends:
                   - name: zipkin-us
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: invalid-url`,
 				expected: `
                 violations:
-                - field: tracing.backends[0].zipkin.url
+                - field: tracing.backends[0].config.url
                   message: invalid URL`,
 			}),
 			Entry("tracing with zipkin with valid url but without port", testCase{
@@ -276,11 +304,12 @@ var _ = Describe("Mesh", func() {
                 tracing:
                   backends:
                   - name: zipkin-us
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin-us.local/v2/spans`,
 				expected: `
                 violations:
-                - field: tracing.backends[0].zipkin.url
+                - field: tracing.backends[0].config.url
                   message: port has to be explicitly specified`,
 			}),
 			Entry("tracing with zipkin with invalid apiVersion", testCase{
@@ -288,12 +317,13 @@ var _ = Describe("Mesh", func() {
                 tracing:
                   backends:
                   - name: zipkin-us
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin-us.local:9411/v2/spans
                       apiVersion: invalid`,
 				expected: `
                 violations:
-                - field: tracing.backends[0].zipkin.apiVersion
+                - field: tracing.backends[0].config.apiVersion
                   message: 'has invalid value. Allowed values: httpJsonV1, httpJson, httpProto'`,
 			}),
 			Entry("default backend has to be set to one of the backends", testCase{
@@ -302,12 +332,62 @@ var _ = Describe("Mesh", func() {
                   defaultBackend: non-existent
                   backends:
                   - name: zipkin-us
-                    zipkin:
+                    type: zipkin
+                    config:
                       url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
                 - field: tracing.defaultBackend
                   message: has to be set to one of the tracing backend in mesh`,
+			}),
+			Entry("multiple metrics backends of the same name", testCase{
+				mesh: `
+                metrics:
+                  enabledBackend: backend-1
+                  backends:
+                  - name: backend-1
+                    type: prometheus
+                  - name: backend-1
+                    type: prometheus`,
+				expected: `
+                violations:
+                - field: metrics.backends[1].name
+                  message: '"backend-1" name is already used for another backend'`,
+			}),
+			Entry("enabledBackend of unknown name", testCase{
+				mesh: `
+                metrics:
+                  enabledBackend: backend-2
+                  backends:
+                  - name: backend-1
+                    type: prometheus`,
+				expected: `
+                violations:
+                - field: metrics.enabledBackend
+                  message: has to be set to one of the backends in the mesh`,
+			}),
+			Entry("unknown backend types", testCase{
+				mesh: `
+                metrics:
+                  backends:
+                  - name: backend-1
+                    type: xxx
+                logging:
+                  backends:
+                  - name: backend-1
+                    type: xxx
+                tracing:
+                  backends:
+                  - name: backend-1
+                    type: xxx
+`,
+				expected: `violations:
+                - field: logging.backends[0].type
+                  message: 'unknown backend type. Available backends: "tcp", "file"'
+                - field: tracing.backends[0].type
+                  message: 'unknown backend type. Available backends: "zipkin"'
+                - field: metrics.backends[0].type
+                  message: 'unknown backend type. Available backends: "prometheus"'`,
 			}),
 			Entry("multiple errors", testCase{
 				mesh: `
@@ -316,12 +396,15 @@ var _ = Describe("Mesh", func() {
                 logging:
                   backends:
                   - name:
-                    file:
+                    type: file
+                    config:
                       path: /path
                   - name: tcp-1
-                    file:
-                      tcp: invalid-address
+                    type: file
+                    config:
+                      address: invalid-address
                   - name: tcp-1
+                    type: tcp
                     path:
                       address:
                   defaultBackend: invalid-backend`,
@@ -331,7 +414,9 @@ var _ = Describe("Mesh", func() {
                   message: has to be set to one of the backends in the mesh
                 - field: logging.backends[0].name
                   message: cannot be empty
-                - field: logging.backends[1].file.path
+                - field: logging.backends[1].config.path
+                  message: cannot be empty
+                - field: logging.backends[2].config.address
                   message: cannot be empty
                 - field: logging.backends[2].name
                   message: '"tcp-1" name is already used for another backend'

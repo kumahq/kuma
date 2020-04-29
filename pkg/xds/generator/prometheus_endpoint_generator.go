@@ -3,6 +3,8 @@ package generator
 import (
 	"net"
 
+	"github.com/pkg/errors"
+
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 
@@ -23,7 +25,10 @@ type PrometheusEndpointGenerator struct {
 }
 
 func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) ([]*core_xds.Resource, error) {
-	prometheusEndpoint := proxy.Dataplane.GetPrometheusEndpoint(ctx.Mesh.Resource)
+	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusEndpoint(ctx.Mesh.Resource)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get prometheus endpoint")
+	}
 	if prometheusEndpoint == nil {
 		// Prometheus metrics must be enabled Mesh-wide for Prometheus endpoint to be generated.
 		return nil, nil

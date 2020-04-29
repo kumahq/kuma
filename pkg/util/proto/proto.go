@@ -89,3 +89,11 @@ func ToStruct(message proto.Message) (pstruct.Struct, error) {
 	}
 	return str, nil
 }
+
+func MustToStruct(message proto.Message) *pstruct.Struct {
+	str, err := ToStruct(message)
+	if err != nil {
+		panic(err)
+	}
+	return &str
+}

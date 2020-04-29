@@ -1,6 +1,9 @@
 # CHANGELOG
 
 ## master
+* feat: refactor other pars of the Mesh to be consistent with CA
+  [#704](https://github.com/Kong/kuma/pull/704)
+  ⚠️ warning: breaking change of Mesh model
 * feat: secret validation on K8S
   [#696](https://github.com/Kong/kuma/pull/696)
 * feat: include traffic direction in access log
@@ -69,16 +72,28 @@
 
 Breaking changes:
 * ⚠ Mesh can now have multiple CAs of the same type. Also it can use CA loaded as a plugins. Mesh format changed from
-```
+```yaml
 type: Mesh
 name: default
 mtls:
   enabled: true
   ca:
     builtin: {}
+metrics:
+  prometheus: {}
+logging:
+  backends:
+  - name: file-1
+    file:
+      path: /var/log/access.log
+tracing:
+  backends:
+  - name: zipkin-1
+    zipkin:
+      url: http://zipkin.local:9411/api/v1/spans
 ```
 to
-```
+```yaml
 type: Mesh
 name: default
 mtls:
@@ -86,6 +101,24 @@ mtls:
   backends:
   - name: ca-1
     type: builtin
+metrics:
+  enabledBackend: prom-1
+  backends:
+  - name: prom-1
+    type: prometheus
+logging:
+  backends:
+  - name: file-1
+    type: file
+    config:
+      path: /var/log/access.log
+tracing:
+  backends:
+  - name: zipkin-1
+    type: zipkin
+    config:
+      url: http://zipkin.local:9411/api/v1/spans
+
 ```
 * ⚠️ before the change TrafficPermission worked in cumulative way, which means that all policies that matched a connection were applied.
   We changed TrafficPermission to work like every other policy so only "the most specific" matching policy is chosen.

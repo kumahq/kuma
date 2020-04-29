@@ -22,16 +22,15 @@ var _ = Describe("MeshResource", func() {
 		applyDefaultsScenario := func(given testCase) {
 			// given
 			mesh := &MeshResource{}
-
 			err := util_proto.FromYAML([]byte(given.input), &mesh.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
-			// do
-			mesh.Default()
-
 			// when
-			actual, err := util_proto.ToYAML(&mesh.Spec)
+			err = mesh.Default()
+
 			// then
+			Expect(err).ToNot(HaveOccurred())
+			actual, err := util_proto.ToYAML(&mesh.Spec)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		}
@@ -41,39 +40,62 @@ var _ = Describe("MeshResource", func() {
 			Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are not set", testCase{
 				input: `
                 metrics:
-                  prometheus: {}
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
 `,
 				expected: `
                 metrics:
-                  prometheus:
-                    port: 5670
-                    path: /metrics
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 5670
+                      path: /metrics
 `,
 			}),
 			Entry("when `metrics.prometheus.port` is not set", testCase{
 				input: `
                 metrics:
-                  prometheus:
-                    path: /non-standard-path
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      path: /non-standard-path
 `,
 				expected: `
                 metrics:
-                  prometheus:
-                    port: 5670
-                    path: /non-standard-path
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 5670
+                      path: /non-standard-path
 `,
 			}),
 			Entry("when `metrics.prometheus.path` is not set", testCase{
 				input: `
                 metrics:
-                  prometheus:
-                    port: 1234
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 1234
 `,
 				expected: `
                 metrics:
-                  prometheus:
-                    port: 1234
-                    path: /metrics
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 1234
+                      path: /metrics
 `,
 			}),
 		)
@@ -86,20 +108,6 @@ var _ = Describe("MeshResource", func() {
 `,
 				expected: `
                 metrics: {}
-`,
-			}),
-			Entry("when `mtls.ca.type` field is not set", testCase{
-				input: `
-                metrics:
-                  prometheus:
-                    port: 1234
-                    path: /non-standard-path
-`,
-				expected: `
-                metrics:
-                  prometheus:
-                    port: 1234
-                    path: /non-standard-path
 `,
 			}),
 		)

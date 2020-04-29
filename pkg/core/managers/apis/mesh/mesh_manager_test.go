@@ -132,39 +132,18 @@ var _ = Describe("Mesh Manager", func() {
 				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are not set", testCase{
 					input: `
                     metrics:
-                      prometheus: {}
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
 `,
 					expected: `
                     metrics:
-                      prometheus:
-                        port: 5670
-                        path: /metrics
-`,
-				}),
-				Entry("when `metrics.prometheus.port` is not set", testCase{
-					input: `
-                    metrics:
-                      prometheus:
-                        path: /non-standard-path
-`,
-					expected: `
-                    metrics:
-                      prometheus:
-                        port: 5670
-                        path: /non-standard-path
-`,
-				}),
-				Entry("when `metrics.prometheus.path` is not set", testCase{
-					input: `
-                    metrics:
-                      prometheus:
-                        port: 1234
-`,
-					expected: `
-                    metrics:
-                      prometheus:
-                        port: 1234
-                        path: /metrics
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 5670
+                          path: /metrics
 `,
 				}),
 			)
@@ -349,112 +328,65 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
 				},
-				Entry("when `metrics.prometheus` is unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated: `
-                    metrics: {}
-`,
-					expected: `
-                    metrics: {}
-`,
-				}),
-				Entry("when `metrics` is unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated:  ``,
-					expected: `{}`,
-				}),
-				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated: `
-                    metrics:
-                      prometheus: {}
-`,
-					expected: `
-                    metrics:
-                      prometheus:
-                        port: 5670
-                        path: /metrics
-`,
-				}),
-				Entry("when `metrics.prometheus.port` is unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated: `
-                    metrics:
-                      prometheus:
-                        path: /non-standard-path
-`,
-					expected: `
-                    metrics:
-                      prometheus:
-                        port: 5670
-                        path: /non-standard-path
-`,
-				}),
-				Entry("when `metrics.prometheus.path` is unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated: `
-                    metrics:
-                      prometheus:
-                        port: 1234
-`,
-					expected: `
-                    metrics:
-                      prometheus:
-                        port: 1234
-                        path: /metrics
-`,
-				}),
 				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are changed", testCase{
 					initial: `
                     metrics:
-                      prometheus: {}
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
 `,
 					updated: `
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 					expected: `
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 				}),
 				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` remain unchanged", testCase{
 					initial: `
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 					updated: `
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 					expected: `
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 				}),
 			)

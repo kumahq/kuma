@@ -16,13 +16,15 @@
         "backends": [
             {
                 "name": "zipkin-us",
-                "zipkin": {
+                "type": "zipkin",
+                "config": {
                     "url": "http://zipkin.us:8080/v1/spans"
                 }
             },
             {
                 "name": "zipkin-eu",
-                "zipkin": {
+                "type": "zipkin",
+                "config": {
                     "url": "http://zipkin.eu:8080/v1/spans"
                 }
             }
@@ -32,22 +34,31 @@
         "backends": [
             {
                 "name": "logstash",
-                "tcp": {
+                "type": "tcp",
+                "config": {
                     "address": "127.0.0.1:5000"
                 }
             },
             {
                 "name": "file",
-                "file": {
+                "type": "file",
+                "config": {
                     "path": "/tmp/service.log"
                 }
             }
         ]
     },
     "metrics": {
-        "prometheus": {
-            "port": 1234,
-            "path": "/non-standard-path"
-        }
+        "enabledBackend": "prometheus-1",
+        "backends": [
+            {
+                "name": "prometheus-1",
+                "type": "prometheus",
+                "config": {
+                    "port": 1234,
+                    "path": "/non-standard-path"
+                }
+            }
+        ]
     }
 }
