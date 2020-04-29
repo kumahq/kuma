@@ -84,17 +84,16 @@ func validateLoggingTcp(cfgStr *structpb.Struct) validators.ValidationError {
 	cfg := mesh_proto.TcpLoggingBackendConfig{}
 	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
 		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
-	} else {
-		if cfg.Address == "" {
-			verr.AddViolation("address", "cannot be empty")
-		} else {
-			host, port, err := net.SplitHostPort(cfg.Address)
-			if host == "" || port == "" || err != nil {
-				verr.AddViolation("address", "has to be in format of HOST:PORT")
-			}
-		}
+		return verr
 	}
-
+	if cfg.Address == "" {
+		verr.AddViolation("address", "cannot be empty")
+		return verr
+	}
+	host, port, err := net.SplitHostPort(cfg.Address)
+	if host == "" || port == "" || err != nil {
+		verr.AddViolation("address", "has to be in format of HOST:PORT")
+	}
 	return verr
 }
 
@@ -150,20 +149,20 @@ func validateZipkin(cfgStr *structpb.Struct) validators.ValidationError {
 	cfg := mesh_proto.ZipkinTracingBackendConfig{}
 	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
 		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
-	} else {
-		if cfg.Url == "" {
-			verr.AddViolation("url", "cannot be empty")
-		} else {
-			uri, err := url.ParseRequestURI(cfg.Url)
-			if err != nil {
-				verr.AddViolation("url", "invalid URL")
-			} else if uri.Port() == "" {
-				verr.AddViolation("url", "port has to be explicitly specified")
-			}
-		}
-		if cfg.ApiVersion != "" && cfg.ApiVersion != "httpJsonV1" && cfg.ApiVersion != "httpJson" && cfg.ApiVersion != "httpProto" {
-			verr.AddViolation("apiVersion", fmt.Sprintf(`has invalid value. %s`, AllowedValuesHint("httpJsonV1", "httpJson", "httpProto")))
-		}
+		return verr
+	}
+	if cfg.ApiVersion != "" && cfg.ApiVersion != "httpJsonV1" && cfg.ApiVersion != "httpJson" && cfg.ApiVersion != "httpProto" {
+		verr.AddViolation("apiVersion", fmt.Sprintf(`has invalid value. %s`, AllowedValuesHint("httpJsonV1", "httpJson", "httpProto")))
+	}
+	if cfg.Url == "" {
+		verr.AddViolation("url", "cannot be empty")
+		return verr
+	}
+	uri, err := url.ParseRequestURI(cfg.Url)
+	if err != nil {
+		verr.AddViolation("url", "invalid URL")
+	} else if uri.Port() == "" {
+		verr.AddViolation("url", "port has to be explicitly specified")
 	}
 	return verr
 }
