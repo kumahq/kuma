@@ -149,12 +149,14 @@ var _ = Describe("Envoy", func() {
 
 			By("starting a mock dataplane")
 			// when
-			dataplane, _ := New(Opts{
+			dataplane, err := New(Opts{
 				Config:    cfg,
 				Generator: sampleConfig,
 				Stdout:    &bytes.Buffer{},
 				Stderr:    &bytes.Buffer{},
 			})
+			// then
+			Expect(err).ToNot(HaveOccurred())
 			// and
 			go func() {
 				errCh <- dataplane.Start(stopCh)
@@ -162,7 +164,7 @@ var _ = Describe("Envoy", func() {
 
 			By("waiting for mock dataplane to complete")
 			// when
-			err := <-errCh
+			err = <-errCh
 			// then
 			Expect(err).To(BeAssignableToTypeOf(&exec.ExitError{}))
 
@@ -179,7 +181,7 @@ var _ = Describe("Envoy", func() {
 			// given
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
-					BinaryPath: filepath.Join("testdata", ""),
+					BinaryPath: filepath.Join("testdata"),
 					ConfigDir:  configDir,
 				},
 			}
@@ -189,14 +191,16 @@ var _ = Describe("Envoy", func() {
 
 			By("starting a mock dataplane")
 			// when
-			_, err := New(Opts{
+			dataplane, err := New(Opts{
 				Config:    cfg,
 				Generator: sampleConfig,
 				Stdout:    &bytes.Buffer{},
 				Stderr:    &bytes.Buffer{},
 			})
 			// then
-			Expect(err).NotTo(BeNil())
+			Expect(dataplane).To(BeNil())
+			// and
+			Expect(err.Error()).To(ContainSubstring(("could not find binary in any of the following paths")))
 
 			// complete
 			close(done)

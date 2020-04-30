@@ -39,9 +39,7 @@ type Opts struct {
 }
 
 func New(opts Opts) (*Envoy, error) {
-	binaryPathConfig := opts.Config.DataplaneRuntime.BinaryPath
-	_, err := lookupEnvoyPath(binaryPathConfig)
-	if err != nil {
+	if _, err := lookupEnvoyPath(opts.Config.DataplaneRuntime.BinaryPath); err != nil {
 		runLog.Error(err, "could not find the envoy executable in your path")
 		return nil, err
 	}
