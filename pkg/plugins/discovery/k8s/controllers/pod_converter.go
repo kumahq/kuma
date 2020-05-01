@@ -10,11 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	injector_metadata "github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
 	"github.com/Kong/kuma/pkg/core"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_k8s "github.com/Kong/kuma/pkg/plugins/discovery/k8s/util"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	injector_metadata "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 
 	kube_core "k8s.io/api/core/v1"

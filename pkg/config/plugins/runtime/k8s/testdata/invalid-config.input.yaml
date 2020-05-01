@@ -1,11 +1,8 @@
-webHookServer:
+admissionServer:
   address: x.y.z
   port: 123456
   certDir:
 injector:
-  controlPlane:
-    apiServer:
-      url: api-server
   sidecarContainer:
     image:
     redirectPort: 423456
