@@ -7,7 +7,20 @@ import (
 )
 
 func (m *MeshResource) HasPrometheusMetricsEnabled() bool {
-	return m != nil && m.Spec.GetMetrics().GetPrometheus() != nil
+	return m != nil && m.GetEnabledMetricsBackend().GetType() == mesh_proto.MetricsPrometheusType
+}
+
+func (m *MeshResource) GetEnabledMetricsBackend() *mesh_proto.MetricsBackend {
+	return m.GetMetricsBackend(m.Spec.GetMetrics().GetEnabledBackend())
+}
+
+func (m *MeshResource) GetMetricsBackend(name string) *mesh_proto.MetricsBackend {
+	for _, backend := range m.Spec.GetMetrics().GetBackends() {
+		if backend.Name == name {
+			return backend
+		}
+	}
+	return nil
 }
 
 func (m *MeshResource) MTLSEnabled() bool {

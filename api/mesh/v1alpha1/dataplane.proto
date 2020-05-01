@@ -113,5 +113,5 @@ message Dataplane {
   //
   // Settings defined here will override their respective defaults
   // defined at a Mesh level.
-  Metrics metrics = 2;
+  MetricsBackend metrics = 2;
 }

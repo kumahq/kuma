@@ -14,7 +14,7 @@ import (
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -23,16 +23,17 @@ import (
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("kumactl get meshes", func() {
 
 	sampleMeshes := []*mesh.MeshResource{
 		{
-			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
+			Spec: mesh_proto.Mesh{
+				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: "builtin-1",
-					Backends: []*v1alpha1.CertificateAuthorityBackend{
+					Backends: []*mesh_proto.CertificateAuthorityBackend{
 						{
 							Name: "builtin-1",
 							Type: "builtin",
@@ -43,49 +44,60 @@ var _ = Describe("kumactl get meshes", func() {
 						},
 					},
 				},
-				Metrics: &v1alpha1.Metrics{
-					Prometheus: &v1alpha1.Metrics_Prometheus{
-						Port: 1234,
-						Path: "/non-standard-path",
+				Metrics: &mesh_proto.Metrics{
+					EnabledBackend: "prometheus-1",
+					Backends: []*mesh_proto.MetricsBackend{
+						{
+							Name: "prometheus-1",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Port: 1234,
+								Path: "/non-standard-path",
+							}),
+						},
+						{
+							Name: "prometheus-2",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Port: 1235,
+								Path: "/non-standard-path",
+							}),
+						},
 					},
 				},
-				Logging: &v1alpha1.Logging{
-					Backends: []*v1alpha1.LoggingBackend{
+				Logging: &mesh_proto.Logging{
+					Backends: []*mesh_proto.LoggingBackend{
 						{
 							Name: "logstash",
-							Type: &v1alpha1.LoggingBackend_Tcp_{
-								Tcp: &v1alpha1.LoggingBackend_Tcp{
-									Address: "127.0.0.1:5000",
-								},
-							},
+							Type: mesh_proto.LoggingTcpType,
+							Config: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+								Address: "127.0.0.1:5000",
+							}),
 						},
 						{
 							Name: "file",
-							Type: &v1alpha1.LoggingBackend_File_{
-								File: &v1alpha1.LoggingBackend_File{
-									Path: "/tmp/service.log",
-								},
-							},
+							Type: mesh_proto.LoggingFileType,
+							Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+								Path: "/tmp/service.log",
+							}),
 						},
 					},
 				},
-				Tracing: &v1alpha1.Tracing{
-					Backends: []*v1alpha1.TracingBackend{
+				Tracing: &mesh_proto.Tracing{
+					Backends: []*mesh_proto.TracingBackend{
 						{
 							Name: "zipkin-us",
-							Type: &v1alpha1.TracingBackend_Zipkin_{
-								Zipkin: &v1alpha1.TracingBackend_Zipkin{
-									Url: "http://zipkin.us:8080/v1/spans",
-								},
-							},
+							Type: mesh_proto.TracingZipkinType,
+							Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Url: "http://zipkin.us:8080/v1/spans",
+							}),
 						},
 						{
 							Name: "zipkin-eu",
-							Type: &v1alpha1.TracingBackend_Zipkin_{
-								Zipkin: &v1alpha1.TracingBackend_Zipkin{
-									Url: "http://zipkin.eu:8080/v1/spans",
-								},
-							},
+							Type: mesh_proto.TracingZipkinType,
+							Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Url: "http://zipkin.eu:8080/v1/spans",
+							}),
 						},
 					},
 				},
@@ -96,18 +108,15 @@ var _ = Describe("kumactl get meshes", func() {
 			},
 		},
 		{
-			Spec: v1alpha1.Mesh{
-				Metrics: &v1alpha1.Metrics{
-					Prometheus: &v1alpha1.Metrics_Prometheus{
-						Port: 1234,
-						Path: "/non-standard-path",
-					},
+			Spec: mesh_proto.Mesh{
+				Metrics: &mesh_proto.Metrics{
+					Backends: []*mesh_proto.MetricsBackend{},
 				},
-				Logging: &v1alpha1.Logging{
-					Backends: []*v1alpha1.LoggingBackend{},
+				Logging: &mesh_proto.Logging{
+					Backends: []*mesh_proto.LoggingBackend{},
 				},
-				Tracing: &v1alpha1.Tracing{
-					Backends: []*v1alpha1.TracingBackend{},
+				Tracing: &mesh_proto.Tracing{
+					Backends: []*mesh_proto.TracingBackend{},
 				},
 			},
 			Meta: &test_model.ResourceMeta{

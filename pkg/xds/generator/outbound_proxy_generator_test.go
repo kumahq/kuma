@@ -155,19 +155,17 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				Logs: model.LogMap{
 					"api-http": &mesh_proto.LoggingBackend{
 						Name: "file",
-						Type: &mesh_proto.LoggingBackend_File_{
-							File: &mesh_proto.LoggingBackend_File{
-								Path: "/var/log",
-							},
-						},
+						Type: mesh_proto.LoggingFileType,
+						Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+							Path: "/var/log",
+						}),
 					},
 					"api-tcp": &mesh_proto.LoggingBackend{
 						Name: "elk",
-						Type: &mesh_proto.LoggingBackend_Tcp_{
-							Tcp: &mesh_proto.LoggingBackend_Tcp{
-								Address: "logstash:1234",
-							},
-						},
+						Type: mesh_proto.LoggingTcpType,
+						Config: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+							Address: "logstash:1234",
+						}),
 					},
 				},
 				Metadata: &model.DataplaneMetadata{},

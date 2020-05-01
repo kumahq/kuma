@@ -3,15 +3,15 @@ package injector
 import (
 	"context"
 	"fmt"
-	"strconv"
+
+	runtime_k8s "github.com/Kong/kuma/pkg/config/plugins/runtime/k8s"
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
-	config "github.com/Kong/kuma/pkg/config/app/kuma-injector"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
@@ -29,18 +29,20 @@ const (
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 )
 
-func New(cfg config.Injector, client kube_client.Client) *KumaInjector {
+func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Client) *KumaInjector {
 	return &KumaInjector{
-		cfg:       cfg,
-		client:    client,
-		converter: k8s_resources.DefaultConverter(),
+		cfg:             cfg,
+		controlPlaneUrl: controlPlaneUrl,
+		client:          client,
+		converter:       k8s_resources.DefaultConverter(),
 	}
 }
 
 type KumaInjector struct {
-	cfg       config.Injector
-	client    kube_client.Client
-	converter k8s_resources.Converter
+	cfg             runtime_k8s.Injector
+	controlPlaneUrl string
+	client          kube_client.Client
+	converter       k8s_resources.Converter
 }
 
 func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
@@ -68,7 +70,7 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	}
 
 	// init container
-	if i.cfg.InitContainer.Enabled {
+	if !i.cfg.CNIEnabled {
 		if pod.Spec.InitContainers == nil {
 			pod.Spec.InitContainers = []kube_core.Container{}
 		}
@@ -131,7 +133,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Contain
 			},
 			{
 				Name:  "KUMA_CONTROL_PLANE_API_SERVER_URL",
-				Value: i.cfg.ControlPlane.ApiServer.URL,
+				Value: i.controlPlaneUrl,
 			},
 			{
 				Name:  "KUMA_DATAPLANE_MESH",
@@ -284,45 +286,8 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
 		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
 	}
-	if !i.cfg.InitContainer.Enabled {
+	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
-	}
-	for k, v := range i.prometheusAnnotations(pod, mesh) {
-		annotations[k] = v
-	}
-	return annotations
-}
-
-const (
-	prometheusScrape = "prometheus.io/scrape"
-	prometheusPath   = "prometheus.io/path"
-	prometheusPort   = "prometheus.io/port"
-)
-
-func (i *KumaInjector) prometheusAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
-	annotations := map[string]string{}
-
-	// we want to ignore adding annotation when there are already prometheus annotation present on the Pod
-	_, scrapeExists := pod.Annotations[prometheusScrape]
-	_, pathExists := pod.Annotations[prometheusPath]
-	_, portExists := pod.Annotations[prometheusPort]
-	if scrapeExists || pathExists || portExists {
-		return annotations
-	}
-
-	if mesh.HasPrometheusMetricsEnabled() {
-		// use mesh defaults
-		annotations[prometheusScrape] = "true"
-		annotations[prometheusPath] = mesh.Spec.Metrics.Prometheus.Path
-		annotations[prometheusPort] = strconv.Itoa(int(mesh.Spec.Metrics.Prometheus.Port))
-
-		// set overrides from custom Kuma Prometheus annotations
-		if port, exists := pod.GetAnnotations()[metadata.KumaMetricsPrometheusPort]; exists {
-			annotations[prometheusPort] = port
-		}
-		if path, exists := pod.GetAnnotations()[metadata.KumaMetricsPrometheusPath]; exists {
-			annotations[prometheusPath] = path
-		}
 	}
 	return annotations
 }

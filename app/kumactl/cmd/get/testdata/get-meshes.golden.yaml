@@ -3,15 +3,26 @@ items:
   logging:
     backends:
       - name: logstash
-        tcp:
+        type: tcp
+        config:
           address: 127.0.0.1:5000
-      - file:
+      - config:
           path: /tmp/service.log
+        type: file
         name: file
   metrics:
-    prometheus:
-      path: /non-standard-path
-      port: 1234
+    enabledBackend: prometheus-1
+    backends:
+      - name: prometheus-1
+        type: prometheus
+        config:
+          path: /non-standard-path
+          port: 1234
+      - name: prometheus-2
+        type: prometheus
+        config:
+          path: /non-standard-path
+          port: 1235
   modificationTime: "0001-01-01T00:00:00Z"
   mtls:
     backends:
@@ -24,19 +35,19 @@ items:
   tracing:
     backends:
       - name: zipkin-us
-        zipkin:
+        type: zipkin
+        config:
           url: http://zipkin.us:8080/v1/spans
       - name: zipkin-eu
-        zipkin:
+        type: zipkin
+        config:
           url: http://zipkin.eu:8080/v1/spans
   type: Mesh
 - creationTime: "0001-01-01T00:00:00Z"
   logging:
     backends: []
   metrics:
-    prometheus:
-      path: /non-standard-path
-      port: 1234
+    backends: []
   modificationTime: "0001-01-01T00:00:00Z"
   name: mesh2
   tracing:

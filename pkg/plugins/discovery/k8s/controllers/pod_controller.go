@@ -20,8 +20,8 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_record "k8s.io/client-go/tools/record"
 
-	injector_metadata "github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	injector_metadata "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 
 	util_k8s "github.com/Kong/kuma/pkg/plugins/discovery/k8s/util"
 )

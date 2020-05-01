@@ -8,9 +8,6 @@ metadata:
     kuma.io/transparent-proxying-port: "15001"
     prometheus.metrics.kuma.io/path: /custom-metrics
     prometheus.metrics.kuma.io/port: "5678"
-    prometheus.io/path: /custom-metrics
-    prometheus.io/port: "5678"
-    prometheus.io/scrape: "true"
   creationTimestamp: null
   labels:
     run: busybox

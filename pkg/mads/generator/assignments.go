@@ -9,6 +9,7 @@ import (
 	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 
@@ -22,6 +23,8 @@ const (
 	// dataplaneLabel is the name of the label that holds the dataplane name.
 	dataplaneLabel = "dataplane"
 )
+
+var log = core.Log.WithName("mads").WithName("generator")
 
 // MonitoringAssignmentsGenerator knows how to generate MonitoringAssignment
 // resources for a given set of Dataplanes.
@@ -101,7 +104,13 @@ func (g MonitoringAssignmentsGenerator) Generate(args Args) ([]*core_xds.Resourc
 			continue
 		}
 
-		prometheusEndpoint := dataplane.GetPrometheusEndpoint(mesh)
+		prometheusEndpoint, err := dataplane.GetPrometheusEndpoint(mesh)
+		if err != nil {
+			log.Info("could not get prometheus endpoint from the dataplane", err)
+			// does not return error to not break MADS for other dataplanes
+			continue
+		}
+
 		if prometheusEndpoint == nil {
 			// Prometheus metrics are not enabled on that Mesh
 			continue
@@ -137,7 +146,7 @@ func (_ MonitoringAssignmentsGenerator) assignmentName(dataplane *mesh_core.Data
 	return fmt.Sprintf("/meshes/%s/dataplanes/%s", dataplane.Meta.GetMesh(), dataplane.Meta.GetName())
 }
 
-func (_ MonitoringAssignmentsGenerator) addressLabel(dataplane *mesh_core.DataplaneResource, endpoint *mesh_proto.Metrics_Prometheus) map[string]string {
+func (_ MonitoringAssignmentsGenerator) addressLabel(dataplane *mesh_core.DataplaneResource, endpoint *mesh_proto.PrometheusMetricsBackendConfig) map[string]string {
 	// TODO(yskopets): handle a case where Dataplane's IP is unknown
 	// For now, we export such a Dataplane with an empty IP address, so that the error state will be at least visible on the Prometheus side
 	return map[string]string{
@@ -145,7 +154,7 @@ func (_ MonitoringAssignmentsGenerator) addressLabel(dataplane *mesh_core.Datapl
 	}
 }
 
-func (g MonitoringAssignmentsGenerator) dataplaneLabels(dataplane *mesh_core.DataplaneResource, endpoint *mesh_proto.Metrics_Prometheus) map[string]string {
+func (g MonitoringAssignmentsGenerator) dataplaneLabels(dataplane *mesh_core.DataplaneResource, endpoint *mesh_proto.PrometheusMetricsBackendConfig) map[string]string {
 	labels := map[string]string{}
 	// first, we copy user-defined tags
 	tags := dataplane.Spec.Tags()

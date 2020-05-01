@@ -194,9 +194,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - type: builtin
                 name: builtin
             metrics:
-              prometheus:
-                port: 1234
-                path: /non-standard-path
+              enabledBackend: prometheus-1
+              backends:
+              - name: prometheus-1
+                type: prometheus
+                config:
+                  port: 1234
+                  path: /non-standard-path
 `,
 			dataplane: `
             networking:
@@ -224,9 +228,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - type: builtin
                 name: builtin
             metrics:
-              prometheus:
-                port: 1234
-                path: /non-standard-path
+              enabledBackend: prometheus-1
+              backends:
+              - name: prometheus-1
+                type: prometheus
+                config:
+                  port: 1234
+                  path: /non-standard-path
 `,
 			dataplane: `
             networking:
@@ -256,9 +264,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - type: builtin
                 name: builtin
             metrics:
-              prometheus:
-                port: 80
-                path: /non-standard-path
+              enabledBackend: prometheus-1
+              backends:
+              - name: prometheus-1
+                type: prometheus
+                config:
+                  port: 80
+                  path: /non-standard-path
 `,
 			dataplane: `
             networking:
@@ -285,9 +297,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - type: builtin
                 name: builtin
             metrics:
-              prometheus:
-                port: 80
-                path: /non-standard-path
+              enabledBackend: prometheus-1
+              backends:
+              - name: prometheus-1
+                type: prometheus
+                config:
+                  port: 80
+                  path: /non-standard-path
 `,
 			dataplane: `
             networking:
@@ -316,9 +332,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - type: builtin
                 name: builtin
             metrics:
-              prometheus:
-                port: 8080
-                path: /non-standard-path
+              enabledBackend: prometheus-1
+              backends:
+              - name: prometheus-1
+                type: prometheus
+                config:
+                  port: 8080
+                  path: /non-standard-path
 `,
 			dataplane: `
             networking:
@@ -345,9 +365,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - type: builtin
                 name: builtin
             metrics:
-              prometheus:
-                port: 8080
-                path: /non-standard-path
+              enabledBackend: prometheus-1
+              backends:
+              - name: prometheus-1
+                type: prometheus
+                config:
+                  port: 8080
+                  path: /non-standard-path
 `,
 			dataplane: `
             networking:
@@ -376,9 +400,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - type: builtin
                 name: builtin
             metrics:
-              prometheus:
-                port: 54321
-                path: /non-standard-path
+              enabledBackend: prometheus-1
+              backends:
+              - name: prometheus-1
+                type: prometheus
+                config:
+                  port: 54321
+                  path: /non-standard-path
 `,
 			dataplane: `
             networking:
@@ -405,9 +433,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - type: builtin
                 name: builtin
             metrics:
-              prometheus:
-                port: 59200
-                path: /non-standard-path
+              enabledBackend: prometheus-1
+              backends:
+              - name: prometheus-1
+                type: prometheus
+                config:
+                  port: 59200
+                  path: /non-standard-path
 `,
 			dataplane: `
             networking:

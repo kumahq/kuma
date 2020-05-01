@@ -5,9 +5,12 @@ import (
 	"net"
 	"net/url"
 
+	structpb "github.com/golang/protobuf/ptypes/struct"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/envoy/accesslog"
+	"github.com/Kong/kuma/pkg/util/proto"
 )
 
 func (m *MeshResource) Validate() error {
@@ -15,6 +18,7 @@ func (m *MeshResource) Validate() error {
 	verr.AddError("mtls", validateMtls(m.Spec.Mtls))
 	verr.AddError("logging", validateLogging(m.Spec.Logging))
 	verr.AddError("tracing", validateTracing(m.Spec.Tracing))
+	verr.AddError("metrics", validateMetrics(m.Spec.Metrics))
 	return verr.OrNil()
 }
 
@@ -33,6 +37,7 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	if mtls.GetEnabledBackend() != "" && !usedNames[mtls.GetEnabledBackend()] {
 		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
 	}
+	// validation of CA backend type is omitted since it can change when you load plugins
 	return verr
 }
 
@@ -63,33 +68,44 @@ func validateLoggingBackend(backend *mesh_proto.LoggingBackend) validators.Valid
 	if err := accesslog.ValidateFormat(backend.Format); err != nil {
 		verr.AddViolation("format", err.Error())
 	}
-	if file, ok := backend.GetType().(*mesh_proto.LoggingBackend_File_); ok {
-		verr.AddError("file", validateLoggingFile(file))
-	} else if tcp, ok := backend.GetType().(*mesh_proto.LoggingBackend_Tcp_); ok {
-		verr.AddError("tcp", validateLoggingTcp(tcp))
+	switch backend.GetType() {
+	case mesh_proto.LoggingFileType:
+		verr.AddError("config", validateLoggingFile(backend.Config))
+	case mesh_proto.LoggingTcpType:
+		verr.AddError("config", validateLoggingTcp(backend.Config))
+	default:
+		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q, %q", mesh_proto.LoggingTcpType, mesh_proto.LoggingFileType))
 	}
 	return verr
 }
 
-func validateLoggingTcp(tcp *mesh_proto.LoggingBackend_Tcp_) validators.ValidationError {
+func validateLoggingTcp(cfgStr *structpb.Struct) validators.ValidationError {
 	var verr validators.ValidationError
-	if tcp.Tcp.Address == "" {
+	cfg := mesh_proto.TcpLoggingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
+		return verr
+	}
+	if cfg.Address == "" {
 		verr.AddViolation("address", "cannot be empty")
-	} else {
-		host, port, err := net.SplitHostPort(tcp.Tcp.Address)
-		if host == "" || port == "" || err != nil {
-			verr.AddViolation("address", "has to be in format of HOST:PORT")
-		}
+		return verr
+	}
+	host, port, err := net.SplitHostPort(cfg.Address)
+	if host == "" || port == "" || err != nil {
+		verr.AddViolation("address", "has to be in format of HOST:PORT")
 	}
 	return verr
 }
 
-func validateLoggingFile(file *mesh_proto.LoggingBackend_File_) validators.ValidationError {
-	var veer validators.ValidationError
-	if file.File.Path == "" {
-		veer.AddViolation("path", "cannot be empty")
+func validateLoggingFile(cfgStr *structpb.Struct) validators.ValidationError {
+	var verr validators.ValidationError
+	cfg := mesh_proto.FileLoggingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
+	} else if cfg.Path == "" {
+		verr.AddViolation("path", "cannot be empty")
 	}
-	return veer
+	return verr
 }
 
 func validateTracing(tracing *mesh_proto.Tracing) validators.ValidationError {
@@ -116,29 +132,58 @@ func validateTracingBackend(backend *mesh_proto.TracingBackend) validators.Valid
 	if backend.Name == "" {
 		verr.AddViolation("name", "cannot be empty")
 	}
+	if backend.GetType() != mesh_proto.TracingZipkinType {
+		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.TracingZipkinType))
+	}
 	if backend.Sampling.GetValue() < 0.0 || backend.Sampling.GetValue() > 100.0 {
 		verr.AddViolation("sampling", "has to be in [0.0 - 100.0] range")
 	}
-	if zipkin, ok := backend.GetType().(*mesh_proto.TracingBackend_Zipkin_); ok {
-		verr.AddError("zipkin", validateZipkin(zipkin.Zipkin))
+	if backend.GetType() == mesh_proto.TracingZipkinType {
+		verr.AddError("config", validateZipkin(backend.Config))
 	}
 	return verr
 }
 
-func validateZipkin(zipkin *mesh_proto.TracingBackend_Zipkin) validators.ValidationError {
+func validateZipkin(cfgStr *structpb.Struct) validators.ValidationError {
 	var verr validators.ValidationError
-	if zipkin.Url == "" {
-		verr.AddViolation("url", "cannot be empty")
-	} else {
-		uri, err := url.ParseRequestURI(zipkin.Url)
-		if err != nil {
-			verr.AddViolation("url", "invalid URL")
-		} else if uri.Port() == "" {
-			verr.AddViolation("url", "port has to be explicitly specified")
-		}
+	cfg := mesh_proto.ZipkinTracingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
+		return verr
 	}
-	if zipkin.ApiVersion != "" && zipkin.ApiVersion != "httpJsonV1" && zipkin.ApiVersion != "httpJson" && zipkin.ApiVersion != "httpProto" {
+	if cfg.ApiVersion != "" && cfg.ApiVersion != "httpJsonV1" && cfg.ApiVersion != "httpJson" && cfg.ApiVersion != "httpProto" {
 		verr.AddViolation("apiVersion", fmt.Sprintf(`has invalid value. %s`, AllowedValuesHint("httpJsonV1", "httpJson", "httpProto")))
+	}
+	if cfg.Url == "" {
+		verr.AddViolation("url", "cannot be empty")
+		return verr
+	}
+	uri, err := url.ParseRequestURI(cfg.Url)
+	if err != nil {
+		verr.AddViolation("url", "invalid URL")
+	} else if uri.Port() == "" {
+		verr.AddViolation("url", "port has to be explicitly specified")
+	}
+	return verr
+}
+
+func validateMetrics(metrics *mesh_proto.Metrics) validators.ValidationError {
+	var verr validators.ValidationError
+	if metrics == nil {
+		return verr
+	}
+	usedNames := map[string]bool{}
+	for i, backend := range metrics.GetBackends() {
+		if usedNames[backend.Name] {
+			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
+		}
+		if backend.GetType() != mesh_proto.MetricsPrometheusType {
+			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.MetricsPrometheusType))
+		}
+		usedNames[backend.Name] = true
+	}
+	if metrics.GetEnabledBackend() != "" && !usedNames[metrics.GetEnabledBackend()] {
+		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
 	}
 	return verr
 }

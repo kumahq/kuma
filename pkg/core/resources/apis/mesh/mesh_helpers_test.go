@@ -8,6 +8,7 @@ import (
 	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MeshResource", func() {
@@ -43,7 +44,13 @@ var _ = Describe("MeshResource", func() {
 				mesh: &MeshResource{
 					Spec: mesh_proto.Mesh{
 						Metrics: &mesh_proto.Metrics{
-							Prometheus: &mesh_proto.Metrics_Prometheus{},
+							EnabledBackend: "prometheus-1",
+							Backends: []*mesh_proto.MetricsBackend{
+								{
+									Name: "prometheus-1",
+									Type: mesh_proto.MetricsPrometheusType,
+								},
+							},
 						},
 					},
 				},
@@ -80,19 +87,17 @@ var _ = Describe("MeshResource", func() {
 							Backends: []*mesh_proto.TracingBackend{
 								{
 									Name: "zipkin-us",
-									Type: &mesh_proto.TracingBackend_Zipkin_{
-										Zipkin: &mesh_proto.TracingBackend_Zipkin{
-											Url: "http://zipkin.us:8080/v1/spans",
-										},
-									},
+									Type: mesh_proto.TracingZipkinType,
+									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+										Url: "http://zipkin.us:8080/v1/spans",
+									}),
 								},
 								{
 									Name: "zipkin-eu",
-									Type: &mesh_proto.TracingBackend_Zipkin_{
-										Zipkin: &mesh_proto.TracingBackend_Zipkin{
-											Url: "http://zipkin.eu:8080/v1/spans",
-										},
-									},
+									Type: mesh_proto.TracingZipkinType,
+									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+										Url: "http://zipkin.eu:8080/v1/spans",
+									}),
 								},
 							},
 						},
@@ -109,11 +114,10 @@ var _ = Describe("MeshResource", func() {
 							Backends: []*mesh_proto.TracingBackend{
 								{
 									Name: "zipkin-us",
-									Type: &mesh_proto.TracingBackend_Zipkin_{
-										Zipkin: &mesh_proto.TracingBackend_Zipkin{
-											Url: "http://zipkin.us:8080/v1/spans",
-										},
-									},
+									Type: mesh_proto.TracingZipkinType,
+									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+										Url: "http://zipkin.us:8080/v1/spans",
+									}),
 								},
 							},
 						},
@@ -130,19 +134,17 @@ var _ = Describe("MeshResource", func() {
 							Backends: []*mesh_proto.TracingBackend{
 								{
 									Name: "zipkin-us",
-									Type: &mesh_proto.TracingBackend_Zipkin_{
-										Zipkin: &mesh_proto.TracingBackend_Zipkin{
-											Url: "http://zipkin.us:8080/v1/spans",
-										},
-									},
+									Type: mesh_proto.TracingZipkinType,
+									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+										Url: "http://zipkin.us:8080/v1/spans",
+									}),
 								},
 								{
 									Name: "zipkin-eu",
-									Type: &mesh_proto.TracingBackend_Zipkin_{
-										Zipkin: &mesh_proto.TracingBackend_Zipkin{
-											Url: "http://zipkin.eu:8080/v1/spans",
-										},
-									},
+									Type: mesh_proto.TracingZipkinType,
+									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+										Url: "http://zipkin.eu:8080/v1/spans",
+									}),
 								},
 							},
 						},
@@ -158,11 +160,10 @@ var _ = Describe("MeshResource", func() {
 							Backends: []*mesh_proto.TracingBackend{
 								{
 									Name: "zipkin-us",
-									Type: &mesh_proto.TracingBackend_Zipkin_{
-										Zipkin: &mesh_proto.TracingBackend_Zipkin{
-											Url: "http://zipkin.us:8080/v1/spans",
-										},
-									},
+									Type: mesh_proto.TracingZipkinType,
+									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+										Url: "http://zipkin.us:8080/v1/spans",
+									}),
 								},
 							},
 						},
@@ -181,27 +182,19 @@ var _ = Describe("MeshResource", func() {
 					Logging: &mesh_proto.Logging{
 						Backends: []*mesh_proto.LoggingBackend{
 							{
-								Name: "logstash",
-								Type: &mesh_proto.LoggingBackend_Tcp_{
-									Tcp: &mesh_proto.LoggingBackend_Tcp{
-										Address: "127.0.0.1:5000",
-									},
-								},
+								Name: "logstash-1",
+								Type: "logstash",
 							},
 							{
-								Name: "file",
-								Type: &mesh_proto.LoggingBackend_File_{
-									File: &mesh_proto.LoggingBackend_File{
-										Path: "/tmp/service.log",
-									},
-								},
+								Name: "file-1",
+								Type: "file",
 							},
 						},
 					},
 				},
 			}
 			backends := mesh.GetLoggingBackends()
-			Expect(backends).To(Equal("logstash, file"))
+			Expect(backends).To(Equal("logstash-1, file-1"))
 		})
 		It("should return default logging backend if logging backends is empty", func() {
 			mesh := &MeshResource{
@@ -225,19 +218,17 @@ var _ = Describe("MeshResource", func() {
 						Backends: []*mesh_proto.TracingBackend{
 							{
 								Name: "zipkin-us",
-								Type: &mesh_proto.TracingBackend_Zipkin_{
-									Zipkin: &mesh_proto.TracingBackend_Zipkin{
-										Url: "http://zipkin.us:8080/v1/spans",
-									},
-								},
+								Type: mesh_proto.TracingZipkinType,
+								Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Url: "http://zipkin.us:8080/v1/spans",
+								}),
 							},
 							{
 								Name: "zipkin-eu",
-								Type: &mesh_proto.TracingBackend_Zipkin_{
-									Zipkin: &mesh_proto.TracingBackend_Zipkin{
-										Url: "http://zipkin.eu:8080/v1/spans",
-									},
-								},
+								Type: mesh_proto.TracingZipkinType,
+								Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Url: "http://zipkin.eu:8080/v1/spans",
+								}),
 							},
 						},
 					},

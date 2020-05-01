@@ -29,11 +29,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		ControlPlaneServiceName string
 		AdmissionServerTlsCert  string
 		AdmissionServerTlsKey   string
-		InjectorImage           string
 		InjectorFailurePolicy   string
-		InjectorServiceName     string
-		InjectorTlsCert         string
-		InjectorTlsKey          string
 		DataplaneImage          string
 		DataplaneInitImage      string
 		SdsTlsCert              string
@@ -49,11 +45,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		ControlPlaneServiceName: "kuma-control-plane",
 		AdmissionServerTlsCert:  "",
 		AdmissionServerTlsKey:   "",
-		InjectorImage:           "kong-docker-kuma-docker.bintray.io/kuma-injector",
 		InjectorFailurePolicy:   "Ignore",
-		InjectorServiceName:     "kuma-injector",
-		InjectorTlsCert:         "",
-		InjectorTlsKey:          "",
 		DataplaneImage:          "kong-docker-kuma-docker.bintray.io/kuma-dp",
 		DataplaneInitImage:      "kong-docker-kuma-docker.bintray.io/kuma-init",
 		SdsTlsCert:              "",
@@ -77,19 +69,6 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				args.AdmissionServerTlsKey = string(admissionCert.KeyPEM)
 			} else if args.AdmissionServerTlsCert == "" || args.AdmissionServerTlsKey == "" {
 				return errors.Errorf("Admission Server: both TLS Cert and TLS Key must be provided at the same time")
-			}
-
-			if args.InjectorTlsCert == "" && args.InjectorTlsKey == "" {
-				fqdn := fmt.Sprintf("%s.%s.svc", args.InjectorServiceName, args.Namespace)
-				// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
-				injectorCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType)
-				if err != nil {
-					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
-				}
-				args.InjectorTlsCert = string(injectorCert.CertPEM)
-				args.InjectorTlsKey = string(injectorCert.KeyPEM)
-			} else if args.InjectorTlsCert == "" || args.InjectorTlsKey == "" {
-				return errors.Errorf("Injector: both TLS Cert and TLS Key must be provided at the same time")
 			}
 
 			if args.SdsTlsCert == "" && args.SdsTlsKey == "" {
@@ -148,11 +127,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.ControlPlaneServiceName, "control-plane-service-name", args.ControlPlaneServiceName, "Service name of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.AdmissionServerTlsCert, "admission-server-tls-cert", args.AdmissionServerTlsCert, "TLS certificate for the admission web hooks implemented by the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.AdmissionServerTlsKey, "admission-server-tls-key", args.AdmissionServerTlsKey, "TLS key for the admission web hooks implemented by the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.InjectorImage, "injector-image", args.InjectorImage, "image of the Kuma Injector component")
 	cmd.Flags().StringVar(&args.InjectorFailurePolicy, "injector-failure-policy", args.InjectorFailurePolicy, "failue policy of the mutating web hook implemented by the Kuma Injector component")
-	cmd.Flags().StringVar(&args.InjectorServiceName, "injector-service-name", args.InjectorServiceName, "Service name of the mutating web hook implemented by the Kuma Injector component")
-	cmd.Flags().StringVar(&args.InjectorTlsCert, "injector-tls-cert", args.InjectorTlsCert, "TLS certificate for the mutating web hook implemented by the Kuma Injector component")
-	cmd.Flags().StringVar(&args.InjectorTlsKey, "injector-tls-key", args.InjectorTlsKey, "TLS key for the mutating web hook implemented by the Kuma Injector component")
 	cmd.Flags().StringVar(&args.DataplaneImage, "dataplane-image", args.DataplaneImage, "image of the Kuma Dataplane component")
 	cmd.Flags().StringVar(&args.DataplaneInitImage, "dataplane-init-image", args.DataplaneInitImage, "init image of the Kuma Dataplane component")
 	cmd.Flags().StringVar(&args.SdsTlsCert, "sds-tls-cert", args.SdsTlsCert, "TLS certificate for the SDS server")

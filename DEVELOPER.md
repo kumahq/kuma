@@ -230,8 +230,7 @@ make run/k8s
 
 #### Running Dataplane (Envoy)
 
-1. Run the instructions at "Pointing Envoy at Control Plane" section, so the `kuma-injector` is present in the KIND
-cluster and Dataplane descriptor is available in the Control Plane.
+1. Run the instructions at "Pointing Envoy at Control Plane" section, so the Dataplane descriptor is available in the Control Plane.
 
 2. Start `Envoy` on local machine (requires `envoy` binary to be on your `PATH`):
 

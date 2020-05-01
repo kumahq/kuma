@@ -68,9 +68,9 @@ func printMeshes(rootTime time.Time, meshes *mesh.MeshResourceList, out io.Write
 				}
 
 				metrics := "off"
-				switch {
-				case mesh.HasPrometheusMetricsEnabled():
-					metrics = "prometheus"
+				if mesh.Spec.GetMetrics().GetEnabledBackend() != "" {
+					backend := mesh.GetEnabledMetricsBackend()
+					metrics = fmt.Sprintf("%s/%s", backend.Type, backend.Name)
 				}
 				logging := "off"
 				if mesh.Spec.GetLogging() != nil {
