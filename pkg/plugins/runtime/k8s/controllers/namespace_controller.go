@@ -17,13 +17,13 @@ import (
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/app/kuma-injector/pkg/injector/metadata"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8scnicncfio "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
 	network_v1 "github.com/Kong/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
+	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 )
 
 // NamespaceReconciler reconciles a Namespace object
