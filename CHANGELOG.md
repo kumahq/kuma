@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* fix: fix kuma-cp migrate help text
+  [#713](https://github.com/Kong/kuma/pull/713)
 * feat: merge injector into kuma-cp
   [#701](https://github.com/Kong/kuma/pull/701)
 * feat: refactor other pars of the Mesh to be consistent with CA
