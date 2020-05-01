@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
 	. "github.com/Kong/kuma/pkg/mads/cache"
 
@@ -44,7 +44,7 @@ var _ = Describe("Snapshot", func() {
 			Expect(snapshot.Consistent()).To(BeNil())
 
 			// when
-			snapshot = NewSnapshot("v2", map[string]envoy_cache.Resource{
+			snapshot = NewSnapshot("v2", map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
 					Name: "/meshes/default/dataplanes/backend",
 				},
@@ -64,7 +64,7 @@ var _ = Describe("Snapshot", func() {
 
 		It("should return MonitoringAssignments", func() {
 			// given
-			assignments := map[string]envoy_cache.Resource{
+			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
 					Name: "/meshes/default/dataplanes/backend",
 				},
@@ -77,7 +77,7 @@ var _ = Describe("Snapshot", func() {
 
 		It("should return `nil` for unsupported resource types", func() {
 			// given
-			assignments := map[string]envoy_cache.Resource{
+			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
 					Name: "/meshes/default/dataplanes/backend",
 				},
@@ -99,7 +99,7 @@ var _ = Describe("Snapshot", func() {
 
 		It("should return proper version for a supported resource type", func() {
 			// given
-			assignments := map[string]envoy_cache.Resource{
+			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
 					Name: "/meshes/default/dataplanes/backend",
 				},
@@ -112,7 +112,7 @@ var _ = Describe("Snapshot", func() {
 
 		It("should return an empty string for unsupported resource type", func() {
 			// given
-			assignments := map[string]envoy_cache.Resource{
+			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
 					Name: "/meshes/default/dataplanes/backend",
 				},
@@ -136,7 +136,7 @@ var _ = Describe("Snapshot", func() {
 
 		It("should return a new snapshot if version has changed", func() {
 			// given
-			assignments := map[string]envoy_cache.Resource{
+			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
 					Name: "/meshes/default/dataplanes/backend",
 				},
@@ -152,7 +152,7 @@ var _ = Describe("Snapshot", func() {
 
 		It("should return the same snapshot if version has not changed", func() {
 			// given
-			assignments := map[string]envoy_cache.Resource{
+			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
 					Name: "/meshes/default/dataplanes/backend",
 				},
@@ -168,7 +168,7 @@ var _ = Describe("Snapshot", func() {
 
 		It("should return the same snapshot if resource type is not supported", func() {
 			// given
-			assignments := map[string]envoy_cache.Resource{
+			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
 					Name: "/meshes/default/dataplanes/backend",
 				},

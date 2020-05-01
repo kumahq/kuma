@@ -16,6 +16,14 @@ type logger struct {
 	log logr.Logger
 }
 
+func (l logger) Debugf(format string, args ...interface{}) {
+	l.log.V(1).Info(fmt.Sprintf(format, args...))
+}
+
+func (l logger) Warnf(format string, args ...interface{}) {
+	l.log.V(1).Info(fmt.Sprintf(format, args...))
+}
+
 func (l logger) Infof(format string, args ...interface{}) {
 	l.log.V(1).Info(fmt.Sprintf(format, args...))
 }

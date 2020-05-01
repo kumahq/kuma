@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"

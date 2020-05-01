@@ -22,7 +22,8 @@ import (
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_log "github.com/envoyproxy/go-control-plane/pkg/log"
 )
 
@@ -54,7 +55,7 @@ type Snapshot interface {
 	Consistent() error
 
 	// GetResources selects snapshot resources by type.
-	GetResources(typ string) map[string]envoy_cache.Resource
+	GetResources(typ string) map[string]envoy_types.Resource
 
 	// GetVersion returns the version for a resource type.
 	GetVersion(typ string) string
@@ -90,6 +91,12 @@ type SnapshotCache interface {
 
 	// ClearSnapshot removes all status and snapshot information associated with a node.
 	ClearSnapshot(node string)
+
+	// GetStatusInfo retrieves status information for a node ID.
+	GetStatusInfo(string) envoy_cache.StatusInfo
+
+	// GetStatusKeys retrieves node IDs for all statuses.
+	GetStatusKeys() []string
 }
 
 type snapshotCache struct {
@@ -194,7 +201,7 @@ func nameSet(names []string) map[string]bool {
 }
 
 // superset checks that all resources are listed in the names set.
-func superset(names map[string]bool, resources map[string]envoy_cache.Resource) error {
+func superset(names map[string]bool, resources map[string]envoy_types.Resource) error {
 	for resourceName := range resources {
 		if _, exists := names[resourceName]; !exists {
 			return fmt.Errorf("%q not listed", resourceName)
@@ -269,7 +276,7 @@ func (cache *snapshotCache) cancelWatch(nodeID string, watchID int64) func() {
 
 // Respond to a watch with the snapshot value. The value channel should have capacity not to block.
 // TODO(kuat) do not respond always, see issue https://github.com/envoyproxy/go-control-plane/issues/46
-func (cache *snapshotCache) respond(request envoy_cache.Request, value chan envoy_cache.Response, resources map[string]envoy_cache.Resource, version string) {
+func (cache *snapshotCache) respond(request envoy_cache.Request, value chan envoy_cache.Response, resources map[string]envoy_types.Resource, version string) {
 	// for ADS, the request names must match the snapshot names
 	// if they do not, then the watch is never responded, and it is expected that envoy makes another request
 	if len(request.ResourceNames) != 0 && cache.ads {
@@ -288,8 +295,8 @@ func (cache *snapshotCache) respond(request envoy_cache.Request, value chan envo
 	value <- createResponse(request, resources, version)
 }
 
-func createResponse(request envoy_cache.Request, resources map[string]envoy_cache.Resource, version string) envoy_cache.Response {
-	filtered := make([]envoy_cache.Resource, 0, len(resources))
+func createResponse(request envoy_cache.Request, resources map[string]envoy_types.Resource, version string) envoy_cache.Response {
+	filtered := make([]envoy_types.Resource, 0, len(resources))
 
 	// Reply only with the requested resources. Envoy may ask each resource
 	// individually in a separate stream. It is ok to reply with the same version
@@ -327,7 +334,7 @@ func (cache *snapshotCache) Fetch(ctx context.Context, request envoy_cache.Reque
 		// It might be beneficial to hold the request since Envoy will re-attempt the refresh.
 		version := snapshot.GetVersion(request.TypeUrl)
 		if request.VersionInfo == version {
-			return nil, &envoy_cache.SkipFetchError{}
+			return nil, &envoy_types.SkipFetchError{}
 		}
 
 		resources := snapshot.GetResources(request.TypeUrl)

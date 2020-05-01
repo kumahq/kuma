@@ -6,7 +6,7 @@ import (
 	"time"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"

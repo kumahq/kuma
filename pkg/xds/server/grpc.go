@@ -5,7 +5,7 @@ import (
 	"net"
 
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

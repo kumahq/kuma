@@ -3,14 +3,15 @@ package cache
 import (
 	"github.com/pkg/errors"
 
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 
 	"github.com/Kong/kuma/pkg/mads"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
 // NewSnapshot creates a snapshot from response types and a version.
-func NewSnapshot(version string, assignments map[string]envoy_cache.Resource) *Snapshot {
+func NewSnapshot(version string, assignments map[string]envoy_types.Resource) *Snapshot {
 	return &Snapshot{
 		MonitoringAssignments: envoy_cache.Resources{Version: version, Items: assignments},
 	}
@@ -38,7 +39,7 @@ func (s *Snapshot) Consistent() error {
 }
 
 // GetResources selects snapshot resources by type.
-func (s *Snapshot) GetResources(typ string) map[string]envoy_cache.Resource {
+func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
 	if s == nil {
 		return nil
 	}

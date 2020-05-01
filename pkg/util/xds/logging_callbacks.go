@@ -6,7 +6,7 @@ import (
 	"github.com/go-logr/logr"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 )
 
 type LoggingCallbacks struct {
