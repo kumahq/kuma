@@ -1,0 +1,16 @@
+.circleci
+.github
+.gitignore
+.gitmodules
+.git
+.golangci.yml
+api
+app
+build/docker-images/
+dev
+docs
+examples
+go.mod
+go.sum
+Makefile*
+vendor
