@@ -1,9 +1,6 @@
 .PHONY: help clean clean/build clean/proto \
-		start/k8s start/kind stop/kind start/control-plane/k8s \
-		deploy/example-app/k8s deploy/control-plane/k8s \
-		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init \
 		generate protoc/plugins protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/k8s/control-plane generate/kumactl/install/k8s/metrics generate/kumactl/install/k8s/tracing generate/kuma-cp/migrations generate/gui \
-		fmt fmt/go fmt/proto vet golangci-lint imports check test integration build run/k8s run/universal/memory run/universal/postgres \
+		fmt fmt/go fmt/proto vet golangci-lint imports check test integration build run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-init docker/build/kuma-prometheus-sd \
 		docker/save docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd \
@@ -67,16 +64,6 @@ ENVOY_ADMIN_PORT ?= 9901
 
 EXAMPLE_NAMESPACE ?= kuma-example
 
-KIND_KUBECONFIG_DIR ?= $(HOME)/.kube
-KIND_KUBECONFIG = $(KIND_KUBECONFIG_DIR)/kind-kuma-config
-
-define KIND_EXAMPLE_DATAPLANE_MESH
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
-endef
-define KIND_EXAMPLE_DATAPLANE_NAME
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
-endef
-
 SIMPLE_DISCOVERY_REQUEST ?= '{"node": {"id": "$(EXAMPLE_ENVOY_ID)", "metadata": {"IPS": "$(EXAMPLE_ENVOY_IP)", "PORTS": "$(EXAMPLE_ENVOY_PORT)"}}}'
 
 KUMA_VERSION ?= master
@@ -121,9 +108,7 @@ GOLANG_PROTOBUF_VERSION := v1.3.2
 GOLANGCI_LINT_VERSION := v1.21.0
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0
-CI_KIND_VERSION ?= v0.8.0
 CI_MINIKUBE_VERSION ?= v1.4.0
-CI_KUBERNETES_VERSION ?= v1.15.11@sha256:6cc31f3533deb138792db2c7d1ffc36f7456a06f1db5556ad3b6927641016f50
 CI_KUBECTL_VERSION ?= v1.14.0
 CI_TOOLS_IMAGE ?= circleci/golang:1.12.12
 
@@ -138,7 +123,6 @@ PROTOBUF_WKT_DIR := $(CI_TOOLS_DIR)/protobuf.d
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
 KUBEBUILDER_PATH := $(CI_TOOLS_DIR)/kubebuilder
 KUSTOMIZE_PATH := $(CI_TOOLS_DIR)/kustomize
-KIND_PATH := $(CI_TOOLS_DIR)/kind
 MINIKUBE_PATH := $(CI_TOOLS_DIR)/minikube
 KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
 KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
@@ -183,53 +167,6 @@ export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z0-9_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
-start/k8s: start/kind deploy/example-app/k8s ## Bootstrap: Start Kubernetes locally (KIND) and deploy sample app
-
-${KIND_KUBECONFIG_DIR}:
-	mkdir -p ${KIND_KUBECONFIG_DIR}
-
-start/kind: ${KIND_KUBECONFIG_DIR}
-	kind create cluster --name kuma --image=kindest/node:$(CI_KUBERNETES_VERSION) 2>/dev/null \
-	&& kind get kubeconfig --name kuma > $(KIND_KUBECONFIG)
-	@echo
-	@echo '>>> You need to manually run the following command in your shell: >>>'
-	@echo
-	@echo export KUBECONFIG="${KIND_KUBECONFIG}"
-	@echo
-	@echo '<<< ------------------------------------------------------------- <<<'
-	@echo
-
-stop/kind:
-	kind delete cluster --name kuma 2>/dev/null
-
-deploy/example-app/k8s:
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl label namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=120s --for=condition=Available -n $(EXAMPLE_NAMESPACE) deployment/example-app
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
-
-kind/load/control-plane: image/kuma-cp
-	kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=kuma
-
-kind/load/kuma-dp: image/kuma-dp
-	kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=kuma
-
-kind/load/kuma-init: image/kuma-init
-	kind load docker-image $(KUMA_INIT_DOCKER_IMAGE) --name=kuma
-
-kind/load/kuma-prometheus-sd: image/kuma-prometheus-sd
-	kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=kuma
-
-deploy/control-plane/k8s: build/kumactl
-	kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
-
-start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
 
 clean: clean/build ## Dev: Clean
 
@@ -331,19 +268,6 @@ build/kumactl: ## Dev: Build `kumactl` binary
 build/kuma-prometheus-sd: ## Dev: Build `kuma-prometheus-sd` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-prometheus-sd/kuma-prometheus-sd ./app/kuma-prometheus-sd
 
-run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
-	KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
-	KUBECONFIG=$(KIND_KUBECONFIG) \
-	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
-	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
-	KUMA_ENVIRONMENT=kubernetes \
-	KUMA_STORE_TYPE=kubernetes \
-	KUMA_SDS_SERVER_TLS_CERT_FILE=app/kuma-cp/cmd/testdata/tls.crt \
-	KUMA_SDS_SERVER_TLS_KEY_FILE=app/kuma-cp/cmd/testdata/tls.key \
-	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT=$(CP_K8S_ADMISSION_PORT) \
-	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-cp/cmd/testdata \
-	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
-
 run/universal/memory: ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
@@ -395,10 +319,6 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KUMA_STORE_POSTGRES_TLS_KEY_PATH=$(POSTGRES_SSL_KEY_PATH) \
 	KUMA_STORE_POSTGRES_TLS_CA_PATH=$(POSTGRES_SSL_ROOT_CERT_PATH) \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
-
-run/example/envoy/k8s: EXAMPLE_DATAPLANE_MESH=$(KIND_EXAMPLE_DATAPLANE_MESH)
-run/example/envoy/k8s: EXAMPLE_DATAPLANE_NAME=$(KIND_EXAMPLE_DATAPLANE_NAME)
-run/example/envoy/k8s: run/example/envoy
 
 run/example/envoy/universal: run/example/envoy
 
@@ -531,5 +451,6 @@ run/kuma-dp: ## Dev: Run `kuma-dp` locally
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
 
+include Makefile.kind.mk
 include Makefile.dev.mk
 include Makefile.e2e.mk
