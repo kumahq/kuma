@@ -1,5 +1,5 @@
 .PHONY: help clean clean/build clean/proto \
-		start/k8s start/kind start/control-plane/k8s \
+		start/k8s start/kind stop/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init \
 		generate protoc/plugins protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/k8s/control-plane generate/kumactl/install/k8s/metrics generate/kumactl/install/k8s/tracing generate/kuma-cp/migrations generate/gui \
@@ -199,6 +199,9 @@ start/kind: ${KIND_KUBECONFIG_DIR}
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
+
+stop/kind:
+	kind delete cluster --name kuma 2>/dev/null
 
 deploy/example-app/k8s:
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
