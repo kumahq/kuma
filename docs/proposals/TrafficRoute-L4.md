@@ -5,7 +5,7 @@
 ### Kubernetes
 
 ```yaml
-apiVersion: getkonvoy.io/v1alpha1
+apiVersion: kuma.io/v1alpha1
 kind: TrafficRoute
 mesh: default
 metadata:
