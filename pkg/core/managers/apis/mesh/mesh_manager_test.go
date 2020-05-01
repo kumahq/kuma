@@ -3,14 +3,15 @@ package mesh
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/core/datasource"
+	"github.com/Kong/kuma/pkg/plugins/ca/provided"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/ca/builtin"
-	builtin_issuer "github.com/Kong/kuma/pkg/core/ca/builtin/issuer"
-	"github.com/Kong/kuma/pkg/core/ca/provided"
+	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -19,6 +20,7 @@ import (
 	secrets_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	secrets_store "github.com/Kong/kuma/pkg/core/secrets/store"
 	"github.com/Kong/kuma/pkg/core/validators"
+	ca_builtin "github.com/Kong/kuma/pkg/plugins/ca/builtin"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_resources "github.com/Kong/kuma/pkg/test/resources"
 
@@ -29,34 +31,25 @@ var _ = Describe("Mesh Manager", func() {
 
 	var resManager manager.ResourceManager
 	var resStore store.ResourceStore
-	var builtinCaManager builtin.BuiltinCaManager
-	var providedCaManager provided.ProvidedCaManager
+	var builtinCaManager core_ca.Manager
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
 		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None())
-		builtinCaManager = builtin.NewBuiltinCaManager(secretManager)
-		providedCaManager = provided.NewProvidedCaManager(secretManager)
+		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
+		providedCaManager := provided.NewProvidedCaManager(datasource.NewDataSourceLoader(secretManager))
+		caManagers := core_ca.Managers{
+			"builtin":  builtinCaManager,
+			"provided": providedCaManager,
+		}
+
 		manager := manager.NewResourceManager(resStore)
-		resManager = NewMeshManager(resStore, builtinCaManager, providedCaManager, manager, secretManager, test_resources.Global())
+		validator := MeshValidator{CaManagers: caManagers}
+		resManager = NewMeshManager(resStore, manager, secretManager, caManagers, test_resources.Global(), validator)
 	})
 
-	createProvidedCa := func(meshName string) string {
-		// when
-		signingPair, err := builtin_issuer.NewRootCA(meshName)
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		signingCert, err := providedCaManager.AddSigningCert(context.Background(), meshName, *signingPair)
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		return signingCert.Id
-	}
-
 	Describe("Create()", func() {
-		It("should also create a built-in CA", func() {
+		It("should also ensure that CAs are created", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
@@ -65,16 +58,31 @@ var _ = Describe("Mesh Manager", func() {
 			}
 
 			// when
-			mesh := core_mesh.MeshResource{}
+			mesh := core_mesh.MeshResource{
+				Spec: mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin-1",
+								Type: "builtin",
+							},
+							{
+								Name: "builtin-2",
+								Type: "builtin",
+							},
+						},
+					},
+				},
+			}
 			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			// and built-in CA is created
-			certs, err := builtinCaManager.GetRootCerts(context.Background(), meshName)
+			// and enabled CA is created
+			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, *mesh.Spec.Mtls.Backends[0])
 			Expect(err).ToNot(HaveOccurred())
-			Expect(certs).To(HaveLen(1))
 		})
 
 		Describe("should set default values for Prometheus settings", func() {
@@ -124,141 +132,24 @@ var _ = Describe("Mesh Manager", func() {
 				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are not set", testCase{
 					input: `
                     metrics:
-                      prometheus: {}
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
 `,
 					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
                     metrics:
-                      prometheus:
-                        port: 5670
-                        path: /metrics
-`,
-				}),
-				Entry("when `metrics.prometheus.port` is not set", testCase{
-					input: `
-                    metrics:
-                      prometheus:
-                        path: /non-standard-path
-`,
-					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
-                    metrics:
-                      prometheus:
-                        port: 5670
-                        path: /non-standard-path
-`,
-				}),
-				Entry("when `metrics.prometheus.path` is not set", testCase{
-					input: `
-                    metrics:
-                      prometheus:
-                        port: 1234
-`,
-					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
-                    metrics:
-                      prometheus:
-                        port: 1234
-                        path: /metrics
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 5670
+                          path: /metrics
 `,
 				}),
 			)
 		})
 
-		Context("Mesh with Provided CA", func() {
-			// given
-			meshName := "mesh-1"
-			resKey := model.ResourceKey{
-				Mesh: meshName,
-				Name: meshName,
-			}
-			var mesh core_mesh.MeshResource
-
-			BeforeEach(func() {
-				mesh = core_mesh.MeshResource{
-					Spec: mesh_proto.Mesh{
-						Mtls: &mesh_proto.Mesh_Mtls{
-							Enabled: true,
-							Ca: &mesh_proto.CertificateAuthority{
-								Type: &mesh_proto.CertificateAuthority_Provided_{
-									Provided: &mesh_proto.CertificateAuthority_Provided{},
-								},
-							},
-						},
-					},
-				}
-			})
-
-			It("should not allow provided CA when it's not created", func() {
-				// when
-				err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
-
-				// then
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(Equal(&validators.ValidationError{
-					Violations: []validators.Violation{
-						{
-							Field:   "mtls.ca.provided",
-							Message: "There is no signing certificate in provided CA for a given mesh. Add certificate via 'kumactl manage ca provided certificates add' command.",
-						},
-					},
-				}))
-			})
-
-			It("should not allow provided CA has no certs", func() {
-				// given ca with no certs
-				id := createProvidedCa("mesh-1")
-				err := providedCaManager.DeleteSigningCert(context.Background(), meshName, id)
-				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				err = resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
-
-				// then
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(Equal(&validators.ValidationError{
-					Violations: []validators.Violation{
-						{
-							Field:   "mtls.ca.provided",
-							Message: "There is no signing certificate in provided CA for a given mesh. Add certificate via 'kumactl manage ca provided certificates add' command.",
-						},
-					},
-				}))
-			})
-
-			It("should allow provided CA when it's available", func() {
-				// setup
-				createProvidedCa("mesh-1")
-
-				// when
-				err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
-
-				// then
-				Expect(err).ToNot(HaveOccurred())
-			})
-		})
-	})
-
-	Describe("Update()", func() {
-		It("should not allow to change CA when mTLS is enabled", func() {
-			// setup
-
-			// when
-			signingPair, err := builtin_issuer.NewRootCA("mesh-1")
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			_, err = providedCaManager.AddSigningCert(context.Background(), "mesh-1", *signingPair)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
+		It("should validate all CAs", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
@@ -270,26 +161,61 @@ var _ = Describe("Mesh Manager", func() {
 			mesh := core_mesh.MeshResource{
 				Spec: mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						Enabled: true,
-						Ca: &mesh_proto.CertificateAuthority{
-							Type: &mesh_proto.CertificateAuthority_Builtin_{
-								Builtin: &mesh_proto.CertificateAuthority_Builtin{},
+						EnabledBackend: "ca-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "ca-1",
+								Type: "provided",
+							},
+							{
+								Name: "ca-2",
+								Type: "provided",
 							},
 						},
 					},
 				},
 			}
-			err = resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
+			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
+
+			// then
+			Expect(err).To(MatchError("mtls.backends[0].config.cert: has to be defined; mtls.backends[0].config.key: has to be defined; mtls.backends[1].config.cert: has to be defined; mtls.backends[1].config.key: has to be defined"))
+		})
+	})
+
+	Describe("Update()", func() {
+		It("should not allow to change CA when mTLS is enabled", func() {
+			// given
+			meshName := "mesh-1"
+			resKey := model.ResourceKey{
+				Mesh: meshName,
+				Name: meshName,
+			}
+
+			// when
+			mesh := core_mesh.MeshResource{
+				Spec: mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin-1",
+								Type: "builtin",
+							},
+							{
+								Name: "builtin-2",
+								Type: "builtin",
+							},
+						},
+					},
+				},
+			}
+			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to change CA
-			mesh.Spec.Mtls.Ca = &mesh_proto.CertificateAuthority{
-				Type: &mesh_proto.CertificateAuthority_Provided_{
-					Provided: &mesh_proto.CertificateAuthority_Provided{},
-				},
-			}
+			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
 			err = resManager.Update(context.Background(), &mesh)
 
 			// then
@@ -297,7 +223,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).To(Equal(&validators.ValidationError{
 				Violations: []validators.Violation{
 					{
-						Field:   "mtls.ca",
+						Field:   "mtls.enabledBackend",
 						Message: "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA",
 					},
 				},
@@ -305,9 +231,6 @@ var _ = Describe("Mesh Manager", func() {
 		})
 
 		It("should allow to change CA when mTLS is disabled", func() {
-			// setup
-			createProvidedCa("mesh-1")
-
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
@@ -319,10 +242,15 @@ var _ = Describe("Mesh Manager", func() {
 			mesh := core_mesh.MeshResource{
 				Spec: mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						Enabled: false,
-						Ca: &mesh_proto.CertificateAuthority{
-							Type: &mesh_proto.CertificateAuthority_Builtin_{
-								Builtin: &mesh_proto.CertificateAuthority_Builtin{},
+						EnabledBackend: "",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin-1",
+								Type: "builtin",
+							},
+							{
+								Name: "builtin-2",
+								Type: "builtin",
 							},
 						},
 					},
@@ -334,14 +262,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to enable mTLS change CA
-			mesh.Spec.Mtls = &mesh_proto.Mesh_Mtls{
-				Enabled: true,
-				Ca: &mesh_proto.CertificateAuthority{
-					Type: &mesh_proto.CertificateAuthority_Provided_{
-						Provided: &mesh_proto.CertificateAuthority_Provided{},
-					},
-				},
-			}
+			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
 			err = resManager.Update(context.Background(), &mesh)
 
 			// then
@@ -407,134 +328,65 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
 				},
-				Entry("when `metrics.prometheus` is unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated: `
-                    metrics: {}
-`,
-					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
-                    metrics: {}
-`,
-				}),
-				Entry("when `metrics` is unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated: ``,
-					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
-`,
-				}),
-				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated: `
-                    metrics:
-                      prometheus: {}
-`,
-					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
-                    metrics:
-                      prometheus:
-                        port: 5670
-                        path: /metrics
-`,
-				}),
-				Entry("when `metrics.prometheus.port` is unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated: `
-                    metrics:
-                      prometheus:
-                        path: /non-standard-path
-`,
-					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
-                    metrics:
-                      prometheus:
-                        port: 5670
-                        path: /non-standard-path
-`,
-				}),
-				Entry("when `metrics.prometheus.path` is unset", testCase{
-					initial: `
-                    metrics:
-                      prometheus: {}
-`,
-					updated: `
-                    metrics:
-                      prometheus:
-                        port: 1234
-`,
-					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
-                    metrics:
-                      prometheus:
-                        port: 1234
-                        path: /metrics
-`,
-				}),
 				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are changed", testCase{
 					initial: `
                     metrics:
-                      prometheus: {}
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
 `,
 					updated: `
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 				}),
 				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` remain unchanged", testCase{
 					initial: `
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 					updated: `
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 					expected: `
-                    mtls:
-                      ca:
-                        builtin: {}
                     metrics:
-                      prometheus:
-                        port: 1234
-                        path: /non-standard-path
+                      enabledBackend: prometheus-1
+                      backends:
+                      - name: prometheus-1
+                        type: prometheus
+                        config:
+                          port: 1234
+                          path: /non-standard-path
 `,
 				}),
 			)
@@ -543,13 +395,26 @@ var _ = Describe("Mesh Manager", func() {
 
 	Describe("Delete()", func() {
 		It("should delete all associated resources", func() {
-			// setup
-			createProvidedCa("mesh-1")
-
 			// given mesh
 			meshName := "mesh-1"
 
-			mesh := core_mesh.MeshResource{}
+			mesh := core_mesh.MeshResource{
+				Spec: mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin-1",
+								Type: "builtin",
+							},
+							{
+								Name: "builtin-2",
+								Type: "builtin",
+							},
+						},
+					},
+				},
+			}
 			resKey := model.ResourceKey{
 				Mesh: meshName,
 				Name: meshName,
@@ -573,14 +438,9 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and built-in mesh CA is deleted
-			_, err = builtinCaManager.GetRootCerts(context.Background(), meshName)
+			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, *mesh.Spec.Mtls.Backends[0])
 			Expect(err).ToNot(BeNil())
-			Expect(err).To(MatchError("failed to load CA key pair for Mesh \"mesh-1\": Resource not found: type=\"Secret\" name=\"builtinca.mesh-1\" mesh=\"mesh-1\"")) // todo(jakubdyszkiewicz) make error msg consistent
-
-			// and provided mesh CA is deleted
-			_, err = providedCaManager.GetSigningCerts(context.Background(), meshName)
-			Expect(err).ToNot(BeNil())
-			Expect(store.IsResourceNotFound(err)).To(BeTrue())
+			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "mesh-1" and backend "builtin-1": Resource not found: type="Secret" name="mesh-1.ca-builtin-cert-builtin-1" mesh="mesh-1"`)) // todo(jakubdyszkiewicz) make error msg consistent
 		})
 
 		It("should delete all associated resources even if mesh is already removed", func() {

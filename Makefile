@@ -2,7 +2,7 @@
 		start/k8s start/kind start/control-plane/k8s \
 		deploy/example-app/k8s deploy/control-plane/k8s \
 		kind/load/control-plane kind/load/kuma-dp kind/load/kuma-injector kind/load/kuma-init \
-		generate protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/k8s/control-plane generate/kumactl/install/k8s/metrics generate/kumactl/install/k8s/tracing generate/kuma-cp/migrations generate/gui \
+		generate protoc/plugins protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/k8s/control-plane generate/kumactl/install/k8s/metrics generate/kumactl/install/k8s/tracing generate/kuma-cp/migrations generate/gui \
 		fmt fmt/go fmt/proto vet golangci-lint imports check test integration build run/k8s run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-injector image/kuma-init image/kuma-prometheus-sd \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-injector docker/build/kuma-init docker/build/kuma-prometheus-sd \
@@ -159,9 +159,10 @@ protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--pr
 # Protobuf-specifc configuration
 PROTOC_GO := protoc \
 	--proto_path=$(PROTOBUF_WKT_DIR)/include \
+	--proto_path=./api \
 	--proto_path=. \
 	$(protoc_search_go_paths) \
-	--go_out=plugins=grpc:. \
+	--go_out=plugins=grpc,Msystem/v1alpha1/datasource.proto=github.com/Kong/kuma/api/system/v1alpha1:. \
 	--validate_out=lang=go:.
 
 PROTOC_OS=unknown
@@ -245,13 +246,16 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIR) -name '*.pb.go' -delete
 	find $(PROTO_DIR) -name '*.pb.validate.go' -delete
 
-generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 ## Dev: Run code generators
+generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins ## Dev: Run code generators
 
 protoc/pkg/config/app/kumactl/v1alpha1:
 	$(PROTOC_GO) pkg/config/app/kumactl/v1alpha1/*.proto
 
 protoc/pkg/test/apis/sample/v1alpha1:
 	$(PROTOC_GO) pkg/test/apis/sample/v1alpha1/*.proto
+
+protoc/plugins:
+	$(PROTOC_GO) pkg/plugins/ca/provided/config/*.proto
 
 # Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
 generate/kumactl/install/k8s/control-plane:
@@ -352,7 +356,7 @@ run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-injector/cmd/testdata \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
-run/universal/memory: fmt vet ## Dev: Run Control Plane locally in universal mode with in-memory store
+run/universal/memory: ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
 	KUMA_ENVIRONMENT=universal \

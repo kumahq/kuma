@@ -3,6 +3,7 @@ package api_server_test
 import (
 	"context"
 	"io/ioutil"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,6 +13,7 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	config "github.com/Kong/kuma/pkg/config/api-server"
+	"github.com/Kong/kuma/pkg/core"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -25,6 +27,10 @@ var _ = Describe("TrafficRoute Endpoints", func() {
 	var stop chan struct{}
 
 	BeforeEach(func() {
+		core.Now = func() time.Time {
+			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
+			return now
+		}
 		resourceStore = memory.NewStore()
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
 		client = resourceApiClient{
@@ -42,6 +48,7 @@ var _ = Describe("TrafficRoute Endpoints", func() {
 
 	AfterEach(func() {
 		close(stop)
+		core.Now = time.Now
 	})
 
 	BeforeEach(func() {
@@ -57,6 +64,8 @@ var _ = Describe("TrafficRoute Endpoints", func() {
         type: TrafficRoute
         name: web-to-backend
         mesh: default
+        creationTime: "2018-07-17T16:05:36.995Z"
+        modificationTime: "2018-07-17T16:05:36.995Z"
         sources:
         - match:
             service: web

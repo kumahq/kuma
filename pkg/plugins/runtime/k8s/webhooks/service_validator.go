@@ -28,7 +28,7 @@ func (v *ServiceValidator) Handle(ctx context.Context, req admission.Request) ad
 
 	if err := v.validate(svc); err != nil {
 		if verr, ok := err.(*validators.ValidationError); ok {
-			return convertValidationErrorOf(verr, svc, svc)
+			return convertValidationErrorOf(*verr, svc, svc)
 		}
 		return admission.Denied(err.Error())
 	}

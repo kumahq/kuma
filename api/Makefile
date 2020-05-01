@@ -1,7 +1,7 @@
 .PHONY: help clean generate build test check \
 		dev/tools install/protoc install/protoc-gen-go install/protoc-gen-validate \
 		install/protobuf-wellknown-types install/data-plane-api \
-		protoc protoc/mesh/v1alpha1 protoc/observability/v1alpha1
+		protoc protoc/mesh/v1alpha1 protoc/observability/v1alpha1 protoc/system/v1alpha1
 
 TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -121,13 +121,16 @@ clean: ## Remove generated files
 	find . -name '*.pb.go' -delete
 	find . -name '*.pb.validate.go' -delete
 
-generate: clean protoc/mesh/v1alpha1 protoc/observability/v1alpha1 ## Process .proto definitions
+generate: clean protoc/mesh/v1alpha1 protoc/observability/v1alpha1 protoc/system/v1alpha1 ## Process .proto definitions
 
 protoc/mesh/v1alpha1:
 	$(PROTOC_GO) mesh/v1alpha1/*.proto
 
 protoc/observability/v1alpha1:
 	$(PROTOC_GO) observability/v1alpha1/*.proto
+
+protoc/system/v1alpha1:
+	$(PROTOC_GO) system/v1alpha1/*.proto
 
 build: ## Build generated files
 	go build ./...

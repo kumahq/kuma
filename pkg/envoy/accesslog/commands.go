@@ -70,6 +70,7 @@ const (
 	CMD_KUMA_SOURCE_SERVICE              = "KUMA_SOURCE_SERVICE"
 	CMD_KUMA_DESTINATION_SERVICE         = "KUMA_DESTINATION_SERVICE"
 	CMD_KUMA_MESH                        = "KUMA_MESH"
+	CMD_KUMA_TRAFFIC_DIRECTION           = "KUMA_TRAFFIC_DIRECTION"
 )
 
 // CommandOperatorDescriptor represents a descriptor of an Envoy access log command operator.
@@ -175,6 +176,8 @@ func (o CommandOperatorDescriptor) String() string {
 		return "%KUMA_DESTINATION_SERVICE%"
 	case CMD_KUMA_MESH:
 		return "%KUMA_MESH%"
+	case CMD_KUMA_TRAFFIC_DIRECTION:
+		return "%KUMA_TRAFFIC_DIRECTION%"
 	default:
 		return fmt.Sprintf("%%%s%%", string(o))
 	}

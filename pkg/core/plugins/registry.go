@@ -12,6 +12,7 @@ const (
 	secretStorePlugin   pluginType = "secret-store"
 	discoveryPlugin     pluginType = "discovery"
 	runtimePlugin       pluginType = "runtime"
+	caPlugin            pluginType = "ca"
 )
 
 type PluginName string
@@ -21,6 +22,9 @@ const (
 	Universal  PluginName = "universal"
 	Memory     PluginName = "memory"
 	Postgres   PluginName = "postgres"
+
+	CaBuiltin  PluginName = "builtin"
+	CaProvided PluginName = "provided"
 )
 
 type Registry interface {
@@ -29,6 +33,8 @@ type Registry interface {
 	SecretStore(name PluginName) (SecretStorePlugin, error)
 	Discovery(name PluginName) (DiscoveryPlugin, error)
 	Runtime(name PluginName) (RuntimePlugin, error)
+	Ca(name PluginName) (CaPlugin, error)
+	CaPlugins() map[PluginName]CaPlugin
 }
 
 type RegistryMutator interface {
@@ -47,6 +53,7 @@ func NewRegistry() MutableRegistry {
 		secretStore:   make(map[PluginName]SecretStorePlugin),
 		discovery:     make(map[PluginName]DiscoveryPlugin),
 		runtime:       make(map[PluginName]RuntimePlugin),
+		ca:            make(map[PluginName]CaPlugin),
 	}
 }
 
@@ -58,6 +65,7 @@ type registry struct {
 	secretStore   map[PluginName]SecretStorePlugin
 	discovery     map[PluginName]DiscoveryPlugin
 	runtime       map[PluginName]RuntimePlugin
+	ca            map[PluginName]CaPlugin
 }
 
 func (r *registry) Bootstrap(name PluginName) (BootstrapPlugin, error) {
@@ -100,6 +108,18 @@ func (r *registry) Runtime(name PluginName) (RuntimePlugin, error) {
 	}
 }
 
+func (r *registry) Ca(name PluginName) (CaPlugin, error) {
+	if p, ok := r.ca[name]; ok {
+		return p, nil
+	} else {
+		return nil, noSuchPluginError(caPlugin, name)
+	}
+}
+
+func (r *registry) CaPlugins() map[PluginName]CaPlugin {
+	return r.ca
+}
+
 func (r *registry) Register(name PluginName, plugin Plugin) error {
 	if bp, ok := plugin.(BootstrapPlugin); ok {
 		if old, exists := r.bootstrap[name]; exists {
@@ -130,6 +150,12 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 			return pluginAlreadyRegisteredError(runtimePlugin, name, old, rp)
 		}
 		r.runtime[name] = rp
+	}
+	if cp, ok := plugin.(CaPlugin); ok {
+		if old, exists := r.ca[name]; exists {
+			return pluginAlreadyRegisteredError(caPlugin, name, old, cp)
+		}
+		r.ca[name] = cp
 	}
 	return nil
 }

@@ -54,7 +54,7 @@ func (h *MeshValidator) ValidateCreate(ctx context.Context, req admission.Reques
 	}
 	if err := h.validator.ValidateCreate(ctx, req.Name, coreRes); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
-			return convertValidationError(kumaErr, k8sRes)
+			return convertSpecValidationError(kumaErr, k8sRes)
 		}
 		return admission.Denied(err.Error())
 	}
@@ -82,7 +82,7 @@ func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Reques
 
 	if err := h.validator.ValidateUpdate(ctx, oldCoreRes, coreRes); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
-			return convertValidationError(kumaErr, k8sRes)
+			return convertSpecValidationError(kumaErr, k8sRes)
 		}
 		return admission.Denied(err.Error())
 	}

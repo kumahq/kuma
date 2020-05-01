@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+
 	"github.com/ghodss/yaml"
 	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
@@ -105,7 +107,12 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return nil
 			}
 
-			rs, err := pctx.CurrentResourceStore()
+			var rs store.ResourceStore
+			if res.GetType() == system.SecretType { // Secret is exposed via Admin Server. It will be merged into API Server eventually.
+				rs, err = pctx.CurrentAdminResourceStore()
+			} else {
+				rs, err = pctx.CurrentResourceStore()
+			}
 			if err != nil {
 				return err
 			}
@@ -222,9 +229,9 @@ func (m meta) GetMesh() string {
 }
 
 func (m meta) GetCreationTime() time.Time {
-	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
+	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
 }
 
 func (m meta) GetModificationTime() time.Time {
-	return time.Unix(0, 0) // the date doesn't matter since it is set on server side anyways
+	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
 }

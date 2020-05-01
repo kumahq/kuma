@@ -2,6 +2,7 @@ package rest_test
 
 import (
 	"encoding/json"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,15 +14,22 @@ import (
 )
 
 var _ = Describe("Rest Resource", func() {
+	var t1, t2 time.Time
+	BeforeEach(func() {
+		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
+		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
+	})
 	Describe("Resource", func() {
 		Describe("MarshalJSON", func() {
 			It("should marshal JSON with proper field order", func() {
 				// given
 				res := &rest.Resource{
 					Meta: rest.ResourceMeta{
-						Type: "TrafficRoute",
-						Mesh: "default",
-						Name: "one",
+						Type:             "TrafficRoute",
+						Mesh:             "default",
+						Name:             "one",
+						CreationTime:     t1,
+						ModificationTime: t2,
 					},
 					Spec: &sample_proto.TrafficRoute{
 						Path: "/example",
@@ -35,7 +43,7 @@ var _ = Describe("Rest Resource", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// and
-				expected := `{"type":"TrafficRoute","mesh":"default","name":"one","path":"/example"}`
+				expected := `{"type":"TrafficRoute","mesh":"default","name":"one","creationTime":"2018-07-17T16:05:36.995Z","modificationTime":"2019-07-17T16:05:36.995Z","path":"/example"}`
 				Expect(string(bytes)).To(Equal(expected))
 			})
 
@@ -43,9 +51,11 @@ var _ = Describe("Rest Resource", func() {
 				// given
 				res := &rest.Resource{
 					Meta: rest.ResourceMeta{
-						Type: "TrafficRoute",
-						Mesh: "default",
-						Name: "one",
+						Type:             "TrafficRoute",
+						Mesh:             "default",
+						Name:             "one",
+						CreationTime:     t1,
+						ModificationTime: t2,
 					},
 				}
 
@@ -56,7 +66,7 @@ var _ = Describe("Rest Resource", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// and
-				expected := `{"type":"TrafficRoute","mesh":"default","name":"one"}`
+				expected := `{"type":"TrafficRoute","mesh":"default","name":"one","creationTime":"2018-07-17T16:05:36.995Z","modificationTime":"2019-07-17T16:05:36.995Z"}`
 				Expect(string(bytes)).To(Equal(expected))
 			})
 		})

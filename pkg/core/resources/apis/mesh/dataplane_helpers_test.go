@@ -259,7 +259,7 @@ var _ = Describe("Dataplane", func() {
 			dataplaneSpec string
 			meshName      string
 			meshSpec      string
-			expected      *mesh_proto.Metrics_Prometheus
+			expected      *mesh_proto.PrometheusMetricsBackendConfig
 		}
 
 		DescribeTable("should correctly determine effective Prometheus config for given Dataplane and Mesh",
@@ -288,7 +288,9 @@ var _ = Describe("Dataplane", func() {
 				}
 
 				// then
-				Expect(dataplane.GetPrometheusEndpoint(mesh)).To(Equal(given.expected))
+				endpoint, err := dataplane.GetPrometheusEndpoint(mesh)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(endpoint).To(Equal(given.expected))
 			},
 			Entry("dataplane == `nil` && mesh == `nil`", testCase{
 				expected: nil,
@@ -297,7 +299,8 @@ var _ = Describe("Dataplane", func() {
 				dataplaneName: "backend-01",
 				dataplaneSpec: `
                 metrics:
-                  prometheus:
+                  type: prometheus
+                  config:
                     port: 8765
                     path: /even-more-non-standard-path
 `,
@@ -309,9 +312,13 @@ var _ = Describe("Dataplane", func() {
 				meshName:      "demo",
 				meshSpec: `
                 metrics:
-                  prometheus:
-                    port: 1234
-                    path: /non-standard-path
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 1234
+                      path: /non-standard-path
 `,
 				expected: nil,
 			}),
@@ -320,7 +327,8 @@ var _ = Describe("Dataplane", func() {
 				dataplaneMesh: "demo",
 				dataplaneSpec: `
                 metrics:
-                  prometheus:
+                  type: prometheus
+                  config:
                     port: 8765
                     path: /even-more-non-standard-path
 `,
@@ -333,11 +341,15 @@ var _ = Describe("Dataplane", func() {
 				meshName:      "demo",
 				meshSpec: `
                 metrics:
-                  prometheus:
-                    port: 1234
-                    path: /non-standard-path
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 1234
+                      path: /non-standard-path
 `,
-				expected: &mesh_proto.Metrics_Prometheus{
+				expected: &mesh_proto.PrometheusMetricsBackendConfig{
 					Port: 1234,
 					Path: "/non-standard-path",
 				},
@@ -347,18 +359,23 @@ var _ = Describe("Dataplane", func() {
 				dataplaneMesh: "demo",
 				dataplaneSpec: `
                 metrics:
-                  prometheus:
+                  type: prometheus
+                  config:
                     port: 8765
                     path: /even-more-non-standard-path
 `,
 				meshName: "demo",
 				meshSpec: `
                 metrics:
-                  prometheus:
-                    port: 1234
-                    path: /non-standard-path
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 1234
+                      path: /non-standard-path
 `,
-				expected: &mesh_proto.Metrics_Prometheus{
+				expected: &mesh_proto.PrometheusMetricsBackendConfig{
 					Port: 8765,
 					Path: "/even-more-non-standard-path",
 				},

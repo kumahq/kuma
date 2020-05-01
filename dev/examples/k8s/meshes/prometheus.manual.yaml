@@ -4,6 +4,10 @@ metadata:
   name: default
 spec:
   metrics:
-    prometheus:
-      port: 1234
-      path: /non-standard-path
+    enabledBackend: prom-1
+    backends:
+      - name: prom-1
+        type: prometheus
+        config:
+          port: 1234
+          path: /non-standard-path

@@ -75,14 +75,14 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 
 func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	reconciler := &k8s_controllers.MeshReconciler{
-		Client:           mgr.GetClient(),
-		Reader:           mgr.GetAPIReader(),
-		Log:              core.Log.WithName("controllers").WithName("Mesh"),
-		Scheme:           mgr.GetScheme(),
-		Converter:        k8s_resources.DefaultConverter(),
-		BuiltinCaManager: rt.BuiltinCaManager(),
-		SystemNamespace:  rt.Config().Store.Kubernetes.SystemNamespace,
-		ResourceManager:  rt.ResourceManager(),
+		Client:          mgr.GetClient(),
+		Reader:          mgr.GetAPIReader(),
+		Log:             core.Log.WithName("controllers").WithName("Mesh"),
+		Scheme:          mgr.GetScheme(),
+		Converter:       k8s_resources.DefaultConverter(),
+		CaManagers:      rt.CaManagers(),
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceManager: rt.ResourceManager(),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -117,7 +117,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global())
 	composite.AddValidator(handler)
 
-	coreMeshValidator := managers_mesh.MeshValidator{ProvidedCaManager: rt.ProvidedCaManager()}
+	coreMeshValidator := managers_mesh.MeshValidator{CaManagers: rt.CaManagers()}
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, k8s_resources.DefaultConverter())
 	composite.AddValidator(k8sMeshValidator)
 
@@ -127,6 +127,12 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 
 	mgr.GetWebhookServer().Register("/validate-v1-service", &kuba_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
 	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
+
+	secretValidator := &k8s_webhooks.SecretValidator{
+		Client: mgr.GetClient(),
+	}
+	mgr.GetWebhookServer().Register("/validate-v1-secret", &kuba_webhook.Admission{Handler: secretValidator})
+	log.Info("Registering a validation webhook for v1/Secret", "path", "/validate-v1-secret")
 
 	return nil
 }

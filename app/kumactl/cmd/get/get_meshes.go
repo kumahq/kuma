@@ -2,6 +2,7 @@ package get
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
@@ -10,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/pkg/output"
 	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -61,19 +61,15 @@ func printMeshes(meshes *mesh.MeshResourceList, out io.Writer) error {
 				mesh := meshes.Items[i]
 
 				mtls := "off"
-				if mesh.Spec.Mtls.GetEnabled() {
-					switch mesh.Spec.GetMtls().GetCa().GetType().(type) {
-					case *mesh_proto.CertificateAuthority_Provided_:
-						mtls = "provided"
-					case *mesh_proto.CertificateAuthority_Builtin_:
-						mtls = "builtin"
-					}
+				if mesh.MTLSEnabled() {
+					backend := mesh.GetEnabledCertificateAuthorityBackend()
+					mtls = fmt.Sprintf("%s/%s", backend.Type, backend.Name)
 				}
 
 				metrics := "off"
-				switch {
-				case mesh.HasPrometheusMetricsEnabled():
-					metrics = "prometheus"
+				if mesh.Spec.GetMetrics().GetEnabledBackend() != "" {
+					backend := mesh.GetEnabledMetricsBackend()
+					metrics = fmt.Sprintf("%s/%s", backend.Type, backend.Name)
 				}
 				logging := "off"
 				if mesh.Spec.GetLogging() != nil {

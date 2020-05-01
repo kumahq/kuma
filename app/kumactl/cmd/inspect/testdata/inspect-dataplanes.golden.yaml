@@ -1,5 +1,6 @@
 items:
-  - dataplane:
+  - creationTime: 2018-07-17T16:05:36.995Z
+    dataplane:
       networking:
         address: 127.0.0.1
         inbound:
@@ -30,9 +31,11 @@ items:
               responsesRejected: "2"
               responsesSent: "20"
     mesh: default
+    modificationTime: "2019-07-17T18:08:41Z"
     name: experiment
     type: DataplaneOverview
-  - dataplane:
+  - creationTime: 2018-07-17T16:05:36.995Z
+    dataplane:
       networking:
         address: 127.0.0.1
         inbound:
@@ -49,6 +52,7 @@ items:
         - controlPlaneInstanceId: node-003
           id: "3"
     mesh: default
+    modificationTime: "2019-07-17T18:08:41Z"
     name: example
     type: DataplaneOverview
 next: null

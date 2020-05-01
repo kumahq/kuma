@@ -4,5 +4,4 @@ kind: Mesh
 metadata:
   name: default
 spec:
-  mtls:
-    enabled: false
+  mtls: {}

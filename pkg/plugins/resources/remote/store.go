@@ -44,7 +44,6 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 	return nil
 }
 func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
-	_ = store.NewUpdateOptions(fs...)
 	meta := rest.ResourceMeta{
 		Type: string(res.GetType()),
 		Name: res.GetMeta().GetName(),

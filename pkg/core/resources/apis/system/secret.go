@@ -3,9 +3,9 @@ package system
 import (
 	"errors"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
-
+	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/Kong/kuma/pkg/core/resources/registry"
 )
 
 const (
@@ -16,7 +16,7 @@ var _ model.Resource = &SecretResource{}
 
 type SecretResource struct {
 	Meta model.ResourceMeta
-	Spec wrappers.BytesValue
+	Spec system_proto.Secret
 }
 
 func (t *SecretResource) GetType() model.ResourceType {
@@ -32,7 +32,7 @@ func (t *SecretResource) GetSpec() model.ResourceSpec {
 	return &t.Spec
 }
 func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
-	value, ok := spec.(*wrappers.BytesValue)
+	value, ok := spec.(*system_proto.Secret)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
@@ -77,4 +77,9 @@ func (l *SecretResourceList) GetPagination() model.Pagination {
 }
 func (l *SecretResourceList) SetPagination(pagination model.Pagination) {
 	l.Pagination = pagination
+}
+
+func init() {
+	registry.RegisterType(&SecretResource{})
+	registry.RegistryListType(&SecretResourceList{})
 }

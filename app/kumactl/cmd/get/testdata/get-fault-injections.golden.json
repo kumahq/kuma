@@ -4,6 +4,8 @@
       "type": "FaultInjection",
       "mesh": "default",
       "name": "fi1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
       "sources": [
         {
           "match": {
@@ -38,6 +40,8 @@
       "type": "FaultInjection",
       "mesh": "default",
       "name": "fi2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
       "sources": [
         {
           "match": {

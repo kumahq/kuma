@@ -16,9 +16,11 @@ func (c *from) Resource(r model.Resource) *Resource {
 	}
 	return &Resource{
 		Meta: ResourceMeta{
-			Mesh: meshName,
-			Type: string(r.GetType()),
-			Name: r.GetMeta().GetName(),
+			Mesh:             meshName,
+			Type:             string(r.GetType()),
+			Name:             r.GetMeta().GetName(),
+			CreationTime:     r.GetMeta().GetCreationTime(),
+			ModificationTime: r.GetMeta().GetModificationTime(),
 		},
 		Spec: r.GetSpec(),
 	}

@@ -6,7 +6,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
-	"time"
+
+	"github.com/Kong/kuma/pkg/catalog"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
+	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -25,13 +28,25 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 	var rootCmd *cobra.Command
 	var outbuf, errbuf *bytes.Buffer
 	var store core_store.ResourceStore
-
 	BeforeEach(func() {
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				Now: time.Now,
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
+				},
+				NewAdminResourceStore: func(string, *config_proto.Context_AdminApiCredentials) (core_store.ResourceStore, error) {
+					return store, nil
+				},
+				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
+					return &test_catalog.StaticCatalogClient{
+						Resp: catalog.Catalog{
+							Apis: catalog.Apis{
+								DataplaneToken: catalog.DataplaneTokenApi{
+									LocalUrl: "http://localhost:1234",
+								},
+							},
+						},
+					}, nil
 				},
 			},
 		}
@@ -53,6 +68,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		Entry("traffic-permission", "traffic-permission"),
 		Entry("traffic-route", "traffic-route"),
 		Entry("traffic-trace", "traffic-trace"),
+		Entry("secret", "secret"),
 	}
 
 	DescribeTable("should throw an error in case of no args",

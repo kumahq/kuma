@@ -1,2 +1,2 @@
-NAME     mTLS   METRICS      LOGGING          TRACING
-mesh-1   off    prometheus   logstash, file   zipkin-us, zipkin-eu
+NAME     mTLS                METRICS                   LOGGING          TRACING
+mesh-1   builtin/builtin-1   prometheus/prometheus-1   logstash, file   zipkin-us, zipkin-eu

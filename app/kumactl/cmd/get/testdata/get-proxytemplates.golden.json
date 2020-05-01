@@ -3,12 +3,16 @@
     {
       "mesh": "default",
       "name": "custom-template",
-      "type": "ProxyTemplate"
+      "type": "ProxyTemplate",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
       "mesh": "default",
       "name": "another-template",
-      "type": "ProxyTemplate"
+      "type": "ProxyTemplate",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
     }
   ],
   "next": null

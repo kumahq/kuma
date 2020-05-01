@@ -6,9 +6,6 @@ metadata:
     kuma.io/sidecar-injected: "true"
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-port: "15001"
-    prometheus.io/path: /metrics
-    prometheus.io/port: "1234"
-    prometheus.io/scrape: "true"
   creationTimestamp: null
   labels:
     run: busybox

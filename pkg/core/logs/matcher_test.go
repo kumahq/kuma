@@ -12,6 +12,7 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	"github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Matcher", func() {
@@ -31,12 +32,24 @@ var _ = Describe("Matcher", func() {
 		// given mesh with 3 backends and file1 backend as default
 		backendFile1 = &mesh_proto.LoggingBackend{
 			Name: "file1",
+			Type: mesh_proto.LoggingFileType,
+			Config: proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+				Path: "/tmp/access.logs",
+			}),
 		}
 		backendFile2 = &mesh_proto.LoggingBackend{
 			Name: "file2",
+			Type: mesh_proto.LoggingFileType,
+			Config: proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+				Path: "/tmp/access.logs",
+			}),
 		}
 		backendFile3 = &mesh_proto.LoggingBackend{
 			Name: "file3",
+			Type: mesh_proto.LoggingFileType,
+			Config: proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+				Path: "/tmp/access.logs",
+			}),
 		}
 		meshRes := core_mesh.MeshResource{
 			Spec: mesh_proto.Mesh{

@@ -3,12 +3,16 @@
         {
             "type": "Meshes",
             "mesh": "mesh-1",
-            "name": "mesh-1"
+            "name": "mesh-1",
+            "creationTime": "2018-07-17T16:05:36.995Z",
+            "modificationTime": "2019-07-17T16:05:36.995Z"
         },
         {
             "type": "Meshes",
             "mesh": "mesh-2",
-            "name": "mesh-2"
+            "name": "mesh-2",
+            "creationTime": "2018-07-17T16:05:36.995Z",
+            "modificationTime": "2019-07-17T16:05:36.995Z"
         }
     ]
 }

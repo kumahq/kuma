@@ -90,7 +90,6 @@ var _ = Describe("kumactl get traffic-logs", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-
 		BeforeEach(func() {
 			// setup
 			rootCtx = &kumactl_cmd.RootContext{

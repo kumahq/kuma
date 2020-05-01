@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,6 +16,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/model/rest"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Resource Endpoints", func() {
@@ -22,7 +24,7 @@ var _ = Describe("Resource Endpoints", func() {
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
 	var stop chan struct{}
-
+	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
@@ -46,7 +48,7 @@ var _ = Describe("Resource Endpoints", func() {
 	Describe("On GET", func() {
 		It("should return an existing resource", func() {
 			// given
-			putMeshIntoStore(resourceStore, "mesh-1")
+			putMeshIntoStore(resourceStore, "mesh-1", t1)
 
 			// when
 			response := client.get("mesh-1")
@@ -58,7 +60,9 @@ var _ = Describe("Resource Endpoints", func() {
 			json := `
 			{
 				"type": "Mesh",
-				"name": "mesh-1"
+				"name": "mesh-1",
+				"creationTime": "2018-07-17T16:05:36.995Z",
+				"modificationTime": "2018-07-17T16:05:36.995Z"
 			}`
 			Expect(body).To(MatchJSON(json))
 		})
@@ -73,8 +77,8 @@ var _ = Describe("Resource Endpoints", func() {
 
 		It("should list resources", func() {
 			// given
-			putMeshIntoStore(resourceStore, "mesh-1")
-			putMeshIntoStore(resourceStore, "mesh-2")
+			putMeshIntoStore(resourceStore, "mesh-1", t1)
+			putMeshIntoStore(resourceStore, "mesh-2", t1)
 
 			// when
 			response := client.list()
@@ -84,12 +88,16 @@ var _ = Describe("Resource Endpoints", func() {
 			json1 := `
 			{
 				"type": "Mesh",
-				"name": "mesh-1"
+				"name": "mesh-1",
+				"creationTime": "2018-07-17T16:05:36.995Z",
+				"modificationTime": "2018-07-17T16:05:36.995Z"
 			}`
 			json2 := `
 			{
 				"type": "Mesh",
-				"name": "mesh-2"
+				"name": "mesh-2",
+				"creationTime": "2018-07-17T16:05:36.995Z",
+				"modificationTime": "2018-07-17T16:05:36.995Z"
 			}`
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -122,7 +130,7 @@ var _ = Describe("Resource Endpoints", func() {
 		It("should update a resource when one already exist", func() {
 			// given
 			name := "mesh-1"
-			putMeshIntoStore(resourceStore, name)
+			putMeshIntoStore(resourceStore, name, t1)
 
 			// when
 			res := rest.Resource{
@@ -135,11 +143,10 @@ var _ = Describe("Resource Endpoints", func() {
 						Backends: []*v1alpha1.TracingBackend{
 							{
 								Name: "zipkin-us",
-								Type: &v1alpha1.TracingBackend_Zipkin_{
-									Zipkin: &v1alpha1.TracingBackend_Zipkin{
-										Url: "http://zipkin-us:9090/v2/spans",
-									},
-								},
+								Type: v1alpha1.TracingZipkinType,
+								Config: util_proto.MustToStruct(&v1alpha1.ZipkinTracingBackendConfig{
+									Url: "http://zipkin-us:9090/v2/spans",
+								}),
 							},
 						},
 					},
@@ -208,7 +215,7 @@ var _ = Describe("Resource Endpoints", func() {
 		It("should delete existing resource", func() {
 			// given
 			name := "mesh-1"
-			putMeshIntoStore(resourceStore, name)
+			putMeshIntoStore(resourceStore, name, t1)
 
 			// when
 			response := client.delete(name)
@@ -232,8 +239,8 @@ var _ = Describe("Resource Endpoints", func() {
 	})
 })
 
-func putMeshIntoStore(resourceStore store.ResourceStore, name string) {
+func putMeshIntoStore(resourceStore store.ResourceStore, name string, createdAt time.Time) {
 	resource := mesh.MeshResource{}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, name))
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, name), store.CreatedAt(createdAt))
 	Expect(err).NotTo(HaveOccurred())
 }

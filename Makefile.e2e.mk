@@ -50,7 +50,6 @@ define pull_docker_images
 		&& docker pull $(KUMA_INJECTOR_DOCKER_IMAGE) \
 		&& docker pull $(KUMA_INIT_DOCKER_IMAGE) \
 		&& docker pull $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) \
-		&& docker pull $(KUMA_TCP_ECHO_DOCKER_IMAGE) \
 		&& docker pull $(KUMACTL_DOCKER_IMAGE) \
 		&& set +x \
 		&& echo "Pulling is now complete" ; \
@@ -321,7 +320,7 @@ deploy/kuma/minikube: ## Minikube: Deploy Kuma with no demo app
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-injector
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-injector
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
-	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane	
+	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
 
 deploy/example/minikube: deploy/kuma/minikube ## Minikube: Deploy example setup
 	kubectl apply -f tools/e2e/examples/minikube/kuma-demo/
