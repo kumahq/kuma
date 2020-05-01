@@ -3,6 +3,7 @@ package api_server
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/emicklei/go-restful"
 
@@ -147,6 +148,21 @@ func (r *resourceEndpoints) updateResource(ctx context.Context, res model.Resour
 	}
 }
 
+func (r *resourceEndpoints) addCreateOrUpdateEndpointReadOnly(ws *restful.WebService, pathPrefix string) {
+	ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResourceReadOnly).
+		Doc("Not allowed in read-only mode.").
+		Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
+}
+
+func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Request, response *restful.Response) {
+	err := response.WriteErrorString(http.StatusMethodNotAllowed,"On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply'."+
+		" As a best practice, you should be using 'kubectl apply' instead." +
+		" You can still use 'kumactl' to make read-only operations. On Universal this limitation does not apply.\n")
+	if err != nil {
+		core.Log.Error(err, "Could not write the response")
+	}
+}
+
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
 		Doc(fmt.Sprintf("Deletes a %s", r.Name)).
@@ -161,6 +177,21 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	resource := r.ResourceFactory()
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(response, err, "Could not delete a resource")
+	}
+}
+
+func (r *resourceEndpoints) addDeleteEndpointReadOnly(ws *restful.WebService, pathPrefix string) {
+	ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResourceReadOnly).
+		Doc("Not allowed in read-only mode.").
+		Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
+}
+
+func (r *resourceEndpoints) deleteResourceReadOnly(request *restful.Request, response *restful.Response) {
+	err := response.WriteErrorString(http.StatusMethodNotAllowed, "On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply'."+
+		" As a best practice, you should be using 'kubectl apply' instead." +
+		" You can still use 'kumactl' to make read-only operations. On Universal this limitation does not apply.\n")
+	if err != nil {
+		core.Log.Error(err, "Could not write the response")
 	}
 }
 
