@@ -100,13 +100,16 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
-			dataplane := envoy.New(envoy.Opts{
+			dataplane, err := envoy.New(envoy.Opts{
 				Catalog:   catalog,
 				Config:    cfg,
 				Generator: bootstrapGenerator,
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 			})
+			if err != nil {
+				return err
+			}
 			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
 			componentMgr := component.NewManager()
