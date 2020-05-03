@@ -1,2 +1,2 @@
 MESH      NAME          TAGS                                AGE
-default   dataplane-1   service=metrics,mobile version=v1   2562047h0m0s
+default   dataplane-1   service=metrics,mobile version=v1   292y

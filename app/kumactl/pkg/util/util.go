@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Duration returns a readable represantation of the provided time
+// Duration returns a readable representation of the provided time
 func Duration(d time.Duration) string {
 	if seconds := int(d.Seconds()); seconds < -1 {
 		return fmt.Sprintf("nil")

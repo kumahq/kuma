@@ -1,2 +1,2 @@
 MESH      NAME            AGE
-default   traffic-log-1   2562047h0m0s
+default   traffic-log-1   292y
