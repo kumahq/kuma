@@ -37,7 +37,7 @@ func newGetSecretCmd(pctx *getContext) *cobra.Command {
 			secrets := []*system.SecretResource{secret}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printSecrets(pctx.RootContext.Runtime.Now(), secrets, cmd.OutOrStdout())
+				return printSecrets(pctx.Now(), secrets, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

@@ -40,7 +40,7 @@ func newGetTrafficRouteCmd(pctx *getContext) *cobra.Command {
 			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficRoutes(pctx.RootContext.Runtime.Now(), trafficRoutes, cmd.OutOrStdout())
+				return printTrafficRoutes(pctx.Now(), trafficRoutes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

@@ -38,7 +38,7 @@ func newGetHealthCheckCmd(pctx *getContext) *cobra.Command {
 			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printHealthChecks(pctx.Runtime.Now(), healthchecks, cmd.OutOrStdout())
+				return printHealthChecks(pctx.Now(), healthchecks, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
