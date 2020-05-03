@@ -5,6 +5,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
@@ -34,7 +36,7 @@ func newGetSecretsCmd(pctx *getContext) *cobra.Command {
 
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printSecrets(pctx.RootContext.Runtime.Now(), secrets.Items, cmd.OutOrStdout())
+				return printSecrets(pctx.Now(), secrets.Items, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -60,9 +62,9 @@ func printSecrets(rootTime time.Time, secrets []*system.SecretResource, out io.W
 				secret := secrets[i]
 
 				return []string{
-					secret.Meta.GetMesh(),                            // MESH
-					secret.Meta.GetName(),                            // NAME
-					Age(rootTime, secret.Meta.GetModificationTime()), //AGE
+					secret.Meta.GetMesh(), // MESH
+					secret.Meta.GetName(), // NAME
+					table.TimeSince(secret.Meta.GetModificationTime(), rootTime), //AGE
 				}
 			}
 		}(),

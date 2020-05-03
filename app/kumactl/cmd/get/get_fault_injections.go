@@ -35,7 +35,7 @@ func newGetFaultInjectionsCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printFaultInjections(pctx.Runtime.Now(), &faultInjections, cmd.OutOrStdout())
+				return printFaultInjections(pctx.Now(), &faultInjections, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -61,9 +61,9 @@ func printFaultInjections(rootTime time.Time, faultInjections *mesh.FaultInjecti
 				faultInjection := faultInjections.Items[i]
 
 				return []string{
-					faultInjection.GetMeta().GetMesh(),                            // MESH
-					faultInjection.GetMeta().GetName(),                            // NAME
-					Age(rootTime, faultInjection.GetMeta().GetModificationTime()), // AGE
+					faultInjection.GetMeta().GetMesh(),                                        // MESH
+					faultInjection.GetMeta().GetName(),                                        // NAME
+					table.TimeSince(faultInjection.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}
 		}(),

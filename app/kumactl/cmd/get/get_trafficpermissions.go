@@ -35,7 +35,7 @@ func newGetTrafficPermissionsCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficPermissions(pctx.RootContext.Runtime.Now(), &trafficPermissions, cmd.OutOrStdout())
+				return printTrafficPermissions(pctx.Now(), &trafficPermissions, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -61,9 +61,9 @@ func printTrafficPermissions(rootTime time.Time, trafficPermissions *mesh.Traffi
 				trafficPermission := trafficPermissions.Items[i]
 
 				return []string{
-					trafficPermission.GetMeta().GetMesh(),                            // MESH
-					trafficPermission.GetMeta().GetName(),                            // NAME
-					Age(rootTime, trafficPermission.GetMeta().GetModificationTime()), //AGE
+					trafficPermission.GetMeta().GetMesh(),                                        // MESH
+					trafficPermission.GetMeta().GetName(),                                        // NAME
+					table.TimeSince(trafficPermission.GetMeta().GetModificationTime(), rootTime), //AGE
 				}
 			}
 		}(),

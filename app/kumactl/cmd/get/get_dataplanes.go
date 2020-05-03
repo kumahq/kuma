@@ -34,7 +34,7 @@ func newGetDataplanesCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printDataplanes(pctx.Runtime.Now(), &dataplanes, cmd.OutOrStdout())
+				return printDataplanes(pctx.Now(), &dataplanes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -60,10 +60,10 @@ func printDataplanes(rootTime time.Time, dataplanes *mesh.DataplaneResourceList,
 				dataplane := dataplanes.Items[i]
 
 				return []string{
-					dataplane.Meta.GetMesh(),                            // MESH
-					dataplane.Meta.GetName(),                            // NAME,
-					dataplane.Spec.Tags().String(),                      // TAGS
-					Age(rootTime, dataplane.Meta.GetModificationTime()), // AGE
+					dataplane.Meta.GetMesh(),                                        // MESH
+					dataplane.Meta.GetName(),                                        // NAME,
+					dataplane.Spec.Tags().String(),                                  // TAGS
+					table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
 
 				}
 			}

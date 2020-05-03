@@ -35,7 +35,7 @@ func newGetTrafficTracesCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficTraces(pctx.RootContext.Runtime.Now(), &trafficTraces, cmd.OutOrStdout())
+				return printTrafficTraces(pctx.Now(), &trafficTraces, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -61,9 +61,9 @@ func printTrafficTraces(rootTime time.Time, trafficTraces *mesh.TrafficTraceReso
 				trafficTraces := trafficTraces.Items[i]
 
 				return []string{
-					trafficTraces.GetMeta().GetMesh(),                            // MESH
-					trafficTraces.GetMeta().GetName(),                            // NAME
-					Age(rootTime, trafficTraces.GetMeta().GetModificationTime()), // AGE
+					trafficTraces.GetMeta().GetMesh(),                                        // MESH
+					trafficTraces.GetMeta().GetName(),                                        // NAME
+					table.TimeSince(trafficTraces.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}
 		}(),

@@ -35,7 +35,7 @@ func newGetHealthChecksCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printHealthChecks(pctx.RootContext.Runtime.Now(), healthChecks, cmd.OutOrStdout())
+				return printHealthChecks(pctx.Now(), healthChecks, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -61,9 +61,9 @@ func printHealthChecks(rootTime time.Time, healthChecks *mesh_core.HealthCheckRe
 				healthCheck := healthChecks.Items[i]
 
 				return []string{
-					healthCheck.Meta.GetMesh(),                            // MESH
-					healthCheck.Meta.GetName(),                            // NAME
-					Age(rootTime, healthCheck.Meta.GetModificationTime()), //AGE
+					healthCheck.Meta.GetMesh(),                                        // MESH
+					healthCheck.Meta.GetName(),                                        // NAME
+					table.TimeSince(healthCheck.Meta.GetModificationTime(), rootTime), //AGE
 				}
 			}
 		}(),

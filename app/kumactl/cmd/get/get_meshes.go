@@ -36,7 +36,7 @@ func newGetMeshesCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printMeshes(pctx.Runtime.Now(), &meshes, cmd.OutOrStdout())
+				return printMeshes(pctx.Now(), &meshes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -92,7 +92,7 @@ func printMeshes(rootTime time.Time, meshes *mesh.MeshResourceList, out io.Write
 					metrics,                  // METRICS
 					logging,                  // LOGGING
 					tracing,                  // TRACING
-					Age(rootTime, mesh.GetMeta().GetModificationTime()),
+					table.TimeSince(mesh.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}
 		}(),

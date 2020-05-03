@@ -35,7 +35,7 @@ func newGetProxyTemplatesCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printProxyTemplates(pctx.RootContext.Runtime.Now(), proxyTemplates, cmd.OutOrStdout())
+				return printProxyTemplates(pctx.Now(), proxyTemplates, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -61,9 +61,9 @@ func printProxyTemplates(rootTime time.Time, proxyTemplates *mesh_core.ProxyTemp
 				proxyTemplate := proxyTemplates.Items[i]
 
 				return []string{
-					proxyTemplate.GetMeta().GetMesh(),                            // MESH
-					proxyTemplate.GetMeta().GetName(),                            // NAME
-					Age(rootTime, proxyTemplate.GetMeta().GetModificationTime()), //AGE
+					proxyTemplate.GetMeta().GetMesh(),                                        // MESH
+					proxyTemplate.GetMeta().GetName(),                                        // NAME
+					table.TimeSince(proxyTemplate.GetMeta().GetModificationTime(), rootTime), //AGE
 				}
 			}
 		}(),
