@@ -1,8 +1,9 @@
 # CHANGELOG
 
 ## master
-* fix: fix kuma-cp migrate help text
+* fix: kuma-cp migrate help text
   [#713](https://github.com/Kong/kuma/pull/713)
+  👍contributed by @tharun208
 * fix: envoy binary not found
   [#695](https://github.com/Kong/kuma/pull/695)
   👍contributed by @tharun208
