@@ -53,6 +53,7 @@ executors:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
+    working_directory: /go/src/github.com/Kong/kuma
 
 jobs:
   dev_golang:
@@ -61,6 +62,7 @@ jobs:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
+    working_directory: /go/src/github.com/Kong/kuma
     steps:
     - checkout
     - run:
@@ -87,6 +89,7 @@ jobs:
       # if GOPATH is not set, `golang-ci` fails with an obscure message
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
+    working_directory: /go/src/github.com/Kong/kuma
     steps:
     - checkout
     - run:
