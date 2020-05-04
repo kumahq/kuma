@@ -45,12 +45,10 @@ dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known
 		&& echo "Protobuf well-known types $(PROTOC_VERSION) have been installed at $(PROTOBUF_WKT_DIR)" ; fi
 
 dev/install/protoc-gen-go: ## Bootstrap: Install Protoc Go Plugin (protobuf Go generator)
-	ls ${GOPATH_BIN_DIR}
 	go get -u github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
-	ls ${GOPATH_BIN_DIR}
 
 dev/install/protoc-gen-validate: ## Bootstrap: Install Protoc Gen Validate Plugin (protobuf validation code generator)
-	go get -u github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
+	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	# see https://github.com/onsi/ginkgo#set-me-up
