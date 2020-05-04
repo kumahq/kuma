@@ -116,7 +116,7 @@ else
 endif
 
 PROTOC_VERSION := 3.6.1
-PROTOC_PGV_VERSION := v0.3.0-java
+PROTOC_PGV_VERSION := v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 GOLANG_PROTOBUF_VERSION := v1.3.2
 GOLANGCI_LINT_VERSION := v1.21.0
 
@@ -273,7 +273,7 @@ generate/gui: ## Generate go files with GUI static files to embed it into binary
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
 fmt/go: ## Dev: Run go fmt
-	go fmt ./...
+	go fmt -mod=mod ./...
 	@# apparently, it's not possible to simply use `go fmt ./pkg/plugins/resources/k8s/native/...`
 	make fmt -C pkg/plugins/resources/k8s/native
 
@@ -281,7 +281,7 @@ fmt/proto: ## Dev: Run clang-format on .proto files
 	which $(CLANG_FORMAT_PATH) && find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT_PATH) -i || true
 
 vet: ## Dev: Run go vet
-	go vet ./...
+	go vet -mod=mod ./...
 	@# for consistency with `fmt`
 	make vet -C pkg/plugins/resources/k8s/native
 
