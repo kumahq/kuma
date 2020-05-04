@@ -1,9 +1,9 @@
-webHookServer:
-  port: 8443
+admissionServer:
+  address: ""
+  certDir: ""
+  port: 5443
 injector:
-  controlPlane:
-    apiServer:
-      url: http://kuma-control-plane.kuma-system:5681
+  cniEnabled: false
   sidecarContainer:
     image: kuma/kuma-dp:latest
     redirectPort: 15001
@@ -31,5 +31,4 @@ injector:
         cpu: 1000m
         memory: 512Mi
   initContainer:
-    enabled: true
     image: kuma/kuma-init:latest

@@ -229,7 +229,6 @@ it is at your discretion, but here are some of the most frequent ones:
 
 - **kuma-cp**: A change that affects the control-plane
 - **kuma-dp**: A change that affects the data-plane
-- **injector**: A change to the Kuma injector
 - **kumactl**: A change to the kumactl
 - **deps**: When updating dependencies (to be used with the `chore` prefix)
 - **conf**: Configuration-related changes (new values, improvements...)

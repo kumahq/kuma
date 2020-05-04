@@ -38,8 +38,12 @@ type Opts struct {
 	Stderr    io.Writer
 }
 
-func New(opts Opts) *Envoy {
-	return &Envoy{opts: opts}
+func New(opts Opts) (*Envoy, error) {
+	if _, err := lookupEnvoyPath(opts.Config.DataplaneRuntime.BinaryPath); err != nil {
+		runLog.Error(err, "could not find the envoy executable in your path")
+		return nil, err
+	}
+	return &Envoy{opts: opts}, nil
 }
 
 var _ component.Component = &Envoy{}
@@ -129,6 +133,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	command.Stderr = e.opts.Stderr
 	runLog.Info("starting Envoy")
 	if err := command.Start(); err != nil {
+		runLog.Error(err, "the envoy executable was found at "+resolvedPath+" but an error occurred when executing it")
 		return err
 	}
 	done := make(chan error, 1)
