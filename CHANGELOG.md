@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat(kuma-cp) friendly response in K8s mode
+  [#712](https://github.com/Kong/kuma/pull/712)
 * chore: upgrade go-control-plane up to v0.9.5
   [#707](https://github.com/Kong/kuma/pull/707)
 * fix: kuma-cp migrate help text
