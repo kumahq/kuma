@@ -17,7 +17,7 @@ func newMigrateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Migrate database to which Control Plane is connected",
-		Long:  `Migrate database to which Control Plane is connected. The database contains all policies, dataplanes and secrets. The schema has to be in sync with version of Kuma CP to properly work. Make sure to run "kumactl migrate up" before running new version of Kuma.`,
+		Long:  `Migrate database to which Control Plane is connected. The database contains all policies, dataplanes and secrets. The schema has to be in sync with version of Kuma CP to properly work. Make sure to run "kuma-cp migrate up" before running new version of Kuma.`,
 	}
 	cmd.AddCommand(newMigrateUpCmd())
 	return cmd
