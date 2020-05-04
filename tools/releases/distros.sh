@@ -81,7 +81,7 @@ function create_tarball {
   cp -p build/artifacts-$system-$arch/kuma-dp/kuma-dp $kuma_dir/bin
   cp -p build/artifacts-$system-$arch/kumactl/kumactl $kuma_dir/bin
   cp -p build/artifacts-$system-$arch/kuma-prometheus-sd/kuma-prometheus-sd $kuma_dir/bin
-  cp -p pkg/config/app/kuma-cp/kuma-cp.defaults.yaml $kuma_dir/conf/kuma-cp.conf
+  cp -p pkg/config/app/kuma-cp/kuma-cp.defaults.yaml $kuma_dir/conf/kuma-cp.conf.yml
 
   cp tools/releases/templates/* $kuma_dir
 
