@@ -11,7 +11,8 @@ import (
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 )
 
 var (
@@ -62,11 +63,11 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 }
 
 func (r *reconciler) autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snapshot) envoy_cache.Snapshot {
-	new.Listeners = reuseVersion(old.Listeners, new.Listeners)
-	new.Routes = reuseVersion(old.Routes, new.Routes)
-	new.Clusters = reuseVersion(old.Clusters, new.Clusters)
-	new.Endpoints = reuseVersion(old.Endpoints, new.Endpoints)
-	new.Secrets = reuseVersion(old.Secrets, new.Secrets)
+	new.Resources[envoy_types.Listener] = reuseVersion(old.Resources[envoy_types.Listener], new.Resources[envoy_types.Listener])
+	new.Resources[envoy_types.Route] = reuseVersion(old.Resources[envoy_types.Route], new.Resources[envoy_types.Route])
+	new.Resources[envoy_types.Cluster] = reuseVersion(old.Resources[envoy_types.Cluster], new.Resources[envoy_types.Cluster])
+	new.Resources[envoy_types.Endpoint] = reuseVersion(old.Resources[envoy_types.Endpoint], new.Resources[envoy_types.Endpoint])
+	new.Resources[envoy_types.Secret] = reuseVersion(old.Resources[envoy_types.Secret], new.Resources[envoy_types.Secret])
 	return new
 }
 
@@ -78,7 +79,7 @@ func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
 	return new
 }
 
-func equalSnapshots(old, new map[string]envoy_cache.Resource) bool {
+func equalSnapshots(old, new map[string]envoy_types.Resource) bool {
 	if len(new) != len(old) {
 		return false
 	}
@@ -109,11 +110,11 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 		return envoy_cache.Snapshot{}, err
 	}
 
-	listeners := []envoy_cache.Resource{}
-	routes := []envoy_cache.Resource{}
-	clusters := []envoy_cache.Resource{}
-	endpoints := []envoy_cache.Resource{}
-	secrets := []envoy_cache.Resource{}
+	listeners := []envoy_types.Resource{}
+	routes := []envoy_types.Resource{}
+	clusters := []envoy_types.Resource{}
+	endpoints := []envoy_types.Resource{}
+	secrets := []envoy_types.Resource{}
 
 	for _, r := range rs {
 		switch r.Resource.(type) {
@@ -133,11 +134,13 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 
 	version := "" // empty value is a sign to other components to generate the version automatically
 	out := envoy_cache.Snapshot{
-		Endpoints: envoy_cache.NewResources(version, endpoints),
-		Clusters:  envoy_cache.NewResources(version, clusters),
-		Routes:    envoy_cache.NewResources(version, routes),
-		Listeners: envoy_cache.NewResources(version, listeners),
-		Secrets:   envoy_cache.NewResources(version, secrets),
+		Resources: [envoy_types.UnknownType]envoy_cache.Resources{
+			envoy_types.Endpoint: envoy_cache.NewResources(version, endpoints),
+			envoy_types.Cluster:  envoy_cache.NewResources(version, clusters),
+			envoy_types.Route:    envoy_cache.NewResources(version, routes),
+			envoy_types.Listener: envoy_cache.NewResources(version, listeners),
+			envoy_types.Secret:   envoy_cache.NewResources(version, secrets),
+		},
 	}
 
 	return out, nil

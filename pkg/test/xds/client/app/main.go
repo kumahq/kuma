@@ -13,7 +13,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 
 	"github.com/Kong/kuma/pkg/core"
 	kuma_log "github.com/Kong/kuma/pkg/log"
@@ -111,21 +111,21 @@ func newRunCmd() *cobra.Command {
 						}()
 
 						nodeLog.Info("requesting Listeners")
-						e := stream.Request(node.ID, envoy_cache.ListenerType)
+						e := stream.Request(node.ID, envoy_resource.ListenerType)
 						if e != nil {
-							return errors.Wrapf(e, "failed to request %q", envoy_cache.ListenerType)
+							return errors.Wrapf(e, "failed to request %q", envoy_resource.ListenerType)
 						}
 
 						nodeLog.Info("requesting Clusters")
-						e = stream.Request(node.ID, envoy_cache.ClusterType)
+						e = stream.Request(node.ID, envoy_resource.ClusterType)
 						if e != nil {
-							return errors.Wrapf(e, "failed to request %q", envoy_cache.ClusterType)
+							return errors.Wrapf(e, "failed to request %q", envoy_resource.ClusterType)
 						}
 
 						nodeLog.Info("requesting Endpoints")
-						e = stream.Request(node.ID, envoy_cache.EndpointType)
+						e = stream.Request(node.ID, envoy_resource.EndpointType)
 						if e != nil {
-							return errors.Wrapf(e, "failed to request %q", envoy_cache.EndpointType)
+							return errors.Wrapf(e, "failed to request %q", envoy_resource.EndpointType)
 						}
 
 						for {

@@ -30,17 +30,18 @@ import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/cache"
-	gcp_server "github.com/envoyproxy/go-control-plane/pkg/server"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	gcp_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 )
 
 // NewServer creates handlers from a config watcher and callbacks.
-func NewServer(config cache.Cache, callbacks gcp_server.Callbacks) gcp_server.Server {
+func NewServer(config envoy_cache.Cache, callbacks gcp_server.Callbacks) gcp_server.Server {
 	return &server{cache: config, callbacks: callbacks}
 }
 
 type server struct {
-	cache     cache.Cache
+	cache     envoy_cache.Cache
 	callbacks gcp_server.Callbacks
 
 	// streamCount for counting bi-di streams
@@ -56,12 +57,12 @@ type stream interface {
 
 // watches for all xDS resource types
 type watches struct {
-	endpoints chan cache.Response
-	clusters  chan cache.Response
-	routes    chan cache.Response
-	listeners chan cache.Response
-	secrets   chan cache.Response
-	runtimes  chan cache.Response
+	endpoints chan envoy_cache.Response
+	clusters  chan envoy_cache.Response
+	routes    chan envoy_cache.Response
+	listeners chan envoy_cache.Response
+	secrets   chan envoy_cache.Response
+	runtimes  chan envoy_cache.Response
 
 	endpointCancel func()
 	clusterCancel  func()
@@ -102,7 +103,7 @@ func (values watches) Cancel() {
 	}
 }
 
-func createResponse(resp *cache.Response, typeURL string) (*v2.DiscoveryResponse, error) {
+func createResponse(resp *envoy_cache.Response, typeURL string) (*v2.DiscoveryResponse, error) {
 	if resp == nil {
 		return nil, errors.New("missing response")
 	}
@@ -148,7 +149,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 	}()
 
 	// sends a response by serializing to protobuf Any
-	send := func(resp cache.Response, typeURL string) (string, error) {
+	send := func(resp envoy_cache.Response, typeURL string) (string, error) {
 		out, err := createResponse(&resp, typeURL)
 		if err != nil {
 			return "", err
@@ -169,7 +170,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 		}
 	}
 
-	peekResponse := func(req cache.Request) *cache.Response {
+	peekResponse := func(req envoy_cache.Request) *envoy_cache.Response {
 		versionInfo := req.VersionInfo
 		req.VersionInfo = "" // trick cache into returning a response despite unchanged version
 		resp, err := s.cache.Fetch(stream.Context(), req)
@@ -179,8 +180,8 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 		resp.Request.VersionInfo = versionInfo // restore the original value
 		return resp
 	}
-	scheduleResponse := func(resp cache.Response) (value chan cache.Response, cancel func()) {
-		value = make(chan cache.Response, 1)
+	scheduleResponse := func(resp envoy_cache.Response) (value chan envoy_cache.Response, cancel func()) {
+		value = make(chan envoy_cache.Response, 1)
 		value <- resp
 		cancel = func() {
 			close(value)
@@ -204,7 +205,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			if !more {
 				return status.Errorf(codes.Unavailable, "endpoints watch failed")
 			}
-			nonce, err := send(resp, cache.EndpointType)
+			nonce, err := send(resp, envoy_resource.EndpointType)
 			if err != nil {
 				return err
 			}
@@ -215,7 +216,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			if !more {
 				return status.Errorf(codes.Unavailable, "clusters watch failed")
 			}
-			nonce, err := send(resp, cache.ClusterType)
+			nonce, err := send(resp, envoy_resource.ClusterType)
 			if err != nil {
 				return err
 			}
@@ -225,7 +226,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			if !more {
 				return status.Errorf(codes.Unavailable, "routes watch failed")
 			}
-			nonce, err := send(resp, cache.RouteType)
+			nonce, err := send(resp, envoy_resource.RouteType)
 			if err != nil {
 				return err
 			}
@@ -235,7 +236,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			if !more {
 				return status.Errorf(codes.Unavailable, "listeners watch failed")
 			}
-			nonce, err := send(resp, cache.ListenerType)
+			nonce, err := send(resp, envoy_resource.ListenerType)
 			if err != nil {
 				return err
 			}
@@ -245,7 +246,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			if !more {
 				return status.Errorf(codes.Unavailable, "secrets watch failed")
 			}
-			nonce, err := send(resp, cache.SecretType)
+			nonce, err := send(resp, envoy_resource.SecretType)
 			if err != nil {
 				return err
 			}
@@ -255,7 +256,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			if !more {
 				return status.Errorf(codes.Unavailable, "runtimes watch failed")
 			}
-			nonce, err := send(resp, cache.RuntimeType)
+			nonce, err := send(resp, envoy_resource.RuntimeType)
 			if err != nil {
 				return err
 			}
@@ -281,7 +282,7 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 			nonce := req.GetResponseNonce()
 
 			// type URL is required for ADS but is implicit for xDS
-			if defaultTypeURL == cache.AnyType {
+			if defaultTypeURL == envoy_resource.AnyType {
 				if req.TypeUrl == "" {
 					return status.Errorf(codes.InvalidArgument, "type URL is required for ADS")
 				}
@@ -297,11 +298,11 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 
 			// cancel existing watches to (re-)request a newer version
 			switch {
-			case req.TypeUrl == cache.EndpointType && (values.endpointNonce == "" || values.endpointNonce == nonce):
+			case req.TypeUrl == envoy_resource.EndpointType && (values.endpointNonce == "" || values.endpointNonce == nonce):
 				// If Envoy uses the same Nonce for the second time, it probably means that
 				// a Cluster has been created or updated and goes through the warming stage.
 				// In that case we must respond even if EDS configuration hasn't changed.
-				var resp *cache.Response
+				var resp *envoy_cache.Response
 				if values.endpointNonceAcked {
 					resp = peekResponse(*req)
 				}
@@ -314,27 +315,27 @@ func (s *server) process(stream stream, reqCh <-chan *v2.DiscoveryRequest, defau
 				} else {
 					values.endpoints, values.endpointCancel = s.cache.CreateWatch(*req)
 				}
-			case req.TypeUrl == cache.ClusterType && (values.clusterNonce == "" || values.clusterNonce == nonce):
+			case req.TypeUrl == envoy_resource.ClusterType && (values.clusterNonce == "" || values.clusterNonce == nonce):
 				if values.clusterCancel != nil {
 					values.clusterCancel()
 				}
 				values.clusters, values.clusterCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == cache.RouteType && (values.routeNonce == "" || values.routeNonce == nonce):
+			case req.TypeUrl == envoy_resource.RouteType && (values.routeNonce == "" || values.routeNonce == nonce):
 				if values.routeCancel != nil {
 					values.routeCancel()
 				}
 				values.routes, values.routeCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == cache.ListenerType && (values.listenerNonce == "" || values.listenerNonce == nonce):
+			case req.TypeUrl == envoy_resource.ListenerType && (values.listenerNonce == "" || values.listenerNonce == nonce):
 				if values.listenerCancel != nil {
 					values.listenerCancel()
 				}
 				values.listeners, values.listenerCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == cache.SecretType && (values.secretNonce == "" || values.secretNonce == nonce):
+			case req.TypeUrl == envoy_resource.SecretType && (values.secretNonce == "" || values.secretNonce == nonce):
 				if values.secretCancel != nil {
 					values.secretCancel()
 				}
 				values.secrets, values.secretCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == cache.RuntimeType && (values.runtimeNonce == "" || values.runtimeNonce == nonce):
+			case req.TypeUrl == envoy_resource.RuntimeType && (values.runtimeNonce == "" || values.runtimeNonce == nonce):
 				if values.runtimeCancel != nil {
 					values.runtimeCancel()
 				}
@@ -373,31 +374,31 @@ func (s *server) handler(stream stream, typeURL string) error {
 }
 
 func (s *server) StreamAggregatedResources(stream discovery.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
-	return s.handler(stream, cache.AnyType)
+	return s.handler(stream, envoy_resource.AnyType)
 }
 
 func (s *server) StreamEndpoints(stream v2.EndpointDiscoveryService_StreamEndpointsServer) error {
-	return s.handler(stream, cache.EndpointType)
+	return s.handler(stream, envoy_resource.EndpointType)
 }
 
 func (s *server) StreamClusters(stream v2.ClusterDiscoveryService_StreamClustersServer) error {
-	return s.handler(stream, cache.ClusterType)
+	return s.handler(stream, envoy_resource.ClusterType)
 }
 
 func (s *server) StreamRoutes(stream v2.RouteDiscoveryService_StreamRoutesServer) error {
-	return s.handler(stream, cache.RouteType)
+	return s.handler(stream, envoy_resource.RouteType)
 }
 
 func (s *server) StreamListeners(stream v2.ListenerDiscoveryService_StreamListenersServer) error {
-	return s.handler(stream, cache.ListenerType)
+	return s.handler(stream, envoy_resource.ListenerType)
 }
 
 func (s *server) StreamSecrets(stream discovery.SecretDiscoveryService_StreamSecretsServer) error {
-	return s.handler(stream, cache.SecretType)
+	return s.handler(stream, envoy_resource.SecretType)
 }
 
 func (s *server) StreamRuntime(stream discovery.RuntimeDiscoveryService_StreamRuntimeServer) error {
-	return s.handler(stream, cache.RuntimeType)
+	return s.handler(stream, envoy_resource.RuntimeType)
 }
 
 // Fetch is the universal fetch method.
@@ -422,7 +423,7 @@ func (s *server) FetchEndpoints(ctx context.Context, req *v2.DiscoveryRequest) (
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = cache.EndpointType
+	req.TypeUrl = envoy_resource.EndpointType
 	return s.Fetch(ctx, req)
 }
 
@@ -430,7 +431,7 @@ func (s *server) FetchClusters(ctx context.Context, req *v2.DiscoveryRequest) (*
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = cache.ClusterType
+	req.TypeUrl = envoy_resource.ClusterType
 	return s.Fetch(ctx, req)
 }
 
@@ -438,7 +439,7 @@ func (s *server) FetchRoutes(ctx context.Context, req *v2.DiscoveryRequest) (*v2
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = cache.RouteType
+	req.TypeUrl = envoy_resource.RouteType
 	return s.Fetch(ctx, req)
 }
 
@@ -446,7 +447,7 @@ func (s *server) FetchListeners(ctx context.Context, req *v2.DiscoveryRequest) (
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = cache.ListenerType
+	req.TypeUrl = envoy_resource.ListenerType
 	return s.Fetch(ctx, req)
 }
 
@@ -454,7 +455,7 @@ func (s *server) FetchSecrets(ctx context.Context, req *v2.DiscoveryRequest) (*v
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = cache.SecretType
+	req.TypeUrl = envoy_resource.SecretType
 	return s.Fetch(ctx, req)
 }
 
@@ -462,7 +463,7 @@ func (s *server) FetchRuntime(ctx context.Context, req *v2.DiscoveryRequest) (*v
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = cache.RuntimeType
+	req.TypeUrl = envoy_resource.RuntimeType
 	return s.Fetch(ctx, req)
 }
 
