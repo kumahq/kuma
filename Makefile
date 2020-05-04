@@ -295,12 +295,16 @@ check: generate fmt vet docs golangci-lint imports ## Dev: Run code checks (go f
 	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
-test: test/api test/k8s test/kuma ## Dev: Run tests for all modules
+test: ${COVERAGE_PROFILE} test/api test/k8s test/kuma coverage ## Dev: Run tests for all modules
+
+${COVERAGE_PROFILE}:
+	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
+
+coverage: ${COVERAGE_PROFILE}
+	GO111MODULE=off go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 test/kuma: # Dev: Run tests for the module github.com/Kong/kuma
-	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
 	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
-	GO111MODULE=off go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 test/api: # Dev: Run tests for the module github.com/Kong/kuma/api
 	GO_TEST='${GO_TEST}' GO_TEST_OPTS='${GO_TEST_OPTS}' COVERAGE_PROFILE='../$(BUILD_COVERAGE_DIR)/coverage-api.out' \
@@ -319,8 +323,10 @@ test/kuma-dp: test/kuma ## Dev: Run `kuma-dp` tests only
 test/kumactl: PKG_LIST=./app/kumactl/... ./pkg/config/app/kumactl/...
 test/kumactl: test/kuma ## Dev: Run `kumactl` tests only
 
-integration: ## Dev: Run integration tests
+${COVERAGE_INTEGRATION_PROFILE}:
 	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
+
+integration: ${COVERAGE_INTEGRATION_PROFILE} ## Dev: Run integration tests
 	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
 	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
