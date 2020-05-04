@@ -34,13 +34,13 @@ GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v -mod=mod $(LD_FLAGS)
 GO_RUN := CGO_ENABLED=0 go run $(LD_FLAGS)
-GO_TEST := go test $(LD_FLAGS)
+GO_TEST := go test  -mod=mod $(LD_FLAGS)
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
 
-GO_TEST_OPTS ?= -mod=mod
+GO_TEST_OPTS ?=
 
 BUILD_COVERAGE_DIR ?= $(BUILD_DIR)/coverage
 
