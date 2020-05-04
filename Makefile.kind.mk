@@ -15,15 +15,12 @@ CI_KUBERNETES_VERSION ?= v1.15.11@sha256:6cc31f3533deb138792db2c7d1ffc36f7456a06
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 
-.PHONY: start/k8s
-start/k8s: start/kind deploy/example-app/k8s ## Bootstrap: Start Kubernetes locally (KIND) and deploy sample app
-
 .PHONY: ${KIND_KUBECONFIG_DIR}
 ${KIND_KUBECONFIG_DIR}:
 	@mkdir -p ${KIND_KUBECONFIG_DIR}
 
-.PHONY: start/kind
-start/kind: ${KIND_KUBECONFIG_DIR}
+.PHONY: kind/start
+kind/start: ${KIND_KUBECONFIG_DIR}
 	@kind get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
 		(kind create cluster \
 			--name "$(KIND_CLUSTER_NAME)" \
@@ -31,7 +28,7 @@ start/kind: ${KIND_KUBECONFIG_DIR}
 			--kubeconfig $(KIND_KUBECONFIG) \
 			--wait 120s && \
 		until \
-			kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
+			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
 		do echo "Waiting for the cluster to come up" && sleep 1; done )
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
@@ -41,17 +38,9 @@ start/kind: ${KIND_KUBECONFIG_DIR}
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
 
-.PHONY: stop/kind
-stop/kind:
+.PHONY: kind/stop
+kind/stop:
 	@kind delete cluster --name $(KIND_CLUSTER_NAME)
-
-.PHONY: deploy/example-app/k8s
-deploy/example-app/k8s:
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl label namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=120s --for=condition=Available -n $(EXAMPLE_NAMESPACE) deployment/example-app
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
 
 .PHONY: kind/load/control-plane
 kind/load/control-plane: image/kuma-cp
@@ -69,16 +58,28 @@ kind/load/kuma-init: image/kuma-init
 kind/load/kuma-prometheus-sd: image/kuma-prometheus-sd
 	@kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=kuma
 
-.PHONY: deploy/control-plane/k8s
-deploy/control-plane/k8s: build/kumactl
+.PHONY: kind/load
+kind/load: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd
+
+.PHONY: kind/deploy/kuma
+kind/deploy/kuma: kind/load
 	@kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
+	@until \
+    	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
+    do \
+    	echo "Waiting for the cluster to come up" && sleep 1; \
+    done
 
-.PHONY: start/control-plane/k8s
-start/control-plane/k8s: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init deploy/control-plane/k8s ## Bootstrap: Deploy Control Plane on Kubernetes (KIND)
+.PHONY: kind/deploy/example-app
+kind/deploy/example-app:
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl label namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=120s --for=condition=Available -n $(EXAMPLE_NAMESPACE) deployment/example-app
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
 
 .PHONY: run/k8s
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
