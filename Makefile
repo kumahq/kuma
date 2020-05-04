@@ -15,7 +15,7 @@
 		print/kubebuilder/test_assets \
 		run/kuma-dp
 
-PKG_LIST := ./... ./api/... ./pkg/plugins/resources/k8s/native/...
+PKG_LIST := ./... #./api/... ./pkg/plugins/resources/k8s/native/...
 
 BUILD_INFO_GIT_TAG ?= $(shell git describe --tags 2>/dev/null || echo unknown)
 BUILD_INFO_GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
@@ -40,7 +40,7 @@ BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
 
-GO_TEST_OPTS ?=
+GO_TEST_OPTS ?= -mod=mod
 
 BUILD_COVERAGE_DIR ?= $(BUILD_DIR)/coverage
 
@@ -295,19 +295,29 @@ check: generate fmt vet docs golangci-lint imports ## Dev: Run code checks (go f
 	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
-test: ## Dev: Run tests
+test: test/api test/k8s test/kuma ## Dev: Run tests for all modules
+
+test/kuma: # Dev: Run tests for the module github.com/Kong/kuma
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
 	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
-	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
+	GO111MODULE=off go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
+
+test/api: # Dev: Run tests for the module github.com/Kong/kuma/api
+	GO_TEST='${GO_TEST}' GO_TEST_OPTS='${GO_TEST_OPTS}' COVERAGE_PROFILE='../$(BUILD_COVERAGE_DIR)/coverage-api.out' \
+	make test -C ./api
+
+test/k8s: # Dev: Run tests for the module github.com/Kong/kuma/pkg/plugins/resources/k8s/native
+	GO_TEST='${GO_TEST}' GO_TEST_OPTS='${GO_TEST_OPTS}' COVERAGE_PROFILE='../../../../../$(BUILD_COVERAGE_DIR)/coverage-k8s.out' \
+	make test -C ./pkg/plugins/resources/k8s/native
 
 test/kuma-cp: PKG_LIST=./app/kuma-cp/... ./pkg/config/app/kuma-cp/...
-test/kuma-cp: test ## Dev: Run `kuma-cp` tests only
+test/kuma-cp: test/kuma ## Dev: Run `kuma-cp` tests only
 
 test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
-test/kuma-dp: test ## Dev: Run `kuma-dp` tests only
+test/kuma-dp: test/kuma ## Dev: Run `kuma-dp` tests only
 
 test/kumactl: PKG_LIST=./app/kumactl/... ./pkg/config/app/kumactl/...
-test/kumactl: test ## Dev: Run `kumactl` tests only
+test/kumactl: test/kuma ## Dev: Run `kumactl` tests only
 
 integration: ## Dev: Run integration tests
 	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"

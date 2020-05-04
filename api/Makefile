@@ -135,8 +135,11 @@ protoc/system/v1alpha1:
 build: ## Build generated files
 	go build ./...
 
+GO_TEST ?= go test
+GO_TEST_OPTS ?=
+
 test: ## Run tests
-	go test ./...
+	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
 
 check: generate build test ## Verify that auto-generated code is up-to-date
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
