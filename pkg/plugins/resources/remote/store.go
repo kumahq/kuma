@@ -78,7 +78,11 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 		return err
 	}
 	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
-		return errors.Errorf("(%d): %s", statusCode, string(b))
+		if statusCode == http.StatusMethodNotAllowed {
+			return errors.Errorf("%s", string(b))
+		} else {
+			return errors.Errorf("(%d): %s", statusCode, string(b))
+		}
 	}
 	res.SetMeta(remoteMeta{
 		Name:    meta.Name,
@@ -105,7 +109,11 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 		return err
 	}
 	if statusCode != http.StatusOK {
-		return errors.Errorf("(%d): %s", statusCode, string(b))
+		if statusCode == http.StatusMethodNotAllowed {
+			return errors.Errorf("%s", string(b))
+		} else {
+			return errors.Errorf("(%d): %s", statusCode, string(b))
+		}
 	}
 	return nil
 }
