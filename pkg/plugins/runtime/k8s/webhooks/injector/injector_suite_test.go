@@ -20,11 +20,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -41,7 +43,7 @@ func TestInjector(t *testing.T) {
 
 	RunSpecsWithDefaultAndCustomReporters(t,
 		"Kubernetes Resources Suite",
-		[]Reporter{envtest.NewlineReporter{}})
+		[]Reporter{printer.NewlineReporter{}})
 }
 
 var _ = BeforeSuite(func(done Done) {
