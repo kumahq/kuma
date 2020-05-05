@@ -15,7 +15,7 @@
 		print/kubebuilder/test_assets \
 		run/kuma-dp
 
-PKG_LIST := ./... #./api/... ./pkg/plugins/resources/k8s/native/...
+PKG_LIST := ./...
 
 BUILD_INFO_GIT_TAG ?= $(shell git describe --tags 2>/dev/null || echo unknown)
 BUILD_INFO_GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
@@ -32,9 +32,9 @@ build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/Kong/
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags)"
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
-GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v -mod=mod $(LD_FLAGS)
+GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(LD_FLAGS)
 GO_RUN := CGO_ENABLED=0 go run $(LD_FLAGS)
-GO_TEST := go test  -mod=mod $(LD_FLAGS)
+GO_TEST := go test $(LD_FLAGS)
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
@@ -125,7 +125,7 @@ CI_KIND_VERSION ?= v0.7.0
 CI_MINIKUBE_VERSION ?= v1.4.0
 CI_KUBERNETES_VERSION ?= v1.15.3
 CI_KUBECTL_VERSION ?= v1.14.0
-CI_TOOLS_IMAGE ?= circleci/golang:1.14.2
+CI_TOOLS_IMAGE ?= circleci/golang:1.13.10
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -273,7 +273,7 @@ generate/gui: ## Generate go files with GUI static files to embed it into binary
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
 fmt/go: ## Dev: Run go fmt
-	go fmt -mod=mod ./...
+	go fmt ./...
 	@# apparently, it's not possible to simply use `go fmt ./pkg/plugins/resources/k8s/native/...`
 	make fmt -C pkg/plugins/resources/k8s/native
 
@@ -281,7 +281,7 @@ fmt/proto: ## Dev: Run clang-format on .proto files
 	which $(CLANG_FORMAT_PATH) && find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT_PATH) -i || true
 
 vet: ## Dev: Run go vet
-	go vet -mod=mod ./...
+	go vet ./...
 	@# for consistency with `fmt`
 	make vet -C pkg/plugins/resources/k8s/native
 
@@ -301,7 +301,7 @@ ${COVERAGE_PROFILE}:
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
 
 coverage: ${COVERAGE_PROFILE}
-	GO111MODULE=off go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
+	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 test/kuma: # Dev: Run tests for the module github.com/Kong/kuma
 	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)

@@ -3,11 +3,11 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-  - &go_version "1.14.2"
+  - &go_version "1.13.10"
 
   docker_images:
-  - &golang_image "golang:1.14.2"
-  - &circleci_golang_image "circleci/golang:1.14.2"
+  - &golang_image "golang:1.13.10"
+  - &circleci_golang_image "circleci/golang:1.13.10"
 
   vm_images:
   - &ubuntu_vm_image "ubuntu-1604:201903-01"
@@ -53,7 +53,6 @@ executors:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-    working_directory: /go/src/github.com/Kong/kuma
 
 jobs:
   dev_golang:
@@ -62,7 +61,6 @@ jobs:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-    working_directory: /go/src/github.com/Kong/kuma
     steps:
     - checkout
     - run:
@@ -89,7 +87,6 @@ jobs:
       # if GOPATH is not set, `golang-ci` fails with an obscure message
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
-    working_directory: /go/src/github.com/Kong/kuma
     steps:
     - checkout
     - run:
