@@ -32,9 +32,10 @@ build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/Kong/
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags)"
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
-GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(LD_FLAGS)
+GOFLAGS := -mod=mod
+GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(GOFLAGS) $(LD_FLAGS)
 GO_RUN := CGO_ENABLED=0 go run $(LD_FLAGS)
-GO_TEST := go test $(LD_FLAGS)
+GO_TEST := go test $(GOFLAGS) $(LD_FLAGS)
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
@@ -116,7 +117,7 @@ else
 endif
 
 PROTOC_VERSION := 3.6.1
-PROTOC_PGV_VERSION := v0.3.0-java
+PROTOC_PGV_VERSION := v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 GOLANG_PROTOBUF_VERSION := v1.3.2
 GOLANGCI_LINT_VERSION := v1.21.0
 
@@ -125,7 +126,7 @@ CI_KIND_VERSION ?= v0.7.0
 CI_MINIKUBE_VERSION ?= v1.4.0
 CI_KUBERNETES_VERSION ?= v1.15.3
 CI_KUBECTL_VERSION ?= v1.14.0
-CI_TOOLS_IMAGE ?= circleci/golang:1.13.10
+CI_TOOLS_IMAGE ?= circleci/golang:1.14.2
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -273,7 +274,7 @@ generate/gui: ## Generate go files with GUI static files to embed it into binary
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
 fmt/go: ## Dev: Run go fmt
-	go fmt ./...
+	go fmt $(GOFLAGS) ./...
 	@# apparently, it's not possible to simply use `go fmt ./pkg/plugins/resources/k8s/native/...`
 	make fmt -C pkg/plugins/resources/k8s/native
 
@@ -281,7 +282,7 @@ fmt/proto: ## Dev: Run clang-format on .proto files
 	which $(CLANG_FORMAT_PATH) && find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT_PATH) -i || true
 
 vet: ## Dev: Run go vet
-	go vet ./...
+	go vet $(GOFLAGS) ./...
 	@# for consistency with `fmt`
 	make vet -C pkg/plugins/resources/k8s/native
 
@@ -301,18 +302,23 @@ ${COVERAGE_PROFILE}:
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
 
 coverage: ${COVERAGE_PROFILE}
-	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
+	GOFLAGS='${GOFLAGS}' go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
 test/kuma: # Dev: Run tests for the module github.com/Kong/kuma
 	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 
-test/api: # Dev: Run tests for the module github.com/Kong/kuma/api
-	GO_TEST='${GO_TEST}' GO_TEST_OPTS='${GO_TEST_OPTS}' COVERAGE_PROFILE='../$(BUILD_COVERAGE_DIR)/coverage-api.out' \
-	make test -C ./api
+test/api: \
+	MODULE=./api \
+	COVERAGE_PROFILE=../$(BUILD_COVERAGE_DIR)/coverage-api.out
+test/api: test/module
 
-test/k8s: # Dev: Run tests for the module github.com/Kong/kuma/pkg/plugins/resources/k8s/native
-	GO_TEST='${GO_TEST}' GO_TEST_OPTS='${GO_TEST_OPTS}' COVERAGE_PROFILE='../../../../../$(BUILD_COVERAGE_DIR)/coverage-k8s.out' \
-	make test -C ./pkg/plugins/resources/k8s/native
+test/k8s: \
+	MODULE=./pkg/plugins/resources/k8s/native \
+	COVERAGE_PROFILE=../../../../../$(BUILD_COVERAGE_DIR)/coverage-k8s.out
+test/k8s: test/module
+
+test/module:
+	GO_TEST='${GO_TEST}' GO_TEST_OPTS='${GO_TEST_OPTS}' COVERAGE_PROFILE='${COVERAGE_PROFILE}' make test -C ${MODULE}
 
 test/kuma-cp: PKG_LIST=./app/kuma-cp/... ./pkg/config/app/kuma-cp/...
 test/kuma-cp: test/kuma ## Dev: Run `kuma-cp` tests only

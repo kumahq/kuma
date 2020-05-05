@@ -1,6 +1,6 @@
 module github.com/Kong/kuma/api
 
-go 1.13
+go 1.14
 
 require (
 	github.com/cncf/udpa v0.0.0-20200313221541-5f7e5dd04533 // indirect
