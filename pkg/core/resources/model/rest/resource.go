@@ -26,6 +26,7 @@ type Resource struct {
 
 type ResourceList struct {
 	Items []*Resource `json:"items"`
+	Total uint64      `json:"total"`
 	Next  *string     `json:"next"`
 }
 
@@ -81,6 +82,7 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 	}
 	type List struct {
 		Items []*json.RawMessage `json:"items"`
+		Total uint64             `json:"total"`
 		Next  *string            `json:"next"`
 	}
 	list := List{}
@@ -103,6 +105,7 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 		}
 		rec.ResourceList.Items[i] = r
 	}
+	rec.ResourceList.Total = list.Total
 	rec.ResourceList.Next = list.Next
 	return nil
 }

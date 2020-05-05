@@ -45,6 +45,7 @@ var _ model.ResourceList = &ProxyTemplateResourceList{}
 
 type ProxyTemplateResourceList struct {
 	Items      []*ProxyTemplateResource
+	Total      uint64
 	Pagination model.Pagination
 }
 
@@ -54,6 +55,12 @@ func (l *ProxyTemplateResourceList) GetItems() []model.Resource {
 		res[i] = elem
 	}
 	return res
+}
+func (l *ProxyTemplateResourceList) GetTotal() uint64 {
+	return l.Total
+}
+func (l *ProxyTemplateResourceList) SetTotal(total uint64) {
+	l.Total = total
 }
 func (l *ProxyTemplateResourceList) GetItemType() model.ResourceType {
 	return ProxyTemplateType

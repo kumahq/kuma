@@ -33,5 +33,6 @@ func (c *from) ResourceList(rs model.ResourceList) *ResourceList {
 	}
 	return &ResourceList{
 		Items: items,
+		Total: rs.GetTotal(),
 	}
 }

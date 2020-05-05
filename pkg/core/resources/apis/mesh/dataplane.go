@@ -45,6 +45,7 @@ var _ model.ResourceList = &DataplaneResourceList{}
 
 type DataplaneResourceList struct {
 	Items      []*DataplaneResource
+	Total      uint64
 	Pagination model.Pagination
 }
 
@@ -55,7 +56,12 @@ func (l *DataplaneResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
-
+func (l *DataplaneResourceList) GetTotal() uint64 {
+	return l.Total
+}
+func (l *DataplaneResourceList) SetTotal(total uint64) {
+	l.Total = total
+}
 func (l *DataplaneResourceList) GetItemType() model.ResourceType {
 	return DataplaneType
 }

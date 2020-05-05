@@ -45,6 +45,7 @@ var _ model.ResourceList = &TrafficPermissionResourceList{}
 
 type TrafficPermissionResourceList struct {
 	Items      []*TrafficPermissionResource
+	Total      uint64
 	Pagination model.Pagination
 }
 
@@ -54,6 +55,12 @@ func (l *TrafficPermissionResourceList) GetItems() []model.Resource {
 		res[i] = elem
 	}
 	return res
+}
+func (l *TrafficPermissionResourceList) GetTotal() uint64 {
+	return l.Total
+}
+func (l *TrafficPermissionResourceList) SetTotal(total uint64) {
+	l.Total = total
 }
 func (l *TrafficPermissionResourceList) GetItemType() model.ResourceType {
 	return TrafficPermissionType

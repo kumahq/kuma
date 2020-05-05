@@ -210,13 +210,16 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		}
 	}
 
-	for i := offset; i < offset+pageSize && i < len(records); i++ {
+	i := offset
+	for ; i < offset+pageSize && i < len(records); i++ {
 		r := rs.NewItem()
 		if err := c.unmarshalRecord(records[i], r); err != nil {
 			return err
 		}
 		_ = rs.AddItem(r)
 	}
+
+	rs.SetTotal(uint64(len(records)))
 
 	if paginateResults {
 		nextOffset := ""

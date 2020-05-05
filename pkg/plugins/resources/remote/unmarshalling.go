@@ -76,6 +76,7 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 		})
 		_ = rs.AddItem(r)
 	}
+	rs.SetTotal(rsr.ResourceList.Total)
 	if rsr.Next != nil {
 		uri, err := url.ParseRequestURI(*rsr.Next)
 		if err != nil {

@@ -50,6 +50,7 @@ var _ model.ResourceList = &FaultInjectionResourceList{}
 
 type FaultInjectionResourceList struct {
 	Items      []*FaultInjectionResource
+	Total      uint64
 	Pagination model.Pagination
 }
 
@@ -59,6 +60,13 @@ func (l *FaultInjectionResourceList) GetItems() []model.Resource {
 		res[i] = elem
 	}
 	return res
+}
+func (l *FaultInjectionResourceList) GetTotal() uint64 {
+	return l.Total
+}
+
+func (l *FaultInjectionResourceList) SetTotal(total uint64) {
+	l.Total = total
 }
 
 func (l *FaultInjectionResourceList) GetItemType() model.ResourceType {

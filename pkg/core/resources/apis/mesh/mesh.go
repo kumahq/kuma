@@ -45,6 +45,7 @@ var _ model.ResourceList = &MeshResourceList{}
 
 type MeshResourceList struct {
 	Items      []*MeshResource
+	Total      uint64
 	Pagination model.Pagination
 }
 
@@ -54,6 +55,12 @@ func (l *MeshResourceList) GetItems() []model.Resource {
 		res[i] = elem
 	}
 	return res
+}
+func (l *MeshResourceList) GetTotal() uint64 {
+	return l.Total
+}
+func (l *MeshResourceList) SetTotal(total uint64) {
+	l.Total = total
 }
 func (l *MeshResourceList) GetItemType() model.ResourceType {
 	return MeshType

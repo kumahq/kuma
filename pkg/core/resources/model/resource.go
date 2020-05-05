@@ -82,6 +82,8 @@ type ResourceSpec interface {
 type ResourceList interface {
 	GetItemType() ResourceType
 	GetItems() []Resource
+	GetTotal() uint64
+	SetTotal(uint64)
 	NewItem() Resource
 	AddItem(Resource) error
 	GetPagination() Pagination
