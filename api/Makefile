@@ -110,7 +110,7 @@ install/protoc-gen-go:
 	go get -u github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
 
 install/protoc-gen-validate:
-	go get -u github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
+	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 install/data-plane-api:
 	go get -u github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
