@@ -247,6 +247,7 @@ var _ = Describe("PodReconciler", func() {
             kind: Pod
             name: pod-with-kuma-sidecar-and-ip
             uid: ""
+          resourceVersion: "1"
         spec:
           networking:
             address: 192.168.0.1
@@ -302,6 +303,8 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(actual).To(MatchYAML(`
+        apiVersion: kuma.io/v1alpha1
+        kind: Dataplane
         mesh: poc
         metadata:
           creationTimestamp: null
@@ -314,6 +317,7 @@ var _ = Describe("PodReconciler", func() {
             kind: Pod
             name: pod-with-kuma-sidecar-and-ip
             uid: ""
+          resourceVersion: "2"
         spec:
           networking:
             address: 192.168.0.1

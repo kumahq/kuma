@@ -20,6 +20,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	v12 "k8s.io/api/core/v1"
+
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	. "github.com/onsi/ginkgo"
@@ -70,6 +72,9 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = mesh_k8s.AddToScheme(k8sClientScheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = v12.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

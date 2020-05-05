@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -74,7 +76,11 @@ var _ = Describe("KubernetesStore", func() {
 	BeforeEach(func() {
 		ns = string(uuid.NewUUID())
 
-		var err error
+		err := k8sClient.Create(context.Background(), &kube_core.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: ns},
+		})
+		Expect(err).ToNot(HaveOccurred())
+
 		s, err = k8s.NewStore(k8sClient, k8sClient, ns)
 		Expect(err).ToNot(HaveOccurred())
 	})

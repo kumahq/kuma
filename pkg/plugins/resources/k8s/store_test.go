@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	kube_core "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -93,6 +96,12 @@ var _ = Describe("KubernetesStore", func() {
 		}
 		s = store.NewStrictResourceStore(ks)
 		ns = string(uuid.NewUUID())
+
+		err := k8sClient.Create(context.Background(), &kube_core.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: ns},
+		})
+		Expect(err).ToNot(HaveOccurred())
+
 		coreName = util_k8s.K8sNamespacedNameToCoreName(name, ns)
 	})
 
