@@ -1,6 +1,6 @@
 module github.com/Kong/kuma/api
 
-go 1.13
+go 1.14
 
 require (
 	cloud.google.com/go v0.26.0 // indirect
