@@ -62,8 +62,8 @@ kind/load/kuma-prometheus-sd: image/kuma-prometheus-sd
 kind/load: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd
 
 .PHONY: kind/deploy/kuma
-kind/deploy/kuma: kind/load
-	@kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+kind/deploy/kuma: build/kumactl kind/load
+	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
