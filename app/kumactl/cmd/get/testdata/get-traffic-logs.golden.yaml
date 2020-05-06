@@ -30,3 +30,4 @@ items:
       backend: logstash
     type: TrafficLog
 next: null
+total: 2

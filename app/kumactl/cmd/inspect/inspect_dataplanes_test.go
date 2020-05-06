@@ -30,6 +30,7 @@ type testDataplaneOverviewClient struct {
 	receivedTags    map[string]string
 	receivedGateway bool
 	overviews       []*mesh_core.DataplaneOverviewResource
+	total           uint64
 }
 
 func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gateway bool) (*mesh_core.DataplaneOverviewResourceList, error) {
@@ -37,6 +38,7 @@ func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map
 	c.receivedGateway = gateway
 	return &mesh_core.DataplaneOverviewResourceList{
 		Items: c.overviews,
+		Total: c.total,
 	}, nil
 }
 
@@ -167,6 +169,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 			// setup
 			testClient = &testDataplaneOverviewClient{
 				overviews: sampleDataplaneOverview,
+				total:     uint64(len(sampleDataplaneOverview)),
 			}
 
 			rootCtx = &kumactl_cmd.RootContext{

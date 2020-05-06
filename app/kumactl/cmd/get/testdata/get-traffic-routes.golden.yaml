@@ -10,3 +10,4 @@ items:
   name: backend-to-db
   type: TrafficRoute
 next: null
+total: 2

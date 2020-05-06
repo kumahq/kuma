@@ -103,8 +103,8 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(string(body)).To(Or(
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json1, json2)),
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json2, json1)),
+				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "total": %d, "next": null}`, json1, json2, 2)),
+				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "total": %d, "next": null}`, json2, json1, 2)),
 			))
 		})
 	})
