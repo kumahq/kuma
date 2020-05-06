@@ -240,6 +240,13 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		items++
 	}
 
+	var total int
+	total, err = r.countRows(string(resources.GetItemType()))
+	if err != nil {
+		return err
+	}
+	resources.SetTotal(uint64(total))
+
 	if paginateResults {
 		nextOffset := ""
 		if items > opts.PageSize { // set new offset only if there is next page
@@ -273,6 +280,20 @@ func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, er
 	item.SetMeta(meta)
 
 	return item, nil
+}
+
+func (r *postgresResourceStore) countRows(resource string) (int, error) {
+	var count int
+	statement, err := r.db.Prepare("SELECT COUNT(*) as count FROM resources WHERE type=" + resource)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to prepare query: %v", statement)
+	}
+	err = statement.QueryRow().Scan(&count)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to execute query: %v", statement)
+	}
+	statement.Close()
+	return count, nil
 }
 
 func (r *postgresResourceStore) Close() error {
