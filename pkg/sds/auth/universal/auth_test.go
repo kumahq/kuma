@@ -147,6 +147,6 @@ var _ = Describe("Authentication flow", func() {
 		_, err = authenticator.Authenticate(context.Background(), id, token)
 
 		// then
-		Expect(err).To(MatchError(`unable to find Dataplane for proxy {"default" "non-existent-dp"}: Resource not found: type="Dataplane" name="non-existent-dp" mesh="default"`))
+		Expect(err).To(MatchError(`unable to find Dataplane for proxy "default.non-existent-dp": Resource not found: type="Dataplane" name="non-existent-dp" mesh="default"`))
 	})
 })

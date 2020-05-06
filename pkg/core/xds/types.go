@@ -18,7 +18,7 @@ type ProxyId struct {
 	Name string
 }
 
-func (id *ProxyId) String() string {
+func (id ProxyId) String() string {
 	return fmt.Sprintf("%s.%s", id.Mesh, id.Name)
 }
 

@@ -73,6 +73,8 @@ sdsServer:
   tlsCertFile: # ENV: KUMA_SDS_SERVER_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
   tlsKeyFile: # ENV: KUMA_SDS_SERVER_TLS_KEY_FILE
+  # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
+  dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
 
 # Dataplane Token server configuration (DEPRECATED: use adminServer)
 dataplaneTokenServer:

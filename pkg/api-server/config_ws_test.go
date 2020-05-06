@@ -176,7 +176,8 @@ var _ = Describe("Config WS", func() {
           "sdsServer": {
             "grpcPort": 5677,
             "tlsCertFile": "",
-            "tlsKeyFile": ""
+            "tlsKeyFile": "",
+            "dataplaneConfigurationRefreshInterval": "1s"
           },
           "store": {
             "kubernetes": {
