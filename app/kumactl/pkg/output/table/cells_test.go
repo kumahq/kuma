@@ -3,8 +3,9 @@ package table_test
 import (
 	"time"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 	. "github.com/onsi/ginkgo/extensions/table"
+
+	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
