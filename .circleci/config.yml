@@ -444,11 +444,6 @@ jobs:
         name: Install Kubectl
         command: make dev/install/kubectl
     - run:
-        name: Install Conntrack
-        command: |
-          sudo apt-get update
-          sudo apt-get install -y conntrack
-    - run:
         name: Start Minikube
         command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none --kubernetes-version=<< parameters.kubernetes_version >>
     - when:
@@ -608,11 +603,11 @@ workflows:
         kubernetes_version: v1.17.0
         use_local_kuma_images: true
     - example_minikube:
-        name: minikube_v1_18_0
+        name: minikube_v1_18_2
         requires:
           - images
         # custom parameters
-        kubernetes_version: v1.18.0
+        kubernetes_version: v1.18.2
         use_local_kuma_images: true
 
   kuma-release:
@@ -696,10 +691,10 @@ workflows:
         use_local_kuma_images: false
     - example_minikube:
         <<: *release_workflow_filters
-        name: minikube_v1_18_0
+        name: minikube_v1_18_2
         requires:
           - release
         # custom parameters
-        kubernetes_version: v1.18.0
+        kubernetes_version: v1.18.2
         # docker images for a release build must be downloaded from a public Docker registry
         use_local_kuma_images: false

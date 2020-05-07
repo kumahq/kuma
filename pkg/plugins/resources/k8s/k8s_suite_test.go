@@ -20,15 +20,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	v12 "k8s.io/api/core/v1"
-
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -74,7 +72,7 @@ var _ = BeforeSuite(func(done Done) {
 	err = mesh_k8s.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = v12.AddToScheme(k8sClientScheme)
+	err = kube_core.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
@@ -84,14 +82,14 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(k8sClient).ToNot(BeNil())
 
 	err = k8s_registry.Global().RegisterObjectType(&v1alpha1.TrafficRoute{}, &sample_v1alpha1.SampleTrafficRoute{
-		TypeMeta: v1.TypeMeta{
+		TypeMeta: kube_meta.TypeMeta{
 			APIVersion: sample_v1alpha1.GroupVersion.String(),
 			Kind:       "SampleTrafficRoute",
 		},
 	})
 	Expect(err).ToNot(HaveOccurred())
 	err = k8s_registry.Global().RegisterListType(&v1alpha1.TrafficRoute{}, &sample_v1alpha1.SampleTrafficRouteList{
-		TypeMeta: v1.TypeMeta{
+		TypeMeta: kube_meta.TypeMeta{
 			APIVersion: sample_v1alpha1.GroupVersion.String(),
 			Kind:       "SampleTrafficRouteList",
 		},
