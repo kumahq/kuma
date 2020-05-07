@@ -444,6 +444,11 @@ jobs:
         name: Install Kubectl
         command: make dev/install/kubectl
     - run:
+        name: Install Conntrack
+        command: |
+          sudo apt-get update
+          sudo apt-get install -y conntrack
+    - run:
         name: Start Minikube
         command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none --kubernetes-version=<< parameters.kubernetes_version >>
     - when:
