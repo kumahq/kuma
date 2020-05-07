@@ -30,6 +30,10 @@ items:
             total:
               responsesRejected: "2"
               responsesSent: "20"
+      mTLS:
+        certificateExpirationTime: "2020-05-08T08:28:22Z"
+        certificateRegenerations: 10
+        lastCertificateRegeneration: "2019-07-16T19:48:08Z"
     mesh: default
     modificationTime: "2019-07-17T18:08:41Z"
     name: experiment

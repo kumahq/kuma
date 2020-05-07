@@ -36,10 +36,11 @@ func SetupServer(rt core_runtime.Runtime) error {
 	authCallbacks := newAuthCallbacks(authenticator)
 
 	reconciler := DataplaneReconciler{
-		resManager:       rt.ReadOnlyResourceManager(),
-		meshCaProvider:   caProvider,
-		identityProvider: identityProvider,
-		cache:            cache,
+		resManager:         rt.ResourceManager(),
+		readOnlyResManager: rt.ReadOnlyResourceManager(),
+		meshCaProvider:     caProvider,
+		identityProvider:   identityProvider,
+		cache:              cache,
 	}
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: sdsServerLog},

@@ -48,7 +48,12 @@
               }
             }
           }
-        ]
+        ],
+        "mTLS": {
+          "certificateExpirationTime": "2020-05-08T08:28:22Z",
+          "lastCertificateRegeneration": "2019-07-16T19:48:08Z",
+          "certificateRegenerations": 10
+        }
       },
       "mesh": "default",
       "name": "experiment",

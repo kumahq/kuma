@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/timestamp"
+
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	"github.com/Kong/kuma/app/kumactl/pkg/resources"
 
@@ -51,6 +53,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 		now, _ = time.Parse(time.RFC3339, "2019-07-17T18:08:41+00:00")
 		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
+		time.Local = time.UTC
 
 		sampleDataplaneOverview = []*mesh_core.DataplaneOverviewResource{
 			{
@@ -108,6 +111,15 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									},
 								},
 							},
+						},
+						MTLS: &mesh_proto.DataplaneInsight_MTLS{
+							CertificateExpirationTime: &timestamp.Timestamp{
+								Seconds: 1588926502,
+							},
+							LastCertificateRegeneration: &timestamp.Timestamp{
+								Seconds: 1563306488,
+							},
+							CertificateRegenerations: 10,
 						},
 					},
 				},

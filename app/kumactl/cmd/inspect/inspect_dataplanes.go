@@ -3,6 +3,7 @@ package inspect
 import (
 	"context"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -63,7 +64,7 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 
 func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
+		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -88,6 +89,17 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 				}
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
+				var certExpiration *time.Time
+				if dataplaneInsight.GetMTLS().GetCertificateExpirationTime() != nil {
+					certExpiration = util_proto.MustTimestampFromProto(dataplaneInsight.GetMTLS().GetCertificateExpirationTime())
+				}
+				var lastCertGeneration *time.Time
+				if dataplaneInsight.GetMTLS().GetLastCertificateRegeneration() != nil {
+					lastCertGeneration = util_proto.MustTimestampFromProto(dataplaneInsight.GetMTLS().GetLastCertificateRegeneration())
+				}
+				dataplaneInsight.GetMTLS().GetCertificateExpirationTime()
+				certRegenerations := strconv.Itoa(int(dataplaneInsight.GetMTLS().GetCertificateRegenerations()))
+
 				return []string{
 					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
@@ -97,6 +109,9 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO
 					table.Number(totalResponsesSent),     // TOTAL UPDATES
 					table.Number(totalResponsesRejected), // TOTAL ERRORS
+					table.Ago(lastCertGeneration, now),   // CERT REGENERATED AGO
+					table.Date(certExpiration),           // CERT EXPIRATION
+					certRegenerations,                    // CERT REGENERATIONS
 				}
 			}
 		}(),
