@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	go_cp_server "github.com/envoyproxy/go-control-plane/pkg/server"
+	go_cp_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
 	"github.com/Kong/kuma/pkg/core/xds"
 )

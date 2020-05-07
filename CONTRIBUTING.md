@@ -121,8 +121,9 @@ to verify a few things:
 - Rebase your work on top of the base branch (seek help online on how to use
   `git rebase`; this is important to ensure your commit history is clean and
    linear)
-- The tests are passing: run `make test`, `make test kuma-dp`, or whichever is 
-  appropriate for your change
+- The tests are passing: run `make test`, `make test/kuma-cp`,
+  `make test/kuma-dp`, or whichever make target under `test/` is appropriate
+  for your change
 - Do not update CHANGELOG.md yourself. Your change will be included there in
   due time if it is accepted, no worries!
 

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
 	"go.uber.org/multierr"
 )

@@ -33,8 +33,10 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
-	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	envoy_resources "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
 	"github.com/Kong/kuma/pkg/core"
 )
@@ -207,7 +209,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest, de
 
 			resp := s.toResponse(req, secret)
 
-			nonce, err = send(resp, envoy_cache.SecretType)
+			nonce, err = send(resp, envoy_resources.SecretType)
 			if err != nil {
 				return err
 			}
@@ -220,7 +222,7 @@ func (s *server) toResponse(req *envoy.DiscoveryRequest, secret *envoy_auth.Secr
 	return envoy_cache.Response{
 		Request:   *req,
 		Version:   s.version(secret),
-		Resources: []envoy_cache.Resource{secret},
+		Resources: []envoy_types.Resource{secret},
 	}
 }
 
@@ -279,7 +281,7 @@ func (s *server) handler(stream stream, typeURL string) error {
 }
 
 func (s *server) StreamSecrets(stream envoy_discovery.SecretDiscoveryService_StreamSecretsServer) error {
-	return s.handler(stream, envoy_cache.SecretType)
+	return s.handler(stream, envoy_resources.SecretType)
 }
 
 func (s *server) FetchSecrets(ctx context.Context, req *envoy.DiscoveryRequest) (*envoy.DiscoveryResponse, error) {

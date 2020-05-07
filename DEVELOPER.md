@@ -216,7 +216,7 @@ The following instructions are for folks who want to run `Control Plane` on thei
 1. Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
 
 ```bash
-make start/k8s
+make kind/start
 
 # set KUBECONFIG for use by `kumactl` and `kubectl`
 export KUBECONFIG="$(kind get kubeconfig-path --name=kuma)"
@@ -251,7 +251,7 @@ To run the Kuma `Control Plane` on Kubernetes, follow these steps:
 1. Run [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
 
 ```bash
-make start/k8s
+make kind/start
 
 # set KUBECONFIG for use by `kubectl`
 export KUBECONFIG="$(kind get kubeconfig-path --name=kuma)"
@@ -260,13 +260,13 @@ export KUBECONFIG="$(kind get kubeconfig-path --name=kuma)"
 2. Deploy `Control Plane` to [KIND](https://kind.sigs.k8s.io/docs/user/quick-start) (Kubernetes IN Docker):
 
 ```bash
-make start/control-plane/k8s
+make kind/deploy/kuma
 ```
 
-3. Redeploy demo app (to get Kuma sidecar injected)
+3. Deploy the demo app (and get Kuma sidecar injected)
 
 ```bash
-kubectl delete -n kuma-demo pod -l app=demo-app
+make kind/deploy/example-app
 ```
 
 4. Build `kumactl`

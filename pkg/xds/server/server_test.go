@@ -26,8 +26,10 @@ import (
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/pkg/cache"
-	"github.com/envoyproxy/go-control-plane/pkg/test/resource"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/test/resource/v2"
 
 	"github.com/Kong/kuma/pkg/xds/server"
 )
@@ -44,13 +46,13 @@ func (h hasher) ID(node *envoy_core.Node) string {
 
 type mockConfigWatcher struct {
 	counts     map[string]int
-	responses  map[string][]cache.Response
+	responses  map[string][]envoy_cache.Response
 	closeWatch bool
 }
 
-func (config *mockConfigWatcher) CreateWatch(req v2.DiscoveryRequest) (chan cache.Response, func()) {
+func (config *mockConfigWatcher) CreateWatch(req v2.DiscoveryRequest) (chan envoy_cache.Response, func()) {
 	config.counts[req.TypeUrl] = config.counts[req.TypeUrl] + 1
-	out := make(chan cache.Response, 1)
+	out := make(chan envoy_cache.Response, 1)
 	if len(config.responses[req.TypeUrl]) > 0 {
 		out <- config.responses[req.TypeUrl][0]
 		config.responses[req.TypeUrl] = config.responses[req.TypeUrl][1:]
@@ -60,7 +62,7 @@ func (config *mockConfigWatcher) CreateWatch(req v2.DiscoveryRequest) (chan cach
 	return out, func() {}
 }
 
-func (config *mockConfigWatcher) Fetch(ctx context.Context, req v2.DiscoveryRequest) (*cache.Response, error) {
+func (config *mockConfigWatcher) Fetch(ctx context.Context, req v2.DiscoveryRequest) (*envoy_cache.Response, error) {
 	if len(config.responses[req.TypeUrl]) > 0 {
 		out := config.responses[req.TypeUrl][0]
 		config.responses[req.TypeUrl] = config.responses[req.TypeUrl][1:]
@@ -69,8 +71,8 @@ func (config *mockConfigWatcher) Fetch(ctx context.Context, req v2.DiscoveryRequ
 	return nil, errors.New("missing")
 }
 
-func (config *mockConfigWatcher) GetStatusInfo(string) cache.StatusInfo { return nil }
-func (config *mockConfigWatcher) GetStatusKeys() []string               { return nil }
+func (config *mockConfigWatcher) GetStatusInfo(string) envoy_cache.StatusInfo { return nil }
+func (config *mockConfigWatcher) GetStatusKeys() []string                     { return nil }
 
 func makeMockConfigWatcher() *mockConfigWatcher {
 	return &mockConfigWatcher{
@@ -181,30 +183,30 @@ var (
 	route     = resource.MakeRoute(routeName, clusterName)
 	listener  = resource.MakeHTTPListener(resource.Ads, listenerName, 80, routeName)
 	testTypes = []string{
-		cache.EndpointType,
-		cache.ClusterType,
-		cache.RouteType,
-		cache.ListenerType,
+		envoy_resource.EndpointType,
+		envoy_resource.ClusterType,
+		envoy_resource.RouteType,
+		envoy_resource.ListenerType,
 	}
 )
 
-func makeResponses() map[string][]cache.Response {
-	return map[string][]cache.Response{
-		cache.EndpointType: []cache.Response{{
+func makeResponses() map[string][]envoy_cache.Response {
+	return map[string][]envoy_cache.Response{
+		envoy_resource.EndpointType: {{
 			Version:   "1",
-			Resources: []cache.Resource{endpoint},
+			Resources: []envoy_types.Resource{endpoint},
 		}},
-		cache.ClusterType: []cache.Response{{
+		envoy_resource.ClusterType: {{
 			Version:   "2",
-			Resources: []cache.Resource{cluster},
+			Resources: []envoy_types.Resource{cluster},
 		}},
-		cache.RouteType: []cache.Response{{
+		envoy_resource.RouteType: {{
 			Version:   "3",
-			Resources: []cache.Resource{route},
+			Resources: []envoy_types.Resource{route},
 		}},
-		cache.ListenerType: []cache.Response{{
+		envoy_resource.ListenerType: {{
 			Version:   "4",
-			Resources: []cache.Resource{listener},
+			Resources: []envoy_types.Resource{listener},
 		}},
 	}
 }
@@ -222,13 +224,13 @@ func TestResponseHandlers(t *testing.T) {
 			go func() {
 				var err error
 				switch typ {
-				case cache.EndpointType:
+				case envoy_resource.EndpointType:
 					err = s.StreamEndpoints(resp)
-				case cache.ClusterType:
+				case envoy_resource.ClusterType:
 					err = s.StreamClusters(resp)
-				case cache.RouteType:
+				case envoy_resource.RouteType:
 					err = s.StreamRoutes(resp)
-				case cache.ListenerType:
+				case envoy_resource.ListenerType:
 					err = s.StreamListeners(resp)
 				}
 				if err != nil {
@@ -423,20 +425,20 @@ func TestAggregatedHandlers(t *testing.T) {
 
 	resp.recv <- &v2.DiscoveryRequest{
 		Node:    node,
-		TypeUrl: cache.ListenerType,
+		TypeUrl: envoy_resource.ListenerType,
 	}
 	resp.recv <- &v2.DiscoveryRequest{
 		Node:    node,
-		TypeUrl: cache.ClusterType,
+		TypeUrl: envoy_resource.ClusterType,
 	}
 	resp.recv <- &v2.DiscoveryRequest{
 		Node:          node,
-		TypeUrl:       cache.EndpointType,
+		TypeUrl:       envoy_resource.EndpointType,
 		ResourceNames: []string{clusterName},
 	}
 	resp.recv <- &v2.DiscoveryRequest{
 		Node:          node,
-		TypeUrl:       cache.RouteType,
+		TypeUrl:       envoy_resource.RouteType,
 		ResourceNames: []string{routeName},
 	}
 
@@ -455,10 +457,10 @@ func TestAggregatedHandlers(t *testing.T) {
 			if count >= 4 {
 				close(resp.recv)
 				if want := map[string]int{
-					cache.EndpointType: 1,
-					cache.ClusterType:  1,
-					cache.RouteType:    1,
-					cache.ListenerType: 1,
+					envoy_resource.EndpointType: 1,
+					envoy_resource.ClusterType:  1,
+					envoy_resource.RouteType:    1,
+					envoy_resource.ListenerType: 1,
 				}; !reflect.DeepEqual(want, config.counts) {
 					t.Errorf("watch counts => got %v, want %v", config.counts, want)
 				}
@@ -473,8 +475,8 @@ func TestAggregatedHandlers(t *testing.T) {
 }
 
 func TestClusterWarming(t *testing.T) {
-	config := cache.NewSnapshotCache(true, hasher{}, nil)
-	err := config.SetSnapshot(node.Id, cache.NewSnapshot("1", []cache.Resource{endpoint}, nil, nil, nil, nil))
+	config := envoy_cache.NewSnapshotCache(true, hasher{}, nil)
+	err := config.SetSnapshot(node.Id, envoy_cache.NewSnapshot("1", []envoy_types.Resource{endpoint}, nil, nil, nil, nil))
 	if err != nil {
 		t.Fatalf("got %v, want no error", err)
 	}
@@ -491,7 +493,7 @@ func TestClusterWarming(t *testing.T) {
 
 	resp.recv <- &v2.DiscoveryRequest{
 		Node:          node,
-		TypeUrl:       cache.EndpointType,
+		TypeUrl:       envoy_resource.EndpointType,
 		ResourceNames: []string{clusterName},
 	}
 
@@ -500,8 +502,8 @@ resp1:
 	for {
 		select {
 		case resp := <-resp.sent:
-			if resp.TypeUrl != cache.EndpointType {
-				t.Errorf("TypeUrl => got %v, want %v", resp.TypeUrl, cache.EndpointType)
+			if resp.TypeUrl != envoy_resource.EndpointType {
+				t.Errorf("TypeUrl => got %v, want %v", resp.TypeUrl, envoy_resource.EndpointType)
 			}
 			resp1 = resp
 			break resp1
@@ -516,7 +518,7 @@ resp1:
 		VersionInfo:   resp1.VersionInfo,
 		ResponseNonce: resp1.Nonce,
 		Node:          node,
-		TypeUrl:       cache.EndpointType,
+		TypeUrl:       envoy_resource.EndpointType,
 		ResourceNames: []string{clusterName},
 	}
 
@@ -527,8 +529,8 @@ resp2:
 	for {
 		select {
 		case resp := <-resp.sent:
-			if resp.TypeUrl != cache.EndpointType {
-				t.Errorf("TypeUrl => got %v, want %v", resp.TypeUrl, cache.EndpointType)
+			if resp.TypeUrl != envoy_resource.EndpointType {
+				t.Errorf("TypeUrl => got %v, want %v", resp.TypeUrl, envoy_resource.EndpointType)
 			}
 			break resp2
 		case <-time.After(1 * time.Second):

@@ -5,11 +5,11 @@ import (
 	"github.com/golang/protobuf/ptypes"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 )
 
 // ResourcePayload is a convenience type alias.
-type ResourcePayload = envoy_cache.Resource
+type ResourcePayload = envoy_types.Resource
 
 // Resource represents a generic xDS resource with name and version.
 type Resource struct {

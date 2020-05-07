@@ -9,7 +9,7 @@ import (
 
 	. "github.com/Kong/kuma/pkg/mads/reconcile"
 
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -252,7 +252,7 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 					},
 				},
-				expected: mads_cache.NewSnapshot("", map[string]envoy_cache.Resource{
+				expected: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
 					"/meshes/demo/dataplanes/backend-02": &observability_proto.MonitoringAssignment{
 						Name: "/meshes/demo/dataplanes/backend-02",
 						Targets: []*observability_proto.MonitoringAssignment_Target{{

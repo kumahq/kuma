@@ -1,6 +1,13 @@
 # CHANGELOG
 
 ## master
+* feat(kuma-cp) friendly response in K8s mode
+  [#712](https://github.com/Kong/kuma/pull/712)
+* chore: upgrade go-control-plane up to v0.9.5
+  [#707](https://github.com/Kong/kuma/pull/707)
+* fix: kuma-cp migrate help text
+  [#713](https://github.com/Kong/kuma/pull/713)
+  👍contributed by @tharun208
 * fix: envoy binary not found
   [#695](https://github.com/Kong/kuma/pull/695)
   👍contributed by @tharun208
