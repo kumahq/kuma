@@ -47,23 +47,23 @@ func (t *SecretResource) Validate() error {
 var _ model.ResourceList = &SecretResourceList{}
 
 type SecretResourceList struct {
-	Items      []*SecretResource
 	Total      uint64
+	Items      []*SecretResource
 	Pagination model.Pagination
 }
 
+func (l *SecretResourceList) GetTotal() uint64 {
+	return l.Total
+}
+func (l *SecretResourceList) SetTotal(total uint64) {
+	l.Total = total
+}
 func (l *SecretResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-func (l *SecretResourceList) GetTotal() uint64 {
-	return l.Total
-}
-func (l *SecretResourceList) SetTotal(total uint64) {
-	l.Total = total
 }
 func (l *SecretResourceList) GetItemType() model.ResourceType {
 	return SecretType

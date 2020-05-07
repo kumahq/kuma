@@ -1,4 +1,5 @@
 {
+  "total": 2,
   "items": [
     {
       "mesh": "default",
@@ -37,6 +38,5 @@
       "type": "TrafficTrace"
     }
   ],
-  "total": 2,
   "next": null
 }

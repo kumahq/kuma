@@ -1,3 +1,4 @@
+total: 2
 items:
   - conf:
       abort:
@@ -44,4 +45,3 @@ items:
           version: "0.1"
     type: FaultInjection
 next: null
-total: 2

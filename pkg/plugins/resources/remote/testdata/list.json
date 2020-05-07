@@ -1,4 +1,5 @@
 {
+    "total": 2,
     "items": [
         {
             "type": "TrafficRoute",
@@ -17,6 +18,5 @@
             "modificationTime": "2019-07-17T16:05:36.995Z"
         }
     ],
-    "total": 2,
     "next": null
 }

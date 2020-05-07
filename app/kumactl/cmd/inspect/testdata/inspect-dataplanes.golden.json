@@ -1,4 +1,5 @@
 {
+  "total": 2,
   "items": [
     {
       "dataplane": {
@@ -94,6 +95,5 @@
       "type": "DataplaneOverview"
     }
   ],
-  "total": 2,
   "next": null
 }

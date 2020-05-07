@@ -52,17 +52,9 @@ func (t *TrafficRouteResource) Validate() error {
 var _ model.ResourceList = &TrafficRouteResourceList{}
 
 type TrafficRouteResourceList struct {
-	Items      []*TrafficRouteResource
 	Total      uint64
+	Items      []*TrafficRouteResource
 	Pagination model.Pagination
-}
-
-func (l *TrafficRouteResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
 }
 
 func (l *TrafficRouteResourceList) GetTotal() uint64 {
@@ -71,6 +63,14 @@ func (l *TrafficRouteResourceList) GetTotal() uint64 {
 
 func (l *TrafficRouteResourceList) SetTotal(total uint64) {
 	l.Total = total
+}
+
+func (l *TrafficRouteResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
 }
 
 func (l *TrafficRouteResourceList) GetItemType() model.ResourceType {

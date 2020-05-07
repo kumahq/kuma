@@ -131,8 +131,8 @@ var _ = Describe("Resource Endpoints", func() {
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(Or(
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "total": %d, "next": null}`, json1, json2, 2)),
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "total": %d, "next": null}`, json2, json1, 2)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json1, json2)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json2, json1)),
 			))
 		})
 
@@ -171,8 +171,8 @@ var _ = Describe("Resource Endpoints", func() {
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(Or(
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "total": %d, "next": null}`, json1, json2, 2)),
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "total": %d, "next": null}`, json2, json1, 2)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json1, json2)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json2, json1)),
 			))
 		})
 
@@ -193,6 +193,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 			json := fmt.Sprintf(`
 			{
+				"total": 3,
 				"items": [
 					{
 						"type": "SampleTrafficRoute",
@@ -211,7 +212,6 @@ var _ = Describe("Resource Endpoints", func() {
 						"path": "/sample-path"
 					}
 				],
-				"total": 3,
 				"next": "%s/sample-traffic-routes?offset=2&size=2"
 			}`, publicApiServerUrl)
 			body, err := ioutil.ReadAll(response.Body)
@@ -229,6 +229,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 			json = `
 			{
+				"total": 3,
 				"items": [
 					{
 						"type": "SampleTrafficRoute",
@@ -239,7 +240,6 @@ var _ = Describe("Resource Endpoints", func() {
 						"path": "/sample-path"
 					}
 				],
-				"total": 3,
 				"next": null
 			}`
 			body, err = ioutil.ReadAll(response.Body)

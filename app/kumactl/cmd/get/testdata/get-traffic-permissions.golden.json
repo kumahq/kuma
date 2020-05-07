@@ -1,4 +1,5 @@
 {
+  "total": 2,
   "items": [
     {
       "mesh": "default",
@@ -47,6 +48,5 @@
       "type": "TrafficPermission"
     }
   ],
-  "total": 2,
   "next": null
 }

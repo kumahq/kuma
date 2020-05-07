@@ -62,6 +62,7 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 	if err := json.Unmarshal(b, rsr); err != nil {
 		return err
 	}
+	rs.SetTotal(rsr.ResourceList.Total)
 	for _, ri := range rsr.ResourceList.Items {
 		r := rs.NewItem()
 		if err := r.SetSpec(ri.Spec); err != nil {
@@ -76,7 +77,6 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 		})
 		_ = rs.AddItem(r)
 	}
-	rs.SetTotal(rsr.ResourceList.Total)
 	if rsr.Next != nil {
 		uri, err := url.ParseRequestURI(*rsr.Next)
 		if err != nil {

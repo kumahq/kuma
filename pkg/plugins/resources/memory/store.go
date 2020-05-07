@@ -210,6 +210,8 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		}
 	}
 
+	rs.SetTotal(uint64(len(records)))
+
 	i := offset
 	for ; i < offset+pageSize && i < len(records); i++ {
 		r := rs.NewItem()
@@ -218,8 +220,6 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		}
 		_ = rs.AddItem(r)
 	}
-
-	rs.SetTotal(uint64(len(records)))
 
 	if paginateResults {
 		nextOffset := ""

@@ -221,6 +221,12 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		statement += fmt.Sprintf(" LIMIT %d OFFSET %d", opts.PageSize+1, offset) // ask for +1 to check if there are any elements left
 	}
 
+	total, err := r.countRows(string(resources.GetItemType()))
+	if err != nil {
+		return err
+	}
+	resources.SetTotal(uint64(total))
+
 	rows, err := r.db.Query(statement, statementArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
@@ -239,13 +245,6 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		}
 		items++
 	}
-
-	var total int
-	total, err = r.countRows(string(resources.GetItemType()))
-	if err != nil {
-		return err
-	}
-	resources.SetTotal(uint64(total))
 
 	if paginateResults {
 		nextOffset := ""
