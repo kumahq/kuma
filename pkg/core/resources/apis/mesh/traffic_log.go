@@ -44,15 +44,15 @@ func (t *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &TrafficLogResourceList{}
 
 type TrafficLogResourceList struct {
-	Total      uint64
+	Total      uint32
 	Items      []*TrafficLogResource
 	Pagination model.Pagination
 }
 
-func (l *TrafficLogResourceList) GetTotal() uint64 {
+func (l *TrafficLogResourceList) GetTotal() uint32 {
 	return l.Total
 }
-func (l *TrafficLogResourceList) SetTotal(total uint64) {
+func (l *TrafficLogResourceList) SetTotal(total uint32) {
 	l.Total = total
 }
 func (l *TrafficLogResourceList) GetItems() []model.Resource {

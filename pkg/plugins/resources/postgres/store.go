@@ -225,7 +225,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	if err != nil {
 		return err
 	}
-	resources.SetTotal(uint64(total))
+	resources.SetTotal(uint32(total))
 
 	rows, err := r.db.Query(statement, statementArgs...)
 	if err != nil {

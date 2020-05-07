@@ -52,16 +52,16 @@ func (t *TrafficRouteResource) Validate() error {
 var _ model.ResourceList = &TrafficRouteResourceList{}
 
 type TrafficRouteResourceList struct {
-	Total      uint64
+	Total      uint32
 	Items      []*TrafficRouteResource
 	Pagination model.Pagination
 }
 
-func (l *TrafficRouteResourceList) GetTotal() uint64 {
+func (l *TrafficRouteResourceList) GetTotal() uint32 {
 	return l.Total
 }
 
-func (l *TrafficRouteResourceList) SetTotal(total uint64) {
+func (l *TrafficRouteResourceList) SetTotal(total uint32) {
 	l.Total = total
 }
 

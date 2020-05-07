@@ -29,7 +29,7 @@ import (
 type testDataplaneOverviewClient struct {
 	receivedTags    map[string]string
 	receivedGateway bool
-	total           uint64
+	total           uint32
 	overviews       []*mesh_core.DataplaneOverviewResource
 }
 
@@ -168,7 +168,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 		BeforeEach(func() {
 			// setup
 			testClient = &testDataplaneOverviewClient{
-				total:     uint64(len(sampleDataplaneOverview)),
+				total:     uint32(len(sampleDataplaneOverview)),
 				overviews: sampleDataplaneOverview,
 			}
 

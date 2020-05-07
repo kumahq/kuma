@@ -44,16 +44,16 @@ func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &DataplaneResourceList{}
 
 type DataplaneResourceList struct {
-	Total      uint64
+	Total      uint32
 	Items      []*DataplaneResource
 	Pagination model.Pagination
 }
 
-func (l *DataplaneResourceList) GetTotal() uint64 {
+func (l *DataplaneResourceList) GetTotal() uint32 {
 	return l.Total
 }
 
-func (l *DataplaneResourceList) SetTotal(total uint64) {
+func (l *DataplaneResourceList) SetTotal(total uint32) {
 	l.Total = total
 }
 

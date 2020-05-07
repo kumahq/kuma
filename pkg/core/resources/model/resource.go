@@ -80,8 +80,8 @@ type ResourceSpec interface {
 }
 
 type ResourceList interface {
-	GetTotal() uint64
-	SetTotal(uint64)
+	GetTotal() uint32
+	SetTotal(uint32)
 	GetItemType() ResourceType
 	GetItems() []Resource
 	NewItem() Resource

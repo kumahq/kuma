@@ -210,7 +210,7 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		}
 	}
 
-	rs.SetTotal(uint64(len(records)))
+	rs.SetTotal(uint32(len(records)))
 
 	i := offset
 	for ; i < offset+pageSize && i < len(records); i++ {

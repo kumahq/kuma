@@ -25,7 +25,7 @@ type Resource struct {
 }
 
 type ResourceList struct {
-	Total uint64      `json:"total"`
+	Total uint32      `json:"total"`
 	Items []*Resource `json:"items"`
 	Next  *string     `json:"next"`
 }
@@ -81,7 +81,7 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 		return errors.Errorf("NewResource must not be nil")
 	}
 	type List struct {
-		Total uint64             `json:"total"`
+		Total uint32             `json:"total"`
 		Items []*json.RawMessage `json:"items"`
 		Next  *string            `json:"next"`
 	}

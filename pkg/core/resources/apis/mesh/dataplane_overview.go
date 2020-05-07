@@ -53,16 +53,16 @@ func (t *DataplaneOverviewResource) Validate() error {
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {
-	Total      uint64
+	Total      uint32
 	Items      []*DataplaneOverviewResource
 	Pagination model.Pagination
 }
 
-func (l *DataplaneOverviewResourceList) GetTotal() uint64 {
+func (l *DataplaneOverviewResourceList) GetTotal() uint32 {
 	return l.Total
 }
 
-func (l *DataplaneOverviewResourceList) SetTotal(total uint64) {
+func (l *DataplaneOverviewResourceList) SetTotal(total uint32) {
 	l.Total = total
 }
 

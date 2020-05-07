@@ -44,15 +44,15 @@ func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &MeshResourceList{}
 
 type MeshResourceList struct {
-	Total      uint64
+	Total      uint32
 	Items      []*MeshResource
 	Pagination model.Pagination
 }
 
-func (l *MeshResourceList) GetTotal() uint64 {
+func (l *MeshResourceList) GetTotal() uint32 {
 	return l.Total
 }
-func (l *MeshResourceList) SetTotal(total uint64) {
+func (l *MeshResourceList) SetTotal(total uint32) {
 	l.Total = total
 }
 func (l *MeshResourceList) GetItems() []model.Resource {

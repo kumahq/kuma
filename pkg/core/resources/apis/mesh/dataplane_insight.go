@@ -48,15 +48,15 @@ func (t *DataplaneInsightResource) Validate() error {
 var _ model.ResourceList = &DataplaneInsightResourceList{}
 
 type DataplaneInsightResourceList struct {
-	Total      uint64
+	Total      uint32
 	Items      []*DataplaneInsightResource
 	Pagination model.Pagination
 }
 
-func (l *DataplaneInsightResourceList) GetTotal() uint64 {
+func (l *DataplaneInsightResourceList) GetTotal() uint32 {
 	return l.Total
 }
-func (l *DataplaneInsightResourceList) SetTotal(total uint64) {
+func (l *DataplaneInsightResourceList) SetTotal(total uint32) {
 	l.Total = total
 }
 func (l *DataplaneInsightResourceList) GetItems() []model.Resource {

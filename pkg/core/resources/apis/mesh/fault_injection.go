@@ -49,16 +49,16 @@ func (f *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &FaultInjectionResourceList{}
 
 type FaultInjectionResourceList struct {
-	Total      uint64
+	Total      uint32
 	Items      []*FaultInjectionResource
 	Pagination model.Pagination
 }
 
-func (l *FaultInjectionResourceList) GetTotal() uint64 {
+func (l *FaultInjectionResourceList) GetTotal() uint32 {
 	return l.Total
 }
 
-func (l *FaultInjectionResourceList) SetTotal(total uint64) {
+func (l *FaultInjectionResourceList) SetTotal(total uint32) {
 	l.Total = total
 }
 
