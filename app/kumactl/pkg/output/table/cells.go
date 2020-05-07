@@ -3,8 +3,6 @@ package table
 import (
 	"fmt"
 	"time"
-
-	"github.com/Kong/kuma/app/kumactl/pkg/util"
 )
 
 func Check(selected bool) string {
@@ -30,11 +28,30 @@ func Ago(m *time.Time, now time.Time) string {
 	if m == nil {
 		return "never"
 	}
-	return now.Sub(*m).Truncate(time.Second).String()
+	d := now.Sub(*m)
+	return Duration(d)
 }
 
 // TimeSince to calculate age of resources
 func TimeSince(m time.Time, now time.Time) string {
 	d := now.Sub(m)
-	return util.Duration(d)
+	return Duration(d)
+}
+
+// Duration returns a readable representation of the provided time
+func Duration(d time.Duration) string {
+	if seconds := int(d.Seconds()); seconds < -1 {
+		return fmt.Sprintf("never")
+	} else if seconds < 0 {
+		return fmt.Sprintf("0s")
+	} else if seconds < 60 {
+		return fmt.Sprintf("%ds", seconds)
+	} else if minutes := int(d.Minutes()); minutes < 60 {
+		return fmt.Sprintf("%dm", minutes)
+	} else if hours := int(d.Hours()); hours < 24 {
+		return fmt.Sprintf("%dh", hours)
+	} else if hours < 24*365 {
+		return fmt.Sprintf("%dd", hours/24)
+	}
+	return fmt.Sprintf("%dy", int(d.Hours()/24/365))
 }
