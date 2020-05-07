@@ -181,6 +181,14 @@ var _ = Describe("SDS Server", func() {
 		Expect(resp).ToNot(BeNil())
 		Expect(resp.Resources).To(HaveLen(2))
 
+		// and insight is generated
+		dpInsight := mesh_core.DataplaneInsightResource{}
+		err = resManager.Get(context.Background(), &dpInsight, core_store.GetByKey("backend-01", "default"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(1)))
+		expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
+		Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
+
 		close(done)
 	}, 10)
 
@@ -235,6 +243,14 @@ var _ = Describe("SDS Server", func() {
 			// then certs are different
 			Expect(resp).ToNot(BeNil())
 			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
+
+			// and insight is updated
+			dpInsight := mesh_core.DataplaneInsightResource{}
+			err = resManager.Get(context.Background(), &dpInsight, core_store.GetByKey("backend-01", "default"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(2)))
+			expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
+			Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
 
 			close(done)
 		}, 10)

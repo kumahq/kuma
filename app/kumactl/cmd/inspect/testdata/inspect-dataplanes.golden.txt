@@ -1,3 +1,3 @@
-MESH      NAME         TAGS                                STATUS    LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
-default   experiment   service=metrics,mobile version=v1   Online    2h                   never              30              3
-default   example      service=example                     Offline   never                never              0               0
+MESH      NAME         TAGS                                STATUS    LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS   CERT REGENERATED AGO   CERT EXPIRATION       CERT REGENERATIONS
+default   experiment   service=metrics,mobile version=v1   Online    2h                   never              30              3              22h                    2020-05-08 08:28:22   10
+default   example      service=example                     Offline   never                never              0               0              never                  -                     0

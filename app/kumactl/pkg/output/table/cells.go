@@ -20,6 +20,13 @@ func OnOff(on bool) string {
 	}
 }
 
+func Date(t *time.Time) string {
+	if t == nil {
+		return "-"
+	}
+	return t.In(time.Local).Format("2006-01-02 15:04:05")
+}
+
 func Number(v interface{}) string {
 	return fmt.Sprintf("%d", v)
 }
