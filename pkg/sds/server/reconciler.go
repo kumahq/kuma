@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 
+	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/ca/issuer"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -19,6 +22,7 @@ import (
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 // DataplaneReconciler keeps the state of the Cache for SDS consistent
@@ -26,7 +30,7 @@ import (
 // execute DataplaneReconciler#Reconcile. It will then check if certs needs to be regenerated because Mesh CA was changed
 // This follows the same pattern as XDS.
 //
-// Snapshot are versioned with UnixNano-NameOfTheCA pattern
+// Snapshot are versioned with UnixNano;NameOfTheCA pattern
 type DataplaneReconciler struct {
 	resManager       core_manager.ReadOnlyResourceManager
 	meshCaProvider   sds_provider.SecretProvider
@@ -58,13 +62,13 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 		return nil
 	}
 
-	generateSnapshot, err := d.shouldGenerateSnapshot(proxyID, mesh)
+	generateSnapshot, reason, err := d.shouldGenerateSnapshot(proxyID, mesh)
 	if err != nil {
 		return err
 	}
 
 	if generateSnapshot {
-		sdsServerLog.V(1).Info("Generating the Snapshot.", "dataplaneId", dataplaneId)
+		sdsServerLog.Info("Generating the Snapshot.", "dataplaneId", dataplaneId, "reason", reason)
 		snapshot, err := d.generateSnapshot(dataplane, mesh)
 		if err != nil {
 			return err
@@ -76,22 +80,37 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 	return nil
 }
 
-func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_core.MeshResource) (bool, error) {
+func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_core.MeshResource) (bool, string, error) {
 	currentSnapshot, err := d.cache.GetSnapshot(proxyID)
-	if err != nil { // snapshot does not exist
-		return true, nil
+	if err != nil {
+		return true, "Snapshot does not exist", nil
 	}
 
-	parts := strings.Split(currentSnapshot.GetVersion(envoy_resource.SecretType), "-")
+	parts := strings.Split(currentSnapshot.GetVersion(envoy_resource.SecretType), ";")
 	if len(parts) != 2 {
-		return false, errors.New(`invalid snapshot version format. Format should be "UnixNano-NameOfTheCA"`)
+		return false, "", errors.New(`invalid snapshot version format. Format should be "UnixNano-NameOfTheCA"`)
 	}
 	// generate snapshot if CA changed
 	caName := parts[1]
 	if caName != mesh.GetEnabledCertificateAuthorityBackend().Name {
-		return true, nil
+		return true, fmt.Sprintf("Enabled CA changed from %s to %s", caName, mesh.GetEnabledCertificateAuthorityBackend().Name), nil
 	}
-	return false, nil
+	// generate snapshot if cert expired
+	generationUnixNano, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return false, "", errors.Wrap(err, `invalid snapshot version format. Format should be "UnixNano;NameOfTheCA"`)
+	}
+	expiration := issuer.DefaultWorkloadCertValidityPeriod
+	if mesh.GetEnabledCertificateAuthorityBackend().GetDpCert().GetRotation().GetExpiration() != nil {
+		expiration = util_proto.ToDuration(*mesh.GetEnabledCertificateAuthorityBackend().GetDpCert().GetRotation().GetExpiration())
+	}
+	generationTime := time.Unix(0, int64(generationUnixNano))
+	expirationTime := generationTime.Add(expiration)
+	if core.Now().After(generationTime.Add(expiration / 5 * 4)) { // regenerate cert after 4/5 of its lifetime
+		reason := fmt.Sprintf("Certificate generated at %s will expire in %s", generationTime, expirationTime.Sub(core.Now()))
+		return true, reason, nil
+	}
+	return false, "", nil
 }
 
 func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (envoy_cache.Snapshot, error) {
@@ -112,7 +131,7 @@ func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneRes
 		return envoy_cache.Snapshot{}, errors.Wrap(err, "could not get mesh CA cert")
 	}
 
-	version := fmt.Sprintf("%d-%s", time.Now().UTC().UnixNano(), mesh.GetEnabledCertificateAuthorityBackend().Name)
+	version := fmt.Sprintf("%d;%s", time.Now().UTC().UnixNano(), mesh.GetEnabledCertificateAuthorityBackend().Name)
 	snap := envoy_cache.Snapshot{
 		Resources: [envoy_types.UnknownType]envoy_cache.Resources{},
 	}

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 
@@ -14,8 +12,10 @@ import (
 	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 type builtinCaManager struct {
@@ -104,7 +104,12 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 		return core_ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
 	}
 
-	keyPair, err := ca_issuer.NewWorkloadCert(ca, mesh, service)
+	var opts []ca_issuer.CertOptsFn
+	if backend.GetDpCert().GetRotation().GetExpiration() != nil {
+		duration := util_proto.ToDuration(*backend.GetDpCert().GetRotation().Expiration)
+		opts = append(opts, ca_issuer.WithExpirationTime(duration))
+	}
+	keyPair, err := ca_issuer.NewWorkloadCert(ca, mesh, service, opts...)
 	if err != nil {
 		return core_ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for workload %q in Mesh %q using backend %q", service, mesh, backend)
 	}

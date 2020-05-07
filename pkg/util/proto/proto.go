@@ -3,7 +3,9 @@ package proto
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 
+	"github.com/golang/protobuf/ptypes/duration"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 
 	"github.com/ghodss/yaml"
@@ -96,4 +98,8 @@ func MustToStruct(message proto.Message) *pstruct.Struct {
 		panic(err)
 	}
 	return &str
+}
+
+func ToDuration(duration duration.Duration) time.Duration {
+	return time.Duration(duration.Seconds) * time.Second
 }

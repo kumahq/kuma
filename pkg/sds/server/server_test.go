@@ -1,3 +1,5 @@
+// +build !race
+
 package server_test
 
 import (
@@ -9,11 +11,13 @@ import (
 	envoy_api_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	"github.com/golang/protobuf/ptypes/duration"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
+	"github.com/Kong/kuma/pkg/core"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
@@ -35,10 +39,16 @@ var _ = Describe("SDS Server", func() {
 	var dpCredential sds_auth.Credential
 	var stop chan struct{}
 	var client envoy_discovery.SecretDiscoveryServiceClient
+	var conn *grpc.ClientConn
 
 	var resManager core_manager.ResourceManager
 
+	now := time.Now()
+
 	BeforeSuite(func() {
+		core.Now = func() time.Time {
+			return now
+		}
 		// setup runtime with SDS
 		cfg := kuma_cp.DefaultConfig()
 		cfg.SdsServer.DataplaneConfigurationRefreshInterval = 100 * time.Millisecond
@@ -59,10 +69,24 @@ var _ = Describe("SDS Server", func() {
 						{
 							Name: "ca-1",
 							Type: "builtin",
+							DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
+								Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
+									Expiration: &duration.Duration{
+										Seconds: 60,
+									},
+								},
+							},
 						},
 						{
 							Name: "ca-2",
 							Type: "builtin",
+							DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
+								Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
+									Expiration: &duration.Duration{
+										Seconds: 60,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -111,14 +135,19 @@ var _ = Describe("SDS Server", func() {
 
 		// wait for SDS server
 		Eventually(func() error {
-			conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
+			c, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
+			conn = c
 			client = envoy_discovery.NewSecretDiscoveryServiceClient(conn)
 			return err
 		}).ShouldNot(HaveOccurred())
 	})
 
 	AfterSuite(func() {
+		if conn != nil {
+			Expect(conn.Close()).To(Succeed())
+		}
 		close(stop)
+		core.Now = time.Now
 	})
 
 	newRequestForSecrets := func() envoy_api.DiscoveryRequest {
@@ -131,29 +160,15 @@ var _ = Describe("SDS Server", func() {
 		}
 	}
 
-	It("should return CA and Identity cert when DP is authorized", func() {
+	It("should return CA and Identity cert when DP is authorized", func(done Done) {
 		// given
 		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", string(dpCredential))
 		stream, err := client.StreamSecrets(ctx)
-		Expect(err).ToNot(HaveOccurred())
-		req := newRequestForSecrets()
-
-		// when
-		err = stream.Send(&req)
-		Expect(err).ToNot(HaveOccurred())
-		resp, err := stream.Recv()
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		Expect(resp).ToNot(BeNil())
-		Expect(resp.Resources).To(HaveLen(2))
-	})
-
-	It("should return new pair if CA changes", func() {
-		By("first exchange of secrets")
-		// given
-		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", string(dpCredential))
-		stream, err := client.StreamSecrets(ctx)
+		defer func() {
+			if stream != nil {
+				Expect(stream.CloseSend()).To(Succeed())
+			}
+		}()
 		Expect(err).ToNot(HaveOccurred())
 		req := newRequestForSecrets()
 
@@ -167,32 +182,93 @@ var _ = Describe("SDS Server", func() {
 		Expect(resp).ToNot(BeNil())
 		Expect(resp.Resources).To(HaveLen(2))
 
-		By("second exchange of secrets")
-		// when CA changes
-		meshRes := mesh_core.MeshResource{}
-		Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey("default", "default"))).To(Succeed())
-		meshRes.Spec.Mtls.EnabledBackend = "" // we need to first disable mTLS
-		Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
-		meshRes.Spec.Mtls.EnabledBackend = "ca-2"
-		Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
+		close(done)
+	}, 10)
 
-		// and when send a request with version previously fetched
-		req = newRequestForSecrets()
-		req.VersionInfo = resp.VersionInfo
-		req.ResponseNonce = resp.Nonce
-		err = stream.Send(&req)
-		Expect(err).ToNot(HaveOccurred())
-		resp2, err := stream.Recv()
-		Expect(err).ToNot(HaveOccurred())
+	Context("should return new pair of + key", func() { // we cannot use DescribeTable because it does not support timeouts
 
-		// then certs are different
-		Expect(resp2).ToNot(BeNil())
-		Expect(resp.Resources).ToNot(Equal(resp2.Resources))
+		var firstExchangeResponse *envoy_api.DiscoveryResponse
+		var stream envoy_discovery.SecretDiscoveryService_StreamSecretsClient
+
+		BeforeEach(func(done Done) {
+			// given
+			ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", string(dpCredential))
+			s, err := client.StreamSecrets(ctx)
+			stream = s
+			Expect(err).ToNot(HaveOccurred())
+			req := newRequestForSecrets()
+
+			// when
+			err = stream.Send(&req)
+			Expect(err).ToNot(HaveOccurred())
+			resp, err := stream.Recv()
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			Expect(resp).ToNot(BeNil())
+			Expect(resp.Resources).To(HaveLen(2))
+			firstExchangeResponse = resp
+			close(done)
+		}, 10)
+
+		AfterEach(func() {
+			Expect(stream.CloseSend()).To(Succeed())
+		})
+
+		It("should return pair when CA is changed", func(done Done) {
+			// when
+			meshRes := mesh_core.MeshResource{}
+			Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey("default", "default"))).To(Succeed())
+			meshRes.Spec.Mtls.EnabledBackend = "" // we need to first disable mTLS
+			Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
+			meshRes.Spec.Mtls.EnabledBackend = "ca-2"
+			Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
+
+			// and when send a request with version previously fetched
+			req := newRequestForSecrets()
+			req.VersionInfo = firstExchangeResponse.VersionInfo
+			req.ResponseNonce = firstExchangeResponse.Nonce
+			err := stream.Send(&req)
+			Expect(err).ToNot(HaveOccurred())
+			resp, err := stream.Recv()
+			Expect(err).ToNot(HaveOccurred())
+
+			// then certs are different
+			Expect(resp).ToNot(BeNil())
+			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
+
+			close(done)
+		}, 10)
+
+		It("should return pair when cert expired", func(done Done) {
+			// when time is moved 1s after 4/5 of 60s cert expiration
+			now = now.Add(49 * time.Second)
+
+			// and when send a request with version previously fetched
+			req := newRequestForSecrets()
+			req.VersionInfo = firstExchangeResponse.VersionInfo
+			req.ResponseNonce = firstExchangeResponse.Nonce
+			err := stream.Send(&req)
+			Expect(err).ToNot(HaveOccurred())
+			resp, err := stream.Recv()
+			Expect(err).ToNot(HaveOccurred())
+
+			// then certs are different
+			Expect(resp).ToNot(BeNil())
+			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
+
+			close(done)
+		}, 10)
 	})
 
-	It("should not return certs when DP is not authorized", func() {
+	It("should not return certs when DP is not authorized", func(done Done) {
 		// given
 		stream, err := client.StreamSecrets(context.Background())
+		defer func() {
+			if stream != nil {
+				Expect(stream.CloseSend()).To(Succeed())
+			}
+		}()
 		Expect(err).ToNot(HaveOccurred())
 		req := newRequestForSecrets()
 
@@ -203,5 +279,7 @@ var _ = Describe("SDS Server", func() {
 
 		// then
 		Expect(err).To(MatchError("rpc error: code = Unknown desc = could not parse token: token contains an invalid number of segments"))
-	})
+
+		close(done)
+	}, 10)
 })
