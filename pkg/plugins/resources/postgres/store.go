@@ -221,7 +221,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		statement += fmt.Sprintf(" LIMIT %d OFFSET %d", opts.PageSize+1, offset) // ask for +1 to check if there are any elements left
 	}
 
-	total, err := r.countRows(string(resources.GetItemType()))
+	total, err := r.countRows(string(resources.GetItemType()), opts.Mesh)
 	if err != nil {
 		return err
 	}
@@ -281,17 +281,26 @@ func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, er
 	return item, nil
 }
 
-func (r *postgresResourceStore) countRows(resource string) (int, error) {
-	var count int
-	statement, err := r.db.Prepare("SELECT COUNT(*) as count FROM resources WHERE type=" + resource)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to prepare query: %v", statement)
+func (r *postgresResourceStore) countRows(resource, mesh string) (int, error) {
+	statement := `SELECT COUNT(*) as count FROM resources WHERE type=$1`
+	var statementArgs []interface{}
+	statementArgs = append(statementArgs, resource)
+	argsIndex := 1
+	if mesh != "" {
+		argsIndex++
+		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
+		statementArgs = append(statementArgs, mesh)
 	}
-	err = statement.QueryRow().Scan(&count)
+	statement += " GROUP BY name,mesh ORDER BY name, mesh"
+
+	var count int
+	err := r.db.QueryRow(statement, statementArgs...).Scan(&count)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
 		return 0, errors.Wrapf(err, "failed to execute query: %v", statement)
 	}
-	statement.Close()
 	return count, nil
 }
 
