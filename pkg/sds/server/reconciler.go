@@ -131,7 +131,7 @@ func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneRes
 		return envoy_cache.Snapshot{}, errors.Wrap(err, "could not get mesh CA cert")
 	}
 
-	version := fmt.Sprintf("%d;%s", time.Now().UTC().UnixNano(), mesh.GetEnabledCertificateAuthorityBackend().Name)
+	version := fmt.Sprintf("%d;%s", core.Now().UTC().UnixNano(), mesh.GetEnabledCertificateAuthorityBackend().Name)
 	snap := envoy_cache.Snapshot{
 		Resources: [envoy_types.UnknownType]envoy_cache.Resources{},
 	}

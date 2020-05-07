@@ -1,10 +1,9 @@
-// +build !race
-
 package server_test
 
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -43,11 +42,12 @@ var _ = Describe("SDS Server", func() {
 
 	var resManager core_manager.ResourceManager
 
-	now := time.Now()
+	var now atomic.Value // it has to be stored as atomic to avoid race condition
 
 	BeforeSuite(func() {
+		now.Store(time.Now())
 		core.Now = func() time.Time {
-			return now
+			return now.Load().(time.Time)
 		}
 		// setup runtime with SDS
 		cfg := kuma_cp.DefaultConfig()
@@ -147,7 +147,6 @@ var _ = Describe("SDS Server", func() {
 			Expect(conn.Close()).To(Succeed())
 		}
 		close(stop)
-		core.Now = time.Now
 	})
 
 	newRequestForSecrets := func() envoy_api.DiscoveryRequest {
@@ -242,7 +241,8 @@ var _ = Describe("SDS Server", func() {
 
 		It("should return pair when cert expired", func(done Done) {
 			// when time is moved 1s after 4/5 of 60s cert expiration
-			now = now.Add(49 * time.Second)
+			shiftedTime := now.Load().(time.Time).Add(49 * time.Second)
+			now.Store(shiftedTime)
 
 			// and when send a request with version previously fetched
 			req := newRequestForSecrets()
