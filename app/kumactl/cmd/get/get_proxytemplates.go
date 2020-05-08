@@ -3,6 +3,7 @@ package get
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 
@@ -34,7 +35,7 @@ func newGetProxyTemplatesCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printProxyTemplates(proxyTemplates, cmd.OutOrStdout())
+				return printProxyTemplates(pctx.Now(), proxyTemplates, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -47,9 +48,9 @@ func newGetProxyTemplatesCmd(pctx *listContext) *cobra.Command {
 	return cmd
 }
 
-func printProxyTemplates(proxyTemplates *mesh_core.ProxyTemplateResourceList, out io.Writer) error {
+func printProxyTemplates(rootTime time.Time, proxyTemplates *mesh_core.ProxyTemplateResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME"},
+		Headers: []string{"MESH", "NAME", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -60,8 +61,9 @@ func printProxyTemplates(proxyTemplates *mesh_core.ProxyTemplateResourceList, ou
 				proxyTemplate := proxyTemplates.Items[i]
 
 				return []string{
-					proxyTemplate.GetMeta().GetMesh(), // MESH
-					proxyTemplate.GetMeta().GetName(), // NAME
+					proxyTemplate.GetMeta().GetMesh(),                                        // MESH
+					proxyTemplate.GetMeta().GetName(),                                        // NAME
+					table.TimeSince(proxyTemplate.GetMeta().GetModificationTime(), rootTime), //AGE
 				}
 			}
 		}(),

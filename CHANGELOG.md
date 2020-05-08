@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## master
+* feat(kumactl) added age column for get commands and updated `inspect dataplanes` lastConnected and lastUpdated to the new format. 
+  [#702](https://github.com/Kong/kuma/pull/702)
 * feat(kuma-cp) friendly response in K8s mode
   [#712](https://github.com/Kong/kuma/pull/712)
 * chore: upgrade go-control-plane up to v0.9.5
