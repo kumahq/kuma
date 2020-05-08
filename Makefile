@@ -188,6 +188,7 @@ protoc/pkg/test/apis/sample/v1alpha1:
 
 protoc/plugins:
 	$(PROTOC_GO) pkg/plugins/ca/provided/config/*.proto
+	$(PROTOC_GO) pkg/plugins/ca/builtin/config/*.proto
 
 # Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
 generate/kumactl/install/k8s/control-plane:
