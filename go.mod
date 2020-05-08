@@ -1,6 +1,6 @@
 module github.com/Kong/kuma
 
-go 1.12
+go 1.14
 
 require (
 	github.com/Kong/kuma/api v0.0.0-00010101000000-000000000000

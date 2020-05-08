@@ -107,15 +107,15 @@ install/protobuf-wellknown-types:
 		&& echo "Protobuf well-known types $(PROTOC_VERSION) have been installed at $(PROTOBUF_WKT_DIR)" ; fi
 
 install/protoc-gen-go:
-	go get -u github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
+	go get github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
 
 install/protoc-gen-validate:
-	go get -u github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
+	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 install/data-plane-api:
-	go get -u github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
-	go get -u github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
-	go get -u github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
+	go get github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
+	go get github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
+	go get github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
 
 clean: ## Remove generated files
 	find . -name '*.pb.go' -delete
@@ -135,8 +135,11 @@ protoc/system/v1alpha1:
 build: ## Build generated files
 	go build ./...
 
+GO_TEST ?= go test
+GO_TEST_OPTS ?=
+
 test: ## Run tests
-	go test ./...
+	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
 
 check: generate build test ## Verify that auto-generated code is up-to-date
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
