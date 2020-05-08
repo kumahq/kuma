@@ -42,29 +42,30 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 		if core_store.IsResourceNotFound(err) {
 			sdsServerLog.V(1).Info("Dataplane not found. Clearing the Snapshot.", "dataplaneId", dataplaneId)
 			d.cache.ClearSnapshot(proxyID)
+			return nil
 		}
 		return err
 	}
 
-	meshRes := mesh_core.MeshResource{}
-	if err := d.resManager.Get(context.Background(), &meshRes, core_store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
+	mesh := &mesh_core.MeshResource{}
+	if err := d.resManager.Get(context.Background(), mesh, core_store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
 		return errors.Wrap(err, "could not retrieve a mesh")
 	}
 
-	if !meshRes.MTLSEnabled() {
+	if !mesh.MTLSEnabled() {
 		sdsServerLog.V(1).Info("mTLS for Mesh disabled. Clearing the Snapshot.", "dataplaneId", dataplaneId)
 		d.cache.ClearSnapshot(proxyID)
 		return nil
 	}
 
-	generateSnapshot, err := d.shouldGenerateSnapshot(proxyID, meshRes)
+	generateSnapshot, err := d.shouldGenerateSnapshot(proxyID, mesh)
 	if err != nil {
 		return err
 	}
 
 	if generateSnapshot {
 		sdsServerLog.V(1).Info("Generating the Snapshot.", "dataplaneId", dataplaneId)
-		snapshot, err := d.generateSnapshot(dataplane, meshRes)
+		snapshot, err := d.generateSnapshot(dataplane, mesh)
 		if err != nil {
 			return err
 		}
@@ -75,7 +76,7 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 	return nil
 }
 
-func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, meshRes mesh_core.MeshResource) (bool, error) {
+func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_core.MeshResource) (bool, error) {
 	currentSnapshot, err := d.cache.GetSnapshot(proxyID)
 	if err != nil { // snapshot does not exist
 		return true, nil
@@ -87,13 +88,13 @@ func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, meshRes mes
 	}
 	// generate snapshot if CA changed
 	caName := parts[1]
-	if caName != meshRes.GetEnabledCertificateAuthorityBackend().Name {
+	if caName != mesh.GetEnabledCertificateAuthorityBackend().Name {
 		return true, nil
 	}
 	return false, nil
 }
 
-func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneResource, meshRes mesh_core.MeshResource) (envoy_cache.Snapshot, error) {
+func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (envoy_cache.Snapshot, error) {
 	requestor := sds_auth.Identity{
 		Service: dataplane.Spec.GetIdentifyingService(),
 		Mesh:    dataplane.GetMeta().GetMesh(),
@@ -111,7 +112,7 @@ func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneRes
 		return envoy_cache.Snapshot{}, errors.Wrap(err, "could not get mesh CA cert")
 	}
 
-	version := fmt.Sprintf("%d-%s", time.Now().UTC().UnixNano(), meshRes.GetEnabledCertificateAuthorityBackend().Name)
+	version := fmt.Sprintf("%d-%s", time.Now().UTC().UnixNano(), mesh.GetEnabledCertificateAuthorityBackend().Name)
 	snap := envoy_cache.Snapshot{
 		Resources: [envoy_types.UnknownType]envoy_cache.Resources{},
 	}
