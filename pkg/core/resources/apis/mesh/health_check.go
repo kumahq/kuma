@@ -75,8 +75,8 @@ func (l *HealthCheckResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*HealthCheckResource)(nil), r)
 	}
 }
-func (l *HealthCheckResourceList) GetPagination() model.Pagination {
-	return l.Pagination
+func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
 }
 func (l *HealthCheckResourceList) SetPagination(pagination model.Pagination) {
 	l.Pagination = pagination

@@ -74,8 +74,8 @@ func (l *DataplaneInsightResourceList) AddItem(r model.Resource) error {
 	}
 }
 
-func (l *DataplaneInsightResourceList) GetPagination() model.Pagination {
-	return l.Pagination
+func (l *DataplaneInsightResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
 }
 
 func (l *DataplaneInsightResourceList) SetPagination(pagination model.Pagination) {

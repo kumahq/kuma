@@ -84,7 +84,7 @@ type ResourceList interface {
 	GetItems() []Resource
 	NewItem() Resource
 	AddItem(Resource) error
-	GetPagination() Pagination
+	GetPagination() *Pagination
 	SetPagination(Pagination)
 }
 
@@ -93,11 +93,11 @@ type Pagination struct {
 	NextOffset string
 }
 
-func (p Pagination) GetTotal() uint32 {
+func (p *Pagination) GetTotal() uint32 {
 	return p.Total
 }
 
-func (p Pagination) SetTotal(total uint32) {
+func (p *Pagination) SetTotal(total uint32) {
 	p.Total = total
 }
 

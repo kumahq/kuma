@@ -69,8 +69,8 @@ func (l *MeshResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*MeshResource)(nil), r)
 	}
 }
-func (l *MeshResourceList) GetPagination() model.Pagination {
-	return l.Pagination
+func (l *MeshResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
 }
 func (l *MeshResourceList) SetPagination(pagination model.Pagination) {
 	l.Pagination = pagination
