@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Kong/kuma/pkg/core/resources/model"
+
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	"github.com/Kong/kuma/app/kumactl/pkg/resources"
 
@@ -37,8 +39,10 @@ func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map
 	c.receivedTags = tags
 	c.receivedGateway = gateway
 	return &mesh_core.DataplaneOverviewResourceList{
-		Total: c.total,
 		Items: c.overviews,
+		Pagination: model.Pagination{
+			Total: c.total,
+		},
 	}, nil
 }
 

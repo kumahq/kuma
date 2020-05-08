@@ -137,12 +137,6 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 		return errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
 	}
 
-	total, err := s.countK8sResources(ctx, rs)
-	if err != nil {
-		return err
-	}
-	rs.SetTotal(uint32(total))
-
 	var kubeOpts kube_client.ListOptions
 	if opts.PageSize > 0 {
 		kubeOpts = kube_client.ListOptions{
@@ -166,6 +160,13 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if err := s.Converter.ToCoreList(obj, rs, predicate); err != nil {
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
+
+	total, err := s.countK8sResources(ctx, rs)
+	if err != nil {
+		return err
+	}
+	rs.GetPagination().SetTotal(uint32(total))
+
 	return nil
 }
 

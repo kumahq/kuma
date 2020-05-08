@@ -44,17 +44,10 @@ func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &ProxyTemplateResourceList{}
 
 type ProxyTemplateResourceList struct {
-	Total      uint32
 	Items      []*ProxyTemplateResource
 	Pagination model.Pagination
 }
 
-func (l *ProxyTemplateResourceList) GetTotal() uint32 {
-	return l.Total
-}
-func (l *ProxyTemplateResourceList) SetTotal(total uint32) {
-	l.Total = total
-}
 func (l *ProxyTemplateResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {

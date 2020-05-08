@@ -50,17 +50,10 @@ func (t *HealthCheckResource) Destinations() []*mesh_proto.Selector {
 var _ model.ResourceList = &HealthCheckResourceList{}
 
 type HealthCheckResourceList struct {
-	Total      uint32
 	Items      []*HealthCheckResource
 	Pagination model.Pagination
 }
 
-func (l *HealthCheckResourceList) GetTotal() uint32 {
-	return l.Total
-}
-func (l *HealthCheckResourceList) SetTotal(total uint32) {
-	l.Total = total
-}
 func (l *HealthCheckResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {

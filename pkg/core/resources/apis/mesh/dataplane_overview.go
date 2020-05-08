@@ -53,17 +53,8 @@ func (t *DataplaneOverviewResource) Validate() error {
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {
-	Total      uint32
 	Items      []*DataplaneOverviewResource
 	Pagination model.Pagination
-}
-
-func (l *DataplaneOverviewResourceList) GetTotal() uint32 {
-	return l.Total
-}
-
-func (l *DataplaneOverviewResourceList) SetTotal(total uint32) {
-	l.Total = total
 }
 
 func (l *DataplaneOverviewResourceList) GetItems() []model.Resource {
@@ -119,7 +110,6 @@ func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneI
 		items = append(items, &overview)
 	}
 	return DataplaneOverviewResourceList{
-		Total:      dataplanes.Total,
 		Pagination: dataplanes.Pagination,
 		Items:      items,
 	}

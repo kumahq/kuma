@@ -44,17 +44,10 @@ func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 var _ model.ResourceList = &TrafficTraceResourceList{}
 
 type TrafficTraceResourceList struct {
-	Total      uint32
 	Items      []*TrafficTraceResource
 	Pagination model.Pagination
 }
 
-func (l *TrafficTraceResourceList) GetTotal() uint32 {
-	return l.Total
-}
-func (l *TrafficTraceResourceList) SetTotal(total uint32) {
-	l.Total = total
-}
 func (l *TrafficTraceResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {

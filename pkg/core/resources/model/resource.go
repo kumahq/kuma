@@ -80,8 +80,6 @@ type ResourceSpec interface {
 }
 
 type ResourceList interface {
-	GetTotal() uint32
-	SetTotal(uint32)
 	GetItemType() ResourceType
 	GetItems() []Resource
 	NewItem() Resource
@@ -91,7 +89,16 @@ type ResourceList interface {
 }
 
 type Pagination struct {
+	Total      uint32
 	NextOffset string
+}
+
+func (p Pagination) GetTotal() uint32 {
+	return p.Total
+}
+
+func (p Pagination) SetTotal(total uint32) {
+	p.Total = total
 }
 
 func ErrorInvalidItemType(expected, actual interface{}) error {

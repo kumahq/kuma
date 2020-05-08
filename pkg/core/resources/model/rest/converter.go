@@ -32,7 +32,7 @@ func (c *from) ResourceList(rs model.ResourceList) *ResourceList {
 		items[i] = c.Resource(r)
 	}
 	return &ResourceList{
-		Total: rs.GetTotal(),
+		Total: rs.GetPagination().Total,
 		Items: items,
 	}
 }
