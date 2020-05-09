@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/Kong/kuma/app/kumactl/cmd/apply"
+	"github.com/Kong/kuma/app/kumactl/cmd/completion"
 	"github.com/Kong/kuma/app/kumactl/cmd/config"
 	"github.com/Kong/kuma/app/kumactl/cmd/delete"
 	"github.com/Kong/kuma/app/kumactl/cmd/generate"
@@ -56,6 +57,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.OffLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	// sub-commands
 	cmd.AddCommand(apply.NewApplyCmd(root))
+	cmd.AddCommand(completion.NewCompletionCommand(root))
 	cmd.AddCommand(config.NewConfigCmd(root))
 	cmd.AddCommand(delete.NewDeleteCmd(root))
 	cmd.AddCommand(generate.NewGenerateCmd(root))
