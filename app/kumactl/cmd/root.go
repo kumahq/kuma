@@ -55,14 +55,14 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&root.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.OffLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	// sub-commands
-	cmd.AddCommand(install.NewInstallCmd(root))
-	cmd.AddCommand(config.NewConfigCmd(root))
-	cmd.AddCommand(get.NewGetCmd(root))
-	cmd.AddCommand(delete.NewDeleteCmd(root))
-	cmd.AddCommand(inspect.NewInspectCmd(root))
 	cmd.AddCommand(apply.NewApplyCmd(root))
-	cmd.AddCommand(version.NewVersionCmd())
+	cmd.AddCommand(config.NewConfigCmd(root))
+	cmd.AddCommand(delete.NewDeleteCmd(root))
 	cmd.AddCommand(generate.NewGenerateCmd(root))
+	cmd.AddCommand(get.NewGetCmd(root))
+	cmd.AddCommand(inspect.NewInspectCmd(root))
+	cmd.AddCommand(install.NewInstallCmd(root))
+	cmd.AddCommand(version.NewVersionCmd())
 	kumactl_cmd.WrapRunnables(cmd, kumactl_errors.FormatErrorWrapper)
 	return cmd
 }
