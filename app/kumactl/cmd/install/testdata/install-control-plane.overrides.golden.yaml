@@ -4298,6 +4298,30 @@ webhooks:
           - UPDATE
         resources:
           - meshes
+  - name: owner-reference.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: QWRtaXNzaW9uQ2VydA==
+      service:
+        namespace: kuma
+        name: kuma-ctrl-plane
+        path: /owner-reference-kuma-io-v1alpha1
+    rules:
+      - apiGroups:
+          - kuma.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+        resources:
+          - faultinjections
+          - trafficlogs
+          - trafficpermissions
+          - trafficroutes
+          - traffictraces
+          - dataplanes
+          - healthchecks
+          - proxytemplates
   - name: kuma-injector.kuma.io
     namespaceSelector:
       matchLabels:
