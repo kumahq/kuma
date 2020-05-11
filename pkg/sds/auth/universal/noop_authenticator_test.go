@@ -74,6 +74,6 @@ var _ = Describe("Noop Authenticator", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err).To(MatchError(`unable to find Dataplane for proxy {"example" "dp-1"}: Resource not found: type="Dataplane" name="dp-1" mesh="example"`))
+		Expect(err).To(MatchError(`unable to find Dataplane for proxy "example.dp-1": Resource not found: type="Dataplane" name="dp-1" mesh="example"`))
 	})
 })
