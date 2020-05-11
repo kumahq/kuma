@@ -292,7 +292,6 @@ func (r *postgresResourceStore) countRows(resource, mesh string) (int, error) {
 		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
 		statementArgs = append(statementArgs, mesh)
 	}
-	statement += " GROUP BY name,mesh ORDER BY name, mesh"
 
 	var count int
 	err := r.db.QueryRow(statement, statementArgs...).Scan(&count)
