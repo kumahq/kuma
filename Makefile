@@ -228,11 +228,12 @@ vet: ## Dev: Run go vet
 
 .PHONY: tidy
 tidy:
-	@for m in . ./api ./pkg/plugins/resources/k8s/native; do \
-		pushd $$m ; \
+	@TOP=$(shell pwd) && \
+	for m in . ./api/ ./pkg/plugins/resources/k8s/native; do \
+		cd $$m ; \
 		rm go.sum ; \
 		go mod tidy ; \
-		popd; \
+		cd $$TOP; \
 	done
 
 golangci-lint: ## Dev: Runs golangci-lint linter
