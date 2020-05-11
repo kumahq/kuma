@@ -17,6 +17,7 @@ limitations under the License.
 package k8s_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -95,6 +96,8 @@ var _ = BeforeSuite(func(done Done) {
 		},
 	})
 	Expect(err).ToNot(HaveOccurred())
+
+	Expect(k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "demo"}})).To(Succeed())
 
 	close(done)
 }, 60)
