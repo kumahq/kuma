@@ -88,14 +88,14 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
 								{
 									Name: "zipkin-eu",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.eu:8080/v1/spans",
 									}),
 								},
@@ -115,7 +115,7 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
@@ -135,14 +135,14 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
 								{
 									Name: "zipkin-eu",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.eu:8080/v1/spans",
 									}),
 								},
@@ -161,7 +161,7 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
@@ -219,14 +219,14 @@ var _ = Describe("MeshResource", func() {
 							{
 								Name: "zipkin-us",
 								Type: mesh_proto.TracingZipkinType,
-								Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 									Url: "http://zipkin.us:8080/v1/spans",
 								}),
 							},
 							{
 								Name: "zipkin-eu",
 								Type: mesh_proto.TracingZipkinType,
-								Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 									Url: "http://zipkin.eu:8080/v1/spans",
 								}),
 							},

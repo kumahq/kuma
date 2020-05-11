@@ -27,21 +27,21 @@ var _ = Describe("Mesh", func() {
               backends:
               - name: file-1
                 type: file
-                config:
+                conf:
                   path: /path/to/file
               - name: file-2
                 format: '%START_TIME% %KUMA_SOURCE_SERVICE%'
                 type: file
-                config:
+                conf:
                   path: /path/to/file2
               - name: tcp-1
                 type: tcp
-                config:
+                conf:
                   address: kibana:1234
               - name: tcp-2
                 format: '%START_TIME% %KUMA_DESTINATION_SERVICE%'
                 type: tcp
-                config:
+                conf:
                   address: kibana:1234
               defaultBackend: tcp-1
             tracing:
@@ -49,13 +49,13 @@ var _ = Describe("Mesh", func() {
               - name: zipkin-us
                 sampling: 80.0
                 type: zipkin
-                config:
+                conf:
                   url: http://zipkin.local:9411/v2/spans
                   traceId128bit: true
                   apiVersion: httpProto
               - name: zipkin-eu
                 type: zipkin
-                config:
+                conf:
                   url: http://zipkin.local:9411/v2/spans
               defaultBackend: zipkin-us
             metrics:
@@ -63,7 +63,7 @@ var _ = Describe("Mesh", func() {
               backends:
               - name: prom-1
                 type: prometheus
-                config:
+                conf:
                   port: 5670
                   path: /metrics
 `
@@ -133,7 +133,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name:
                     type: tcp
-                    config: 
+                    conf: 
                       address: kibana:1234`,
 				expected: `
                 violations:
@@ -146,11 +146,11 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: backend-1
                     type: tcp
-                    config:
+                    conf:
                       address: kibana:1234
                   - name: backend-1
                     type: file
-                    config:
+                    conf:
                       path: /path/to/file
                   defaultBackend: backend-1`,
 				expected: `
@@ -164,7 +164,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: backend-1
                     type: tcp
-                    config:
+                    conf:
                       address:
                   defaultBackend: backend-1`,
 				expected: `
@@ -178,7 +178,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: backend-1
                     type: tcp
-                    config:
+                    conf:
                       address: wrong-format:234:234
                   defaultBackend: backend-1`,
 				expected: `
@@ -192,7 +192,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: backend-1
                     type: file
-                    config:
+                    conf:
                       path:
                   defaultBackend: backend-1`,
 				expected: `
@@ -207,7 +207,7 @@ var _ = Describe("Mesh", func() {
                   - name: backend-1
                     format: "%START_TIME% %sent_bytes%"
                     type: file
-                    config:
+                    conf:
                       path: /var/logs
                   defaultBackend: backend-1`,
 				expected: `
@@ -221,7 +221,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: backend-1
                     type: file
-                    config:
+                    conf:
                       path: /path
                   defaultBackend: non-existing-backend`,
 				expected: `
@@ -235,7 +235,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name:
                     type: zipkin
-                    config:
+                    conf:
                       url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -248,11 +248,11 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     type: zipkin
-                    config:
+                    conf:
                       url: http://zipkin.local:9411/v2/spans
                   - name: zipkin-us
                     type: zipkin
-                    config:
+                    conf:
                       url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -266,7 +266,7 @@ var _ = Describe("Mesh", func() {
                   - name: zipkin-us
                     sampling: 100.1
                     type: zipkin
-                    config:
+                    conf:
                       url: http://zipkin-us.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -279,7 +279,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     type: zipkin
-                    config:
+                    conf:
                       url: ""`,
 				expected: `
                 violations:
@@ -292,7 +292,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     type: zipkin
-                    config:
+                    conf:
                       url: invalid-url`,
 				expected: `
                 violations:
@@ -305,7 +305,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     type: zipkin
-                    config:
+                    conf:
                       url: http://zipkin-us.local/v2/spans`,
 				expected: `
                 violations:
@@ -318,7 +318,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     type: zipkin
-                    config:
+                    conf:
                       url: http://zipkin-us.local:9411/v2/spans
                       apiVersion: invalid`,
 				expected: `
@@ -333,7 +333,7 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: zipkin-us
                     type: zipkin
-                    config:
+                    conf:
                       url: http://zipkin.local:9411/v2/spans`,
 				expected: `
                 violations:
@@ -397,11 +397,11 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name:
                     type: file
-                    config:
+                    conf:
                       path: /path
                   - name: tcp-1
                     type: file
-                    config:
+                    conf:
                       address: invalid-address
                   - name: tcp-1
                     type: tcp

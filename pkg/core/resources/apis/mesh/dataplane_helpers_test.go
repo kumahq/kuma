@@ -300,7 +300,7 @@ var _ = Describe("Dataplane", func() {
 				dataplaneSpec: `
                 metrics:
                   type: prometheus
-                  config:
+                  conf:
                     port: 8765
                     path: /even-more-non-standard-path
 `,
@@ -316,7 +316,7 @@ var _ = Describe("Dataplane", func() {
                   backends:
                   - name: prometheus-1
                     type: prometheus
-                    config:
+                    conf:
                       port: 1234
                       path: /non-standard-path
 `,
@@ -328,7 +328,7 @@ var _ = Describe("Dataplane", func() {
 				dataplaneSpec: `
                 metrics:
                   type: prometheus
-                  config:
+                  conf:
                     port: 8765
                     path: /even-more-non-standard-path
 `,
@@ -345,7 +345,7 @@ var _ = Describe("Dataplane", func() {
                   backends:
                   - name: prometheus-1
                     type: prometheus
-                    config:
+                    conf:
                       port: 1234
                       path: /non-standard-path
 `,
@@ -360,7 +360,7 @@ var _ = Describe("Dataplane", func() {
 				dataplaneSpec: `
                 metrics:
                   type: prometheus
-                  config:
+                  conf:
                     port: 8765
                     path: /even-more-non-standard-path
 `,
@@ -371,7 +371,7 @@ var _ = Describe("Dataplane", func() {
                   backends:
                   - name: prometheus-1
                     type: prometheus
-                    config:
+                    conf:
                       port: 1234
                       path: /non-standard-path
 `,

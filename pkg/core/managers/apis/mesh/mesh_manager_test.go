@@ -141,7 +141,7 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 5670
                           path: /metrics
 `,
@@ -342,7 +342,7 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
 `,
@@ -352,7 +352,7 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
 `,
@@ -364,7 +364,7 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
 `,
@@ -374,7 +374,7 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
 `,
@@ -384,7 +384,7 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
 `,

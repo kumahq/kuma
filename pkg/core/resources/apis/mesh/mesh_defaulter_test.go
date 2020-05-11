@@ -51,7 +51,7 @@ var _ = Describe("MeshResource", func() {
                   backends:
                   - name: prometheus-1
                     type: prometheus
-                    config:
+                    conf:
                       port: 5670
                       path: /metrics
 `,
@@ -63,7 +63,7 @@ var _ = Describe("MeshResource", func() {
                   backends:
                   - name: prometheus-1
                     type: prometheus
-                    config:
+                    conf:
                       path: /non-standard-path
 `,
 				expected: `
@@ -72,7 +72,7 @@ var _ = Describe("MeshResource", func() {
                   backends:
                   - name: prometheus-1
                     type: prometheus
-                    config:
+                    conf:
                       port: 5670
                       path: /non-standard-path
 `,
@@ -84,7 +84,7 @@ var _ = Describe("MeshResource", func() {
                   backends:
                   - name: prometheus-1
                     type: prometheus
-                    config:
+                    conf:
                       port: 1234
 `,
 				expected: `
@@ -93,7 +93,7 @@ var _ = Describe("MeshResource", func() {
                   backends:
                   - name: prometheus-1
                     type: prometheus
-                    config:
+                    conf:
                       port: 1234
                       path: /metrics
 `,

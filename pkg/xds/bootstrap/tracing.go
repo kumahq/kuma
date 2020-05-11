@@ -21,7 +21,7 @@ import (
 
 func AddTracingConfig(bootstrap *envoy_bootstrap.Bootstrap, backend *mesh_proto.TracingBackend) error {
 	if backend.GetType() == mesh_proto.TracingZipkinType {
-		cluster, tracingCfg, err := zipkinConfig(bootstrap, backend.Config, backend.Name)
+		cluster, tracingCfg, err := zipkinConfig(bootstrap, backend.Conf, backend.Name)
 		if err != nil {
 			return err
 		}

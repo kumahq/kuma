@@ -68,7 +68,7 @@ message CertificateAuthorityBackend {
   DpCert dpCert = 3;
 
   // Configuration of the backend
-  google.protobuf.Struct config = 4;
+  google.protobuf.Struct conf = 4;
 }
 
 // Tracing defines tracing configuration of the mesh.
@@ -96,7 +96,7 @@ message TracingBackend {
   string type = 3;
 
   // Configuration of the backend
-  google.protobuf.Struct config = 4;
+  google.protobuf.Struct conf = 4;
 }
 
 message ZipkinTracingBackendConfig {
@@ -136,7 +136,7 @@ message LoggingBackend {
   string type = 3;
 
   // Configuration of the backend
-  google.protobuf.Struct config = 4;
+  google.protobuf.Struct conf = 4;
 }
 
 // FileLoggingBackendConfig defines configuration for file based access logs

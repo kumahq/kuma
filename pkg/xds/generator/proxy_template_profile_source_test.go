@@ -198,7 +198,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               backends:
               - name: prometheus-1
                 type: prometheus
-                config:
+                conf:
                   port: 1234
                   path: /non-standard-path
 `,
@@ -232,7 +232,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               backends:
               - name: prometheus-1
                 type: prometheus
-                config:
+                conf:
                   port: 1234
                   path: /non-standard-path
 `,
@@ -268,7 +268,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               backends:
               - name: prometheus-1
                 type: prometheus
-                config:
+                conf:
                   port: 80
                   path: /non-standard-path
 `,
@@ -301,7 +301,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               backends:
               - name: prometheus-1
                 type: prometheus
-                config:
+                conf:
                   port: 80
                   path: /non-standard-path
 `,
@@ -336,7 +336,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               backends:
               - name: prometheus-1
                 type: prometheus
-                config:
+                conf:
                   port: 8080
                   path: /non-standard-path
 `,
@@ -369,7 +369,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               backends:
               - name: prometheus-1
                 type: prometheus
-                config:
+                conf:
                   port: 8080
                   path: /non-standard-path
 `,
@@ -404,7 +404,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               backends:
               - name: prometheus-1
                 type: prometheus
-                config:
+                conf:
                   port: 54321
                   path: /non-standard-path
 `,
@@ -437,7 +437,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               backends:
               - name: prometheus-1
                 type: prometheus
-                config:
+                conf:
                   port: 59200
                   path: /non-standard-path
 `,

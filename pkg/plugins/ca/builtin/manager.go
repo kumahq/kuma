@@ -47,7 +47,7 @@ func (b *builtinCaManager) Ensure(ctx context.Context, mesh string, backend mesh
 func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error {
 	verr := core_validators.ValidationError{}
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
-	if err := util_proto.ToTyped(backend.Config, cfg); err != nil {
+	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
 		verr.AddViolation("", "could not convert backend config: "+err.Error())
 		return verr.OrNil()
 	}
@@ -56,7 +56,7 @@ func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, bac
 
 func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error {
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
-	if err := util_proto.ToTyped(backend.Config, cfg); err != nil {
+	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
 		return errors.Wrap(err, "could not convert backend config to BuiltinCertificateAuthorityConfig")
 	}
 

@@ -90,7 +90,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			backend := mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
-				Config: proto.MustToStruct(&config.BuiltinCertificateAuthorityConfig{
+				Conf: proto.MustToStruct(&config.BuiltinCertificateAuthorityConfig{
 					CaCert: &config.BuiltinCertificateAuthorityConfig_CaCert{
 						RSAbits: &wrappers.UInt32Value{
 							Value: uint32(2048),
