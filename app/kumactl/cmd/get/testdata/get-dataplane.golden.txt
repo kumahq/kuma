@@ -1,2 +1,2 @@
-MESH      NAME          TAGS
-default   dataplane-1   service=metrics,mobile version=v1
+MESH      NAME          TAGS                                AGE
+default   dataplane-1   service=metrics,mobile version=v1   292y

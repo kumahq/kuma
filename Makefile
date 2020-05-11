@@ -12,7 +12,7 @@
 		print/kubebuilder/test_assets \
 		run/kuma-dp
 
-PKG_LIST := ./... ./api/... ./pkg/plugins/resources/k8s/native/...
+PKG_LIST := ./...
 
 BUILD_INFO_GIT_TAG ?= $(shell git describe --tags 2>/dev/null || echo unknown)
 BUILD_INFO_GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
@@ -29,9 +29,10 @@ build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/Kong/
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags)"
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
-GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(LD_FLAGS)
+GOFLAGS := -mod=mod
+GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(GOFLAGS) $(LD_FLAGS)
 GO_RUN := CGO_ENABLED=0 go run $(LD_FLAGS)
-GO_TEST := go test $(LD_FLAGS)
+GO_TEST := go test $(GOFLAGS) $(LD_FLAGS)
 
 BUILD_DIR ?= build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
@@ -103,14 +104,14 @@ else
 endif
 
 PROTOC_VERSION := 3.6.1
-PROTOC_PGV_VERSION := v0.3.0-java
+PROTOC_PGV_VERSION := v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 GOLANG_PROTOBUF_VERSION := v1.3.2
 GOLANGCI_LINT_VERSION := v1.21.0
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0
-CI_MINIKUBE_VERSION ?= v1.4.0
-CI_KUBECTL_VERSION ?= v1.14.0
-CI_TOOLS_IMAGE ?= circleci/golang:1.12.12
+CI_MINIKUBE_VERSION ?= v1.9.2
+CI_KUBECTL_VERSION ?= v1.18.0
+CI_TOOLS_IMAGE ?= circleci/golang:1.14.2
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -213,7 +214,7 @@ generate/gui: ## Generate go files with GUI static files to embed it into binary
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
 fmt/go: ## Dev: Run go fmt
-	go fmt ./...
+	go fmt $(GOFLAGS) ./...
 	@# apparently, it's not possible to simply use `go fmt ./pkg/plugins/resources/k8s/native/...`
 	make fmt -C pkg/plugins/resources/k8s/native
 
@@ -221,7 +222,7 @@ fmt/proto: ## Dev: Run clang-format on .proto files
 	which $(CLANG_FORMAT_PATH) && find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT_PATH) -i || true
 
 vet: ## Dev: Run go vet
-	go vet ./...
+	go vet $(GOFLAGS) ./...
 	@# for consistency with `fmt`
 	make vet -C pkg/plugins/resources/k8s/native
 
@@ -235,24 +236,45 @@ check: generate fmt vet docs golangci-lint imports ## Dev: Run code checks (go f
 	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
-test: ## Dev: Run tests
+test: ${COVERAGE_PROFILE} test/api test/k8s test/kuma coverage ## Dev: Run tests for all modules
+
+${COVERAGE_PROFILE}:
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
+
+coverage: ${COVERAGE_PROFILE}
+	GOFLAGS='${GOFLAGS}' go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
+
+test/kuma: # Dev: Run tests for the module github.com/Kong/kuma
 	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
-	go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
+
+test/api: \
+	MODULE=./api \
+	COVERAGE_PROFILE=../$(BUILD_COVERAGE_DIR)/coverage-api.out
+test/api: test/module
+
+test/k8s: \
+	MODULE=./pkg/plugins/resources/k8s/native \
+	COVERAGE_PROFILE=../../../../../$(BUILD_COVERAGE_DIR)/coverage-k8s.out
+test/k8s: test/module
+
+test/module:
+	GO_TEST='${GO_TEST}' GO_TEST_OPTS='${GO_TEST_OPTS}' COVERAGE_PROFILE='${COVERAGE_PROFILE}' make test -C ${MODULE}
 
 test/kuma-cp: PKG_LIST=./app/kuma-cp/... ./pkg/config/app/kuma-cp/...
-test/kuma-cp: test ## Dev: Run `kuma-cp` tests only
+test/kuma-cp: test/kuma ## Dev: Run `kuma-cp` tests only
 
 test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
-test/kuma-dp: test ## Dev: Run `kuma-dp` tests only
+test/kuma-dp: test/kuma ## Dev: Run `kuma-dp` tests only
 
 test/kumactl: PKG_LIST=./app/kumactl/... ./pkg/config/app/kumactl/...
-test/kumactl: test ## Dev: Run `kumactl` tests only
+test/kumactl: test/kuma ## Dev: Run `kumactl` tests only
 
-integration: ## Dev: Run integration tests
+${COVERAGE_INTEGRATION_PROFILE}:
 	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
+
+integration: ${COVERAGE_INTEGRATION_PROFILE} ## Dev: Run integration tests
 	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
-	go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
+	GOFLAGS='${GOFLAGS}' go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
 build: build/kuma-cp build/kuma-dp build/kumactl build/kuma-prometheus-sd ## Dev: Build all binaries
 

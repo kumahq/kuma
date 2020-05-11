@@ -373,7 +373,9 @@ func init() {
 	proto.RegisterType((*ProxyTemplateRawResource)(nil), "kuma.mesh.v1alpha1.ProxyTemplateRawResource")
 }
 
-func init() { proto.RegisterFile("mesh/v1alpha1/proxy_template.proto", fileDescriptor_129e53d675ac14f4) }
+func init() {
+	proto.RegisterFile("mesh/v1alpha1/proxy_template.proto", fileDescriptor_129e53d675ac14f4)
+}
 
 var fileDescriptor_129e53d675ac14f4 = []byte{
 	// 392 bytes of a gzipped FileDescriptorProto

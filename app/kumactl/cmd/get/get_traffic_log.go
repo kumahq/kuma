@@ -40,7 +40,7 @@ func newGetTrafficLogCmd(pctx *getContext) *cobra.Command {
 			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficLogs(trafficLogs, cmd.OutOrStdout())
+				return printTrafficLogs(pctx.Now(), trafficLogs, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

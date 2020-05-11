@@ -24,9 +24,13 @@ export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
 all: manager
 
+GO_TEST ?= go test
+GO_TEST_OPTS ?=
+COVERAGE_PROFILE ?= cover.out
+
 # Run tests
 test: generate fmt vet manifests
-	go test ./api/... ./controllers/... -coverprofile cover.out
+	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./api/... ./controllers/...
 
 # Build manager binary
 manager: generate fmt vet
@@ -84,7 +88,7 @@ docker-push:
 # download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0
 CONTROLLER_GEN=$(GOPATH_BIN_DIR)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)

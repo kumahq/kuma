@@ -3,11 +3,11 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-  - &go_version "1.12.12"
+  - &go_version "1.14.2"
 
   docker_images:
-  - &golang_image "golang:1.12.12"
-  - &circleci_golang_image "circleci/golang:1.12"
+  - &golang_image "golang:1.14.2"
+  - &circleci_golang_image "circleci/golang:1.14.2"
 
   vm_images:
   - &ubuntu_vm_image "ubuntu-1604:201903-01"
@@ -444,6 +444,11 @@ jobs:
         name: Install Kubectl
         command: make dev/install/kubectl
     - run:
+        name: Install Conntrack # need for minikube on Ubuntu with --vm-driver=non
+        command: |
+          sudo apt-get update
+          sudo apt-get install -y conntrack
+    - run:
         name: Start Minikube
         command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none --kubernetes-version=<< parameters.kubernetes_version >>
     - when:
@@ -602,6 +607,13 @@ workflows:
         # custom parameters
         kubernetes_version: v1.17.0
         use_local_kuma_images: true
+    - example_minikube:
+        name: minikube_v1_18_2
+        requires:
+          - images
+        # custom parameters
+        kubernetes_version: v1.18.2
+        use_local_kuma_images: true
 
   kuma-release:
     jobs:
@@ -680,5 +692,14 @@ workflows:
         - release
         # custom parameters
         kubernetes_version: v1.17.0
+        # docker images for a release build must be downloaded from a public Docker registry
+        use_local_kuma_images: false
+    - example_minikube:
+        <<: *release_workflow_filters
+        name: minikube_v1_18_2
+        requires:
+          - release
+        # custom parameters
+        kubernetes_version: v1.18.2
         # docker images for a release build must be downloaded from a public Docker registry
         use_local_kuma_images: false

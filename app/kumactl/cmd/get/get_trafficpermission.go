@@ -40,7 +40,7 @@ func newGetTrafficPermissionCmd(pctx *getContext) *cobra.Command {
 			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficPermissions(trafficPermissions, cmd.OutOrStdout())
+				return printTrafficPermissions(pctx.Now(), trafficPermissions, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

@@ -40,7 +40,7 @@ func newGetProxyTemplateCmd(pctx *getContext) *cobra.Command {
 			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printProxyTemplates(proxyTemplates, cmd.OutOrStdout())
+				return printProxyTemplates(pctx.Now(), proxyTemplates, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

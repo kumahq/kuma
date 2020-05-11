@@ -3,6 +3,7 @@ package get
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ func newGetDataplanesCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printDataplanes(&dataplanes, cmd.OutOrStdout())
+				return printDataplanes(pctx.Now(), &dataplanes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -46,9 +47,9 @@ func newGetDataplanesCmd(pctx *listContext) *cobra.Command {
 	return cmd
 }
 
-func printDataplanes(dataplanes *mesh.DataplaneResourceList, out io.Writer) error {
+func printDataplanes(rootTime time.Time, dataplanes *mesh.DataplaneResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "TAGS"},
+		Headers: []string{"MESH", "NAME", "TAGS", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -59,9 +60,11 @@ func printDataplanes(dataplanes *mesh.DataplaneResourceList, out io.Writer) erro
 				dataplane := dataplanes.Items[i]
 
 				return []string{
-					dataplane.Meta.GetMesh(),       // MESH
-					dataplane.Meta.GetName(),       // NAME,
-					dataplane.Spec.Tags().String(), // TAGS
+					dataplane.Meta.GetMesh(),                                        // MESH
+					dataplane.Meta.GetName(),                                        // NAME,
+					dataplane.Spec.Tags().String(),                                  // TAGS
+					table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
+
 				}
 			}
 		}(),

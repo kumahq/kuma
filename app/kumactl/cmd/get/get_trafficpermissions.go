@@ -3,6 +3,7 @@ package get
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 
@@ -34,7 +35,7 @@ func newGetTrafficPermissionsCmd(pctx *listContext) *cobra.Command {
 
 			switch format := output.Format(pctx.getContext.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficPermissions(&trafficPermissions, cmd.OutOrStdout())
+				return printTrafficPermissions(pctx.Now(), &trafficPermissions, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -47,9 +48,9 @@ func newGetTrafficPermissionsCmd(pctx *listContext) *cobra.Command {
 	return cmd
 }
 
-func printTrafficPermissions(trafficPermissions *mesh.TrafficPermissionResourceList, out io.Writer) error {
+func printTrafficPermissions(rootTime time.Time, trafficPermissions *mesh.TrafficPermissionResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME"},
+		Headers: []string{"MESH", "NAME", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -60,8 +61,9 @@ func printTrafficPermissions(trafficPermissions *mesh.TrafficPermissionResourceL
 				trafficPermission := trafficPermissions.Items[i]
 
 				return []string{
-					trafficPermission.GetMeta().GetMesh(), // MESH
-					trafficPermission.GetMeta().GetName(), // NAME
+					trafficPermission.GetMeta().GetMesh(),                                        // MESH
+					trafficPermission.GetMeta().GetName(),                                        // NAME
+					table.TimeSince(trafficPermission.GetMeta().GetModificationTime(), rootTime), //AGE
 				}
 			}
 		}(),
