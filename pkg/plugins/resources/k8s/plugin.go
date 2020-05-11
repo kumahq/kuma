@@ -25,7 +25,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.
 	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, errors.Wrap(err, "could not add to scheme")
 	}
-	return NewStore(mgr.GetClient())
+	return NewStore(mgr.GetClient(), mgr.GetScheme())
 }
 
 func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {

@@ -7,6 +7,7 @@ import (
 	test_store "github.com/Kong/kuma/pkg/test/store"
 )
 
-var _ = Describe("MemoryStore", func() {
+var _ = Describe("MemoryStore template", func() {
 	test_store.ExecuteStoreTests(memory.NewStore)
+	test_store.ExecuteOwnerTests(memory.NewStore)
 })

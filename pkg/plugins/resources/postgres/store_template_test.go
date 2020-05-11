@@ -15,8 +15,7 @@ import (
 	test_store "github.com/Kong/kuma/pkg/test/store"
 )
 
-var _ = Describe("postgresResourceStore", func() {
-
+var _ = Describe("PostgresStore template", func() {
 	createStore := func() store.ResourceStore {
 		cfg := postgres.PostgresStoreConfig{}
 		err := config.Load("", &cfg)
@@ -36,6 +35,7 @@ var _ = Describe("postgresResourceStore", func() {
 	}
 
 	test_store.ExecuteStoreTests(createStore)
+	test_store.ExecuteOwnerTests(createStore)
 })
 
 func createRandomDb(cfg postgres.PostgresStoreConfig) (string, error) {
