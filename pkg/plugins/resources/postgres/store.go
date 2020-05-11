@@ -110,6 +110,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	opts := store.NewUpdateOptions(fs...)
 
 	version, err := strconv.Atoi(resource.GetMeta().GetVersion())
+	newVersion := version + 1
 	if err != nil {
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
@@ -117,7 +118,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	result, err := r.db.Exec(
 		statement,
 		string(bytes),
-		version+1,
+		newVersion,
 		opts.ModificationTime,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
@@ -133,9 +134,10 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 
 	// update resource's meta with new version
 	resource.SetMeta(&resourceMetaObject{
-		Name:    resource.GetMeta().GetName(),
-		Mesh:    resource.GetMeta().GetMesh(),
-		Version: strconv.Itoa(version),
+		Name:             resource.GetMeta().GetName(),
+		Mesh:             resource.GetMeta().GetMesh(),
+		Version:          strconv.Itoa(newVersion),
+		ModificationTime: opts.ModificationTime,
 	})
 
 	return nil

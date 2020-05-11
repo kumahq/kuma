@@ -146,6 +146,8 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 
 	// persist
 	c.records[idx] = record
+
+	r.SetMeta(meta)
 	return nil
 }
 func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {

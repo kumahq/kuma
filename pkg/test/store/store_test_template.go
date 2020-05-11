@@ -117,6 +117,7 @@ func ExecuteStoreTests(
 			name := "to-be-updated.demo"
 			resource := createResource(name)
 			modificationTime := time.Now().Add(time.Second)
+			versionBeforeUpdate := resource.Meta.GetVersion()
 
 			// when
 			resource.Spec.Path = "new-path"
@@ -124,6 +125,12 @@ func ExecuteStoreTests(
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+
+			// and meta is updated (version and modification time)
+			Expect(resource.Meta.GetVersion()).ToNot(Equal(versionBeforeUpdate))
+			if reflect.TypeOf(createStore()) != reflect.TypeOf(&resources_k8s.KubernetesStore{}) {
+				Expect(resource.Meta.GetModificationTime().Round(time.Millisecond).Nanosecond() / 1e6).To(Equal(modificationTime.Round(time.Millisecond).Nanosecond() / 1e6))
+			}
 
 			// when retrieve the resource
 			res := sample_model.TrafficRouteResource{}
