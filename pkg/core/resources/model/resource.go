@@ -85,7 +85,6 @@ type ResourceList interface {
 	NewItem() Resource
 	AddItem(Resource) error
 	GetPagination() *Pagination
-	SetPagination(Pagination)
 }
 
 type Pagination struct {
@@ -99,6 +98,14 @@ func (p *Pagination) GetTotal() uint32 {
 
 func (p *Pagination) SetTotal(total uint32) {
 	p.Total = total
+}
+
+func (p *Pagination) GetNextOffset() string {
+	return p.NextOffset
+}
+
+func (p *Pagination) SetNextOffset(nextOffset string) {
+	p.NextOffset = nextOffset
 }
 
 func ErrorInvalidItemType(expected, actual interface{}) error {

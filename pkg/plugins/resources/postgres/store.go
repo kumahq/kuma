@@ -245,9 +245,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		if items > opts.PageSize { // set new offset only if there is next page
 			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
-		resources.SetPagination(model.Pagination{
-			NextOffset: nextOffset,
-		})
+		resources.GetPagination().SetNextOffset(nextOffset)
 	}
 
 	total, err := r.countRows(string(resources.GetItemType()), opts.Mesh)

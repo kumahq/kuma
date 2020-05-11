@@ -78,9 +78,6 @@ func (l *HealthCheckResourceList) AddItem(r model.Resource) error {
 func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
-func (l *HealthCheckResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
-}
 
 func init() {
 	registry.RegisterType(&HealthCheckResource{})

@@ -72,9 +72,6 @@ func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
-func (l *ProxyTemplateResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
-}
 
 func init() {
 	registry.RegisterType(&ProxyTemplateResource{})

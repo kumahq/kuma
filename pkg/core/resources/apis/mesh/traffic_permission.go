@@ -72,9 +72,6 @@ func (l *TrafficPermissionResourceList) AddItem(r model.Resource) error {
 func (l *TrafficPermissionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
-func (l *TrafficPermissionResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
-}
 
 func (t *TrafficPermissionResource) Sources() []*mesh_proto.Selector {
 	return t.Spec.GetSources()

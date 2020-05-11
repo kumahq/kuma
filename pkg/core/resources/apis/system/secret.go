@@ -75,9 +75,6 @@ func (l *SecretResourceList) AddItem(r model.Resource) error {
 func (l *SecretResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
-func (l *SecretResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
-}
 
 func init() {
 	registry.RegisterType(&SecretResource{})

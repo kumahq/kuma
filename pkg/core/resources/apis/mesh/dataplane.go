@@ -73,9 +73,6 @@ func (l *DataplaneResourceList) AddItem(r model.Resource) error {
 func (l *DataplaneResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
-func (l *DataplaneResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
-}
 
 func init() {
 	registry.RegisterType(&DataplaneResource{})

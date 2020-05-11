@@ -72,9 +72,6 @@ func (l *TrafficLogResourceList) AddItem(r model.Resource) error {
 func (l *TrafficLogResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
-func (l *TrafficLogResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
-}
 
 func init() {
 	registry.RegisterType(&TrafficLogResource{})

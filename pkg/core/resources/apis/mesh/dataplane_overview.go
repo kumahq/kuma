@@ -84,10 +84,6 @@ func (l *DataplaneOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-func (l *DataplaneOverviewResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
-}
-
 func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneInsightResourceList) DataplaneOverviewResourceList {
 	insightsByKey := map[model.ResourceKey]*DataplaneInsightResource{}
 	for _, insight := range insights.Items {

@@ -82,10 +82,6 @@ func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-func (l *FaultInjectionResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
-}
-
 func init() {
 	registry.RegisterType(&FaultInjectionResource{})
 	registry.RegistryListType(&FaultInjectionResourceList{})

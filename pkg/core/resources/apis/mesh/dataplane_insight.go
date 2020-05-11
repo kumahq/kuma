@@ -78,10 +78,6 @@ func (l *DataplaneInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-func (l *DataplaneInsightResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
-}
-
 func init() {
 	registry.RegisterType(&DataplaneInsightResource{})
 	registry.RegistryListType(&DataplaneInsightResourceList{})
