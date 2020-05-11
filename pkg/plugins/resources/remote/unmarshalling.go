@@ -62,7 +62,6 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 	if err := json.Unmarshal(b, rsr); err != nil {
 		return err
 	}
-	rs.GetPagination().SetTotal(rsr.ResourceList.Total)
 	for _, ri := range rsr.ResourceList.Items {
 		r := rs.NewItem()
 		if err := r.SetSpec(ri.Spec); err != nil {
@@ -91,5 +90,6 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 			})
 		}
 	}
+	rs.GetPagination().SetTotal(rsr.ResourceList.Total)
 	return nil
 }
