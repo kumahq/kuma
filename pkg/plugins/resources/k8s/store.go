@@ -161,7 +161,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
 
-	total, err := s.countK8sResources(ctx, rs)
+	total, err := s.countK8sResources(ctx, rs, opts.Mesh)
 	if err != nil {
 		return err
 	}
@@ -170,18 +170,22 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	return nil
 }
 
-func (s *KubernetesStore) countK8sResources(ctx context.Context, rs core_model.ResourceList) (int, error) {
+func (s *KubernetesStore) countK8sResources(ctx context.Context, rs core_model.ResourceList, mesh string) (int, error) {
 	obj, err := s.Converter.ToKubernetesList(rs)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
 	}
 
-	var kubeOpts kube_client.ListOptions
-	if err := s.Client.List(ctx, obj, &kubeOpts); err != nil {
+	if err := s.Client.List(ctx, obj, &kube_client.ListOptions{}); err != nil {
 		return 0, errors.Wrap(err, "failed to list k8s resources")
 	}
 
-	return len(obj.GetItems()), nil
+	total := 0
+	if total, err = s.Converter.CountMeshItems(obj, rs.NewItem(), mesh); err != nil {
+		return 0, errors.Wrap(err, "failed to convert k8s model into core counterpart")
+	}
+
+	return total, nil
 }
 
 func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, error) {
@@ -254,6 +258,7 @@ type Converter interface {
 	ToKubernetesList(core_model.ResourceList) (k8s_model.KubernetesList, error)
 	ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error
 	ToCoreList(obj k8s_model.KubernetesList, out core_model.ResourceList, predicate ConverterPredicate) error
+	CountMeshItems(obj k8s_model.KubernetesList, out core_model.Resource, mesh string) (int, error)
 }
 
 func DefaultConverter() Converter {
@@ -312,4 +317,22 @@ func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model
 	}
 	out.GetPagination().SetNextOffset(in.GetContinue())
 	return nil
+}
+
+func (c *SimpleConverter) CountMeshItems(in k8s_model.KubernetesList, out core_model.Resource, mesh string) (int, error) {
+	if mesh == "" {
+		return len(in.GetItems()), nil
+	}
+
+	total := 0
+	for _, o := range in.GetItems() {
+		if err := c.ToCoreResource(o, out); err != nil {
+			return 0, err
+		}
+
+		if out.GetMeta().GetMesh() == mesh {
+			total++
+		}
+	}
+	return total, nil
 }
