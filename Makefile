@@ -31,7 +31,7 @@ GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 GOFLAGS := -mod=mod
 GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(GOFLAGS) $(LD_FLAGS)
-GO_RUN := CGO_ENABLED=0 go run $(LD_FLAGS)
+GO_RUN := CGO_ENABLED=0 go run $(GOFLAGS) $(LD_FLAGS)
 GO_TEST := go test $(GOFLAGS) $(LD_FLAGS)
 
 BUILD_DIR ?= build
@@ -106,7 +106,7 @@ endif
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 GOLANG_PROTOBUF_VERSION := v1.3.2
-GOLANGCI_LINT_VERSION := v1.21.0
+GOLANGCI_LINT_VERSION := v1.26.0
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0
 CI_MINIKUBE_VERSION ?= v1.9.2
@@ -226,13 +226,23 @@ vet: ## Dev: Run go vet
 	@# for consistency with `fmt`
 	make vet -C pkg/plugins/resources/k8s/native
 
+.PHONY: tidy
+tidy:
+	@TOP=$(shell pwd) && \
+	for m in . ./api/ ./pkg/plugins/resources/k8s/native; do \
+		cd $$m ; \
+		rm go.sum ; \
+		go mod tidy ; \
+		cd $$TOP; \
+	done
+
 golangci-lint: ## Dev: Runs golangci-lint linter
 	$(GOLANGCI_LINT_DIR)/golangci-lint run -v
 
 imports: ## Dev: Runs goimports in order to organize imports
 	goimports -w -local github.com/Kong/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendor/*'`
 
-check: generate fmt vet docs golangci-lint imports ## Dev: Run code checks (go fmt, go vet, ...)
+check: generate fmt vet docs golangci-lint imports tidy ## Dev: Run code checks (go fmt, go vet, ...)
 	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 

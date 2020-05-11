@@ -149,7 +149,6 @@ func requireClientCerts(certsDir string) (*tls.Config, error) {
 		ClientCAs:  clientCertPool,
 		ClientAuth: tls.RequireAndVerifyClientCert,
 	}
-	tlsConfig.BuildNameToCertificate()
 	return tlsConfig, nil
 }
 
