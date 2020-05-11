@@ -1,7 +1,7 @@
 package test
 
 import (
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 )
 
-type NewlineReporter = envtest.NewlineReporter
+type NewlineReporter = printer.NewlineReporter
