@@ -22,8 +22,6 @@ resources:
         socketAddress:
           address: 0.0.0.0
           portValue: 1234
-      deprecatedV1:
-        bindToPort: false
       filterChains:
         - filters:
             - name: envoy.http_connection_manager
