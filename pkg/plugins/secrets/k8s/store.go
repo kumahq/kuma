@@ -120,6 +120,9 @@ func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.SecretResourc
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
 	if r.GetMeta().GetMesh() != opts.Mesh {
+		if err := r.SetSpec(&system_proto.Secret{}); err != nil {
+			return err
+		}
 		return core_store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
 	}
 	return nil

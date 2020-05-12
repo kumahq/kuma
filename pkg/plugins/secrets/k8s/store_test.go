@@ -379,6 +379,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// then
 			Expect(err).To(MatchError(store.ErrorResourceNotFound(core_system.SecretType, name, "another-mesh")))
+			Expect(actual.Spec.GetData().GetValue()).To(BeEmpty())
 		})
 	})
 
