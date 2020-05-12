@@ -1,12 +1,38 @@
 # CHANGELOG
 
 ## master
-* feat(kumactl) added age column for get commands and updated `inspect dataplanes` lastConnected and lastUpdated to the new format. 
+
+## [0.5.0]
+
+> Released on 2020/05/12
+
+Changes:
+
+* feat: configure expiration and rsa bits of the CA
+  [#730](https://github.com/Kong/kuma/pull/730)
+* feat: provide `total` field when listing resources in the HTTP API
+  [#723](https://github.com/Kong/kuma/pull/723)
+* fix: turn off transparent proxy for prometheus scraping
+  [#733](https://github.com/Kong/kuma/pull/733)  
+* feat: dataplane certificate rotation
+  [#721](https://github.com/Kong/kuma/pull/721)
+  [#722](https://github.com/Kong/kuma/pull/722)
+  [#739](https://github.com/Kong/kuma/pull/739)
+* сhore: update k8s to 1.18
+  [#720](https://github.com/Kong/kuma/pull/720)
+* chore: update go up to 1.14.2
+  [#718](https://github.com/Kong/kuma/pull/718)
+* feat: added age column for get commands and updated `inspect dataplanes` lastConnected and lastUpdated to the new format. 
   [#702](https://github.com/Kong/kuma/pull/702)
-* feat(kuma-cp) friendly response in K8s mode
-  [#712](https://github.com/Kong/kuma/pull/712)
+  👍contributed by @tharun208
+* chore: upgrade Envoy up to v1.14.1
+  [#705](https://github.com/Kong/kuma/pull/705)
+* feat: friendly response in K8s mode
+  [#712](https://github.com/Kong/kuma/pull/712)  
 * chore: upgrade go-control-plane up to v0.9.5
   [#707](https://github.com/Kong/kuma/pull/707)
+* fix: change the config to kuma-cp.conf.yml
+  [#716](https://github.com/Kong/kuma/pull/716)
 * fix: kuma-cp migrate help text
   [#713](https://github.com/Kong/kuma/pull/713)
   👍contributed by @tharun208
@@ -22,51 +48,74 @@
   [#696](https://github.com/Kong/kuma/pull/696)
 * feat: include traffic direction in access log
   [#682](https://github.com/Kong/kuma/pull/682)
+  👍contributed by @tharun208
 * feat: validate tags and selectors
   [#691](https://github.com/Kong/kuma/pull/691) 
 * feat: refactor CA to plugins
   [#694](https://github.com/Kong/kuma/pull/694)
 * feat: expose CreationTime and modificationTime
   [#677](https://github.com/Kong/kuma/pull/677)
-* feat: pagination in kumactl
-  [#690](https://github.com/Kong/kuma/pull/690)
+  👍contributed by @tharun208
 * feat: secret management API
   [#684](https://github.com/Kong/kuma/pull/684)
+  [#735](https://github.com/Kong/kuma/pull/735)
+* docs: adopting CNCF code of conduct
+  [#692](https://github.com/Kong/kuma/pull/692)
+* chore: updating to version 1.1.17
+  [#688](https://github.com/Kong/kuma/pull/688)
+* feat: CNI plugin for openshift support
+  [#681](https://github.com/Kong/kuma/pull/681)
+  [#689](https://github.com/Kong/kuma/pull/689)
+* chore: removing tcp-echo
+  [#671](https://github.com/Kong/kuma/pull/671)
+* feat: pagination in the API and kumactl
+  [#673](https://github.com/Kong/kuma/pull/673)
+  [#690](https://github.com/Kong/kuma/pull/690)
 * chore: unify matching for TrafficPermission
   [#668](https://github.com/Kong/kuma/pull/668)
   ⚠️ warning: breaking change of matching mechanism
-* feat kuma-dp and kumactl can communiate with kuma-cp over https
-  [#633](https://github.com/Kong/kuma/pull/633)
 * fix: reduce Prometheus scrape_interval to work with Kong Prometheus plugin 
   [#674](https://github.com/Kong/kuma/pull/674)
-* feat(kuma-cp) envoy configs for fault injections
-  [#649](https://github.com/Kong/kuma/pull/649)
-* feat: endpoints for fetching resources from all meshes 
-  [#657](https://github.com/Kong/kuma/pull/657)
+* feat: added `kumactl get` command for individual resources
+  [#667](https://github.com/Kong/kuma/pull/667)
+  👍contributed by @tharun208
+* feat: kuma-dp and kumactl can communiate with kuma-cp over https
+  [#633](https://github.com/Kong/kuma/pull/633)
+  👍contributed by @sudeeptoroy
+* docs: introducing open-governance to the project
+  [#659](https://github.com/Kong/kuma/pull/659)
 * feat: added logging and tracing information for meshes
   [#665](https://github.com/Kong/kuma/pull/665)
+  👍contributed by @tharun208
+* feat: endpoints for fetching resources from all meshes 
+  [#657](https://github.com/Kong/kuma/pull/657)
+* feature: validate `<port>.service.kuma.io/protocol` annotations on K8S Service objects
+  [#611](https://github.com/Kong/kuma/pull/611)
 * feature: filter gateway dataplanes through api and through `kumactl inspect dataplanes --gateway`
   [#654](https://github.com/Kong/kuma/pull/654)
+  👍contributed by @tharun208
 * fix: added shorthand command name for mesh in kumactl
   [#664](https://github.com/Kong/kuma/pull/664)
-* fix: make Envoy 1.13.1 work on Kind
-  [#660](https://github.com/Kong/kuma/pull/660)
+  👍contributed by @tharun208
 * feat: added a new `kumactl install tracing` CLI command
   [#655](https://github.com/Kong/kuma/pull/655)
-* chore: replace deprected field ORIGINAL_DST_LB to CLUSTER_PROVIDED 
-  [#656](https://github.com/Kong/kuma/pull/656)
-* chore: upgrade Envoy to 1.13.1 
-  [#653](https://github.com/Kong/kuma/pull/653)
-* chore: migrate deprecated Envoy config to support newest version of Envoy 
-  [#652](https://github.com/Kong/kuma/pull/652)
 * chore: prevent dataplane creation with a headless services and provide more descriptive error message on pod converter error
   [#651](https://github.com/Kong/kuma/pull/651)
+* chore: migrate deprecated Envoy config to support newest version of Envoy 
+  [#652](https://github.com/Kong/kuma/pull/652)
+* chore: replace deprected field ORIGINAL_DST_LB to CLUSTER_PROVIDED 
+  [#656](https://github.com/Kong/kuma/pull/656)
+  👍contributed by @Lynskylate
 * feat: save service's tags to header for L7-traffic
   [#647](https://github.com/Kong/kuma/pull/647/files)
 * chore: the API root `/` now returns the hostname
   [#645](https://github.com/Kong/kuma/pull/645) 
-* feat: FaultInjection entity, support in API and `kumactl` 
+* feat: FaultInjection policy
   [#643](https://github.com/Kong/kuma/pull/643)
+  [#649](https://github.com/Kong/kuma/pull/649)
+  [#734](https://github.com/Kong/kuma/pull/734)
+* feat: add response flag to default format
+  [#635](https://github.com/Kong/kuma/pull/635)
 * chore: merge mTLS and CA status into one column
   [#637](https://github.com/Kong/kuma/pull/637)
 * fix: `kumactl apply -v ...` support dots in variables name
@@ -79,61 +128,13 @@
   [#630](https://github.com/Kong/kuma/pull/630)
 * feature: added flag `--dry-run` for `kumactl apply`
   [#622](https://github.com/Kong/kuma/pull/622)
-* feature: validate `<port>.service.kuma.io/protocol` annotations on K8S Service objects
-  [#611](https://github.com/Kong/kuma/pull/611)
-* feat: added `kumactl get` command for individual resources
-  [#667](https://github.com/Kong/kuma/pull/667)
+* feat: add the mesh to the access logs - http and network 
+  [#620](https://github.com/Kong/kuma/pull/620)
+  👍contributed by @pradeepmurugesan
 
 Breaking changes:
-* ⚠ Mesh can now have multiple CAs of the same type. Also it can use CA loaded as a plugins. Mesh format changed from
-```yaml
-type: Mesh
-name: default
-mtls:
-  enabled: true
-  ca:
-    builtin: {}
-metrics:
-  prometheus: {}
-logging:
-  backends:
-  - name: file-1
-    file:
-      path: /var/log/access.log
-tracing:
-  backends:
-  - name: zipkin-1
-    zipkin:
-      url: http://zipkin.local:9411/api/v1/spans
-```
-to
-```yaml
-type: Mesh
-name: default
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-metrics:
-  enabledBackend: prom-1
-  backends:
-  - name: prom-1
-    type: prometheus
-logging:
-  backends:
-  - name: file-1
-    type: file
-    config:
-      path: /var/log/access.log
-tracing:
-  backends:
-  - name: zipkin-1
-    type: zipkin
-    config:
-      url: http://zipkin.local:9411/api/v1/spans
+* ⚠ Mesh can now have multiple CAs of the same type. Also it can use CA loaded as a plugins. For migration details, please refer to [UPGRADE.md](UPGRADE.md)
 
-```
 * ⚠️ before the change TrafficPermission worked in cumulative way, which means that all policies that matched a connection were applied.
   We changed TrafficPermission to work like every other policy so only "the most specific" matching policy is chosen.
   Consult [docs](https://kuma.io/docs/0.4.0/policies/how-kuma-chooses-the-right-policy-to-apply/) to learn more how Kuma picks the right policy.
