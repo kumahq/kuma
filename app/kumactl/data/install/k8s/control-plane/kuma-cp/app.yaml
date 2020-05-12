@@ -210,7 +210,6 @@ webhooks:
         - trafficpermissions
         - trafficroutes
         - traffictraces
-        - dataplanes
         - healthchecks
         - proxytemplates
 - name: kuma-injector.kuma.io
