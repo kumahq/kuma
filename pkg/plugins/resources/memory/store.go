@@ -210,8 +210,7 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		}
 	}
 
-	i := offset
-	for ; i < offset+pageSize && i < len(records); i++ {
+	for i := offset; i < offset+pageSize && i < len(records); i++ {
 		r := rs.NewItem()
 		if err := c.unmarshalRecord(records[i], r); err != nil {
 			return err

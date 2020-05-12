@@ -602,6 +602,7 @@ var _ = Describe("KubernetesStore", func() {
 `, ns, "three"))
 			backend.Create(three)
 
+			By("listing resources from default mesh")
 			// given
 			trl := &sample_core.TrafficRouteResourceList{}
 
@@ -635,6 +636,8 @@ var _ = Describe("KubernetesStore", func() {
 				"k8s.kuma.io/namespace": ns,
 				"k8s.kuma.io/name":      "two",
 			}))
+
+			By("listing resources from demo mesh")
 
 			// given
 			trl = &sample_core.TrafficRouteResourceList{}
