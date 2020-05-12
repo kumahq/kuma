@@ -130,7 +130,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "kind": "DataplaneInsight",
               "mesh": "default",
               "metadata": {
-                "namespace": "example",
+                "namespace": "default",
 				"name": "dp-1",
 				"creationTimestamp": null
               }
@@ -142,7 +142,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 		dp := &mesh_k8s.Dataplane{
 			ObjectMeta: kube_meta.ObjectMeta{
 				Name:      "dp-1",
-				Namespace: "example",
+				Namespace: "default",
 			},
 			Mesh: "default",
 		}
