@@ -13,6 +13,9 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
+// StreamID represents a stream opened by XDS
+type StreamID = int64
+
 type ProxyId struct {
 	Mesh string
 	Name string
