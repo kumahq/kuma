@@ -19,6 +19,11 @@ import (
 	"github.com/Kong/kuma/pkg/cmd/version"
 	"github.com/Kong/kuma/pkg/core"
 	kuma_log "github.com/Kong/kuma/pkg/log"
+	kuma_version "github.com/Kong/kuma/pkg/version"
+)
+
+var (
+	kumactlLog = core.Log.WithName("kumactl")
 )
 
 // newRootCmd represents the base command when called without any subcommands.
@@ -31,6 +36,10 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Management tool for Kuma",
 		Long:  `Management tool for Kuma.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			kumaCpInfo, err := root.Version()
+			if err != nil {
+				kumactlLog.Error(err, "Unable to get index client")
+			}
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
 				return err
@@ -40,7 +49,9 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			// once command line flags have been parsed,
 			// avoid printing usage instructions
 			cmd.SilenceUsage = true
-
+			if kumaCpInfo.Version != "" && kumaCpInfo.Version != kuma_version.Build.Version {
+				kumactlLog.Info("Warning: Your kumactl version is " + kuma_version.Build.Version + " which is not the same as " + kumaCpInfo.Version + " for CP. Update your kumactl.")
+			}
 			if root.IsFirstTimeUsage() {
 				root.Runtime.Config = kumactl_config.DefaultConfiguration()
 				if err := root.SaveConfig(); err != nil {

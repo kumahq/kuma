@@ -11,6 +11,7 @@ import (
 	"github.com/Kong/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/Kong/kuma/app/kumactl/pkg/resources"
 	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
+	"github.com/Kong/kuma/pkg/api-server/types"
 	"github.com/Kong/kuma/pkg/catalog"
 	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -33,6 +34,7 @@ type RootRuntime struct {
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string, *kumactl_config.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error)
 	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
+	NewAPIServerClient         func(string) (kumactl_resources.ApiServerClient, error)
 }
 
 type RootContext struct {
@@ -49,6 +51,7 @@ func DefaultRootContext() *RootContext {
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 			NewCatalogClient:           catalog_client.NewCatalogClient,
+			NewAPIServerClient:         kumactl_resources.NewApiServerClient,
 		},
 	}
 }
@@ -240,4 +243,16 @@ func (rc *RootContext) cpOnTheSameMachine() (bool, error) {
 
 func (rc *RootContext) IsFirstTimeUsage() bool {
 	return rc.Args.ConfigFile == "" && !util_files.FileExists(config.DefaultConfigFile)
+}
+
+func (rc *RootContext) Version() (types.IndexResponse, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return types.IndexResponse{}, err
+	}
+	client, err := rc.Runtime.NewAPIServerClient(controlPlane.Coordinates.ApiServer.Url)
+	if err != nil {
+		return types.IndexResponse{}, errors.Wrap(err, "could not create components client")
+	}
+	return client.GetVersion()
 }
