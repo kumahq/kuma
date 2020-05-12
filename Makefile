@@ -428,6 +428,16 @@ docker/save/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}
 
 docker/load: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-init docker/load/kuma-prometheus-sd
 
+${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar: docker/save/kuma-cp
+
+${BUILD_DOCKER_IMAGES_DIR}/kuma-dp.tar: docker/save/kuma-dp
+
+${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar: docker/save/kumactl
+
+${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar: docker/save/kuma-init
+
+${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar: docker/save/kuma-prometheus-sd
+
 docker/load/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
 	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
 
