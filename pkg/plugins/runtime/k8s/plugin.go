@@ -155,5 +155,4 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) {
 		Scheme:       mgr.GetScheme(),
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
-
 }
