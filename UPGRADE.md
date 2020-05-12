@@ -8,9 +8,127 @@ does not have any particular instructions.
 
 ## Upgrade to `0.5.0`
 ### Suggested Upgrade Path on Kubernetes
+
+#### Mesh resource format changes
+
+The Mesh resource format in Kubernetes changed from
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  mtls:
+    enabled: true
+    ca:
+      builtin: {}
+  metrics:
+    prometheus: {}
+  logging:
+    backends:
+    - name: file-1
+      file:
+        path: /var/log/access.log
+  tracing:
+    backends:
+    - name: zipkin-1
+      zipkin:
+        url: http://zipkin.local:9411/api/v1/spans
+```
+to
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  mtls:
+    enabledBackend: ca-1
+    backends:
+    - name: ca-1
+      type: builtin
+  metrics:
+    enabledBackend: prom-1
+    backends:
+    - name: prom-1
+      type: prometheus
+  logging:
+    backends:
+    - name: file-1
+      type: file
+      conf:
+        path: /var/log/access.log
+  tracing:
+    backends:
+    - name: zipkin-1
+      type: zipkin
+      conf:
+        url: http://zipkin.local:9411/api/v1/spans
+```
+
+#### Removing `kuma-injector`
+
+Kuma 0.5.0 ships with `kuma-injector` embedded into the `kuma-cp`, which makes its previously created resources obsolete and potentially
+ can cause problems with the deployments. Before deploying the new version, it is strongly advised to run a cleanup script [kuma-0.5.0-k8s-remove_injector_resources.sh](tools/migrations/0.5.0/kuma-0.5.0-k8s-remove_injector_resources.sh).
+ 
+ NOTE: if Kuma was deployed in a namespace other than `kuma-system`, please run `export KUMA_SYSTEM=<othernamespace` before running the cleanup script.
+
+#### Kuma resources `ownerReferences` 
 Kuma 0.5.0 introduce webhook for setting `ownerReferences` to the Kuma resources. If you have some 
-Kuma resources in your k8s cluster, then you can use our script [kuma-0.5.0-k8s-migration.sh](https://gist.github.com/lobkovilya/f4b9b2c384c705d53a70bb5a828b7419#file-kuma-0-5-0-k8s-migration-sh) 
+Kuma resources in your k8s cluster, then you can use our script [kuma-0.5.0-k8s-set_owner_references.sh](tools/migrations/0.5.0/kuma-0.5.0-k8s-set_owner_references.sh) 
 in order to properly set `ownerReferences` .
+
+### Suggested Upgrade Path on Universal
+
+#### Mesh resource format changes
+Mesh format on Universal changed from
+```yaml
+type: Mesh
+name: default
+mtls:
+  enabled: true
+  ca:
+    builtin: {}
+metrics:
+  prometheus: {}
+logging:
+  backends:
+  - name: file-1
+    file:
+      path: /var/log/access.log
+tracing:
+  backends:
+  - name: zipkin-1
+    zipkin:
+      url: http://zipkin.local:9411/api/v1/spans
+```
+to
+```yaml
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+metrics:
+  enabledBackend: prom-1
+  backends:
+  - name: prom-1
+    type: prometheus
+logging:
+  backends:
+  - name: file-1
+    type: file
+    conf:
+      path: /var/log/access.log
+tracing:
+  backends:
+  - name: zipkin-1
+    type: zipkin
+    conf:
+      url: http://zipkin.local:9411/api/v1/spans
+```
 
 ## Upgrade to `0.4.0`
 
