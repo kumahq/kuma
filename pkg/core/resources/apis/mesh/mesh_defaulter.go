@@ -12,7 +12,7 @@ func (mesh *MeshResource) Default() error {
 	for idx, backend := range mesh.Spec.GetMetrics().GetBackends() {
 		if backend.GetType() == mesh_proto.MetricsPrometheusType {
 			cfg := mesh_proto.PrometheusMetricsBackendConfig{}
-			if err := proto.ToTyped(backend.GetConfig(), &cfg); err != nil {
+			if err := proto.ToTyped(backend.GetConf(), &cfg); err != nil {
 				return errors.Wrap(err, "could not convert the backend")
 			}
 
@@ -27,7 +27,7 @@ func (mesh *MeshResource) Default() error {
 			if err != nil {
 				return errors.Wrap(err, "could not convert the backend")
 			}
-			mesh.Spec.Metrics.Backends[idx].Config = &str
+			mesh.Spec.Metrics.Backends[idx].Conf = &str
 		}
 	}
 	return nil

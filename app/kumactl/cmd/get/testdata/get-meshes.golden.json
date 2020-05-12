@@ -8,7 +8,7 @@
           {
             "name": "prometheus-1",
             "type": "prometheus",
-            "config": {
+            "conf": {
               "port": 1234,
               "path": "/non-standard-path"
             }
@@ -16,7 +16,7 @@
           {
             "name": "prometheus-2",
             "type": "prometheus",
-            "config": {
+            "conf": {
               "port": 1235,
               "path": "/non-standard-path"
             }
@@ -28,14 +28,14 @@
           {
             "name": "zipkin-us",
             "type": "zipkin",
-            "config": {
+            "conf": {
               "url": "http://zipkin.us:8080/v1/spans"
             }
           },
           {
             "name": "zipkin-eu",
             "type": "zipkin",
-            "config": {
+            "conf": {
               "url": "http://zipkin.eu:8080/v1/spans"
             }
           }
@@ -46,14 +46,14 @@
           {
             "name": "logstash",
             "type": "tcp",
-            "config": {
+            "conf": {
               "address": "127.0.0.1:5000"
             }
           },
           {
             "name": "file",
             "type": "file",
-            "config": {
+            "conf": {
               "path": "/tmp/service.log"
             }
           }

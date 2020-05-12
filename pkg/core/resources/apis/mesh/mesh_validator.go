@@ -70,9 +70,9 @@ func validateLoggingBackend(backend *mesh_proto.LoggingBackend) validators.Valid
 	}
 	switch backend.GetType() {
 	case mesh_proto.LoggingFileType:
-		verr.AddError("config", validateLoggingFile(backend.Config))
+		verr.AddError("config", validateLoggingFile(backend.Conf))
 	case mesh_proto.LoggingTcpType:
-		verr.AddError("config", validateLoggingTcp(backend.Config))
+		verr.AddError("config", validateLoggingTcp(backend.Conf))
 	default:
 		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q, %q", mesh_proto.LoggingTcpType, mesh_proto.LoggingFileType))
 	}
@@ -139,7 +139,7 @@ func validateTracingBackend(backend *mesh_proto.TracingBackend) validators.Valid
 		verr.AddViolation("sampling", "has to be in [0.0 - 100.0] range")
 	}
 	if backend.GetType() == mesh_proto.TracingZipkinType {
-		verr.AddError("config", validateZipkin(backend.Config))
+		verr.AddError("config", validateZipkin(backend.Conf))
 	}
 	return verr
 }

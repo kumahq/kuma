@@ -156,14 +156,14 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					"api-http": &mesh_proto.LoggingBackend{
 						Name: "file",
 						Type: mesh_proto.LoggingFileType,
-						Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+						Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 							Path: "/var/log",
 						}),
 					},
 					"api-tcp": &mesh_proto.LoggingBackend{
 						Name: "elk",
 						Type: mesh_proto.LoggingTcpType,
-						Config: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+						Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
 							Address: "logstash:1234",
 						}),
 					},

@@ -144,7 +144,7 @@ var _ = Describe("Resource Endpoints", func() {
 							{
 								Name: "zipkin-us",
 								Type: v1alpha1.TracingZipkinType,
-								Config: util_proto.MustToStruct(&v1alpha1.ZipkinTracingBackendConfig{
+								Conf: util_proto.MustToStruct(&v1alpha1.ZipkinTracingBackendConfig{
 									Url: "http://zipkin-us:9090/v2/spans",
 								}),
 							},

@@ -59,9 +59,9 @@ func convertLoggingBackend(mesh string, trafficDirection string, sourceService s
 
 	switch backend.GetType() {
 	case mesh_proto.LoggingFileType:
-		return fileAccessLog(format, backend.Config)
+		return fileAccessLog(format, backend.Conf)
 	case mesh_proto.LoggingTcpType:
-		return tcpAccessLog(format, backend.Config)
+		return tcpAccessLog(format, backend.Conf)
 	default: // should be caught by validator
 		return nil, errors.Errorf("could not convert LoggingBackend of type %T to AccessLog", backend.GetType())
 	}

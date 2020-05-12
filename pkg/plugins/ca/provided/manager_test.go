@@ -56,9 +56,9 @@ var _ = Describe("Provided CA", func() {
 
 				// when
 				verr := caManager.ValidateBackend(context.Background(), "default", mesh_proto.CertificateAuthorityBackend{
-					Name:   "provided-1",
-					Type:   "provided",
-					Config: &str,
+					Name: "provided-1",
+					Type: "provided",
+					Conf: &str,
 				})
 
 				// then
@@ -146,9 +146,9 @@ var _ = Describe("Provided CA", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		backendWithTestCerts = mesh_proto.CertificateAuthorityBackend{
-			Name:   "provided-1",
-			Type:   "provided",
-			Config: &str,
+			Name: "provided-1",
+			Type: "provided",
+			Conf: &str,
 			DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
 				Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
 					Expiration: &duration.Duration{
@@ -174,9 +174,9 @@ var _ = Describe("Provided CA", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		backendWithInvalidCerts = mesh_proto.CertificateAuthorityBackend{
-			Name:   "provided-2",
-			Type:   "provided",
-			Config: &invalidStr,
+			Name: "provided-2",
+			Type: "provided",
+			Conf: &invalidStr,
 		}
 	})
 
