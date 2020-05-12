@@ -68,7 +68,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                       safeRegexMatch:
                         googleRe2: 
                           maxProgramSize: 500
-                        regex: '&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*'
+                        regex: '.*&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*'
                 - name: envoy.router
                 statPrefix: stats`,
 		}),
@@ -114,7 +114,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                       safeRegexMatch:
                         googleRe2: 
                           maxProgramSize: 500
-                        regex: '(&tag1=[^&]*value1m1[,&].*&tag2=[^&]*value2m1[,&].*|&tag1=[^&]*value1m2[,&].*&tag2=[^&]*value2m2[,&].*)'
+                        regex: '(.*&tag1=[^&]*value1m1[,&].*&tag2=[^&]*value2m1[,&].*|.*&tag1=[^&]*value1m2[,&].*&tag2=[^&]*value2m2[,&].*)'
                 - name: envoy.router
                 statPrefix: stats`,
 		}),

@@ -55,7 +55,7 @@ resources:
                           safeRegexMatch:
                             googleRe2:
                               maxProgramSize: 500
-                            regex: '&service=[^&]*frontend[,&].*'
+                            regex: '.*&service=[^&]*frontend[,&].*'
                   - name: envoy.router
                 routeConfig:
                   name: inbound:backend1

@@ -21,6 +21,7 @@ func MatchingRegex(tags mesh_proto.SingleValueTagSet) (re string) {
 		expr := keyIsEqual + value + `.*`
 		re += expr
 	}
+	re = `.*` + re
 	return
 }
 
