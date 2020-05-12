@@ -15,22 +15,20 @@ import (
 func newAuthCallbacks(authenticator sds_auth.Authenticator) envoy_server.Callbacks {
 	return &authCallbacks{
 		authenticator: authenticator,
-		contexts:      map[int64]context.Context{},
+		contexts:      map[core_xds.StreamID]context.Context{},
 	}
 }
-
-type streamID = int64
 
 // authCallback checks if the DiscoveryRequest is authorized, ie. if it has a valid Dataplane Token/Service Account Token.
 type authCallbacks struct {
 	sync.RWMutex
 	authenticator sds_auth.Authenticator
-	contexts      map[streamID]context.Context
+	contexts      map[core_xds.StreamID]context.Context
 }
 
 var _ envoy_server.Callbacks = &authCallbacks{}
 
-func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID streamID, s string) error {
+func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, s string) error {
 	a.Lock()
 	defer a.Unlock()
 
@@ -38,10 +36,10 @@ func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID streamID, s s
 	return nil
 }
 
-func (a *authCallbacks) OnStreamClosed(streamID int64) {
+func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 }
 
-func (a *authCallbacks) OnStreamRequest(streamID streamID, req *envoy_api.DiscoveryRequest) error {
+func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req *envoy_api.DiscoveryRequest) error {
 	credential, err := a.credential(streamID)
 	if err != nil {
 		return err
@@ -49,7 +47,7 @@ func (a *authCallbacks) OnStreamRequest(streamID streamID, req *envoy_api.Discov
 	return a.authenticate(credential, req)
 }
 
-func (a *authCallbacks) credential(streamID streamID) (sds_auth.Credential, error) {
+func (a *authCallbacks) credential(streamID core_xds.StreamID) (sds_auth.Credential, error) {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -77,7 +75,7 @@ func (a *authCallbacks) authenticate(credential sds_auth.Credential, req *envoy_
 	return nil
 }
 
-func (a *authCallbacks) OnStreamResponse(streamID, *envoy_api.DiscoveryRequest, *envoy_api.DiscoveryResponse) {
+func (a *authCallbacks) OnStreamResponse(core_xds.StreamID, *envoy_api.DiscoveryRequest, *envoy_api.DiscoveryResponse) {
 }
 
 func (a *authCallbacks) OnFetchRequest(ctx context.Context, request *envoy_api.DiscoveryRequest) error {

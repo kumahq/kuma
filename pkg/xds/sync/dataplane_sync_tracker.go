@@ -17,12 +17,12 @@ var (
 	dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")
 )
 
-type NewDataplaneWatchdogFunc func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog
+type NewDataplaneWatchdogFunc func(dataplaneId core_model.ResourceKey, streamId core_xds.StreamID) util_watchdog.Watchdog
 
 func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) envoy_xds.Callbacks {
 	return &dataplaneSyncTracker{
 		newDataplaneWatchdog: factoryFunc,
-		streamsAssociation:   make(map[int64]core_model.ResourceKey),
+		streamsAssociation:   make(map[core_xds.StreamID]core_model.ResourceKey),
 		dpStreams:            make(map[core_model.ResourceKey]streams),
 	}
 }
@@ -31,7 +31,7 @@ var _ envoy_xds.Callbacks = &dataplaneSyncTracker{}
 
 type streams struct {
 	watchdogCancel context.CancelFunc
-	activeStreams  map[int64]bool
+	activeStreams  map[core_xds.StreamID]bool
 }
 
 // dataplaneSyncTracker tracks XDS streams that are connected to the CP and fire up a watchdog.
@@ -44,18 +44,18 @@ type dataplaneSyncTracker struct {
 	newDataplaneWatchdog NewDataplaneWatchdogFunc
 
 	stdsync.RWMutex    // protects access to the fields below
-	streamsAssociation map[int64]core_model.ResourceKey
+	streamsAssociation map[core_xds.StreamID]core_model.ResourceKey
 	dpStreams          map[core_model.ResourceKey]streams
 }
 
 // OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (t *dataplaneSyncTracker) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
+func (t *dataplaneSyncTracker) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, typ string) error {
 	return nil
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (t *dataplaneSyncTracker) OnStreamClosed(streamID int64) {
+func (t *dataplaneSyncTracker) OnStreamClosed(streamID core_xds.StreamID) {
 	t.Lock()
 	defer t.Unlock()
 
@@ -76,7 +76,7 @@ func (t *dataplaneSyncTracker) OnStreamClosed(streamID int64) {
 
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (t *dataplaneSyncTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequest) error {
+func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req *envoy.DiscoveryRequest) error {
 	t.RLock()
 	_, alreadyAssociated := t.streamsAssociation[streamID]
 	t.RUnlock()
@@ -91,7 +91,7 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID int64, req *envoy.Discov
 		defer t.Unlock()
 		streams := t.dpStreams[dataplaneKey]
 		if streams.activeStreams == nil {
-			streams.activeStreams = map[int64]bool{}
+			streams.activeStreams = map[core_xds.StreamID]bool{}
 		}
 		streams.activeStreams[streamID] = true
 		if streams.watchdogCancel == nil { // watchdog was not started yet
@@ -113,7 +113,7 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID int64, req *envoy.Discov
 }
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
-func (t *dataplaneSyncTracker) OnStreamResponse(streamID int64, req *envoy.DiscoveryRequest, resp *envoy.DiscoveryResponse) {
+func (t *dataplaneSyncTracker) OnStreamResponse(streamID core_xds.StreamID, req *envoy.DiscoveryRequest, resp *envoy.DiscoveryResponse) {
 }
 
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
