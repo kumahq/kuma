@@ -3,7 +3,6 @@ package sync_test
 import (
 	"context"
 	"sync/atomic"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -165,22 +164,25 @@ var _ = Describe("Sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then only one watchdog is active
-			time.Sleep(50 * time.Millisecond) // wait for goroutines
-			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(1)))
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&activeWatchdogs)
+			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when first stream is closed
 			tracker.OnStreamClosed(1)
 
 			// then watchdog is still active because other stream is opened
-			time.Sleep(50 * time.Millisecond) // wait for goroutines
-			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(1)))
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&activeWatchdogs)
+			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when other stream is closed
 			tracker.OnStreamClosed(2)
 
 			// then no watchdog is stopped
-			time.Sleep(50 * time.Millisecond) // wait for goroutines
-			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(0)))
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&activeWatchdogs)
+			}, "5s", "10ms").Should(Equal(int32(0)))
 		})
 	})
 })
