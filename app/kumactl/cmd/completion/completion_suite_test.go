@@ -1,4 +1,4 @@
-package server_test
+package completion_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestServer(t *testing.T) {
+func TestCompletionCmd(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "SDS Server Suite")
+	RunSpecs(t, "Completion Cmd Suite")
 }

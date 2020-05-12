@@ -12,6 +12,7 @@ import (
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
+	"github.com/Kong/kuma/pkg/plugins/ca/builtin"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
@@ -40,6 +41,8 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	rm := newResourceManager(builder)
 	builder.WithResourceManager(rm).
 		WithReadOnlyResourceManager(rm)
+
+	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.SecretManager()))
 
 	return builder
 }

@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
 	sds_config "github.com/Kong/kuma/pkg/config/sds"
 	"github.com/Kong/kuma/pkg/core"
@@ -22,7 +23,7 @@ var (
 )
 
 type grpcServer struct {
-	server Server
+	server envoy_server.Server
 	config sds_config.SdsServerConfig
 }
 

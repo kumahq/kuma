@@ -8,6 +8,7 @@ Usage:
 
 Available Commands:
   apply       Create or modify Kuma resources
+  completion  Output shell completion code for bash, fish or zsh
   config      Manage kumactl config
   delete      Delete Kuma resources
   generate    Generate resources, tokens, etc
