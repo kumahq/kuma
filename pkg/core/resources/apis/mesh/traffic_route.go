@@ -69,11 +69,8 @@ func (l *TrafficRouteResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*TrafficRouteResource)(nil), r)
 	}
 }
-func (l *TrafficRouteResourceList) GetPagination() model.Pagination {
-	return l.Pagination
-}
-func (l *TrafficRouteResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
+func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
 }
 
 func init() {

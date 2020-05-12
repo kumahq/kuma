@@ -72,11 +72,8 @@ func (l *SecretResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*SecretResource)(nil), r)
 	}
 }
-func (l *SecretResourceList) GetPagination() model.Pagination {
-	return l.Pagination
-}
-func (l *SecretResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
+func (l *SecretResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
 }
 
 func init() {

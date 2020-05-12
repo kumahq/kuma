@@ -25,6 +25,7 @@ type Resource struct {
 }
 
 type ResourceList struct {
+	Total uint32      `json:"total"`
 	Items []*Resource `json:"items"`
 	Next  *string     `json:"next"`
 }
@@ -80,6 +81,7 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 		return errors.Errorf("NewResource must not be nil")
 	}
 	type List struct {
+		Total uint32             `json:"total"`
 		Items []*json.RawMessage `json:"items"`
 		Next  *string            `json:"next"`
 	}
@@ -87,6 +89,7 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &list); err != nil {
 		return err
 	}
+	rec.ResourceList.Total = list.Total
 	rec.ResourceList.Items = make([]*Resource, len(list.Items))
 	for i, li := range list.Items {
 		b, err := json.Marshal(li)

@@ -223,10 +223,11 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		if offset+pageSize < len(records) { // set new offset only if we did not reach the end of the collection
 			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
-		rs.SetPagination(model.Pagination{
-			NextOffset: nextOffset,
-		})
+		rs.GetPagination().SetNextOffset(nextOffset)
 	}
+
+	rs.GetPagination().SetTotal(uint32(len(records)))
+
 	return nil
 }
 

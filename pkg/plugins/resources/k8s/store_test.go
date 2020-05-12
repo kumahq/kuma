@@ -557,6 +557,15 @@ var _ = Describe("KubernetesStore", func() {
 
 		It("should return a list of matching resource", func() {
 			// setup
+			demoMesh := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: kuma.io/v1alpha1
+            kind: Mesh
+            metadata:
+              name: %s
+`, "demo"))
+			backend.Create(demoMesh)
+
+			// and
 			one := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: sample.test.kuma.io/v1alpha1
             kind: SampleTrafficRoute
@@ -580,7 +589,20 @@ var _ = Describe("KubernetesStore", func() {
               path: /another
 `, ns, "two"))
 			backend.Create(two)
+			// and
+			three := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: sample.test.kuma.io/v1alpha1
+            kind: SampleTrafficRoute
+            mesh: demo
+            metadata:
+              namespace: %s
+              name: %s
+            spec:
+              path: /third
+`, ns, "three"))
+			backend.Create(three)
 
+			By("listing resources from default mesh")
 			// given
 			trl := &sample_core.TrafficRouteResourceList{}
 
@@ -589,6 +611,8 @@ var _ = Describe("KubernetesStore", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(trl.Pagination.Total).To(Equal(uint32(2)))
 			// and
 			Expect(trl.Items).To(HaveLen(2))
 
@@ -612,6 +636,42 @@ var _ = Describe("KubernetesStore", func() {
 				"k8s.kuma.io/namespace": ns,
 				"k8s.kuma.io/name":      "two",
 			}))
+
+			By("listing resources from demo mesh")
+
+			// given
+			trl = &sample_core.TrafficRouteResourceList{}
+
+			// when
+			err = s.List(context.Background(), trl, store.ListByMesh(name))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(trl.Pagination.Total).To(Equal(uint32(1)))
+			// and
+			Expect(trl.Items).To(HaveLen(1))
+
+			// when
+			actualResources = map[string]*sample_core.TrafficRouteResource{
+				trl.Items[0].Meta.GetName(): trl.Items[0],
+			}
+			// then
+			actualResourceThree := actualResources[fmt.Sprintf("three.%s", ns)]
+			Expect(actualResourceThree.Spec.Path).To(Equal("/third"))
+			Expect(actualResourceThree.Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
+				"k8s.kuma.io/namespace": ns,
+				"k8s.kuma.io/name":      "three",
+			}))
+
+			// when
+			err = s.Delete(context.Background(), &core_mesh.MeshResource{}, store.DeleteByKey("demo", "demo"))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			backend.AssertNotExists(&mesh_k8s.Mesh{}, ns, "demo")
+
 		})
 
 		It("should return a list of matching Meshes", func() {

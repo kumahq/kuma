@@ -286,6 +286,8 @@ func ExecuteStoreTests(
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
+			Expect(list.Pagination.Total).To(Equal(uint32(0)))
+			// and
 			Expect(list.Items).To(HaveLen(0))
 		})
 
@@ -301,6 +303,8 @@ func ExecuteStoreTests(
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(list.Pagination.Total).To(Equal(uint32(2)))
 			// and
 			Expect(list.Items).To(HaveLen(2))
 			// and
@@ -324,6 +328,8 @@ func ExecuteStoreTests(
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(list.Pagination.Total).To(Equal(uint32(0)))
 			// and
 			Expect(list.Items).To(HaveLen(0))
 		})
@@ -361,6 +367,7 @@ func ExecuteStoreTests(
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
+				Expect(list.Pagination.Total).To(Equal(uint32(numOfResources)))
 				Expect(list.Pagination.NextOffset).To(BeEmpty())
 				Expect(list.Items).To(HaveLen(1))
 				resourceNames[list.Items[0].GetMeta().GetName()] = true
@@ -381,6 +388,7 @@ func ExecuteStoreTests(
 				err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(5, ""))
 
 				// then
+				Expect(list.Pagination.Total).To(Equal(uint32(1)))
 				Expect(list.Items).To(HaveLen(1))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(list.Pagination.NextOffset).To(BeEmpty())
@@ -395,6 +403,7 @@ func ExecuteStoreTests(
 				err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(1, ""))
 
 				// then
+				Expect(list.Pagination.Total).To(Equal(uint32(1)))
 				Expect(list.Items).To(HaveLen(1))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(list.Pagination.NextOffset).To(BeEmpty())
@@ -406,6 +415,7 @@ func ExecuteStoreTests(
 				err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, ""))
 
 				// then
+				Expect(list.Pagination.Total).To(Equal(uint32(0)))
 				Expect(list.Items).To(BeEmpty())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(list.Pagination.NextOffset).To(BeEmpty())
@@ -417,6 +427,7 @@ func ExecuteStoreTests(
 				err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, "123invalidOffset"))
 
 				// then
+				Expect(list.Pagination.Total).To(Equal(uint32(0)))
 				Expect(err).To(Equal(store.ErrorInvalidOffset))
 			})
 		})

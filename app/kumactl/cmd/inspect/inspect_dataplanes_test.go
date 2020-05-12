@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Kong/kuma/pkg/core/resources/model"
+
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	"github.com/Kong/kuma/app/kumactl/pkg/resources"
 
@@ -29,6 +31,7 @@ import (
 type testDataplaneOverviewClient struct {
 	receivedTags    map[string]string
 	receivedGateway bool
+	total           uint32
 	overviews       []*mesh_core.DataplaneOverviewResource
 }
 
@@ -37,6 +40,9 @@ func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map
 	c.receivedGateway = gateway
 	return &mesh_core.DataplaneOverviewResourceList{
 		Items: c.overviews,
+		Pagination: model.Pagination{
+			Total: c.total,
+		},
 	}, nil
 }
 
@@ -166,6 +172,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 		BeforeEach(func() {
 			// setup
 			testClient = &testDataplaneOverviewClient{
+				total:     uint32(len(sampleDataplaneOverview)),
 				overviews: sampleDataplaneOverview,
 			}
 
