@@ -4,8 +4,12 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/duration"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core"
 	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -24,9 +28,18 @@ var _ = Describe("Builtin CA Manager", func() {
 	var secretManager secret_manager.SecretManager
 	var caManager core_ca.Manager
 
+	now := time.Now()
+
 	BeforeEach(func() {
+		core.Now = func() time.Time {
+			return now
+		}
 		secretManager = secret_manager.NewSecretManager(store.NewSecretStore(memory.NewStore()), cipher.None())
 		caManager = builtin.NewBuiltinCaManager(secretManager)
+	})
+
+	AfterEach(func() {
+		core.Now = time.Now
 	})
 
 	Context("Ensure", func() {
@@ -106,6 +119,13 @@ var _ = Describe("Builtin CA Manager", func() {
 			backend := mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
+				DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
+					Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
+						Expiration: &duration.Duration{
+							Seconds: 1,
+						},
+					},
+				},
 			}
 			err := caManager.Ensure(context.Background(), mesh, backend)
 			Expect(err).ToNot(HaveOccurred())
@@ -124,6 +144,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cert.URIs).To(HaveLen(1))
 			Expect(cert.URIs[0].String()).To(Equal("spiffe://default/web"))
+			Expect(cert.NotAfter).To(Equal(now.UTC().Truncate(time.Second).Add(1 * time.Second))) // time in cert is in UTC and truncated to seconds
 		})
 
 		It("should throw an error on generate dataplane certs on non-existing CA", func() {

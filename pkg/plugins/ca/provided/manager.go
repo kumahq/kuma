@@ -11,7 +11,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/datasource"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/plugins/ca/provided/config"
-	"github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 type providedCaManager struct {
@@ -30,7 +30,7 @@ func (p *providedCaManager) ValidateBackend(ctx context.Context, mesh string, ba
 	verr := validators.ValidationError{}
 
 	cfg := &config.ProvidedCertificateAuthorityConfig{}
-	if err := proto.ToTyped(backend.Config, cfg); err != nil {
+	if err := util_proto.ToTyped(backend.Config, cfg); err != nil {
 		verr.AddViolation("", "could not convert backend config: "+err.Error())
 		return verr.OrNil()
 	}
@@ -60,7 +60,7 @@ func (p *providedCaManager) ValidateBackend(ctx context.Context, mesh string, ba
 
 func (p *providedCaManager) getCa(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) (ca.KeyPair, error) {
 	cfg := &config.ProvidedCertificateAuthorityConfig{}
-	if err := proto.ToTyped(backend.Config, cfg); err != nil {
+	if err := util_proto.ToTyped(backend.Config, cfg); err != nil {
 		return ca.KeyPair{}, errors.Wrap(err, "could not convert backend config to ProvidedCertificateAuthorityConfig")
 	}
 	key, err := p.dataSourceLoader.Load(ctx, mesh, cfg.Key)
@@ -96,9 +96,14 @@ func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh stri
 		return ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
 	}
 
-	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, service)
+	var opts []ca_issuer.CertOptsFn
+	if backend.GetDpCert().GetRotation().GetExpiration() != nil {
+		duration := util_proto.ToDuration(*backend.GetDpCert().GetRotation().Expiration)
+		opts = append(opts, ca_issuer.WithExpirationTime(duration))
+	}
+	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, service, opts...)
 	if err != nil {
 		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for workload %q in Mesh %q using backend %q", service, mesh, backend.Name)
 	}
-	return *keyPair, nil // todo pointer?
+	return *keyPair, nil
 }

@@ -6,8 +6,10 @@ import (
 	"encoding/pem"
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/golang/protobuf/ptypes/duration"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -15,6 +17,7 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
+	"github.com/Kong/kuma/pkg/core"
 	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	"github.com/Kong/kuma/pkg/core/datasource"
 	"github.com/Kong/kuma/pkg/plugins/ca/provided"
@@ -25,8 +28,17 @@ import (
 var _ = Describe("Provided CA", func() {
 	var caManager core_ca.Manager
 
+	now := time.Now()
+
 	BeforeEach(func() {
+		core.Now = func() time.Time {
+			return now
+		}
 		caManager = provided.NewProvidedCaManager(datasource.NewDataSourceLoader(nil))
+	})
+
+	AfterEach(func() {
+		core.Now = time.Now
 	})
 
 	Context("ValidateBackend", func() {
@@ -137,6 +149,13 @@ var _ = Describe("Provided CA", func() {
 			Name:   "provided-1",
 			Type:   "provided",
 			Config: &str,
+			DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
+				Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
+					Expiration: &duration.Duration{
+						Seconds: 1,
+					},
+				},
+			},
 		}
 
 		invalidCfg := provided_config.ProvidedCertificateAuthorityConfig{
@@ -201,6 +220,7 @@ var _ = Describe("Provided CA", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cert.URIs).To(HaveLen(1))
 			Expect(cert.URIs[0].String()).To(Equal("spiffe://default/web"))
+			Expect(cert.NotAfter).To(Equal(now.UTC().Truncate(time.Second).Add(1 * time.Second))) // time in cert is in UTC and truncated to seconds
 		})
 
 		It("should throw an error on invalid certs", func() {
