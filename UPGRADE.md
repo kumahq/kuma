@@ -6,6 +6,12 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `0.5.0`
+### Suggested Upgrade Path on Kubernetes
+Kuma 0.5.0 introduce webhook for setting `ownerReferences` to the Kuma resources. If you have some 
+Kuma resources in your k8s cluster, then you can use our script [kuma-0.5.0-k8s-migration.sh](https://gist.github.com/lobkovilya/f4b9b2c384c705d53a70bb5a828b7419#file-kuma-0-5-0-k8s-migration-sh) 
+in order to properly set `ownerReferences` .
+
 ## Upgrade to `0.4.0`
 
 ### Suggested Upgrade Path on Kubernetes

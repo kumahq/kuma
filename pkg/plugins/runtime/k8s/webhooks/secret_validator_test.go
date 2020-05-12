@@ -3,63 +3,17 @@ package webhooks_test
 import (
 	"context"
 
-	"path/filepath"
-
 	"github.com/ghodss/yaml"
-
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
-
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("ServiceValidator", func() {
-
-	var decoder *kube_admission.Decoder
-	var testEnv *envtest.Environment
-	var k8sClient client.Client
-
-	BeforeSuite(func() {
-		// setup K8S with Kuma CRDs
-		testEnv = &envtest.Environment{
-			CRDDirectoryPaths: []string{
-				filepath.Join("..", "..", "..", "resources", "k8s", "native", "config", "crd", "bases"),
-			},
-		}
-		cfg, err := testEnv.Start()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(cfg).ToNot(BeNil())
-
-		scheme := kube_runtime.NewScheme()
-		Expect(kube_core.AddToScheme(scheme)).To(Succeed())
-		Expect(mesh_k8s.AddToScheme(scheme)).To(Succeed())
-
-		decoder, err = kube_admission.NewDecoder(scheme)
-		Expect(err).ToNot(HaveOccurred())
-
-		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(k8sClient).ToNot(BeNil())
-
-		// create default mesh
-		mesh := mesh_k8s.Mesh{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name: "default",
-			},
-		}
-		err = k8sClient.Create(context.Background(), &mesh)
-		Expect(err).ToNot(HaveOccurred())
-	})
 
 	type testCase struct {
 		request  string

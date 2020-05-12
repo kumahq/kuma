@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 )
@@ -49,23 +49,16 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 		return err
 	}
 	opts := store.NewCreateOptions(fs...)
-	if resource.GetType() != mesh.MeshType {
-		if err := r.ensureMeshExists(ctx, opts.Mesh); err != nil {
-			return err
+
+	var owner model.Resource
+	if resource.GetType() != core_mesh.MeshType {
+		owner = &core_mesh.MeshResource{}
+		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Mesh, opts.Mesh)); err != nil {
+			return MeshNotFound(opts.Mesh)
 		}
 	}
-	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(core.Now()))...)
-}
 
-func (r *resourcesManager) ensureMeshExists(ctx context.Context, meshName string) error {
-	list := mesh.MeshResourceList{}
-	if err := r.Store.List(ctx, &list, store.ListByMesh(meshName)); err != nil {
-		return err
-	}
-	if len(list.Items) != 1 {
-		return MeshNotFound(meshName)
-	}
-	return nil
+	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(core.Now()), store.CreateWithOwner(owner))...)
 }
 
 func (r *resourcesManager) Delete(ctx context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {

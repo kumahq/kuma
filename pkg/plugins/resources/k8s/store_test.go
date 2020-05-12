@@ -93,6 +93,7 @@ var _ = Describe("KubernetesStore", func() {
 					KubeTypes: kubeTypes,
 				},
 			},
+			Scheme: k8sClientScheme,
 		}
 		s = store.NewStrictResourceStore(ks)
 		ns = string(uuid.NewUUID())
@@ -208,6 +209,34 @@ var _ = Describe("KubernetesStore", func() {
 
 			// then
 			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(sample_core.TrafficRouteType, coreName, mesh)))
+		})
+
+		It("should set owner reference", func() {
+			// setup
+			mesh := core_mesh.MeshResource{}
+			err := s.Create(context.Background(), &mesh, store.CreateByKey("mesh", "mesh"))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Namespace: ns, Name: "mesh"}, &mesh_k8s.Mesh{})
+			Expect(err).ToNot(HaveOccurred())
+
+			tr := sample_core.TrafficRouteResource{
+				Spec: sample_proto.TrafficRoute{
+					Path: "/example",
+				},
+			}
+			// when
+			err = s.Create(context.Background(), &tr, store.CreateByKey(coreName, "mesh"), store.CreateWithOwner(&mesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			obj := sample_k8s.SampleTrafficRoute{}
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Namespace: ns, Name: name}, &obj)
+			Expect(err).ToNot(HaveOccurred())
+			owners := obj.GetOwnerReferences()
+			Expect(owners).To(HaveLen(1))
+			Expect(owners[0].Name).To(Equal("mesh"))
+			Expect(owners[0].Kind).To(Equal("Mesh"))
 		})
 	})
 

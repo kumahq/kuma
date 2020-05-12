@@ -81,9 +81,21 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 		return errors.Wrap(err, "failed to convert spec to json")
 	}
 
+	var ownerName *string
+	var ownerMesh *string
+	var ownerType *string
+
+	if opts.Owner != nil {
+		ptr := func(s string) *string { return &s }
+		ownerName = ptr(opts.Owner.GetMeta().GetName())
+		ownerMesh = ptr(opts.Owner.GetMeta().GetMesh())
+		ownerType = ptr(string(opts.Owner.GetType()))
+	}
+
 	version := 0
-	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
-	_, err = r.db.Exec(statement, opts.Name, "", opts.Mesh, resource.GetType(), version, string(bytes), opts.CreationTime, opts.CreationTime)
+	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
+	_, err = r.db.Exec(statement, opts.Name, opts.Mesh, resource.GetType(), version, string(bytes),
+		opts.CreationTime, opts.CreationTime, ownerName, ownerMesh, ownerType)
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Name, opts.Mesh)

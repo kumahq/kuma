@@ -14,6 +14,7 @@ const (
 
 type KubernetesObject interface {
 	runtime.Object
+	metav1.Object
 	GetObjectMeta() *metav1.ObjectMeta
 	SetObjectMeta(*metav1.ObjectMeta)
 	GetMesh() string
