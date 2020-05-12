@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
@@ -17,7 +18,9 @@ import (
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	"github.com/Kong/kuma/pkg/core/secrets/store"
 	"github.com/Kong/kuma/pkg/plugins/ca/builtin"
+	"github.com/Kong/kuma/pkg/plugins/ca/builtin/config"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	"github.com/Kong/kuma/pkg/util/proto"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -63,16 +66,56 @@ var _ = Describe("Builtin CA Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(secretRes.Spec.GetData().GetValue()).ToNot(BeEmpty())
 
-			secretRes = system.SecretResource{}
-			err = secretManager.Get(context.Background(), &secretRes, core_store.GetByKey("default.ca-builtin-key-builtin-1", "default"))
+			keyRes := system.SecretResource{}
+			err = secretManager.Get(context.Background(), &keyRes, core_store.GetByKey("default.ca-builtin-key-builtin-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(secretRes.Spec.GetData().GetValue()).ToNot(BeEmpty())
+			Expect(keyRes.Spec.GetData().GetValue()).ToNot(BeEmpty())
 
 			// when called Ensured after CA is already created
 			err = caManager.Ensure(context.Background(), mesh, backend)
 
 			// then no error happens
 			Expect(err).ToNot(HaveOccurred())
+
+			// and CA has default parameters
+			block, _ := pem.Decode(secretRes.Spec.Data.Value)
+			cert, err := x509.ParseCertificate(block.Bytes)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cert.NotAfter).To(Equal(core.Now().UTC().Add(10 * 365 * 24 * time.Hour).Truncate(time.Second)))
+		})
+
+		It("should create a configured CA", func() {
+			//given
+			mesh := "default"
+			backend := mesh_proto.CertificateAuthorityBackend{
+				Name: "builtin-1",
+				Type: "builtin",
+				Config: proto.MustToStruct(&config.BuiltinCertificateAuthorityConfig{
+					CaCert: &config.BuiltinCertificateAuthorityConfig_CaCert{
+						RSAbits: &wrappers.UInt32Value{
+							Value: uint32(2048),
+						},
+						Expiration: &duration.Duration{
+							Seconds: 10,
+						},
+					},
+				}),
+			}
+
+			// when
+			err := caManager.Ensure(context.Background(), mesh, backend)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and CA has configured parameters
+			secretRes := system.SecretResource{}
+			err = secretManager.Get(context.Background(), &secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
+			Expect(err).ToNot(HaveOccurred())
+			block, _ := pem.Decode(secretRes.Spec.Data.Value)
+			cert, err := x509.ParseCertificate(block.Bytes)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cert.NotAfter).To(Equal(core.Now().UTC().Add(10 * time.Second).Truncate(time.Second)))
 		})
 	})
 
