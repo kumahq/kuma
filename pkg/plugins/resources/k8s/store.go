@@ -180,9 +180,15 @@ func (s *KubernetesStore) countK8sResources(ctx context.Context, rs core_model.R
 		return 0, errors.Wrap(err, "failed to list k8s resources")
 	}
 
+	if mesh == "" {
+		return len(obj.GetItems()), nil
+	}
+
 	total := 0
-	if total, err = s.Converter.CountMeshItems(obj, rs.NewItem(), mesh); err != nil {
-		return 0, errors.Wrap(err, "failed to convert k8s model into core counterpart")
+	for _, item := range obj.GetItems() {
+		if item.GetMesh() == mesh {
+			total++
+		}
 	}
 
 	return total, nil
@@ -258,7 +264,6 @@ type Converter interface {
 	ToKubernetesList(core_model.ResourceList) (k8s_model.KubernetesList, error)
 	ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error
 	ToCoreList(obj k8s_model.KubernetesList, out core_model.ResourceList, predicate ConverterPredicate) error
-	CountMeshItems(obj k8s_model.KubernetesList, out core_model.Resource, mesh string) (int, error)
 }
 
 func DefaultConverter() Converter {
@@ -317,22 +322,4 @@ func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model
 	}
 	out.GetPagination().SetNextOffset(in.GetContinue())
 	return nil
-}
-
-func (c *SimpleConverter) CountMeshItems(in k8s_model.KubernetesList, out core_model.Resource, mesh string) (int, error) {
-	if mesh == "" {
-		return len(in.GetItems()), nil
-	}
-
-	total := 0
-	for _, o := range in.GetItems() {
-		if err := c.ToCoreResource(o, out); err != nil {
-			return 0, err
-		}
-
-		if out.GetMeta().GetMesh() == mesh {
-			total++
-		}
-	}
-	return total, nil
 }
