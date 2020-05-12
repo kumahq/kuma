@@ -85,8 +85,8 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "default",
               "metadata": {
                 "namespace": "example",
-				"name": "empty",
-				"creationTimestamp": null
+                "name": "empty",
+                "creationTimestamp": null
               }
             }`,
 			expectedPatch: `
@@ -115,8 +115,8 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "not-existing-mesh",
               "metadata": {
                 "namespace": "example",
-				"name": "empty",
-				"creationTimestamp": null
+                "name": "empty",
+                "creationTimestamp": null
               }
             }`,
 			expectedMessage: `meshes.kuma.io "not-existing-mesh" not found`,
@@ -131,8 +131,8 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "default",
               "metadata": {
                 "namespace": "default",
-				"name": "dp-1",
-				"creationTimestamp": null
+                "name": "dp-1",
+                "creationTimestamp": null
               }
             }`
 		dpInsight := &mesh_k8s.DataplaneInsight{}

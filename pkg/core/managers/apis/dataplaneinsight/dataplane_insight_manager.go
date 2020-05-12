@@ -2,6 +2,7 @@ package dataplaneinsight
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core"
 
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
@@ -37,5 +38,5 @@ func (m *dataplaneInsightManager) Create(ctx context.Context, resource core_mode
 	if err := m.store.Get(ctx, &dp, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
 		return err
 	}
-	return m.store.Create(ctx, resource, append(fs, core_store.CreateWithOwner(&dp))...)
+	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()), core_store.CreateWithOwner(&dp))...)
 }
