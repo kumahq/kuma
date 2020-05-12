@@ -60,9 +60,9 @@ func (t *dataplaneSyncTracker) OnStreamClosed(streamID core_xds.StreamID) {
 	defer t.Unlock()
 
 	dp, hasAssociation := t.streamsAssociation[streamID]
-	delete(t.streamsAssociation, streamID)
-
 	if hasAssociation {
+		delete(t.streamsAssociation, streamID)
+
 		streams := t.dpStreams[dp]
 		delete(streams.activeStreams, streamID)
 		if len(streams.activeStreams) == 0 { // no stream is active, cancel watchdog
