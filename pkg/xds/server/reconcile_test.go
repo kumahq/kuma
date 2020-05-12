@@ -6,7 +6,8 @@ import (
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -45,29 +46,31 @@ var _ = Describe("Reconcile", func() {
 		})
 
 		snapshot := envoy_cache.Snapshot{
-			Listeners: envoy_cache.Resources{
-				Items: map[string]envoy_cache.Resource{
-					"listener": &envoy.Listener{},
+			Resources: [envoy_types.UnknownType]envoy_cache.Resources{
+				envoy_types.Listener: {
+					Items: map[string]envoy_types.Resource{
+						"listener": &envoy.Listener{},
+					},
 				},
-			},
-			Routes: envoy_cache.Resources{
-				Items: map[string]envoy_cache.Resource{
-					"route": &envoy.RouteConfiguration{},
+				envoy_types.Route: {
+					Items: map[string]envoy_types.Resource{
+						"route": &envoy.RouteConfiguration{},
+					},
 				},
-			},
-			Clusters: envoy_cache.Resources{
-				Items: map[string]envoy_cache.Resource{
-					"cluster": &envoy.Cluster{},
+				envoy_types.Cluster: {
+					Items: map[string]envoy_types.Resource{
+						"cluster": &envoy.Cluster{},
+					},
 				},
-			},
-			Endpoints: envoy_cache.Resources{
-				Items: map[string]envoy_cache.Resource{
-					"endpoint": &envoy.ClusterLoadAssignment{},
+				envoy_types.Endpoint: {
+					Items: map[string]envoy_types.Resource{
+						"endpoint": &envoy.ClusterLoadAssignment{},
+					},
 				},
-			},
-			Secrets: envoy_cache.Resources{
-				Items: map[string]envoy_cache.Resource{
-					"secret": &envoy_auth.Secret{},
+				envoy_types.Secret: {
+					Items: map[string]envoy_types.Resource{
+						"secret": &envoy_auth.Secret{},
+					},
 				},
 			},
 		}
@@ -116,11 +119,11 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
 			// and
-			Expect(snapshot.Listeners.Version).To(Equal("v1"))
-			Expect(snapshot.Routes.Version).To(Equal("v2"))
-			Expect(snapshot.Clusters.Version).To(Equal("v3"))
-			Expect(snapshot.Endpoints.Version).To(Equal("v4"))
-			Expect(snapshot.Secrets.Version).To(Equal("v5"))
+			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal("v1"))
+			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal("v2"))
+			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal("v3"))
+			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal("v4"))
+			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal("v5"))
 
 			By("simulating discovery event (Dataplane watchdog triggers refresh)")
 			// when
@@ -135,11 +138,11 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
 			// and
-			Expect(snapshot.Listeners.Version).To(Equal("v1"))
-			Expect(snapshot.Routes.Version).To(Equal("v2"))
-			Expect(snapshot.Clusters.Version).To(Equal("v3"))
-			Expect(snapshot.Endpoints.Version).To(Equal("v4"))
-			Expect(snapshot.Secrets.Version).To(Equal("v5"))
+			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal("v1"))
+			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal("v2"))
+			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal("v3"))
+			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal("v4"))
+			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal("v5"))
 
 			By("simulating discovery event (Dataplane gets changed)")
 			// when
@@ -154,11 +157,11 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
 			// and
-			Expect(snapshot.Listeners.Version).To(Equal("v6"))
-			Expect(snapshot.Routes.Version).To(Equal("v7"))
-			Expect(snapshot.Clusters.Version).To(Equal("v8"))
-			Expect(snapshot.Endpoints.Version).To(Equal("v9"))
-			Expect(snapshot.Secrets.Version).To(Equal("v10"))
+			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal("v6"))
+			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal("v7"))
+			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal("v8"))
+			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal("v9"))
+			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal("v10"))
 		})
 	})
 })

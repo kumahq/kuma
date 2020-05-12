@@ -22,148 +22,92 @@ var _ = Describe("MeshResource", func() {
 		applyDefaultsScenario := func(given testCase) {
 			// given
 			mesh := &MeshResource{}
-
 			err := util_proto.FromYAML([]byte(given.input), &mesh.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
-			// do
-			mesh.Default()
-
 			// when
-			actual, err := util_proto.ToYAML(&mesh.Spec)
+			err = mesh.Default()
+
 			// then
+			Expect(err).ToNot(HaveOccurred())
+			actual, err := util_proto.ToYAML(&mesh.Spec)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		}
 
 		DescribeTable("should apply defaults on a target MeshResource",
 			applyDefaultsScenario,
-			Entry("when `mtls` field is not set", testCase{
-				input: ``,
-				expected: `
-                mtls:
-                  ca:
-                    builtin: {}
-`,
-			}),
-			Entry("when `mtls.ca` field is not set", testCase{
-				input: `
-                mtls: {}
-`,
-				expected: `
-                mtls:
-                  ca:
-                    builtin: {}
-`,
-			}),
-			Entry("when `mtls.ca.type` field is not set", testCase{
-				input: `
-                mtls:
-                  ca: {}
-`,
-				expected: `
-                mtls:
-                  ca:
-                    builtin: {}
-`,
-			}),
 			Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are not set", testCase{
 				input: `
                 metrics:
-                  prometheus: {}
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
 `,
 				expected: `
-                mtls:
-                  ca:
-                    builtin: {}
                 metrics:
-                  prometheus:
-                    port: 5670
-                    path: /metrics
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 5670
+                      path: /metrics
 `,
 			}),
 			Entry("when `metrics.prometheus.port` is not set", testCase{
 				input: `
                 metrics:
-                  prometheus:
-                    path: /non-standard-path
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      path: /non-standard-path
 `,
 				expected: `
-                mtls:
-                  ca:
-                    builtin: {}
                 metrics:
-                  prometheus:
-                    port: 5670
-                    path: /non-standard-path
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 5670
+                      path: /non-standard-path
 `,
 			}),
 			Entry("when `metrics.prometheus.path` is not set", testCase{
 				input: `
                 metrics:
-                  prometheus:
-                    port: 1234
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 1234
 `,
 				expected: `
-                mtls:
-                  ca:
-                    builtin: {}
                 metrics:
-                  prometheus:
-                    port: 1234
-                    path: /metrics
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    config:
+                      port: 1234
+                      path: /metrics
 `,
 			}),
 		)
 
 		DescribeTable("should not override user-defined configuration in a target MeshResource",
 			applyDefaultsScenario,
-			Entry("when `mtls` field is set to `provided` CA", testCase{
-				input: `
-                mtls:
-                  ca:
-                    provided: {}
-`,
-				expected: `
-                mtls:
-                  ca:
-                    provided: {}
-`,
-			}),
-			Entry("when `metrics` field is not set", testCase{
-				input: ``,
-				expected: `
-                mtls:
-                  ca:
-                    builtin: {}
-`,
-			}),
 			Entry("when `metrics.prometheus` field is not set", testCase{
 				input: `
                 metrics: {}
 `,
 				expected: `
-                mtls:
-                  ca:
-                    builtin: {}
                 metrics: {}
-`,
-			}),
-			Entry("when `mtls.ca.type` field is not set", testCase{
-				input: `
-                metrics:
-                  prometheus:
-                    port: 1234
-                    path: /non-standard-path
-`,
-				expected: `
-                mtls:
-                  ca:
-                    builtin: {}
-                metrics:
-                  prometheus:
-                    port: 1234
-                    path: /non-standard-path
 `,
 			}),
 		)

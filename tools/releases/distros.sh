@@ -12,7 +12,7 @@ DISTRIBUTIONS=(debian:linux ubuntu:linux rhel:linux centos:linux darwin:darwin)
 BINTRAY_ENDPOINT="https://api.bintray.com/"
 BINTRAY_SUBJECT="kong"
 [ -z "$BINTRAY_REPOSITORY" ] && BINTRAY_REPOSITORY="kuma"
-ENVOY_VERSION=1.13.1
+ENVOY_VERSION=1.14.1
 
 function msg_green {
   builtin echo -en "\033[1;32m"
@@ -81,7 +81,7 @@ function create_tarball {
   cp -p build/artifacts-$system-$arch/kuma-dp/kuma-dp $kuma_dir/bin
   cp -p build/artifacts-$system-$arch/kumactl/kumactl $kuma_dir/bin
   cp -p build/artifacts-$system-$arch/kuma-prometheus-sd/kuma-prometheus-sd $kuma_dir/bin
-  cp -p pkg/config/app/kuma-cp/kuma-cp.defaults.yaml $kuma_dir/conf/kuma-cp.conf
+  cp -p pkg/config/app/kuma-cp/kuma-cp.defaults.yaml $kuma_dir/conf/kuma-cp.conf.yml
 
   cp tools/releases/templates/* $kuma_dir
 

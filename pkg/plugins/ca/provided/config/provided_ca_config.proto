@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package kuma.plugins.ca;
+
+option go_package = "config";
+
+import "system/v1alpha1/datasource.proto";
+
+// ProvidedCertificateAuthorityConfig defines configuration for Provided CA
+// plugin
+message ProvidedCertificateAuthorityConfig {
+  // Data source for the certificate of CA
+  kuma.system.v1alpha1.DataSource cert = 1;
+  // Data source for the key of CA
+  kuma.system.v1alpha1.DataSource key = 2;
+}

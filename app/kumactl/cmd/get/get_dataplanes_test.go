@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Kong/kuma/app/kumactl/cmd"
 
@@ -30,8 +31,8 @@ import (
 var _ = Describe("kumactl get dataplanes", func() {
 
 	var dataplanes []*mesh_core.DataplaneResource
-
 	BeforeEach(func() {
+		// setup
 		dataplanes = []*mesh_core.DataplaneResource{
 			{
 				Meta: &test_model.ResourceMeta{
@@ -92,12 +93,13 @@ var _ = Describe("kumactl get dataplanes", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-
+		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 		BeforeEach(func() {
 			// setup
 
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
+					Now: func() time.Time { return rootTime },
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
@@ -122,6 +124,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 
 		type testCase struct {
 			outputFormat string
+			pagination   string
 			goldenFile   string
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
@@ -131,7 +134,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "dataplanes"}, given.outputFormat))
+					"get", "dataplanes"}, given.outputFormat, given.pagination))
 
 				// when
 				err := rootCmd.Execute()
@@ -155,6 +158,14 @@ var _ = Describe("kumactl get dataplanes", func() {
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "get-dataplanes.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support pagination", testCase{
+				outputFormat: "-otable",
+				goldenFile:   "get-dataplanes.pagination.golden.txt",
+				pagination:   "--size=1",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},

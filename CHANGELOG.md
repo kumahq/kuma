@@ -1,6 +1,37 @@
 # CHANGELOG
 
 ## master
+* feat(kumactl) added age column for get commands and updated `inspect dataplanes` lastConnected and lastUpdated to the new format. 
+  [#702](https://github.com/Kong/kuma/pull/702)
+* feat(kuma-cp) friendly response in K8s mode
+  [#712](https://github.com/Kong/kuma/pull/712)
+* chore: upgrade go-control-plane up to v0.9.5
+  [#707](https://github.com/Kong/kuma/pull/707)
+* fix: kuma-cp migrate help text
+  [#713](https://github.com/Kong/kuma/pull/713)
+  👍contributed by @tharun208
+* fix: envoy binary not found
+  [#695](https://github.com/Kong/kuma/pull/695)
+  👍contributed by @tharun208
+* feat: merge injector into kuma-cp
+  [#701](https://github.com/Kong/kuma/pull/701)
+* feat: refactor other pars of the Mesh to be consistent with CA
+  [#704](https://github.com/Kong/kuma/pull/704)
+  ⚠️ warning: breaking change of Mesh model
+* feat: secret validation on K8S
+  [#696](https://github.com/Kong/kuma/pull/696)
+* feat: include traffic direction in access log
+  [#682](https://github.com/Kong/kuma/pull/682)
+* feat: validate tags and selectors
+  [#691](https://github.com/Kong/kuma/pull/691) 
+* feat: refactor CA to plugins
+  [#694](https://github.com/Kong/kuma/pull/694)
+* feat: expose CreationTime and modificationTime
+  [#677](https://github.com/Kong/kuma/pull/677)
+* feat: pagination in kumactl
+  [#690](https://github.com/Kong/kuma/pull/690)
+* feat: secret management API
+  [#684](https://github.com/Kong/kuma/pull/684)
 * chore: unify matching for TrafficPermission
   [#668](https://github.com/Kong/kuma/pull/668)
   ⚠️ warning: breaking change of matching mechanism
@@ -54,6 +85,55 @@
   [#667](https://github.com/Kong/kuma/pull/667)
 
 Breaking changes:
+* ⚠ Mesh can now have multiple CAs of the same type. Also it can use CA loaded as a plugins. Mesh format changed from
+```yaml
+type: Mesh
+name: default
+mtls:
+  enabled: true
+  ca:
+    builtin: {}
+metrics:
+  prometheus: {}
+logging:
+  backends:
+  - name: file-1
+    file:
+      path: /var/log/access.log
+tracing:
+  backends:
+  - name: zipkin-1
+    zipkin:
+      url: http://zipkin.local:9411/api/v1/spans
+```
+to
+```yaml
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+metrics:
+  enabledBackend: prom-1
+  backends:
+  - name: prom-1
+    type: prometheus
+logging:
+  backends:
+  - name: file-1
+    type: file
+    config:
+      path: /var/log/access.log
+tracing:
+  backends:
+  - name: zipkin-1
+    type: zipkin
+    config:
+      url: http://zipkin.local:9411/api/v1/spans
+
+```
 * ⚠️ before the change TrafficPermission worked in cumulative way, which means that all policies that matched a connection were applied.
   We changed TrafficPermission to work like every other policy so only "the most specific" matching policy is chosen.
   Consult [docs](https://kuma.io/docs/0.4.0/policies/how-kuma-chooses-the-right-policy-to-apply/) to learn more how Kuma picks the right policy.

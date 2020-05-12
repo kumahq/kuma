@@ -61,7 +61,7 @@ data:
   config.yaml: |
     # use this file to override default configuration of `kuma-cp`
     #
-    # see conf/kuma-cp.conf for available settings
+    # see conf/kuma-cp.conf.yml for available settings
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -109,14 +109,18 @@ spec:
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
         - name: KUMA_SDS_SERVER_TLS_KEY_FILE
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
-        - name: KUMA_KUBERNETES_ADMISSION_SERVER_PORT
+        - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
           value: "5443"
-        - name: KUMA_KUBERNETES_ADMISSION_SERVER_CERT_DIR
+        - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
           value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
         - name: KUMA_API_SERVER_READ_ONLY
           value: "true"
-        - name: KUMA_KUBERNETES_CNI_ENABLED
+        - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
           value: "{{ .CNIEnabled }}"
+        - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
+          value: {{ .DataplaneImage }}:{{ .ControlPlaneVersion }}
+        - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+          value: {{ .DataplaneInitImage }}:{{ .ControlPlaneVersion }}
         args:
         - run
         - --log-level=info
@@ -185,6 +189,26 @@ webhooks:
     - UPDATE
     resources:
     - meshes
+- name: kuma-injector.kuma.io
+  namespaceSelector:
+    matchLabels:
+      kuma.io/sidecar-injection: enabled
+  failurePolicy: {{ .InjectorFailurePolicy }}
+  clientConfig:
+    caBundle: {{ .AdmissionServerTlsCert | b64enc }}
+    service:
+      namespace: {{ .Namespace }}
+      name: {{ .ControlPlaneServiceName }}
+      path: /inject-sidecar
+  rules:
+    - apiGroups:
+        - ""
+      apiVersions:
+        - v1
+      operations:
+        - CREATE
+      resources:
+        - pods
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
@@ -235,3 +259,21 @@ webhooks:
           - UPDATE
         resources:
           - services
+  - name: secret.validator.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: {{ .AdmissionServerTlsCert | b64enc }}
+      service:
+        namespace: {{ .Namespace }}
+        name: {{ .ControlPlaneServiceName }}
+        path: /validate-v1-secret
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - secrets

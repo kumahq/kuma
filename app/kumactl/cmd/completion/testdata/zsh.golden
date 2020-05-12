@@ -1,0 +1,712 @@
+#compdef _kumactl kumactl
+
+
+function _kumactl {
+  local -a commands
+
+  _arguments -C \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "apply:Create or modify Kuma resources"
+      "completion:Output shell completion code for bash, fish or zsh"
+      "config:Manage kumactl config"
+      "delete:Delete Kuma resources"
+      "generate:Generate resources, tokens, etc"
+      "get:Show Kuma resources"
+      "help:Help about any command"
+      "inspect:Inspect Kuma resources"
+      "install:Install Kuma on Kubernetes"
+      "version:Print version"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  apply)
+    _kumactl_apply
+    ;;
+  completion)
+    _kumactl_completion
+    ;;
+  config)
+    _kumactl_config
+    ;;
+  delete)
+    _kumactl_delete
+    ;;
+  generate)
+    _kumactl_generate
+    ;;
+  get)
+    _kumactl_get
+    ;;
+  help)
+    _kumactl_help
+    ;;
+  inspect)
+    _kumactl_inspect
+    ;;
+  install)
+    _kumactl_install
+    ;;
+  version)
+    _kumactl_version
+    ;;
+  esac
+}
+
+function _kumactl_apply {
+  _arguments \
+    '--dry-run[Resolve variable and prints result out without actual applying]' \
+    '(-f --file)'{-f,--file}'[Path to file to apply]:' \
+    '(-v --var)'{-v,--var}'[Variable to replace in configuration]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+
+function _kumactl_completion {
+  local -a commands
+
+  _arguments -C \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "bash:Output shell completions for bash"
+      "fish:Output shell completions for fish"
+      "zsh:Output shell completions for zsh"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  bash)
+    _kumactl_completion_bash
+    ;;
+  fish)
+    _kumactl_completion_fish
+    ;;
+  zsh)
+    _kumactl_completion_zsh
+    ;;
+  esac
+}
+
+function _kumactl_completion_bash {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_completion_fish {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_completion_zsh {
+  _arguments \
+    '(-h --help)'{-h,--help}'[help for zsh]' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+
+function _kumactl_config {
+  local -a commands
+
+  _arguments -C \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "control-planes:Manage known Control Planes"
+      "view:Show kumactl config"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  control-planes)
+    _kumactl_config_control-planes
+    ;;
+  view)
+    _kumactl_config_view
+    ;;
+  esac
+}
+
+
+function _kumactl_config_control-planes {
+  local -a commands
+
+  _arguments -C \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "add:Add a Control Plane"
+      "list:List Control Planes"
+      "remove:Remove a Control Plane"
+      "switch:Switch active Control Plane"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  add)
+    _kumactl_config_control-planes_add
+    ;;
+  list)
+    _kumactl_config_control-planes_list
+    ;;
+  remove)
+    _kumactl_config_control-planes_remove
+    ;;
+  switch)
+    _kumactl_config_control-planes_switch
+    ;;
+  esac
+}
+
+function _kumactl_config_control-planes_add {
+  _arguments \
+    '--address[URL of the Control Plane API Server (required)]:' \
+    '--admin-client-cert[Path to certificate of a client that is authorized to use Admin Server]:' \
+    '--admin-client-key[Path to certificate key of a client that is authorized to use Admin Server]:' \
+    '--name[reference name for the Control Plane (required)]:' \
+    '--overwrite[overwrite existing Control Plane with the same reference name]' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_config_control-planes_list {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_config_control-planes_remove {
+  _arguments \
+    '--name[reference name for the Control Plane (required)]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_config_control-planes_switch {
+  _arguments \
+    '--name[reference name for the Control Plane (required)]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_config_view {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_delete {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+
+function _kumactl_generate {
+  local -a commands
+
+  _arguments -C \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "dataplane-token:Generate Dataplane Token"
+      "tls-certificate:Generate a TLS certificate"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  dataplane-token)
+    _kumactl_generate_dataplane-token
+    ;;
+  tls-certificate)
+    _kumactl_generate_tls-certificate
+    ;;
+  esac
+}
+
+function _kumactl_generate_dataplane-token {
+  _arguments \
+    '--dataplane[name of the Dataplane]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_generate_tls-certificate {
+  _arguments \
+    '--cert-file[path to a file with a generated TLS certificate]:' \
+    '*--cp-hostname[DNS name of the control plane]:' \
+    '--key-file[path to a file with a generated private key]:' \
+    '--type[type of the certificate: one of client|server]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+
+function _kumactl_get {
+  local -a commands
+
+  _arguments -C \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "dataplane:Show a single Dataplane resource"
+      "dataplanes:Show Dataplanes"
+      "fault-injection:Show a single Fault-Injection resource"
+      "fault-injections:Show FaultInjections"
+      "healthcheck:Show a single HealthCheck resource"
+      "healthchecks:Show HealthChecks"
+      "mesh:Show a single Mesh resource"
+      "meshes:Show Meshes"
+      "proxytemplate:Show a single Proxytemplate resource"
+      "proxytemplates:Show ProxyTemplates"
+      "secret:Show a single Secret resource"
+      "secrets:Show Secrets"
+      "traffic-log:Show a single TrafficLog resource"
+      "traffic-logs:Show TrafficLogs"
+      "traffic-permission:Show a single TrafficPermission resource"
+      "traffic-permissions:Show TrafficPermissions"
+      "traffic-route:Show a single TrafficRoute resource"
+      "traffic-routes:Show TrafficRoutes"
+      "traffic-trace:Show a single TrafficTrace resource"
+      "traffic-traces:Show TrafficTraces"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  dataplane)
+    _kumactl_get_dataplane
+    ;;
+  dataplanes)
+    _kumactl_get_dataplanes
+    ;;
+  fault-injection)
+    _kumactl_get_fault-injection
+    ;;
+  fault-injections)
+    _kumactl_get_fault-injections
+    ;;
+  healthcheck)
+    _kumactl_get_healthcheck
+    ;;
+  healthchecks)
+    _kumactl_get_healthchecks
+    ;;
+  mesh)
+    _kumactl_get_mesh
+    ;;
+  meshes)
+    _kumactl_get_meshes
+    ;;
+  proxytemplate)
+    _kumactl_get_proxytemplate
+    ;;
+  proxytemplates)
+    _kumactl_get_proxytemplates
+    ;;
+  secret)
+    _kumactl_get_secret
+    ;;
+  secrets)
+    _kumactl_get_secrets
+    ;;
+  traffic-log)
+    _kumactl_get_traffic-log
+    ;;
+  traffic-logs)
+    _kumactl_get_traffic-logs
+    ;;
+  traffic-permission)
+    _kumactl_get_traffic-permission
+    ;;
+  traffic-permissions)
+    _kumactl_get_traffic-permissions
+    ;;
+  traffic-route)
+    _kumactl_get_traffic-route
+    ;;
+  traffic-routes)
+    _kumactl_get_traffic-routes
+    ;;
+  traffic-trace)
+    _kumactl_get_traffic-trace
+    ;;
+  traffic-traces)
+    _kumactl_get_traffic-traces
+    ;;
+  esac
+}
+
+function _kumactl_get_dataplane {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_dataplanes {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_fault-injection {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_fault-injections {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_healthcheck {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_healthchecks {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_mesh {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_meshes {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_proxytemplate {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_proxytemplates {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_secret {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_secrets {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_traffic-log {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_traffic-logs {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_traffic-permission {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_traffic-permissions {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_traffic-route {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_traffic-routes {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_traffic-trace {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_traffic-traces {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_help {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+
+function _kumactl_inspect {
+  local -a commands
+
+  _arguments -C \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "dataplanes:Inspect Dataplanes"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  dataplanes)
+    _kumactl_inspect_dataplanes
+    ;;
+  esac
+}
+
+function _kumactl_inspect_dataplanes {
+  _arguments \
+    '--gateway[filter gateway dataplanes]' \
+    '--tag[filter by tag in format of key=value. You can provide many tags]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+
+function _kumactl_install {
+  local -a commands
+
+  _arguments -C \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "control-plane:Install Kuma Control Plane on Kubernetes"
+      "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
+      "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  control-plane)
+    _kumactl_install_control-plane
+    ;;
+  metrics)
+    _kumactl_install_metrics
+    ;;
+  tracing)
+    _kumactl_install_tracing
+    ;;
+  esac
+}
+
+function _kumactl_install_control-plane {
+  _arguments \
+    '--admission-server-tls-cert[TLS certificate for the admission web hooks implemented by the Kuma Control Plane]:' \
+    '--admission-server-tls-key[TLS key for the admission web hooks implemented by the Kuma Control Plane]:' \
+    '--cni-enabled[install Kuma with CNI instead of proxy init container]' \
+    '--cni-image[image of Kuma CNI component, if CNIEnabled equals true]:' \
+    '--cni-version[version of the CNIImage]:' \
+    '--control-plane-image[image of the Kuma Control Plane component]:' \
+    '--control-plane-service-name[Service name of the Kuma Control Plane]:' \
+    '--control-plane-version[version shared by all components of the Kuma Control Plane]:' \
+    '--dataplane-image[image of the Kuma Dataplane component]:' \
+    '--dataplane-init-image[init image of the Kuma Dataplane component]:' \
+    '--image-pull-policy[image pull policy that applies to all components of the Kuma Control Plane]:' \
+    '--injector-failure-policy[failue policy of the mutating web hook implemented by the Kuma Injector component]:' \
+    '--namespace[namespace to install Kuma Control Plane to]:' \
+    '--sds-tls-cert[TLS certificate for the SDS server]:' \
+    '--sds-tls-key[TLS key for the SDS server]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_metrics {
+  _arguments \
+    '--kuma-cp-address[the address of Kuma CP]:' \
+    '--kuma-prometheus-sd-image[image name of Kuma Prometheus SD]:' \
+    '--kuma-prometheus-sd-version[version of Kuma Prometheus SD]:' \
+    '--namespace[namespace to install metrics to]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_tracing {
+  _arguments \
+    '--namespace[namespace to install tracing to]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_version {
+  _arguments \
+    '(-a --detailed)'{-a,--detailed}'[Print detailed version]' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+

@@ -78,12 +78,8 @@ func (l *FaultInjectionResourceList) AddItem(r model.Resource) error {
 	}
 }
 
-func (l *FaultInjectionResourceList) GetPagination() model.Pagination {
-	return l.Pagination
-}
-
-func (l *FaultInjectionResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
+func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
 }
 
 func init() {

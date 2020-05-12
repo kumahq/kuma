@@ -56,11 +56,10 @@ var _ = Describe("bootstrapGenerator", func() {
 					Backends: []*mesh_proto.TracingBackend{
 						{
 							Name: "zipkin-us",
-							Type: &mesh_proto.TracingBackend_Zipkin_{
-								Zipkin: &mesh_proto.TracingBackend_Zipkin{
-									Url: "http://zipkin.us:9090/v2/spans",
-								},
-							},
+							Type: mesh_proto.TracingZipkinType,
+							Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Url: "http://zipkin.us:9090/v2/spans",
+							}),
 						},
 					},
 				},

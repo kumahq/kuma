@@ -24,7 +24,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var stop chan struct{}
-
+	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
@@ -46,7 +46,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh1", "mesh1"))
+		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh1", "mesh1"), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -74,7 +74,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				},
 			},
 		}
-		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("dp1", "mesh1"))
+		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("dp1", "mesh1"), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
@@ -99,6 +99,8 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	"type": "DataplaneOverview",
 	"name": "dp1",
 	"mesh": "mesh1",
+	"creationTime": "2018-07-17T16:05:36.995Z",
+	"modificationTime": "2018-07-17T16:05:36.995Z",
 	"dataplane": {
 		"networking": {
 			"address": "127.0.0.1",
@@ -171,27 +173,27 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 			Entry("should list all when no tag is provided", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights",
-				expectedJson: fmt.Sprintf(`{"items": [%s], "next": null}`, sampleJson),
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
 			}),
 			Entry("should list all when no tag is provided", testCase{
 				url:          "/dataplanes+insights",
-				expectedJson: fmt.Sprintf(`{"items": [%s], "next": null}`, sampleJson),
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
 			}),
 			Entry("should list with only one matching tag", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample",
-				expectedJson: fmt.Sprintf(`{"items": [%s], "next": null}`, sampleJson),
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
 			}),
 			Entry("should list all with all matching tags", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample&tag=version:v1",
-				expectedJson: fmt.Sprintf(`{"items": [%s], "next": null}`, sampleJson),
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
 			}),
 			Entry("should not list when any tag is not matching", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample&tag=version:v2",
-				expectedJson: `{"items": [], "next": null}`,
+				expectedJson: `{"total": 1, "items": [], "next": null}`,
 			}),
 			Entry("should list only gateway dataplanes", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?gateway=true",
-				expectedJson: fmt.Sprintf(`{"items": [%s], "next": null}`, sampleJson),
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
 			}),
 		)
 	})

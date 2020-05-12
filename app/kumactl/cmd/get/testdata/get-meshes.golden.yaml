@@ -1,52 +1,57 @@
+total: 2
 items:
-  - mtls:
-      enabled: true
-      ca:
-        builtin: {}
-    name: mesh1
-    type: Mesh
-  - mtls:
-      enabled: true
-      ca:
-        provided: {}
-    name: mesh2
-    type: Mesh
-  - logging:
-      backends:
-        - name: logstash
-          tcp:
-            address: 127.0.0.1:5000
-        - file:
-            path: /tmp/service.log
-          name: file
-    metrics:
-      prometheus:
-        path: /non-standard-path
-        port: 1234
-    mtls:
-      ca:
-        provided: {}
-    name: mesh3
-    tracing:
-      backends:
-        - name: zipkin-us
-          zipkin:
-            url: http://zipkin.us:8080/v1/spans
-        - name: zipkin-eu
-          zipkin:
-            url: http://zipkin.eu:8080/v1/spans
-    type: Mesh
-  - logging:
-      backends: []
-    metrics:
-      prometheus:
-        path: /non-standard-path
-        port: 1234
-    mtls:
-      ca:
-        provided: {}
-    name: mesh4
-    tracing:
-      backends: []
-    type: Mesh
+- creationTime: "0001-01-01T00:00:00Z"
+  logging:
+    backends:
+      - name: logstash
+        type: tcp
+        config:
+          address: 127.0.0.1:5000
+      - config:
+          path: /tmp/service.log
+        type: file
+        name: file
+  metrics:
+    enabledBackend: prometheus-1
+    backends:
+      - name: prometheus-1
+        type: prometheus
+        config:
+          path: /non-standard-path
+          port: 1234
+      - name: prometheus-2
+        type: prometheus
+        config:
+          path: /non-standard-path
+          port: 1235
+  modificationTime: "0001-01-01T00:00:00Z"
+  mtls:
+    backends:
+      - name: builtin-1
+        type: builtin
+      - name: builtin-2
+        type: builtin
+    enabledBackend: builtin-1
+  name: mesh1
+  tracing:
+    backends:
+      - name: zipkin-us
+        type: zipkin
+        config:
+          url: http://zipkin.us:8080/v1/spans
+      - name: zipkin-eu
+        type: zipkin
+        config:
+          url: http://zipkin.eu:8080/v1/spans
+  type: Mesh
+- creationTime: "0001-01-01T00:00:00Z"
+  logging:
+    backends: []
+  metrics:
+    backends: []
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mesh2
+  tracing:
+    backends: []
+  type: Mesh
 next: null

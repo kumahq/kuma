@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 
+	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -20,7 +22,10 @@ import (
 )
 
 const (
-	noMesh = ""
+	// Every Kuma Secret will be annotated with kuma.io/mesh to be able to expose secrets only for given mesh
+	meshLabel = "kuma.io/mesh"
+	// Kubernetes secret type to differentiate Kuma System secrets
+	secretType = "system.kuma.io/secret"
 )
 
 var _ secret_store.SecretStore = &KubernetesStore{}
@@ -50,10 +55,14 @@ func (s *KubernetesStore) Create(ctx context.Context, r *secret_model.SecretReso
 	}
 	secret.Namespace = s.namespace
 	secret.Name = opts.Name
+	labels := map[string]string{
+		meshLabel: opts.Mesh,
+	}
+	secret.SetLabels(labels)
 
 	if err := s.writer.Create(ctx, secret); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
-			return core_store.ErrorResourceAlreadyExists(r.GetType(), secret.Name, noMesh)
+			return core_store.ErrorResourceAlreadyExists(r.GetType(), secret.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to create k8s Secret")
 	}
@@ -71,7 +80,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r *secret_model.SecretReso
 	secret.Namespace = s.namespace
 	if err := s.writer.Update(ctx, secret); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			return core_store.ErrorResourceConflict(r.GetType(), secret.Name, noMesh)
+			return core_store.ErrorResourceConflict(r.GetType(), secret.Name, r.GetMeta().GetMesh())
 		}
 		return errors.Wrap(err, "failed to update k8s Secret")
 	}
@@ -103,7 +112,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.SecretResourc
 	secret := &kube_core.Secret{}
 	if err := s.reader.Get(ctx, kube_client.ObjectKey{Namespace: s.namespace, Name: opts.Name}, secret); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return core_store.ErrorResourceNotFound(r.GetType(), opts.Name, noMesh)
+			return core_store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to get k8s secret")
 	}
@@ -113,8 +122,17 @@ func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.SecretResourc
 	return nil
 }
 func (s *KubernetesStore) List(ctx context.Context, rs *secret_model.SecretResourceList, fs ...core_store.ListOptionsFunc) error {
+	opts := core_store.NewListOptions(fs...)
 	secrets := &kube_core.SecretList{}
-	if err := s.reader.List(ctx, secrets, kube_client.InNamespace(s.namespace)); err != nil {
+
+	fields := kube_client.MatchingFields{ // list only Kuma System secrets
+		"type": secretType,
+	}
+	labels := kube_client.MatchingLabels{}
+	if opts.Mesh != "" {
+		labels[meshLabel] = opts.Mesh
+	}
+	if err := s.reader.List(ctx, secrets, kube_client.InNamespace(s.namespace), labels, fields); err != nil {
 		return errors.Wrap(err, "failed to list k8s Secrets")
 	}
 	if err := s.converter.ToCoreList(secrets, rs); err != nil {
@@ -138,7 +156,11 @@ func (m *KubernetesMetaAdapter) GetVersion() string {
 }
 
 func (m *KubernetesMetaAdapter) GetMesh() string {
-	return noMesh
+	mesh, exist := m.Labels[meshLabel]
+	if !exist {
+		mesh = core_model.DefaultMesh
+	}
+	return mesh
 }
 
 func (m *KubernetesMetaAdapter) GetCreationTime() time.Time {
@@ -166,13 +188,17 @@ type SimpleConverter struct {
 
 func (c *SimpleConverter) ToKubernetesObject(r *secret_model.SecretResource) (*kube_core.Secret, error) {
 	secret := &kube_core.Secret{}
-	secret.Type = "system.kuma.io/secret"
+	secret.Type = secretType
 	secret.Data = map[string][]byte{
-		"value": r.Spec.Value,
+		"value": r.Spec.GetData().GetValue(),
 	}
 	if r.GetMeta() != nil {
 		if adapter, ok := r.GetMeta().(*KubernetesMetaAdapter); ok {
 			secret.ObjectMeta = adapter.ObjectMeta
+			labels := map[string]string{
+				meshLabel: r.GetMeta().GetMesh(),
+			}
+			secret.SetLabels(labels)
 		} else {
 			return nil, fmt.Errorf("meta has unexpected type: %#v", r.GetMeta())
 		}
@@ -183,7 +209,11 @@ func (c *SimpleConverter) ToKubernetesObject(r *secret_model.SecretResource) (*k
 func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out *secret_model.SecretResource) error {
 	out.SetMeta(&KubernetesMetaAdapter{secret.ObjectMeta})
 	if secret.Data != nil {
-		out.Spec.Value = secret.Data["value"]
+		out.Spec = system_proto.Secret{
+			Data: &wrappers.BytesValue{
+				Value: secret.Data["value"],
+			},
+		}
 	}
 	return nil
 }

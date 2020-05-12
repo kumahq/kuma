@@ -40,11 +40,10 @@ var _ = Describe("Bootstrap Tracing", func() {
 		Entry("infer version from /api/v1/spans path", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-us",
-				Type: &mesh_proto.TracingBackend_Zipkin_{
-					Zipkin: &mesh_proto.TracingBackend_Zipkin{
-						Url: "http://zipkin:9090/api/v1/spans",
-					},
-				},
+				Type: mesh_proto.TracingZipkinType,
+				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+					Url: "http://zipkin:9090/api/v1/spans",
+				}),
 			},
 			expectedYAML: `
                 staticResources:
@@ -73,11 +72,10 @@ var _ = Describe("Bootstrap Tracing", func() {
 		Entry("infer version from /api/v2/spans path", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
-				Type: &mesh_proto.TracingBackend_Zipkin_{
-					Zipkin: &mesh_proto.TracingBackend_Zipkin{
-						Url: "http://zipkin:9090/api/v2/spans",
-					},
-				},
+				Type: mesh_proto.TracingZipkinType,
+				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+					Url: "http://zipkin:9090/api/v2/spans",
+				}),
 			},
 			expectedYAML: `
                 staticResources:
@@ -107,12 +105,11 @@ var _ = Describe("Bootstrap Tracing", func() {
 		Entry("explicit httpJsonV1 version config in backend", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
-				Type: &mesh_proto.TracingBackend_Zipkin_{
-					Zipkin: &mesh_proto.TracingBackend_Zipkin{
-						Url:        "http://zipkin:9090/api/v2/spans",
-						ApiVersion: "httpJsonV1",
-					},
-				},
+				Type: mesh_proto.TracingZipkinType,
+				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+					Url:        "http://zipkin:9090/api/v2/spans",
+					ApiVersion: "httpJsonV1",
+				}),
 			},
 			expectedYAML: `
                 staticResources:
@@ -141,12 +138,11 @@ var _ = Describe("Bootstrap Tracing", func() {
 		Entry("explicit httpJson version config in backend", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
-				Type: &mesh_proto.TracingBackend_Zipkin_{
-					Zipkin: &mesh_proto.TracingBackend_Zipkin{
-						Url:        "http://zipkin:9090/some/path",
-						ApiVersion: "httpJson",
-					},
-				},
+				Type: mesh_proto.TracingZipkinType,
+				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+					Url:        "http://zipkin:9090/some/path",
+					ApiVersion: "httpJson",
+				}),
 			},
 			expectedYAML: `
                 staticResources:
@@ -176,12 +172,11 @@ var _ = Describe("Bootstrap Tracing", func() {
 		Entry("explicit httpProto version config in backend", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
-				Type: &mesh_proto.TracingBackend_Zipkin_{
-					Zipkin: &mesh_proto.TracingBackend_Zipkin{
-						Url:        "http://zipkin:9090/some/path",
-						ApiVersion: "httpProto",
-					},
-				},
+				Type: mesh_proto.TracingZipkinType,
+				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+					Url:        "http://zipkin:9090/some/path",
+					ApiVersion: "httpProto",
+				}),
 			},
 			expectedYAML: `
                 staticResources:
@@ -211,11 +206,10 @@ var _ = Describe("Bootstrap Tracing", func() {
 		Entry("version defaults to httpJson", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
-				Type: &mesh_proto.TracingBackend_Zipkin_{
-					Zipkin: &mesh_proto.TracingBackend_Zipkin{
-						Url: "http://zipkin:9090/some/path",
-					},
-				},
+				Type: mesh_proto.TracingZipkinType,
+				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+					Url: "http://zipkin:9090/some/path",
+				}),
 			},
 			expectedYAML: `
                 staticResources:
@@ -245,12 +239,11 @@ var _ = Describe("Bootstrap Tracing", func() {
 		Entry("traceId128bit on", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
-				Type: &mesh_proto.TracingBackend_Zipkin_{
-					Zipkin: &mesh_proto.TracingBackend_Zipkin{
-						Url:           "http://zipkin:9090/api/v2/spans",
-						TraceId128Bit: true,
-					},
-				},
+				Type: mesh_proto.TracingZipkinType,
+				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+					Url:           "http://zipkin:9090/api/v2/spans",
+					TraceId128Bit: true,
+				}),
 			},
 			expectedYAML: `
                 staticResources:

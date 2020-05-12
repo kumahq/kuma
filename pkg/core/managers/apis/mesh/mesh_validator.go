@@ -2,55 +2,57 @@ package mesh
 
 import (
 	"context"
-	"reflect"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/ca/provided"
+	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/validators"
 )
 
 type MeshValidator struct {
-	ProvidedCaManager provided.ProvidedCaManager
+	CaManagers core_ca.Managers
 }
 
 func (m *MeshValidator) ValidateCreate(ctx context.Context, name string, resource *core_mesh.MeshResource) error {
-	switch resource.Spec.GetMtls().GetCa().GetType().(type) {
-	case *mesh_proto.CertificateAuthority_Provided_:
-		if err := m.validateProvidedCaRoot(ctx, name); err != nil {
-			return err
-		}
+	if err := m.validateMTLSBackends(ctx, name, resource); err != nil {
+		return err
 	}
 	return nil
 }
 
-func (m *MeshValidator) validateProvidedCaRoot(ctx context.Context, mesh string) error {
-	certs, err := m.ProvidedCaManager.GetSigningCerts(ctx, mesh)
-	if err != nil || len(certs) == 0 {
-		verr := validators.ValidationError{}
-		verr.AddViolation("mtls.ca.provided", "There is no signing certificate in provided CA for a given mesh. Add certificate via 'kumactl manage ca provided certificates add' command.")
-		return verr.OrNil()
+func (m *MeshValidator) validateMTLSBackends(ctx context.Context, name string, resource *core_mesh.MeshResource) error {
+	verr := validators.ValidationError{}
+	path := validators.RootedAt("mtls").Field("backends")
+	for idx, backend := range resource.Spec.GetMtls().GetBackends() {
+		caManager, exist := m.CaManagers[backend.Type]
+		if !exist {
+			verr.AddViolationAt(path.Index(idx).Field("type"), "could not find installed plugin for this type")
+			return verr.OrNil()
+		} else if err := caManager.ValidateBackend(ctx, name, *backend); err != nil {
+			if configErr, ok := err.(*validators.ValidationError); ok {
+				verr.AddErrorAt(path.Index(idx).Field("config"), *configErr)
+			} else {
+				verr.AddViolationAt(path.Index(idx), err.Error())
+				return err
+			}
+		}
 	}
-	return nil
+	return verr.OrNil()
 }
 
 func (m *MeshValidator) ValidateUpdate(ctx context.Context, previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {
-	if err := m.validateCaChange(previousMesh, newMesh); err != nil {
+	if err := m.validateMTLSBackendChange(previousMesh, newMesh); err != nil {
 		return err
 	}
-	switch newMesh.Spec.GetMtls().GetCa().GetType().(type) {
-	case *mesh_proto.CertificateAuthority_Provided_:
-		if err := m.validateProvidedCaRoot(ctx, newMesh.Meta.GetName()); err != nil {
-			return err
-		}
+	if err := m.validateMTLSBackends(ctx, newMesh.Meta.GetName(), newMesh); err != nil {
+		return err
 	}
 	return nil
 }
 
-func (m *MeshValidator) validateCaChange(previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {
+func (m *MeshValidator) validateMTLSBackendChange(previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {
 	verr := validators.ValidationError{}
-	if previousMesh.Spec.Mtls.Enabled && newMesh.Spec.Mtls.Enabled && reflect.TypeOf(newMesh.Spec.Mtls.Ca.Type) != reflect.TypeOf(previousMesh.Spec.Mtls.Ca.Type) {
-		verr.AddViolation("mtls.ca", "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA")
+	if previousMesh.MTLSEnabled() && newMesh.MTLSEnabled() && previousMesh.Spec.GetMtls().GetEnabledBackend() != newMesh.Spec.GetMtls().GetEnabledBackend() {
+		verr.AddViolation("mtls.enabledBackend", "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA")
 	}
 	return verr.OrNil()
 }

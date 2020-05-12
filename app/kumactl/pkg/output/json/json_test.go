@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -21,7 +22,8 @@ var _ = Describe("printer", func() {
 
 	var printer output.Printer
 	var buf *bytes.Buffer
-
+	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
+	t2, _ := time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
 		printer = json.NewPrinter()
 		buf = &bytes.Buffer{}
@@ -54,17 +56,20 @@ var _ = Describe("printer", func() {
 		Entry("format response from Kuma REST API", testCase{
 			obj: &core_rest.Resource{
 				Meta: core_rest.ResourceMeta{
-					Type: string(mesh_core.MeshType),
-					Name: "demo",
+					Type:             string(mesh_core.MeshType),
+					Name:             "demo",
+					CreationTime:     t1,
+					ModificationTime: t2,
 				},
 				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
-						Ca: &mesh_proto.CertificateAuthority{
-							Type: &mesh_proto.CertificateAuthority_Builtin_{
-								Builtin: &mesh_proto.CertificateAuthority_Builtin{},
+						EnabledBackend: "builtin-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin-1",
+								Type: "builtin",
 							},
 						},
-						Enabled: true,
 					},
 				},
 			},

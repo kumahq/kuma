@@ -3,6 +3,10 @@ package proto
 import (
 	"bytes"
 	"encoding/json"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/duration"
+	pstruct "github.com/golang/protobuf/ptypes/struct"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
@@ -58,4 +62,44 @@ func FromMap(in map[string]interface{}, out proto.Message) error {
 		return err
 	}
 	return FromJSON(content, out)
+}
+
+// Converts loosely typed Struct to strongly typed Message
+func ToTyped(protoStruct *pstruct.Struct, message proto.Message) error {
+	if protoStruct == nil {
+		return nil
+	}
+	configBytes, err := ToJSON(protoStruct)
+	if err != nil {
+		return err
+	}
+	if err := FromJSON(configBytes, message); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Converts loosely typed Struct to strongly typed Message
+func ToStruct(message proto.Message) (pstruct.Struct, error) {
+	configBytes, err := ToJSON(message)
+	if err != nil {
+		return pstruct.Struct{}, err
+	}
+	str := pstruct.Struct{}
+	if err := FromJSON(configBytes, &str); err != nil {
+		return pstruct.Struct{}, err
+	}
+	return str, nil
+}
+
+func MustToStruct(message proto.Message) *pstruct.Struct {
+	str, err := ToStruct(message)
+	if err != nil {
+		panic(err)
+	}
+	return &str
+}
+
+func ToDuration(duration duration.Duration) time.Duration {
+	return time.Duration(duration.Seconds) * time.Second
 }

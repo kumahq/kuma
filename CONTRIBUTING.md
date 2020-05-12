@@ -121,8 +121,9 @@ to verify a few things:
 - Rebase your work on top of the base branch (seek help online on how to use
   `git rebase`; this is important to ensure your commit history is clean and
    linear)
-- The tests are passing: run `make test`, `make test konvoy-injector`,
-  `make test kuma-dp`, or whichever is appropriate for your change
+- The tests are passing: run `make test`, `make test/kuma-cp`,
+  `make test/kuma-dp`, or whichever make target under `test/` is appropriate
+  for your change
 - Do not update CHANGELOG.md yourself. Your change will be included there in
   due time if it is accepted, no worries!
 
@@ -228,7 +229,6 @@ it is at your discretion, but here are some of the most frequent ones:
 
 - **kuma-cp**: A change that affects the control-plane
 - **kuma-dp**: A change that affects the data-plane
-- **injector**: A change to the Kuma injector
 - **kumactl**: A change to the kumactl
 - **deps**: When updating dependencies (to be used with the `chore` prefix)
 - **conf**: Configuration-related changes (new values, improvements...)

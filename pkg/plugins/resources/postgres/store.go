@@ -110,6 +110,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	opts := store.NewUpdateOptions(fs...)
 
 	version, err := strconv.Atoi(resource.GetMeta().GetVersion())
+	newVersion := version + 1
 	if err != nil {
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
@@ -117,7 +118,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	result, err := r.db.Exec(
 		statement,
 		string(bytes),
-		version+1,
+		newVersion,
 		opts.ModificationTime,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
@@ -133,9 +134,10 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 
 	// update resource's meta with new version
 	resource.SetMeta(&resourceMetaObject{
-		Name:    resource.GetMeta().GetName(),
-		Mesh:    resource.GetMeta().GetMesh(),
-		Version: strconv.Itoa(version),
+		Name:             resource.GetMeta().GetName(),
+		Mesh:             resource.GetMeta().GetMesh(),
+		Version:          strconv.Itoa(newVersion),
+		ModificationTime: opts.ModificationTime,
 	})
 
 	return nil
@@ -243,10 +245,15 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		if items > opts.PageSize { // set new offset only if there is next page
 			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
-		resources.SetPagination(model.Pagination{
-			NextOffset: nextOffset,
-		})
+		resources.GetPagination().SetNextOffset(nextOffset)
 	}
+
+	total, err := r.countRows(string(resources.GetItemType()), opts.Mesh)
+	if err != nil {
+		return err
+	}
+	resources.GetPagination().SetTotal(uint32(total))
+
 	return nil
 }
 
@@ -271,6 +278,28 @@ func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, er
 	item.SetMeta(meta)
 
 	return item, nil
+}
+
+func (r *postgresResourceStore) countRows(resource, mesh string) (int, error) {
+	statement := `SELECT COUNT(*) as count FROM resources WHERE type=$1`
+	var statementArgs []interface{}
+	statementArgs = append(statementArgs, resource)
+	argsIndex := 1
+	if mesh != "" {
+		argsIndex++
+		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
+		statementArgs = append(statementArgs, mesh)
+	}
+
+	var count int
+	err := r.db.QueryRow(statement, statementArgs...).Scan(&count)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, errors.Wrapf(err, "failed to execute query: %v", statement)
+	}
+	return count, nil
 }
 
 func (r *postgresResourceStore) Close() error {

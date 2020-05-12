@@ -1,14 +1,19 @@
 {
+  "total": 2,
   "items": [
     {
       "mesh": "default",
       "name": "web-to-backend",
-      "type": "TrafficRoute"
+      "type": "TrafficRoute",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
       "mesh": "default",
       "name": "backend-to-db",
-      "type": "TrafficRoute"
+      "type": "TrafficRoute",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
     }
   ],
   "next": null

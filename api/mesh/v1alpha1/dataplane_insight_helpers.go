@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"time"
 
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/golang/protobuf/ptypes"
 )
 
@@ -79,22 +79,22 @@ func (s *DiscoverySubscriptionStatus) StatsOf(typeUrl string) *DiscoveryServiceS
 		return &DiscoveryServiceStats{}
 	}
 	switch typeUrl {
-	case envoy_cache.ClusterType:
+	case envoy_resource.ClusterType:
 		if s.Cds == nil {
 			s.Cds = &DiscoveryServiceStats{}
 		}
 		return s.Cds
-	case envoy_cache.EndpointType:
+	case envoy_resource.EndpointType:
 		if s.Eds == nil {
 			s.Eds = &DiscoveryServiceStats{}
 		}
 		return s.Eds
-	case envoy_cache.ListenerType:
+	case envoy_resource.ListenerType:
 		if s.Lds == nil {
 			s.Lds = &DiscoveryServiceStats{}
 		}
 		return s.Lds
-	case envoy_cache.RouteType:
+	case envoy_resource.RouteType:
 		if s.Rds == nil {
 			s.Rds = &DiscoveryServiceStats{}
 		}

@@ -1,0 +1,14 @@
+admissionServer:
+  address: x.y.z
+  port: 123456
+  certDir:
+injector:
+  sidecarContainer:
+    image:
+    redirectPort: 423456
+    uid: -1
+    gid: -2
+    adminPort: 523456
+    drainTime: 0s
+  initContainer:
+    image:

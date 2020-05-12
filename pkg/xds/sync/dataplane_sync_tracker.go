@@ -10,7 +10,7 @@ import (
 	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 )
 
 var (

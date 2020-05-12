@@ -35,10 +35,12 @@ func newGetMeshCmd(pctx *getContext) *cobra.Command {
 				}
 				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
 			}
-			meshes := []*core_mesh.MeshResource{mesh}
+			meshes := &core_mesh.MeshResourceList{
+				Items: []*core_mesh.MeshResource{mesh},
+			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printMeshes(meshes, cmd.OutOrStdout())
+				return printMeshes(pctx.Now(), meshes, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

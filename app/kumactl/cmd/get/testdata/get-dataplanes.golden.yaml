@@ -1,5 +1,8 @@
+total: 2
 items:
-- mesh: default
+- creationTime: 0001-01-01T00:00:00Z
+  mesh: default
+  modificationTime: 0001-01-01T00:00:00Z
   name: experiment
   networking:
     address: 127.0.0.1
@@ -15,7 +18,9 @@ items:
         service: metrics
         version: v1
   type: Dataplane
-- mesh: default
+- creationTime: 0001-01-01T00:00:00Z
+  mesh: default
+  modificationTime: 0001-01-01T00:00:00Z
   name: example
   networking:
     address: 127.0.0.2

@@ -13,7 +13,7 @@ This folder contains your download of Kuma:
 │   ├── kuma-prometheus-sd
 │   └── kumactl
 └── conf
-    └── kuma-cp.conf
+    └── kuma-cp.conf.yml
 
 ===============================================================================
 

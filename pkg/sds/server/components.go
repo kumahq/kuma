@@ -3,8 +3,6 @@ package server
 import (
 	"context"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/pkg/errors"
 	kube_auth "k8s.io/api/authentication/v1"
 
@@ -74,65 +72,9 @@ func DefaultDataplaneResolver(resourceManager core_manager.ResourceManager) func
 }
 
 func DefaultMeshCaProvider(rt core_runtime.Runtime) sds_provider.SecretProvider {
-	return ca_sds_provider.New(rt.ResourceManager(), rt.BuiltinCaManager(), rt.ProvidedCaManager())
+	return ca_sds_provider.New(rt.ResourceManager(), rt.CaManagers())
 }
 
 func DefaultIdentityCertProvider(rt core_runtime.Runtime) sds_provider.SecretProvider {
-	return identity_sds_provider.New(rt.ResourceManager(), rt.BuiltinCaManager(), rt.ProvidedCaManager())
-}
-
-func DefaultSecretProviderSelector(rt core_runtime.Runtime) func(string) (sds_provider.SecretProvider, error) {
-	meshCaProvider := DefaultMeshCaProvider(rt)
-	identityCertProvider := DefaultIdentityCertProvider(rt)
-	return func(resource string) (sds_provider.SecretProvider, error) {
-		switch resource {
-		case MeshCaResource:
-			return meshCaProvider, nil
-		case IdentityCertResource:
-			return identityCertProvider, nil
-		default:
-			return nil, errors.Errorf("SDS request for %q resource is not supported", resource)
-		}
-	}
-}
-
-func DefaultSecretDiscoveryHandler(rt core_runtime.Runtime) (SecretDiscoveryHandler, error) {
-	authenticator, err := DefaultAuthenticator(rt)
-	if err != nil {
-		return nil, err
-	}
-	secretProviderSelector := DefaultSecretProviderSelector(rt)
-	return SecretDiscoveryHandlerFunc(func(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error) {
-		resource := req.ResourceNames[0]
-		provider, err := secretProviderSelector(resource)
-		if err != nil {
-			return nil, err
-		}
-		proxyId, err := core_xds.ParseProxyId(req.Node)
-		if err != nil {
-			return nil, errors.Wrap(err, "SDS request must have a valid Proxy Id")
-		}
-		requestor := sds_auth.Identity{Mesh: proxyId.Mesh}
-		if provider.RequiresIdentity() {
-			credential, err := sds_auth.ExtractCredential(ctx)
-			if err != nil {
-				return nil, err
-			}
-			requestor, err = authenticator.Authenticate(ctx, *proxyId, credential)
-			if err != nil {
-				return nil, err
-			}
-		}
-		secret, err := provider.Get(ctx, resource, requestor)
-		if err != nil {
-			return nil, err
-		}
-		return secret.ToResource(resource), nil
-	}), nil
-}
-
-type SecretDiscoveryHandlerFunc func(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error)
-
-func (f SecretDiscoveryHandlerFunc) Handle(ctx context.Context, req envoy.DiscoveryRequest) (*envoy_auth.Secret, error) {
-	return f(ctx, req)
+	return identity_sds_provider.New(rt.ResourceManager(), rt.CaManagers())
 }

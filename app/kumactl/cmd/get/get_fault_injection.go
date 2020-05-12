@@ -35,10 +35,12 @@ func newGetFaultInjectionCmd(pctx *getContext) *cobra.Command {
 				}
 				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
 			}
-			faultInjections := []*mesh.FaultInjectionResource{faultInjection}
+			faultInjections := &mesh.FaultInjectionResourceList{
+				Items: []*mesh.FaultInjectionResource{faultInjection},
+			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printFaultInjections(faultInjections, cmd.OutOrStdout())
+				return printFaultInjections(pctx.Now(), faultInjections, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

@@ -4,8 +4,10 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "v1alpha1";
 
+import "google/protobuf/duration.proto";
 import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
 
 // Mesh defines configuration of a single mesh.
 message Mesh {
@@ -13,12 +15,11 @@ message Mesh {
   // mTLS settings of a Mesh.
   message Mtls {
 
-    // Certificate Authority of a Mesh.
-    // +optional
-    CertificateAuthority ca = 1;
+    // Name of the enabled backend
+    string enabledBackend = 1;
 
-    // If true, then mTLS will be enabled for given mesh
-    bool enabled = 2;
+    // List of available Certificate Authority backends
+    repeated CertificateAuthorityBackend backends = 2;
   }
 
   // mTLS settings.
@@ -42,27 +43,32 @@ message Mesh {
   Metrics metrics = 4;
 }
 
-// CertificateAuthority defines configuration of a CA.
-message CertificateAuthority {
+// CertificateAuthorityBackend defines Certificate Authority backend
+message CertificateAuthorityBackend {
 
-  // Builtin defines configuration of the builtin CA.
-  message Builtin {}
+  // Name of the backend
+  string name = 1;
 
-  // Provided defines configuration of the provided CA.
-  message Provided {}
+  // Type of the backend. Has to be one of the loaded plugins (Kuma ships with
+  // builtin and provided)
+  string type = 2;
 
-  oneof type {
-
-    // Use builtin CA.
-    Builtin builtin = 1;
-
-    // Use provided CA.
-    //
-    // To be able to use provided CA, a user must first upload CA certificate
-    // and key, e.g. by using `kumactl manage ca provided certificates add`
-    // command.
-    Provided provided = 2;
+  // DpCert defines settings for certificates generated for Dataplanes
+  message DpCert {
+    // Rotation defines rotation settings for Dataplane certificate
+    message Rotation {
+      // Time after which generated certificate for Dataplane will expire
+      google.protobuf.Duration expiration = 1;
+    }
+    // Rotation settings
+    Rotation rotation = 1;
   }
+
+  // Dataplane certificate settings
+  DpCert dpCert = 3;
+
+  // Configuration of the backend
+  google.protobuf.Struct config = 4;
 }
 
 // Tracing defines tracing configuration of the mesh.
@@ -86,22 +92,24 @@ message TracingBackend {
   // Empty value defaults to 100.0%
   google.protobuf.DoubleValue sampling = 2;
 
-  // Zipkin defined configuration of Zipkin tracer.
-  message Zipkin {
+  // Type of the backend (Kuma ships with 'zipkin')
+  string type = 3;
 
-    // Address of Zipkin collector.
-    string url = 1;
+  // Configuration of the backend
+  google.protobuf.Struct config = 4;
+}
 
-    // Generate 128bit traces. Default: false
-    bool traceId128bit = 2;
+message ZipkinTracingBackendConfig {
+  // Address of Zipkin collector.
+  string url = 1;
 
-    // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
-    // httpJson see
-    // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
-    string apiVersion = 3;
-  }
+  // Generate 128bit traces. Default: false
+  bool traceId128bit = 2;
 
-  oneof type { Zipkin zipkin = 3; }
+  // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
+  // httpJson see
+  // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
+  string apiVersion = 3;
 }
 
 message Logging {
@@ -124,13 +132,21 @@ message LoggingBackend {
   // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
   string format = 2;
 
-  // Simple logging to file
-  message File { string path = 1; }
+  // Type of the backend (Kuma ships with 'tcp' and 'file')
+  string type = 3;
 
-  message Tcp { string address = 1; }
+  // Configuration of the backend
+  google.protobuf.Struct config = 4;
+}
 
-  oneof type {
-    File file = 3;
-    Tcp tcp = 4;
-  }
+// FileLoggingBackendConfig defines configuration for file based access logs
+message FileLoggingBackendConfig {
+  // Path to a file that logs will be written to
+  string path = 1;
+}
+
+// TcpLoggingBackendConfig defines configuration for TCP based access logs
+message TcpLoggingBackendConfig {
+  // Address to TCP service that will receive logs
+  string address = 1;
 }

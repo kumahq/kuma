@@ -2,7 +2,6 @@ package webhooks
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"k8s.io/api/admission/v1beta1"
@@ -60,7 +59,8 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 
 	if err := coreRes.Validate(); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
-			return convertValidationError(kumaErr, obj)
+			// we assume that coreRes.Validate() returns validation errors of the spec
+			return convertSpecValidationError(kumaErr, obj)
 		}
 		return admission.Denied(err.Error())
 	}
@@ -72,12 +72,15 @@ func (h *validatingHandler) Supports(admission.Request) bool {
 	return true
 }
 
-func convertValidationError(kumaErr *validators.ValidationError, obj k8s_model.KubernetesObject) admission.Response {
-	return convertValidationErrorOf(kumaErr, obj, obj.GetObjectMeta())
+func convertSpecValidationError(kumaErr *validators.ValidationError, obj k8s_model.KubernetesObject) admission.Response {
+	verr := validators.ValidationError{}
+	if kumaErr != nil {
+		verr.AddError("spec", *kumaErr)
+	}
+	return convertValidationErrorOf(verr, obj, obj.GetObjectMeta())
 }
 
-func convertValidationErrorOf(kumaErr *validators.ValidationError, obj kube_runtime.Object, objMeta metav1.Object) admission.Response {
-	kumaErr = convertFieldNames(kumaErr)
+func convertValidationErrorOf(kumaErr validators.ValidationError, obj kube_runtime.Object, objMeta metav1.Object) admission.Response {
 	details := &metav1.StatusDetails{
 		Name: objMeta.GetName(),
 		Kind: obj.GetObjectKind().GroupVersionKind().Kind,
@@ -103,16 +106,4 @@ func convertValidationErrorOf(kumaErr *validators.ValidationError, obj kube_runt
 		details.Causes = append(details.Causes, cause)
 	}
 	return resp
-}
-
-func convertFieldNames(verr *validators.ValidationError) *validators.ValidationError {
-	return verr.Transform(func(violation validators.Violation) validators.Violation {
-		violation.Field = convertFieldName(violation.Field)
-		return violation
-	})
-}
-
-func convertFieldName(field string) string {
-	// at the moment, all Kuma resources validate only ResourceSpec fields
-	return fmt.Sprintf("spec.%s", field)
 }

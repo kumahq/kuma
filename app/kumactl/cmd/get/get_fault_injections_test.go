@@ -112,12 +112,12 @@ var _ = Describe("kumactl get fault-injections", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-
+		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 		BeforeEach(func() {
 			// setup
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
-					Now: time.Now,
+					Now: func() time.Time { return rootTime },
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
@@ -139,6 +139,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 		type testCase struct {
 			outputFormat string
 			goldenFile   string
+			pagination   string
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
@@ -147,7 +148,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "fault-injections"}, given.outputFormat))
+					"get", "fault-injections"}, given.outputFormat, given.pagination))
 
 				// when
 				err := rootCmd.Execute()
@@ -171,6 +172,14 @@ var _ = Describe("kumactl get fault-injections", func() {
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "get-fault-injections.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support pagination", testCase{
+				outputFormat: "-otable",
+				goldenFile:   "get-fault-injections.pagination.golden.txt",
+				pagination:   "--size=1",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},

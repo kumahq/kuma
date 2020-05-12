@@ -6,6 +6,8 @@ package v1alpha1
 import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	duration "github.com/golang/protobuf/ptypes/duration"
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	math "math"
 )
@@ -99,14 +101,13 @@ func (m *Mesh) GetMetrics() *Metrics {
 
 // mTLS settings of a Mesh.
 type Mesh_Mtls struct {
-	// Certificate Authority of a Mesh.
-	// +optional
-	Ca *CertificateAuthority `protobuf:"bytes,1,opt,name=ca,proto3" json:"ca,omitempty"`
-	// If true, then mTLS will be enabled for given mesh
-	Enabled              bool     `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	// Name of the enabled backend
+	EnabledBackend string `protobuf:"bytes,1,opt,name=enabledBackend,proto3" json:"enabledBackend,omitempty"`
+	// List of available Certificate Authority backends
+	Backends             []*CertificateAuthorityBackend `protobuf:"bytes,2,rep,name=backends,proto3" json:"backends,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
+	XXX_unrecognized     []byte                         `json:"-"`
+	XXX_sizecache        int32                          `json:"-"`
 }
 
 func (m *Mesh_Mtls) Reset()         { *m = Mesh_Mtls{} }
@@ -134,164 +135,174 @@ func (m *Mesh_Mtls) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Mesh_Mtls proto.InternalMessageInfo
 
-func (m *Mesh_Mtls) GetCa() *CertificateAuthority {
+func (m *Mesh_Mtls) GetEnabledBackend() string {
 	if m != nil {
-		return m.Ca
+		return m.EnabledBackend
+	}
+	return ""
+}
+
+func (m *Mesh_Mtls) GetBackends() []*CertificateAuthorityBackend {
+	if m != nil {
+		return m.Backends
 	}
 	return nil
 }
 
-func (m *Mesh_Mtls) GetEnabled() bool {
-	if m != nil {
-		return m.Enabled
-	}
-	return false
+// CertificateAuthorityBackend defines Certificate Authority backend
+type CertificateAuthorityBackend struct {
+	// Name of the backend
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Type of the backend. Has to be one of the loaded plugins (Kuma ships with
+	// builtin and provided)
+	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	// Dataplane certificate settings
+	DpCert *CertificateAuthorityBackend_DpCert `protobuf:"bytes,3,opt,name=dpCert,proto3" json:"dpCert,omitempty"`
+	// Configuration of the backend
+	Config               *_struct.Struct `protobuf:"bytes,4,opt,name=config,proto3" json:"config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
-// CertificateAuthority defines configuration of a CA.
-type CertificateAuthority struct {
-	// Types that are valid to be assigned to Type:
-	//	*CertificateAuthority_Builtin_
-	//	*CertificateAuthority_Provided_
-	Type                 isCertificateAuthority_Type `protobuf_oneof:"type"`
-	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
-	XXX_unrecognized     []byte                      `json:"-"`
-	XXX_sizecache        int32                       `json:"-"`
-}
-
-func (m *CertificateAuthority) Reset()         { *m = CertificateAuthority{} }
-func (m *CertificateAuthority) String() string { return proto.CompactTextString(m) }
-func (*CertificateAuthority) ProtoMessage()    {}
-func (*CertificateAuthority) Descriptor() ([]byte, []int) {
+func (m *CertificateAuthorityBackend) Reset()         { *m = CertificateAuthorityBackend{} }
+func (m *CertificateAuthorityBackend) String() string { return proto.CompactTextString(m) }
+func (*CertificateAuthorityBackend) ProtoMessage()    {}
+func (*CertificateAuthorityBackend) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ae9b3cd8c92bbf6a, []int{1}
 }
 
-func (m *CertificateAuthority) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CertificateAuthority.Unmarshal(m, b)
+func (m *CertificateAuthorityBackend) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CertificateAuthorityBackend.Unmarshal(m, b)
 }
-func (m *CertificateAuthority) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CertificateAuthority.Marshal(b, m, deterministic)
+func (m *CertificateAuthorityBackend) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CertificateAuthorityBackend.Marshal(b, m, deterministic)
 }
-func (m *CertificateAuthority) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateAuthority.Merge(m, src)
+func (m *CertificateAuthorityBackend) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CertificateAuthorityBackend.Merge(m, src)
 }
-func (m *CertificateAuthority) XXX_Size() int {
-	return xxx_messageInfo_CertificateAuthority.Size(m)
+func (m *CertificateAuthorityBackend) XXX_Size() int {
+	return xxx_messageInfo_CertificateAuthorityBackend.Size(m)
 }
-func (m *CertificateAuthority) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateAuthority.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateAuthority proto.InternalMessageInfo
-
-type isCertificateAuthority_Type interface {
-	isCertificateAuthority_Type()
+func (m *CertificateAuthorityBackend) XXX_DiscardUnknown() {
+	xxx_messageInfo_CertificateAuthorityBackend.DiscardUnknown(m)
 }
 
-type CertificateAuthority_Builtin_ struct {
-	Builtin *CertificateAuthority_Builtin `protobuf:"bytes,1,opt,name=builtin,proto3,oneof"`
+var xxx_messageInfo_CertificateAuthorityBackend proto.InternalMessageInfo
+
+func (m *CertificateAuthorityBackend) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
 }
 
-type CertificateAuthority_Provided_ struct {
-	Provided *CertificateAuthority_Provided `protobuf:"bytes,2,opt,name=provided,proto3,oneof"`
-}
-
-func (*CertificateAuthority_Builtin_) isCertificateAuthority_Type() {}
-
-func (*CertificateAuthority_Provided_) isCertificateAuthority_Type() {}
-
-func (m *CertificateAuthority) GetType() isCertificateAuthority_Type {
+func (m *CertificateAuthorityBackend) GetType() string {
 	if m != nil {
 		return m.Type
 	}
-	return nil
+	return ""
 }
 
-func (m *CertificateAuthority) GetBuiltin() *CertificateAuthority_Builtin {
-	if x, ok := m.GetType().(*CertificateAuthority_Builtin_); ok {
-		return x.Builtin
+func (m *CertificateAuthorityBackend) GetDpCert() *CertificateAuthorityBackend_DpCert {
+	if m != nil {
+		return m.DpCert
 	}
 	return nil
 }
 
-func (m *CertificateAuthority) GetProvided() *CertificateAuthority_Provided {
-	if x, ok := m.GetType().(*CertificateAuthority_Provided_); ok {
-		return x.Provided
+func (m *CertificateAuthorityBackend) GetConfig() *_struct.Struct {
+	if m != nil {
+		return m.Config
 	}
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*CertificateAuthority) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*CertificateAuthority_Builtin_)(nil),
-		(*CertificateAuthority_Provided_)(nil),
-	}
+// DpCert defines settings for certificates generated for Dataplanes
+type CertificateAuthorityBackend_DpCert struct {
+	// Rotation settings
+	Rotation             *CertificateAuthorityBackend_DpCert_Rotation `protobuf:"bytes,1,opt,name=rotation,proto3" json:"rotation,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                     `json:"-"`
+	XXX_unrecognized     []byte                                       `json:"-"`
+	XXX_sizecache        int32                                        `json:"-"`
 }
 
-// Builtin defines configuration of the builtin CA.
-type CertificateAuthority_Builtin struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CertificateAuthority_Builtin) Reset()         { *m = CertificateAuthority_Builtin{} }
-func (m *CertificateAuthority_Builtin) String() string { return proto.CompactTextString(m) }
-func (*CertificateAuthority_Builtin) ProtoMessage()    {}
-func (*CertificateAuthority_Builtin) Descriptor() ([]byte, []int) {
+func (m *CertificateAuthorityBackend_DpCert) Reset()         { *m = CertificateAuthorityBackend_DpCert{} }
+func (m *CertificateAuthorityBackend_DpCert) String() string { return proto.CompactTextString(m) }
+func (*CertificateAuthorityBackend_DpCert) ProtoMessage()    {}
+func (*CertificateAuthorityBackend_DpCert) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ae9b3cd8c92bbf6a, []int{1, 0}
 }
 
-func (m *CertificateAuthority_Builtin) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CertificateAuthority_Builtin.Unmarshal(m, b)
+func (m *CertificateAuthorityBackend_DpCert) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CertificateAuthorityBackend_DpCert.Unmarshal(m, b)
 }
-func (m *CertificateAuthority_Builtin) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CertificateAuthority_Builtin.Marshal(b, m, deterministic)
+func (m *CertificateAuthorityBackend_DpCert) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CertificateAuthorityBackend_DpCert.Marshal(b, m, deterministic)
 }
-func (m *CertificateAuthority_Builtin) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateAuthority_Builtin.Merge(m, src)
+func (m *CertificateAuthorityBackend_DpCert) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CertificateAuthorityBackend_DpCert.Merge(m, src)
 }
-func (m *CertificateAuthority_Builtin) XXX_Size() int {
-	return xxx_messageInfo_CertificateAuthority_Builtin.Size(m)
+func (m *CertificateAuthorityBackend_DpCert) XXX_Size() int {
+	return xxx_messageInfo_CertificateAuthorityBackend_DpCert.Size(m)
 }
-func (m *CertificateAuthority_Builtin) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateAuthority_Builtin.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CertificateAuthority_Builtin proto.InternalMessageInfo
-
-// Provided defines configuration of the provided CA.
-type CertificateAuthority_Provided struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+func (m *CertificateAuthorityBackend_DpCert) XXX_DiscardUnknown() {
+	xxx_messageInfo_CertificateAuthorityBackend_DpCert.DiscardUnknown(m)
 }
 
-func (m *CertificateAuthority_Provided) Reset()         { *m = CertificateAuthority_Provided{} }
-func (m *CertificateAuthority_Provided) String() string { return proto.CompactTextString(m) }
-func (*CertificateAuthority_Provided) ProtoMessage()    {}
-func (*CertificateAuthority_Provided) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ae9b3cd8c92bbf6a, []int{1, 1}
+var xxx_messageInfo_CertificateAuthorityBackend_DpCert proto.InternalMessageInfo
+
+func (m *CertificateAuthorityBackend_DpCert) GetRotation() *CertificateAuthorityBackend_DpCert_Rotation {
+	if m != nil {
+		return m.Rotation
+	}
+	return nil
 }
 
-func (m *CertificateAuthority_Provided) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CertificateAuthority_Provided.Unmarshal(m, b)
-}
-func (m *CertificateAuthority_Provided) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CertificateAuthority_Provided.Marshal(b, m, deterministic)
-}
-func (m *CertificateAuthority_Provided) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CertificateAuthority_Provided.Merge(m, src)
-}
-func (m *CertificateAuthority_Provided) XXX_Size() int {
-	return xxx_messageInfo_CertificateAuthority_Provided.Size(m)
-}
-func (m *CertificateAuthority_Provided) XXX_DiscardUnknown() {
-	xxx_messageInfo_CertificateAuthority_Provided.DiscardUnknown(m)
+// Rotation defines rotation settings for Dataplane certificate
+type CertificateAuthorityBackend_DpCert_Rotation struct {
+	// Time after which generated certificate for Dataplane will expire
+	Expiration           *duration.Duration `protobuf:"bytes,1,opt,name=expiration,proto3" json:"expiration,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
-var xxx_messageInfo_CertificateAuthority_Provided proto.InternalMessageInfo
+func (m *CertificateAuthorityBackend_DpCert_Rotation) Reset() {
+	*m = CertificateAuthorityBackend_DpCert_Rotation{}
+}
+func (m *CertificateAuthorityBackend_DpCert_Rotation) String() string {
+	return proto.CompactTextString(m)
+}
+func (*CertificateAuthorityBackend_DpCert_Rotation) ProtoMessage() {}
+func (*CertificateAuthorityBackend_DpCert_Rotation) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ae9b3cd8c92bbf6a, []int{1, 0, 0}
+}
+
+func (m *CertificateAuthorityBackend_DpCert_Rotation) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CertificateAuthorityBackend_DpCert_Rotation.Unmarshal(m, b)
+}
+func (m *CertificateAuthorityBackend_DpCert_Rotation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CertificateAuthorityBackend_DpCert_Rotation.Marshal(b, m, deterministic)
+}
+func (m *CertificateAuthorityBackend_DpCert_Rotation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CertificateAuthorityBackend_DpCert_Rotation.Merge(m, src)
+}
+func (m *CertificateAuthorityBackend_DpCert_Rotation) XXX_Size() int {
+	return xxx_messageInfo_CertificateAuthorityBackend_DpCert_Rotation.Size(m)
+}
+func (m *CertificateAuthorityBackend_DpCert_Rotation) XXX_DiscardUnknown() {
+	xxx_messageInfo_CertificateAuthorityBackend_DpCert_Rotation.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CertificateAuthorityBackend_DpCert_Rotation proto.InternalMessageInfo
+
+func (m *CertificateAuthorityBackend_DpCert_Rotation) GetExpiration() *duration.Duration {
+	if m != nil {
+		return m.Expiration
+	}
+	return nil
+}
 
 // Tracing defines tracing configuration of the mesh.
 type Tracing struct {
@@ -352,12 +363,13 @@ type TracingBackend struct {
 	// Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
 	// Empty value defaults to 100.0%
 	Sampling *wrappers.DoubleValue `protobuf:"bytes,2,opt,name=sampling,proto3" json:"sampling,omitempty"`
-	// Types that are valid to be assigned to Type:
-	//	*TracingBackend_Zipkin_
-	Type                 isTracingBackend_Type `protobuf_oneof:"type"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
+	// Type of the backend (Kuma ships with 'zipkin')
+	Type string `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	// Configuration of the backend
+	Config               *_struct.Struct `protobuf:"bytes,4,opt,name=config,proto3" json:"config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
 func (m *TracingBackend) Reset()         { *m = TracingBackend{} }
@@ -399,39 +411,21 @@ func (m *TracingBackend) GetSampling() *wrappers.DoubleValue {
 	return nil
 }
 
-type isTracingBackend_Type interface {
-	isTracingBackend_Type()
-}
-
-type TracingBackend_Zipkin_ struct {
-	Zipkin *TracingBackend_Zipkin `protobuf:"bytes,3,opt,name=zipkin,proto3,oneof"`
-}
-
-func (*TracingBackend_Zipkin_) isTracingBackend_Type() {}
-
-func (m *TracingBackend) GetType() isTracingBackend_Type {
+func (m *TracingBackend) GetType() string {
 	if m != nil {
 		return m.Type
 	}
-	return nil
+	return ""
 }
 
-func (m *TracingBackend) GetZipkin() *TracingBackend_Zipkin {
-	if x, ok := m.GetType().(*TracingBackend_Zipkin_); ok {
-		return x.Zipkin
+func (m *TracingBackend) GetConfig() *_struct.Struct {
+	if m != nil {
+		return m.Config
 	}
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*TracingBackend) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*TracingBackend_Zipkin_)(nil),
-	}
-}
-
-// Zipkin defined configuration of Zipkin tracer.
-type TracingBackend_Zipkin struct {
+type ZipkinTracingBackendConfig struct {
 	// Address of Zipkin collector.
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	// Generate 128bit traces. Default: false
@@ -445,46 +439,46 @@ type TracingBackend_Zipkin struct {
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *TracingBackend_Zipkin) Reset()         { *m = TracingBackend_Zipkin{} }
-func (m *TracingBackend_Zipkin) String() string { return proto.CompactTextString(m) }
-func (*TracingBackend_Zipkin) ProtoMessage()    {}
-func (*TracingBackend_Zipkin) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ae9b3cd8c92bbf6a, []int{3, 0}
+func (m *ZipkinTracingBackendConfig) Reset()         { *m = ZipkinTracingBackendConfig{} }
+func (m *ZipkinTracingBackendConfig) String() string { return proto.CompactTextString(m) }
+func (*ZipkinTracingBackendConfig) ProtoMessage()    {}
+func (*ZipkinTracingBackendConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ae9b3cd8c92bbf6a, []int{4}
 }
 
-func (m *TracingBackend_Zipkin) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TracingBackend_Zipkin.Unmarshal(m, b)
+func (m *ZipkinTracingBackendConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ZipkinTracingBackendConfig.Unmarshal(m, b)
 }
-func (m *TracingBackend_Zipkin) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TracingBackend_Zipkin.Marshal(b, m, deterministic)
+func (m *ZipkinTracingBackendConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ZipkinTracingBackendConfig.Marshal(b, m, deterministic)
 }
-func (m *TracingBackend_Zipkin) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TracingBackend_Zipkin.Merge(m, src)
+func (m *ZipkinTracingBackendConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ZipkinTracingBackendConfig.Merge(m, src)
 }
-func (m *TracingBackend_Zipkin) XXX_Size() int {
-	return xxx_messageInfo_TracingBackend_Zipkin.Size(m)
+func (m *ZipkinTracingBackendConfig) XXX_Size() int {
+	return xxx_messageInfo_ZipkinTracingBackendConfig.Size(m)
 }
-func (m *TracingBackend_Zipkin) XXX_DiscardUnknown() {
-	xxx_messageInfo_TracingBackend_Zipkin.DiscardUnknown(m)
+func (m *ZipkinTracingBackendConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_ZipkinTracingBackendConfig.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_TracingBackend_Zipkin proto.InternalMessageInfo
+var xxx_messageInfo_ZipkinTracingBackendConfig proto.InternalMessageInfo
 
-func (m *TracingBackend_Zipkin) GetUrl() string {
+func (m *ZipkinTracingBackendConfig) GetUrl() string {
 	if m != nil {
 		return m.Url
 	}
 	return ""
 }
 
-func (m *TracingBackend_Zipkin) GetTraceId128Bit() bool {
+func (m *ZipkinTracingBackendConfig) GetTraceId128Bit() bool {
 	if m != nil {
 		return m.TraceId128Bit
 	}
 	return false
 }
 
-func (m *TracingBackend_Zipkin) GetApiVersion() string {
+func (m *ZipkinTracingBackendConfig) GetApiVersion() string {
 	if m != nil {
 		return m.ApiVersion
 	}
@@ -505,7 +499,7 @@ func (m *Logging) Reset()         { *m = Logging{} }
 func (m *Logging) String() string { return proto.CompactTextString(m) }
 func (*Logging) ProtoMessage()    {}
 func (*Logging) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ae9b3cd8c92bbf6a, []int{4}
+	return fileDescriptor_ae9b3cd8c92bbf6a, []int{5}
 }
 
 func (m *Logging) XXX_Unmarshal(b []byte) error {
@@ -549,20 +543,20 @@ type LoggingBackend struct {
 	// Format of access logs. Placehodlers available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
 	Format string `protobuf:"bytes,2,opt,name=format,proto3" json:"format,omitempty"`
-	// Types that are valid to be assigned to Type:
-	//	*LoggingBackend_File_
-	//	*LoggingBackend_Tcp_
-	Type                 isLoggingBackend_Type `protobuf_oneof:"type"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
+	// Type of the backend (Kuma ships with 'tcp' and 'file')
+	Type string `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	// Configuration of the backend
+	Config               *_struct.Struct `protobuf:"bytes,4,opt,name=config,proto3" json:"config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
 func (m *LoggingBackend) Reset()         { *m = LoggingBackend{} }
 func (m *LoggingBackend) String() string { return proto.CompactTextString(m) }
 func (*LoggingBackend) ProtoMessage()    {}
 func (*LoggingBackend) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ae9b3cd8c92bbf6a, []int{5}
+	return fileDescriptor_ae9b3cd8c92bbf6a, []int{6}
 }
 
 func (m *LoggingBackend) XXX_Unmarshal(b []byte) error {
@@ -597,124 +591,96 @@ func (m *LoggingBackend) GetFormat() string {
 	return ""
 }
 
-type isLoggingBackend_Type interface {
-	isLoggingBackend_Type()
-}
-
-type LoggingBackend_File_ struct {
-	File *LoggingBackend_File `protobuf:"bytes,3,opt,name=file,proto3,oneof"`
-}
-
-type LoggingBackend_Tcp_ struct {
-	Tcp *LoggingBackend_Tcp `protobuf:"bytes,4,opt,name=tcp,proto3,oneof"`
-}
-
-func (*LoggingBackend_File_) isLoggingBackend_Type() {}
-
-func (*LoggingBackend_Tcp_) isLoggingBackend_Type() {}
-
-func (m *LoggingBackend) GetType() isLoggingBackend_Type {
+func (m *LoggingBackend) GetType() string {
 	if m != nil {
 		return m.Type
 	}
-	return nil
+	return ""
 }
 
-func (m *LoggingBackend) GetFile() *LoggingBackend_File {
-	if x, ok := m.GetType().(*LoggingBackend_File_); ok {
-		return x.File
+func (m *LoggingBackend) GetConfig() *_struct.Struct {
+	if m != nil {
+		return m.Config
 	}
 	return nil
 }
 
-func (m *LoggingBackend) GetTcp() *LoggingBackend_Tcp {
-	if x, ok := m.GetType().(*LoggingBackend_Tcp_); ok {
-		return x.Tcp
-	}
-	return nil
-}
-
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*LoggingBackend) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*LoggingBackend_File_)(nil),
-		(*LoggingBackend_Tcp_)(nil),
-	}
-}
-
-// Simple logging to file
-type LoggingBackend_File struct {
+// FileLoggingBackendConfig defines configuration for file based access logs
+type FileLoggingBackendConfig struct {
+	// Path to a file that logs will be written to
 	Path                 string   `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *LoggingBackend_File) Reset()         { *m = LoggingBackend_File{} }
-func (m *LoggingBackend_File) String() string { return proto.CompactTextString(m) }
-func (*LoggingBackend_File) ProtoMessage()    {}
-func (*LoggingBackend_File) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ae9b3cd8c92bbf6a, []int{5, 0}
+func (m *FileLoggingBackendConfig) Reset()         { *m = FileLoggingBackendConfig{} }
+func (m *FileLoggingBackendConfig) String() string { return proto.CompactTextString(m) }
+func (*FileLoggingBackendConfig) ProtoMessage()    {}
+func (*FileLoggingBackendConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ae9b3cd8c92bbf6a, []int{7}
 }
 
-func (m *LoggingBackend_File) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_LoggingBackend_File.Unmarshal(m, b)
+func (m *FileLoggingBackendConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FileLoggingBackendConfig.Unmarshal(m, b)
 }
-func (m *LoggingBackend_File) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_LoggingBackend_File.Marshal(b, m, deterministic)
+func (m *FileLoggingBackendConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FileLoggingBackendConfig.Marshal(b, m, deterministic)
 }
-func (m *LoggingBackend_File) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LoggingBackend_File.Merge(m, src)
+func (m *FileLoggingBackendConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FileLoggingBackendConfig.Merge(m, src)
 }
-func (m *LoggingBackend_File) XXX_Size() int {
-	return xxx_messageInfo_LoggingBackend_File.Size(m)
+func (m *FileLoggingBackendConfig) XXX_Size() int {
+	return xxx_messageInfo_FileLoggingBackendConfig.Size(m)
 }
-func (m *LoggingBackend_File) XXX_DiscardUnknown() {
-	xxx_messageInfo_LoggingBackend_File.DiscardUnknown(m)
+func (m *FileLoggingBackendConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_FileLoggingBackendConfig.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_LoggingBackend_File proto.InternalMessageInfo
+var xxx_messageInfo_FileLoggingBackendConfig proto.InternalMessageInfo
 
-func (m *LoggingBackend_File) GetPath() string {
+func (m *FileLoggingBackendConfig) GetPath() string {
 	if m != nil {
 		return m.Path
 	}
 	return ""
 }
 
-type LoggingBackend_Tcp struct {
+// TcpLoggingBackendConfig defines configuration for TCP based access logs
+type TcpLoggingBackendConfig struct {
+	// Address to TCP service that will receive logs
 	Address              string   `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *LoggingBackend_Tcp) Reset()         { *m = LoggingBackend_Tcp{} }
-func (m *LoggingBackend_Tcp) String() string { return proto.CompactTextString(m) }
-func (*LoggingBackend_Tcp) ProtoMessage()    {}
-func (*LoggingBackend_Tcp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ae9b3cd8c92bbf6a, []int{5, 1}
+func (m *TcpLoggingBackendConfig) Reset()         { *m = TcpLoggingBackendConfig{} }
+func (m *TcpLoggingBackendConfig) String() string { return proto.CompactTextString(m) }
+func (*TcpLoggingBackendConfig) ProtoMessage()    {}
+func (*TcpLoggingBackendConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ae9b3cd8c92bbf6a, []int{8}
 }
 
-func (m *LoggingBackend_Tcp) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_LoggingBackend_Tcp.Unmarshal(m, b)
+func (m *TcpLoggingBackendConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TcpLoggingBackendConfig.Unmarshal(m, b)
 }
-func (m *LoggingBackend_Tcp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_LoggingBackend_Tcp.Marshal(b, m, deterministic)
+func (m *TcpLoggingBackendConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TcpLoggingBackendConfig.Marshal(b, m, deterministic)
 }
-func (m *LoggingBackend_Tcp) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LoggingBackend_Tcp.Merge(m, src)
+func (m *TcpLoggingBackendConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TcpLoggingBackendConfig.Merge(m, src)
 }
-func (m *LoggingBackend_Tcp) XXX_Size() int {
-	return xxx_messageInfo_LoggingBackend_Tcp.Size(m)
+func (m *TcpLoggingBackendConfig) XXX_Size() int {
+	return xxx_messageInfo_TcpLoggingBackendConfig.Size(m)
 }
-func (m *LoggingBackend_Tcp) XXX_DiscardUnknown() {
-	xxx_messageInfo_LoggingBackend_Tcp.DiscardUnknown(m)
+func (m *TcpLoggingBackendConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_TcpLoggingBackendConfig.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_LoggingBackend_Tcp proto.InternalMessageInfo
+var xxx_messageInfo_TcpLoggingBackendConfig proto.InternalMessageInfo
 
-func (m *LoggingBackend_Tcp) GetAddress() string {
+func (m *TcpLoggingBackendConfig) GetAddress() string {
 	if m != nil {
 		return m.Address
 	}
@@ -724,57 +690,58 @@ func (m *LoggingBackend_Tcp) GetAddress() string {
 func init() {
 	proto.RegisterType((*Mesh)(nil), "kuma.mesh.v1alpha1.Mesh")
 	proto.RegisterType((*Mesh_Mtls)(nil), "kuma.mesh.v1alpha1.Mesh.Mtls")
-	proto.RegisterType((*CertificateAuthority)(nil), "kuma.mesh.v1alpha1.CertificateAuthority")
-	proto.RegisterType((*CertificateAuthority_Builtin)(nil), "kuma.mesh.v1alpha1.CertificateAuthority.Builtin")
-	proto.RegisterType((*CertificateAuthority_Provided)(nil), "kuma.mesh.v1alpha1.CertificateAuthority.Provided")
+	proto.RegisterType((*CertificateAuthorityBackend)(nil), "kuma.mesh.v1alpha1.CertificateAuthorityBackend")
+	proto.RegisterType((*CertificateAuthorityBackend_DpCert)(nil), "kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert")
+	proto.RegisterType((*CertificateAuthorityBackend_DpCert_Rotation)(nil), "kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation")
 	proto.RegisterType((*Tracing)(nil), "kuma.mesh.v1alpha1.Tracing")
 	proto.RegisterType((*TracingBackend)(nil), "kuma.mesh.v1alpha1.TracingBackend")
-	proto.RegisterType((*TracingBackend_Zipkin)(nil), "kuma.mesh.v1alpha1.TracingBackend.Zipkin")
+	proto.RegisterType((*ZipkinTracingBackendConfig)(nil), "kuma.mesh.v1alpha1.ZipkinTracingBackendConfig")
 	proto.RegisterType((*Logging)(nil), "kuma.mesh.v1alpha1.Logging")
 	proto.RegisterType((*LoggingBackend)(nil), "kuma.mesh.v1alpha1.LoggingBackend")
-	proto.RegisterType((*LoggingBackend_File)(nil), "kuma.mesh.v1alpha1.LoggingBackend.File")
-	proto.RegisterType((*LoggingBackend_Tcp)(nil), "kuma.mesh.v1alpha1.LoggingBackend.Tcp")
+	proto.RegisterType((*FileLoggingBackendConfig)(nil), "kuma.mesh.v1alpha1.FileLoggingBackendConfig")
+	proto.RegisterType((*TcpLoggingBackendConfig)(nil), "kuma.mesh.v1alpha1.TcpLoggingBackendConfig")
 }
 
 func init() { proto.RegisterFile("mesh/v1alpha1/mesh.proto", fileDescriptor_ae9b3cd8c92bbf6a) }
 
 var fileDescriptor_ae9b3cd8c92bbf6a = []byte{
-	// 589 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x93, 0xdd, 0x6e, 0xd3, 0x30,
-	0x14, 0xc7, 0xdb, 0x34, 0x6a, 0xd3, 0x33, 0x31, 0x21, 0x0b, 0xa1, 0x28, 0x83, 0x31, 0x55, 0x68,
-	0x8c, 0x9b, 0x94, 0x16, 0x21, 0x4d, 0x48, 0x20, 0xd1, 0x21, 0x54, 0xa4, 0x4d, 0x20, 0xab, 0xda,
-	0x45, 0xaf, 0x70, 0x12, 0xb7, 0xb5, 0xea, 0x24, 0xc6, 0x71, 0x86, 0xc6, 0x3b, 0xf0, 0x42, 0x3c,
-	0x07, 0x8f, 0xc3, 0x05, 0x72, 0x62, 0x97, 0x75, 0xeb, 0x58, 0x2f, 0xb8, 0xf3, 0x39, 0xe7, 0xff,
-	0x3b, 0x1f, 0x39, 0x27, 0xe0, 0xa7, 0xb4, 0x58, 0xf4, 0x2f, 0x06, 0x84, 0x8b, 0x05, 0x19, 0xf4,
-	0xb5, 0x15, 0x0a, 0x99, 0xab, 0x1c, 0xa1, 0x65, 0x99, 0x92, 0xb0, 0x72, 0xd8, 0x70, 0xb0, 0x77,
-	0x5d, 0xad, 0x24, 0x8b, 0x8b, 0x1a, 0x08, 0xf6, 0xe7, 0x79, 0x3e, 0xe7, 0xb4, 0x5f, 0x59, 0x51,
-	0x39, 0xeb, 0x7f, 0x93, 0x44, 0x08, 0x2a, 0x4d, 0xbc, 0xf7, 0xd3, 0x01, 0xf7, 0x8c, 0x16, 0x0b,
-	0x34, 0x00, 0x37, 0x55, 0xbc, 0xf0, 0x9b, 0x07, 0xcd, 0xa3, 0x9d, 0xe1, 0xe3, 0xf0, 0x66, 0xa1,
-	0x50, 0xeb, 0xc2, 0x33, 0xc5, 0x0b, 0x5c, 0x49, 0xd1, 0x2b, 0xe8, 0x28, 0x49, 0x62, 0x96, 0xcd,
-	0x7d, 0xa7, 0xa2, 0xf6, 0x36, 0x51, 0x93, 0x5a, 0x82, 0xad, 0x56, 0x63, 0x3c, 0x9f, 0xcf, 0x35,
-	0xd6, 0xba, 0x1d, 0x3b, 0xad, 0x25, 0xd8, 0x6a, 0x35, 0x66, 0x46, 0xf3, 0xdd, 0xdb, 0xb1, 0xb3,
-	0x5a, 0x82, 0xad, 0x36, 0x98, 0x82, 0xab, 0x5b, 0x46, 0xc7, 0xe0, 0xc4, 0xc4, 0x4c, 0x77, 0xb4,
-	0x89, 0x3c, 0xa1, 0x52, 0xb1, 0x19, 0x8b, 0x89, 0xa2, 0xef, 0x4a, 0xb5, 0xc8, 0x25, 0x53, 0x97,
-	0xd8, 0x89, 0x09, 0xf2, 0xa1, 0x43, 0x33, 0x12, 0x71, 0x9a, 0x54, 0x63, 0x7a, 0xd8, 0x9a, 0xbd,
-	0x5f, 0x4d, 0x78, 0xb0, 0x09, 0x43, 0xa7, 0xd0, 0x89, 0x4a, 0xc6, 0x15, 0xcb, 0x4c, 0xc5, 0x17,
-	0xdb, 0x56, 0x0c, 0x47, 0x35, 0x37, 0x6e, 0x60, 0x9b, 0x02, 0x7d, 0x02, 0x4f, 0xc8, 0xfc, 0x82,
-	0x25, 0xa6, 0x83, 0x9d, 0xe1, 0x60, 0xeb, 0x74, 0x9f, 0x0d, 0x38, 0x6e, 0xe0, 0x55, 0x92, 0xa0,
-	0x0b, 0x1d, 0x53, 0x26, 0x00, 0xf0, 0xac, 0x64, 0xd4, 0x06, 0x57, 0x5d, 0x0a, 0xda, 0xfb, 0x0a,
-	0x1d, 0xb3, 0x34, 0x74, 0x08, 0xbb, 0x09, 0x9d, 0x91, 0x92, 0xab, 0x11, 0x89, 0x97, 0x34, 0x4b,
-	0xaa, 0x79, 0xba, 0xf8, 0x9a, 0x17, 0xbd, 0x05, 0x2f, 0xaa, 0x9f, 0x85, 0xef, 0x1c, 0xb4, 0x8e,
-	0x76, 0x86, 0xbd, 0x7f, 0xdc, 0x82, 0xa1, 0xf0, 0x8a, 0xe9, 0xfd, 0x70, 0x60, 0x77, 0x3d, 0x88,
-	0x10, 0xb8, 0x19, 0x49, 0xa9, 0x29, 0x58, 0xbd, 0xd1, 0x31, 0x78, 0x05, 0x49, 0x05, 0xff, 0x7b,
-	0x72, 0x8f, 0xc2, 0xfa, 0xc0, 0x43, 0x7b, 0xe0, 0xe1, 0xfb, 0xbc, 0x8c, 0x38, 0x3d, 0x27, 0xbc,
-	0xa4, 0x78, 0xa5, 0x46, 0x27, 0xd0, 0xfe, 0xce, 0xc4, 0x92, 0x65, 0xe6, 0xe6, 0x9e, 0xdf, 0xdd,
-	0x5e, 0x38, 0xad, 0x80, 0x71, 0x03, 0x1b, 0x34, 0xf8, 0x02, 0xed, 0xda, 0x87, 0xee, 0x43, 0xab,
-	0x94, 0xdc, 0xf4, 0xa6, 0x9f, 0xe8, 0x29, 0xdc, 0xd3, 0x07, 0x4e, 0x3f, 0x26, 0x83, 0xe1, 0x71,
-	0xc4, 0x94, 0xb9, 0x95, 0x75, 0x27, 0xda, 0x07, 0x20, 0x82, 0x9d, 0x53, 0x59, 0xb0, 0xbc, 0x6e,
-	0xa5, 0x8b, 0xaf, 0x78, 0xae, 0xae, 0xc0, 0xfc, 0x00, 0xff, 0x7b, 0x05, 0x26, 0xed, 0xcd, 0x15,
-	0xfc, 0x6e, 0xc2, 0xee, 0x7a, 0x70, 0xe3, 0x0a, 0x1e, 0x42, 0x7b, 0x96, 0xcb, 0x94, 0xd4, 0x03,
-	0x76, 0xb1, 0xb1, 0xd0, 0x1b, 0x70, 0x67, 0x8c, 0x53, 0xf3, 0x79, 0x9f, 0xdd, 0x5d, 0x3a, 0xfc,
-	0xc0, 0x38, 0x1d, 0x37, 0x70, 0x85, 0xa1, 0xd7, 0xd0, 0x52, 0xb1, 0x30, 0x7f, 0xf6, 0xe1, 0x16,
-	0xf4, 0x24, 0x16, 0xe3, 0x06, 0xd6, 0x50, 0x10, 0x80, 0xab, 0x73, 0xe9, 0x76, 0x05, 0x51, 0x0b,
-	0xdb, 0xae, 0x7e, 0x07, 0x4f, 0xa0, 0x35, 0x89, 0x85, 0xfe, 0x87, 0x49, 0x92, 0x48, 0x5a, 0x14,
-	0x26, 0x6a, 0x4d, 0xfb, 0xc5, 0x47, 0x30, 0xf5, 0x6c, 0xa9, 0xa8, 0x5d, 0x1d, 0xd3, 0xcb, 0x3f,
-	0x01, 0x00, 0x00, 0xff, 0xff, 0xce, 0xec, 0x63, 0x75, 0x88, 0x05, 0x00, 0x00,
+	// 603 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x53, 0x4d, 0x6f, 0xd4, 0x30,
+	0x10, 0xd5, 0x7e, 0x68, 0x9b, 0x4e, 0x45, 0x85, 0x7c, 0xa0, 0x21, 0x2d, 0x55, 0x15, 0x21, 0xd4,
+	0x53, 0xa2, 0x6d, 0x05, 0x2a, 0x17, 0x10, 0x6d, 0x41, 0x42, 0x50, 0x0e, 0xa6, 0xea, 0xa1, 0x9c,
+	0x9c, 0xc4, 0x9b, 0xb5, 0xd6, 0x49, 0x8c, 0xe3, 0x00, 0x15, 0x27, 0x7e, 0x0b, 0x57, 0xfe, 0x11,
+	0xbf, 0x83, 0x3b, 0xb2, 0xe3, 0x2c, 0x9b, 0xcd, 0xb6, 0x52, 0x51, 0x6f, 0x93, 0x99, 0xf7, 0x26,
+	0xcf, 0xf3, 0x66, 0xc0, 0xcd, 0x68, 0x39, 0x0d, 0xbf, 0x8c, 0x09, 0x17, 0x53, 0x32, 0x0e, 0xf5,
+	0x57, 0x20, 0x64, 0xa1, 0x0a, 0x84, 0x66, 0x55, 0x46, 0x02, 0x93, 0x68, 0xca, 0xde, 0x6e, 0x5a,
+	0x14, 0x29, 0xa7, 0xa1, 0x41, 0x44, 0xd5, 0x24, 0x4c, 0x2a, 0x49, 0x14, 0x2b, 0xf2, 0x9a, 0xe3,
+	0x6d, 0x2f, 0x77, 0x53, 0x92, 0xc5, 0xa5, 0x2d, 0x76, 0xc8, 0x5f, 0x25, 0x11, 0x82, 0xca, 0xa6,
+	0xbe, 0xb3, 0x5c, 0x2f, 0x95, 0xac, 0x62, 0x55, 0x57, 0xfd, 0xdf, 0x7d, 0x18, 0x9e, 0xd1, 0x72,
+	0x8a, 0xc6, 0x30, 0xcc, 0x14, 0x2f, 0xdd, 0xde, 0x5e, 0x6f, 0x7f, 0xe3, 0xe0, 0x51, 0xd0, 0x95,
+	0x19, 0x68, 0x5c, 0x70, 0xa6, 0x78, 0x89, 0x0d, 0x14, 0x3d, 0x85, 0x35, 0x25, 0x49, 0xcc, 0xf2,
+	0xd4, 0xed, 0x1b, 0xd6, 0xf6, 0x2a, 0xd6, 0x79, 0x0d, 0xc1, 0x0d, 0x56, 0xd3, 0x78, 0x91, 0xa6,
+	0x9a, 0x36, 0xb8, 0x9e, 0xf6, 0xbe, 0x86, 0xe0, 0x06, 0xab, 0x69, 0xf6, 0xe1, 0xee, 0xf0, 0x7a,
+	0xda, 0x59, 0x0d, 0xc1, 0x0d, 0xd6, 0xfb, 0x0e, 0x43, 0x2d, 0x19, 0x3d, 0x81, 0x4d, 0x9a, 0x93,
+	0x88, 0xd3, 0xe4, 0x98, 0xc4, 0x33, 0x9a, 0x27, 0xe6, 0xa5, 0xeb, 0x78, 0x29, 0x8b, 0xde, 0x81,
+	0x13, 0xd5, 0x61, 0xe9, 0xf6, 0xf7, 0x06, 0xfb, 0x1b, 0x07, 0xe1, 0xaa, 0xff, 0x9c, 0x50, 0xa9,
+	0xd8, 0x84, 0xc5, 0x44, 0xd1, 0x57, 0x95, 0x9a, 0x16, 0x92, 0xa9, 0x2b, 0xdb, 0x02, 0xcf, 0x1b,
+	0xf8, 0x7f, 0xfa, 0xb0, 0x7d, 0x03, 0x12, 0x21, 0x18, 0xe6, 0x24, 0xa3, 0x56, 0x8a, 0x89, 0x75,
+	0x4e, 0x5d, 0x09, 0x6a, 0x46, 0xba, 0x8e, 0x4d, 0x8c, 0x3e, 0xc0, 0x28, 0x11, 0xba, 0x91, 0x9d,
+	0xd8, 0xb3, 0x5b, 0x4a, 0x0a, 0x4e, 0x0d, 0x1b, 0xdb, 0x2e, 0x28, 0x84, 0x51, 0x5c, 0xe4, 0x13,
+	0x96, 0xda, 0x51, 0x6e, 0x05, 0xf5, 0x92, 0x04, 0xcd, 0x92, 0x04, 0x1f, 0xcd, 0x92, 0x60, 0x0b,
+	0xf3, 0x7e, 0xf5, 0x60, 0x54, 0xf7, 0x40, 0x9f, 0xc0, 0x91, 0x85, 0x32, 0xeb, 0x69, 0x97, 0xe5,
+	0xe5, 0xff, 0xa9, 0x09, 0xb0, 0x6d, 0x83, 0xe7, 0x0d, 0xbd, 0xd7, 0xe0, 0x34, 0x59, 0xf4, 0x1c,
+	0x80, 0x7e, 0x13, 0x4c, 0x2e, 0xfe, 0xea, 0x61, 0x47, 0xe8, 0xa9, 0x3d, 0x15, 0xbc, 0x00, 0xf6,
+	0x3f, 0xc3, 0x9a, 0x5d, 0x3b, 0xed, 0x7b, 0x42, 0x27, 0xa4, 0xe2, 0x6a, 0xc9, 0xf7, 0x76, 0x16,
+	0xbd, 0xe8, 0xf8, 0xee, 0xdf, 0xb0, 0xcd, 0x5d, 0xab, 0x7f, 0xf6, 0x60, 0xb3, 0x5d, 0x5c, 0xe9,
+	0xee, 0x11, 0x38, 0x25, 0xc9, 0x04, 0xff, 0x77, 0x34, 0x3b, 0xdd, 0x27, 0x15, 0x55, 0xc4, 0xe9,
+	0x05, 0xe1, 0x15, 0xc5, 0x73, 0xf4, 0x7c, 0x2f, 0x06, 0x0b, 0x7b, 0x71, 0x5b, 0x1f, 0x7d, 0x05,
+	0xde, 0x25, 0x13, 0x33, 0x96, 0xb7, 0xa5, 0x9e, 0x98, 0x2a, 0xba, 0x0f, 0x83, 0x4a, 0x72, 0xab,
+	0x57, 0x87, 0xe8, 0x31, 0xdc, 0xd3, 0x67, 0x4b, 0xdf, 0x26, 0xe3, 0x83, 0xa3, 0x88, 0x29, 0xa3,
+	0xd9, 0xc1, 0xed, 0x24, 0xda, 0x05, 0x20, 0x82, 0x5d, 0x50, 0x59, 0x6a, 0xa7, 0x6a, 0x81, 0x0b,
+	0x19, 0x6d, 0x87, 0x3d, 0xe7, 0xbb, 0xb6, 0xc3, 0xb6, 0xed, 0xda, 0xf1, 0xa3, 0x07, 0x9b, 0xed,
+	0xe2, 0x4a, 0x3b, 0x1e, 0xc0, 0x68, 0x52, 0xc8, 0x8c, 0x28, 0x7b, 0x6e, 0xf6, 0xeb, 0x6e, 0x86,
+	0x1d, 0x80, 0xfb, 0x86, 0x71, 0xda, 0x96, 0x61, 0x47, 0x8d, 0x60, 0x28, 0x88, 0x9a, 0x36, 0x62,
+	0x74, 0xec, 0x1f, 0xc2, 0xd6, 0x79, 0x2c, 0x56, 0xc2, 0x5d, 0x58, 0x23, 0x49, 0x22, 0x69, 0x59,
+	0x5a, 0x46, 0xf3, 0x79, 0x0c, 0x97, 0x4e, 0x33, 0x8d, 0x68, 0x64, 0x94, 0x1c, 0xfe, 0x0d, 0x00,
+	0x00, 0xff, 0xff, 0x52, 0x36, 0x64, 0x4b, 0x7e, 0x06, 0x00, 0x00,
 }

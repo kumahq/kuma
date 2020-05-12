@@ -92,23 +92,23 @@ func (s *secretManager) DeleteAll(ctx context.Context, fs ...core_store.DeleteAl
 }
 
 func (s *secretManager) encrypt(secret *secret_model.SecretResource) error {
-	if len(secret.Spec.Value) > 0 {
-		value, err := s.cipher.Encrypt(secret.Spec.Value)
+	if len(secret.Spec.GetData().GetValue()) > 0 {
+		value, err := s.cipher.Encrypt(secret.Spec.Data.Value)
 		if err != nil {
 			return err
 		}
-		secret.Spec.Value = value
+		secret.Spec.Data.Value = value
 	}
 	return nil
 }
 
 func (s *secretManager) decrypt(secret *secret_model.SecretResource) error {
-	if len(secret.Spec.Value) > 0 {
-		value, err := s.cipher.Decrypt(secret.Spec.Value)
+	if len(secret.Spec.GetData().GetValue()) > 0 {
+		value, err := s.cipher.Decrypt(secret.Spec.Data.Value)
 		if err != nil {
 			return err
 		}
-		secret.Spec.Value = value
+		secret.Spec.Data.Value = value
 	}
 	return nil
 }

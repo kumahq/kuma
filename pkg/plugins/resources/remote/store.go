@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -43,7 +44,6 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 	return nil
 }
 func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
-	_ = store.NewUpdateOptions(fs...)
 	meta := rest.ResourceMeta{
 		Type: string(res.GetType()),
 		Name: res.GetMeta().GetName(),
@@ -78,7 +78,11 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 		return err
 	}
 	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
-		return errors.Errorf("(%d): %s", statusCode, string(b))
+		if statusCode == http.StatusMethodNotAllowed {
+			return errors.Errorf("%s", string(b))
+		} else {
+			return errors.Errorf("(%d): %s", statusCode, string(b))
+		}
 	}
 	res.SetMeta(remoteMeta{
 		Name:    meta.Name,
@@ -105,7 +109,11 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 		return err
 	}
 	if statusCode != http.StatusOK {
-		return errors.Errorf("(%d): %s", statusCode, string(b))
+		if statusCode == http.StatusMethodNotAllowed {
+			return errors.Errorf("%s", string(b))
+		} else {
+			return errors.Errorf("(%d): %s", statusCode, string(b))
+		}
 	}
 	return nil
 }
@@ -142,6 +150,15 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 	if err != nil {
 		return err
 	}
+	query := req.URL.Query()
+	if opts.PageOffset != "" {
+		query.Add("offset", opts.PageOffset)
+	}
+	if opts.PageSize != 0 {
+		query.Add("size", strconv.Itoa(opts.PageSize))
+	}
+	req.URL.RawQuery = query.Encode()
+
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
 		return err

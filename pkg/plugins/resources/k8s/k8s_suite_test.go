@@ -17,15 +17,18 @@ limitations under the License.
 package k8s_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -46,7 +49,7 @@ func TestKubernetes(t *testing.T) {
 
 	RunSpecsWithDefaultAndCustomReporters(t,
 		"Kubernetes Resources Suite",
-		[]Reporter{envtest.NewlineReporter{}})
+		[]Reporter{printer.NewlineReporter{}})
 }
 
 var _ = BeforeSuite(func(done Done) {
@@ -70,6 +73,9 @@ var _ = BeforeSuite(func(done Done) {
 	err = mesh_k8s.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = kube_core.AddToScheme(k8sClientScheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: k8sClientScheme})
@@ -77,19 +83,21 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(k8sClient).ToNot(BeNil())
 
 	err = k8s_registry.Global().RegisterObjectType(&v1alpha1.TrafficRoute{}, &sample_v1alpha1.SampleTrafficRoute{
-		TypeMeta: v1.TypeMeta{
+		TypeMeta: kube_meta.TypeMeta{
 			APIVersion: sample_v1alpha1.GroupVersion.String(),
 			Kind:       "SampleTrafficRoute",
 		},
 	})
 	Expect(err).ToNot(HaveOccurred())
 	err = k8s_registry.Global().RegisterListType(&v1alpha1.TrafficRoute{}, &sample_v1alpha1.SampleTrafficRouteList{
-		TypeMeta: v1.TypeMeta{
+		TypeMeta: kube_meta.TypeMeta{
 			APIVersion: sample_v1alpha1.GroupVersion.String(),
 			Kind:       "SampleTrafficRouteList",
 		},
 	})
 	Expect(err).ToNot(HaveOccurred())
+
+	Expect(k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "demo"}})).To(Succeed())
 
 	close(done)
 }, 60)

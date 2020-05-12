@@ -110,7 +110,7 @@ var _ = Describe("Config WS", func() {
             }
           },
           "defaults": {
-            "mesh": "type: Mesh\nname: default\nmtls:\n  ca: {}\n  enabled: false\n"
+            "mesh": "type: Mesh\nname: default\n"
           },
           "environment": "universal",
           "general": {
@@ -134,13 +134,50 @@ var _ = Describe("Config WS", func() {
                 "certDir": "",
                 "port": 5443
               },
-            "cniEnabled": false
+              "injector": {
+                "cniEnabled": false,
+                "initContainer": {
+                  "image": "kuma/kuma-init:latest"
+                },
+                "sidecarContainer": {
+                  "adminPort": 9901,
+                  "drainTime": "30s",
+                  "gid": 5678,
+                  "image": "kuma/kuma-dp:latest",
+                  "livenessProbe": {
+                    "failureThreshold": 12,
+                    "initialDelaySeconds": 60,
+                    "periodSeconds": 5,
+                    "timeoutSeconds": 3
+                  },
+                  "readinessProbe": {
+                    "failureThreshold": 12,
+                    "initialDelaySeconds": 1,
+                    "periodSeconds": 5,
+                    "successThreshold": 1,
+                    "timeoutSeconds": 3
+                  },
+                  "redirectPort": 15001,
+                  "resources": {
+                    "limits": {
+                      "cpu": "1000m",
+                      "memory": "512Mi"
+                    },
+                    "requests": {
+                      "cpu": "50m",
+                      "memory": "64Mi"
+                    }
+                  },
+                  "uid": 5678
+                }
+              }
             }
           },
           "sdsServer": {
             "grpcPort": 5677,
             "tlsCertFile": "",
-            "tlsKeyFile": ""
+            "tlsKeyFile": "",
+            "dataplaneConfigurationRefreshInterval": "1s"
           },
           "store": {
             "kubernetes": {

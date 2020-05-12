@@ -1,7 +1,7 @@
 package xds
 
 import (
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -38,7 +38,7 @@ func (v SnapshotAutoVersioner) Version(new, old Snapshot) Snapshot {
 	return new
 }
 
-func (_ SnapshotAutoVersioner) equal(new, old map[string]envoy_cache.Resource) bool {
+func (_ SnapshotAutoVersioner) equal(new, old map[string]envoy_types.Resource) bool {
 	if len(new) != len(old) {
 		return false
 	}

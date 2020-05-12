@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	kuma_version "github.com/Kong/kuma/pkg/version"
+
 	"github.com/Kong/kuma/pkg/catalog/client"
 
 	"github.com/pkg/errors"
@@ -98,13 +100,16 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
-			dataplane := envoy.New(envoy.Opts{
+			dataplane, err := envoy.New(envoy.Opts{
 				Catalog:   catalog,
 				Config:    cfg,
 				Generator: bootstrapGenerator,
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 			})
+			if err != nil {
+				return err
+			}
 			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
 			componentMgr := component.NewManager()
@@ -112,7 +117,7 @@ func newRunCmd() *cobra.Command {
 				return err
 			}
 
-			runLog.Info("starting Kuma DP")
+			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
 			if err := componentMgr.Start(core.SetupSignalHandler()); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
 				return err

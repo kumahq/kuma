@@ -1,8 +1,7 @@
 package runtime
 
 import (
-	builtin_ca "github.com/Kong/kuma/pkg/core/ca/builtin"
-	provided_ca "github.com/Kong/kuma/pkg/core/ca/provided"
+	"github.com/Kong/kuma/pkg/core/datasource"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
@@ -13,6 +12,7 @@ import (
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
+	"github.com/Kong/kuma/pkg/plugins/ca/builtin"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
@@ -35,13 +35,14 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 		WithResourceStore(resources_memory.NewStore()).
 		WithXdsContext(core_xds.NewXdsContext())
 
-	builder.WithSecretManager(newSecretManager(builder)).
-		WithBuiltinCaManager(newBuiltinCaManager(builder)).
-		WithProvidedCaManager(newProvidedCaManager(builder))
+	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.SecretManager()))
+	builder.WithSecretManager(newSecretManager(builder))
 
 	rm := newResourceManager(builder)
 	builder.WithResourceManager(rm).
 		WithReadOnlyResourceManager(rm)
+
+	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.SecretManager()))
 
 	return builder
 }
@@ -52,19 +53,14 @@ func newSecretManager(builder *core_runtime.Builder) secret_manager.SecretManage
 	return secretManager
 }
 
-func newProvidedCaManager(builder *core_runtime.Builder) provided_ca.ProvidedCaManager {
-	return provided_ca.NewProvidedCaManager(builder.SecretManager())
-}
-
-func newBuiltinCaManager(builder *core_runtime.Builder) builtin_ca.BuiltinCaManager {
-	return builtin_ca.NewBuiltinCaManager(builder.SecretManager())
-}
-
 func newResourceManager(builder *core_runtime.Builder) core_manager.ResourceManager {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), builder.BuiltinCaManager(), builder.ProvidedCaManager(), customizableManager, builder.SecretManager(), registry.Global())
+	validator := mesh_managers.MeshValidator{
+		CaManagers: builder.CaManagers(),
+	}
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.SecretManager(), builder.CaManagers(), registry.Global(), validator)
 	customManagers[core_mesh.MeshType] = meshManager
 	return customizableManager
 }

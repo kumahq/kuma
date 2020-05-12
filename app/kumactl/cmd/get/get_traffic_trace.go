@@ -33,10 +33,12 @@ func newGetTrafficTraceCmd(pctx *getContext) *cobra.Command {
 				}
 				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
 			}
-			trafficTraces := []*mesh.TrafficTraceResource{trafficTrace}
+			trafficTraces := &mesh.TrafficTraceResourceList{
+				Items: []*mesh.TrafficTraceResource{trafficTrace},
+			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printTrafficTraces(trafficTraces, cmd.OutOrStdout())
+				return printTrafficTraces(pctx.Now(), trafficTraces, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

@@ -12,14 +12,16 @@ import (
 	envoy_config_trace_v2 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v2"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/util/proto"
 )
 
 func AddTracingConfig(bootstrap *envoy_bootstrap.Bootstrap, backend *mesh_proto.TracingBackend) error {
-	if zipkin, ok := backend.GetType().(*mesh_proto.TracingBackend_Zipkin_); ok {
-		cluster, tracingCfg, err := zipkinConfig(bootstrap, zipkin.Zipkin, backend.Name)
+	if backend.GetType() == mesh_proto.TracingZipkinType {
+		cluster, tracingCfg, err := zipkinConfig(bootstrap, backend.Config, backend.Name)
 		if err != nil {
 			return err
 		}
@@ -32,8 +34,12 @@ func AddTracingConfig(bootstrap *envoy_bootstrap.Bootstrap, backend *mesh_proto.
 	return nil
 }
 
-func zipkinConfig(bootstrap *envoy_bootstrap.Bootstrap, zipkin *mesh_proto.TracingBackend_Zipkin, backendName string) (*envoy_api.Cluster, *envoy_config_trace_v2.Tracing, error) {
-	url, err := net_url.ParseRequestURI(zipkin.Url)
+func zipkinConfig(bootstrap *envoy_bootstrap.Bootstrap, cfgStr *structpb.Struct, backendName string) (*envoy_api.Cluster, *envoy_config_trace_v2.Tracing, error) {
+	cfg := mesh_proto.ZipkinTracingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		return nil, nil, errors.Wrap(err, "could not convert backend")
+	}
+	url, err := net_url.ParseRequestURI(cfg.Url)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "invalid URL of Zipkin")
 	}
@@ -46,8 +52,8 @@ func zipkinConfig(bootstrap *envoy_bootstrap.Bootstrap, zipkin *mesh_proto.Traci
 	zipkinConfig := envoy_config_trace_v2.ZipkinConfig{
 		CollectorCluster:         cluster.Name,
 		CollectorEndpoint:        url.Path,
-		TraceId_128Bit:           zipkin.TraceId128Bit,
-		CollectorEndpointVersion: apiVersion(zipkin, url),
+		TraceId_128Bit:           cfg.TraceId128Bit,
+		CollectorEndpointVersion: apiVersion(&cfg, url),
 	}
 	zipkinConfigAny, err := ptypes.MarshalAny(&zipkinConfig)
 	if err != nil {
@@ -64,7 +70,7 @@ func zipkinConfig(bootstrap *envoy_bootstrap.Bootstrap, zipkin *mesh_proto.Traci
 	return cluster, tracingConfig, nil
 }
 
-func apiVersion(zipkin *mesh_proto.TracingBackend_Zipkin, url *net_url.URL) envoy_config_trace_v2.ZipkinConfig_CollectorEndpointVersion {
+func apiVersion(zipkin *mesh_proto.ZipkinTracingBackendConfig, url *net_url.URL) envoy_config_trace_v2.ZipkinConfig_CollectorEndpointVersion {
 	if zipkin.ApiVersion == "" { // try to infer it from the URL
 		if url.Path == "/api/v1/spans" {
 			return envoy_config_trace_v2.ZipkinConfig_HTTP_JSON_V1

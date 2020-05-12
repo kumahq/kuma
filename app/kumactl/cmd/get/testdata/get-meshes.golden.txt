@@ -1,5 +1,3 @@
-NAME    mTLS       METRICS      LOGGING          TRACING
-mesh1   builtin    off          off              off
-mesh2   provided   off          off              off
-mesh3   off        prometheus   logstash, file   zipkin-us, zipkin-eu
-mesh4   off        prometheus   off              off
+NAME    mTLS                METRICS                   LOGGING          TRACING                AGE
+mesh1   builtin/builtin-1   prometheus/prometheus-1   logstash, file   zipkin-us, zipkin-eu   292y
+mesh2   off                 off                       off              off                    292y

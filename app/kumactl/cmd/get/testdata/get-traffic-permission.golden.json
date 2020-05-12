@@ -1,21 +1,23 @@
 {
-    "type": "TrafficPermission",
-    "mesh": "default",
-    "name": "traffic-permission-1",
-    "sources": [
-      {
-        "match": {
-          "service": "web1",
-          "version": "1.0"
-        }
+  "type": "TrafficPermission",
+  "mesh": "default",
+  "name": "traffic-permission-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "sources": [
+    {
+      "match": {
+        "service": "web1",
+        "version": "1.0"
       }
-    ],
-    "destinations": [
-      {
-        "match": {
-          "env": "dev",
-          "service": "backend1"
-        }
+    }
+  ],
+  "destinations": [
+    {
+      "match": {
+        "env": "dev",
+        "service": "backend1"
       }
-    ]
-  }
+    }
+  ]
+}

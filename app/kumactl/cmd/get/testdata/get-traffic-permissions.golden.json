@@ -1,8 +1,11 @@
 {
+  "total": 2,
   "items": [
     {
       "mesh": "default",
       "name": "web1-to-backend1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
       "sources": [
         {
           "match": {
@@ -24,6 +27,8 @@
     {
       "mesh": "default",
       "name": "web2-to-backend2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
       "sources": [
         {
           "match": {

@@ -40,11 +40,10 @@ var _ = Describe("TracingConfigurer", func() {
 			backend: &mesh_proto.TracingBackend{
 				Name:     "zipkin",
 				Sampling: &wrappers.DoubleValue{Value: 30.5},
-				Type: &mesh_proto.TracingBackend_Zipkin_{
-					Zipkin: &mesh_proto.TracingBackend_Zipkin{
-						Url: "http://zipkin.us:9090/v2/spans",
-					},
-				},
+				Type:     mesh_proto.TracingZipkinType,
+				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+					Url: "http://zipkin.us:9090/v2/spans",
+				}),
 			},
 			expected: `
             name: inbound:192.168.0.1:8080
@@ -69,11 +68,10 @@ var _ = Describe("TracingConfigurer", func() {
 		Entry("backend specified without sampling", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin",
-				Type: &mesh_proto.TracingBackend_Zipkin_{
-					Zipkin: &mesh_proto.TracingBackend_Zipkin{
-						Url: "http://zipkin.us:9090/v2/spans",
-					},
-				},
+				Type: mesh_proto.TracingZipkinType,
+				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+					Url: "http://zipkin.us:9090/v2/spans",
+				}),
 			},
 			expected: `
             name: inbound:192.168.0.1:8080

@@ -75,6 +75,8 @@ var _ = Describe("Resource Endpoints", func() {
 				"type": "SampleTrafficRoute",
 				"name": "tr-1",
 				"mesh": "default",
+				"creationTime": "0001-01-01T00:00:00Z",
+				"modificationTime": "0001-01-01T00:00:00Z",
 				"path": "/sample-path"
 			}`
 			Expect(body).To(MatchJSON(json))
@@ -113,6 +115,8 @@ var _ = Describe("Resource Endpoints", func() {
 				"type": "SampleTrafficRoute",
 				"name": "tr-1",
 				"mesh": "default",
+				"creationTime": "0001-01-01T00:00:00Z",
+				"modificationTime": "0001-01-01T00:00:00Z",
 				"path": "/sample-path"
 			}`
 			json2 := `
@@ -120,13 +124,15 @@ var _ = Describe("Resource Endpoints", func() {
 				"type": "SampleTrafficRoute",
 				"name": "tr-2",
 				"mesh": "default",
+				"creationTime": "0001-01-01T00:00:00Z",
+				"modificationTime": "0001-01-01T00:00:00Z",
 				"path": "/sample-path"
 			}`
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(Or(
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json1, json2)),
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s]}, "next": null`, json2, json1)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json1, json2)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json2, json1)),
 			))
 		})
 
@@ -149,6 +155,8 @@ var _ = Describe("Resource Endpoints", func() {
 				"type": "SampleTrafficRoute",
 				"name": "tr-1",
 				"mesh": "mesh-1",
+				"creationTime": "0001-01-01T00:00:00Z",
+				"modificationTime": "0001-01-01T00:00:00Z",
 				"path": "/sample-path"
 			}`
 			json2 := `
@@ -156,13 +164,15 @@ var _ = Describe("Resource Endpoints", func() {
 				"type": "SampleTrafficRoute",
 				"name": "tr-2",
 				"mesh": "mesh-2",
+				"creationTime": "0001-01-01T00:00:00Z",
+				"modificationTime": "0001-01-01T00:00:00Z",
 				"path": "/sample-path"
 			}`
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(Or(
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json1, json2)),
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json2, json1)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json1, json2)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json2, json1)),
 			))
 		})
 
@@ -183,17 +193,22 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 			json := fmt.Sprintf(`
 			{
+				"total": 3,
 				"items": [
 					{
 						"type": "SampleTrafficRoute",
 						"name": "tr-1",
 						"mesh": "mesh-1",
+						"creationTime": "0001-01-01T00:00:00Z",
+						"modificationTime": "0001-01-01T00:00:00Z",
 						"path": "/sample-path"
 					},
 					{
 						"type": "SampleTrafficRoute",
 						"name": "tr-2",
 						"mesh": "mesh-1",
+						"creationTime": "0001-01-01T00:00:00Z",
+						"modificationTime": "0001-01-01T00:00:00Z",
 						"path": "/sample-path"
 					}
 				],
@@ -214,11 +229,14 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 			json = `
 			{
+				"total": 3,
 				"items": [
 					{
 						"type": "SampleTrafficRoute",
 						"name": "tr-3",
 						"mesh": "mesh-1",
+						"creationTime": "0001-01-01T00:00:00Z",
+				        "modificationTime": "0001-01-01T00:00:00Z",
 						"path": "/sample-path"
 					}
 				],

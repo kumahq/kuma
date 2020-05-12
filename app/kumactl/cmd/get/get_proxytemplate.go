@@ -35,10 +35,12 @@ func newGetProxyTemplateCmd(pctx *getContext) *cobra.Command {
 				}
 				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
 			}
-			proxyTemplates := []*mesh.ProxyTemplateResource{proxyTemplate}
+			proxyTemplates := &mesh.ProxyTemplateResourceList{
+				Items: []*mesh.ProxyTemplateResource{proxyTemplate},
+			}
 			switch format := output.Format(pctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printProxyTemplates(proxyTemplates, cmd.OutOrStdout())
+				return printProxyTemplates(pctx.Now(), proxyTemplates, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

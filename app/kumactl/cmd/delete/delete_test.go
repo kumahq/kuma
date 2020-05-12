@@ -6,6 +6,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Kong/kuma/pkg/catalog"
+	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -35,6 +40,20 @@ var _ = Describe("kumactl delete ", func() {
 					Now: time.Now,
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
+					},
+					NewAdminResourceStore: func(string, *config_proto.Context_AdminApiCredentials) (core_store.ResourceStore, error) {
+						return store, nil
+					},
+					NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
+						return &test_catalog.StaticCatalogClient{
+							Resp: catalog.Catalog{
+								Apis: catalog.Apis{
+									DataplaneToken: catalog.DataplaneTokenApi{
+										LocalUrl: "http://localhost:1234",
+									},
+								},
+							},
+						}, nil
 					},
 				},
 			}
@@ -78,9 +97,9 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, secret"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection`))
+			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, secret`))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
@@ -183,6 +202,12 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return &mesh_core.FaultInjectionResource{} },
 					expectedMessage: "deleted FaultInjection \"web\"\n",
 				}),
+				Entry("secret", testCase{
+					typ:             "secret",
+					name:            "web",
+					resource:        func() core_model.Resource { return &system.SecretResource{} },
+					expectedMessage: "deleted Secret \"web\"\n",
+				}),
 			)
 
 			DescribeTable("should fail if resource doesn't exist",
@@ -243,6 +268,12 @@ var _ = Describe("kumactl delete ", func() {
 					name:            "web",
 					resource:        func() core_model.Resource { return &mesh_core.FaultInjectionResource{} },
 					expectedMessage: "Error: there is no FaultInjection with name \"web\"\n",
+				}),
+				Entry("secret", testCase{
+					typ:             "secret",
+					name:            "web",
+					resource:        func() core_model.Resource { return &system.SecretResource{} },
+					expectedMessage: "Error: there is no Secret with name \"web\"\n",
 				}),
 			)
 		})

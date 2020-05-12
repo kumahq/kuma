@@ -9,7 +9,7 @@ import (
 	util_proto "github.com/Kong/kuma/api/internal/util/proto"
 	. "github.com/Kong/kuma/api/mesh/v1alpha1"
 
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 )
 
 var _ = Describe("DataplaneHelpers", func() {
@@ -201,7 +201,7 @@ var _ = Describe("DataplaneHelpers", func() {
 			It("should support CDS", func() {
 
 				// when
-				status.StatsOf(envoy_cache.ClusterType).ResponsesSent = 1
+				status.StatsOf(envoy_resource.ClusterType).ResponsesSent = 1
 
 				// then
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`
@@ -217,7 +217,7 @@ var _ = Describe("DataplaneHelpers", func() {
 			It("should support EDS", func() {
 
 				// when
-				status.StatsOf(envoy_cache.EndpointType).ResponsesSent = 1
+				status.StatsOf(envoy_resource.EndpointType).ResponsesSent = 1
 
 				// then
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`
@@ -233,7 +233,7 @@ var _ = Describe("DataplaneHelpers", func() {
 			It("should support LDS", func() {
 
 				// when
-				status.StatsOf(envoy_cache.ListenerType).ResponsesSent = 1
+				status.StatsOf(envoy_resource.ListenerType).ResponsesSent = 1
 
 				// then
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`
@@ -249,7 +249,7 @@ var _ = Describe("DataplaneHelpers", func() {
 			It("should support RDS", func() {
 
 				// when
-				status.StatsOf(envoy_cache.RouteType).ResponsesSent = 1
+				status.StatsOf(envoy_resource.RouteType).ResponsesSent = 1
 
 				// then
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`
@@ -264,7 +264,7 @@ var _ = Describe("DataplaneHelpers", func() {
 
 			It("should not fail on unknown xDS", func() {
 				// when
-				status.StatsOf(envoy_cache.SecretType).ResponsesSent = 1
+				status.StatsOf(envoy_resource.SecretType).ResponsesSent = 1
 
 				// then
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`

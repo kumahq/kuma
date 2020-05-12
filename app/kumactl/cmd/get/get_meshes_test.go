@@ -14,7 +14,7 @@ import (
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -23,18 +23,81 @@ import (
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 var _ = Describe("kumactl get meshes", func() {
 
 	sampleMeshes := []*mesh.MeshResource{
 		{
-			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: true,
-					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Builtin_{
-							Builtin: &v1alpha1.CertificateAuthority_Builtin{},
+			Spec: mesh_proto.Mesh{
+				Mtls: &mesh_proto.Mesh_Mtls{
+					EnabledBackend: "builtin-1",
+					Backends: []*mesh_proto.CertificateAuthorityBackend{
+						{
+							Name: "builtin-1",
+							Type: "builtin",
+						},
+						{
+							Name: "builtin-2",
+							Type: "builtin",
+						},
+					},
+				},
+				Metrics: &mesh_proto.Metrics{
+					EnabledBackend: "prometheus-1",
+					Backends: []*mesh_proto.MetricsBackend{
+						{
+							Name: "prometheus-1",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Port: 1234,
+								Path: "/non-standard-path",
+							}),
+						},
+						{
+							Name: "prometheus-2",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Port: 1235,
+								Path: "/non-standard-path",
+							}),
+						},
+					},
+				},
+				Logging: &mesh_proto.Logging{
+					Backends: []*mesh_proto.LoggingBackend{
+						{
+							Name: "logstash",
+							Type: mesh_proto.LoggingTcpType,
+							Config: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+								Address: "127.0.0.1:5000",
+							}),
+						},
+						{
+							Name: "file",
+							Type: mesh_proto.LoggingFileType,
+							Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+								Path: "/tmp/service.log",
+							}),
+						},
+					},
+				},
+				Tracing: &mesh_proto.Tracing{
+					Backends: []*mesh_proto.TracingBackend{
+						{
+							Name: "zipkin-us",
+							Type: mesh_proto.TracingZipkinType,
+							Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Url: "http://zipkin.us:8080/v1/spans",
+							}),
+						},
+						{
+							Name: "zipkin-eu",
+							Type: mesh_proto.TracingZipkinType,
+							Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Url: "http://zipkin.eu:8080/v1/spans",
+							}),
 						},
 					},
 				},
@@ -45,109 +108,20 @@ var _ = Describe("kumactl get meshes", func() {
 			},
 		},
 		{
-			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: true,
-					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Provided_{
-							Provided: &v1alpha1.CertificateAuthority_Provided{},
-						},
-					},
+			Spec: mesh_proto.Mesh{
+				Metrics: &mesh_proto.Metrics{
+					Backends: []*mesh_proto.MetricsBackend{},
+				},
+				Logging: &mesh_proto.Logging{
+					Backends: []*mesh_proto.LoggingBackend{},
+				},
+				Tracing: &mesh_proto.Tracing{
+					Backends: []*mesh_proto.TracingBackend{},
 				},
 			},
 			Meta: &test_model.ResourceMeta{
 				Mesh: "mesh2",
 				Name: "mesh2",
-			},
-		},
-		{
-			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: false,
-					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Provided_{
-							Provided: &v1alpha1.CertificateAuthority_Provided{},
-						},
-					},
-				},
-				Metrics: &v1alpha1.Metrics{
-					Prometheus: &v1alpha1.Metrics_Prometheus{
-						Port: 1234,
-						Path: "/non-standard-path",
-					},
-				},
-				Logging: &v1alpha1.Logging{
-					Backends: []*v1alpha1.LoggingBackend{
-						{
-							Name: "logstash",
-							Type: &v1alpha1.LoggingBackend_Tcp_{
-								Tcp: &v1alpha1.LoggingBackend_Tcp{
-									Address: "127.0.0.1:5000",
-								},
-							},
-						},
-						{
-							Name: "file",
-							Type: &v1alpha1.LoggingBackend_File_{
-								File: &v1alpha1.LoggingBackend_File{
-									Path: "/tmp/service.log",
-								},
-							},
-						},
-					},
-				},
-				Tracing: &v1alpha1.Tracing{
-					Backends: []*v1alpha1.TracingBackend{
-						{
-							Name: "zipkin-us",
-							Type: &v1alpha1.TracingBackend_Zipkin_{
-								Zipkin: &v1alpha1.TracingBackend_Zipkin{
-									Url: "http://zipkin.us:8080/v1/spans",
-								},
-							},
-						},
-						{
-							Name: "zipkin-eu",
-							Type: &v1alpha1.TracingBackend_Zipkin_{
-								Zipkin: &v1alpha1.TracingBackend_Zipkin{
-									Url: "http://zipkin.eu:8080/v1/spans",
-								},
-							},
-						},
-					},
-				},
-			},
-			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh3",
-				Name: "mesh3",
-			},
-		},
-		{
-			Spec: v1alpha1.Mesh{
-				Mtls: &v1alpha1.Mesh_Mtls{
-					Enabled: false,
-					Ca: &v1alpha1.CertificateAuthority{
-						Type: &v1alpha1.CertificateAuthority_Provided_{
-							Provided: &v1alpha1.CertificateAuthority_Provided{},
-						},
-					},
-				},
-				Metrics: &v1alpha1.Metrics{
-					Prometheus: &v1alpha1.Metrics_Prometheus{
-						Port: 1234,
-						Path: "/non-standard-path",
-					},
-				},
-				Logging: &v1alpha1.Logging{
-					Backends: []*v1alpha1.LoggingBackend{},
-				},
-				Tracing: &v1alpha1.Tracing{
-					Backends: []*v1alpha1.TracingBackend{},
-				},
-			},
-			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh4",
-				Name: "mesh4",
 			},
 		},
 	}
@@ -158,12 +132,12 @@ var _ = Describe("kumactl get meshes", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-
+		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 		BeforeEach(func() {
 			// setup
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
-					Now: time.Now,
+					Now: func() time.Time { return rootTime },
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
@@ -189,6 +163,7 @@ var _ = Describe("kumactl get meshes", func() {
 		type testCase struct {
 			outputFormat string
 			goldenFile   string
+			pagination   string
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
@@ -197,7 +172,7 @@ var _ = Describe("kumactl get meshes", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "meshes"}, given.outputFormat))
+					"get", "meshes"}, given.outputFormat, given.pagination))
 
 				// when
 				err := rootCmd.Execute()
@@ -221,6 +196,14 @@ var _ = Describe("kumactl get meshes", func() {
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "get-meshes.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support pagination", testCase{
+				outputFormat: "-otable",
+				pagination:   "--size=1",
+				goldenFile:   "get-meshes.pagination.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},

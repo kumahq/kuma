@@ -73,6 +73,8 @@ sdsServer:
   tlsCertFile: # ENV: KUMA_SDS_SERVER_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
   tlsKeyFile: # ENV: KUMA_SDS_SERVER_TLS_KEY_FILE
+  # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
+  dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
 
 # Dataplane Token server configuration (DEPRECATED: use adminServer)
 dataplaneTokenServer:
@@ -180,6 +182,36 @@ runtime:
       # TLS certificate file must be named `tls.crt`.
       # TLS key file must be named `tls.key`.
       certDir:
+    injector:
+      cniEnabled: false
+      sidecarContainer:
+        image: kuma/kuma-dp:latest
+        redirectPort: 15001
+        uid: 5678
+        gid: 5678
+        adminPort: 9901
+        drainTime: 30s
+
+        readinessProbe:
+          initialDelaySeconds: 1
+          timeoutSeconds:      3
+          periodSeconds:       5
+          successThreshold:    1
+          failureThreshold:    12
+        livenessProbe:
+          initialDelaySeconds: 60
+          timeoutSeconds:      3
+          periodSeconds:       5
+          failureThreshold:    12
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+      initContainer:
+        image: kuma/kuma-init:latest
 
 # Default Kuma entities configuration
 defaults:
@@ -187,9 +219,6 @@ defaults:
   mesh: | # ENV: KUMA_DEFAULTS_MESH
     type: Mesh
     name: default
-    mtls:
-      ca: {}
-      enabled: false
 
 # Reports configuration
 reports:

@@ -140,10 +140,8 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	var kubeOpts kube_client.ListOptions
 	if opts.PageSize > 0 {
 		kubeOpts = kube_client.ListOptions{
-			Raw: &kube_meta.ListOptions{
-				Limit:    int64(opts.PageSize),
-				Continue: opts.PageOffset,
-			},
+			Limit:    int64(opts.PageSize),
+			Continue: opts.PageOffset,
 		}
 	}
 
@@ -162,7 +160,38 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if err := s.Converter.ToCoreList(obj, rs, predicate); err != nil {
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
+
+	total, err := s.countK8sResources(ctx, rs, opts.Mesh)
+	if err != nil {
+		return err
+	}
+	rs.GetPagination().SetTotal(uint32(total))
+
 	return nil
+}
+
+func (s *KubernetesStore) countK8sResources(ctx context.Context, rs core_model.ResourceList, mesh string) (int, error) {
+	obj, err := s.Converter.ToKubernetesList(rs)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
+	}
+
+	if err := s.Client.List(ctx, obj, &kube_client.ListOptions{}); err != nil {
+		return 0, errors.Wrap(err, "failed to list k8s resources")
+	}
+
+	if mesh == "" {
+		return len(obj.GetItems()), nil
+	}
+
+	total := 0
+	for _, item := range obj.GetItems() {
+		if item.GetMesh() == mesh {
+			total++
+		}
+	}
+
+	return total, nil
 }
 
 func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, error) {
@@ -291,8 +320,6 @@ func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model
 			_ = out.AddItem(r)
 		}
 	}
-	out.SetPagination(core_model.Pagination{
-		NextOffset: in.GetContinue(),
-	})
+	out.GetPagination().SetNextOffset(in.GetContinue())
 	return nil
 }

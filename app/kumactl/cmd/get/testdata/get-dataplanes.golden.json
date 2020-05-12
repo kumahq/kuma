@@ -1,8 +1,11 @@
 {
+    "total": 2,
     "items": [
       {
         "mesh": "default",
         "name": "experiment",
+        "creationTime": "0001-01-01T00:00:00Z",
+        "modificationTime": "0001-01-01T00:00:00Z",
         "networking": {
           "address": "127.0.0.1",
           "inbound": [
@@ -29,6 +32,8 @@
       {
         "mesh": "default",
         "name": "example",
+        "creationTime": "0001-01-01T00:00:00Z",
+        "modificationTime": "0001-01-01T00:00:00Z",
         "networking": {
           "address": "127.0.0.2",
           "inbound": [

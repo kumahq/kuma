@@ -63,8 +63,14 @@ func (v *ValidationError) AddError(rootField string, validationErr ValidationErr
 		rootPrefix += fmt.Sprintf("%s.", rootField)
 	}
 	for _, violation := range validationErr.Violations {
+		field := ""
+		if violation.Field == "" {
+			field = rootField
+		} else {
+			field = fmt.Sprintf("%s%s", rootPrefix, violation.Field)
+		}
 		newViolation := Violation{
-			Field:   fmt.Sprintf("%s%s", rootPrefix, violation.Field),
+			Field:   field,
 			Message: violation.Message,
 		}
 		v.Violations = append(v.Violations, newViolation)

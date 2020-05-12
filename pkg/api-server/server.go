@@ -111,6 +111,9 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 			if !config.ReadOnly {
 				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			} else {
+				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
+				endpoints.addDeleteEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
 			}
 			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
@@ -125,6 +128,9 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 			if !config.ReadOnly {
 				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
 				endpoints.addDeleteEndpoint(ws, "/meshes")
+			} else {
+				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
+				endpoints.addDeleteEndpointReadOnly(ws, "/meshes")
 			}
 			endpoints.addFindEndpoint(ws, "/meshes")
 			endpoints.addListEndpoint(ws, "/meshes")

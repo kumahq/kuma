@@ -1,0 +1,34 @@
+admissionServer:
+  address: ""
+  certDir: ""
+  port: 5443
+injector:
+  cniEnabled: false
+  sidecarContainer:
+    image: kuma/kuma-dp:latest
+    redirectPort: 15001
+    uid: 5678
+    gid: 5678
+    adminPort: 9901
+    drainTime: 30s
+
+    readinessProbe:
+      initialDelaySeconds: 1
+      timeoutSeconds:      3
+      periodSeconds:       5
+      successThreshold:    1
+      failureThreshold:    12
+    livenessProbe:
+      initialDelaySeconds: 60
+      timeoutSeconds:      3
+      periodSeconds:       5
+      failureThreshold:    12
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 1000m
+        memory: 512Mi
+  initContainer:
+    image: kuma/kuma-init:latest

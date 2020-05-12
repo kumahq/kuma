@@ -76,11 +76,13 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Mesh: "demo",
 					},
 					Spec: mesh_proto.Dataplane{
-						Metrics: &mesh_proto.Metrics{
-							Prometheus: &mesh_proto.Metrics_Prometheus{
+						Metrics: &mesh_proto.MetricsBackend{
+							Name: "prometheus-1",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 								Port: 1234,
 								Path: "/non-standard-path",
-							},
+							}),
 						},
 					},
 				},
@@ -95,9 +97,16 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
-								Prometheus: &mesh_proto.Metrics_Prometheus{
-									Port: 1234,
-									Path: "/non-standard-path",
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port: 1234,
+											Path: "/non-standard-path",
+										}),
+									},
 								},
 							},
 						},
@@ -112,11 +121,13 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Mesh: "demo",
 					},
 					Spec: mesh_proto.Dataplane{
-						Metrics: &mesh_proto.Metrics{
-							Prometheus: &mesh_proto.Metrics_Prometheus{
+						Metrics: &mesh_proto.MetricsBackend{
+							Name: "prometheus-1",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 								Port: 8765,
 								Path: "/even-more-non-standard-path",
-							},
+							}),
 						},
 					},
 				},
@@ -132,9 +143,16 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
-								Prometheus: &mesh_proto.Metrics_Prometheus{
-									Port: 1234,
-									Path: "/non-standard-path",
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port: 1234,
+											Path: "/non-standard-path",
+										}),
+									},
 								},
 							},
 						},
@@ -149,11 +167,13 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Mesh: "demo",
 					},
 					Spec: mesh_proto.Dataplane{
-						Metrics: &mesh_proto.Metrics{
-							Prometheus: &mesh_proto.Metrics_Prometheus{
+						Metrics: &mesh_proto.MetricsBackend{
+							Name: "prometheus-1",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 								Port: 8765,
 								Path: "/even-more-non-standard-path",
-							},
+							}),
 						},
 					},
 				},
@@ -192,9 +212,16 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
-								Prometheus: &mesh_proto.Metrics_Prometheus{
-									Port: 1234,
-									Path: "/non-standard-path",
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port: 1234,
+											Path: "/non-standard-path",
+										}),
+									},
 								},
 							},
 						},
@@ -270,9 +297,16 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
-								Prometheus: &mesh_proto.Metrics_Prometheus{
-									Port: 1234,
-									Path: "/non-standard-path",
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port: 1234,
+											Path: "/non-standard-path",
+										}),
+									},
 								},
 							},
 						},
@@ -287,11 +321,13 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Mesh: "demo",
 					},
 					Spec: mesh_proto.Dataplane{
-						Metrics: &mesh_proto.Metrics{
-							Prometheus: &mesh_proto.Metrics_Prometheus{
+						Metrics: &mesh_proto.MetricsBackend{
+							Name: "prometheus-1",
+							Type: mesh_proto.MetricsPrometheusType,
+							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 								Port: 8765,
 								Path: "/even-more-non-standard-path",
-							},
+							}),
 						},
 					},
 				},
@@ -366,9 +402,16 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							},
 							Spec: mesh_proto.Mesh{
 								Metrics: &mesh_proto.Metrics{
-									Prometheus: &mesh_proto.Metrics_Prometheus{
-										Port: 1234,
-										Path: "/non-standard-path",
+									EnabledBackend: "prometheus-1",
+									Backends: []*mesh_proto.MetricsBackend{
+										{
+											Name: "prometheus-1",
+											Type: mesh_proto.MetricsPrometheusType,
+											Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+												Port: 1234,
+												Path: "/non-standard-path",
+											}),
+										},
 									},
 								},
 							},
@@ -412,7 +455,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                   - port: 59200
                     service: elastic
                 metrics:
-                  prometheus:
+                  type: prometheus
+                  config:
                     port: 80
 `,
 			}),
@@ -429,7 +473,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                   - port: 59200
                     service: elastic
                 metrics:
-                  prometheus:
+                  type: prometheus
+                  config:
                     port: 8080
 `,
 			}),
@@ -446,7 +491,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                   - port: 59200
                     service: elastic
                 metrics:
-                  prometheus:
+                  type: prometheus
+                  config:
                     port: 54321
 `,
 			}),

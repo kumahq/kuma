@@ -1,7 +1,7 @@
 .PHONY: help clean generate build test check \
 		dev/tools install/protoc install/protoc-gen-go install/protoc-gen-validate \
 		install/protobuf-wellknown-types install/data-plane-api \
-		protoc protoc/mesh/v1alpha1 protoc/observability/v1alpha1
+		protoc protoc/mesh/v1alpha1 protoc/observability/v1alpha1 protoc/system/v1alpha1
 
 TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -107,21 +107,21 @@ install/protobuf-wellknown-types:
 		&& echo "Protobuf well-known types $(PROTOC_VERSION) have been installed at $(PROTOBUF_WKT_DIR)" ; fi
 
 install/protoc-gen-go:
-	go get -u github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
+	go get github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
 
 install/protoc-gen-validate:
-	go get -u github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
+	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 install/data-plane-api:
-	go get -u github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
-	go get -u github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
-	go get -u github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
+	go get github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
+	go get github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
+	go get github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
 
 clean: ## Remove generated files
 	find . -name '*.pb.go' -delete
 	find . -name '*.pb.validate.go' -delete
 
-generate: clean protoc/mesh/v1alpha1 protoc/observability/v1alpha1 ## Process .proto definitions
+generate: clean protoc/mesh/v1alpha1 protoc/observability/v1alpha1 protoc/system/v1alpha1 ## Process .proto definitions
 
 protoc/mesh/v1alpha1:
 	$(PROTOC_GO) mesh/v1alpha1/*.proto
@@ -129,11 +129,17 @@ protoc/mesh/v1alpha1:
 protoc/observability/v1alpha1:
 	$(PROTOC_GO) observability/v1alpha1/*.proto
 
+protoc/system/v1alpha1:
+	$(PROTOC_GO) system/v1alpha1/*.proto
+
 build: ## Build generated files
 	go build ./...
 
+GO_TEST ?= go test
+GO_TEST_OPTS ?=
+
 test: ## Run tests
-	go test ./...
+	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
 
 check: generate build test ## Verify that auto-generated code is up-to-date
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty

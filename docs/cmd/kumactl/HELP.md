@@ -8,6 +8,7 @@ Usage:
 
 Available Commands:
   apply       Create or modify Kuma resources
+  completion  Output shell completion code for bash, fish or zsh
   config      Manage kumactl config
   delete      Delete Kuma resources
   generate    Generate resources, tokens, etc
@@ -15,7 +16,6 @@ Available Commands:
   help        Help about any command
   inspect     Inspect Kuma resources
   install     Install Kuma on Kubernetes
-  manage      Manage certificate authorities, etc
   version     Print version
 
 Flags:
@@ -223,6 +223,8 @@ Flags:
       --admission-server-tls-cert string    TLS certificate for the admission web hooks implemented by the Kuma Control Plane
       --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
       --cni-enabled                         install Kuma with CNI instead of proxy init container
+      --cni-image string                    image of Kuma CNI component, if CNIEnabled equals true (default "lobkovilya/install-cni")
+      --cni-version string                  version of the CNIImage (default "0.0.1")
       --control-plane-image string          image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io/kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
       --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
@@ -231,10 +233,6 @@ Flags:
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
-      --injector-image string               image of the Kuma Injector component (default "kong-docker-kuma-docker.bintray.io/kuma-injector")
-      --injector-service-name string        Service name of the mutating web hook implemented by the Kuma Injector component (default "kuma-injector")
-      --injector-tls-cert string            TLS certificate for the mutating web hook implemented by the Kuma Injector component
-      --injector-tls-key string             TLS key for the mutating web hook implemented by the Kuma Injector component
       --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
       --sds-tls-cert string                 TLS certificate for the SDS server
       --sds-tls-key string                  TLS key for the SDS server
@@ -355,6 +353,8 @@ Available Commands:
   meshes              Show Meshes
   proxytemplate       Show a single Proxytemplate resource
   proxytemplates      Show ProxyTemplates
+  secret              Show a single Secret resource
+  secrets             Show Secrets
   traffic-log         Show a single TrafficLog resource
   traffic-logs        Show TrafficLogs
   traffic-permission  Show a single TrafficPermission resource
@@ -385,7 +385,9 @@ Usage:
   kumactl get meshes [flags]
 
 Flags:
-  -h, --help   help for meshes
+  -h, --help            help for meshes
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -403,7 +405,9 @@ Usage:
   kumactl get dataplanes [flags]
 
 Flags:
-  -h, --help   help for dataplanes
+  -h, --help            help for dataplanes
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -421,7 +425,9 @@ Usage:
   kumactl get healthchecks [flags]
 
 Flags:
-  -h, --help   help for healthchecks
+  -h, --help            help for healthchecks
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -439,7 +445,9 @@ Usage:
   kumactl get proxytemplates [flags]
 
 Flags:
-  -h, --help   help for proxytemplates
+  -h, --help            help for proxytemplates
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -457,7 +465,9 @@ Usage:
   kumactl get traffic-logs [flags]
 
 Flags:
-  -h, --help   help for traffic-logs
+  -h, --help            help for traffic-logs
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -475,7 +485,9 @@ Usage:
   kumactl get traffic-permissions [flags]
 
 Flags:
-  -h, --help   help for traffic-permissions
+  -h, --help            help for traffic-permissions
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -493,7 +505,9 @@ Usage:
   kumactl get traffic-routes [flags]
 
 Flags:
-  -h, --help   help for traffic-routes
+  -h, --help            help for traffic-routes
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -511,7 +525,9 @@ Usage:
   kumactl get traffic-traces [flags]
 
 Flags:
-  -h, --help   help for traffic-traces
+  -h, --help            help for traffic-traces
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -529,7 +545,45 @@ Usage:
   kumactl get fault-injections [flags]
 
 Flags:
-  -h, --help   help for fault-injections
+  -h, --help            help for fault-injections
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get secret
+
+```
+Show a single Secret resource.
+
+Usage:
+  kumactl get secret NAME [flags]
+
+Flags:
+  -h, --help   help for secret
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get secrets
+
+```
+Show Secrets.
+
+Usage:
+  kumactl get secrets [flags]
+
+Flags:
+  -h, --help   help for secrets
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -596,150 +650,6 @@ Global Flags:
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
   -o, --output string        output format: one of table|yaml|json (default "table")
-```
-
-## kumactl manage
-
-```
-Manage certificate authorities, etc.
-
-Usage:
-  kumactl manage [command]
-
-Available Commands:
-  ca          Manage certificate authorities
-
-Flags:
-  -h, --help   help for manage
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-  -m, --mesh string          mesh to use (default "default")
-
-Use "kumactl manage [command] --help" for more information about a command.
-```
-
-### kumactl manage ca
-
-```
-Manage certificate authorities.
-
-Usage:
-  kumactl manage ca [command]
-
-Available Commands:
-  provided    Manage "provided" certificate authorities
-
-Flags:
-  -h, --help   help for ca
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-  -m, --mesh string          mesh to use (default "default")
-
-Use "kumactl manage ca [command] --help" for more information about a command.
-```
-
-#### kumactl manage ca provided
-
-```
-Manage "provided" certificate authorities.
-
-Usage:
-  kumactl manage ca provided [command]
-
-Available Commands:
-  certificates Manage signing certificates used by a "provided" certificate authority
-
-Flags:
-  -h, --help   help for provided
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-  -m, --mesh string          mesh to use (default "default")
-
-Use "kumactl manage ca provided [command] --help" for more information about a command.
-```
-
-##### kumactl manage ca provided certificates
-
-```
-Manage signing certificates used by a "provided" certificate authority.
-
-Usage:
-  kumactl manage ca provided certificates [command]
-
-Available Commands:
-  add         Add signing certificate
-  delete      Delete signing certificate
-  list        List signing certificates
-
-Flags:
-  -h, --help   help for certificates
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-  -m, --mesh string          mesh to use (default "default")
-
-Use "kumactl manage ca provided certificates [command] --help" for more information about a command.
-```
-
-###### kumactl manage ca provided certificates list
-
-```
-List signing certificates.
-
-Usage:
-  kumactl manage ca provided certificates list [flags]
-
-Flags:
-  -h, --help   help for list
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-  -m, --mesh string          mesh to use (default "default")
-```
-
-###### kumactl manage ca provided certificates delete
-
-```
-Delete signing certificate.
-
-Usage:
-  kumactl manage ca provided certificates delete [flags]
-
-Flags:
-  -h, --help        help for delete
-      --id string   id of the certificate
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-  -m, --mesh string          mesh to use (default "default")
-```
-
-###### kumactl manage ca provided certificates add
-
-```
-Add signing certificate.
-
-Usage:
-  kumactl manage ca provided certificates add [flags]
-
-Flags:
-      --cert-file string   path to a file with a CA certificate
-  -h, --help               help for add
-      --key-file string    path to a file with a private key
-
-Global Flags:
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-  -m, --mesh string          mesh to use (default "default")
 ```
 
 ## kumactl version
