@@ -18,7 +18,7 @@ func MatchingRegex(tags mesh_proto.SingleValueTagSet) (re string) {
 			value = fmt.Sprintf(`[^&]*%s[,&]`, tags[key])
 		}
 		value = strings.ReplaceAll(value, ".", `\.`)
-		expr := keyIsEqual + value + `.*`
+		expr := `.*` + keyIsEqual + value + `.*`
 		re += expr
 	}
 	return
