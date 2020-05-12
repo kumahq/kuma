@@ -30,39 +30,6 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should create a new resource with owner", func() {
-		// setup
-		meshRes := core_mesh.MeshResource{}
-		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, mesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		name := "resource1.demo"
-		trRes := sample_model.TrafficRouteResource{
-			Spec: sample_proto.TrafficRoute{
-				Path: "demo",
-			},
-		}
-		err = s.Create(context.Background(), &trRes,
-			store.CreateByKey(name, mesh),
-			store.CreatedAt(time.Now()),
-			store.CreateWithOwner(&meshRes))
-		Expect(err).ToNot(HaveOccurred())
-
-		// when retrieve created object
-		actual := sample_model.TrafficRouteResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey(name, mesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, mesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		actual = sample_model.TrafficRouteResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey(name, mesh))
-		Expect(store.IsResourceNotFound(err)).To(BeTrue())
-	})
-
 	It("should delete resource when its owner is deleted", func() {
 		// setup
 		meshRes := core_mesh.MeshResource{}

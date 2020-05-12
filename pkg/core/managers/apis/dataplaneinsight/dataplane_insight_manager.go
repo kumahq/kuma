@@ -6,7 +6,6 @@ import (
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_registry "github.com/Kong/kuma/pkg/core/resources/registry"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 )
 
@@ -26,7 +25,6 @@ type dataplaneInsightManager struct {
 
 	store         core_store.ResourceStore
 	otherManagers core_manager.ResourceManager
-	registry      core_registry.TypeRegistry
 }
 
 func (m *dataplaneInsightManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
