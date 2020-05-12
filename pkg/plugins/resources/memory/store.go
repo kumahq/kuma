@@ -191,9 +191,11 @@ func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.
 		}
 		obj, err := registry.Global().NewObject(model.ResourceType(child.ResourceType))
 		if err != nil {
-			return fmt.Errorf("MemoryStore.Delete() couldn't delete linked child resource")
+			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
 		}
-		_ = c.unmarshalRecord(childRecord, obj)
+		if err := c.unmarshalRecord(childRecord, obj); err != nil {
+			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
+		}
 		if err := c.delete(ctx, obj, store.DeleteByKey(childRecord.Name, childRecord.Mesh)); err != nil {
 			return fmt.Errorf("MemoryStore.Delete() couldn't delete linked child resource")
 		}
