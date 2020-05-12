@@ -2,6 +2,7 @@ package dataplaneinsight
 
 import (
 	"context"
+
 	"github.com/Kong/kuma/pkg/core"
 
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
