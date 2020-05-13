@@ -27,7 +27,7 @@ var _ = Describe("DataSource Loader", func() {
 	var dataSourceLoader datasource.Loader
 
 	BeforeEach(func() {
-		secretManager = manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None())
+		secretManager = manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil)
 		dataSourceLoader = datasource.NewDataSourceLoader(secretManager)
 	})
 

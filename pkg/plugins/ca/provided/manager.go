@@ -82,6 +82,21 @@ func (p *providedCaManager) Ensure(ctx context.Context, mesh string, backend mes
 	return nil // Cert and Key are created by user and pointed in the configuration which is validated first
 }
 
+func (p *providedCaManager) UsedSecrets(mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]string, error) {
+	cfg := &config.ProvidedCertificateAuthorityConfig{}
+	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
+		return nil, errors.Wrap(err, "could not convert backend config to ProvidedCertificateAuthorityConfig")
+	}
+	var secrets []string
+	if cfg.GetCert().GetSecret() != "" {
+		secrets = append(secrets, cfg.GetCert().GetSecret())
+	}
+	if cfg.GetKey().GetSecret() != "" {
+		secrets = append(secrets, cfg.GetCert().GetSecret())
+	}
+	return secrets, nil
+}
+
 func (p *providedCaManager) GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]ca.Cert, error) {
 	meshCa, err := p.getCa(ctx, mesh, backend)
 	if err != nil {

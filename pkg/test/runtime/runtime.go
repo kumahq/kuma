@@ -49,7 +49,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 
 func newSecretManager(builder *core_runtime.Builder) secret_manager.SecretManager {
 	secretStore := secret_store.NewSecretStore(builder.ResourceStore())
-	secretManager := secret_manager.NewSecretManager(secretStore, secret_cipher.None())
+	secretManager := secret_manager.NewSecretManager(secretStore, secret_cipher.None(), nil)
 	return secretManager
 }
 
