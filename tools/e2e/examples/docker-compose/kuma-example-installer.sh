@@ -7,7 +7,7 @@ set -e
 #
 
 function resolve_ip {
-  LC_ALL=C nslookup ${DATAPLANE_HOSTNAME} 2>/dev/null  | sed -nr '/Name/,+1s|Address(es)?: *||p'
+  getent hosts ${DATAPLANE_HOSTNAME} 2>/dev/null | awk -e '{ print $1 }'
 }
 
 function fail {
