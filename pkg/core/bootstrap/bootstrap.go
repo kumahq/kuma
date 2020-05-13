@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"github.com/pkg/errors"
 
+	"github.com/Kong/kuma/pkg/core/managers/apis/dataplaneinsight"
+
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
@@ -239,6 +241,10 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	}
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.SecretManager(), builder.CaManagers(), registry.Global(), validator)
 	customManagers[mesh.MeshType] = meshManager
+
+	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), customizableManager)
+	customManagers[mesh.DataplaneInsightType] = dpInsightManager
+
 	builder.WithResourceManager(customizableManager)
 
 	if builder.Config().Store.Cache.Enabled {

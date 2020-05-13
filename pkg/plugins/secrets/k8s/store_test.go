@@ -295,7 +295,7 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).To(MatchError(store.ErrorResourceNotFound(core_system.SecretType, name, "demo")))
 		})
 
-		It("should return an existing resource", func() {
+		It("should return an existing resource with explicit mesh label", func() {
 			// setup
 			expected := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: v1
@@ -324,6 +324,62 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(actual.Meta.GetMesh()).To(Equal("demo"))
 			// and
 			Expect(actual.Spec.Data.Value).To(Equal([]byte("example")))
+		})
+
+		It("should return an existing resource with implicit default mesh", func() {
+			// setup
+			expected := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/secret
+            metadata:
+              namespace: %s
+              name: %s
+            data:
+              value: ZXhhbXBsZQ== # base64(example)
+`, ns, name))
+			backend.Create(expected)
+
+			// given
+			actual := &secret_model.SecretResource{}
+
+			// when
+			err := s.Get(context.Background(), actual, store.GetByKey(name, "default"))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(actual.Meta.GetName()).To(Equal(name))
+			Expect(actual.Meta.GetMesh()).To(Equal("default"))
+			// and
+			Expect(actual.Spec.Data.Value).To(Equal([]byte("example")))
+		})
+
+		It("should return an error if resource is in another mesh", func() {
+			// setup
+			expected := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/secret
+            metadata:
+              namespace: %s
+              name: %s
+              labels:
+                kuma.io/mesh: demo
+            data:
+              value: ZXhhbXBsZQ== # base64(example)
+`, ns, name))
+			backend.Create(expected)
+
+			// given
+			actual := &secret_model.SecretResource{}
+
+			// when
+			err := s.Get(context.Background(), actual, store.GetByKey(name, "another-mesh"))
+
+			// then
+			Expect(err).To(MatchError(store.ErrorResourceNotFound(core_system.SecretType, name, "another-mesh")))
+			Expect(actual.Spec.GetData().GetValue()).To(BeEmpty())
 		})
 	})
 

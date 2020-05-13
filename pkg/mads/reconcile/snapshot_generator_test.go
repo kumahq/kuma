@@ -125,7 +125,7 @@ var _ = Describe("snapshotGenerator", func() {
 									{
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
-										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
 											Path: "/non-standard-path",
 										}),
@@ -177,7 +177,7 @@ var _ = Describe("snapshotGenerator", func() {
 									{
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
-										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
 											Path: "/non-standard-path",
 										}),
@@ -244,7 +244,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Metrics: &mesh_proto.MetricsBackend{
 								Name: "prometheus-1",
 								Type: mesh_proto.MetricsPrometheusType,
-								Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 									Port: 8765,
 									Path: "/even-more-non-standard-path",
 								}),

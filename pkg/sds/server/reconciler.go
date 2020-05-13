@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
@@ -32,17 +35,18 @@ import (
 //
 // Snapshot are versioned with UnixNano;NameOfTheCA pattern
 type DataplaneReconciler struct {
-	resManager       core_manager.ReadOnlyResourceManager
-	meshCaProvider   sds_provider.SecretProvider
-	identityProvider sds_provider.SecretProvider
-	cache            envoy_cache.SnapshotCache
+	resManager         core_manager.ResourceManager
+	readOnlyResManager core_manager.ReadOnlyResourceManager
+	meshCaProvider     sds_provider.SecretProvider
+	identityProvider   sds_provider.SecretProvider
+	cache              envoy_cache.SnapshotCache
 }
 
 func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) error {
 	proxyID := core_xds.FromResourceKey(dataplaneId).String()
 
 	dataplane := &mesh_core.DataplaneResource{}
-	if err := d.resManager.Get(context.Background(), dataplane, core_store.GetBy(dataplaneId)); err != nil {
+	if err := d.readOnlyResManager.Get(context.Background(), dataplane, core_store.GetBy(dataplaneId)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			sdsServerLog.V(1).Info("Dataplane not found. Clearing the Snapshot.", "dataplaneId", dataplaneId)
 			d.cache.ClearSnapshot(proxyID)
@@ -52,7 +56,7 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 	}
 
 	mesh := &mesh_core.MeshResource{}
-	if err := d.resManager.Get(context.Background(), mesh, core_store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
+	if err := d.readOnlyResManager.Get(context.Background(), mesh, core_store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
 		return errors.Wrap(err, "could not retrieve a mesh")
 	}
 
@@ -72,6 +76,10 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 		snapshot, err := d.generateSnapshot(dataplane, mesh)
 		if err != nil {
 			return err
+		}
+		if err := d.updateInsights(dataplaneId, snapshot); err != nil {
+			// do not stop updating Envoy even if insights update fails
+			sdsServerLog.Error(err, "Could not update Dataplane Insights", "dataplaneId", dataplaneId)
 		}
 		if err := d.cache.SetSnapshot(proxyID, snapshot); err != nil {
 			return err
@@ -140,4 +148,35 @@ func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneRes
 		caSecret.ToResource(MeshCaResource),
 	})
 	return snap, nil
+}
+
+func (d *DataplaneReconciler) updateInsights(dataplaneId core_model.ResourceKey, snapshot envoy_cache.Snapshot) error {
+	secret := snapshot.Resources[envoy_types.Secret].Items[IdentityCertResource].(*envoy_auth.Secret)
+	certPEM := secret.GetTlsCertificate().CertificateChain.GetInlineBytes()
+	block, _ := pem.Decode(certPEM)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return err
+	}
+
+	create := false
+	dataplaneInsight := &mesh_core.DataplaneInsightResource{}
+	err = d.resManager.Get(context.Background(), dataplaneInsight, core_store.GetBy(dataplaneId))
+	if err != nil {
+		if core_store.IsResourceNotFound(err) {
+			create = true
+		} else {
+			return err
+		}
+	}
+
+	if err := dataplaneInsight.Spec.UpdateCert(core.Now(), cert.NotAfter); err != nil {
+		return err
+	}
+
+	if create {
+		return d.resManager.Create(context.Background(), dataplaneInsight, core_store.CreateBy(dataplaneId))
+	} else {
+		return d.resManager.Update(context.Background(), dataplaneInsight)
+	}
 }

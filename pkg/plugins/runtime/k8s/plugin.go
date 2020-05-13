@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
-
 	"github.com/pkg/errors"
+	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
+	kube_ctrl "sigs.k8s.io/controller-runtime"
+	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/Kong/kuma/pkg/core"
 	managers_mesh "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
@@ -20,11 +21,8 @@ import (
 	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	k8s_controllers "github.com/Kong/kuma/pkg/plugins/runtime/k8s/controllers"
 	k8s_webhooks "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
+	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
-
-	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
-	kube_ctrl "sigs.k8s.io/controller-runtime"
-	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 var (
@@ -148,4 +146,13 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) {
 		mgr.GetClient(),
 	)
 	mgr.GetWebhookServer().Register("/inject-sidecar", k8s_webhooks.PodMutatingWebhook(kumaInjector.InjectKuma))
+
+	ownerRefMutator := &k8s_webhooks.OwnerReferenceMutator{
+		Client:       mgr.GetClient(),
+		CoreRegistry: core_registry.Global(),
+		K8sRegistry:  k8s_registry.Global(),
+		Converter:    k8s_resources.DefaultConverter(),
+		Scheme:       mgr.GetScheme(),
+	}
+	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 }

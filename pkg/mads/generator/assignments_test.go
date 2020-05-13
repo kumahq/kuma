@@ -97,7 +97,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Metrics: &mesh_proto.MetricsBackend{
 								Name: "prometheus-1",
 								Type: mesh_proto.MetricsPrometheusType,
-								Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 									Port: 8765,
 									Path: "/even-more-non-standard-path",
 								}),
@@ -121,7 +121,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									{
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
-										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
 											Path: "/non-standard-path",
 										}),
@@ -190,7 +190,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									{
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
-										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
 											Path: "/non-standard-path",
 										}),
@@ -277,7 +277,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									{
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
-										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
 											Path: "/non-standard-path",
 										}),
@@ -351,7 +351,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									{
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
-										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
 											Path: "/non-standard-path",
 										}),
@@ -426,7 +426,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									{
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
-										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
 											Path: "/non-standard-path",
 										}),
@@ -447,7 +447,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									{
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
-										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 2345,
 											Path: "/another-non-standard-path",
 										}),
@@ -497,7 +497,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Metrics: &mesh_proto.MetricsBackend{
 								Name: "prometheus-1",
 								Type: mesh_proto.MetricsPrometheusType,
-								Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 									Port: 8765,
 									Path: "/even-more-non-standard-path",
 								}),
@@ -570,7 +570,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									{
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
-										Config: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
 											Path: "/non-standard-path",
 										}),

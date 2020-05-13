@@ -12,6 +12,22 @@ message DataplaneInsight {
 
   // List of ADS subscriptions created by a given Dataplane.
   repeated DiscoverySubscription subscriptions = 1;
+
+  // Insights about mTLS for Dataplane.
+  MTLS mTLS = 2;
+
+  // MTLS defines insights for mTLS
+  message MTLS {
+    // Expiration time of the last certificate that was generated for a
+    // Dataplane.
+    google.protobuf.Timestamp certificate_expiration_time = 1;
+
+    // Time on which the last certificate was generated.
+    google.protobuf.Timestamp last_certificate_regeneration = 2;
+
+    // Number of certificate regenerations for a Dataplane.
+    uint32 certificate_regenerations = 3;
+  }
 }
 
 // DiscoverySubscription describes a single ADS subscription

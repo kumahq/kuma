@@ -108,14 +108,14 @@ func (d *DataplaneResource) GetPrometheusEndpoint(mesh *MeshResource) (*mesh_pro
 		return nil, nil
 	}
 	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
-	strCfg := mesh.GetEnabledMetricsBackend().Config
+	strCfg := mesh.GetEnabledMetricsBackend().Conf
 	if err := util_proto.ToTyped(strCfg, &cfg); err != nil {
 		return nil, err
 	}
 
 	if d.Spec.GetMetrics().GetType() == mesh_proto.MetricsPrometheusType {
 		dpCfg := mesh_proto.PrometheusMetricsBackendConfig{}
-		if err := util_proto.ToTyped(d.Spec.Metrics.Config, &dpCfg); err != nil {
+		if err := util_proto.ToTyped(d.Spec.Metrics.Conf, &dpCfg); err != nil {
 			return nil, err
 		}
 		proto.Merge(&cfg, &dpCfg)

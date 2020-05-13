@@ -30,7 +30,7 @@ func (p *providedCaManager) ValidateBackend(ctx context.Context, mesh string, ba
 	verr := validators.ValidationError{}
 
 	cfg := &config.ProvidedCertificateAuthorityConfig{}
-	if err := util_proto.ToTyped(backend.Config, cfg); err != nil {
+	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
 		verr.AddViolation("", "could not convert backend config: "+err.Error())
 		return verr.OrNil()
 	}
@@ -60,7 +60,7 @@ func (p *providedCaManager) ValidateBackend(ctx context.Context, mesh string, ba
 
 func (p *providedCaManager) getCa(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) (ca.KeyPair, error) {
 	cfg := &config.ProvidedCertificateAuthorityConfig{}
-	if err := util_proto.ToTyped(backend.Config, cfg); err != nil {
+	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
 		return ca.KeyPair{}, errors.Wrap(err, "could not convert backend config to ProvidedCertificateAuthorityConfig")
 	}
 	key, err := p.dataSourceLoader.Load(ctx, mesh, cfg.Key)

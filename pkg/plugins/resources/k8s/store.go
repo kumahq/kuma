@@ -9,7 +9,9 @@ import (
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -25,12 +27,14 @@ var _ store.ResourceStore = &KubernetesStore{}
 type KubernetesStore struct {
 	Client    kube_client.Client
 	Converter Converter
+	Scheme    *kube_runtime.Scheme
 }
 
-func NewStore(client kube_client.Client) (store.ResourceStore, error) {
+func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme) (store.ResourceStore, error) {
 	return &KubernetesStore{
 		Client:    client,
 		Converter: DefaultConverter(),
+		Scheme:    scheme,
 	}, nil
 }
 
@@ -47,6 +51,17 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	obj.SetMesh(opts.Mesh)
 	obj.GetObjectMeta().SetName(name)
 	obj.GetObjectMeta().SetNamespace(namespace)
+
+	if opts.Owner != nil {
+		k8sOwner, err := s.Converter.ToKubernetesObject(opts.Owner)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert core model into k8s counterpart")
+		}
+		if err := controllerutil.SetControllerReference(k8sOwner, obj, s.Scheme); err != nil {
+			return errors.Wrap(err, "failed to set owner reference for object")
+		}
+	}
+
 	if err := s.Client.Create(ctx, obj); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
 			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)

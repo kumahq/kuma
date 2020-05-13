@@ -41,7 +41,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Name:     "zipkin",
 				Sampling: &wrappers.DoubleValue{Value: 30.5},
 				Type:     mesh_proto.TracingZipkinType,
-				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url: "http://zipkin.us:9090/v2/spans",
 				}),
 			},
@@ -69,7 +69,7 @@ var _ = Describe("TracingConfigurer", func() {
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin",
 				Type: mesh_proto.TracingZipkinType,
-				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url: "http://zipkin.us:9090/v2/spans",
 				}),
 			},

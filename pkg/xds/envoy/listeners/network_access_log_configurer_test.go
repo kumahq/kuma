@@ -107,7 +107,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			backend: &mesh_proto.LoggingBackend{
 				Name: "file",
 				Type: mesh_proto.LoggingFileType,
-				Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 					Path: "/tmp/log",
 				}),
 			},
@@ -147,7 +147,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 "%RESP(SERVER):5%" "%TRAILER(GRPC-MESSAGE):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
 `, // intentional newline at the end
 				Type: mesh_proto.LoggingTcpType,
-				Config: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
 					Address: "127.0.0.1:1234",
 				}),
 			},
