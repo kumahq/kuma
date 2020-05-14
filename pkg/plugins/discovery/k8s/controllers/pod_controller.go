@@ -42,8 +42,9 @@ const (
 type PodReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder
-	Scheme *kube_runtime.Scheme
-	Log    logr.Logger
+	Scheme       *kube_runtime.Scheme
+	Log          logr.Logger
+	PodConverter PodConverter
 }
 
 func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -140,7 +141,7 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := PodToDataplane(dataplane, pod, services, others, r.Client); err != nil {
+		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, others); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
@@ -156,9 +157,9 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
-		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Dataplane: %s", dataplane.Name)
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Dataplane: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
-		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", dataplane.Name)
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", pod.Name)
 	}
 	return nil
 }

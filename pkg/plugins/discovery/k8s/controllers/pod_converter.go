@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"net"
 	"sort"
 	"strings"
 
@@ -25,13 +24,13 @@ var (
 	converterLog = core.Log.WithName("discovery").WithName("k8s").WithName("pod-to-dataplane-converter")
 )
 
-func PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane, serviceGetter kube_client.Reader) error {
-	// pick a Mesh
-	dataplane.Mesh = MeshFor(pod)
+type PodConverter struct {
+	ServiceGetter kube_client.Reader
+}
 
-	// auto-generate Dataplane definition
-	dataplaneProto, err := DataplaneFor(pod, services, others, serviceGetter)
+func (p *PodConverter) PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane) error {
+	dataplane.Mesh = MeshFor(pod)
+	dataplaneProto, err := p.DataplaneFor(pod, services, others)
 	if err != nil {
 		return err
 	}
@@ -47,7 +46,7 @@ func MeshFor(pod *kube_core.Pod) string {
 	return injector_metadata.GetMesh(pod)
 }
 
-func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane, serviceGetter kube_client.Reader) (*mesh_proto.Dataplane, error) {
+func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
 	}
@@ -72,7 +71,7 @@ func DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*m
 		dataplane.Networking.Inbound = ifaces
 	}
 
-	ofaces, err := OutboundInterfacesFor(others, serviceGetter)
+	ofaces, err := p.OutboundInterfacesFor(pod, others)
 	if err != nil {
 		return nil, err
 	}
@@ -105,9 +104,6 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 				// ignore those cases where a Pod doesn't have all the ports a Service has
 				continue
 			}
-			if net.ParseIP(svc.Spec.ClusterIP) == nil {
-				return nil, errors.Errorf("Kuma requires a Kubernetes Service entity associated with a Pod with a valid IP address in the ClusterIP field. Service %s.%s has a ClusterIP value of %q. At the moment Kuma does not support headless services, to continue please add the missing Service definition or - alternatively - exclude this Pod from the automatic sidecar injection by following the instructions at: https://kuma.io/docs/latest/documentation/dps-and-data-model/#kubernetes", svc.Name, svc.Namespace, svc.Spec.ClusterIP)
-			}
 
 			tags := InboundTagsFor(pod, svc, &svcPort, isGateway)
 
@@ -119,7 +115,7 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 	}
 	if len(ifaces) == 0 {
 		// Notice that here we return an error immediately
-		// instead of leaving validation up to a ValidatingAdmissionWebHook.
+		// instead of leaving Dataplane validation up to a ValidatingAdmissionWebHook.
 		// We do it this way in order to provide the most descriptive error message.
 		cause := "However, there are no Services that select this Pod."
 		if len(services) > 0 {
@@ -130,10 +126,107 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 	return ifaces, nil
 }
 
-func OutboundInterfacesFor(others []*mesh_k8s.Dataplane, serviceGetter kube_client.Reader) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
-	var ofaces []*mesh_proto.Dataplane_Networking_Outbound
+func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_k8s.Dataplane) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	directAccessServices := directAccessServices(pod)
+	endpoints := endpointsByService(others)
+	for _, serviceTag := range endpoints.Services() {
+		service, port, err := p.k8sService(serviceTag)
+		if err != nil {
+			converterLog.Error(err, "could not get K8S Service for service tag")
+			continue // one invalid Dataplane definition should not break the entire mesh
+		}
+		if isHeadlessService(service) {
+			directAccessServices[serviceTag] = true
+		} else {
+			// generate outbound based on ClusterIP. Transparent Proxy will work only if DNS name that resolves to ClusterIP is used
+			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+				Address: service.Spec.ClusterIP,
+				Port:    port,
+				Service: serviceTag,
+			})
+		}
+	}
 
-	allServiceTags := make(map[string]bool)
+	directAccessOutbounds := directAccessOutbounds(directAccessServices, endpoints)
+	return append(outbounds, directAccessOutbounds...), nil
+}
+
+func directAccessServices(pod *kube_core.Pod) map[string]bool {
+	result := map[string]bool{}
+	servicesRaw := pod.GetAnnotations()[injector_metadata.KumaDirectAccess]
+	services := strings.Split(servicesRaw, ",")
+	for _, service := range services {
+		result[service] = true
+	}
+	return result
+}
+
+// Generate outbound listeners for every endpoint of services.
+// This will enable consuming applications via transparent proxy by PodIP instead of ClusterIP of its service
+// Generating listener for every endpoint will cause XDS snapshot to be huge therefore it should be used only if really needed
+func directAccessOutbounds(services map[string]bool, endpointsByService EndpointsByService) []*mesh_proto.Dataplane_Networking_Outbound {
+	var sortedServices []string // service should be sorted so we generate consistent every time
+	if services[injector_metadata.KumaDirectAccessAll] {
+		sortedServices = endpointsByService.Services()
+	} else {
+		sortedServices = stringSetToSortedList(services)
+	}
+
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	for _, service := range sortedServices {
+		// services that are not found will be ignored
+		for _, endpoint := range endpointsByService[service] {
+			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+				Address: endpoint.Address,
+				Port:    endpoint.Port,
+				Service: service,
+			})
+		}
+	}
+	return outbounds
+}
+
+func isHeadlessService(svc *kube_core.Service) bool {
+	return svc.Spec.ClusterIP == "None"
+}
+
+func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32, error) {
+	host, port, err := mesh_proto.ServiceTagValue(serviceTag).HostAndPort()
+	if err != nil {
+		return nil, 0, errors.Errorf("failed to parse `service` tag %q", serviceTag)
+	}
+	name, ns, err := ParseServiceFQDN(host)
+	if err != nil {
+		return nil, 0, errors.Errorf("failed to parse `service` host %q as FQDN", host)
+	}
+
+	svc := &kube_core.Service{}
+	svcKey := kube_client.ObjectKey{Namespace: ns, Name: name}
+	if err := p.ServiceGetter.Get(context.Background(), svcKey, svc); err != nil {
+		return nil, 0, errors.Wrapf(err, "failed to get Service %q", svcKey)
+	}
+	return svc, port, nil
+}
+
+type Endpoint struct {
+	Address string
+	Port    uint32
+}
+
+type EndpointsByService map[string][]Endpoint
+
+func (e EndpointsByService) Services() []string {
+	list := make([]string, 0, len(e))
+	for key := range e {
+		list = append(list, key)
+	}
+	sort.Strings(list)
+	return list
+}
+
+func endpointsByService(others []*mesh_k8s.Dataplane) EndpointsByService {
+	result := EndpointsByService{}
 	for _, other := range others {
 		dataplane := &mesh_proto.Dataplane{}
 		if err := util_proto.FromMap(other.Spec, dataplane); err != nil {
@@ -145,37 +238,18 @@ func OutboundInterfacesFor(others []*mesh_k8s.Dataplane, serviceGetter kube_clie
 			if !ok {
 				continue
 			}
-			allServiceTags[svc] = true
+			endpoint := Endpoint{
+				Port: inbound.Port,
+			}
+			if inbound.Address != "" {
+				endpoint.Address = inbound.Address
+			} else {
+				endpoint.Address = dataplane.Networking.Address
+			}
+			result[svc] = append(result[svc], endpoint)
 		}
 	}
-	for _, serviceTag := range stringSetToSortedList(allServiceTags) {
-		host, port, err := mesh_proto.ServiceTagValue(serviceTag).HostAndPort()
-		if err != nil {
-			converterLog.Error(err, "failed to parse `service` tag value", "value", serviceTag)
-			continue // one invalid Dataplane definition should not break the entire mesh
-		}
-		name, ns, err := ParseServiceFQDN(host)
-		if err != nil {
-			converterLog.Error(err, "failed to parse `service` host as FQDN", "host", host)
-			continue // one invalid Dataplane definition should not break the entire mesh
-		}
-
-		svc := &kube_core.Service{}
-		if err := serviceGetter.Get(context.Background(), kube_client.ObjectKey{Namespace: ns, Name: name}, svc); err != nil {
-			converterLog.Error(err, "failed to get Service", "namespace", ns, "name", name)
-			continue // one invalid Dataplane definition should not break the entire mesh
-		}
-
-		dataplaneIP := svc.Spec.ClusterIP
-		dataplanePort := port
-
-		ofaces = append(ofaces, &mesh_proto.Dataplane_Networking_Outbound{
-			Address: dataplaneIP,
-			Port:    dataplanePort,
-			Service: serviceTag,
-		})
-	}
-	return ofaces, nil
+	return result
 }
 
 func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) map[string]string {
