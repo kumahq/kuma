@@ -2,6 +2,7 @@ package dataplaneinsight
 
 import (
 	"context"
+
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 
 	"github.com/Kong/kuma/pkg/core"
