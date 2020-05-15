@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -63,7 +64,7 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 	}
-	if err := controllerutil.SetControllerReference(owner, obj, m.Scheme); err != nil {
+	if err := controllerutil.SetOwnerReference(owner, obj, m.Scheme); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 	mutatedRaw, err := json.Marshal(obj)

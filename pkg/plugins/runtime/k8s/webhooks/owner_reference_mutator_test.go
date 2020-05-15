@@ -97,8 +97,6 @@ var _ = Describe("OwnerReferenceMutator", func() {
                 "value": [
                   {
                     "apiVersion": "kuma.io/v1alpha1",
-                    "blockOwnerDeletion": true,
-                    "controller": true,
                     "kind": "Mesh",
                     "name": "default",
                     "uid": "%s"
@@ -160,8 +158,6 @@ var _ = Describe("OwnerReferenceMutator", func() {
                 "value": [
                   {
                     "apiVersion": "kuma.io/v1alpha1",
-                    "blockOwnerDeletion": true,
-                    "controller": true,
                     "kind": "Dataplane",
                     "name": "dp-1",
                     "uid": "%s"
