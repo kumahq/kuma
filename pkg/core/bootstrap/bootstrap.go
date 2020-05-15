@@ -242,7 +242,7 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.SecretManager(), builder.CaManagers(), registry.Global(), validator)
 	customManagers[mesh.MeshType] = meshManager
 
-	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), customizableManager)
+	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
 	customManagers[mesh.DataplaneInsightType] = dpInsightManager
 
 	builder.WithResourceManager(customizableManager)
