@@ -278,6 +278,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               inbound:
                 - port: 80
                   servicePort: 8080
+                  tags:
+                    service: backend
               outbound:
               - port: 54321
                 service: db
@@ -311,6 +313,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               inbound:
                 - port: 80
                   servicePort: 8080
+                  tags:
+                    service: backend
               outbound:
               - port: 54321
                 service: db
@@ -346,6 +350,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               inbound:
                 - port: 80
                   servicePort: 8080
+                  tags:
+                    service: backend
               outbound:
               - port: 54321
                 service: db
@@ -379,6 +385,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               inbound:
                 - port: 80
                   servicePort: 8080
+                  tags:
+                    service: backend
               outbound:
               - port: 54321
                 service: db
@@ -414,6 +422,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               inbound:
                 - port: 80
                   servicePort: 8080
+                  tags:
+                    service: backend
               outbound:
               - port: 54321
                 service: db
@@ -447,6 +457,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               inbound:
                 - port: 80
                   servicePort: 8080
+                  tags:
+                    service: backend
               outbound:
               - port: 54321
                 service: db

@@ -55,7 +55,7 @@ resources:
                           safeRegexMatch:
                             googleRe2:
                               maxProgramSize: 500
-                            regex: '.*&service=[^&]*frontend[,&].*'
+                            regex: .*&service=[^&]*frontend[,&].*
                   - name: envoy.router
                 routeConfig:
                   name: inbound:backend1
@@ -78,7 +78,7 @@ resources:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
                 tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: dp:backend1
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -88,7 +88,7 @@ resources:
                                 sslCredentials:
                                   rootCerts:
                                     inlineBytes: MTIzNDU=
-                              statPrefix: sds_identity_cert
+                              statPrefix: sds_dp_backend1
                               targetUri: kuma-system:5677
                 validationContextSdsSecretConfig:
                   name: mesh_ca
@@ -149,7 +149,7 @@ resources:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
                 tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: dp:backend2
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -159,7 +159,7 @@ resources:
                                 sslCredentials:
                                   rootCerts:
                                     inlineBytes: MTIzNDU=
-                              statPrefix: sds_identity_cert
+                              statPrefix: sds_dp_backend2
                               targetUri: kuma-system:5677
                 validationContextSdsSecretConfig:
                   name: mesh_ca
@@ -219,7 +219,7 @@ resources:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
                 tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: dp:backend3
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -229,7 +229,7 @@ resources:
                                 sslCredentials:
                                   rootCerts:
                                     inlineBytes: MTIzNDU=
-                              statPrefix: sds_identity_cert
+                              statPrefix: sds_dp_backend3
                               targetUri: kuma-system:5677
                 validationContextSdsSecretConfig:
                   name: mesh_ca
@@ -274,7 +274,7 @@ resources:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
                 tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: dp:backend4
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -284,7 +284,7 @@ resources:
                                 sslCredentials:
                                   rootCerts:
                                     inlineBytes: MTIzNDU=
-                              statPrefix: sds_identity_cert
+                              statPrefix: sds_dp_backend4
                               targetUri: kuma-system:5677
                 validationContextSdsSecretConfig:
                   name: mesh_ca

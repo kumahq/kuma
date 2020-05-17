@@ -50,3 +50,13 @@ func GetDestinationClusterName(service string, selector map[string]string) strin
 	sort.Strings(pairs)
 	return fmt.Sprintf("%s{%s}", service, strings.Join(pairs, ","))
 }
+
+const MeshCaResource = "mesh_ca"
+
+func DpCertResource(service string) string {
+	return fmt.Sprintf("dp:%s", service)
+}
+
+func IsDpCertResource(resourceName string) bool {
+	return strings.HasPrefix(resourceName, "dp:")
+}
