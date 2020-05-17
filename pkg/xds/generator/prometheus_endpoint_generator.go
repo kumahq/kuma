@@ -74,12 +74,18 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	if err != nil {
 		return nil, err
 	}
+	cluster, err := envoy_clusters.NewClusterBuilder().
+		Configure(envoy_clusters.StaticCluster(envoyAdminClusterName, adminAddress, adminPort)).
+		Build()
+	if err != nil {
+		return nil, err
+	}
 	return []*core_xds.Resource{
 		// CDS resource
 		&core_xds.Resource{
 			Name:     envoyAdminClusterName,
 			Version:  "",
-			Resource: envoy_clusters.CreateLocalCluster(envoyAdminClusterName, adminAddress, adminPort),
+			Resource: cluster,
 		},
 		// LDS resource
 		&core_xds.Resource{

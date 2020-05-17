@@ -101,10 +101,15 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	for i, endpoint := range endpoints {
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
+		cluster, err := envoy_clusters.NewClusterBuilder().
+			Configure(envoy_clusters.StaticCluster(localClusterName, "127.0.0.1", endpoint.WorkloadPort)).
+			Build()
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
+		}
 		resources.Add(&model.Resource{
 			Name:     localClusterName,
-			Version:  "",
-			Resource: envoy_clusters.CreateLocalCluster(localClusterName, "127.0.0.1", endpoint.WorkloadPort),
+			Resource: cluster,
 		})
 
 		// generate LDS resource
@@ -142,7 +147,6 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		}
 		resources.Add(&model.Resource{
 			Name:     inboundListenerName,
-			Version:  "",
 			Resource: inboundListener,
 		})
 	}
@@ -258,13 +262,17 @@ func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *mode
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags[kuma_mesh.ServiceTag]
 		healthCheck := proxy.HealthChecks[serviceName]
-		edsCluster, err := envoy_clusters.CreateEdsCluster(ctx, cluster.Name, proxy.Metadata)
+		edsCluster, err := envoy_clusters.NewClusterBuilder().
+			Configure(envoy_clusters.EdsCluster(cluster.Name)).
+			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata)).
+			Configure(envoy_clusters.HealthCheck(healthCheck)).
+			Build()
 		if err != nil {
 			return nil, nil, err
 		}
 		resources = append(resources, &model.Resource{
 			Name:     cluster.Name,
-			Resource: envoy_clusters.ClusterWithHealthChecks(edsCluster, healthCheck),
+			Resource: edsCluster,
 		})
 		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName]).Filter(kuma_mesh.MatchTags(cluster.Tags))
 		resources = append(resources, &model.Resource{
@@ -318,7 +326,13 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate listener %s", "catch_all")
+		return nil, errors.Wrapf(err, "could not generate listener: catch_all")
+	}
+	cluster, err := envoy_clusters.NewClusterBuilder().
+		Configure(envoy_clusters.PassThroughCluster("pass_through")).
+		Build()
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not generate cluster: pass_through")
 	}
 	return []*model.Resource{
 		&model.Resource{
@@ -329,7 +343,7 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 		&model.Resource{
 			Name:     "pass_through",
 			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: envoy_clusters.CreatePassThroughCluster("pass_through"),
+			Resource: cluster,
 		},
 	}, nil
 }
