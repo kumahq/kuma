@@ -11,6 +11,11 @@ import (
 // ResourcePayload is a convenience type alias.
 type ResourcePayload = envoy_types.Resource
 
+type NamedResourcePayload interface {
+	ResourcePayload
+	GetName() string
+}
+
 // Resource represents a generic xDS resource with name and version.
 type Resource struct {
 	Name     string
@@ -72,6 +77,16 @@ func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
 		}
 		s.resources = append(s.resources, resource)
 		s.index(resource)
+	}
+	return s
+}
+
+func (s *ResourceSet) AddNamed(namedPayloads ...NamedResourcePayload) *ResourceSet {
+	for _, namedPayload := range namedPayloads {
+		s.Add(&Resource{
+			Name: namedPayload.GetName(),
+			Resource: namedPayload,
+		})
 	}
 	return s
 }

@@ -80,18 +80,6 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	if err != nil {
 		return nil, err
 	}
-	return []*core_xds.Resource{
-		// CDS resource
-		&core_xds.Resource{
-			Name:     envoyAdminClusterName,
-			Version:  "",
-			Resource: cluster,
-		},
-		// LDS resource
-		&core_xds.Resource{
-			Name:     prometheusListenerName,
-			Version:  "",
-			Resource: listener,
-		},
-	}, nil
+	resources := (&core_xds.ResourceSet{}).AddNamed(cluster, listener)
+	return resources.List(), nil
 }

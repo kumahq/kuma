@@ -35,10 +35,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
 		}
-		resources.Add(&model.Resource{
-			Name:     localClusterName,
-			Resource: cluster,
-		})
+		resources.AddNamed(cluster)
 
 		// generate LDS resource
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
@@ -73,10 +70,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
 		}
-		resources.Add(&model.Resource{
-			Name:     inboundListenerName,
-			Resource: inboundListener,
-		})
+		resources.AddNamed(inboundListener)
 	}
 	return resources.List(), nil
 }

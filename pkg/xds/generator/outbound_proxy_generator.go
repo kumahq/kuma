@@ -88,10 +88,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i), outboundListenerName)
 		}
-		resources.Add(&model.Resource{
-			Name:     outboundListenerName,
-			Resource: listener,
-		})
+		resources.AddNamed(listener)
 
 		// generate RDS resources
 		rdsResources, err := g.generateRds(protocol, outbound.Service, outboundRouteName, clusters, proxy.Dataplane.Spec.Tags())
@@ -164,10 +161,7 @@ func (_ OutboundProxyGenerator) generateRds(protocol mesh_core.Protocol, service
 		if err != nil {
 			return nil, err
 		}
-		resources.Add(&model.Resource{
-			Name:     outboundRouteName,
-			Resource: routeConfiguration,
-		})
+		resources.AddNamed(routeConfiguration)
 	}
 	return resources.List(), nil
 }
