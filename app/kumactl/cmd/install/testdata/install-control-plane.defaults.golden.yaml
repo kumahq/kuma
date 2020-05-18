@@ -4322,9 +4322,6 @@ webhooks:
           - proxytemplates
           - dataplanes
   - name: kuma-injector.kuma.io
-    namespaceSelector:
-      matchLabels:
-        kuma.io/sidecar-injection: enabled
     failurePolicy: Ignore
     clientConfig:
       caBundle: Q0VSVA==
