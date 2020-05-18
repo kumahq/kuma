@@ -214,9 +214,6 @@ webhooks:
         - proxytemplates
         - dataplanes
 - name: kuma-injector.kuma.io
-  namespaceSelector:
-    matchLabels:
-      kuma.io/sidecar-injection: enabled
   failurePolicy: {{ .InjectorFailurePolicy }}
   clientConfig:
     caBundle: {{ .AdmissionServerTlsCert | b64enc }}

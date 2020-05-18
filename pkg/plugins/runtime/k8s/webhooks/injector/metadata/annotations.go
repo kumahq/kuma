@@ -8,12 +8,14 @@ const (
 	KumaMeshAnnotation = "kuma.io/mesh"
 
 	// KumaSidecarInjectionAnnotation defines a Pod annotation that
-	// gives users a chance to opt out of side-car injection
-	// into a given Pod by setting its value to KumaSidecarInjectionDisabled.
+	// gives users a chance to override behaviour defined in Namespace
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
 	// KumaSidecarInjectionDisabled defines a value of KumaSidecarInjectionAnnotation
 	// that will prevent Kuma from injecting a side-car into that Pod.
 	KumaSidecarInjectionDisabled = "disabled"
+	// KumaSidecarInjectionEnabled a value of KumaSidecarInjectionAnnotation
+	// that will let Kuma to be injected as a side-cat into that Pod.
+	KumaSidecarInjectionEnabled = "enabled"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
