@@ -100,7 +100,7 @@ func needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
 	if enabled, ok := pod.Annotations[metadata.KumaSidecarInjectionAnnotation]; ok {
 		return isEnabled(enabled)
 	}
-	if enabled, ok := ns.Labels[metadata.KumaSidecarInjectionLabel]; ok {
+	if enabled, ok := ns.Annotations[metadata.KumaSidecarInjectionAnnotation]; ok {
 		return isEnabled(enabled)
 	}
 	return false, nil
@@ -110,7 +110,7 @@ func meshName(pod *kube_core.Pod, ns *kube_core.Namespace) string {
 	if mesh, ok := pod.Annotations[metadata.KumaMeshAnnotation]; ok {
 		return mesh
 	}
-	if mesh, ok := ns.Labels[metadata.KumaMeshLabel]; ok {
+	if mesh, ok := ns.Annotations[metadata.KumaMeshAnnotation]; ok {
 		return mesh
 	}
 	return core_model.DefaultMesh

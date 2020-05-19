@@ -7,14 +7,14 @@ const (
 	// Annotation value must be the name of a Mesh resource.
 	KumaMeshAnnotation = "kuma.io/mesh"
 
-	// KumaSidecarInjectionAnnotation defines a Pod annotation that
-	// gives users a chance to override behaviour defined in Namespace
+	// KumaSidecarInjectionAnnotation defines a Pod/Namespace annotation that
+	// gives users an ability to enable or disable sidecar-injection
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
 	// KumaSidecarInjectionDisabled defines a value of KumaSidecarInjectionAnnotation
-	// that will prevent Kuma from injecting a side-car into that Pod.
+	// that will prevent Kuma from injecting a sidecar into that Pod or Namespace.
 	KumaSidecarInjectionDisabled = "disabled"
 	// KumaSidecarInjectionEnabled a value of KumaSidecarInjectionAnnotation
-	// that will let Kuma to be injected as a side-cat into that Pod.
+	// that will let Kuma to be injected as a sidecar into that Pod or Namespace.
 	KumaSidecarInjectionEnabled = "enabled"
 )
 

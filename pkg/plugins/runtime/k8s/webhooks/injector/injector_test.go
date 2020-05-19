@@ -104,7 +104,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`,
 		}),
 		Entry("02. Pod with init containers and annotations", testCase{
@@ -119,7 +119,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`,
 		}),
 		Entry("03. Pod without Namespace and Name", testCase{
@@ -134,7 +134,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`,
 		}),
 		Entry("04. Pod with explicitly selected Mesh", testCase{
@@ -149,7 +149,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`,
 		}),
 		Entry("05. Pod without ServiceAccount token", testCase{
@@ -164,7 +164,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`,
 		}),
 		Entry("06. Pod with kuma.io/gateway annotation", testCase{
@@ -179,7 +179,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`,
 		}),
 		Entry("07. Pod with mesh with metrics enabled", testCase{
@@ -199,7 +199,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`}),
 		Entry("08. Pod with prometheus annotation already defined so injector won't override those", testCase{
 			num: "08",
@@ -218,7 +218,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`,
 		}),
 		Entry("09. Pod with Kuma metrics annotation overrides", testCase{
@@ -238,7 +238,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`,
 		}),
 		Entry("10. Pod with `kuma.io/sidecar-injection: disabled` annotation", testCase{
@@ -254,7 +254,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled`,
 		}),
 		Entry("11. Namespace - `kuma.io/sidecar-injection: disabled`, Pod - `kuma.io/sidecar-injection: enabled`", testCase{
@@ -270,7 +270,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: disabled`,
 		}),
 		Entry("12. Mesh name from Namespace", testCase{
@@ -286,7 +286,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled
                   kuma.io/mesh: mesh-name-from-ns`,
 		}),
@@ -303,7 +303,7 @@ var _ = Describe("Injector", func() {
               kind: Namespace
               metadata:
                 name: default
-                labels: 
+                annotations:
                   kuma.io/sidecar-injection: enabled
                   kuma.io/mesh: mesh-name-from-ns`,
 		}),
