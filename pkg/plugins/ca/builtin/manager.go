@@ -3,6 +3,7 @@ package builtin
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
@@ -130,8 +131,11 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 	}
 
 	var opts []ca_issuer.CertOptsFn
-	if backend.GetDpCert().GetRotation().GetExpiration() != nil {
-		duration := util_proto.ToDuration(*backend.GetDpCert().GetRotation().Expiration)
+	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
+		duration, err := time.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		if err != nil {
+			return core_ca.KeyPair{}, err
+		}
 		opts = append(opts, ca_issuer.WithExpirationTime(duration))
 	}
 	keyPair, err := ca_issuer.NewWorkloadCert(ca, mesh, service, opts...)

@@ -2,6 +2,7 @@ package provided
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -112,8 +113,11 @@ func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh stri
 	}
 
 	var opts []ca_issuer.CertOptsFn
-	if backend.GetDpCert().GetRotation().GetExpiration() != nil {
-		duration := util_proto.ToDuration(*backend.GetDpCert().GetRotation().Expiration)
+	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
+		duration, err := time.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		if err != nil {
+			return ca.KeyPair{}, err
+		}
 		opts = append(opts, ca_issuer.WithExpirationTime(duration))
 	}
 	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, service, opts...)

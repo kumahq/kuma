@@ -10,7 +10,6 @@ import (
 	envoy_api_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
-	"github.com/golang/protobuf/ptypes/duration"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -72,9 +71,7 @@ var _ = Describe("SDS Server", func() {
 							Type: "builtin",
 							DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
 								Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
-									Expiration: &duration.Duration{
-										Seconds: 60,
-									},
+									Expiration: "1m",
 								},
 							},
 						},
@@ -83,9 +80,7 @@ var _ = Describe("SDS Server", func() {
 							Type: "builtin",
 							DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
 								Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
-									Expiration: &duration.Duration{
-										Seconds: 60,
-									},
+									Expiration: "1m",
 								},
 							},
 						},
