@@ -231,4 +231,44 @@ var _ = Describe("Provided CA", func() {
 			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "default" and backend "provided-2": could not load data: open testdata/invalid.key: no such file or directory`))
 		})
 	})
+
+	Context("UsedSecret", func() {
+		It("should return empty list when no secrets are used", func() {
+			// when
+			secrets, err := caManager.UsedSecrets("default", backendWithTestCerts)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secrets).To(BeEmpty())
+		})
+
+		It("should return list of secrets", func() {
+			// given
+			backend := mesh_proto.CertificateAuthorityBackend{
+				Name: "provided-1",
+				Type: "provided",
+				Conf: proto.MustToStruct(&provided_config.ProvidedCertificateAuthorityConfig{
+					Cert: &system_proto.DataSource{
+						Type: &system_proto.DataSource_Secret{
+							Secret: "cert-sec",
+						},
+					},
+					Key: &system_proto.DataSource{
+						Type: &system_proto.DataSource_Secret{
+							Secret: "key-sec",
+						},
+					},
+				}),
+			}
+
+			// when
+			secrets, err := caManager.UsedSecrets("default", backend)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secrets).To(HaveLen(2))
+			Expect(secrets[0]).To(Equal("cert-sec"))
+			Expect(secrets[1]).To(Equal("key-sec"))
+		})
+	})
 })

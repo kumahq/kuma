@@ -92,7 +92,7 @@ func (p *providedCaManager) UsedSecrets(mesh string, backend mesh_proto.Certific
 		secrets = append(secrets, cfg.GetCert().GetSecret())
 	}
 	if cfg.GetKey().GetSecret() != "" {
-		secrets = append(secrets, cfg.GetCert().GetSecret())
+		secrets = append(secrets, cfg.GetKey().GetSecret())
 	}
 	return secrets, nil
 }
