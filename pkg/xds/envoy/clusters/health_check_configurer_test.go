@@ -1,12 +1,14 @@
 package clusters_test
 
 import (
+	"time"
+
+	"github.com/golang/protobuf/ptypes"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/Kong/kuma/pkg/xds/envoy/clusters"
-	"github.com/golang/protobuf/ptypes"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

@@ -74,4 +74,3 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	}
 	return resources.List(), nil
 }
-

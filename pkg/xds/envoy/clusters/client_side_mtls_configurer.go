@@ -1,30 +1,31 @@
 package clusters
 
 import (
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/golang/protobuf/ptypes"
+
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/golang/protobuf/ptypes"
 )
 
 func ClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.Add(&ClientSideMTLSConfigurer{
-			ctx:            ctx,
-			metadata:       metadata,
+			Ctx:      ctx,
+			Metadata: metadata,
 		})
 	})
 }
 
 type ClientSideMTLSConfigurer struct {
-	ctx xds_context.Context
-	metadata *core_xds.DataplaneMetadata
+	Ctx      xds_context.Context
+	Metadata *core_xds.DataplaneMetadata
 }
 
-func (c *ClientSideMTLSConfigurer) Configure(cluster *v2.Cluster) error {
-	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata)
+func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
+	tlsContext, err := envoy.CreateUpstreamTlsContext(c.Ctx, c.Metadata)
 	if err != nil {
 		return err
 	}

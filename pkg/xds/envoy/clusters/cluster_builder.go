@@ -1,14 +1,14 @@
 package clusters
 
 import (
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 )
 
 // ClusterConfigurer is responsible for configuring a single aspect of the entire Envoy cluster,
 // such as filter chain, transparent proxying, etc.
 type ClusterConfigurer interface {
 	// Configure configures a single aspect on a given Envoy cluster.
-	Configure(cluster *v2.Cluster) error
+	Configure(cluster *envoy_api.Cluster) error
 }
 
 // ClusterBuilderOpt is a configuration option for ClusterBuilder.
@@ -38,8 +38,8 @@ func (b *ClusterBuilder) Configure(opts ...ClusterBuilderOpt) *ClusterBuilder {
 }
 
 // Build generates an Envoy cluster by applying a series of ClusterConfigurers.
-func (b *ClusterBuilder) Build() (*v2.Cluster, error) {
-	cluster := v2.Cluster{}
+func (b *ClusterBuilder) Build() (*envoy_api.Cluster, error) {
+	cluster := envoy_api.Cluster{}
 	for _, configurer := range b.config.Configurers {
 		if err := configurer.Configure(&cluster); err != nil {
 			return nil, err

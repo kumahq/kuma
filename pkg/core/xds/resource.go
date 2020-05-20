@@ -84,7 +84,7 @@ func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
 func (s *ResourceSet) AddNamed(namedPayloads ...NamedResourcePayload) *ResourceSet {
 	for _, namedPayload := range namedPayloads {
 		s.Add(&Resource{
-			Name: namedPayload.GetName(),
+			Name:     namedPayload.GetName(),
 			Resource: namedPayload,
 		})
 	}

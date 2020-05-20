@@ -1,16 +1,17 @@
 package clusters
 
 import (
-	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+
+	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 )
 
 func StaticCluster(name string, address string, port uint32) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.Add(&StaticClusterConfigurer{
 			Name:    name,
-			address: address,
-			port:    port,
+			Address: address,
+			Port:    port,
 		})
 		config.Add(&AltStatNameConfigurer{})
 		config.Add(&TimeoutConfigurer{})
@@ -18,14 +19,14 @@ func StaticCluster(name string, address string, port uint32) ClusterBuilderOpt {
 }
 
 type StaticClusterConfigurer struct {
-	Name string
-	address string
-	port uint32
+	Name    string
+	Address string
+	Port    uint32
 }
 
 func (e *StaticClusterConfigurer) Configure(c *v2.Cluster) error {
 	c.Name = e.Name
 	c.ClusterDiscoveryType = &v2.Cluster_Type{Type: v2.Cluster_STATIC}
-	c.LoadAssignment = envoy_endpoints.CreateStaticEndpoint(e.Name, e.address, e.port)
+	c.LoadAssignment = envoy_endpoints.CreateStaticEndpoint(e.Name, e.Address, e.Port)
 	return nil
 }

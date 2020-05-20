@@ -1,7 +1,7 @@
 package clusters
 
 import (
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
@@ -19,10 +19,10 @@ type EdsClusterConfigurer struct {
 	Name string
 }
 
-func (e *EdsClusterConfigurer) Configure(c *v2.Cluster) error {
+func (e *EdsClusterConfigurer) Configure(c *envoy_api.Cluster) error {
 	c.Name = e.Name
-	c.ClusterDiscoveryType = &v2.Cluster_Type{Type: v2.Cluster_EDS}
-	c.EdsClusterConfig = &v2.Cluster_EdsClusterConfig{
+	c.ClusterDiscoveryType = &envoy_api.Cluster_Type{Type: envoy_api.Cluster_EDS}
+	c.EdsClusterConfig = &envoy_api.Cluster_EdsClusterConfig{
 		EdsConfig: &envoy_core.ConfigSource{
 			ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{
 				Ads: &envoy_core.AggregatedConfigSource{},
