@@ -7,7 +7,7 @@ set -e
 #
 
 function resolve_ip {
-  nslookup "${1}" 2>/dev/null | tail -1 | awk '{print $3}'
+  getent hosts ${DATAPLANE_HOSTNAME} 2>/dev/null | awk -e '{ print $1 }'
 }
 
 function fail {

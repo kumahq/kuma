@@ -57,7 +57,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 		if err != nil {
 			return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 		}
-		if err := controllerutil.SetControllerReference(k8sOwner, obj, s.Scheme); err != nil {
+		if err := controllerutil.SetOwnerReference(k8sOwner, obj, s.Scheme); err != nil {
 			return errors.Wrap(err, "failed to set owner reference for object")
 		}
 	}
