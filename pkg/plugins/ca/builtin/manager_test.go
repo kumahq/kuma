@@ -6,7 +6,6 @@ import (
 	"encoding/pem"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -95,9 +94,7 @@ var _ = Describe("Builtin CA Manager", func() {
 						RSAbits: &wrappers.UInt32Value{
 							Value: uint32(2048),
 						},
-						Expiration: &duration.Duration{
-							Seconds: 10,
-						},
+						Expiration: "1m",
 					},
 				}),
 			}
@@ -115,7 +112,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			block, _ := pem.Decode(secretRes.Spec.Data.Value)
 			cert, err := x509.ParseCertificate(block.Bytes)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cert.NotAfter).To(Equal(core.Now().UTC().Add(10 * time.Second).Truncate(time.Second)))
+			Expect(cert.NotAfter).To(Equal(core.Now().UTC().Add(time.Minute).Truncate(time.Second)))
 		})
 	})
 

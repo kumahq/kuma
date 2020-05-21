@@ -69,9 +69,12 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh
 	}
 
 	var opts []certOptsFn
-	if cfg.GetCaCert().GetExpiration() != nil {
-		util_proto.ToDuration(*cfg.GetCaCert().GetExpiration())
-		opts = append(opts, withExpirationTime(util_proto.ToDuration(*cfg.GetCaCert().GetExpiration())))
+	if cfg.GetCaCert().GetExpiration() != "" {
+		duration, err := time.ParseDuration(cfg.GetCaCert().GetExpiration())
+		if err != nil {
+			return err
+		}
+		opts = append(opts, withExpirationTime(duration))
 	}
 	keyPair, err := newRootCa(mesh, int(cfg.GetCaCert().GetRSAbits().GetValue()), opts...)
 	if err != nil {
