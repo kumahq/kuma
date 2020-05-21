@@ -75,6 +75,11 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	if request.AdminPort != 0 {
 		adminPort = request.AdminPort
 	}
+
+	if err := b.verifyAdminPort(adminPort, dataplane); err != nil {
+		return nil, err
+	}
+
 	var certBytes string = ""
 	if b.xdsCertFile != "" {
 		cert, err := ioutil.ReadFile(b.xdsCertFile)
@@ -99,6 +104,22 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params)
+}
+
+func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_mesh.DataplaneResource) error {
+	for _, inbound := range dataplane.Spec.Networking.Inbound {
+		if adminPort == inbound.Port {
+			return errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", adminPort)
+		}
+	}
+
+	for _, outbound := range dataplane.Spec.Networking.Outbound {
+		if adminPort == outbound.Port {
+			return errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", adminPort)
+		}
+	}
+
+	return nil
 }
 
 func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
