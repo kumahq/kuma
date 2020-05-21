@@ -225,9 +225,9 @@ func (e EndpointsByService) Services() []string {
 	return list
 }
 
-func endpointsByService(others []*mesh_k8s.Dataplane) EndpointsByService {
+func endpointsByService(dataplanes []*mesh_k8s.Dataplane) EndpointsByService {
 	result := EndpointsByService{}
-	for _, other := range others {
+	for _, other := range dataplanes {
 		dataplane := &mesh_proto.Dataplane{}
 		if err := util_proto.FromMap(other.Spec, dataplane); err != nil {
 			converterLog.Error(err, "failed to parse Dataplane", "dataplane", other.Spec)
