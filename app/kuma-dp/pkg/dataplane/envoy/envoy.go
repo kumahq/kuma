@@ -98,7 +98,7 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 func (e *Envoy) Start(stop <-chan struct{}) error {
 	bootstrapConfig, err := e.opts.Generator(e.opts.Catalog.Apis.Bootstrap.Url, e.opts.Config)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate Envoy bootstrap config")
+		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 	}
 	configFile, err := newConfigFile(e.opts.Config.DataplaneRuntime, bootstrapConfig)
 	if err != nil {
