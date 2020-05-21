@@ -53,11 +53,8 @@ dev/install/protoc-gen-validate: ## Bootstrap: Install Protoc Gen Validate Plugi
 dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	# see https://github.com/onsi/ginkgo#set-me-up
 	echo "Installing Ginkgo ..."
-	go get github.com/onsi/ginkgo/ginkgo  # installs the ginkgo CLI
+	go get github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)  # installs the ginkgo CLI
 	echo "Ginkgo has been installed at $(GOPATH_BIN_DIR)/ginkgo"
-	echo "Installing Gomega ..."
-	go get github.com/onsi/gomega/... # fetches the matcher library
-	echo "Gomega has been installed"
 
 dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and kube-apiserver)
 	# see https://book.kubebuilder.io/quick-start.html#installation
