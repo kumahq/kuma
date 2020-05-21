@@ -1,0 +1,11 @@
+mesh: default
+metadata:
+  creationTimestamp: null
+spec:
+  networking:
+    address: 192.168.0.1
+    gateway:
+      tags:
+        app: example
+        service: example.demo.svc:80
+        version: "0.1"
