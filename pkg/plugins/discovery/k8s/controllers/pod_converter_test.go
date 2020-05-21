@@ -171,9 +171,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:       "02.dataplane.yaml",
 		}),
 		Entry("03. Pod with gateway annotation and 1 service", testCase{
-			pod:             "03.pod.yaml",
-			servicesForPod:  "03.services-for-pod.yaml",
-			dataplane:       "03.dataplane.yaml",
+			pod:            "03.pod.yaml",
+			servicesForPod: "03.services-for-pod.yaml",
+			dataplane:      "03.dataplane.yaml",
 		}),
 		Entry("04. Pod with direct access to all services", testCase{
 			pod:             "04.pod.yaml",

@@ -7,11 +7,11 @@ import (
 
 var sep = regexp.MustCompile("(?:^|\\s*\n)---\\s*")
 
-// Takes YAMLs separated by `---` line and splits it into multiple YAMLs. Empty entries are ignored
-func SplitYAML(YAMLs string) []string {
+// SplitYAML takes YAMLs separated by `---` line and splits it into multiple YAMLs. Empty entries are ignored
+func SplitYAML(yamls string) []string {
 	var result []string
 	// Making sure that any extra whitespace in YAML stream doesn't interfere in splitting documents correctly.
-	trimYAMLs := strings.TrimSpace(YAMLs)
+	trimYAMLs := strings.TrimSpace(yamls)
 	docs := sep.Split(trimYAMLs, -1)
 	for _, doc := range docs {
 		if doc == "" {
