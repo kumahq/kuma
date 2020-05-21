@@ -1,0 +1,17 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+mesh: default
+metadata:
+  name: test-app-8646b8bbc8-5qbl2
+  namespace: playground
+spec:
+  networking:
+    address: 10.244.0.25
+    inbound:
+      - port: 80
+        tags:
+          app: test-app
+          pod-template-hash: 8646b8bbc8
+          service: test-app.playground.svc:80
+    transparentProxying:
+      redirectPort: 15001
