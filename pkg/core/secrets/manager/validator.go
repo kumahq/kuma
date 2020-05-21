@@ -39,7 +39,7 @@ type secretValidator struct {
 
 func (s *secretValidator) ValidateDelete(ctx context.Context, name string, mesh string) error {
 	meshRes := &mesh_core.MeshResource{}
-	err := s.meshAccessor(ctx, meshRes, core_store.GetByKey(name, mesh))
+	err := s.meshAccessor(ctx, meshRes, core_store.GetByKey(mesh, mesh))
 	if err != nil {
 		return err
 	}
