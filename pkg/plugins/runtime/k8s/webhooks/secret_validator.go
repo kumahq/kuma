@@ -69,6 +69,9 @@ func (v *SecretValidator) handleUpdate(ctx context.Context, req admission.Reques
 func (v *SecretValidator) handleDelete(ctx context.Context, req admission.Request) admission.Response {
 	secret := &kube_core.Secret{}
 	if err := v.Client.Get(ctx, kube_types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, secret); err != nil {
+		if kube_apierrs.IsNotFound(err) { // let K8S handle case when resource is not found
+			return admission.Allowed("")
+		}
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 	if isKumaSecret(secret) {
