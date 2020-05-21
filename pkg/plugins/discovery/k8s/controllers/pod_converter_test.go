@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -15,6 +17,7 @@ import (
 	. "github.com/Kong/kuma/pkg/plugins/discovery/k8s/controllers"
 
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	util_yaml "github.com/Kong/kuma/pkg/util/yaml"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,14 +27,6 @@ import (
 )
 
 var _ = Describe("PodToDataplane(..)", func() {
-
-	type testCase struct {
-		pod           string
-		services      []string
-		others        []string
-		serviceGetter fakeReader
-		expected      string
-	}
 
 	pod := `
     metadata:
@@ -75,26 +70,6 @@ var _ = Describe("PodToDataplane(..)", func() {
       podIP: 192.168.0.1
 `
 
-	podWithDirectAccess := func(services string) string {
-		return fmt.Sprintf(`
-        metadata:
-          namespace: demo
-          name: example
-          labels:
-            app: example
-            version: "0.1"
-          annotations:
-            kuma.io/direct-access-services: %q
-        spec:
-          containers:
-          - ports:
-            - containerPort: 7070
-            - containerPort: 6060
-              name: metrics
-        status:
-          podIP: 192.168.0.1`, services)
-	}
-
 	ParseServices := func(values []string) ([]*kube_core.Service, error) {
 		services := make([]*kube_core.Service, len(values))
 		for i, value := range values {
@@ -119,662 +94,114 @@ var _ = Describe("PodToDataplane(..)", func() {
 		return dataplanes, nil
 	}
 
-	DescribeTable("should convert Pod into a Dataplane",
+	type testCase struct {
+		pod             string
+		servicesForPod  string
+		otherDataplanes string
+		otherServices   string
+		dataplane       string
+	}
+	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
 			// given
-			converter := PodConverter{
-				ServiceGetter: given.serviceGetter,
+			// pod
+			pod := &kube_core.Pod{}
+			bytes, err := ioutil.ReadFile(filepath.Join("testdata", given.pod))
+			Expect(err).ToNot(HaveOccurred())
+			err = yaml.Unmarshal(bytes, pod)
+			Expect(err).ToNot(HaveOccurred())
+
+			// services for pod
+			bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.servicesForPod))
+			Expect(err).ToNot(HaveOccurred())
+			YAMLs := util_yaml.SplitYAML(string(bytes))
+			services, err := ParseServices(YAMLs)
+			Expect(err).ToNot(HaveOccurred())
+
+			// other services
+			var serviceGetter kube_client.Reader
+			if given.otherServices != "" {
+				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.otherServices))
+				Expect(err).ToNot(HaveOccurred())
+				YAMLs := util_yaml.SplitYAML(string(bytes))
+				services, err := ParseServices(YAMLs)
+				Expect(err).ToNot(HaveOccurred())
+				reader, err := newFakeReader(services)
+				Expect(err).ToNot(HaveOccurred())
+				serviceGetter = reader
 			}
 
-			pod := &kube_core.Pod{}
-			err := yaml.Unmarshal([]byte(given.pod), pod)
-			Expect(err).ToNot(HaveOccurred())
+			// other dataplanes
+			var otherDataplanes []*mesh_k8s.Dataplane
+			if given.otherDataplanes != "" {
+				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.otherDataplanes))
+				Expect(err).ToNot(HaveOccurred())
+				YAMLs := util_yaml.SplitYAML(string(bytes))
+				otherDataplanes, err = ParseDataplanes(YAMLs)
+				Expect(err).ToNot(HaveOccurred())
+			}
 
-			services, err := ParseServices(given.services)
-			Expect(err).ToNot(HaveOccurred())
-
-			others, err := ParseDataplanes(given.others)
-			Expect(err).ToNot(HaveOccurred())
-
-			dataplane := &mesh_k8s.Dataplane{}
+			converter := PodConverter{
+				ServiceGetter: serviceGetter,
+			}
 
 			// when
-			err = converter.PodToDataplane(dataplane, pod, services, others)
+			dataplane := &mesh_k8s.Dataplane{}
+			err = converter.PodToDataplane(dataplane, pod, services, otherDataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+
 			actual, err := json.Marshal(dataplane)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(given.expected))
+			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.dataplane))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML(expected))
 		},
-		Entry("Pod with 2 Services", testCase{
-			pod: pod,
-			services: []string{
-				`
-                metadata:
-                  namespace: demo
-                  name: example
-                  annotations:
-                    80.service.kuma.io/protocol: http
-                spec:
-                  clusterIP: 192.168.0.1
-                  ports:
-                  - # protocol defaults to TCP
-                    port: 80
-                    targetPort: 8080
-                  - protocol: TCP
-                    port: 443
-                    targetPort: 8443
-`,
-				`
-                metadata:
-                  namespace: playground
-                  name: sample
-                  annotations:
-                    7071.service.kuma.io/protocol: MONGO
-                spec:
-                  clusterIP: 192.168.0.1
-                  ports:
-                  - protocol: TCP
-                    port: 7071
-                    targetPort: 7070
-                  - protocol: TCP
-                    port: 6061
-                    targetPort: metrics
-`,
-			},
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-                inbound:
-                - port: 8080
-                  tags:
-                    app: example
-                    protocol: http
-                    service: example.demo.svc:80
-                    version: "0.1"
-                - port: 8443
-                  tags:
-                    app: example
-                    protocol: tcp
-                    service: example.demo.svc:443
-                    version: "0.1"
-                - port: 7070
-                  tags:
-                    app: example
-                    protocol: MONGO
-                    service: sample.playground.svc:7071
-                    version: "0.1"
-                - port: 6060
-                  tags:
-                    app: example
-                    protocol: tcp
-                    service: sample.playground.svc:6061
-                    version: "0.1"
-`,
+		Entry("01.Pod with 2 Services", testCase{
+			pod:            "01.pod.yaml",
+			servicesForPod: "01.services-for-pod.yaml",
+			dataplane:      "01.dataplane.yaml",
 		}),
-		Entry("Pod with 1 Service and 1 other Dataplane", testCase{
-			pod: pod,
-			services: []string{`
-            metadata:
-              namespace: demo
-              name: example
-            spec:
-              clusterIP: 192.168.0.1
-              ports:
-              - # protocol defaults to TCP
-                port: 80
-                targetPort: 8080
-`,
-			},
-			others: []string{`
-            apiVersion: kuma.io/v1alpha1
-            kind: Dataplane
-            mesh: default
-            metadata:
-              name: test-app-8646b8bbc8-5qbl2
-              namespace: playground
-            spec:
-              networking:
-                address: 10.244.0.25
-                inbound:
-                - port: 80
-                  tags:
-                    app: test-app
-                    pod-template-hash: 8646b8bbc8
-                    service: test-app.playground.svc:80
-                - port: 443
-                  tags:
-                    app: test-app
-                    pod-template-hash: 8646b8bbc8
-                    service: test-app.playground.svc:443
-                transparentProxying:
-                  redirectPort: 15001
-`,
-			},
-			serviceGetter: fakeReader{
-				"playground/test-app": `
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: test-app
-                      namespace: playground
-                    spec:
-                      clusterIP: 10.108.144.24
-                      ports:
-                      - name: http
-                        port: 80
-                        protocol: TCP
-                        targetPort: 80
-                      - name: https
-                        port: 443
-                        protocol: TCP
-                        targetPort: 80
-                      selector:
-                        app: test-app
-                      sessionAffinity: None
-                      type: ClusterIP
-                    status:
-                      loadBalancer: {}
-`,
-			},
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-                inbound:
-                - port: 8080
-                  tags:
-                    app: example
-                    protocol: tcp
-                    service: example.demo.svc:80
-                    version: "0.1"
-                outbound:
-                - address: 10.108.144.24
-                  port: 443
-                  service: test-app.playground.svc:443
-                - address: 10.108.144.24
-                  port: 80
-                  service: test-app.playground.svc:80
-`,
+		Entry("02. Pod with 1 Service and 1 other Dataplane", testCase{
+			pod:             "02.pod.yaml",
+			servicesForPod:  "02.services-for-pod.yaml",
+			otherDataplanes: "02.other-dataplanes.yaml",
+			otherServices:   "02.other-services.yaml",
+			dataplane:       "02.dataplane.yaml",
 		}),
-		Entry("pod with gateway annotation and 1 service", testCase{
-			pod: gatewayPod,
-			services: []string{`
-            metadata:
-              namespace: demo
-              name: example
-              annotations:
-                80.service.kuma.io/protocol: http # should be ignored in case of a gateway
-            spec:
-              clusterIP: 192.168.0.1
-              ports:
-              - # protocol defaults to TCP
-                port: 80
-                targetPort: 8080
-              - protocol: TCP
-                port: 443
-                targetPort: 8443
-`},
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-                gateway:
-                  tags:
-                    app: example
-                    service: example.demo.svc:80
-                    version: "0.1"
-`,
+		Entry("03. Pod with gateway annotation and 1 service", testCase{
+			pod:             "03.pod.yaml",
+			servicesForPod:  "03.services-for-pod.yaml",
+			dataplane:       "03.dataplane.yaml",
 		}),
-		Entry("pod with direct access to all services", testCase{
-			pod: podWithDirectAccess("*"),
-			services: []string{`
-            metadata:
-              namespace: demo
-              name: example
-            spec:
-              clusterIP: 192.168.0.1
-              ports:
-              - # protocol defaults to TCP
-                port: 80
-                targetPort: 8080
-`,
-			},
-			others: []string{`
-            apiVersion: kuma.io/v1alpha1
-            kind: Dataplane
-            mesh: default
-            metadata:
-              name: test-app-8646b8bbc8-5qbl2
-              namespace: playground
-            spec:
-              networking:
-                address: 10.244.0.25
-                inbound:
-                - port: 80
-                  tags:
-                    app: test-app
-                    pod-template-hash: 8646b8bbc8
-                    service: test-app.playground.svc:80
-                - port: 443
-                  tags:
-                    app: test-app
-                    pod-template-hash: 8646b8bbc8
-                    service: test-app.playground.svc:443
-                transparentProxying:
-                  redirectPort: 15001
-`,
-				`
-            apiVersion: kuma.io/v1alpha1
-            kind: Dataplane
-            mesh: default
-            metadata:
-              name: second-test-app-8646b8bbc9-5qbl2
-              namespace: playground
-            spec:
-              networking:
-                address: 10.244.0.26
-                inbound:
-                - port: 80
-                  tags:
-                    app: second-test-app
-                    pod-template-hash: 8646b8bbc9
-                    service: second-test-app.playground.svc:80
-                transparentProxying:
-                  redirectPort: 15001
-`,
-			},
-			serviceGetter: fakeReader{
-				"playground/test-app": `
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: test-app
-                      namespace: playground
-                    spec:
-                      clusterIP: 10.108.144.24
-                      ports:
-                      - name: http
-                        port: 80
-                        protocol: TCP
-                        targetPort: 80
-                      - name: https
-                        port: 443
-                        protocol: TCP
-                        targetPort: 80
-                      selector:
-                        app: test-app
-                      sessionAffinity: None
-                      type: ClusterIP
-                    status:
-                      loadBalancer: {}`,
-				"playground/second-test-app": `
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: second-test-app
-                      namespace: playground
-                    spec:
-                      clusterIP: 10.108.144.25
-                      ports:
-                      - name: http
-                        port: 80
-                        protocol: TCP
-                        targetPort: 80
-                      selector:
-                        app: second-test-app
-                      sessionAffinity: None
-                      type: ClusterIP
-                    status:
-                      loadBalancer: {}`,
-			},
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-                inbound:
-                - port: 8080
-                  tags:
-                    app: example
-                    protocol: tcp
-                    service: example.demo.svc:80
-                    version: "0.1"
-                outbound:
-                - address: 10.108.144.25
-                  port: 80
-                  service: second-test-app.playground.svc:80
-                - address: 10.108.144.24
-                  port: 443
-                  service: test-app.playground.svc:443
-                - address: 10.108.144.24
-                  port: 80
-                  service: test-app.playground.svc:80
-                - address: 10.244.0.26
-                  port: 80
-                  service: second-test-app.playground.svc:80
-                - address: 10.244.0.25
-                  port: 443
-                  service: test-app.playground.svc:443
-                - address: 10.244.0.25
-                  port: 80
-                  service: test-app.playground.svc:80`,
+		Entry("04. Pod with direct access to all services", testCase{
+			pod:             "04.pod.yaml",
+			servicesForPod:  "04.services-for-pod.yaml",
+			otherDataplanes: "04.other-dataplanes.yaml",
+			otherServices:   "04.other-services.yaml",
+			dataplane:       "04.dataplane.yaml",
 		}),
-		Entry("pod with direct access to chosen services", testCase{
-			pod: podWithDirectAccess("test-app.playground.svc:80,test-app.playground.svc:443"),
-			services: []string{`
-            metadata:
-              namespace: demo
-              name: example
-            spec:
-              clusterIP: 192.168.0.1
-              ports:
-              - # protocol defaults to TCP
-                port: 80
-                targetPort: 8080
-`,
-			},
-			others: []string{`
-            apiVersion: kuma.io/v1alpha1
-            kind: Dataplane
-            mesh: default
-            metadata:
-              name: test-app-8646b8bbc8-5qbl2
-              namespace: playground
-            spec:
-              networking:
-                address: 10.244.0.25
-                inbound:
-                - port: 80
-                  tags:
-                    app: test-app
-                    pod-template-hash: 8646b8bbc8
-                    service: test-app.playground.svc:80
-                - port: 443
-                  tags:
-                    app: test-app
-                    pod-template-hash: 8646b8bbc8
-                    service: test-app.playground.svc:443
-                transparentProxying:
-                  redirectPort: 15001
-`,
-				`
-            apiVersion: kuma.io/v1alpha1
-            kind: Dataplane
-            mesh: default
-            metadata:
-              name: second-test-app-8646b8bbc9-5qbl2
-              namespace: playground
-            spec:
-              networking:
-                address: 10.244.0.26
-                inbound:
-                - port: 80
-                  tags:
-                    app: second-test-app
-                    pod-template-hash: 8646b8bbc9
-                    service: second-test-app.playground.svc:80
-                transparentProxying:
-                  redirectPort: 15001
-`,
-			},
-			serviceGetter: fakeReader{
-				"playground/test-app": `
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: test-app
-                      namespace: playground
-                    spec:
-                      clusterIP: 10.108.144.24
-                      ports:
-                      - name: http
-                        port: 80
-                        protocol: TCP
-                        targetPort: 80
-                      - name: https
-                        port: 443
-                        protocol: TCP
-                        targetPort: 80
-                      selector:
-                        app: test-app
-                      sessionAffinity: None
-                      type: ClusterIP
-                    status:
-                      loadBalancer: {}`,
-				"playground/second-test-app": `
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: second-test-app
-                      namespace: playground
-                    spec:
-                      clusterIP: 10.108.144.25
-                      ports:
-                      - name: http
-                        port: 80
-                        protocol: TCP
-                        targetPort: 80
-                      selector:
-                        app: second-test-app
-                      sessionAffinity: None
-                      type: ClusterIP
-                    status:
-                      loadBalancer: {}`,
-			},
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-                inbound:
-                - port: 8080
-                  tags:
-                    app: example
-                    protocol: tcp
-                    service: example.demo.svc:80
-                    version: "0.1"
-                outbound:
-                - address: 10.108.144.25
-                  port: 80
-                  service: second-test-app.playground.svc:80
-                - address: 10.108.144.24
-                  port: 443
-                  service: test-app.playground.svc:443
-                - address: 10.108.144.24
-                  port: 80
-                  service: test-app.playground.svc:80
-                - address: 10.244.0.25
-                  port: 443
-                  service: test-app.playground.svc:443
-                - address: 10.244.0.25
-                  port: 80
-                  service: test-app.playground.svc:80`,
+		Entry("05. Pod with direct access to chosen services", testCase{
+			pod:             "05.pod.yaml",
+			servicesForPod:  "05.services-for-pod.yaml",
+			otherDataplanes: "05.other-dataplanes.yaml",
+			otherServices:   "05.other-services.yaml",
+			dataplane:       "05.dataplane.yaml",
 		}),
-		Entry("Pod with headless service and communication to headless services", testCase{
-			pod: pod,
-			services: []string{
-				`
-                metadata:
-                  namespace: demo
-                  name: example
-                spec:
-                  clusterIP: None
-                  ports:
-                  - # protocol defaults to TCP
-                    port: 80
-                    targetPort: 8080
-                  - protocol: TCP
-                    port: 443
-                    targetPort: 8443
-`,
-			},
-			others: []string{`
-            apiVersion: kuma.io/v1alpha1
-            kind: Dataplane
-            mesh: default
-            metadata:
-              name: test-app-8646b8bbc8-5qbl2
-              namespace: playground
-            spec:
-              networking:
-                address: 10.244.0.25
-                inbound:
-                - port: 80
-                  tags:
-                    app: test-app
-                    pod-template-hash: 8646b8bbc8
-                    service: test-app.playground.svc:80
-                transparentProxying:
-                  redirectPort: 15001
-`,
-			},
-			serviceGetter: fakeReader{
-				"playground/test-app": `
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: test-app
-                      namespace: playground
-                    spec:
-                      clusterIP: None
-                      ports:
-                      - name: http
-                        port: 80
-                        protocol: TCP
-                        targetPort: 80
-                      selector:
-                        app: test-app
-                      sessionAffinity: None
-                      type: ClusterIP
-                    status:
-                      loadBalancer: {}
-`,
-			},
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-                inbound:
-                - port: 8080
-                  tags:
-                    app: example
-                    protocol: tcp
-                    service: example.demo.svc:80
-                    version: "0.1"
-                - port: 8443
-                  tags:
-                    app: example
-                    protocol: tcp
-                    service: example.demo.svc:443
-                    version: "0.1"
-                outbound:
-                - address: 10.244.0.25
-                  port: 80
-                  service: test-app.playground.svc:80`,
+		Entry("06. Pod with headless service and communication to headless services", testCase{
+			pod:             "06.pod.yaml",
+			servicesForPod:  "06.services-for-pod.yaml",
+			otherDataplanes: "06.other-dataplanes.yaml",
+			otherServices:   "06.other-services.yaml",
+			dataplane:       "06.dataplane.yaml",
 		}),
-		Entry("Pod with communication to headless services and direct access to this service should generate direct listener once", testCase{
-			pod: podWithDirectAccess("test-app.playground.svc:80"),
-			services: []string{
-				`
-                metadata:
-                  namespace: demo
-                  name: example
-                spec:
-                  clusterIP: None
-                  ports:
-                  - # protocol defaults to TCP
-                    port: 80
-                    targetPort: 8080
-                  - protocol: TCP
-                    port: 443
-                    targetPort: 8443
-`,
-			},
-			others: []string{`
-            apiVersion: kuma.io/v1alpha1
-            kind: Dataplane
-            mesh: default
-            metadata:
-              name: test-app-8646b8bbc8-5qbl2
-              namespace: playground
-            spec:
-              networking:
-                address: 10.244.0.25
-                inbound:
-                - port: 80
-                  tags:
-                    app: test-app
-                    pod-template-hash: 8646b8bbc8
-                    service: test-app.playground.svc:80
-                transparentProxying:
-                  redirectPort: 15001
-`,
-			},
-			serviceGetter: fakeReader{
-				"playground/test-app": `
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: test-app
-                      namespace: playground
-                    spec:
-                      clusterIP: None
-                      ports:
-                      - name: http
-                        port: 80
-                        protocol: TCP
-                        targetPort: 80
-                      selector:
-                        app: test-app
-                      sessionAffinity: None
-                      type: ClusterIP
-                    status:
-                      loadBalancer: {}
-`,
-			},
-			expected: `
-            mesh: default
-            metadata:
-              creationTimestamp: null
-            spec:
-              networking:
-                address: 192.168.0.1
-                inbound:
-                - port: 8080
-                  tags:
-                    app: example
-                    protocol: tcp
-                    service: example.demo.svc:80
-                    version: "0.1"
-                - port: 8443
-                  tags:
-                    app: example
-                    protocol: tcp
-                    service: example.demo.svc:443
-                    version: "0.1"
-                outbound:
-                - address: 10.244.0.25
-                  port: 80
-                  service: test-app.playground.svc:80`,
+		Entry("07. Pod with communication to headless services and direct access to this service should generate direct listener once", testCase{
+			pod:             "07.pod.yaml",
+			servicesForPod:  "07.services-for-pod.yaml",
+			otherDataplanes: "07.other-dataplanes.yaml",
+			otherServices:   "07.other-services.yaml",
+			dataplane:       "07.dataplane.yaml",
 		}),
 	)
 
@@ -1124,6 +551,18 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 })
 
 type fakeReader map[string]string
+
+func newFakeReader(services []*kube_core.Service) (fakeReader, error) {
+	servicesMap := map[string]string{}
+	for _, service := range services {
+		bytes, err := yaml.Marshal(service)
+		if err != nil {
+			return nil, err
+		}
+		servicesMap[service.GetNamespace()+"/"+service.GetName()] = string(bytes)
+	}
+	return servicesMap, nil
+}
 
 var _ kube_client.Reader = fakeReader{}
 

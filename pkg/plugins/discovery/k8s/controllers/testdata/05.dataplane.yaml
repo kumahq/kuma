@@ -1,0 +1,29 @@
+mesh: default
+metadata:
+  creationTimestamp: null
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+      - port: 8080
+        tags:
+          app: example
+          protocol: tcp
+          service: example.demo.svc:80
+          version: "0.1"
+    outbound:
+      - address: 10.108.144.25
+        port: 80
+        service: second-test-app.playground.svc:80
+      - address: 10.108.144.24
+        port: 443
+        service: test-app.playground.svc:443
+      - address: 10.108.144.24
+        port: 80
+        service: test-app.playground.svc:80
+      - address: 10.244.0.25
+        port: 443
+        service: test-app.playground.svc:443
+      - address: 10.244.0.25
+        port: 80
+        service: test-app.playground.svc:80
