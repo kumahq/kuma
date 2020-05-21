@@ -63,11 +63,14 @@ It gives us an ability to configure criteria and conditions for how long a speci
 type: CircuitBreaker
 mesh: default
 name: cb-1
-selector:
+sources:
   - match:
-      service: backend 
+      service: frontend
       region: aws
       version: 3
+destinations:
+  - match:
+      service: backend
 conf:
   interval: 1s # time interval between ejection analysis sweeps
   baseEjectionTime: 30s # the base time that a host is ejected for. The real time is equal to the base time multiplied by the number of times the host has been ejected
