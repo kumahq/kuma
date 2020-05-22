@@ -120,6 +120,7 @@ func newRunCmd() *cobra.Command {
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
 			if err := componentMgr.Start(core.SetupSignalHandler()); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
+				return err
 			}
 			runLog.Info("stopping Kuma DP")
 			return nil
