@@ -10,36 +10,31 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/ca"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/validators"
 )
 
 var log = core.Log.WithName("secrets").WithName("validator")
 
-// MeshAccessor is used instead of MeshManager, otherwise we would have cyclic dependency.
-// MeshManager depends on SecretManager which depends on SecretValidator which would depend on ResourceManager
-type MeshAccessor = func(context.Context, model.Resource, ...core_store.GetOptionsFunc) error
-
 type SecretValidator interface {
 	ValidateDelete(ctx context.Context, secretName string, secretMesh string) error
 }
 
-func NewSecretValidator(caManagers ca.Managers, meshAccessor MeshAccessor) SecretValidator {
+func NewSecretValidator(caManagers ca.Managers, store core_store.ResourceStore) SecretValidator {
 	return &secretValidator{
-		caManagers:   caManagers,
-		meshAccessor: meshAccessor,
+		caManagers: caManagers,
+		store:      store,
 	}
 }
 
 type secretValidator struct {
-	caManagers   ca.Managers
-	meshAccessor MeshAccessor
+	caManagers ca.Managers
+	store      core_store.ResourceStore
 }
 
 func (s *secretValidator) ValidateDelete(ctx context.Context, name string, mesh string) error {
 	meshRes := &mesh_core.MeshResource{}
-	err := s.meshAccessor(ctx, meshRes, core_store.GetByKey(mesh, mesh))
+	err := s.store.Get(ctx, meshRes, core_store.GetByKey(mesh, mesh))
 	if err != nil {
 		return err
 	}

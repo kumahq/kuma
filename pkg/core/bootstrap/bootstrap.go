@@ -1,8 +1,6 @@
 package bootstrap
 
 import (
-	"context"
-
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -16,7 +14,6 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 	runtime_reports "github.com/Kong/kuma/pkg/core/runtime/reports"
@@ -190,9 +187,7 @@ func initializeSecretManager(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if secretStore, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		validator := secret_manager.NewSecretValidator(builder.CaManagers(), func(ctx context.Context, resource core_model.Resource, optionsFunc ...core_store.GetOptionsFunc) error {
-			return builder.ResourceManager().Get(ctx, resource, optionsFunc...)
-		})
+		validator := secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
 		builder.WithSecretManager(secret_manager.NewSecretManager(secretStore, cipher, validator))
 		return nil
 	}
