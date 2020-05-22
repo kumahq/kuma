@@ -100,7 +100,7 @@ var _ = Describe("Dataplane", func() {
                 tags:
                   service: backend
                   version: "1"
-                  valid: abc.0123-789.under_score:90
+                  kuma.io/valid: abc.0123-789.under_score:90
               outbound:
                 - port: 3333
                   service: redis`,
@@ -589,7 +589,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.inbound[0].tags["inv@lidT/gN%me"]
-                  message: tag name must consist of alphanumeric characters, dots, dashes and underscores`,
+                  message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`,
 		}),
 		Entry("networking.inbound: tag value with invalid characters", testCase{
 			dataplane: `
