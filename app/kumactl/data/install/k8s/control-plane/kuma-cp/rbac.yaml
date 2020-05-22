@@ -98,6 +98,14 @@ rules:
     - list
     - watch
 - apiGroups:
+    - kuma.io
+  resources:
+    - circuitbreakers
+  verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
     - ""
   resources:
     - pods/finalizers
