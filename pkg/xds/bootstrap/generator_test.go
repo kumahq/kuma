@@ -218,4 +218,121 @@ var _ = Describe("bootstrapGenerator", func() {
 		// expect
 		Expect(actual).To(MatchYAML(expected))
 	})
+
+	It("should fail bootstrap configuration due to conflicting port in inbound", func() {
+		// setup
+		dataplane := mesh.DataplaneResource{
+			Spec: mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "8.8.8.8",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Address:     "127.0.0.111",
+							Port:        9901,
+							ServicePort: 8443,
+							Tags: map[string]string{
+								"service": "backend",
+							},
+						},
+					},
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{
+							Address: "1.1.1.1",
+							Port:    9000,
+							Service: "redis",
+						},
+					},
+				},
+			},
+		}
+		// when
+		err := resManager.Create(context.Background(), &dataplane, store.CreateByKey("name-1.namespace", "mesh"))
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		dataplane.Spec.Networking.Address = "127.0.1.123"
+		dataplane.Spec.Networking.Inbound[0].Address = "2.2.2.2"
+		err = resManager.Create(context.Background(), &dataplane, store.CreateByKey("name-2.namespace", "mesh"))
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		params := bootstrap_config.DefaultBootstrapParamsConfig()
+		params.XdsHost = "127.0.0.1"
+		params.XdsPort = 5678
+
+		generator := NewDefaultBootstrapGenerator(resManager, params, "")
+		request := types.BootstrapRequest{
+			Mesh:      "mesh",
+			Name:      "name-1.namespace",
+			AdminPort: 9901,
+		}
+
+		// when
+		_, err = generator.Generate(context.Background(), request)
+		// then
+		Expect(err).To(HaveOccurred())
+
+		request = types.BootstrapRequest{
+			Mesh:      "mesh",
+			Name:      "name-2.namespace",
+			AdminPort: 9901,
+		}
+
+		// when
+		_, err = generator.Generate(context.Background(), request)
+		// then
+		Expect(err).To(HaveOccurred())
+
+	})
+
+	It("should fail bootstrap configuration due to conflicting port in outbound", func() {
+		// setup
+		dataplane := mesh.DataplaneResource{
+			Spec: mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "8.8.8.8",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:        443,
+							ServicePort: 8443,
+							Tags: map[string]string{
+								"service": "backend",
+							},
+						},
+					},
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{
+							Address: "127.0.1.1",
+							Port:    9901,
+							Service: "redis",
+						},
+					},
+				},
+			},
+		}
+		// when
+		err := resManager.Create(context.Background(), &dataplane, store.CreateByKey("name-3.namespace", "mesh"))
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		params := bootstrap_config.DefaultBootstrapParamsConfig()
+		params.XdsHost = "127.0.0.1"
+		params.XdsPort = 5678
+
+		generator := NewDefaultBootstrapGenerator(resManager, params, "")
+		request := types.BootstrapRequest{
+			Mesh:      "mesh",
+			Name:      "name-3.namespace",
+			AdminPort: 9901,
+		}
+
+		// when
+		_, err = generator.Generate(context.Background(), request)
+		// then
+		Expect(err).To(HaveOccurred())
+
+	})
 })
