@@ -30,9 +30,9 @@ type ValidateSelectorsOpts struct {
 	RequireAtLeastOneSelector bool
 }
 
-var tagNameCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:]*$`)
+var tagNameCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:/]*$`)
 var tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:]*$`)
-var selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:]*|\*)$`)
+var selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:/]*|\*)$`)
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) (err validators.ValidationError) {
 	if opts.RequireAtLeastOneSelector && len(sources) == 0 {
@@ -56,7 +56,7 @@ func ValidateSelector(path validators.PathBuilder, selector map[string]string, o
 			err.AddViolationAt(path, "tag name must be non-empty")
 		}
 		if !tagNameCharacterSet.MatchString(key) {
-			err.AddViolationAt(path.Key(key), `tag name must consist of alphanumeric characters, dots, dashes and underscores`)
+			err.AddViolationAt(path.Key(key), `tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`)
 		}
 		for _, validate := range opts.ExtraTagKeyValidators {
 			err.Add(validate(path, key))
@@ -67,7 +67,7 @@ func ValidateSelector(path validators.PathBuilder, selector map[string]string, o
 			err.AddViolationAt(path.Key(key), "tag value must be non-empty")
 		}
 		if !selectorCharacterSet.MatchString(value) {
-			err.AddViolationAt(path.Key(key), `tag value must consist of alphanumeric characters, dots, dashes and underscores or be "*"`)
+			err.AddViolationAt(path.Key(key), `tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`)
 		}
 		for _, validate := range opts.ExtraTagValueValidators {
 			err.Add(validate(path, key, value))
