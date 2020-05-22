@@ -3,6 +3,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: kuma-system
+  labels:
+    kuma.io/system-namespace: "true"
 ---
 apiVersion: v1
 kind: Secret
@@ -4392,6 +4394,9 @@ webhooks:
         resources:
           - services
   - name: secret.validator.kuma-admission.kuma.io
+    namespaceSelector:
+      matchLabels:
+        kuma.io/system-namespace: "true"
     failurePolicy: Fail
     clientConfig:
       caBundle: Q0VSVA==
@@ -4407,5 +4412,6 @@ webhooks:
         operations:
           - CREATE
           - UPDATE
+          - DELETE
         resources:
           - secrets

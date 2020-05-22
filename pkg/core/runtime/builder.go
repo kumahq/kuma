@@ -152,6 +152,9 @@ func (b *Builder) ResourceStore() core_store.ResourceStore {
 func (b *Builder) SecretManager() secret_manager.SecretManager {
 	return b.sm
 }
+func (b *Builder) ResourceManager() core_manager.ResourceManager {
+	return b.rm
+}
 func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return b.rom
 }
