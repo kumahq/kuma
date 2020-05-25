@@ -3,14 +3,15 @@ package webhooks
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"k8s.io/api/admission/v1beta1"
 	"net/http"
+
+	"k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	managers_mesh "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s"
 	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
