@@ -11,20 +11,20 @@ const defaultConnectTimeout = 5 * time.Second
 
 func ConnectTimeout(timeout time.Duration) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.Add(&TimeoutConfigurer{
-			ConnectTimeout: timeout,
+		config.Add(&timeoutConfigurer{
+			connectTimeout: timeout,
 		})
 	})
 }
 
-type TimeoutConfigurer struct {
-	ConnectTimeout time.Duration
+type timeoutConfigurer struct {
+	connectTimeout time.Duration
 }
 
-func (t *TimeoutConfigurer) Configure(cluster *envoy_api.Cluster) error {
-	if t.ConnectTimeout.Nanoseconds() == 0 {
-		t.ConnectTimeout = defaultConnectTimeout
+func (t *timeoutConfigurer) Configure(cluster *envoy_api.Cluster) error {
+	if t.connectTimeout.Nanoseconds() == 0 {
+		t.connectTimeout = defaultConnectTimeout
 	}
-	cluster.ConnectTimeout = ptypes.DurationProto(t.ConnectTimeout)
+	cluster.ConnectTimeout = ptypes.DurationProto(t.connectTimeout)
 	return nil
 }

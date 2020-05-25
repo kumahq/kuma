@@ -7,20 +7,20 @@ import (
 
 func EdsCluster(name string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.Add(&EdsClusterConfigurer{
-			Name: name,
+		config.Add(&edsClusterConfigurer{
+			name: name,
 		})
-		config.Add(&AltStatNameConfigurer{})
-		config.Add(&TimeoutConfigurer{})
+		config.Add(&altStatNameConfigurer{})
+		config.Add(&timeoutConfigurer{})
 	})
 }
 
-type EdsClusterConfigurer struct {
-	Name string
+type edsClusterConfigurer struct {
+	name string
 }
 
-func (e *EdsClusterConfigurer) Configure(c *envoy_api.Cluster) error {
-	c.Name = e.Name
+func (e *edsClusterConfigurer) Configure(c *envoy_api.Cluster) error {
+	c.Name = e.name
 	c.ClusterDiscoveryType = &envoy_api.Cluster_Type{Type: envoy_api.Cluster_EDS}
 	c.EdsClusterConfig = &envoy_api.Cluster_EdsClusterConfig{
 		EdsConfig: &envoy_core.ConfigSource{

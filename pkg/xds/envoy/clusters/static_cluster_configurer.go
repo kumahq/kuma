@@ -8,25 +8,25 @@ import (
 
 func StaticCluster(name string, address string, port uint32) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.Add(&StaticClusterConfigurer{
-			Name:    name,
-			Address: address,
-			Port:    port,
+		config.Add(&staticClusterConfigurer{
+			name:    name,
+			address: address,
+			port:    port,
 		})
-		config.Add(&AltStatNameConfigurer{})
-		config.Add(&TimeoutConfigurer{})
+		config.Add(&altStatNameConfigurer{})
+		config.Add(&timeoutConfigurer{})
 	})
 }
 
-type StaticClusterConfigurer struct {
-	Name    string
-	Address string
-	Port    uint32
+type staticClusterConfigurer struct {
+	name    string
+	address string
+	port    uint32
 }
 
-func (e *StaticClusterConfigurer) Configure(c *v2.Cluster) error {
-	c.Name = e.Name
+func (e *staticClusterConfigurer) Configure(c *v2.Cluster) error {
+	c.Name = e.name
 	c.ClusterDiscoveryType = &v2.Cluster_Type{Type: v2.Cluster_STATIC}
-	c.LoadAssignment = envoy_endpoints.CreateStaticEndpoint(e.Name, e.Address, e.Port)
+	c.LoadAssignment = envoy_endpoints.CreateStaticEndpoint(e.name, e.address, e.port)
 	return nil
 }

@@ -3,6 +3,7 @@ package clusters
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
 
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
@@ -12,20 +13,20 @@ import (
 
 func ClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.Add(&ClientSideMTLSConfigurer{
-			Ctx:      ctx,
-			Metadata: metadata,
+		config.Add(&clientSideMTLSConfigurer{
+			ctx:      ctx,
+			metadata: metadata,
 		})
 	})
 }
 
-type ClientSideMTLSConfigurer struct {
-	Ctx      xds_context.Context
-	Metadata *core_xds.DataplaneMetadata
+type clientSideMTLSConfigurer struct {
+	ctx      xds_context.Context
+	metadata *core_xds.DataplaneMetadata
 }
 
-func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
-	tlsContext, err := envoy.CreateUpstreamTlsContext(c.Ctx, c.Metadata)
+func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
+	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata)
 	if err != nil {
 		return err
 	}
@@ -35,7 +36,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 			return err
 		}
 		cluster.TransportSocket = &envoy_core.TransportSocket{
-			Name: "envoy.transport_sockets.tls",
+			Name: envoy_wellknown.TransportSocketTls,
 			ConfigType: &envoy_core.TransportSocket_TypedConfig{
 				TypedConfig: pbst,
 			},

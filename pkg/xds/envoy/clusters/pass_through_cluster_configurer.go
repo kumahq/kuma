@@ -6,20 +6,20 @@ import (
 
 func PassThroughCluster(name string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.Add(&PassThroughClusterConfigurer{
-			Name: name,
+		config.Add(&passThroughClusterConfigurer{
+			name: name,
 		})
-		config.Add(&AltStatNameConfigurer{})
-		config.Add(&TimeoutConfigurer{})
+		config.Add(&altStatNameConfigurer{})
+		config.Add(&timeoutConfigurer{})
 	})
 }
 
-type PassThroughClusterConfigurer struct {
-	Name string
+type passThroughClusterConfigurer struct {
+	name string
 }
 
-func (p *PassThroughClusterConfigurer) Configure(c *envoy_api.Cluster) error {
-	c.Name = p.Name
+func (p *passThroughClusterConfigurer) Configure(c *envoy_api.Cluster) error {
+	c.Name = p.name
 	c.ClusterDiscoveryType = &envoy_api.Cluster_Type{Type: envoy_api.Cluster_ORIGINAL_DST}
 	c.LbPolicy = envoy_api.Cluster_CLUSTER_PROVIDED
 	return nil

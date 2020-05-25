@@ -8,15 +8,14 @@ import (
 
 func AltStatName() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.Add(&AltStatNameConfigurer{})
+		config.Add(&altStatNameConfigurer{})
 	})
 }
 
-type AltStatNameConfigurer struct {
-	Name string
+type altStatNameConfigurer struct {
 }
 
-func (e *AltStatNameConfigurer) Configure(cluster *envoy_api.Cluster) error {
+func (e *altStatNameConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	sanitizedName := util_xds.SanitizeMetric(cluster.Name)
 	if sanitizedName != cluster.Name {
 		cluster.AltStatName = sanitizedName

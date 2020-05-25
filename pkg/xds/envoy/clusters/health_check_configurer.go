@@ -11,22 +11,22 @@ import (
 
 func HealthCheck(healthCheck *mesh_core.HealthCheckResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.Add(&HealthCheckConfigurer{
-			HealthCheck: healthCheck,
+		config.Add(&healthCheckConfigurer{
+			healthCheck: healthCheck,
 		})
 	})
 }
 
-type HealthCheckConfigurer struct {
-	HealthCheck *mesh_core.HealthCheckResource
+type healthCheckConfigurer struct {
+	healthCheck *mesh_core.HealthCheckResource
 }
 
-func (e *HealthCheckConfigurer) Configure(cluster *envoy_api.Cluster) error {
-	if e.HealthCheck == nil {
+func (e *healthCheckConfigurer) Configure(cluster *envoy_api.Cluster) error {
+	if e.healthCheck == nil {
 		return nil
 	}
-	if e.HealthCheck.HasActiveChecks() {
-		activeChecks := e.HealthCheck.Spec.Conf.GetActiveChecks()
+	if e.healthCheck.HasActiveChecks() {
+		activeChecks := e.healthCheck.Spec.Conf.GetActiveChecks()
 		cluster.HealthChecks = append(cluster.HealthChecks, &envoy_core.HealthCheck{
 			HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
 				TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
@@ -37,8 +37,8 @@ func (e *HealthCheckConfigurer) Configure(cluster *envoy_api.Cluster) error {
 			HealthyThreshold:   &wrappers.UInt32Value{Value: activeChecks.HealthyThreshold},
 		})
 	}
-	if e.HealthCheck.HasPassiveChecks() {
-		passiveChecks := e.HealthCheck.Spec.Conf.GetPassiveChecks()
+	if e.healthCheck.HasPassiveChecks() {
+		passiveChecks := e.healthCheck.Spec.Conf.GetPassiveChecks()
 		cluster.OutlierDetection = &envoy_cluster.OutlierDetection{
 			Interval:        passiveChecks.PenaltyInterval,
 			Consecutive_5Xx: &wrappers.UInt32Value{Value: passiveChecks.UnhealthyThreshold},
