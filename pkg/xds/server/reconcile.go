@@ -102,7 +102,7 @@ type templateSnapshotGenerator struct {
 func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error) {
 	template := s.ProxyTemplateResolver.GetTemplate(proxy)
 
-	gen := generator.TemplateProxyGenerator{ProxyTemplate: template}
+	gen := generator.ProxyTemplateGenerator{ProxyTemplate: template}
 
 	rs, err := gen.Generate(ctx, proxy)
 	if err != nil {
