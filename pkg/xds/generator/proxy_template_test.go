@@ -183,6 +183,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                   inbound:
                     - port: 80
                       servicePort: 8080
+                      tags:
+                        service: backend
 `,
 				proxyTemplateFile: "1-proxy-template.input.yaml",
 				envoyConfigFile:   "1-envoy-config.golden.yaml",

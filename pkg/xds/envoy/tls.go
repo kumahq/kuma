@@ -8,16 +8,16 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/sds/server"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	"github.com/Kong/kuma/pkg/xds/envoy/names"
 )
 
-func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) (*envoy_auth.DownstreamTlsContext, error) {
+func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, service string) (*envoy_auth.DownstreamTlsContext, error) {
 	if !ctx.Mesh.Resource.MTLSEnabled() {
 		return nil, nil
 	}
-	commonTlsContext, err := CreateCommonTlsContext(ctx, metadata)
+	commonTlsContext, err := CreateCommonTlsContext(ctx, metadata, []string{service})
 	if err != nil {
 		return nil, err
 	}
@@ -27,11 +27,11 @@ func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Data
 	}, nil
 }
 
-func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) (*envoy_auth.UpstreamTlsContext, error) {
+func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, services []string) (*envoy_auth.UpstreamTlsContext, error) {
 	if !ctx.Mesh.Resource.MTLSEnabled() {
 		return nil, nil
 	}
-	commonTlsContext, err := CreateCommonTlsContext(ctx, metadata)
+	commonTlsContext, err := CreateCommonTlsContext(ctx, metadata, services)
 	if err != nil {
 		return nil, err
 	}
@@ -40,23 +40,24 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Datapl
 	}, nil
 }
 
-func CreateCommonTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) (*envoy_auth.CommonTlsContext, error) {
-	meshCaSecret, err := sdsSecretConfig(ctx, server.MeshCaResource, metadata)
+func CreateCommonTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, services []string) (*envoy_auth.CommonTlsContext, error) {
+	meshCaSecret, err := sdsSecretConfig(ctx, names.MeshCaResource, metadata)
 	if err != nil {
 		return nil, err
 	}
-	identitySecret, err := sdsSecretConfig(ctx, server.IdentityCertResource, metadata)
-	if err != nil {
-		return nil, err
-	}
-	return &envoy_auth.CommonTlsContext{
+	commonTlsCtx := &envoy_auth.CommonTlsContext{
 		ValidationContextType: &envoy_auth.CommonTlsContext_ValidationContextSdsSecretConfig{
 			ValidationContextSdsSecretConfig: meshCaSecret,
 		},
-		TlsCertificateSdsSecretConfigs: []*envoy_auth.SdsSecretConfig{
-			identitySecret,
-		},
-	}, nil
+	}
+	for _, service := range services {
+		dpCertSecret, err := sdsSecretConfig(ctx, names.DpCertResource(service), metadata)
+		if err != nil {
+			return nil, err
+		}
+		commonTlsCtx.TlsCertificateSdsSecretConfigs = append(commonTlsCtx.TlsCertificateSdsSecretConfigs, dpCertSecret)
+	}
+	return commonTlsCtx, nil
 }
 
 func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) (*envoy_auth.SdsSecretConfig, error) {

@@ -22,11 +22,6 @@ import (
 	"github.com/Kong/kuma/pkg/tokens/builtin"
 )
 
-const (
-	MeshCaResource       = "mesh_ca"
-	IdentityCertResource = "identity_cert"
-)
-
 func NewKubeAuthenticator(rt core_runtime.Runtime) (sds_auth.Authenticator, error) {
 	mgr, ok := k8s_runtime.FromManagerContext(rt.Extensions())
 	if !ok {

@@ -17,6 +17,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 
 	type testCase struct {
 		clusterName string
+		services    []string
 		ctx         xds_context.Context
 		metadata    *core_xds.DataplaneMetadata
 		expected    string
@@ -27,7 +28,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			// when
 			cluster, err := clusters.NewClusterBuilder().
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.ClientSideMTLS(given.ctx, given.metadata)).
+				Configure(clusters.ClientSideMTLS(given.ctx, given.metadata, given.services)).
 				Build()
 
 			// then
@@ -39,6 +40,10 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		},
 		Entry("cluster with mTLS", testCase{
 			clusterName: "testCluster",
+			services: []string{
+				"web",
+				"web-api",
+			},
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsLocation: "kuma-control-plane:5677",
@@ -73,7 +78,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
                 '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: dp:web
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -83,7 +88,19 @@ var _ = Describe("EdsClusterConfigurer", func() {
                               sslCredentials:
                                 rootCerts:
                                   inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_identity_cert
+                            statPrefix: sds_dp_web
+                            targetUri: kuma-control-plane:5677
+                  - name: dp:web-api
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                        - googleGrpc:
+                            channelCredentials:
+                              sslCredentials:
+                                rootCerts:
+                                  inlineBytes: Q0VSVElGSUNBVEU=
+                            statPrefix: sds_dp_web-api
                             targetUri: kuma-control-plane:5677
                   validationContextSdsSecretConfig:
                     name: mesh_ca
@@ -101,6 +118,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		}),
 		Entry("cluster with mTLS and credentials", testCase{
 			clusterName: "testCluster",
+			services:    []string{"web"},
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsLocation: "kuma-control-plane:5677",
@@ -137,7 +155,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
                 '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: dp:web
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -155,7 +173,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                 rootCerts:
                                   inlineBytes: Q0VSVElGSUNBVEU=
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                            statPrefix: sds_identity_cert
+                            statPrefix: sds_dp_web
                             targetUri: kuma-control-plane:5677
                   validationContextSdsSecretConfig:
                     name: mesh_ca

@@ -14,5 +14,5 @@ type Secret interface {
 
 type SecretProvider interface {
 	RequiresIdentity() bool
-	Get(ctx context.Context, name string, requestor sds_auth.Identity) (Secret, error)
+	Get(ctx context.Context, requestor sds_auth.Identity) (Secret, error)
 }
