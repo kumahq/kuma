@@ -36,23 +36,37 @@ var _ = Describe("CircuitBreaker", func() {
                 - match:
                     service: backend
                 conf:
-                    interval: 1s
-                    baseEjectionTime: 30s
-                    maxEjectionPercent: 20
-                    splitExternalAndLocalErrors: false 
+                  interval: 1s
+                  baseEjectionTime: 30s
+                  maxEjectionPercent: 20
+                  splitExternalAndLocalErrors: false 
+                  detectors:
+                    totalErrors: 
+                      consecutive: 20
+                    gatewayErrors: 
+                      consecutive: 10
+                    localErrors: 
+                      consecutive: 7
+                    standardDeviation:
+                      requestVolume: 10
+                      minimumHosts: 5
+                      factor: 1.9
+                    failure:
+                      requestVolume: 10
+                      minimumHosts: 5
+                      threshold: 85`),
+			Entry("one detector with default values", `
+                sources:
+                - match:
+                    service: frontend
+                    region: us
+                destinations:
+                - match:
+                    service: backend
+                conf:
                     detectors:
-                      errors:
-                        total: 20
-                        gateway: 10
-                        local: 7
-                      standardDeviation:
-                        requestVolume: 10
-                        minimumHosts: 5
-                        factor: 1.9
-                      failure:
-                        requestVolume: 10
-                        minimumHosts: 5
-                        threshold: 85`),
+                      totalErrors: {}
+                      standardDeviation: {}`),
 		)
 
 		type testCase struct {
@@ -88,7 +102,32 @@ var _ = Describe("CircuitBreaker", func() {
                - field: destinations
                  message: must have at least one element
                - field: conf
-                 message: must provide at least one detector`}),
+                 message: must have at least one of the detectors configured`}),
+			Entry("wrong format", testCase{
+				circuitBreaker: `
+                sources:
+                - match:
+                    service: frontend
+                    region: us
+                destinations:
+                - match:
+                    service: backend
+                    region: eu
+                conf:
+                    maxEjectionPercent: 120
+                    detectors:
+                      failure:
+                        threshold: 850`,
+				expected: `
+               violations:
+               - field: destinations[0].match
+                 message: must consist of exactly one tag "service"
+               - field: destinations[0].match["region"]
+                 message: tag "region" is not allowed
+               - field: conf.maxEjectionPercent
+                 message: has to be in [0.0 - 100.0] range
+               - field: conf.detectors.failure.threshold
+                 message: has to be in [0.0 - 100.0] range`}),
 		)
 	})
 })

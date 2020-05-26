@@ -111,6 +111,12 @@ resources:
       edsConfig:
         ads: {}
     name: api-http
+    outlierDetection:
+      enforcingConsecutive5xx: 100
+      enforcingConsecutiveGatewayFailure: 0
+      enforcingConsecutiveLocalOriginFailure: 0
+      enforcingFailurePercentage: 0
+      enforcingSuccessRate: 0
     type: EDS
 - name: api-http
   resource:

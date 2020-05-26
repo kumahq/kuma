@@ -25,24 +25,24 @@ message CircuitBreaker {
     google.protobuf.Duration baseEjectionTime = 2;
     // The maximum percent of an upstream cluster that can be ejected due to
     // outlier detection, has to be in [0.0 - 100.0] range
-    google.protobuf.DoubleValue maxEjectionPercent = 3;
+    google.protobuf.UInt32Value maxEjectionPercent = 3;
     // Enables Split Mode in which local and external errors are distinguished
     bool splitExternalAndLocalErrors = 4;
 
     message Detectors {
-      // Detection based on limiting consecutive errors
+      // Detector based on counting consecutive number of errors
       message Errors {
-        // Errors with status code 5xx and locally originated errors, in Split
-        // Mode - just errors with status code 5xx
-        google.protobuf.UInt32Value total = 1;
-        // Subset of 'total' related to gateway errors (502, 503 or 504 status
-        // code)
-        google.protobuf.UInt32Value gateway = 2;
-        // Takes into account only in Split Mode, number of locally originated
-        // errors
-        google.protobuf.UInt32Value local = 3;
+        google.protobuf.UInt32Value consecutive = 1;
       }
-      Errors errors = 1;
+      // Errors with status code 5xx and locally originated errors, in Split
+      // Mode - just errors with status code 5xx
+      Errors totalErrors = 1;
+      // Subset of 'total' related to gateway errors (502, 503 or 504 status
+      // code)
+      Errors gatewayErrors = 2;
+      // Takes into account only in Split Mode, number of locally originated
+      // errors
+      Errors localErrors = 3;
 
       // Detection based on success rate, aggregated from every host in the
       // cluser
@@ -55,7 +55,7 @@ message CircuitBreaker {
         // Resulting threshold = mean - (stdev * factor)
         google.protobuf.DoubleValue factor = 3;
       }
-      StandardDeviation standardDeviation = 2;
+      StandardDeviation standardDeviation = 4;
 
       // Detection based on success rate, but threshold is set explicitly
       // (unlike 'standardDeviation')
@@ -67,9 +67,9 @@ message CircuitBreaker {
         google.protobuf.UInt32Value minimumHosts = 2;
         // Eject host if failure percentage of a given host is greater than or
         // equal to this value, has to be in [0.0 - 100.0] range
-        google.protobuf.DoubleValue threshold = 3;
+        google.protobuf.UInt32Value threshold = 3;
       }
-      Failure failure = 3;
+      Failure failure = 5;
     }
     Detectors detectors = 5;
   }
