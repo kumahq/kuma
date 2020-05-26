@@ -107,22 +107,14 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 }
 
 func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_mesh.DataplaneResource) error {
-	// The admin port in kuma-dp is always bound to 127.0.0.1
-	isNetworkingAddressLocal := dataplane.Spec.Networking.Address == "127.0.0.1"
-
-	for _, inbound := range dataplane.Spec.Networking.Inbound {
-		isIPLocal := (inbound.Address == "127.0.0.1") || isNetworkingAddressLocal
-		if isIPLocal && inbound.Port == adminPort {
-			return errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", adminPort)
-		}
+	//The admin port in kuma-dp is always bound to 127.0.0.1
+	if dataplane.UsesInboundInterface(core_mesh.IPv4Loopback, adminPort) {
+		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", adminPort)
 	}
 
-	for _, outbound := range dataplane.Spec.Networking.Outbound {
-		if outbound.Address == "127.0.0.1" && outbound.Port == adminPort {
-			return errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", adminPort)
-		}
+	if dataplane.UsesOutboundInterface(core_mesh.IPv4Loopback, adminPort) {
+		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", adminPort)
 	}
-
 	return nil
 }
 
