@@ -227,7 +227,7 @@ var _ = Describe("bootstrapGenerator", func() {
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Address:     "127.0.0.111",
+							Address:     "127.0.0.1",
 							Port:        9901,
 							ServicePort: 8443,
 							Tags: map[string]string{
@@ -251,7 +251,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		dataplane.Spec.Networking.Address = "127.0.1.123"
+		dataplane.Spec.Networking.Address = "127.0.0.1"
 		dataplane.Spec.Networking.Inbound[0].Address = "2.2.2.2"
 		err = resManager.Create(context.Background(), &dataplane, store.CreateByKey("name-2.namespace", "mesh"))
 		// then
@@ -272,7 +272,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		// when
 		_, err = generator.Generate(context.Background(), request)
 		// then
-		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("Resource precondition failed: Port 9901 requested as both admin and inbound port."))
 
 		request = types.BootstrapRequest{
 			Mesh:      "mesh",
@@ -283,7 +283,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		// when
 		_, err = generator.Generate(context.Background(), request)
 		// then
-		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("Resource precondition failed: Port 9901 requested as both admin and inbound port."))
 
 	})
 
@@ -304,7 +304,7 @@ var _ = Describe("bootstrapGenerator", func() {
 					},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
-							Address: "127.0.1.1",
+							Address: "127.0.0.1",
 							Port:    9901,
 							Service: "redis",
 						},
@@ -332,7 +332,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		// when
 		_, err = generator.Generate(context.Background(), request)
 		// then
-		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("Resource precondition failed: Port 9901 requested as both admin and outbound port."))
 
 	})
 })
