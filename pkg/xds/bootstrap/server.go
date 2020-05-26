@@ -76,6 +76,15 @@ func (b *BootstrapServer) handleBootstrapRequest(resp http.ResponseWriter, req *
 			resp.WriteHeader(http.StatusNotFound)
 			return
 		}
+		if store.IsResourcePreconditionFailed(err) {
+			resp.WriteHeader(http.StatusUnprocessableEntity)
+			_, err = resp.Write([]byte(err.Error()))
+			if err != nil {
+				log.WithValues("params", reqParams).Error(err, "Error while writing the response")
+				return
+			}
+			return
+		}
 		log.WithValues("params", reqParams).Error(err, "Could not generate a bootstrap configuration")
 		resp.WriteHeader(http.StatusInternalServerError)
 		return
