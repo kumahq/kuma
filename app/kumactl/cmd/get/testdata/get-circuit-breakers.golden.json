@@ -27,7 +27,9 @@
         "baseEjectionTime": "5s",
         "maxEjectionPercent": 50,
         "detectors": {
-          "errors": {},
+          "totalErrors": {},
+          "gatewayErrors": {},
+          "localErrors": {},
           "standardDeviation": {},
           "failure": {}
         }
@@ -59,10 +61,14 @@
         "baseEjectionTime": "5s",
         "maxEjectionPercent": 50,
         "detectors": {
-          "errors": {
-            "total": 20,
-            "gateway": 10,
-            "local": 5
+          "totalErrors": {
+            "consecutive": 20
+          },
+          "gatewayErrors": {
+            "consecutive": 10
+          },
+          "localErrors": {
+            "consecutive": 2
           },
           "standardDeviation": {
             "requestVolume": 20,
@@ -72,7 +78,7 @@
           "failure": {
             "requestVolume": 20,
             "minimumHosts": 3,
-            "threshold": 85.1
+            "threshold": 85
           }
         }
       }

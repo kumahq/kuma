@@ -1,14 +1,15 @@
 package clusters_test
 
 import (
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/envoy/clusters"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/Kong/kuma/pkg/xds/envoy/clusters"
 )
 
 var _ = ginkgo.Describe("CircuitBreakerConfigurer", func() {

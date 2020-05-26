@@ -75,14 +75,16 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
         conf:
           baseEjectionTime: 5s
           detectors:
-            errors:
-              gateway: 10
-              local: 5
-              total: 20
+            gatewayErrors: 
+              consecutive: 10
+            localErrors: 
+              consecutive: 5
+            totalErrors: 
+              consecutive: 20
             failure:
               minimumHosts: 3
               requestVolume: 20
-              threshold: 85.1
+              threshold: 85
             standardDeviation:
               factor: 1.9
               minimumHosts: 3

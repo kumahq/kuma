@@ -50,10 +50,12 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 				Conf: &kuma_mesh.CircuitBreaker_Conf{
 					Interval:                    &duration.Duration{Seconds: 5},
 					BaseEjectionTime:            &duration.Duration{Seconds: 5},
-					MaxEjectionPercent:          &wrappers.DoubleValue{Value: 50},
+					MaxEjectionPercent:          &wrappers.UInt32Value{Value: 50},
 					SplitExternalAndLocalErrors: false,
 					Detectors: &kuma_mesh.CircuitBreaker_Conf_Detectors{
-						Errors:            &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{},
+						TotalErrors:       &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{},
+						GatewayErrors:     &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{},
+						LocalErrors:       &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{},
 						StandardDeviation: &kuma_mesh.CircuitBreaker_Conf_Detectors_StandardDeviation{},
 						Failure:           &kuma_mesh.CircuitBreaker_Conf_Detectors_Failure{},
 					},
@@ -84,14 +86,12 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 				Conf: &kuma_mesh.CircuitBreaker_Conf{
 					Interval:                    &duration.Duration{Seconds: 5},
 					BaseEjectionTime:            &duration.Duration{Seconds: 5},
-					MaxEjectionPercent:          &wrappers.DoubleValue{Value: 50},
+					MaxEjectionPercent:          &wrappers.UInt32Value{Value: 50},
 					SplitExternalAndLocalErrors: false,
 					Detectors: &kuma_mesh.CircuitBreaker_Conf_Detectors{
-						Errors: &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{
-							Total:   &wrappers.UInt32Value{Value: 20},
-							Gateway: &wrappers.UInt32Value{Value: 10},
-							Local:   &wrappers.UInt32Value{Value: 5},
-						},
+						TotalErrors:   &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 20}},
+						GatewayErrors: &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 10}},
+						LocalErrors:   &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 2}},
 						StandardDeviation: &kuma_mesh.CircuitBreaker_Conf_Detectors_StandardDeviation{
 							RequestVolume: &wrappers.UInt32Value{Value: 20},
 							MinimumHosts:  &wrappers.UInt32Value{Value: 3},
@@ -100,7 +100,7 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 						Failure: &kuma_mesh.CircuitBreaker_Conf_Detectors_Failure{
 							RequestVolume: &wrappers.UInt32Value{Value: 20},
 							MinimumHosts:  &wrappers.UInt32Value{Value: 3},
-							Threshold:     &wrappers.DoubleValue{Value: 85.1},
+							Threshold:     &wrappers.UInt32Value{Value: 85},
 						},
 					},
 				},

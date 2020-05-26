@@ -31,9 +31,7 @@ message CircuitBreaker {
 
     message Detectors {
       // Detector based on counting consecutive number of errors
-      message Errors {
-        google.protobuf.UInt32Value consecutive = 1;
-      }
+      message Errors { google.protobuf.UInt32Value consecutive = 1; }
       // Errors with status code 5xx and locally originated errors, in Split
       // Mode - just errors with status code 5xx
       Errors totalErrors = 1;

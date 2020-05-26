@@ -1,10 +1,11 @@
 package clusters
 
 import (
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	"github.com/golang/protobuf/ptypes/wrappers"
+
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 )
 
 func CircuitBreaker(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterBuilderOpt {
