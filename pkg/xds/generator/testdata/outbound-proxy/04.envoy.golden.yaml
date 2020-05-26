@@ -13,7 +13,7 @@ resources:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
-              - name: dp:web
+              - name: identity_cert
                 sdsConfig:
                   apiConfigSource:
                     apiType: GRPC
@@ -23,7 +23,7 @@ resources:
                             sslCredentials:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
-                          statPrefix: sds_dp_web
+                          statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
             validationContextSdsSecretConfig:
               name: mesh_ca
@@ -88,7 +88,7 @@ resources:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
-              - name: dp:web
+              - name: identity_cert
                 sdsConfig:
                   apiConfigSource:
                     apiType: GRPC
@@ -98,7 +98,7 @@ resources:
                             sslCredentials:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
-                          statPrefix: sds_dp_web
+                          statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
             validationContextSdsSecretConfig:
               name: mesh_ca
@@ -145,7 +145,7 @@ resources:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
-              - name: dp:web
+              - name: identity_cert
                 sdsConfig:
                   apiConfigSource:
                     apiType: GRPC
@@ -155,7 +155,7 @@ resources:
                             sslCredentials:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
-                          statPrefix: sds_dp_web
+                          statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
             validationContextSdsSecretConfig:
               name: mesh_ca
@@ -214,7 +214,7 @@ resources:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
-              - name: dp:web
+              - name: identity_cert
                 sdsConfig:
                   apiConfigSource:
                     apiType: GRPC
@@ -224,7 +224,7 @@ resources:
                             sslCredentials:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
-                          statPrefix: sds_dp_web
+                          statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
             validationContextSdsSecretConfig:
               name: mesh_ca
@@ -330,7 +330,7 @@ resources:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
-              - name: dp:web
+              - name: identity_cert
                 sdsConfig:
                   apiConfigSource:
                     apiType: GRPC
@@ -340,7 +340,7 @@ resources:
                             sslCredentials:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
-                          statPrefix: sds_dp_web
+                          statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
             validationContextSdsSecretConfig:
               name: mesh_ca

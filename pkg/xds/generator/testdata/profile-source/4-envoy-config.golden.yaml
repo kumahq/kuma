@@ -127,7 +127,7 @@ resources:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
                 tlsCertificateSdsSecretConfigs:
-                  - name: dp:backend
+                  - name: identity_cert
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -137,7 +137,7 @@ resources:
                                 sslCredentials:
                                   rootCerts:
                                     inlineBytes: MTIzNDU=
-                              statPrefix: sds_dp_backend
+                              statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
                 validationContextSdsSecretConfig:
                   name: mesh_ca
@@ -169,7 +169,7 @@ resources:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
-              - name: dp:backend
+              - name: identity_cert
                 sdsConfig:
                   apiConfigSource:
                     apiType: GRPC
@@ -179,7 +179,7 @@ resources:
                             sslCredentials:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
-                          statPrefix: sds_dp_backend
+                          statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
             validationContextSdsSecretConfig:
               name: mesh_ca
@@ -249,7 +249,7 @@ resources:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
-              - name: dp:backend
+              - name: identity_cert
                 sdsConfig:
                   apiConfigSource:
                     apiType: GRPC
@@ -259,7 +259,7 @@ resources:
                             sslCredentials:
                               rootCerts:
                                 inlineBytes: MTIzNDU=
-                          statPrefix: sds_dp_backend
+                          statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
             validationContextSdsSecretConfig:
               name: mesh_ca

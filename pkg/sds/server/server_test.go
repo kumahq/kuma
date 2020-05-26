@@ -27,7 +27,6 @@ import (
 	"github.com/Kong/kuma/pkg/test/runtime"
 	tokens_builtin "github.com/Kong/kuma/pkg/tokens/builtin"
 	tokens_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -103,12 +102,6 @@ var _ = Describe("SDS Server", func() {
 								"service": "backend",
 							},
 						},
-						{
-							Port: 1234,
-							Tags: map[string]string{
-								"service": "backend-api",
-							},
-						},
 					},
 				},
 			},
@@ -156,16 +149,12 @@ var _ = Describe("SDS Server", func() {
 			Node: &envoy_api_core.Node{
 				Id: "default.backend-01",
 			},
-			ResourceNames: []string{
-				envoy_names.MeshCaResource,
-				envoy_names.DpCertResource("backend"),
-				envoy_names.DpCertResource("backend-api"),
-			},
-			TypeUrl: envoy_resource.SecretType,
+			ResourceNames: []string{server.MeshCaResource, server.IdentityCertResource},
+			TypeUrl:       envoy_resource.SecretType,
 		}
 	}
 
-	It("should return CA and dp certs when DP is authorized", func(done Done) {
+	It("should return CA and Identity cert when DP is authorized", func(done Done) {
 		// given
 		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", string(dpCredential))
 		stream, err := client.StreamSecrets(ctx)
@@ -185,13 +174,13 @@ var _ = Describe("SDS Server", func() {
 
 		// then
 		Expect(resp).ToNot(BeNil())
-		Expect(resp.Resources).To(HaveLen(3)) // ca, dp-backend, dp-backend-api
+		Expect(resp.Resources).To(HaveLen(2))
 
 		// and insight is generated
 		dpInsight := mesh_core.DataplaneInsightResource{}
 		err = resManager.Get(context.Background(), &dpInsight, core_store.GetByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
-		Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(2))) // backend and backend-api generated
+		Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(1)))
 		expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
 		Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
 
@@ -219,7 +208,7 @@ var _ = Describe("SDS Server", func() {
 
 			// then
 			Expect(resp).ToNot(BeNil())
-			Expect(resp.Resources).To(HaveLen(3))
+			Expect(resp.Resources).To(HaveLen(2))
 			firstExchangeResponse = resp
 			close(done)
 		}, 10)
@@ -254,7 +243,7 @@ var _ = Describe("SDS Server", func() {
 			dpInsight := mesh_core.DataplaneInsightResource{}
 			err = resManager.Get(context.Background(), &dpInsight, core_store.GetByKey("backend-01", "default"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(4))) // backend and backend-api regenerated
+			Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(2)))
 			expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
 			Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
 
