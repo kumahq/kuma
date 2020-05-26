@@ -102,7 +102,7 @@ define envoy_active_mtls_listeners_count
 	| select(.active_state.listener.address.socket_address.port_value == $(2)) \
 	| select(.active_state.listener.filter_chains[] \
 		| (.transport_socket.typed_config.common_tls_context \
-			and .transport_socket.typed_config.common_tls_context.tls_certificate_sds_secret_configs[] .name != \"\") \
+			and .transport_socket.typed_config.common_tls_context.tls_certificate_sds_secret_configs[] .name == \"identity_cert\") \
 			and (.transport_socket.typed_config.common_tls_context.validation_context_sds_secret_config.name == \"mesh_ca\") \
 			and (.transport_socket.typed_config.require_client_certificate == true) \
 	  ) " \
@@ -117,7 +117,7 @@ define envoy_active_mtls_clusters_count
 	| select(.cluster.name == \"$(1)\") \
 	| select(.cluster.transport_socket.typed_config.common_tls_context) \
 	| select(.cluster.transport_socket.typed_config.common_tls_context | \
-		 (.tls_certificate_sds_secret_configs[] | .name != \"\") and (.validation_context_sds_secret_config.name == \"mesh_ca\") \
+		 (.tls_certificate_sds_secret_configs[] | .name == \"identity_cert\") and (.validation_context_sds_secret_config.name == \"mesh_ca\") \
 	  ) " \
 	| jq -s ". | length"
 endef

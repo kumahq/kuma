@@ -29,7 +29,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			metadata := &core_xds.DataplaneMetadata{}
 
 			// when
-			snippet, err := CreateDownstreamTlsContext(ctx, metadata, "web")
+			snippet, err := CreateDownstreamTlsContext(ctx, metadata)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -40,7 +40,6 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 	Context("when mTLS is enabled on a given Mesh", func() {
 
 		type testCase struct {
-			service  string
 			metadata *core_xds.DataplaneMetadata
 			expected string
 		}
@@ -71,7 +70,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := CreateDownstreamTlsContext(ctx, given.metadata, given.service)
+				snippet, err := CreateDownstreamTlsContext(ctx, given.metadata)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -82,12 +81,11 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("metadata is `nil`", testCase{
-				service:  "web",
 				metadata: nil,
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
-                  - name: dp:web
+                  - name: identity_cert
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -97,7 +95,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                               sslCredentials:
                                 rootCerts:
                                   inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_dp_web
+                            statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
                   validationContextSdsSecretConfig:
                     name: mesh_ca
@@ -116,12 +114,11 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 `,
 			}),
 			Entry("dataplane without a token", testCase{
-				service:  "web",
 				metadata: &core_xds.DataplaneMetadata{},
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
-                  - name: dp:web
+                  - name: identity_cert
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -131,7 +128,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                               sslCredentials:
                                 rootCerts:
                                   inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_dp_web
+                            statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
                   validationContextSdsSecretConfig:
                     name: mesh_ca
@@ -150,14 +147,13 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 `,
 			}),
 			Entry("dataplane with a token", testCase{
-				service: "web",
 				metadata: &core_xds.DataplaneMetadata{
 					DataplaneTokenPath: "/path/to/token",
 				},
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
-                  - name: dp:web
+                  - name: identity_cert
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -175,7 +171,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                                 rootCerts:
                                   inlineBytes: Q0VSVElGSUNBVEU=
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                            statPrefix: sds_dp_web
+                            statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
                   validationContextSdsSecretConfig:
                     name: mesh_ca
@@ -219,7 +215,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			metadata := &core_xds.DataplaneMetadata{}
 
 			// when
-			snippet, err := CreateUpstreamTlsContext(ctx, metadata, nil)
+			snippet, err := CreateUpstreamTlsContext(ctx, metadata)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -230,9 +226,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 	Context("when mTLS is enabled on a given Mesh", func() {
 
 		type testCase struct {
-			serverServices []string
-			metadata       *core_xds.DataplaneMetadata
-			expected       string
+			metadata *core_xds.DataplaneMetadata
+			expected string
 		}
 
 		DescribeTable("should generate proper Envoy config",
@@ -261,7 +256,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := CreateUpstreamTlsContext(ctx, given.metadata, given.serverServices)
+				snippet, err := CreateUpstreamTlsContext(ctx, given.metadata)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -272,12 +267,11 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("metadata is `nil`", testCase{
-				serverServices: []string{"web", "web-api"},
-				metadata:       nil,
+				metadata: nil,
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
-                  - name: dp:web
+                  - name: identity_cert
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -287,19 +281,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                               sslCredentials:
                                 rootCerts:
                                   inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_dp_web
-                            targetUri: kuma-control-plane:5677
-                  - name: dp:web-api
-                    sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_dp_web-api
+                            statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
                   validationContextSdsSecretConfig:
                     name: mesh_ca
@@ -317,12 +299,11 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 `,
 			}),
 			Entry("dataplane without a token", testCase{
-				serverServices: []string{"web"},
-				metadata:       &core_xds.DataplaneMetadata{},
+				metadata: &core_xds.DataplaneMetadata{},
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
-                  - name: dp:web
+                  - name: identity_cert
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -332,7 +313,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                               sslCredentials:
                                 rootCerts:
                                   inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_dp_web
+                            statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
                   validationContextSdsSecretConfig:
                     name: mesh_ca
@@ -350,14 +331,13 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 `,
 			}),
 			Entry("dataplane with a token", testCase{
-				serverServices: []string{"web"},
 				metadata: &core_xds.DataplaneMetadata{
 					DataplaneTokenPath: "/path/to/token",
 				},
 				expected: `
                 commonTlsContext:
                   tlsCertificateSdsSecretConfigs:
-                  - name: dp:web
+                  - name: identity_cert
                     sdsConfig:
                       apiConfigSource:
                         apiType: GRPC
@@ -375,7 +355,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                                 rootCerts:
                                   inlineBytes: Q0VSVElGSUNBVEU=
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                            statPrefix: sds_dp_web
+                            statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
                   validationContextSdsSecretConfig:
                     name: mesh_ca

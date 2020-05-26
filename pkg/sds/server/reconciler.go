@@ -16,7 +16,6 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/ca/issuer"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -27,7 +26,6 @@ import (
 	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
 )
 
 // DataplaneReconciler keeps the state of the Cache for SDS consistent
@@ -124,23 +122,19 @@ func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_
 }
 
 func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (envoy_cache.Snapshot, error) {
-	var secrets []envoy_types.Resource
-	for _, service := range dataplane.Spec.Tags().Values(mesh_proto.ServiceTag) {
-		requestor := sds_auth.Identity{
-			Service: service,
-			Mesh:    dataplane.GetMeta().GetMesh(),
-		}
-		identitySecret, err := d.identityProvider.Get(context.Background(), requestor)
-		if err != nil {
-			return envoy_cache.Snapshot{}, errors.Wrapf(err, "could not get Dataplane cert pair for service %s", service)
-		}
-		secrets = append(secrets, identitySecret.ToResource(envoy_names.DpCertResource(service)))
+	requestor := sds_auth.Identity{
+		Service: dataplane.Spec.GetIdentifyingService(),
+		Mesh:    dataplane.GetMeta().GetMesh(),
+	}
+	identitySecret, err := d.identityProvider.Get(context.Background(), IdentityCertResource, requestor)
+	if err != nil {
+		return envoy_cache.Snapshot{}, errors.Wrap(err, "could not get Dataplane cert pair")
 	}
 
-	requestor := sds_auth.Identity{
+	requestor = sds_auth.Identity{
 		Mesh: dataplane.GetMeta().GetMesh(),
 	}
-	caSecret, err := d.meshCaProvider.Get(context.Background(), requestor)
+	caSecret, err := d.meshCaProvider.Get(context.Background(), MeshCaResource, requestor)
 	if err != nil {
 		return envoy_cache.Snapshot{}, errors.Wrap(err, "could not get mesh CA cert")
 	}
@@ -149,24 +143,15 @@ func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneRes
 	snap := envoy_cache.Snapshot{
 		Resources: [envoy_types.UnknownType]envoy_cache.Resources{},
 	}
-	secrets = append(secrets, caSecret.ToResource(envoy_names.MeshCaResource))
-	snap.Resources[envoy_types.Secret] = envoy_cache.NewResources(version, secrets)
+	snap.Resources[envoy_types.Secret] = envoy_cache.NewResources(version, []envoy_types.Resource{
+		identitySecret.ToResource(IdentityCertResource),
+		caSecret.ToResource(MeshCaResource),
+	})
 	return snap, nil
 }
 
 func (d *DataplaneReconciler) updateInsights(dataplaneId core_model.ResourceKey, snapshot envoy_cache.Snapshot) error {
-	var secret *envoy_auth.Secret
-	dpCerts := 0
-	for _, resource := range snapshot.Resources[envoy_types.Secret].Items {
-		sec := resource.(*envoy_auth.Secret)
-		if envoy_names.IsDpCertResource(sec.Name) {
-			secret = sec
-			dpCerts++
-		}
-	}
-	if secret == nil { // should not happen since every DP has at least one inbound with service == at least one cert
-		return errors.New("could not find DP certificate in the snapshot")
-	}
+	secret := snapshot.Resources[envoy_types.Secret].Items[IdentityCertResource].(*envoy_auth.Secret)
 	certPEM := secret.GetTlsCertificate().CertificateChain.GetInlineBytes()
 	block, _ := pem.Decode(certPEM)
 	cert, err := x509.ParseCertificate(block.Bytes)
@@ -185,7 +170,7 @@ func (d *DataplaneReconciler) updateInsights(dataplaneId core_model.ResourceKey,
 		}
 	}
 
-	if err := dataplaneInsight.Spec.UpdateCerts(core.Now(), cert.NotAfter, dpCerts); err != nil {
+	if err := dataplaneInsight.Spec.UpdateCert(core.Now(), cert.NotAfter); err != nil {
 		return err
 	}
 

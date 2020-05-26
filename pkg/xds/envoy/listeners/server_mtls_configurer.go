@@ -10,12 +10,11 @@ import (
 	"github.com/Kong/kuma/pkg/xds/envoy"
 )
 
-func ServerSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, service string) FilterChainBuilderOpt {
+func ServerSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.Add(&ServerSideMTLSConfigurer{
 			ctx:      ctx,
 			metadata: metadata,
-			service:  service,
 		})
 	})
 }
@@ -23,11 +22,10 @@ func ServerSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadat
 type ServerSideMTLSConfigurer struct {
 	ctx      xds_context.Context
 	metadata *core_xds.DataplaneMetadata
-	service  string
 }
 
 func (c *ServerSideMTLSConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	tlsContext, err := envoy.CreateDownstreamTlsContext(c.ctx, c.metadata, c.service)
+	tlsContext, err := envoy.CreateDownstreamTlsContext(c.ctx, c.metadata)
 	if err != nil {
 		return err
 	}

@@ -29,7 +29,7 @@ func (s *meshCaProvider) RequiresIdentity() bool {
 	return false
 }
 
-func (s *meshCaProvider) Get(ctx context.Context, requestor sds_auth.Identity) (sds_provider.Secret, error) {
+func (s *meshCaProvider) Get(ctx context.Context, resource string, requestor sds_auth.Identity) (sds_provider.Secret, error) {
 	meshName := requestor.Mesh
 
 	meshRes := &core_mesh.MeshResource{}
