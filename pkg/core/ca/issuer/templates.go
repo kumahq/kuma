@@ -10,15 +10,19 @@ import (
 	"github.com/spiffe/go-spiffe/spiffe"
 )
 
-func NewWorkloadTemplate(spiffeID string, trustDomain string, publicKey crypto.PublicKey, notBefore, notAfter time.Time, serialNumber *big.Int) (*x509.Certificate, error) {
-	uri, err := spiffe.ParseID(spiffeID, spiffe.AllowTrustDomainWorkload(trustDomain))
-	if err != nil {
-		return nil, err
+func NewWorkloadTemplate(spiffeIDs []string, trustDomain string, publicKey crypto.PublicKey, notBefore, notAfter time.Time, serialNumber *big.Int) (*x509.Certificate, error) {
+	var uris []*url.URL
+	for _, spiffeID := range spiffeIDs {
+		uri, err := spiffe.ParseID(spiffeID, spiffe.AllowTrustDomainWorkload(trustDomain))
+		if err != nil {
+			return nil, err
+		}
+		uris = append(uris, uri)
 	}
 	return &x509.Certificate{
 		SerialNumber: serialNumber,
 		// Subject is deliberately left empty
-		URIs:      []*url.URL{uri},
+		URIs:      uris,
 		NotBefore: notBefore,
 		NotAfter:  notAfter,
 		KeyUsage: x509.KeyUsageKeyEncipherment |

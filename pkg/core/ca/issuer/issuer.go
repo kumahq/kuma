@@ -32,7 +32,7 @@ func WithExpirationTime(expiration time.Duration) CertOptsFn {
 	}
 }
 
-func NewWorkloadCert(ca util_tls.KeyPair, mesh string, workload string, certOpts ...CertOptsFn) (*util_tls.KeyPair, error) {
+func NewWorkloadCert(ca util_tls.KeyPair, mesh string, services []string, certOpts ...CertOptsFn) (*util_tls.KeyPair, error) {
 	caPrivateKey, caCert, err := loadKeyPair(ca)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load CA key pair")
@@ -42,18 +42,22 @@ func NewWorkloadCert(ca util_tls.KeyPair, mesh string, workload string, certOpts
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate a private key")
 	}
-	workloadCert, err := newWorkloadCert(caPrivateKey, caCert, mesh, workload, workloadKey.Public(), certOpts...)
+	workloadCert, err := newWorkloadCert(caPrivateKey, caCert, mesh, services, workloadKey.Public(), certOpts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate X509 certificate")
 	}
 	return util_tls.ToKeyPair(workloadKey, workloadCert)
 }
 
-func newWorkloadCert(signer crypto.PrivateKey, parent *x509.Certificate, trustDomain string, workload string, publicKey crypto.PublicKey, certOpts ...CertOptsFn) ([]byte, error) {
-	spiffeID := &url.URL{
-		Scheme: "spiffe",
-		Host:   trustDomain,
-		Path:   workload,
+func newWorkloadCert(signer crypto.PrivateKey, parent *x509.Certificate, trustDomain string, services []string, publicKey crypto.PublicKey, certOpts ...CertOptsFn) ([]byte, error) {
+	var spiffeIDs []string
+	for _, service := range services {
+		spiffeID := &url.URL{
+			Scheme: "spiffe",
+			Host:   trustDomain,
+			Path:   service,
+		}
+		spiffeIDs = append(spiffeIDs, spiffeID.String())
 	}
 
 	now := time.Now()
@@ -65,7 +69,7 @@ func newWorkloadCert(signer crypto.PrivateKey, parent *x509.Certificate, trustDo
 		return nil, err
 	}
 
-	template, err := NewWorkloadTemplate(spiffeID.String(), trustDomain, publicKey, notBefore, notAfter, serialNumber)
+	template, err := NewWorkloadTemplate(spiffeIDs, trustDomain, publicKey, notBefore, notAfter, serialNumber)
 	if err != nil {
 		return nil, err
 	}
