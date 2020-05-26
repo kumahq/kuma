@@ -42,6 +42,10 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 kind/stop:
 	@kind delete cluster --name $(KIND_CLUSTER_NAME)
 
+.PHONY: kind/stop/all
+kind/stop/all:
+	@kind delete clusters --all
+
 .PHONY: kind/load/control-plane
 kind/load/control-plane: image/kuma-cp
 	@kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=kuma
