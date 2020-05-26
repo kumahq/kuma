@@ -35,7 +35,7 @@ var _ = Describe("Mesh Manager", func() {
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None())
+		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
 		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
 		providedCaManager := provided.NewProvidedCaManager(datasource.NewDataSourceLoader(secretManager))
 		caManagers := core_ca.Managers{

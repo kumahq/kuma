@@ -17,7 +17,7 @@ import (
 	"github.com/Kong/kuma/pkg/xds/generator"
 )
 
-var _ = Describe("TemplateProxyGenerator", func() {
+var _ = Describe("ProxyTemplateGenerator", func() {
 	Context("Error case", func() {
 		type testCase struct {
 			proxy    *model.Proxy
@@ -28,7 +28,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 		DescribeTable("Avoid producing invalid Envoy xDS resources",
 			func(given testCase) {
 				// setup
-				gen := &generator.TemplateProxyGenerator{
+				gen := &generator.ProxyTemplateGenerator{
 					ProxyTemplate: given.template,
 				}
 				ctx := xds_context.Context{
@@ -110,7 +110,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				ptBytes, err := ioutil.ReadFile(filepath.Join("testdata", "template-proxy", given.proxyTemplateFile))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(util_proto.FromYAML(ptBytes, &proxyTemplate)).To(Succeed())
-				gen := &generator.TemplateProxyGenerator{
+				gen := &generator.ProxyTemplateGenerator{
 					ProxyTemplate: &proxyTemplate,
 				}
 
@@ -183,6 +183,8 @@ var _ = Describe("TemplateProxyGenerator", func() {
                   inbound:
                     - port: 80
                       servicePort: 8080
+                      tags:
+                        service: backend
 `,
 				proxyTemplateFile: "1-proxy-template.input.yaml",
 				envoyConfigFile:   "1-envoy-config.golden.yaml",

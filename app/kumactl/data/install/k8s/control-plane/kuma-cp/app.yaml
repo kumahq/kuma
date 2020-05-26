@@ -284,6 +284,9 @@ webhooks:
         resources:
           - services
   - name: secret.validator.kuma-admission.kuma.io
+    namespaceSelector:
+      matchLabels:
+        kuma.io/system-namespace: "true"
     failurePolicy: Fail
     clientConfig:
       caBundle: {{ .AdmissionServerTlsCert | b64enc }}
@@ -299,5 +302,6 @@ webhooks:
         operations:
           - CREATE
           - UPDATE
+          - DELETE
         resources:
           - secrets

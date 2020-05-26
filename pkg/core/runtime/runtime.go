@@ -7,6 +7,7 @@ import (
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
+	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
@@ -27,6 +28,7 @@ type RuntimeContext interface {
 	Config() kuma_cp.Config
 	XDS() core_xds.XdsContext
 	ResourceManager() core_manager.ResourceManager
+	ResourceStore() core_store.ResourceStore
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	SecretManager() secret_manager.SecretManager
 	CaManagers() ca.Managers
@@ -56,6 +58,7 @@ var _ RuntimeContext = &runtimeContext{}
 type runtimeContext struct {
 	cfg kuma_cp.Config
 	rm  core_manager.ResourceManager
+	rs  core_store.ResourceStore
 	rom core_manager.ReadOnlyResourceManager
 	sm  secret_manager.SecretManager
 	cam ca.Managers
@@ -74,6 +77,9 @@ func (rc *runtimeContext) XDS() core_xds.XdsContext {
 }
 func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 	return rc.rm
+}
+func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
+	return rc.rs
 }
 func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return rc.rom

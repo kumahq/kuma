@@ -3,12 +3,11 @@ package bootstrap
 import (
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/core/managers/apis/dataplaneinsight"
-
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/datasource"
+	"github.com/Kong/kuma/pkg/core/managers/apis/dataplaneinsight"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -188,7 +187,8 @@ func initializeSecretManager(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if secretStore, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		builder.WithSecretManager(secret_manager.NewSecretManager(secretStore, cipher))
+		validator := secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
+		builder.WithSecretManager(secret_manager.NewSecretManager(secretStore, cipher, validator))
 		return nil
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Kong/kuma/pkg/core/secrets/manager"
+
 	"github.com/pkg/errors"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -131,7 +133,8 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
 
 	secretValidator := &k8s_webhooks.SecretValidator{
-		Client: mgr.GetClient(),
+		Client:    mgr.GetClient(),
+		Validator: manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 	log.Info("Registering a validation webhook for v1/Secret", "path", "/validate-v1-secret")

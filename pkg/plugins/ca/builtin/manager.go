@@ -54,6 +54,13 @@ func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, bac
 	return nil
 }
 
+func (b *builtinCaManager) UsedSecrets(mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]string, error) {
+	return []string{
+		certSecretResKey(mesh, backend.Name).Name,
+		keySecretResKey(mesh, backend.Name).Name,
+	}, nil
+}
+
 func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error {
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {

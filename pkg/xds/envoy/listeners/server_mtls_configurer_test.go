@@ -26,6 +26,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 		clusters        []envoy_common.ClusterInfo
 		ctx             xds_context.Context
 		metadata        core_xds.DataplaneMetadata
+		service         string
 		expected        string
 	}
 
@@ -35,7 +36,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder().
-					Configure(ServerSideMTLS(given.ctx, &given.metadata)).
+					Configure(ServerSideMTLS(given.ctx, &given.metadata, given.service)).
 					Configure(TcpProxy(given.statsName, given.clusters...)))).
 				Build()
 			// then
@@ -53,6 +54,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
+			service:         "backend",
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsLocation: "kuma-control-plane:5677",
@@ -92,7 +94,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                   '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
                   commonTlsContext:
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert
+                    - name: dp:backend
                       sdsConfig:
                         apiConfigSource:
                           apiType: GRPC
@@ -102,7 +104,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                                 sslCredentials:
                                   rootCerts:
                                     inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_identity_cert
+                              statPrefix: sds_dp_backend
                               targetUri: kuma-control-plane:5677
                     validationContextSdsSecretConfig:
                       name: mesh_ca
@@ -128,6 +130,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
+			service:         "backend",
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsLocation: "kuma-control-plane:5677",
@@ -170,7 +173,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                   '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
                   commonTlsContext:
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert
+                    - name: dp:backend
                       sdsConfig:
                         apiConfigSource:
                           apiType: GRPC
@@ -188,7 +191,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                                   rootCerts:
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                              statPrefix: sds_identity_cert
+                              statPrefix: sds_dp_backend
                               targetUri: kuma-control-plane:5677
                     validationContextSdsSecretConfig:
                       name: mesh_ca

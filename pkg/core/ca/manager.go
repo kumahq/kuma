@@ -17,6 +17,8 @@ type Manager interface {
 	ValidateBackend(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error
 	// Ensure ensures that CA of given name is available
 	Ensure(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error
+	// UsedSecrets returns a list of secrets that are used by the manager
+	UsedSecrets(mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]string, error)
 
 	// GetRootCert returns root certificates of the CA
 	GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]Cert, error)
