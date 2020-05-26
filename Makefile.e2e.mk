@@ -319,7 +319,7 @@ deploy/kuma/minikube: ## Minikube: Deploy Kuma with no demo app
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
 
-deploy/example/minikube: #deploy/kuma/minikube ## Minikube: Deploy example setup
+deploy/example/minikube: deploy/kuma/minikube ## Minikube: Deploy example setup
 	kubectl apply -f tools/e2e/examples/minikube/kuma-demo/
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-demo deployment/demo-app
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo pods -l app=demo-app
@@ -477,5 +477,3 @@ undeploy/traffic-routing/minikube: ## Minikube: Undeploy example setup for Traff
 	@echo "Undeploying example setup for TrafficRoute ..."
 	@echo
 	kubectl delete -f tools/e2e/examples/minikube/kuma-routing/
-
-deploy/circuit-breaker/minikube:
