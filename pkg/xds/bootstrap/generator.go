@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"text/template"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
@@ -108,21 +107,18 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 }
 
 func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_mesh.DataplaneResource) error {
-	_, localhostNet, _ := net.ParseCIDR("127.0.0.0/8")
-	networkingAddress := net.ParseIP(dataplane.Spec.Networking.Address)
-	isNetworkingAddressLocal := localhostNet.Contains(networkingAddress)
+	// The admin port in kuma-dp is always bound to 127.0.0.1
+	isNetworkingAddressLocal := dataplane.Spec.Networking.Address == "127.0.0.1"
 
 	for _, inbound := range dataplane.Spec.Networking.Inbound {
-		inIP := net.ParseIP(inbound.Address)
-		isIPLocal := localhostNet.Contains(inIP) || isNetworkingAddressLocal
+		isIPLocal := (inbound.Address == "127.0.0.1") || isNetworkingAddressLocal
 		if isIPLocal && inbound.Port == adminPort {
 			return errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", adminPort)
 		}
 	}
 
 	for _, outbound := range dataplane.Spec.Networking.Outbound {
-		outIP := net.ParseIP(outbound.Address)
-		if localhostNet.Contains(outIP) && outbound.Port == adminPort {
+		if outbound.Address == "127.0.0.1" && outbound.Port == adminPort {
 			return errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", adminPort)
 		}
 	}
