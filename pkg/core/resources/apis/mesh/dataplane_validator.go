@@ -10,7 +10,11 @@ import (
 
 func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
-	err.Add(validateNetworking(d.Spec.GetNetworking()))
+	if d.Spec.GetNetworking().GetIngress() != nil {
+		err.Add(validateIngressNetworking(d.Spec.GetNetworking()))
+	} else {
+		err.Add(validateNetworking(d.Spec.GetNetworking()))
+	}
 	return err.OrNil()
 }
 
@@ -44,6 +48,22 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)
 		err.AddErrorAt(path.Field("outbound").Index(i), result)
+	}
+	return err
+}
+
+func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
+	var err validators.ValidationError
+	path := validators.RootedAt("networking")
+	if networking.Gateway != nil {
+		err.AddViolationAt(path, "gateway cannot be defined in the ingress mode")
+	}
+	if len(networking.GetOutbound()) != 0 {
+		err.AddViolationAt(path, "dataplane cannot have outbounds in the ingress mode")
+	}
+	for i, inbound := range networking.GetInbound() {
+		result := validateInbound(inbound, networking.Address)
+		err.AddErrorAt(path.Field("inbound").Index(i), result)
 	}
 	return err
 }

@@ -105,6 +105,14 @@ var _ = Describe("Dataplane", func() {
                 - port: 3333
                   service: redis`,
 		),
+		Entry("dataplane in ingress mode", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+                ingress: {}
+                address: 192.168.0.1`,
+		),
 	)
 
 	type testCase struct {
@@ -611,6 +619,36 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.inbound[0].tags["invalidTagValue"]
                   message: tag value must consist of alphanumeric characters, dots, dashes and underscores`,
+		}),
+		Entry("networking.ingress: outbound is not empty", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  ingress: {}
+                  address: 192.168.0.1
+                  outbound:
+                    - port: 3333
+                      service: redis`,
+			expected: `
+                violations:
+                - field: networking
+                  message: dataplane cannot have outbounds in the ingress mode`,
+		}),
+		Entry("networking.ingress: gateway defined", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  ingress: {}
+                  gateway: {}
+                  address: 192.168.0.1`,
+			expected: `
+                violations:
+                - field: networking
+                  message: gateway cannot be defined in the ingress mode`,
 		}),
 	)
 

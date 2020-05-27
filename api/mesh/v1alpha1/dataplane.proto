@@ -14,6 +14,15 @@ message Dataplane {
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {
 
+    // Ingress allows us to configure dataplane in the Ingress mode. In this
+    // mode, dataplane has only inbound interfaces (outbound and gateway
+    // prohibited). Every inbound interface matches with services that reside in
+    // that cluster.
+    message Ingress {}
+
+    // Ingress if not nil, dataplane will be work in the Ingress mode
+    Ingress ingress = 6;
+
     // Public IP on which the dataplane is accessible in the network.
     // Host names and DNS are not allowed.
     string address = 5;
