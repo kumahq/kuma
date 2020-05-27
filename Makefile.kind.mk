@@ -1,7 +1,7 @@
 
 KIND_KUBECONFIG_DIR ?= $(HOME)/.kube
-KIND_KUBECONFIG = $(KIND_KUBECONFIG_DIR)/kind-kuma-config
-KIND_CLUSTER_NAME = kuma
+KIND_KUBECONFIG ?= $(KIND_KUBECONFIG_DIR)/kind-kuma-config
+KIND_CLUSTER_NAME ?= kuma
 
 define KIND_EXAMPLE_DATAPLANE_MESH
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
@@ -48,19 +48,19 @@ kind/stop/all:
 
 .PHONY: kind/load/control-plane
 kind/load/control-plane: image/kuma-cp
-	@kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=kuma
+	@kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/kuma-dp
 kind/load/kuma-dp: image/kuma-dp
-	@kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=kuma
+	@kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/kuma-init
 kind/load/kuma-init: image/kuma-init
-	@kind load docker-image $(KUMA_INIT_DOCKER_IMAGE) --name=kuma
+	@kind load docker-image $(KUMA_INIT_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/kuma-prometheus-sd
 kind/load/kuma-prometheus-sd: image/kuma-prometheus-sd
-	@kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=kuma
+	@kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load
 kind/load: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd
