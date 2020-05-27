@@ -36,9 +36,9 @@ func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Data
 }
 
 // CreateUpstreamTlsContext creates UpstreamTlsContext for outgoing connections
-// It verifies that the client has TLS certificate signed by Mesh CA with URI SAN of spiffe://{mesh_name}/{upstream_service}
-// Server exposes for the the clients cert with multiple URI SANs, which means that if client DP has inbound with services "web" and "web-api" and communicates with "backend"
-// the client ("backend") will see that DP with TLS certificate of URIs of "web" and "web-api".
+// It verifies that the upstream server has TLS certificate signed by Mesh CA with URI SAN of spiffe://{mesh_name}/{upstream_service}
+// The downstream client exposes for the upstream server cert with multiple URI SANs, which means that if DP has inbound with services "web" and "web-api" and communicates with "backend"
+// the upstream server ("backend") will see that DP with TLS certificate of URIs of "web" and "web-api".
 // There is no way to correlate incoming request to "web" or "web-api" with outgoing request to "backend" to expose only one URI SAN.
 func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, upstreamService string) (*envoy_auth.UpstreamTlsContext, error) {
 	if !ctx.Mesh.Resource.MTLSEnabled() {
