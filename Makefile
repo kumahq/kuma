@@ -491,3 +491,4 @@ run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
 include Makefile.kind.mk
 include Makefile.dev.mk
 include Makefile.e2e.mk
+include Makefile.e2e.new.mk
