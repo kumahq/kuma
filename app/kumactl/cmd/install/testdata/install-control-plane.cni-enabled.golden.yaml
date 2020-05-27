@@ -4474,7 +4474,6 @@ webhooks:
           - traffictraces
           - healthchecks
           - proxytemplates
-          - dataplanes
   - name: kuma-injector.kuma.io
     namespaceSelector:
       matchLabels:
@@ -4517,6 +4516,7 @@ webhooks:
         operations:
           - CREATE
           - UPDATE
+          - DELETE
         resources:
           - faultinjections
           - trafficlogs
