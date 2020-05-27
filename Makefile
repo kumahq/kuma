@@ -34,7 +34,8 @@ GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(GOFLAGS) $
 GO_RUN := CGO_ENABLED=0 go run $(GOFLAGS) $(LD_FLAGS)
 GO_TEST := go test $(GOFLAGS) $(LD_FLAGS)
 
-BUILD_DIR ?= build
+TOP := $(shell pwd)
+BUILD_DIR ?= $(TOP)/build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
 
