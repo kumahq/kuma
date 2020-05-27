@@ -39,6 +39,10 @@ var _ = Describe("InboundProxyGenerator", func() {
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "default",
+						},
 						Spec: mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
