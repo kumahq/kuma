@@ -162,7 +162,10 @@ func (m *Dataplane_Networking) GetTransparentProxying() *Dataplane_Networking_Tr
 	return nil
 }
 
-// Ingress allows us to configure dataplane in the Ingress mode. In this mode, dataplane has only inbound interfaces (outbound and gateway prohibited). Every inbound interface matches with services that reside in that cluster.
+// Ingress allows us to configure dataplane in the Ingress mode. In this
+// mode, dataplane has only inbound interfaces (outbound and gateway
+// prohibited). Every inbound interface matches with services that reside in
+// that cluster.
 type Dataplane_Networking_Ingress struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
