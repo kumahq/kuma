@@ -1,10 +1,11 @@
-// +build kind
+// +build integration
 
 package cmd_test
 
 import (
-	"github.com/Kong/kuma/tools/test/framework"
 	"testing"
+
+	"github.com/Kong/kuma/tools/test/framework"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,4 +20,5 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 
 	t := framework.NewK8sTest(1, "")
 	t.DeployKumaOnK8sCluster(1)
+
 })

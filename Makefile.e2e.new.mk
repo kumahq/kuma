@@ -24,5 +24,5 @@ $(foreach cluster, $(CLUSTERS), $(eval $(call gen-clusters,$(cluster))))
 test/kind/integration: ${COVERAGE_INTEGRATION_PROFILE} images
 	make $(CLUSTER_TARGETS)
 	KUMACTL=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
-		go test -tags=kind $(GOFLAGS) $(LD_FLAGS) -v -run 'Integration' ./... || true
+		go test -tags=integration $(GOFLAGS) $(LD_FLAGS) -v -run 'Integration' ./... || true
 	make kind/stop/all

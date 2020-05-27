@@ -1,12 +1,13 @@
 package framework
 
 import (
-	"github.com/gruntwork-io/terratest/modules/shell"
-	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/url"
 	"os"
+
+	"github.com/gruntwork-io/terratest/modules/shell"
+	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/stretchr/testify/require"
 )
 
 func RunKumactl(t testing.TestingT, options *KumactlOptions, args ...string) {
@@ -79,7 +80,7 @@ func StoreConfigToTempFileE(t testing.TestingT, configData string) (string, erro
 }
 
 func KumactlInstallCP(t testing.TestingT, options *KumactlOptions) string {
-	output, err:= KumactlInstallCPE(t, options)
+	output, err := KumactlInstallCPE(t, options)
 	require.NoError(t, err)
 	return output
 }
@@ -89,7 +90,7 @@ func KumactlInstallCPE(t testing.TestingT, options *KumactlOptions) (string, err
 }
 
 func KumactlInstallMetrics(t testing.TestingT, options *KumactlOptions) string {
-	output, err:= KumactlInstallMetricsE(t, options)
+	output, err := KumactlInstallMetricsE(t, options)
 	require.NoError(t, err)
 	return output
 }
@@ -99,7 +100,7 @@ func KumactlInstallMetricsE(t testing.TestingT, options *KumactlOptions) (string
 }
 
 func KumactlInstallTracing(t testing.TestingT, options *KumactlOptions) string {
-	output, err:= KumactlInstallTracingE(t, options)
+	output, err := KumactlInstallTracingE(t, options)
 	require.NoError(t, err)
 	return output
 }

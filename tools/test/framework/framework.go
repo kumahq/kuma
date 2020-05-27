@@ -2,11 +2,12 @@ package framework
 
 import (
 	"fmt"
-	"github.com/prometheus/common/log"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/prometheus/common/log"
+	"github.com/stretchr/testify/require"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 )
@@ -14,25 +15,25 @@ import (
 type TestFramework struct {
 	testing.T
 	k8sclusters []string
-	kumactl string
+	kumactl     string
 }
 
-const defaultKubeconfigPattern = "${HOME}/.kube/kind-kuma-%d-config"
+const defaultKubeConfigPathPattern = "${HOME}/.kube/kind-kuma-%d-config"
 
 // NewK8sTest gets the number of the clusters to use in the tests, and the pattern
 // to locate the KUBECONFIG for them. The second argument can be empty
-func NewK8sTest(numClusters int, pattern string) *TestFramework {
+func NewK8sTest(numClusters int, kubeConfigPathPattern string) *TestFramework {
 	if numClusters < 1 || numClusters > 3 {
 		log.Error("Invalid cluster number. Should be in the range [1,3], but it is ", numClusters)
 		return nil
 	}
-	if pattern == "" {
-		pattern = defaultKubeconfigPattern
+	if kubeConfigPathPattern == "" {
+		kubeConfigPathPattern = defaultKubeConfigPathPattern
 	}
 	kubeconfigs := []string{""} // have an empty cluster at [0]
 	for i := 1; i <= numClusters; i++ {
 		kubeconfigs = append(kubeconfigs,
-			os.ExpandEnv(fmt.Sprintf(pattern, i)))
+			os.ExpandEnv(fmt.Sprintf(kubeConfigPathPattern, i)))
 	}
 
 	kumactl := os.Getenv("KUMACTL")
@@ -42,7 +43,7 @@ func NewK8sTest(numClusters int, pattern string) *TestFramework {
 
 	return &TestFramework{
 		k8sclusters: kubeconfigs,
-		kumactl: kumactl,
+		kumactl:     kumactl,
 	}
 }
 
@@ -66,7 +67,6 @@ func (t *TestFramework) DeployKumaOnK8sCluster(idx int) {
 }
 
 func (t *TestFramework) DeployKumaOnK8sClusterE(idx int) error {
-
 	err := k8s.KubectlApplyFromStringE(t,
 		&k8s.KubectlOptions{
 			ConfigPath: t.k8sclusters[idx],
