@@ -4124,6 +4124,12 @@ rules:
     verbs:
       - "*"
   - apiGroups:
+      - kuma.io
+    resources:
+      - dataplanes/finalizers
+    verbs:
+      - '*'
+  - apiGroups:
       - k8s.cni.cncf.io
     resources:
       - network-attachment-definitions

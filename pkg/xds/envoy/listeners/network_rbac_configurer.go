@@ -8,12 +8,12 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
-	envoy_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	"github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 func NetworkRBAC(statsName string, rbacEnabled bool, permission *mesh_core.TrafficPermissionResource) FilterChainBuilderOpt {
@@ -88,11 +88,7 @@ func createPolicy(permission *mesh_core.TrafficPermissionResource) *rbac_config.
 		} else {
 			principal.Identifier = &rbac_config.Principal_Authenticated_{
 				Authenticated: &rbac_config.Principal_Authenticated{
-					PrincipalName: &envoy_matcher.StringMatcher{
-						MatchPattern: &envoy_matcher.StringMatcher_Exact{
-							Exact: fmt.Sprintf("spiffe://%s/%s", permission.Meta.GetMesh(), service),
-						},
-					},
+					PrincipalName: envoy.ServiceSpiffeIDMatcher(permission.Meta.GetMesh(), service),
 				},
 			}
 		}

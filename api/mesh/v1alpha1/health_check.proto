@@ -45,26 +45,8 @@ message HealthCheck {
       uint32 healthy_threshold = 4 [ (validate.rules).uint32 = {gt : 0} ];
     }
 
-    // Passive defines configuration for passive health checking.
-    message Passive {
-      // Number of consecutive failed requests before considering a host
-      // unhealthy.
-      uint32 unhealthy_threshold = 1 [ (validate.rules).uint32 = {gt : 0} ];
-
-      // Interval a host should be considred unhealthy after reaching unhealthy
-      // threshold.
-      google.protobuf.Duration penalty_interval = 2
-          [ (validate.rules).duration = {
-            required : true,
-            gt {}
-          } ];
-    }
-
     // Configuration for active health checking.
     Active active_checks = 1;
-
-    // Configuration for passive health checking.
-    Passive passive_checks = 2;
   }
 
   // Configuration for various types of health checking.

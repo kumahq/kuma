@@ -173,16 +173,6 @@ func (m *HealthCheck_Conf) Validate() error {
 		}
 	}
 
-	if v, ok := interface{}(m.GetPassiveChecks()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return HealthCheck_ConfValidationError{
-				field:  "PassiveChecks",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	return nil
 }
 

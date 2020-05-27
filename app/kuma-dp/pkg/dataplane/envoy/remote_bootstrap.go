@@ -48,9 +48,16 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Messag
 		return nil, errors.Wrap(err, "request to bootstrap server failed")
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		if resp.StatusCode == 404 {
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
 			return nil, errors.New("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection.")
+		}
+		if resp.StatusCode == http.StatusUnprocessableEntity {
+			bodyBytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return nil, errors.Errorf("Unable to read the response with status code: %d", resp.StatusCode)
+			}
+			return nil, errors.Errorf("Error: %s", string(bodyBytes))
 		}
 		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
 	}

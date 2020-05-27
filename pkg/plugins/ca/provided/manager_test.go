@@ -207,7 +207,7 @@ var _ = Describe("Provided CA", func() {
 	Context("GenerateDataplaneCert", func() {
 		It("should generate dataplane cert", func() {
 			// when
-			pair, err := caManager.GenerateDataplaneCert(context.Background(), "default", backendWithTestCerts, "web")
+			pair, err := caManager.GenerateDataplaneCert(context.Background(), "default", backendWithTestCerts, []string{"web", "web-api"})
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -218,14 +218,15 @@ var _ = Describe("Provided CA", func() {
 			block, _ := pem.Decode(pair.CertPEM)
 			cert, err := x509.ParseCertificate(block.Bytes)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cert.URIs).To(HaveLen(1))
+			Expect(cert.URIs).To(HaveLen(2))
 			Expect(cert.URIs[0].String()).To(Equal("spiffe://default/web"))
+			Expect(cert.URIs[1].String()).To(Equal("spiffe://default/web-api"))
 			Expect(cert.NotAfter).To(Equal(now.UTC().Truncate(time.Second).Add(1 * time.Second))) // time in cert is in UTC and truncated to seconds
 		})
 
 		It("should throw an error on invalid certs", func() {
 			// when
-			_, err := caManager.GenerateDataplaneCert(context.Background(), "default", backendWithInvalidCerts, "web")
+			_, err := caManager.GenerateDataplaneCert(context.Background(), "default", backendWithInvalidCerts, []string{"web"})
 
 			// then
 			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "default" and backend "provided-2": could not load data: open testdata/invalid.key: no such file or directory`))

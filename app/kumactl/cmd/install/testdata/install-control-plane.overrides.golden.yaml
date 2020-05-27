@@ -4093,6 +4093,12 @@ rules:
       - meshes/finalizers
     verbs:
       - "*"
+  - apiGroups:
+      - kuma.io
+    resources:
+      - dataplanes/finalizers
+    verbs:
+      - '*'
   # validate k8s token before issueing mTLS cert
   - apiGroups:
       - authentication.k8s.io
