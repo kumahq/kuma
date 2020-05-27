@@ -6,14 +6,15 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"net/url"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core"
-
 	"github.com/pkg/errors"
+	"github.com/spiffe/go-spiffe/spiffe"
 	"github.com/spiffe/spire/pkg/common/x509util"
 
+	"github.com/Kong/kuma/pkg/core"
 	util_tls "github.com/Kong/kuma/pkg/tls"
 )
 
@@ -32,7 +33,7 @@ func WithExpirationTime(expiration time.Duration) CertOptsFn {
 	}
 }
 
-func NewWorkloadCert(ca util_tls.KeyPair, mesh string, workload string, certOpts ...CertOptsFn) (*util_tls.KeyPair, error) {
+func NewWorkloadCert(ca util_tls.KeyPair, mesh string, services []string, certOpts ...CertOptsFn) (*util_tls.KeyPair, error) {
 	caPrivateKey, caCert, err := loadKeyPair(ca)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load CA key pair")
@@ -42,39 +43,54 @@ func NewWorkloadCert(ca util_tls.KeyPair, mesh string, workload string, certOpts
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate a private key")
 	}
-	workloadCert, err := newWorkloadCert(caPrivateKey, caCert, mesh, workload, workloadKey.Public(), certOpts...)
+	template, err := newWorkloadTemplate(mesh, services, workloadKey.Public(), certOpts...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate X509 certificate template")
+	}
+	workloadCert, err := x509.CreateCertificate(rand.Reader, template, caCert, workloadKey.Public(), caPrivateKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate X509 certificate")
 	}
 	return util_tls.ToKeyPair(workloadKey, workloadCert)
 }
 
-func newWorkloadCert(signer crypto.PrivateKey, parent *x509.Certificate, trustDomain string, workload string, publicKey crypto.PublicKey, certOpts ...CertOptsFn) ([]byte, error) {
-	spiffeID := &url.URL{
-		Scheme: "spiffe",
-		Host:   trustDomain,
-		Path:   workload,
+func newWorkloadTemplate(trustDomain string, services []string, publicKey crypto.PublicKey, certOpts ...CertOptsFn) (*x509.Certificate, error) {
+	var uris []*url.URL
+	for _, service := range services {
+		uri, err := spiffe.ParseID(fmt.Sprintf("spiffe://%s/%s", trustDomain, service), spiffe.AllowTrustDomainWorkload(trustDomain))
+		if err != nil {
+			return nil, err
+		}
+		uris = append(uris, uri)
 	}
 
 	now := time.Now()
-	notBefore := now.Add(-DefaultAllowedClockSkew)
-	notAfter := now.Add(DefaultWorkloadCertValidityPeriod)
-
 	serialNumber, err := x509util.NewSerialNumber()
 	if err != nil {
 		return nil, err
 	}
 
-	template, err := NewWorkloadTemplate(spiffeID.String(), trustDomain, publicKey, notBefore, notAfter, serialNumber)
-	if err != nil {
-		return nil, err
+	template := &x509.Certificate{
+		SerialNumber: serialNumber,
+		// Subject is deliberately left empty
+		URIs:      uris,
+		NotBefore: now.Add(-DefaultAllowedClockSkew),
+		NotAfter:  now.Add(DefaultWorkloadCertValidityPeriod),
+		KeyUsage: x509.KeyUsageKeyEncipherment |
+			x509.KeyUsageKeyAgreement |
+			x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{
+			x509.ExtKeyUsageServerAuth,
+			x509.ExtKeyUsageClientAuth,
+		},
+		BasicConstraintsValid: true,
+		PublicKey:             publicKey,
 	}
 
 	for _, opt := range certOpts {
 		opt(template)
 	}
-
-	return x509.CreateCertificate(rand.Reader, template, parent, publicKey, signer)
+	return template, nil
 }
 
 func loadKeyPair(pair util_tls.KeyPair) (crypto.PrivateKey, *x509.Certificate, error) {
