@@ -6,13 +6,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
-	"github.com/gruntwork-io/terratest/modules/logger"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -27,23 +27,15 @@ import (
 
 type TestFramework struct {
 	testing.T
-	//require.TestingT
 	k8sclusters []string
 	kumactl     string
 	verbose     bool
 }
 
-const (
-	Verbose = true
-	Silent  = false
-)
-
-const defaultKubeConfigPathPattern = "${HOME}/.kube/kind-kuma-%d-config"
-
 // NewK8sTest gets the number of the clusters to use in the tests, and the pattern
 // to locate the KUBECONFIG for them. The second argument can be empty
 func NewK8sTest(numClusters int, kubeConfigPathPattern string, verbose bool) *TestFramework {
-	if numClusters < 1 || numClusters > 3 {
+	if numClusters < 1 || numClusters > maxClusters {
 		log.Error("Invalid cluster number. Should be in the range [1,3], but it is ", numClusters)
 		return nil
 	}
@@ -56,7 +48,7 @@ func NewK8sTest(numClusters int, kubeConfigPathPattern string, verbose bool) *Te
 			os.ExpandEnv(fmt.Sprintf(kubeConfigPathPattern, i)))
 	}
 
-	kumactl := os.Getenv("KUMACTL")
+	kumactl := os.Getenv(envKUMACTL)
 	if kumactl == "" {
 		log.Error("Unable to find kumactl, please supply valid KUMACTL environment variable.")
 		return nil
@@ -80,7 +72,7 @@ func (t *TestFramework) ApplyAndWaitServiceOnK8sCluster(idx int, namespace strin
 	options := k8s.NewKubectlOptions("", "", namespace)
 	defer k8s.KubectlDelete(t, options, t.k8sclusters[idx])
 	k8s.KubectlApply(t, options, yaml)
-	k8s.WaitUntilServiceAvailable(t, options, service, 10, 1*time.Second)
+	k8s.WaitUntilServiceAvailable(t, options, service, defaultRetries, defaultTiemout)
 	return nil
 }
 
@@ -103,26 +95,26 @@ func (t *TestFramework) DeployKumaOnK8sClusterE(idx int) error {
 	k8s.WaitUntilServiceAvailable(t,
 		&k8s.KubectlOptions{
 			ConfigPath: t.k8sclusters[idx],
-			Namespace:  "kuma-system",
+			Namespace:  kumaNamespace,
 		},
-		"kuma-control-plane", 10, 3*time.Second)
+		kumaServiceName, defaultRetries, defaultTiemout)
 
 	k8s.WaitUntilNumPodsCreated(t,
 		&k8s.KubectlOptions{
 			ConfigPath: t.k8sclusters[idx],
-			Namespace:  "kuma-system",
+			Namespace:  kumaNamespace,
 		},
 		metav1.ListOptions{
-			LabelSelector: "app=kuma-control-plane",
+			LabelSelector: "app=" + kumaServiceName,
 		},
-		1, 10, 3*time.Second)
+		1, defaultRetries, defaultTiemout)
 
 	kumacp_pods := k8s.ListPods(t, &k8s.KubectlOptions{
 		ConfigPath: t.k8sclusters[idx],
-		Namespace:  "kuma-system",
+		Namespace:  kumaNamespace,
 	},
 		metav1.ListOptions{
-			LabelSelector: "app=kuma-control-plane",
+			LabelSelector: "app=" + kumaServiceName,
 		},
 	)
 
@@ -131,13 +123,12 @@ func (t *TestFramework) DeployKumaOnK8sClusterE(idx int) error {
 	k8s.WaitUntilPodAvailable(t,
 		&k8s.KubectlOptions{
 			ConfigPath: t.k8sclusters[idx],
-			Namespace:  "kuma-system",
+			Namespace:  kumaNamespace,
 		},
 		kumacp_pods[0].Name,
 		10, 3*time.Second)
 
-	logger.Logf(t, ">>>>> Pod %s is ready", kumacp_pods[0].Name)
-	t.PortForwardServiceOnK8sCluster(idx, "kuma-system", "kuma-control-plane", 5681)
+	t.PortForwardServiceOnK8sCluster(idx, kumaNamespace, kumaServiceName, 5681)
 
 	return nil
 }
@@ -166,15 +157,13 @@ func (t *TestFramework) DeleteKumaNamespaceOnK8sClusterE(idx int) error {
 	return k8s.DeleteNamespaceE(t,
 		&k8s.KubectlOptions{
 			ConfigPath: t.k8sclusters[idx],
-		}, "kuma-system")
+		}, kumaNamespace)
 }
 
 func (t *TestFramework) PortForwardServiceOnK8sCluster(idx int, namespace string, service string, port int) {
 	options := k8s.NewKubectlOptions("", t.k8sclusters[idx], namespace)
 	go func() {
-		logger.Logf(t, "Port forward to %s %d started", service, port)
 		_ = k8s.RunKubectlE(t, options, "port-forward", "service/"+service, strconv.Itoa(port))
-		logger.Logf(t, "Port forward to %s %d terminated", service, port)
 	}()
 }
 
@@ -187,10 +176,10 @@ func (t *TestFramework) VerifyKumaOnK8sClusterE(idx int) error {
 		t,
 		"http://localhost:5681",
 		&tls.Config{},
-		5,
-		3*time.Second,
+		defaultRetries/2,
+		defaultTiemout,
 		func(statusCode int, body string) bool {
-			return statusCode == 200
+			return statusCode == http.StatusOK
 		},
 	)
 }
