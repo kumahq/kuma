@@ -30,9 +30,11 @@ test/integration/kind/stop: $(CLUSTERS_STOP_TARGETS)
 .PHONY: test/integration/test
 test/integration/test:
 	KUMACTL=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
-		$(GO_TEST) -tags=k8s,integration -v -run "Integration" -timeout=10m ./...
+		$(GO_TEST) -tags=k8s,integration -v -run "Integration" -timeout=30m ./...
 
 .PHONY: test/integration
 test/integration: vet ${COVERAGE_INTEGRATION_PROFILE} build/kumactl test/integration/kind/start
-	make test/integration/test || true
-	make test/integration/kind/stop
+	make test/integration/test || \
+	(ret=$$?; \
+	make test/integration/kind/stop && \
+	exit $$ret)
