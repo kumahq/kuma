@@ -262,12 +262,12 @@ test/kuma: # Dev: Run tests for the module github.com/Kong/kuma
 
 test/api: \
 	MODULE=./api \
-	COVERAGE_PROFILE=../$(BUILD_COVERAGE_DIR)/coverage-api.out
+	COVERAGE_PROFILE=$(BUILD_COVERAGE_DIR)/coverage-api.out
 test/api: test/module
 
 test/k8s: \
 	MODULE=./pkg/plugins/resources/k8s/native \
-	COVERAGE_PROFILE=../../../../../$(BUILD_COVERAGE_DIR)/coverage-k8s.out
+	COVERAGE_PROFILE=$(BUILD_COVERAGE_DIR)/coverage-k8s.out
 test/k8s: test/module
 
 test/module:
