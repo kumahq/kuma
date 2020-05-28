@@ -372,7 +372,8 @@ jobs:
     # Mount files from the upstream jobs
     - attach_workspace:
         at: build
-    - setup_remote_docker
+    - setup_remote_docker:
+        version: 19.03.8
     - run:
         name: Build Docker images
         command: make docker/build
@@ -506,7 +507,8 @@ jobs:
     executor: golang
     steps:
     - checkout
-    - setup_remote_docker
+    - setup_remote_docker:
+        version: 19.03.8
     - restore_cache:
         keys:
         # prefer the exact match
@@ -518,7 +520,7 @@ jobs:
     - run:
         name: "Install Docker client"
         command: |
-          VER="17.03.0-ce"
+          VER="19.03.8"
           curl -L -o /tmp/docker-$VER.tgz https://download.docker.com/linux/static/stable/x86_64/docker-$VER.tgz
           tar -xz -C /tmp -f /tmp/docker-$VER.tgz
           mv /tmp/docker/docker /usr/bin
