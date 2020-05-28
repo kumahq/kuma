@@ -10,7 +10,7 @@ type KumactlOptions struct {
 // NewKumactlOptions will return a pointer to new instance of KumactlOptions with the configured options
 func NewKumactlOptions(contextName string, configPath string, silent bool) *KumactlOptions {
 	if configPath == "" {
-		configPath = "~/.kumactl/config"
+		configPath = os.ExpandEnv("${HOME}/.kumactl/config")
 	}
 	return &KumactlOptions{
 		ContextName: contextName,
