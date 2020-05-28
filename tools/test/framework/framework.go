@@ -5,17 +5,18 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
-	"github.com/gruntwork-io/terratest/modules/logger"
 	"io"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
+	"github.com/gruntwork-io/terratest/modules/logger"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/prometheus/common/log"
 	"github.com/stretchr/testify/require"
@@ -194,7 +195,7 @@ func (t *TestFramework) VerifyKumaOnK8sClusterE(idx int) error {
 	)
 }
 
-func (t *TestFramework) getPodLogs(pod v1.Pod) string {
+func (t *TestFramework) GetPodLogs(pod v1.Pod) string {
 	podLogOpts := v1.PodLogOptions{}
 	config, err := rest.InClusterConfig()
 	if err != nil {

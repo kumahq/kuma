@@ -1,10 +1,11 @@
 package framework
 
 import (
-	"github.com/gruntwork-io/terratest/modules/logger"
 	"io/ioutil"
 	"net/url"
 	"os"
+
+	"github.com/gruntwork-io/terratest/modules/logger"
 
 	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -31,7 +32,7 @@ func RunKumactlAndGetOutputE(t testing.TestingT, options *KumactlOptions, args .
 		Args:    cmdArgs,
 	}
 
-	if options.Verbose == false {
+	if !options.Verbose {
 		command.Logger = logger.Discard
 	}
 	return shell.RunCommandAndGetOutputE(t, command)

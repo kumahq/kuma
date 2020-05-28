@@ -23,6 +23,5 @@ func NewKumactlOptions(contextName string, configPath string, verbose bool) *Kum
 
 // GetConfigPath will return a sensible default if the config path is not set on the options.
 func (kumactlOptions *KumactlOptions) GetConfigPath() (string, error) {
-
 	return kumactlOptions.ConfigPath, nil
 }

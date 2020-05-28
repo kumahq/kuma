@@ -3,8 +3,9 @@
 package cmd_test
 
 import (
-	"github.com/Kong/kuma/tools/test/framework"
 	"testing"
+
+	"github.com/Kong/kuma/tools/test/framework"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
