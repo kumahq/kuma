@@ -91,7 +91,11 @@ func KumactlInstallCP(t testing.TestingT, options *KumactlOptions) string {
 }
 
 func KumactlInstallCPE(t testing.TestingT, options *KumactlOptions) (string, error) {
-	return RunKumactlAndGetOutputE(t, options, "install", "control-plane")
+	return RunKumactlAndGetOutputE(t, options,
+		"install", "control-plane",
+		"--control-plane-image", "kuma/kuma-cp",
+		"--dataplane-image", "kuma/kuma-dp",
+		"--dataplane-init-image", "kuma/kuma-init")
 }
 
 func KumactlInstallMetrics(t testing.TestingT, options *KumactlOptions) string {
