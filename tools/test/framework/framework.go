@@ -67,11 +67,13 @@ func (t *TestFramework) DeployKumaOnK8sCluster(idx int) {
 }
 
 func (t *TestFramework) DeployKumaOnK8sClusterE(idx int) error {
+	options := NewKumactlOptions("","", true)
+
 	err := k8s.KubectlApplyFromStringE(t,
 		&k8s.KubectlOptions{
 			ConfigPath: t.k8sclusters[idx],
 		},
-		KumactlInstallCP(t, &KumactlOptions{}))
+		KumactlInstallCP(t, options))
 	if err != nil {
 		return err
 	}
