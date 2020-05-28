@@ -31,7 +31,7 @@ func RunKumactlAndGetOutputE(t testing.TestingT, options *KumactlOptions, args .
 		Args:    cmdArgs,
 	}
 
-	if options.Silent {
+	if options.Verbose == false {
 		command.Logger = logger.Discard
 	}
 	return shell.RunCommandAndGetOutputE(t, command)

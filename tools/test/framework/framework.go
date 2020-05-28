@@ -16,13 +16,19 @@ type TestFramework struct {
 	testing.T
 	k8sclusters []string
 	kumactl     string
+	verbose     bool
 }
+
+const (
+	Verbose = true
+	Silent  = false
+)
 
 const defaultKubeConfigPathPattern = "${HOME}/.kube/kind-kuma-%d-config"
 
 // NewK8sTest gets the number of the clusters to use in the tests, and the pattern
 // to locate the KUBECONFIG for them. The second argument can be empty
-func NewK8sTest(numClusters int, kubeConfigPathPattern string) *TestFramework {
+func NewK8sTest(numClusters int, kubeConfigPathPattern string, verbose bool) *TestFramework {
 	if numClusters < 1 || numClusters > 3 {
 		log.Error("Invalid cluster number. Should be in the range [1,3], but it is ", numClusters)
 		return nil
@@ -44,6 +50,7 @@ func NewK8sTest(numClusters int, kubeConfigPathPattern string) *TestFramework {
 	return &TestFramework{
 		k8sclusters: kubeconfigs,
 		kumactl:     kumactl,
+		verbose:     verbose,
 	}
 }
 
@@ -67,7 +74,7 @@ func (t *TestFramework) DeployKumaOnK8sCluster(idx int) {
 }
 
 func (t *TestFramework) DeployKumaOnK8sClusterE(idx int) error {
-	options := NewKumactlOptions("","", true)
+	options := NewKumactlOptions("", "", t.verbose)
 
 	err := k8s.KubectlApplyFromStringE(t,
 		&k8s.KubectlOptions{
