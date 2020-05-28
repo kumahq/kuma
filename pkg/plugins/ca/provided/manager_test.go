@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/protobuf/ptypes/duration"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -151,9 +150,7 @@ var _ = Describe("Provided CA", func() {
 			Conf: &str,
 			DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
 				Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
-					Expiration: &duration.Duration{
-						Seconds: 1,
-					},
+					Expiration: "1s",
 				},
 			},
 		}

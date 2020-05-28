@@ -4,7 +4,6 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "v1alpha1";
 
-import "google/protobuf/duration.proto";
 import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/struct.proto";
@@ -58,7 +57,7 @@ message CertificateAuthorityBackend {
     // Rotation defines rotation settings for Dataplane certificate
     message Rotation {
       // Time after which generated certificate for Dataplane will expire
-      google.protobuf.Duration expiration = 1;
+      string expiration = 1;
     }
     // Rotation settings
     Rotation rotation = 1;

@@ -3,6 +3,7 @@ package builtin
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
@@ -68,9 +69,12 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh
 	}
 
 	var opts []certOptsFn
-	if cfg.GetCaCert().GetExpiration() != nil {
-		util_proto.ToDuration(*cfg.GetCaCert().GetExpiration())
-		opts = append(opts, withExpirationTime(util_proto.ToDuration(*cfg.GetCaCert().GetExpiration())))
+	if cfg.GetCaCert().GetExpiration() != "" {
+		duration, err := time.ParseDuration(cfg.GetCaCert().GetExpiration())
+		if err != nil {
+			return err
+		}
+		opts = append(opts, withExpirationTime(duration))
 	}
 	keyPair, err := newRootCa(mesh, int(cfg.GetCaCert().GetRSAbits().GetValue()), opts...)
 	if err != nil {
@@ -130,8 +134,11 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 	}
 
 	var opts []ca_issuer.CertOptsFn
-	if backend.GetDpCert().GetRotation().GetExpiration() != nil {
-		duration := util_proto.ToDuration(*backend.GetDpCert().GetRotation().Expiration)
+	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
+		duration, err := time.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		if err != nil {
+			return core_ca.KeyPair{}, err
+		}
 		opts = append(opts, ca_issuer.WithExpirationTime(duration))
 	}
 	keyPair, err := ca_issuer.NewWorkloadCert(ca, mesh, services, opts...)
