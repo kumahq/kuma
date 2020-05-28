@@ -286,7 +286,7 @@ ${COVERAGE_INTEGRATION_PROFILE}:
 	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
 
 integration: ${COVERAGE_INTEGRATION_PROFILE} ## Dev: Run integration tests
-	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
+	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=compose,integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
 	GOFLAGS='${GOFLAGS}' go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
 build: build/kuma-cp build/kuma-dp build/kumactl build/kuma-prometheus-sd ## Dev: Build all binaries
