@@ -296,6 +296,11 @@ jobs:
 
   integration:
     executor: vm
+    parameters:
+      target:
+        description: The integration make target.
+        type: string
+        default: integration
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
@@ -333,7 +338,7 @@ jobs:
         name: "Run integration tests"
         command: | 
           export PATH=$HOME/go/bin:$PATH
-          make integration
+          make << parameters.target >>
     - store_artifacts:
         path: build/coverage
         destination: /coverage
@@ -563,6 +568,13 @@ workflows:
         requires:
         - api_check
         - check
+    - integration:
+        name: test/integration
+        requires:
+          - api_check
+          - check
+        # custom parameters
+        target: test/integration
     - images:
         requires:
         - build
