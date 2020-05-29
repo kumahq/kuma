@@ -1,19 +1,19 @@
 
 CLUSTERS = 1
-CLUSTERS_START_TARGETS  = $(addprefix test/kind/start/cluster/, $(CLUSTERS))
-CLUSTERS_STOP_TARGETS  = $(addprefix test/kind/stop/cluster/, $(CLUSTERS))
+CLUSTERS_START_TARGETS = $(addprefix test/integration/kind/start/cluster/, $(CLUSTERS))
+CLUSTERS_STOP_TARGETS  = $(addprefix test/integration/kind/stop/cluster/, $(CLUSTERS))
 
 define gen-clusters
-.PHONY: test/kind/start/cluster/$1
-test/kind/start/cluster/$1:
+.PHONY: test/integration/kind/start/cluster/$1
+test/integration/kind/start/cluster/$1:
 	KIND_CLUSTER_NAME=kuma-$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-kuma-$1-config \
 		make kind/start
 	KIND_CLUSTER_NAME=kuma-$1 \
 		make kind/load
 
-.PHONY: test/kind/stop/cluster/$1
-test/kind/stop/cluster/$1:
+.PHONY: test/integration/kind/stop/cluster/$1
+test/integration/kind/stop/cluster/$1:
 	KIND_CLUSTER_NAME=kuma-$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-kuma-$1-config \
 		make kind/stop
