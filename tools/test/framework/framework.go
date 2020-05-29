@@ -128,7 +128,7 @@ func (t *TestFramework) DeployKumaOnK8sClusterE(idx int) error {
 		kumacp_pods[0].Name,
 		10, 3*time.Second)
 
-	t.PortForwardServiceOnK8sCluster(idx, kumaNamespace, kumaServiceName, 5681)
+	t.PortForwardServiceOnK8sCluster(idx, kumaNamespace, kumaServiceName, 5681, 5681)
 
 	return nil
 }
@@ -160,18 +160,19 @@ func (t *TestFramework) DeleteKumaNamespaceOnK8sClusterE(idx int) error {
 		}, kumaNamespace)
 }
 
-func (t *TestFramework) PortForwardServiceOnK8sCluster(idx int, namespace string, service string, port int) {
+func (t *TestFramework) PortForwardServiceOnK8sCluster(idx int, namespace string, service string, localPort, remotePort int) {
 	options := k8s.NewKubectlOptions("", t.k8sclusters[idx], namespace)
 	go func() {
-		_ = k8s.RunKubectlE(t, options, "port-forward", "service/"+service, strconv.Itoa(port))
+		_ = k8s.RunKubectlE(t, options, "port-forward", "service/"+service,
+			strconv.Itoa(localPort)+":"+strconv.Itoa(remotePort))
 	}()
 }
 
-func (t *TestFramework) VerifyKumaOnK8sCluster(idx int) {
-	require.NoError(t, t.VerifyKumaOnK8sClusterE(idx))
+func (t *TestFramework) VerifyKumaOnK8sCluster() {
+	require.NoError(t, t.VerifyKumaOnK8sClusterE())
 }
 
-func (t *TestFramework) VerifyKumaOnK8sClusterE(idx int) error {
+func (t *TestFramework) VerifyKumaOnK8sClusterE() error {
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		t,
 		"http://localhost:5681",

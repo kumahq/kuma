@@ -18,18 +18,21 @@ func TestIntegrationCmd(t *testing.T) {
 
 var _ = Describe("Test K8s deployment with `kumactl install control-plane`", func() {
 
-	It("Deploy on Single K8s cluster and verify the Kuma CP REST API is accessible", func() {
-		t := framework.NewK8sTest(1, "", framework.Silent)
+	It("Deploy on Single K8s cluster and verify the Kuma CP REST API is accessible", func(done Done) {
+		t := framework.NewK8sTest(1, "", framework.Verbose)
 
 		err := t.DeployKumaOnK8sClusterE(1)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = t.VerifyKumaOnK8sClusterE(1)
+		err = t.VerifyKumaOnK8sClusterE()
 		Expect(err).ToNot(HaveOccurred())
 
 		_ = t.DeleteKumaOnK8sClusterE(1)
 		_ = t.DeleteKumaNamespaceOnK8sClusterE(1)
-	}, 90)
+
+		// completed
+		close(done)
+	}, 180)
 
 	//It("Deploy on Two K8s clusters and verify the Kuma CP REST API is accessible", func() {
 	//	t := framework.NewK8sTest(2, "", framework.Silent)
