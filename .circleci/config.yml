@@ -570,13 +570,6 @@ workflows:
         requires:
         - api_check
         - check
-    - integration:
-        name: test/integration
-        requires:
-          - api_check
-          - check
-        # custom parameters
-        target: test/integration
     - images:
         requires:
         - build
@@ -628,6 +621,17 @@ workflows:
         # custom parameters
         kubernetes_version: v1.18.2
         use_local_kuma_images: true
+    - integration:
+        name: test/e2e
+        requires:
+          - minikube_v1_13_0
+          - minikube_v1_14_0
+          - minikube_v1_15_0
+          - minikube_v1_16_0
+          - minikube_v1_17_0
+          - minikube_v1_18_2
+        # custom parameters
+        target: test/e2e
 
   kuma-release:
     jobs:

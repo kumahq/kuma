@@ -1,20 +1,11 @@
-// +build k8s,integration
-
-package cmd_test
+package e2e
 
 import (
-	"testing"
-
-	"github.com/Kong/kuma/tools/test/framework"
+	"github.com/Kong/kuma/test/framework"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
-
-func TestIntegrationCmd(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Integration CMD Suite")
-}
 
 var _ = Describe("Test K8s deployment with `kumactl install control-plane`", func() {
 
