@@ -80,6 +80,9 @@ func (r *IngressReconciler) generatePort() uint32 {
 func (r *IngressReconciler) generateInbounds(others []*core_mesh.DataplaneResource, old []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
 	inbounds := make([]*mesh_proto.Dataplane_Networking_Inbound, 0, len(others))
 	for _, dp := range others {
+		if dp.Spec.GetNetworking().GetIngress() != nil {
+			continue
+		}
 		for _, dpInbound := range dp.Spec.GetNetworking().GetInbound() {
 			if dup := inboundSet(inbounds).getBy(dpInbound.GetTags()); dup != nil {
 				continue
