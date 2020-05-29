@@ -29,8 +29,8 @@ import (
 type testApiServerClient struct {
 }
 
-func (c *testApiServerClient) GetVersion() (types.IndexResponse, error) {
-	return types.IndexResponse{
+func (c *testApiServerClient) GetVersion() (*types.IndexResponse, error) {
+	return &types.IndexResponse{
 		Version: "0.4.0",
 	}, nil
 }
@@ -64,7 +64,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 						},
 					}, nil
 				},
-				NewAPIServerClient: func(s string) (resources.ApiServerClient, error) {
+				NewAPIServerClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ApiServerClient, error) {
 					return testClient, nil
 				},
 			},
