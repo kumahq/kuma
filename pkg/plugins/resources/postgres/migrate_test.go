@@ -1,4 +1,4 @@
-// +build compose,integration
+// +build integration
 
 package postgres
 
