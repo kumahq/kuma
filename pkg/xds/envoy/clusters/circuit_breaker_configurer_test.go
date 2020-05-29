@@ -12,7 +12,7 @@ import (
 	"github.com/Kong/kuma/pkg/xds/envoy/clusters"
 )
 
-var _ = ginkgo.Describe("CircuitBreakerConfigurer", func() {
+var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {
 
 	type testCase struct {
 		clusterName    string
@@ -25,7 +25,7 @@ var _ = ginkgo.Describe("CircuitBreakerConfigurer", func() {
 			// when
 			cluster, err := clusters.NewClusterBuilder().
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.CircuitBreaker(given.circuitBreaker)).
+				Configure(clusters.OutlierDetection(given.circuitBreaker)).
 				Build()
 
 			// then

@@ -24,7 +24,7 @@ message CircuitBreaker {
     // base time multiplied by the number of times the host has been ejected
     google.protobuf.Duration baseEjectionTime = 2;
     // The maximum percent of an upstream cluster that can be ejected due to
-    // outlier detection, has to be in [0.0 - 100.0] range
+    // outlier detection, has to be in [0 - 100] range
     google.protobuf.UInt32Value maxEjectionPercent = 3;
     // Enables Split Mode in which local and external errors are distinguished
     bool splitExternalAndLocalErrors = 4;
@@ -64,7 +64,7 @@ message CircuitBreaker {
         // 'requestVolume' is less than 'minimumHosts'
         google.protobuf.UInt32Value minimumHosts = 2;
         // Eject host if failure percentage of a given host is greater than or
-        // equal to this value, has to be in [0.0 - 100.0] range
+        // equal to this value, has to be in [0 - 100] range
         google.protobuf.UInt32Value threshold = 3;
       }
       Failure failure = 5;

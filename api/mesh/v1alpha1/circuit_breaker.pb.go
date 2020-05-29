@@ -87,7 +87,7 @@ type CircuitBreaker_Conf struct {
 	// base time multiplied by the number of times the host has been ejected
 	BaseEjectionTime *duration.Duration `protobuf:"bytes,2,opt,name=baseEjectionTime,proto3" json:"baseEjectionTime,omitempty"`
 	// The maximum percent of an upstream cluster that can be ejected due to
-	// outlier detection, has to be in [0.0 - 100.0] range
+	// outlier detection, has to be in [0 - 100] range
 	MaxEjectionPercent *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=maxEjectionPercent,proto3" json:"maxEjectionPercent,omitempty"`
 	// Enables Split Mode in which local and external errors are distinguished
 	SplitExternalAndLocalErrors bool                           `protobuf:"varint,4,opt,name=splitExternalAndLocalErrors,proto3" json:"splitExternalAndLocalErrors,omitempty"`
@@ -348,7 +348,7 @@ type CircuitBreaker_Conf_Detectors_Failure struct {
 	// 'requestVolume' is less than 'minimumHosts'
 	MinimumHosts *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=minimumHosts,proto3" json:"minimumHosts,omitempty"`
 	// Eject host if failure percentage of a given host is greater than or
-	// equal to this value, has to be in [0.0 - 100.0] range
+	// equal to this value, has to be in [0 - 100] range
 	Threshold            *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=threshold,proto3" json:"threshold,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`

@@ -128,7 +128,7 @@ func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *mode
 		edsCluster, err := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.EdsCluster(cluster.Name)).
 			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata)).
-			Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
+			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 			Configure(envoy_clusters.HealthCheck(healthCheck)).
 			Build()
 		if err != nil {

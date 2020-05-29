@@ -8,19 +8,19 @@ import (
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 )
 
-func CircuitBreaker(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterBuilderOpt {
+func OutlierDetection(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.Add(&CircuitBreakerConfigurer{
+		config.Add(&OutlierDetectionConfigurer{
 			CircuitBreaker: circuitBreaker,
 		})
 	})
 }
 
-type CircuitBreakerConfigurer struct {
+type OutlierDetectionConfigurer struct {
 	CircuitBreaker *mesh_core.CircuitBreakerResource
 }
 
-func (c *CircuitBreakerConfigurer) Configure(cluster *envoy_api.Cluster) error {
+func (c *OutlierDetectionConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	if c.CircuitBreaker == nil {
 		return nil
 	}
@@ -39,7 +39,7 @@ func (c *CircuitBreakerConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	return nil
 }
 
-func (c *CircuitBreakerConfigurer) configureTotalErrorDetector(outlierDetection *envoy_cluster.OutlierDetection) {
+func (c *OutlierDetectionConfigurer) configureTotalErrorDetector(outlierDetection *envoy_cluster.OutlierDetection) {
 	if total := c.CircuitBreaker.Spec.GetConf().GetDetectors().GetTotalErrors(); total != nil {
 		outlierDetection.Consecutive_5Xx = total.GetConsecutive()
 		outlierDetection.EnforcingConsecutive_5Xx = &wrappers.UInt32Value{Value: 100}
@@ -48,7 +48,7 @@ func (c *CircuitBreakerConfigurer) configureTotalErrorDetector(outlierDetection 
 	}
 }
 
-func (c *CircuitBreakerConfigurer) configureGatewayErrorDetector(outlierDetection *envoy_cluster.OutlierDetection) {
+func (c *OutlierDetectionConfigurer) configureGatewayErrorDetector(outlierDetection *envoy_cluster.OutlierDetection) {
 	if gateway := c.CircuitBreaker.Spec.GetConf().GetDetectors().GetGatewayErrors(); gateway != nil {
 		outlierDetection.ConsecutiveGatewayFailure = gateway.GetConsecutive()
 		outlierDetection.EnforcingConsecutiveGatewayFailure = &wrappers.UInt32Value{Value: 100}
@@ -57,7 +57,7 @@ func (c *CircuitBreakerConfigurer) configureGatewayErrorDetector(outlierDetectio
 	}
 }
 
-func (c *CircuitBreakerConfigurer) configureLocalErrorDetector(outlierDetection *envoy_cluster.OutlierDetection) {
+func (c *OutlierDetectionConfigurer) configureLocalErrorDetector(outlierDetection *envoy_cluster.OutlierDetection) {
 	if local := c.CircuitBreaker.Spec.GetConf().GetDetectors().GetLocalErrors(); local != nil {
 		outlierDetection.ConsecutiveLocalOriginFailure = local.GetConsecutive()
 		outlierDetection.EnforcingConsecutiveLocalOriginFailure = &wrappers.UInt32Value{Value: 100}
@@ -66,7 +66,7 @@ func (c *CircuitBreakerConfigurer) configureLocalErrorDetector(outlierDetection 
 	}
 }
 
-func (c *CircuitBreakerConfigurer) configureStandardDeviationDetector(outlierDetection *envoy_cluster.OutlierDetection) {
+func (c *OutlierDetectionConfigurer) configureStandardDeviationDetector(outlierDetection *envoy_cluster.OutlierDetection) {
 	if stdev := c.CircuitBreaker.Spec.GetConf().GetDetectors().GetStandardDeviation(); stdev != nil {
 		outlierDetection.SuccessRateRequestVolume = stdev.GetRequestVolume()
 		outlierDetection.SuccessRateMinimumHosts = stdev.GetMinimumHosts()
@@ -80,7 +80,7 @@ func (c *CircuitBreakerConfigurer) configureStandardDeviationDetector(outlierDet
 	}
 }
 
-func (c *CircuitBreakerConfigurer) configureFailureDetector(outlierDetection *envoy_cluster.OutlierDetection) {
+func (c *OutlierDetectionConfigurer) configureFailureDetector(outlierDetection *envoy_cluster.OutlierDetection) {
 	if failure := c.CircuitBreaker.Spec.GetConf().GetDetectors().GetFailure(); failure != nil {
 		outlierDetection.FailurePercentageRequestVolume = failure.GetRequestVolume()
 		outlierDetection.FailurePercentageMinimumHosts = failure.GetMinimumHosts()
