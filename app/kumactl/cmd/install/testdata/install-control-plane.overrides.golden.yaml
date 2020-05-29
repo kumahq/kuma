@@ -4240,6 +4240,7 @@ spec:
               value: kuma-ci/kuma-init:greatest
           args:
             - run
+            - --mode=local
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:

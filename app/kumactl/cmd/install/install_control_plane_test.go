@@ -120,6 +120,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--dataplane-init-image", "kuma-ci/kuma-init",
 				"--sds-tls-cert", "SdsCert",
 				"--sds-tls-key", "SdsKey",
+				"--mode", "local",
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
 		}),

@@ -123,6 +123,7 @@ spec:
           value: {{ .DataplaneInitImage }}:{{ .ControlPlaneVersion }}
         args:
         - run
+        - --mode={{ .KumaCpMode }}
         - --log-level=info
         - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
         ports:
