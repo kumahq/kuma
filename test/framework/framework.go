@@ -48,7 +48,7 @@ func NewK8sTest(numClusters int, kubeConfigPathPattern string, verbose bool) *Te
 			os.ExpandEnv(fmt.Sprintf(kubeConfigPathPattern, i)))
 	}
 
-	kumactl := os.Getenv(envKUMACTL)
+	kumactl := os.Getenv(envKUMACTLBIN)
 	if kumactl == "" {
 		log.Error("Unable to find kumactl, please supply valid KUMACTL environment variable.")
 		return nil

@@ -29,7 +29,7 @@ test/e2e/kind/stop: $(CLUSTERS_STOP_TARGETS)
 
 .PHONY: test/e2e/test
 test/e2e/test:
-	KUMACTL=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
+	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 		$(GO_TEST) -v -timeout=30m ./test/e2e/...
 
 .PHONY: test/e2e

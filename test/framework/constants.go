@@ -8,7 +8,7 @@ const (
 
 	defaultKumactlConfig         = "${HOME}/.kumactl/config"
 	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-kuma-%d-config"
-	envKUMACTL                   = "KUMACTL"
+	envKUMACTLBIN                = "KUMACTLBIN"
 	maxClusters                  = 3
 	defaultRetries               = 10
 	defaultTiemout               = 3 * time.Second
