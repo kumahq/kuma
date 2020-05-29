@@ -3,6 +3,9 @@ package install
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s"
@@ -12,8 +15,6 @@ import (
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/tls"
 	kuma_version "github.com/Kong/kuma/pkg/version"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 var (

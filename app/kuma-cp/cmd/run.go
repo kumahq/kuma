@@ -3,10 +3,11 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	kuma_version "github.com/Kong/kuma/pkg/version"
-	"github.com/spf13/cobra"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/Kong/kuma/pkg/admin-server"
