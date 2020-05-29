@@ -12,14 +12,14 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 	It("Deploy on Single K8s cluster and verify the Kuma CP REST API is accessible", func(done Done) {
 		t := framework.NewK8sTest(1, "", framework.Verbose)
 
-		err := t.DeployKumaOnK8sClusterE(1)
+		err := t.DeployKumaOnK8sCluster(1)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = t.VerifyKumaOnK8sClusterE()
+		err = t.VerifyKumaOnK8sCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		_ = t.DeleteKumaOnK8sClusterE(1)
-		_ = t.DeleteKumaNamespaceOnK8sClusterE(1)
+		_ = t.DeleteKumaOnK8sCluster(1)
+		_ = t.DeleteKumaNamespaceOnK8sCluster(1)
 
 		// completed
 		close(done)

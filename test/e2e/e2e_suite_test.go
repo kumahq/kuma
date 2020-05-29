@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"testing"
 
+	"github.com/Kong/kuma/test/framework"
+
 	"github.com/go-logr/logr"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -14,8 +16,12 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Integration CMD Suite")
+	if framework.IsK8sClustersStarted() {
+		RegisterFailHandler(Fail)
+		RunSpecs(t, "E2E Suite")
+	} else {
+		t.SkipNow()
+	}
 }
 
 var _ = BeforeSuite(func() {

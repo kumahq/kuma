@@ -18,11 +18,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/prometheus/common/log"
-	"github.com/stretchr/testify/require"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/common/log"
 )
 
 type TestFramework struct {
@@ -76,18 +74,19 @@ func (t *TestFramework) ApplyAndWaitServiceOnK8sCluster(idx int, namespace strin
 	return nil
 }
 
-func (t *TestFramework) DeployKumaOnK8sCluster(idx int) {
-	require.NoError(t, t.DeployKumaOnK8sClusterE(idx))
-}
-
-func (t *TestFramework) DeployKumaOnK8sClusterE(idx int) error {
+func (t *TestFramework) DeployKumaOnK8sCluster(idx int) error {
 	options := NewKumactlOptions("", "", t.verbose)
 
-	err := k8s.KubectlApplyFromStringE(t,
+	yaml, err := KumactlInstallCP(t, options)
+	if err != nil {
+		return err
+	}
+
+	err = k8s.KubectlApplyFromStringE(t,
 		&k8s.KubectlOptions{
 			ConfigPath: t.k8sclusters[idx],
 		},
-		KumactlInstallCP(t, options))
+		yaml)
 	if err != nil {
 		return err
 	}
@@ -133,27 +132,24 @@ func (t *TestFramework) DeployKumaOnK8sClusterE(idx int) error {
 	return nil
 }
 
-func (t *TestFramework) DeleteKumaOnK8sCluster(idx int) {
-	require.NoError(t, t.DeleteKumaOnK8sClusterE(idx))
-}
-
-func (t *TestFramework) DeleteKumaOnK8sClusterE(idx int) error {
+func (t *TestFramework) DeleteKumaOnK8sCluster(idx int) error {
 	options := NewKumactlOptions("", "", t.verbose)
 
-	err := k8s.KubectlDeleteFromStringE(t,
+	yaml, err := KumactlInstallCP(t, options)
+	if err != nil {
+		return err
+	}
+
+	err = k8s.KubectlDeleteFromStringE(t,
 		&k8s.KubectlOptions{
 			ConfigPath: t.k8sclusters[idx],
 		},
-		KumactlInstallCP(t, options))
+		yaml)
 
 	return err
 }
 
-func (t *TestFramework) DeleteKumaNamespaceOnK8sCluster(idx int) {
-	require.NoError(t, t.DeleteKumaNamespaceOnK8sClusterE(idx))
-}
-
-func (t *TestFramework) DeleteKumaNamespaceOnK8sClusterE(idx int) error {
+func (t *TestFramework) DeleteKumaNamespaceOnK8sCluster(idx int) error {
 	return k8s.DeleteNamespaceE(t,
 		&k8s.KubectlOptions{
 			ConfigPath: t.k8sclusters[idx],
@@ -168,11 +164,7 @@ func (t *TestFramework) PortForwardServiceOnK8sCluster(idx int, namespace string
 	}()
 }
 
-func (t *TestFramework) VerifyKumaOnK8sCluster() {
-	require.NoError(t, t.VerifyKumaOnK8sClusterE())
-}
-
-func (t *TestFramework) VerifyKumaOnK8sClusterE() error {
+func (t *TestFramework) VerifyKumaOnK8sCluster() error {
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		t,
 		"http://localhost:5681",
@@ -211,4 +203,9 @@ func (t *TestFramework) GetPodLogs(pod v1.Pod) string {
 	str := buf.String()
 
 	return str
+}
+
+func IsK8sClustersStarted() bool {
+	_, found := os.LookupEnv(envK8SCLUSTERS)
+	return found
 }

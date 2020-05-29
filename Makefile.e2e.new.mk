@@ -1,9 +1,9 @@
 
-CLUSTERS = kuma-1
-CLUSTERS_START_TARGETS = $(addprefix test/e2e/kind/start/cluster/, $(CLUSTERS))
-CLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/kind/stop/cluster/, $(CLUSTERS))
+K8SCLUSTERS = kuma-1
+K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/kind/start/cluster/, $(K8SCLUSTERS))
+K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/kind/stop/cluster/, $(K8SCLUSTERS))
 
-define gen-clusters
+define gen-k8sclusters
 .PHONY: test/e2e/kind/start/cluster/$1
 test/e2e/kind/start/cluster/$1:
 	KIND_CLUSTER_NAME=$1 \
@@ -19,16 +19,17 @@ test/e2e/kind/stop/cluster/$1:
 		make kind/stop
 endef
 
-$(foreach cluster, $(CLUSTERS), $(eval $(call gen-clusters,$(cluster))))
+$(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
 
 .PHONY: test/e2e/kind/start
-test/e2e/kind/start: $(CLUSTERS_START_TARGETS)
+test/e2e/kind/start: $(K8SCLUSTERS_START_TARGETS)
 
 .PHONY: test/e2e/kind/stop
-test/e2e/kind/stop: $(CLUSTERS_STOP_TARGETS)
+test/e2e/kind/stop: $(K8SCLUSTERS_STOP_TARGETS)
 
 .PHONY: test/e2e/test
 test/e2e/test:
+	K8SCLUSTERS=$(K8SCLUSTERS) \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 		$(GO_TEST) -v -timeout=30m ./test/e2e/...
 
