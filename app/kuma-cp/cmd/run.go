@@ -3,8 +3,9 @@ package cmd
 import (
 	"fmt"
 
+	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
+	config_core "github.com/Kong/kuma/pkg/config/core"
 	kuma_version "github.com/Kong/kuma/pkg/version"
-
 	"github.com/spf13/cobra"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
@@ -36,6 +37,7 @@ type runCmdOpts struct {
 func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 	args := struct {
 		configPath string
+		kumaCpMode string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "run",
@@ -48,6 +50,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "could not load the configuration")
 				return err
 			}
+			cfg.Mode = args.kumaCpMode
 			rt, err := bootstrap.Bootstrap(cfg)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")
@@ -101,5 +104,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 	}
 	// flags
 	cmd.PersistentFlags().StringVarP(&args.configPath, "config-file", "c", "", "configuration file")
+	cmd.PersistentFlags().StringVar(&args.kumaCpMode, "mode", config_core.StandAlone, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "local", "global"))
 	return cmd
 }
