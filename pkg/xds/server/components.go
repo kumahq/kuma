@@ -34,7 +34,9 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	metadataTracker := NewDataplaneMetadataTracker()
 
-	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler, metadataTracker)
+	ingressReconciler := DefaultIngressReconciler(rt)
+
+	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler, ingressReconciler, metadataTracker)
 	if err != nil {
 		return err
 	}
@@ -70,7 +72,11 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 	}
 }
 
-func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
+func DefaultIngressReconciler(rt core_runtime.Runtime) *IngressReconciler {
+	return NewIngressReconciler(rt.ResourceManager())
+}
+
+func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler, ingressReconciler *IngressReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	faultInjectionMatcher := faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
@@ -94,6 +100,10 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 						return reconciler.Clear(&proxyID)
 					}
 					return err
+				}
+
+				if dataplane.Spec.GetNetworking().GetIngress() != nil {
+					return ingressReconciler.Reconcile(core_model.MetaToResourceKey(dataplane.GetMeta()))
 				}
 
 				mesh := &mesh_core.MeshResource{}
