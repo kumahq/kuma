@@ -11,7 +11,7 @@ $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(ku
 endef
 
 CI_KIND_VERSION ?= v0.8.1
-CI_KUBERNETES_VERSION ?= v1.15.11@sha256:6cc31f3533deb138792db2c7d1ffc36f7456a06f1db5556ad3b6927641016f50
+CI_KUBERNETES_VERSION ?= v1.18.2@sha256:7b27a6d0f2517ff88ba444025beae41491b016bc6af573ba467b70c5e8e0d85f
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 
@@ -26,7 +26,7 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 			--name "$(KIND_CLUSTER_NAME)" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
 			--kubeconfig $(KIND_KUBECONFIG) \
-			--wait 120s && \
+			--quiet --wait 120s && \
 		until \
 			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
 		do echo "Waiting for the cluster to come up" && sleep 1; done )
