@@ -45,6 +45,9 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 		Short: "Launch Control Plane",
 		Long:  `Launch Control Plane.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := config_core.ValidateCpMode(args.kumaCpMode); err != nil {
+				return err
+			}
 			cfg := kuma_cp.DefaultConfig()
 			err := config.Load(args.configPath, &cfg)
 			if err != nil {
