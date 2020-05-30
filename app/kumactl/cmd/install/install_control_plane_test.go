@@ -131,4 +131,14 @@ var _ = Describe("kumactl install control-plane", func() {
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
 	)
+	It("should fail to install control plane when `kumactl install control-plane run with unknown mode`", func() {
+		// given
+		rootCmd := cmd.DefaultRootCmd()
+		rootCmd.SetArgs([]string{"install", "control-plane", "--mode", "test"})
+		//when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("mode should be either standalone, local or global"))
+	})
 })
