@@ -239,8 +239,8 @@ func (rc *RootContext) cpOnTheSameMachine() (bool, error) {
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {
-	if rc.Args.ConfigFile != ""{
+	if rc.Args.ConfigFile != "" {
 		return !util_files.FileExists(rc.Args.ConfigFile)
 	}
-	return  !util_files.FileExists(config.DefaultConfigFile)
+	return !util_files.FileExists(config.DefaultConfigFile)
 }

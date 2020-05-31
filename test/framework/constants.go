@@ -6,8 +6,8 @@ const (
 	Verbose = true
 	Silent  = false
 
-	defaultKumactlConfig         = "${HOME}/.kumactl/config"
-	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-kuma-%d-config"
+	defaultKumactlConfig         = "${HOME}/.kumactl/%s-config"
+	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-%s-config"
 
 	envKUMACTLBIN  = "KUMACTLBIN"
 	envK8SCLUSTERS = "K8SCLUSTERS"
@@ -22,4 +22,8 @@ const (
 	kumaCPImage   = "kuma/kuma-cp"
 	kumaDPImage   = "kuma/kuma-dp"
 	kumaInitImage = "kuma/kuma-init"
+
+	Kuma1 = "kuma-1"
+	Kuma2 = "kuma-2"
+	Kuma3 = "kuma-3"
 )
