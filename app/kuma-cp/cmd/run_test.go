@@ -122,7 +122,7 @@ func RunSmokeTest(factory ConfigFactory) {
 			cmd.SetArgs([]string{"--mode", "test"})
 			err = cmd.Execute()
 			// then
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("mode should be either standalone, local or global"))
 		})
 	})
