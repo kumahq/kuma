@@ -208,8 +208,8 @@ func (c *Config) Validate() error {
 	if err := c.GuiServer.Validate(); err != nil {
 		return errors.Wrap(err, "GuiServer validation failed")
 	}
-	if c.Mode != core.StandAlone && c.Mode != core.Local && c.Mode != core.Global {
-		return errors.Errorf("Mode should be either %s or %s or %s", core.StandAlone, core.Local, core.Global)
+	if err := core.ValidateCpMode(c.Mode); err != nil {
+		return err
 	}
 	return nil
 }
