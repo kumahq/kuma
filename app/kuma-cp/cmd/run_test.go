@@ -108,7 +108,7 @@ func RunSmokeTest(factory ConfigFactory) {
 			// complete
 			close(done)
 		}, 15)
-		It("should fail to start when `kuma-cp run with unknown mode`", func() {
+		It("should fail to start when `kuma-cp run with unknown mode`", func(done Done) {
 			// given
 			config := fmt.Sprintf(factory.GenerateConfig(), diagnosticsPort)
 			_, err := configFile.WriteString(config)
@@ -120,10 +120,17 @@ func RunSmokeTest(factory ConfigFactory) {
 			})
 			// when
 			cmd.SetArgs([]string{"--mode", "test"})
-			err = cmd.Execute()
+
+			By("starting the Control Plane")
+			go func() {
+				defer close(errCh)
+				errCh <- cmd.Execute()
+			}()
 			// then
+			err = <-errCh
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("mode should be either standalone, local or global"))
+			close(done)
 		})
 	})
 }

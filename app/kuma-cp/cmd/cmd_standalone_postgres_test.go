@@ -13,15 +13,13 @@ import (
 
 var _ = Describe("Standalone Postgres test", func() {
 
-	BeforeEach(func() {
-		// setup migrate DB
-		cfg := kuma_cp.DefaultConfig()
-		err := config.Load("", &cfg)
-		cfg.Store.Type = store.PostgresStore
-		Expect(err).ToNot(HaveOccurred())
-		err = migrate(cfg)
-		Expect(err).ToNot(HaveOccurred())
-	})
+	// setup migrate DB
+	cfg := kuma_cp.DefaultConfig()
+	err := config.Load("", &cfg)
+	cfg.Store.Type = store.PostgresStore
+	Expect(err).ToNot(HaveOccurred())
+	err = migrate(cfg)
+	Expect(err).ToNot(HaveOccurred())
 
 	RunSmokeTest(StaticConfig(`
 xdsServer:
