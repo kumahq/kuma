@@ -112,6 +112,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					},
 				}
 
+				otherDataplanes := &mesh_core.DataplaneResourceList{}
+				if err := rt.ReadOnlyResourceManager().List(ctx, otherDataplanes, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
+					return err
+				}
+
 				// pick a single the most specific route for each outbound interface
 				routes, err := xds_topology.GetRoutes(ctx, dataplane, rt.ReadOnlyResourceManager())
 				if err != nil {
@@ -146,7 +151,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					tracingBackend = mesh.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
 				}
 
-				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane)
+				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane, mesh)
 				if err != nil {
 					return err
 				}
@@ -156,7 +161,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					return err
 				}
 
-				faultInjection, err := faultInjectionMatcher.Match(ctx, dataplane)
+				faultInjection, err := faultInjectionMatcher.Match(ctx, dataplane, mesh)
 				if err != nil {
 					return err
 				}

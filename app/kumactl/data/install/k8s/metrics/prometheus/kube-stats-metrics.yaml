@@ -184,5 +184,4 @@ spec:
           resources:
             {}
       securityContext:
-        runAsNonRoot: true
         runAsUser: 65534

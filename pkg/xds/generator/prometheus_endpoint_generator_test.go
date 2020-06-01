@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -218,8 +219,12 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-											Port: 1234,
-											Path: "/non-standard-path",
+											Port:     1234,
+											Path:     "/non-standard-path",
+											SkipMTLS: &wrappers.BoolValue{Value: false},
+											Tags: map[string]string{
+												"service": "dataplane-metrics",
+											},
 										}),
 									},
 								},
@@ -234,6 +239,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
+					},
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
 					},
 				},
 				Metadata: &core_xds.DataplaneMetadata{
@@ -264,7 +274,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                 trafficDirection: INBOUND
                 address:
                   socketAddress:
-                    address: 0.0.0.0
+                    address: 192.168.0.1
                     portValue: 1234
                 filterChains:
                 - filters:
@@ -321,6 +331,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Mesh: "demo",
 					},
 					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
 						Metrics: &mesh_proto.MetricsBackend{
 							Name: "prometheus-1",
 							Type: mesh_proto.MetricsPrometheusType,
@@ -359,7 +372,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                 trafficDirection: INBOUND
                 address:
                   socketAddress:
-                    address: 0.0.0.0
+                    address: 192.168.0.1
                     portValue: 8765
                 filterChains:
                 - filters:
@@ -475,7 +488,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                 metrics:
                   type: prometheus
                   conf:
-                    port: 8080
+                    port: 80
 `,
 			}),
 			Entry("should not overshadow outbound listener port", testCase{
@@ -487,9 +500,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                     servicePort: 8080
                   outbound:
                   - port: 54321
+                    address: 192.168.0.1
                     service: db
-                  - port: 59200
-                    service: elastic
                 metrics:
                   type: prometheus
                   conf:

@@ -3,11 +3,12 @@ package generator
 import (
 	"net"
 
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/pkg/errors"
 
+	manager_dataplane "github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
-
 	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
@@ -40,12 +41,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 		return nil, nil
 	}
 
-	// It should be always possible to scrape metrics out of a Dataplane,
-	// even when it doesn't have any inbound interfaces (e.g., gateway scenario).
-	// Therefore, we always bind Prometheus endpoint to `0.0.0.0`
-	// instead of trying to reuse IP address of an inbound listener.
-	prometheusEndpointIP := net.IPv4zero // 0.0.0.0
-	prometheusEndpointAddress := prometheusEndpointIP.String()
+	prometheusEndpointAddress := proxy.Dataplane.Spec.GetNetworking().Address
+	prometheusEndpointIP := net.ParseIP(prometheusEndpointAddress)
 
 	if proxy.Dataplane.UsesInterface(prometheusEndpointIP, prometheusEndpoint.Port) {
 		// If the Prometheus endpoint would otherwise overshadow one of interfaces of that Dataplane,
@@ -66,11 +63,40 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
 	prometheusListenerName := envoy_names.GetPrometheusListenerName()
 
-	listener, err := envoy_listeners.NewListenerBuilder().
-		Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
-			Configure(envoy_listeners.PrometheusEndpoint(prometheusListenerName, prometheusEndpoint.Path, envoyAdminClusterName)))).
-		Build()
+	inbound, err := manager_dataplane.PrometheusInbound(proxy.Dataplane, ctx.Mesh.Resource)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get prometheus inbound interface")
+	}
+	iface, err := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not convert inbound interface")
+	}
+
+	// We assume that skipMTLS = nil is the same as false, so we don't break deployments between 0.5 and 0.5.1
+	skipMTLS := prometheusEndpoint.SkipMTLS == nil || prometheusEndpoint.SkipMTLS.Value
+	var listener *envoy_api.Listener
+	if skipMTLS || !ctx.Mesh.Resource.MTLSEnabled() {
+		listener, err = envoy_listeners.NewListenerBuilder().
+			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+				Configure(envoy_listeners.PrometheusEndpoint(prometheusListenerName, prometheusEndpoint.Path, envoyAdminClusterName)),
+			)).
+			Build()
+	} else {
+		listener, err = envoy_listeners.NewListenerBuilder().
+			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
+			// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+				Configure(envoy_listeners.SourceMatcher(proxy.Dataplane.Spec.GetNetworking().Address)).
+				Configure(envoy_listeners.PrometheusEndpoint(prometheusListenerName, prometheusEndpoint.Path, envoyAdminClusterName)),
+			)).
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+				Configure(envoy_listeners.PrometheusEndpoint(prometheusListenerName, prometheusEndpoint.Path, envoyAdminClusterName)).
+				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
+				Configure(envoy_listeners.NetworkRBAC(prometheusListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.TrafficPermissions[iface])),
+			)).
+			Build()
+	}
 	if err != nil {
 		return nil, err
 	}

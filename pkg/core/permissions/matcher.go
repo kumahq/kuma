@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	manager_dataplane "github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/Kong/kuma/pkg/core/policy"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
@@ -16,7 +17,7 @@ type TrafficPermissionsMatcher struct {
 	ResourceManager manager.ReadOnlyResourceManager
 }
 
-func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource) (core_xds.TrafficPermissionMap, error) {
+func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (core_xds.TrafficPermissionMap, error) {
 	permissions := &mesh_core.TrafficPermissionResourceList{}
 	if err := m.ResourceManager.List(ctx, permissions, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
@@ -27,7 +28,12 @@ func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *mesh_c
 		policies[i] = permission
 	}
 
-	policyMap, err := policy.SelectInboundConnectionPolicies(dataplane, policies)
+	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not fetch additional inbounds")
+	}
+	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
+	policyMap, err := policy.SelectInboundConnectionPolicies(dataplane, inbounds, policies)
 	if err != nil {
 		return nil, err
 	}

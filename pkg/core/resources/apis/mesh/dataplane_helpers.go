@@ -134,7 +134,7 @@ func (d *DataplaneResource) GetIP() string {
 	if len(d.Spec.Networking.Inbound) == 0 {
 		return ""
 	}
-	iface, err := d.Spec.Networking.GetInboundInterfaceByIdx(0)
+	iface, err := d.Spec.Networking.ToInboundInterface(d.Spec.Networking.Inbound[0])
 	if err != nil {
 		return ""
 	}

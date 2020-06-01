@@ -24,6 +24,9 @@ func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_
 		if isHeadlessService(service) {
 			// Generate outbound listeners for every endpoint of services.
 			for _, endpoint := range endpoints[serviceTag] {
+				if endpoint.Address == pod.Status.PodIP {
+					continue // ignore generating outbound for itself, otherwise we've got a conflict with inbound
+				}
 				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 					Address: endpoint.Address,
 					Port:    endpoint.Port,
