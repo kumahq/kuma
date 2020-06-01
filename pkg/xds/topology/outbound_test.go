@@ -11,40 +11,22 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("TrafficRoute", func() {
 
 	var ctx context.Context
-	var rm core_manager.ResourceManager
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		rm = core_manager.NewResourceManager(memory_resources.NewStore())
 	})
 
 	Describe("GetOutboundTargets()", func() {
 
 		It("should pick proper dataplanes for each outbound destination", func() {
 			// given
-			mesh := &mesh_core.MeshResource{ // mesh that is relevant to this test case
-				Meta: &test_model.ResourceMeta{
-					Mesh: "demo",
-					Name: "demo",
-				},
-			}
-			otherMesh := &mesh_core.MeshResource{ // mesh that is irrelevant to this test case
-				Meta: &test_model.ResourceMeta{
-					Mesh: "default",
-					Name: "default",
-				},
-			}
 			backend := &mesh_core.DataplaneResource{ // dataplane that is a source of traffic
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
@@ -85,24 +67,6 @@ var _ = Describe("TrafficRoute", func() {
 								Tags:        map[string]string{"service": "redis", "version": "v1"},
 								Port:        6379,
 								ServicePort: 16379,
-							},
-						},
-					},
-				},
-			}
-			redisV2 := &mesh_core.DataplaneResource{ // dataplane that must be ingored (due to `mesh: default`)
-				Meta: &test_model.ResourceMeta{
-					Mesh: "default", // other mesh
-					Name: "redis-v2",
-				},
-				Spec: mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
-						Address: "192.168.0.3",
-						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{
-								Tags:        map[string]string{"service": "redis", "version": "v2"},
-								Port:        6379,
-								ServicePort: 26379,
 							},
 						},
 					},
@@ -172,15 +136,12 @@ var _ = Describe("TrafficRoute", func() {
 					{"service": "elastic", "region": "au"},
 				},
 			}
-			for _, resource := range []core_model.Resource{mesh, backend, redisV1, redisV3, elasticEU, elasticUS, otherMesh, redisV2} {
-				// when
-				err := rm.Create(ctx, resource, core_store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())))
-				// then
-				Expect(err).ToNot(HaveOccurred())
+			dataplanes := &mesh_core.DataplaneResourceList{
+				Items: []*mesh_core.DataplaneResource{backend, redisV1, redisV3, elasticEU, elasticUS},
 			}
 
 			// when
-			targets, err := GetOutboundTargets(ctx, backend, destinations, rm)
+			targets, err := GetOutboundTargets(ctx, backend, destinations, dataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
