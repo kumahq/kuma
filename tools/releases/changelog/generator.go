@@ -27,24 +27,24 @@ func NewGenerator(startTag, endTag string) *Generator {
 func (g *Generator) filteredTags() []string {
 
 	tags := g.log.Keys()
-	if config.startTag != "" {
+	if g.endTag != "" {
 		for _, tag := range tags {
-			if tag == config.startTag {
+			//fmt.Println(g.formatTag(tag)," ", g.endTag, " ", tag == g.endTag)
+			if g.formatTag(tag) == g.endTag {
 				break
 			}
 			tags = tags[1:]
 		}
 	}
 
-	if config.endTag != "" {
+	if g.startTag != "" {
 		for i, tag := range tags {
-			if tag == config.endTag {
+			if g.formatTag(tag) == g.startTag {
 				tags = tags[:i]
 				break
 			}
 		}
 	}
-
 	return tags
 }
 
