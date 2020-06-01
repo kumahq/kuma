@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	util_net "github.com/Kong/kuma/pkg/util/net"
 	"io"
 	"net/http"
 	"net/url"
@@ -33,10 +34,11 @@ type K8sClusters struct {
 
 type K8sCluster struct {
 	testing.T
-	kubeconfig     string
-	kumactl        *KumactlOptions
-	forwardedPorts map[int]chan struct{}
-	verbose        bool
+	kubeconfig          string
+	kumactl             *KumactlOptions
+	forwardedPortsChans map[uint32]chan struct{}
+	localCPPort         uint32
+	verbose             bool
 }
 
 // NewK8sTest gets the number of the clusters to use in the tests, and the pattern
@@ -56,10 +58,10 @@ func NewK8sClusters(clusterNames []string, kubeConfigPathPattern string, verbose
 			return nil, err
 		}
 		clusters[name] = &K8sCluster{
-			kubeconfig:     os.ExpandEnv(fmt.Sprintf(kubeConfigPathPattern, name)),
-			kumactl:        options,
-			verbose:        verbose,
-			forwardedPorts: map[int]chan struct{}{},
+			kubeconfig:          os.ExpandEnv(fmt.Sprintf(kubeConfigPathPattern, name)),
+			kumactl:             options,
+			verbose:             verbose,
+			forwardedPortsChans: map[uint32]chan struct{}{},
 		}
 	}
 
@@ -103,7 +105,7 @@ func (cs *K8sClusters) GetKumaCPLogs() (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("Verify Kuma on %s failed: %v", name, err)
 		}
-		logs = logs + "\n ========== " + log + " ==========\n"
+		logs = logs + "========== " + name + " ==========\n" + log + "\n"
 	}
 	return logs, nil
 }
@@ -175,7 +177,7 @@ func (c *K8sCluster) DeployKuma() error {
 		kumacp_pods[0].Name,
 		10, 3*time.Second)
 
-	c.PortForwardKumaCP(kumaNamespace, 5681, 5681)
+	c.localCPPort = c.PortForwardKumaCP()
 
 	return nil
 }
@@ -222,18 +224,25 @@ func (c *K8sCluster) WaitKumaNamespaceDelete() {
 	}
 }
 
-func (c *K8sCluster) PortForwardKumaCP(namespace string, localPort, remotePort int) {
+func (c *K8sCluster) PortForwardKumaCP() uint32 {
 	pods := c.GetKumaCPPods()
 	if len(pods) < 1 {
 		fmt.Println("No kuma-cp pods found for port-forward.")
-		return
+		return 0
 	}
 	name := pods[0].Name
 
-	c.PortForwardPod(namespace, name, localPort, remotePort)
+	//find free local port
+	localPort, err := util_net.PickTCPPort("127.0.0.1", kumaCPAPIPort, kumaCPAPIPort)
+	if err != nil {
+		return 0
+	}
+
+	c.PortForwardPod(kumaNamespace, name, localPort, kumaCPAPIPort)
+	return localPort
 }
 
-func (c *K8sCluster) PortForwardPod(namespace, name string, localPort, remotePort int) {
+func (c *K8sCluster) PortForwardPod(namespace, name string, localPort, remotePort uint32) {
 	config, err := clientcmd.BuildConfigFromFlags("", c.kubeconfig)
 	if err != nil {
 		fmt.Println("Error building config")
@@ -253,7 +262,7 @@ func (c *K8sCluster) PortForwardPod(namespace, name string, localPort, remotePor
 
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
 
-	ports := []string{strconv.Itoa(localPort) + ":" + strconv.Itoa(remotePort)}
+	ports := []string{strconv.FormatUint(uint64(localPort), 10) + ":" + strconv.FormatUint(uint64(remotePort), 10)}
 
 	forwarder, err := portforward.New(dialer, ports, stopChan, readyChan, out, errOut)
 	if err != nil {
@@ -276,20 +285,20 @@ func (c *K8sCluster) PortForwardPod(namespace, name string, localPort, remotePor
 		}
 	}()
 
-	c.forwardedPorts[localPort] = stopChan
+	c.forwardedPortsChans[localPort] = stopChan
 }
 
 func (c *K8sCluster) CleanupPortForwards() {
-	for _, stop := range c.forwardedPorts {
+	for _, stop := range c.forwardedPortsChans {
 		close(stop)
 	}
-	c.forwardedPorts = map[int]chan struct{}{}
+	c.forwardedPortsChans = map[uint32]chan struct{}{}
 }
 
 func (c *K8sCluster) VerifyKuma() error {
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c,
-		"http://localhost:5681",
+		"http://localhost:"+strconv.FormatUint(uint64(c.localCPPort), 10),
 		&tls.Config{},
 		defaultRetries/2,
 		defaultTiemout,
@@ -329,14 +338,10 @@ func (c *K8sCluster) GetKumaCPLogs() (string, error) {
 
 func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	podLogOpts := v1.PodLogOptions{}
-	//config, err := rest.InClusterConfig()
-	//if err != nil {
-	//	return "", fmt.Errorf("error in getting config")
-	//}
 	// creates the clientset
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c, &k8s.KubectlOptions{
 		ConfigPath: c.kubeconfig,
-	}) //kubernetes.NewForConfig(config)
+	})
 	if err != nil {
 		return "", fmt.Errorf("error in getting access to K8S")
 	}
