@@ -6,7 +6,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	util_net "github.com/Kong/kuma/pkg/util/net"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"io"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,10 +18,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -34,6 +34,7 @@ type K8sClusters struct {
 
 type K8sCluster struct {
 	testing.T
+	name                string
 	kubeconfig          string
 	kumactl             *KumactlOptions
 	forwardedPortsChans map[uint32]chan struct{}
@@ -58,6 +59,7 @@ func NewK8sClusters(clusterNames []string, kubeConfigPathPattern string, verbose
 			return nil, err
 		}
 		clusters[name] = &K8sCluster{
+			name:                name,
 			kubeconfig:          os.ExpandEnv(fmt.Sprintf(kubeConfigPathPattern, name)),
 			kumactl:             options,
 			verbose:             verbose,
@@ -179,6 +181,8 @@ func (c *K8sCluster) DeployKuma() error {
 
 	c.localCPPort = c.PortForwardKumaCP()
 
+	c.kumactl.KumactlConfigControlPlanesAdd(c.name, "http://localhost:"+strconv.FormatUint(uint64(c.localCPPort), 10))
+
 	return nil
 }
 
@@ -208,20 +212,18 @@ func (c *K8sCluster) DeleteKumaNamespace() error {
 		}, kumaNamespace)
 }
 
-func (c *K8sCluster) IsKumaNamespaceAcitve() bool {
-	_, err := k8s.GetNamespaceE(c,
-		&k8s.KubectlOptions{
-			ConfigPath: c.kubeconfig,
-		}, kumaNamespace)
-	return err == nil
-}
-
 func (c *K8sCluster) WaitKumaNamespaceDelete() {
-	fmt.Println("Waiting for the Kuma Namespace to be deleted.")
-	for c.IsKumaNamespaceAcitve() {
-		fmt.Println("Kuma Namespace still active, retrying.")
-		time.Sleep(defaultTiemout)
-	}
+	retry.DoWithRetry(c, "Wait the Kuma Namespace to terminate.", 2*defaultRetries, defaultTiemout,
+		func() (string, error) {
+			_, err := k8s.GetNamespaceE(c,
+				&k8s.KubectlOptions{
+					ConfigPath: c.kubeconfig,
+				}, kumaNamespace)
+			if err != nil {
+				return "", nil
+			}
+			return "", fmt.Errorf("Kuma Namespace still not terminated.")
+		})
 }
 
 func (c *K8sCluster) PortForwardKumaCP() uint32 {
@@ -296,6 +298,22 @@ func (c *K8sCluster) CleanupPortForwards() {
 }
 
 func (c *K8sCluster) VerifyKuma() error {
+	if err := c.VerifyKumaCtl(); err != nil {
+		return err
+	}
+	if err := c.VerifyKumaREST(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *K8sCluster) VerifyKumaCtl() error {
+	output, err := c.kumactl.RunKumactlAndGetOutputV(Verbose, "get", "dataplanes")
+	fmt.Println(output)
+	return err
+}
+
+func (c *K8sCluster) VerifyKumaREST() error {
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c,
 		"http://localhost:"+strconv.FormatUint(uint64(c.localCPPort), 10),

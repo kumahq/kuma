@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -26,7 +27,7 @@ func NewKumactlOptions(cpname string, contextName string, configPath string, ver
 	kumactl := os.Getenv(envKUMACTLBIN)
 	_, err := os.Stat(kumactl)
 	if kumactl == "" || os.IsNotExist(err) {
-		return nil, fmt.Errorf("Unable to find kumactl, please supply valid KUMACTL environment variable.")
+		return nil, fmt.Errorf("Unable to find kumactl, please supply a valid KUMACTL environment variable.")
 	}
 
 	if configPath == "" {
@@ -115,8 +116,12 @@ func (o *KumactlOptions) KumactlInstallTracing() (string, error) {
 }
 
 func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
-	return o.RunKumactl(
-		"config", "control-planes", "add",
-		"--name", name,
-		"--address", address)
+	_, err := retry.DoWithRetryE(o, "kumactl config control-planes add", defaultRetries, defaultTiemout,
+		func() (string, error) {
+			return "", o.RunKumactl(
+				"config", "control-planes", "add",
+				"--name", name,
+				"--address", address)
+		})
+	return err
 }
