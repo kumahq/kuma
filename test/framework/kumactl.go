@@ -5,9 +5,9 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/gruntwork-io/terratest/modules/testing"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/shell"
@@ -15,32 +15,29 @@ import (
 
 // KumactlOptions represents common options necessary to specify for all Kumactl calls
 type KumactlOptions struct {
-	testing.T
-	CPName      string
-	Kumactl     string
-	ContextName string
-	ConfigPath  string
-	Verbose     bool
+	t          testing.TestingT
+	CPName     string
+	Kumactl    string
+	ConfigPath string
+	Verbose    bool
 }
 
 // NewKumactlOptions will return a pointer to new instance of KumactlOptions with the configured options
-func NewKumactlOptions(cpname string, contextName string, configPath string, verbose bool) (*KumactlOptions, error) {
+func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*KumactlOptions, error) {
 	kumactl := os.Getenv(envKUMACTLBIN)
 	_, err := os.Stat(kumactl)
 	if kumactl == "" || os.IsNotExist(err) {
 		return nil, fmt.Errorf("Unable to find kumactl, please supply a valid KUMACTL environment variable.")
 	}
 
-	if configPath == "" {
-		configPath = os.ExpandEnv(fmt.Sprintf(defaultKumactlConfig, cpname))
-	}
+	configPath := os.ExpandEnv(fmt.Sprintf(defaultKumactlConfig, cpname))
 
 	return &KumactlOptions{
-		CPName:      cpname,
-		Kumactl:     kumactl,
-		ContextName: contextName,
-		ConfigPath:  configPath,
-		Verbose:     verbose,
+		t:          t,
+		CPName:     cpname,
+		Kumactl:    kumactl,
+		ConfigPath: configPath,
+		Verbose:    verbose,
 	}, nil
 }
 
@@ -67,7 +64,7 @@ func (o *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (
 	if !verbose {
 		command.Logger = logger.Discard
 	}
-	return shell.RunCommandAndGetOutputE(o, command)
+	return shell.RunCommandAndGetOutputE(o.t, command)
 }
 
 func (o *KumactlOptions) KumactlDelete(kumatype string, name string) error {
@@ -79,7 +76,7 @@ func (o *KumactlOptions) KumactlApply(configPath string) error {
 }
 
 func (o *KumactlOptions) KumactlApplyFromString(configData string) error {
-	tmpfile, err := storeConfigToTempFile(o.Name(), configData)
+	tmpfile, err := storeConfigToTempFile(o.t.Name(), configData)
 	if err != nil {
 		return err
 	}
@@ -117,7 +114,7 @@ func (o *KumactlOptions) KumactlInstallTracing() (string, error) {
 }
 
 func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
-	_, err := retry.DoWithRetryE(o, "kumactl config control-planes add", defaultRetries, defaultTiemout,
+	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", defaultRetries, defaultTiemout,
 		func() (string, error) {
 			return "", o.RunKumactl(
 				"config", "control-planes", "add",

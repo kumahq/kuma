@@ -3,6 +3,8 @@ package e2e
 import (
 	"fmt"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
+
 	"github.com/Kong/kuma/test/framework"
 
 	. "github.com/onsi/ginkgo"
@@ -18,7 +20,7 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 	It("Deploy on Single K8s cluster and verify the Kuma CP REST API is accessible", func(done Done) {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1},
-			framework.Verbose)
+			framework.Silent)
 		Expect(err).ToNot(HaveOccurred())
 		c := clusters.GetCluster(framework.Kuma1)
 
@@ -41,7 +43,7 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 	It("Deploy on Two K8s cluster and verify the Kuma CP REST API is accessible. Use the Clusters Interface.", func(done Done) {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1, framework.Kuma2},
-			framework.Verbose)
+			framework.Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = clusters.DeployKuma()
@@ -55,6 +57,35 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 		fmt.Println(logs)
 
 		_ = clusters.DeleteKuma()
+
+		// completed
+		close(done)
+	}, 180)
+
+	It("Check Kuma side-car injection", func(done Done) {
+		clusters, err := framework.NewK8sClusters(
+			[]string{framework.Kuma1},
+			framework.Verbose)
+		Expect(err).ToNot(HaveOccurred())
+		c := clusters.GetCluster(framework.Kuma1)
+
+		err = c.DeployKuma()
+		Expect(err).ToNot(HaveOccurred())
+
+		err = c.VerifyKuma()
+		Expect(err).ToNot(HaveOccurred())
+
+		logs, err := c.GetKumaCPLogs()
+		Expect(err).ToNot(HaveOccurred())
+		fmt.Println(logs)
+
+		err = k8s.CreateNamespaceE(c.GetTesting(), c.GetKubectlOptions(), "kuma-test")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = c.LabelNamespaceForSidecarInjection("kuma-test")
+		Expect(err).ToNot(HaveOccurred())
+
+		_ = c.DeleteKuma()
 
 		// completed
 		close(done)

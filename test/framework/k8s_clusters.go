@@ -2,9 +2,10 @@ package framework
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"os"
 )
 
 type K8sClusters struct {
@@ -13,8 +14,6 @@ type K8sClusters struct {
 	verbose  bool
 }
 
-// NewK8sTest gets the number of the clusters to use in the tests, and the pattern
-// to locate the KUBECONFIG for them. The second argument can be empty
 func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	if len(clusterNames) < 1 || len(clusterNames) > maxClusters {
 		return nil, fmt.Errorf("Invalid cluster number. Should be in the range [1,3], but it is %d", len(clusterNames))
@@ -23,7 +22,7 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	t := NewTestingT()
 	clusters := map[string]*K8sCluster{}
 	for _, name := range clusterNames {
-		options, err := NewKumactlOptions(t, name, "", "", verbose)
+		options, err := NewKumactlOptions(t, name, verbose)
 		if err != nil {
 			return nil, err
 		}
@@ -96,11 +95,18 @@ func (cs *K8sClusters) GetKubectlOptions(namespace ...string) *k8s.KubectlOption
 	return nil
 }
 
-func (c *K8sClusters) GetTesting() testing.TestingT {
-	return c.t
+func (cs *K8sClusters) GetTesting() testing.TestingT {
+	return cs.t
 }
 
-
+func (cs *K8sClusters) LabelNamespaceForSidecarInjection(namespace string) error {
+	for name, c := range cs.clusters {
+		if err := c.LabelNamespaceForSidecarInjection(namespace); err != nil {
+			return fmt.Errorf("Labeling Namespace %s on %s failed: %v", namespace, name, err)
+		}
+	}
+	return nil
+}
 
 func IsK8sClustersStarted() bool {
 	_, found := os.LookupEnv(envK8SCLUSTERS)
