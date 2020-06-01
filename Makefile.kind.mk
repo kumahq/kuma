@@ -47,23 +47,26 @@ kind/stop/all:
 	@kind delete clusters --all
 
 .PHONY: kind/load/control-plane
-kind/load/control-plane: image/kuma-cp
+kind/load/control-plane:
 	@kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/kuma-dp
-kind/load/kuma-dp: image/kuma-dp
+kind/load/kuma-dp:
 	@kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/kuma-init
-kind/load/kuma-init: image/kuma-init
+kind/load/kuma-init:
 	@kind load docker-image $(KUMA_INIT_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/kuma-prometheus-sd
-kind/load/kuma-prometheus-sd: image/kuma-prometheus-sd
+kind/load/kuma-prometheus-sd:
 	@kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
+.PHONY: kind/load/images
+kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd
+
 .PHONY: kind/load
-kind/load: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd
+kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd kind/load/images
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load

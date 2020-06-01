@@ -10,7 +10,7 @@ test/e2e/kind/start/cluster/$1:
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
 		make kind/start
 	KIND_CLUSTER_NAME=$1 \
-		make kind/load
+		make kind/load/images
 
 .PHONY: test/e2e/kind/stop/cluster/$1
 test/e2e/kind/stop/cluster/$1:
@@ -34,7 +34,7 @@ test/e2e/test:
 		$(GO_TEST) -v -timeout=30m ./test/e2e/...
 
 .PHONY: test/e2e
-test/e2e: vet build/kumactl test/e2e/kind/start
+test/e2e: vet build/kumactl images test/e2e/kind/start
 	make test/e2e/test || \
 	(ret=$$?; \
 	make test/e2e/kind/stop && \
