@@ -242,7 +242,7 @@ func (c *K8sCluster) LabelNamespaceForSidecarInjection(namespace string) error {
 			},
 		},
 	}
-	_, err = clientset.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+	_, err = clientset.CoreV1().Namespaces().Update(context.Background(), ns, metav1.UpdateOptions{})
 	return err
 }
 
