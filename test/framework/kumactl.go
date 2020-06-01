@@ -2,11 +2,12 @@ package framework
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/retry"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/shell"
@@ -120,6 +121,7 @@ func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) err
 		func() (string, error) {
 			return "", o.RunKumactl(
 				"config", "control-planes", "add",
+				"--overwrite",
 				"--name", name,
 				"--address", address)
 		})

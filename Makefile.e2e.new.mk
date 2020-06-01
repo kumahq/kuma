@@ -1,5 +1,5 @@
 
-K8SCLUSTERS = kuma-1
+K8SCLUSTERS = kuma-1 kuma-2
 K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/kind/start/cluster/, $(K8SCLUSTERS))
 K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/kind/stop/cluster/, $(K8SCLUSTERS))
 
@@ -29,7 +29,7 @@ test/e2e/kind/stop: $(K8SCLUSTERS_STOP_TARGETS)
 
 .PHONY: test/e2e/test
 test/e2e/test:
-	K8SCLUSTERS=$(K8SCLUSTERS) \
+	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 		$(GO_TEST) -v -timeout=30m ./test/e2e/...
 
