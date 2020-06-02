@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 		})
 		CheckIfError(err)
 
-		Info("Retreive tags")
+		Info("Retrieve tags")
 		tagMap := map[string]string{}
 		// List all tag references, both lightweight tags and annotated tags
 		tagrefs, err := r.Tags()
@@ -46,7 +46,7 @@ var rootCmd = &cobra.Command{
 		})
 		CheckIfError(err)
 
-		Info("Retreive commit history")
+		Info("Retrieve commit history")
 		// ... retrieves the commit history
 		cIter, err := r.Log(&git.LogOptions{})
 		CheckIfError(err)
@@ -58,13 +58,13 @@ var rootCmd = &cobra.Command{
 			if tag, found := tagMap[c.Hash.String()]; found {
 				currentTag = tag
 			}
-			generator.addToLog(currentTag, c)
+			_ = generator.addToLog(currentTag, c)
 			return nil
 		})
 		CheckIfError(err)
 
 		Info("Generate the formatted log")
-		generator.Generate()
+		_ = generator.Generate()
 		fmt.Println(generator.Changelog())
 	},
 }

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/google/go-github/v32/github"
 	"github.com/iancoleman/orderedmap"
 )
 
@@ -25,7 +28,6 @@ func NewGenerator(startTag, endTag string) *Generator {
 }
 
 func (g *Generator) filteredTags() []string {
-
 	tags := g.log.Keys()
 	if g.endTag != "" {
 		for _, tag := range tags {
@@ -46,6 +48,28 @@ func (g *Generator) filteredTags() []string {
 		}
 	}
 	return tags
+}
+
+func (g *Generator) getPRNum(c *object.Commit) int {
+	// Split the message, taking various new line formats
+	splitMessage := strings.Split(strings.Replace(c.Message, "\r\n", "\n", -1), "\n")
+	// The title is the first lien
+	title := splitMessage[0]
+
+	// generate a Markdown link to the pull request
+	re := regexp.MustCompile(`\(#(?P<num>[0-9]*)\)`)
+	match := re.FindStringSubmatch(title)
+	if len(match) <2 {
+		return 0
+	}
+
+	pr, err := strconv.Atoi(match[1])
+	if err != nil {
+		Warning("Unable to get PR from %s [%v]", title, match )
+		return 0
+	}
+
+	return pr
 }
 
 func (g *Generator) formatTitle(c *object.Commit) string {
@@ -72,7 +96,6 @@ func (g *Generator) formatTime(c *object.Commit) string {
 }
 
 func (g *Generator) addToLog(tag string, c *object.Commit) error {
-
 	if _, found := g.log.Get(tag); !found {
 		g.log.Set(tag, []*object.Commit{})
 	}
@@ -82,12 +105,23 @@ func (g *Generator) addToLog(tag string, c *object.Commit) error {
 	return nil
 }
 
+func (g *Generator) getGithubName(c *object.Commit) string {
+	client := github.NewClient(nil)
+	prNum := g.getPRNum(c)
+	pr, resp, err := client.PullRequests.Get(context.Background(), "Kong", "kuma", prNum)
+	if err != nil {
+		Warning("Was not able to get PR %d with response [%v]", prNum, resp)
+		return ""
+	}
+
+	return *pr.User.Login
+}
+
 func (g *Generator) addChangelog(add string) {
 	g.changelog += add
 }
 
 func (g *Generator) Generate() error {
-
 	g.changelog = ""
 
 	g.addChangelog("# CHANGELOG \n")
@@ -103,7 +137,7 @@ func (g *Generator) Generate() error {
 				g.addChangelog(fmt.Sprintln("> Released on ", g.formatTime(c)))
 				g.addChangelog("\nChanges:\n")
 			}
-			g.addChangelog(fmt.Sprintln("* ", g.formatTitle(c)))
+			g.addChangelog(fmt.Sprintln("* ", g.formatTitle(c), "\n 👍contributed by", c.Author.Name))
 		}
 	}
 
