@@ -1,7 +1,11 @@
 package mesh
 
 import (
+	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
@@ -69,4 +73,41 @@ func (m *MeshResource) GetCertificateAuthorityBackend(name string) *mesh_proto.C
 		}
 	}
 	return nil
+}
+
+var durationRE = regexp.MustCompile("^([0-9]+)(y|w|d|h|m|s|ms)$")
+
+// ParseDuration parses a string into a time.Duration
+func ParseDuration(durationStr string) (time.Duration, error) {
+	// Allow 0 without a unit.
+	if durationStr == "0" {
+		return 0, nil
+	}
+	matches := durationRE.FindStringSubmatch(durationStr)
+	if len(matches) != 3 {
+		return 0, fmt.Errorf("not a valid duration string: %q", durationStr)
+	}
+	var (
+		n, _ = strconv.Atoi(matches[1])
+		dur  = time.Duration(n) * time.Millisecond
+	)
+	switch unit := matches[2]; unit {
+	case "y":
+		dur *= 1000 * 60 * 60 * 24 * 365
+	case "w":
+		dur *= 1000 * 60 * 60 * 24 * 7
+	case "d":
+		dur *= 1000 * 60 * 60 * 24
+	case "h":
+		dur *= 1000 * 60 * 60
+	case "m":
+		dur *= 1000 * 60
+	case "s":
+		dur *= 1000
+	case "ms":
+		// Value already correct
+	default:
+		return 0, fmt.Errorf("invalid time unit in duration string: %q", unit)
+	}
+	return dur, nil
 }

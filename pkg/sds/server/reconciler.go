@@ -20,6 +20,7 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/ca/issuer"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	mesh_helper "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -110,7 +111,7 @@ func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_
 	}
 	expiration := issuer.DefaultWorkloadCertValidityPeriod
 	if mesh.GetEnabledCertificateAuthorityBackend().GetDpCert().GetRotation().GetExpiration() != "" {
-		expiration, err = time.ParseDuration(mesh.GetEnabledCertificateAuthorityBackend().GetDpCert().GetRotation().GetExpiration())
+		expiration, err = mesh_helper.ParseDuration(mesh.GetEnabledCertificateAuthorityBackend().GetDpCert().GetRotation().GetExpiration())
 		if err != nil {
 			return false, "", nil
 		}
