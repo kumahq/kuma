@@ -4493,6 +4493,12 @@ rules:
       - meshes/finalizers
     verbs:
       - "*"
+  - apiGroups:
+      - kuma.io
+    resources:
+      - dataplanes/finalizers
+    verbs:
+      - '*'
   # validate k8s token before issueing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -4724,7 +4730,6 @@ webhooks:
           - traffictraces
           - healthchecks
           - proxytemplates
-          - dataplanes
   - name: kuma-injector.kuma.io
     namespaceSelector:
       matchLabels:
@@ -4767,6 +4772,7 @@ webhooks:
         operations:
           - CREATE
           - UPDATE
+          - DELETE
         resources:
           - circuitbreakers
           - faultinjections

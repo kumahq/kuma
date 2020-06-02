@@ -5,7 +5,6 @@ package kuma.plugins.ca;
 option go_package = "config";
 
 import "google/protobuf/wrappers.proto";
-import "google/protobuf/duration.proto";
 
 // BuiltinCertificateAuthorityConfig defines configuration for Builtin CA
 // plugin
@@ -15,7 +14,7 @@ message BuiltinCertificateAuthorityConfig {
     // RSAbits of the certificate
     google.protobuf.UInt32Value RSAbits = 1;
     // Expiration time of the certificate
-    google.protobuf.Duration expiration = 2;
+    string expiration = 2;
   }
 
   // Configuration of CA Certificate

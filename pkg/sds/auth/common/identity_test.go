@@ -30,6 +30,13 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 								"service": "backend",
 							},
 						},
+						{
+							Port:        9080,
+							ServicePort: 90,
+							Tags: map[string]string{
+								"service": "backend-api",
+							},
+						},
 					},
 				},
 			},
@@ -43,8 +50,8 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 
 		// and
 		Expect(id).To(Equal(sds_auth.Identity{
-			Mesh:    "demo",
-			Service: "backend",
+			Mesh:     "demo",
+			Services: []string{"backend", "backend-api"},
 		}))
 	})
 
@@ -74,8 +81,8 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 
 		// and
 		Expect(id).To(Equal(sds_auth.Identity{
-			Mesh:    "demo",
-			Service: "edge",
+			Mesh:     "demo",
+			Services: []string{"edge"},
 		}))
 	})
 

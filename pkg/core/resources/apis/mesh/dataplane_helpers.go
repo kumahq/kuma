@@ -50,7 +50,7 @@ var SupportedProtocols = ProtocolList{
 // Service that indicates L4 pass through cluster
 const PassThroughService = "pass_through"
 
-var ipv4loopback = net.IPv4(127, 0, 0, 1)
+var IPv4Loopback = net.IPv4(127, 0, 0, 1)
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
 	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
@@ -70,7 +70,7 @@ func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bo
 			return true
 		}
 		// compare against port and IP address of the application
-		if port == iface.WorkloadPort && overlap(address, ipv4loopback) {
+		if port == iface.WorkloadPort && overlap(address, IPv4Loopback) {
 			return true
 		}
 	}

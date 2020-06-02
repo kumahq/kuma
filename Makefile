@@ -479,10 +479,12 @@ print/kubebuilder/test_assets: ## Dev: Print Kubebuilder Environment variables
 	@echo export TEST_ASSET_ETCD=$(TEST_ASSET_ETCD)
 	@echo export TEST_ASSET_KUBECTL=$(TEST_ASSET_KUBECTL)
 
-run/kuma-dp: ## Dev: Run `kuma-dp` locally
+run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
+	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --dataplane=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
+	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token \
 	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
 
 include Makefile.kind.mk

@@ -2,6 +2,7 @@ package provided
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -105,20 +106,23 @@ func (p *providedCaManager) GetRootCert(ctx context.Context, mesh string, backen
 	return []ca.Cert{meshCa.CertPEM}, nil
 }
 
-func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (ca.KeyPair, error) {
+func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, services []string) (ca.KeyPair, error) {
 	meshCa, err := p.getCa(ctx, mesh, backend)
 	if err != nil {
 		return ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
 	}
 
 	var opts []ca_issuer.CertOptsFn
-	if backend.GetDpCert().GetRotation().GetExpiration() != nil {
-		duration := util_proto.ToDuration(*backend.GetDpCert().GetRotation().Expiration)
+	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
+		duration, err := time.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		if err != nil {
+			return ca.KeyPair{}, err
+		}
 		opts = append(opts, ca_issuer.WithExpirationTime(duration))
 	}
-	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, service, opts...)
+	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, services, opts...)
 	if err != nil {
-		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for workload %q in Mesh %q using backend %q", service, mesh, backend.Name)
+		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for services %q in Mesh %q using backend %q", services, mesh, backend.Name)
 	}
 	return *keyPair, nil
 }

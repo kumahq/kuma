@@ -58,7 +58,7 @@ var _ = Describe("Noop Authenticator", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(authIdentity.Service).To(Equal("web"))
+		Expect(authIdentity.Services[0]).To(Equal("web"))
 		Expect(authIdentity.Mesh).To(Equal(id.Mesh))
 	})
 

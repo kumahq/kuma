@@ -6,7 +6,6 @@ import (
 	"encoding/pem"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -95,9 +94,7 @@ var _ = Describe("Builtin CA Manager", func() {
 						RSAbits: &wrappers.UInt32Value{
 							Value: uint32(2048),
 						},
-						Expiration: &duration.Duration{
-							Seconds: 10,
-						},
+						Expiration: "1m",
 					},
 				}),
 			}
@@ -115,7 +112,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			block, _ := pem.Decode(secretRes.Spec.Data.Value)
 			cert, err := x509.ParseCertificate(block.Bytes)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cert.NotAfter).To(Equal(core.Now().UTC().Add(10 * time.Second).Truncate(time.Second)))
+			Expect(cert.NotAfter).To(Equal(core.Now().UTC().Add(time.Minute).Truncate(time.Second)))
 		})
 	})
 
@@ -164,9 +161,7 @@ var _ = Describe("Builtin CA Manager", func() {
 				Type: "builtin",
 				DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
 					Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
-						Expiration: &duration.Duration{
-							Seconds: 1,
-						},
+						Expiration: "1s",
 					},
 				},
 			}
@@ -174,7 +169,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			pair, err := caManager.GenerateDataplaneCert(context.Background(), mesh, backend, "web")
+			pair, err := caManager.GenerateDataplaneCert(context.Background(), mesh, backend, []string{"web", "web-api"})
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -185,8 +180,9 @@ var _ = Describe("Builtin CA Manager", func() {
 			block, _ := pem.Decode(pair.CertPEM)
 			cert, err := x509.ParseCertificate(block.Bytes)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cert.URIs).To(HaveLen(1))
+			Expect(cert.URIs).To(HaveLen(2))
 			Expect(cert.URIs[0].String()).To(Equal("spiffe://default/web"))
+			Expect(cert.URIs[1].String()).To(Equal("spiffe://default/web-api"))
 			Expect(cert.NotAfter).To(Equal(now.UTC().Truncate(time.Second).Add(1 * time.Second))) // time in cert is in UTC and truncated to seconds
 		})
 
@@ -199,7 +195,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			}
 
 			// when
-			_, err := caManager.GenerateDataplaneCert(context.Background(), mesh, backend, "web")
+			_, err := caManager.GenerateDataplaneCert(context.Background(), mesh, backend, []string{"web"})
 
 			// then
 			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "default" and backend "builtin-non-existent": Resource not found: type="Secret" name="default.ca-builtin-cert-builtin-non-existent" mesh="default"`))

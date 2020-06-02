@@ -101,10 +101,11 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	return nil
 }
 
-func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int) error {
+func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int, pingType string) error {
 	if err := b.updateEntitiesReport(rt); err != nil {
 		return err
 	}
+	b.mutable["signal"] = pingType
 	pingData, err := b.marshall()
 	if err != nil {
 		return err
@@ -135,7 +136,6 @@ func (b *reportsBuffer) Append(info map[string]string) {
 
 func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
 	b.immutable["version"] = kuma_version.Build.Version
-	b.immutable["signal"] = "ping"
 	b.immutable["unique_id"] = rt.GetInstanceId()
 	b.immutable["backend"] = rt.Config().Store.Type
 
@@ -147,8 +147,12 @@ func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
 
 func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer) {
 	go func() {
+		err := buffer.dispatch(rt, pingHost, pingPort, "start")
+		if err != nil {
+			log.V(2).Info("Failed sending usage info", err)
+		}
 		for range time.Tick(time.Second * pingInterval) {
-			err := buffer.dispatch(rt, pingHost, pingPort)
+			err := buffer.dispatch(rt, pingHost, pingPort, "ping")
 			if err != nil {
 				log.V(2).Info("Failed sending usage info", err)
 			}

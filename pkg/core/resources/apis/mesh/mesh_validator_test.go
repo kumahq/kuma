@@ -127,6 +127,21 @@ var _ = Describe("Mesh", func() {
                 - field: mtls.enabledBackend
                   message: has to be set to one of the backends in the mesh`,
 			}),
+			Entry("dpCert rotation invalid expiration time", testCase{
+				mesh: `
+                mtls:
+                  enabledBackend: backend-3
+                  backends:
+                  - name: backend-3
+                    type: builtin
+                    dpCert:
+                      rotation:
+                        expiration: 2e`,
+				expected: `
+                violations:
+                - field: mtls.dpcert.rotation.expiration
+                  message: has to be a valid format`,
+			}),
 			Entry("logging backend with empty name", testCase{
 				mesh: `
                 logging:

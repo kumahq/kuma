@@ -9,8 +9,8 @@ import (
 type Credential string
 
 type Identity struct {
-	Mesh    string
-	Service string
+	Mesh     string
+	Services []string
 }
 
 type Authenticator interface {

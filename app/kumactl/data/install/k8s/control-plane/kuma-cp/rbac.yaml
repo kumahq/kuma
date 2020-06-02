@@ -117,6 +117,12 @@ rules:
     - meshes/finalizers
   verbs:
     - "*"
+- apiGroups:
+    - kuma.io
+  resources:
+    - dataplanes/finalizers
+  verbs:
+    - "*"
 {{ if .CNIEnabled }}- apiGroups:
     - k8s.cni.cncf.io
   resources:

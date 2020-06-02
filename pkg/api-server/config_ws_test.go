@@ -120,6 +120,12 @@ var _ = Describe("Config WS", func() {
             "port": 5683,
             "apiServerUrl": ""
           },
+          "metrics": {
+            "dataplane": {
+              "enabled": true,
+              "subscriptionLimit": 10
+            }
+          },
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
             "grpcPort": 5676

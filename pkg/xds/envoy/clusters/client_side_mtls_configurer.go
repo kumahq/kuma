@@ -11,22 +11,24 @@ import (
 	"github.com/Kong/kuma/pkg/xds/envoy"
 )
 
-func ClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) ClusterBuilderOpt {
+func ClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, clientService string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.Add(&clientSideMTLSConfigurer{
-			ctx:      ctx,
-			metadata: metadata,
+			ctx:           ctx,
+			metadata:      metadata,
+			clientService: clientService,
 		})
 	})
 }
 
 type clientSideMTLSConfigurer struct {
-	ctx      xds_context.Context
-	metadata *core_xds.DataplaneMetadata
+	ctx           xds_context.Context
+	metadata      *core_xds.DataplaneMetadata
+	clientService string
 }
 
 func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
-	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata)
+	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata, c.clientService)
 	if err != nil {
 		return err
 	}

@@ -51,6 +51,35 @@ func (d *Defaults) Validate() error {
 	return err
 }
 
+type Metrics struct {
+	Dataplane *DataplaneMetrics `yaml:"dataplane"`
+}
+
+func (m *Metrics) Sanitize() {
+}
+
+func (m *Metrics) Validate() error {
+	if err := m.Dataplane.Validate(); err != nil {
+		return errors.Wrap(err, "Dataplane validation failed")
+	}
+	return nil
+}
+
+type DataplaneMetrics struct {
+	Enabled           bool `yaml:"enabled" envconfig:"kuma_metrics_dataplane_enabled"`
+	SubscriptionLimit int  `yaml:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
+}
+
+func (d *DataplaneMetrics) Sanitize() {
+}
+
+func (d *DataplaneMetrics) Validate() error {
+	if d.SubscriptionLimit < 0 {
+		return errors.New("SubscriptionLimit should be positive or equal 0")
+	}
+	return nil
+}
+
 type Reports struct {
 	// If true then usage stats will be reported
 	Enabled bool `yaml:"enabled" envconfig:"kuma_reports_enabled"`
@@ -81,6 +110,8 @@ type Config struct {
 	Runtime *runtime.RuntimeConfig
 	// Default Kuma entities configuration
 	Defaults *Defaults `yaml:"defaults"`
+	// Metrics configuration
+	Metrics *Metrics `yaml:"metrics"`
 	// Reports configuration
 	Reports *Reports `yaml:"reports"`
 	// GUI Server Config
@@ -98,6 +129,7 @@ func (c *Config) Sanitize() {
 	c.AdminServer.Sanitize()
 	c.ApiServer.Sanitize()
 	c.Runtime.Sanitize()
+	c.Metrics.Sanitize()
 	c.Defaults.Sanitize()
 	c.GuiServer.Sanitize()
 }
@@ -118,6 +150,12 @@ func DefaultConfig() Config {
 			Mesh: `type: Mesh
 name: default
 `,
+		},
+		Metrics: &Metrics{
+			Dataplane: &DataplaneMetrics{
+				Enabled:           true,
+				SubscriptionLimit: 10,
+			},
 		},
 		Reports: &Reports{
 			Enabled: true,
@@ -157,6 +195,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Runtime.Validate(c.Environment); err != nil {
 		return errors.Wrap(err, "Runtime validation failed")
+	}
+	if err := c.Metrics.Validate(); err != nil {
+		return errors.Wrap(err, "Metrics validation failed")
 	}
 	if err := c.Defaults.Validate(); err != nil {
 		return errors.Wrap(err, "Defaults validation failed")

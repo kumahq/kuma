@@ -127,7 +127,7 @@ func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *mode
 		circuitBreaker := proxy.CircuitBreakers[serviceName]
 		edsCluster, err := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.EdsCluster(cluster.Name)).
-			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata)).
+			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, cluster.Tags[kuma_mesh.ServiceTag])).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 			Configure(envoy_clusters.HealthCheck(healthCheck)).
 			Build()
@@ -138,7 +138,7 @@ func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *mode
 			Name:     cluster.Name,
 			Resource: edsCluster,
 		})
-		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName]).Filter(kuma_mesh.MatchTags(cluster.Tags))
+		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName]).Filter(cluster.Tags)
 		resources = append(resources, &model.Resource{
 			Name:     cluster.Name,
 			Resource: envoy_endpoints.CreateClusterLoadAssignment(cluster.Name, endpoints),
