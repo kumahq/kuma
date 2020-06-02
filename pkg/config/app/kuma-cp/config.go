@@ -164,7 +164,7 @@ name: default
 		},
 		General:   DefaultGeneralConfig(),
 		GuiServer: gui_server.DefaultGuiServerConfig(),
-		Mode:      core.StandAlone,
+		Mode:      core.Standalone,
 	}
 }
 

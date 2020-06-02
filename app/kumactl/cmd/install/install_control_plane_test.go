@@ -139,6 +139,6 @@ var _ = Describe("kumactl install control-plane", func() {
 		err := rootCmd.Execute()
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("mode should be either standalone, local or global"))
+		Expect(err.Error()).To(Equal("invalid mode. Available modes: standalone, local, global"))
 	})
 })

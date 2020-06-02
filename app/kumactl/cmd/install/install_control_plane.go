@@ -55,7 +55,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		SdsTlsKey:               "",
 		CNIImage:                "lobkovilya/install-cni",
 		CNIVersion:              "0.0.1",
-		KumaCpMode:              core.StandAlone,
+		KumaCpMode:              core.Standalone,
 	}
 	cmd := &cobra.Command{
 		Use:   "control-plane",

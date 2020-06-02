@@ -108,6 +108,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 	}
 	// flags
 	cmd.PersistentFlags().StringVarP(&args.configPath, "config-file", "c", "", "configuration file")
-	cmd.PersistentFlags().StringVar(&args.kumaCpMode, "mode", config_core.StandAlone, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "local", "global"))
+	cmd.PersistentFlags().StringVar(&args.kumaCpMode, "mode", config_core.Standalone, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "local", "global"))
 	return cmd
 }

@@ -246,4 +246,5 @@ guiServer:
   # URL of the Api Server that requests with /api prefix will be redirected to. By default autoconfigured to http://locahost:port_of_api_server
   apiServerUrl: # ENV: KUMA_GUI_SERVER_API_SERVER_URL
 
-mode: standalone
+# ControlPlane mode
+mode: standalone # Configured from args. By default autoconfigured to standalone
