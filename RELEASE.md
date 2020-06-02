@@ -4,7 +4,7 @@ Below you can find the checklist of all the work that has to be performed when c
 
 To release a new version of Kuma follow these steps:
 
-- [ ] Update the `CHANGELOG.md`.
+- [ ] Update the `CHANGELOG.md`. Use `make changelog` as a helper.
 - [ ] Double-check that all the new changes have been documented on the [kuma.io website](https://github.com/Kong/kuma-website) by opening up a documentation PR with the new content for the new version of Kuma.
 - [ ] Create a new Git tag for the release.
 - [ ] Push the Git tag. This will trigger the release job on CI.

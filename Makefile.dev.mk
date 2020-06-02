@@ -129,3 +129,11 @@ dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 
 dev/install/goimports: ## Bootstrap: Install goimports
 	go get golang.org/x/tools/cmd/goimports
+
+GEN_CHANGELOG_MD ?= changelog.generated.md
+GEN_CHANGELOG_START_TAG ?= 0.5.0
+.PHONY: changelog
+changelog:
+	@cd tools/releases/changelog/ && \
+	go run ./... --start $(GEN_CHANGELOG_START_TAG) > ../../../$(GEN_CHANGELOG_MD)
+	@echo "The generated changelog is in $(GEN_CHANGELOG_MD)"
