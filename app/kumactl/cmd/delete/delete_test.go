@@ -97,9 +97,9 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, secret"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, secret`))
+			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret`))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
@@ -202,6 +202,12 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return &mesh_core.FaultInjectionResource{} },
 					expectedMessage: "deleted FaultInjection \"web\"\n",
 				}),
+				Entry("circuit-breaker", testCase{
+					typ:             "circuit-breaker",
+					name:            "web",
+					resource:        func() core_model.Resource { return &mesh_core.CircuitBreakerResource{} },
+					expectedMessage: "deleted CircuitBreaker \"web\"\n",
+				}),
 				Entry("secret", testCase{
 					typ:             "secret",
 					name:            "web",
@@ -268,6 +274,12 @@ var _ = Describe("kumactl delete ", func() {
 					name:            "web",
 					resource:        func() core_model.Resource { return &mesh_core.FaultInjectionResource{} },
 					expectedMessage: "Error: there is no FaultInjection with name \"web\"\n",
+				}),
+				Entry("fault-injections", testCase{
+					typ:             "circuit-breaker",
+					name:            "web",
+					resource:        func() core_model.Resource { return &mesh_core.CircuitBreakerResource{} },
+					expectedMessage: "Error: there is no CircuitBreaker with name \"web\"\n",
 				}),
 				Entry("secret", testCase{
 					typ:             "secret",
