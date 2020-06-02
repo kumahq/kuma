@@ -59,13 +59,13 @@ func (g *Generator) getPRNum(c *object.Commit) int {
 	// generate a Markdown link to the pull request
 	re := regexp.MustCompile(`\(#(?P<num>[0-9]*)\)`)
 	match := re.FindStringSubmatch(title)
-	if len(match) <2 {
+	if len(match) < 2 {
 		return 0
 	}
 
 	pr, err := strconv.Atoi(match[1])
 	if err != nil {
-		Warning("Unable to get PR from %s [%v]", title, match )
+		Warning("Unable to get PR from %s [%v]", title, match)
 		return 0
 	}
 
