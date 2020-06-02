@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strings"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -42,8 +44,10 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 		Networking: &mesh_proto.Dataplane_Networking{},
 	}
 	if injector_metadata.HasTransparentProxyingEnabled(pod) {
+		services := pod.GetAnnotations()[injector_metadata.KumaDirectAccess]
 		dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
-			RedirectPort: injector_metadata.GetTransparentProxyingPort(pod),
+			RedirectPort:         injector_metadata.GetTransparentProxyingPort(pod),
+			DirectAccessServices: strings.Split(services, ","),
 		}
 	}
 
