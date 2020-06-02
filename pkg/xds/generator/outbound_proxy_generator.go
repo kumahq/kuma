@@ -59,7 +59,6 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		outboundListenerName := envoy_names.GetOutboundListenerName(ofaces[i].DataplaneIP, ofaces[i].DataplanePort)
 		outboundRouteName := envoy_names.GetOutboundRouteName(outbound.Service)
 		destinationService := outbound.Service
-		trafficDirection := "OUTBOUND"
 		filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder()
 			switch protocol {
@@ -68,7 +67,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(outbound.Service)).
 					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
-					Configure(envoy_listeners.HttpAccessLog(meshName, trafficDirection, sourceService, destinationService, proxy.Logs[outbound.Service], proxy)).
+					Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, destinationService, proxy.Logs[outbound.Service], proxy)).
 					Configure(envoy_listeners.HttpOutboundRoute(outboundRouteName))
 			case mesh_core.ProtocolTCP:
 				fallthrough
@@ -76,7 +75,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 				// configuration for non-HTTP cases
 				filterChainBuilder.
 					Configure(envoy_listeners.TcpProxy(outbound.Service, clusters...)).
-					Configure(envoy_listeners.NetworkAccessLog(meshName, trafficDirection, sourceService, destinationService, proxy.Logs[outbound.Service], proxy))
+					Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, destinationService, proxy.Logs[outbound.Service], proxy))
 			}
 			return filterChainBuilder
 		}()

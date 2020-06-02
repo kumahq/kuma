@@ -1,15 +1,13 @@
 package topology
 
 import (
-	"context"
-
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
 
 // GetOutboundTargets resolves all endpoints reachable from a given dataplane.
-func GetOutboundTargets(ctx context.Context, dataplane *mesh_core.DataplaneResource, destinations core_xds.DestinationMap, dataplanes *mesh_core.DataplaneResourceList) (core_xds.EndpointMap, error) {
+func GetOutboundTargets(destinations core_xds.DestinationMap, dataplanes *mesh_core.DataplaneResourceList) (core_xds.EndpointMap, error) {
 	if len(destinations) == 0 {
 		return nil, nil
 	}

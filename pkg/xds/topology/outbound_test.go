@@ -1,8 +1,6 @@
 package topology_test
 
 import (
-	"context"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -16,12 +14,6 @@ import (
 )
 
 var _ = Describe("TrafficRoute", func() {
-
-	var ctx context.Context
-
-	BeforeEach(func() {
-		ctx = context.Background()
-	})
 
 	Describe("GetOutboundTargets()", func() {
 
@@ -141,7 +133,7 @@ var _ = Describe("TrafficRoute", func() {
 			}
 
 			// when
-			targets, err := GetOutboundTargets(ctx, backend, destinations, dataplanes)
+			targets, err := GetOutboundTargets(destinations, dataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

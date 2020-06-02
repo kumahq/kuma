@@ -122,7 +122,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound, err := xds_topology.GetOutboundTargets(ctx, dataplane, destinations, dataplanes)
+				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes)
 				if err != nil {
 					return err
 				}
