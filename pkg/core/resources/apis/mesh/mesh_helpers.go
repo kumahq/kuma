@@ -109,5 +109,5 @@ func ParseDuration(durationStr string) (time.Duration, error) {
 	default:
 		return 0, fmt.Errorf("invalid time unit in duration string: %q", unit)
 	}
-	return time.Duration(dur), nil
+	return dur, nil
 }
