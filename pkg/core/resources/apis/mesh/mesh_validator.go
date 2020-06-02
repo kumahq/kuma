@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"time"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 
@@ -40,7 +39,7 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	}
 	for _, backend := range mtls.Backends {
 		if backend.GetDpCert() != nil {
-			_, err := time.ParseDuration(backend.GetDpCert().GetRotation().GetExpiration())
+			_, err := ParseDuration(backend.GetDpCert().GetRotation().GetExpiration())
 			if err != nil {
 				verr.AddViolation("dpcert.rotation.expiration", "has to be a valid format")
 			}

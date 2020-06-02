@@ -23,6 +23,9 @@ var _ = Describe("Mesh", func() {
               backends:
               - name: builtin-1
                 type: builtin
+                dpCert:
+                  rotation:
+                    expiration: 2y
             logging:
               backends:
               - name: file-1
