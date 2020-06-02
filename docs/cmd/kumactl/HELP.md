@@ -344,6 +344,8 @@ Usage:
   kumactl get [command]
 
 Available Commands:
+  circuit-breaker     Show a single CircuitBreaker resource
+  circuit-breakers    Show CircuitBreakers
   dataplane           Show a single Dataplane resource
   dataplanes          Show Dataplanes
   fault-injection     Show a single Fault-Injection resource

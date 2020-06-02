@@ -127,6 +127,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					return err
 				}
 
+				circuitBreakers, err := xds_topology.GetCircuitBreakers(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
+				if err != nil {
+					return err
+				}
+
 				trafficTrace, err := xds_topology.GetTrafficTrace(ctx, dataplane, rt.ReadOnlyResourceManager())
 				if err != nil {
 					return err
@@ -159,6 +164,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					OutboundSelectors:  destinations,
 					OutboundTargets:    outbound,
 					HealthChecks:       healthChecks,
+					CircuitBreakers:    circuitBreakers,
 					Logs:               matchedLogs,
 					TrafficTrace:       trafficTrace,
 					TracingBackend:     tracingBackend,

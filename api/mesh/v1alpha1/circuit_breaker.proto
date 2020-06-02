@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+import "mesh/v1alpha1/selector.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+// CircuitBreaker defines circuit breaking policy for dataplane's outbound
+message CircuitBreaker {
+
+  // List of selectors to match dataplanes that are sources of traffic.
+  repeated Selector sources = 1;
+
+  // List of selectors to match services that are destinations of traffic.
+  repeated Selector destinations = 2;
+
+  message Conf {
+    // Time interval between ejection analysis sweeps
+    google.protobuf.Duration interval = 1;
+    // The base time that a host is ejected for. The real time is equal to the
+    // base time multiplied by the number of times the host has been ejected
+    google.protobuf.Duration baseEjectionTime = 2;
+    // The maximum percent of an upstream cluster that can be ejected due to
+    // outlier detection, has to be in [0 - 100] range
+    google.protobuf.UInt32Value maxEjectionPercent = 3;
+    // Enables Split Mode in which local and external errors are distinguished
+    bool splitExternalAndLocalErrors = 4;
+
+    message Detectors {
+      // Detector based on counting consecutive number of errors
+      message Errors { google.protobuf.UInt32Value consecutive = 1; }
+      // Errors with status code 5xx and locally originated errors, in Split
+      // Mode - just errors with status code 5xx
+      Errors totalErrors = 1;
+      // Subset of 'total' related to gateway errors (502, 503 or 504 status
+      // code)
+      Errors gatewayErrors = 2;
+      // Takes into account only in Split Mode, number of locally originated
+      // errors
+      Errors localErrors = 3;
+
+      // Detection based on success rate, aggregated from every host in the
+      // cluser
+      message StandardDeviation {
+        // Ignore hosts with less number of requests than 'requestVolume'
+        google.protobuf.UInt32Value requestVolume = 1;
+        // Won't count success rate for cluster if number of hosts with required
+        // 'requestVolume' is less than 'minimumHosts'
+        google.protobuf.UInt32Value minimumHosts = 2;
+        // Resulting threshold = mean - (stdev * factor)
+        google.protobuf.DoubleValue factor = 3;
+      }
+      StandardDeviation standardDeviation = 4;
+
+      // Detection based on success rate, but threshold is set explicitly
+      // (unlike 'standardDeviation')
+      message Failure {
+        // Ignore hosts with less number of requests than 'requestVolume'
+        google.protobuf.UInt32Value requestVolume = 1;
+        // Won't count success rate for cluster if number of hosts with required
+        // 'requestVolume' is less than 'minimumHosts'
+        google.protobuf.UInt32Value minimumHosts = 2;
+        // Eject host if failure percentage of a given host is greater than or
+        // equal to this value, has to be in [0 - 100] range
+        google.protobuf.UInt32Value threshold = 3;
+      }
+      Failure failure = 5;
+    }
+    Detectors detectors = 5;
+  }
+
+  Conf conf = 3;
+}

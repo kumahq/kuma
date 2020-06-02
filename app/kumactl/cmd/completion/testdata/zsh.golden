@@ -314,6 +314,8 @@ function _kumactl_get {
   case $state in
   cmnds)
     commands=(
+      "circuit-breaker:Show a single CircuitBreaker resource"
+      "circuit-breakers:Show CircuitBreakers"
       "dataplane:Show a single Dataplane resource"
       "dataplanes:Show Dataplanes"
       "fault-injection:Show a single Fault-Injection resource"
@@ -340,6 +342,12 @@ function _kumactl_get {
   esac
 
   case "$words[1]" in
+  circuit-breaker)
+    _kumactl_get_circuit-breaker
+    ;;
+  circuit-breakers)
+    _kumactl_get_circuit-breakers
+    ;;
   dataplane)
     _kumactl_get_dataplane
     ;;
@@ -401,6 +409,24 @@ function _kumactl_get {
     _kumactl_get_traffic-traces
     ;;
   esac
+}
+
+function _kumactl_get_circuit-breaker {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_circuit-breakers {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
 function _kumactl_get_dataplane {

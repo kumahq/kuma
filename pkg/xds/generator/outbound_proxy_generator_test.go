@@ -169,6 +169,17 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 				Metadata: &model.DataplaneMetadata{},
+				CircuitBreakers: model.CircuitBreakerMap{
+					"api-http": &mesh_core.CircuitBreakerResource{
+						Spec: mesh_proto.CircuitBreaker{
+							Conf: &mesh_proto.CircuitBreaker_Conf{
+								Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
+									TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
+								},
+							},
+						},
+					},
+				},
 			}
 
 			// when

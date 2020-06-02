@@ -1,0 +1,88 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "type": "CircuitBreaker",
+      "mesh": "default",
+      "name": "cb1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "sources": [
+        {
+          "match": {
+            "service": "frontend",
+            "version": "0.1"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "service": "backend"
+          }
+        }
+      ],
+      "conf": {
+        "interval": "5s",
+        "baseEjectionTime": "5s",
+        "maxEjectionPercent": 50,
+        "detectors": {
+          "totalErrors": {},
+          "gatewayErrors": {},
+          "localErrors": {},
+          "standardDeviation": {},
+          "failure": {}
+        }
+      }
+    },
+    {
+      "type": "CircuitBreaker",
+      "mesh": "default",
+      "name": "cb2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "sources": [
+        {
+          "match": {
+            "service": "web",
+            "version": "0.1"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "service": "redis"
+          }
+        }
+      ],
+      "conf": {
+        "interval": "5s",
+        "baseEjectionTime": "5s",
+        "maxEjectionPercent": 50,
+        "detectors": {
+          "totalErrors": {
+            "consecutive": 20
+          },
+          "gatewayErrors": {
+            "consecutive": 10
+          },
+          "localErrors": {
+            "consecutive": 2
+          },
+          "standardDeviation": {
+            "requestVolume": 20,
+            "minimumHosts": 3,
+            "factor": 1.9
+          },
+          "failure": {
+            "requestVolume": 20,
+            "minimumHosts": 3,
+            "threshold": 85
+          }
+        }
+      }
+    }
+  ],
+  "next": null
+}

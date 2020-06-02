@@ -206,6 +206,7 @@ webhooks:
       operations:
         - CREATE
       resources:
+        - circuitbreakers
         - faultinjections
         - trafficlogs
         - trafficpermissions
@@ -257,6 +258,7 @@ webhooks:
           - UPDATE
           - DELETE
         resources:
+          - circuitbreakers
           - faultinjections
           - trafficlogs
           - trafficpermissions
