@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/goutils v1.1.0 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
+	github.com/Nordix/simple-ipam v1.0.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emicklei/go-restful v2.9.6+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.5
@@ -23,6 +24,7 @@ require (
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.1.1
+	github.com/miekg/dns v1.1.29
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0

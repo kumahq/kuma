@@ -248,3 +248,9 @@ guiServer:
 
 # ControlPlane mode
 mode: standalone # Configured from args. By default autoconfigured to standalone
+# DNS Server configuration
+dnsServer:
+  # Port on which the server is exposed
+  port: 5653 # ENV: KUMA_DNS_SERVER_PORT
+  # The CIDR range used to allocate
+  CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_CIDR

@@ -112,6 +112,10 @@ var _ = Describe("Config WS", func() {
           "defaults": {
             "mesh": "type: Mesh\nname: default\n"
           },
+          "dnsServer": {
+            "CIDR": "240.0.0.0/4",
+            "port": 5653
+          },
           "environment": "universal",
           "general": {
             "advertisedHostname": "localhost"
