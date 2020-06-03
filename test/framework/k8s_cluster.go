@@ -10,13 +10,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
+
+	"github.com/pkg/errors"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,18 +36,30 @@ type K8sCluster struct {
 	verbose             bool
 }
 
-func (c *K8sCluster) Apply(namespace string, yaml string) error {
+func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
 	options := c.GetKubectlOptions(namespace)
-	defer k8s.KubectlDelete(c.t, options, c.kubeconfig)
-	k8s.KubectlApply(c.t, options, yaml)
-	return nil
+
+	return k8s.KubectlApplyE(c.t,
+		options,
+		yamlPath)
 }
 
-func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, yaml string, service string) error {
+func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service string, yamlPath string) error {
 	options := c.GetKubectlOptions(namespace)
-	defer k8s.KubectlDelete(c.t, options, c.kubeconfig)
-	k8s.KubectlApply(c.t, options, yaml)
-	k8s.WaitUntilServiceAvailable(c.t, options, service, defaultRetries, defaultTiemout)
+
+	err := k8s.KubectlApplyE(c.t,
+		options,
+		yamlPath)
+	if err != nil {
+		return err
+	}
+
+	k8s.WaitUntilServiceAvailable(c.t,
+		options,
+		service,
+		defaultRetries,
+		defaultTiemout)
+
 	return nil
 }
 
@@ -64,31 +76,30 @@ func (c *K8sCluster) DeployKuma() error {
 		return err
 	}
 
-	k8s.WaitUntilServiceAvailable(c.t,
-		c.GetKubectlOptions(kumaNamespace),
-		kumaServiceName, defaultRetries, defaultTiemout)
-
 	k8s.WaitUntilNumPodsCreated(c.t,
 		c.GetKubectlOptions(kumaNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + kumaServiceName,
 		},
-		1, defaultRetries, defaultTiemout)
+		1,
+		defaultRetries,
+		defaultTiemout)
 
-	kumacp_pods := c.GetKumaCPPods()
-	Expect(len(kumacp_pods)).To(Equal(1))
+	kumacpPods := c.GetKumaCPPods()
+	if len(kumacpPods) != 1 {
+		return errors.Wrapf(err, "Kuma CP pods: %d", len(kumacpPods))
+	}
 
 	k8s.WaitUntilPodAvailable(c.t,
 		c.GetKubectlOptions(kumaNamespace),
-		kumacp_pods[0].Name,
-		10, 3*time.Second)
+		kumacpPods[0].Name,
+		defaultRetries,
+		defaultTiemout)
 
 	c.localCPPort = c.PortForwardKumaCP()
+	kumacpURL := "http://localhost:" + strconv.FormatUint(uint64(c.localCPPort), 10)
 
-	err = c.kumactl.KumactlConfigControlPlanesAdd(c.name, "http://localhost:"+strconv.FormatUint(uint64(c.localCPPort), 10))
-	Expect(err).ToNot(HaveOccurred())
-
-	return nil
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
 }
 
 func (c *K8sCluster) DeleteKuma() error {
@@ -115,7 +126,10 @@ func (c *K8sCluster) DeleteKumaNamespace() error {
 }
 
 func (c *K8sCluster) WaitKumaNamespaceDelete() {
-	retry.DoWithRetry(c.t, "Wait the Kuma Namespace to terminate.", 2*defaultRetries, defaultTiemout,
+	retry.DoWithRetry(c.t,
+		"Wait the Kuma Namespace to terminate.",
+		defaultRetries,
+		defaultTiemout,
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
@@ -123,68 +137,87 @@ func (c *K8sCluster) WaitKumaNamespaceDelete() {
 			if err != nil {
 				return "", nil
 			}
-			return "", fmt.Errorf("Kuma Namespace still not terminated.")
+			return "", errors.Wrapf(err, "kuma Namespace still not terminated")
 		})
 }
 
 func (c *K8sCluster) PortForwardKumaCP() uint32 {
-	pods := c.GetKumaCPPods()
-	if len(pods) < 1 {
-		fmt.Println("No kuma-cp pods found for port-forward.")
+	kumacpPods := c.GetKumaCPPods()
+	if len(kumacpPods) != 1 {
+		fmt.Printf("Kuma CP pods: %d", len(kumacpPods))
 		return 0
 	}
-	name := pods[0].Name
 
-	//find free local port
-	localPort, err := util_net.PickTCPPort("127.0.0.1", 32000+kumaCPAPIPort, 42000+kumaCPAPIPort)
+	kumacpPodName := kumacpPods[0].Name
+
+	//find a free local port
+	localPort, err := util_net.PickTCPPort("127.0.0.1", kumaCPAPIPortFwdLow, kumaCPAPIPortFwdHi)
 	if err != nil {
-		fmt.Println("No free port found in range: ", 32000+kumaCPAPIPort, " - ", 42000+kumaCPAPIPort)
+		fmt.Println("No free port found in range: ", kumaCPAPIPortFwdLow, " - ", kumaCPAPIPortFwdHi)
 		return 0
 	}
 
-	c.PortForwardPod(kumaNamespace, name, localPort, kumaCPAPIPort)
+	c.PortForwardPod(kumaNamespace, kumacpPodName, localPort, kumaCPAPIPort)
+
 	return localPort
 }
 
-func (c *K8sCluster) PortForwardPod(namespace, name string, localPort, remotePort uint32) {
+func (c *K8sCluster) PortForwardPod(namespace string, podName string, localPort, remotePort uint32) {
 	config, err := clientcmd.BuildConfigFromFlags("", c.kubeconfig)
 	if err != nil {
-		fmt.Println("Error building config")
+		fmt.Printf("Error building config %v", err)
 		return
 	}
+
 	roundTripper, upgrader, err := spdy.RoundTripperFor(config)
 	if err != nil {
-		panic(err)
+		fmt.Printf("Error port forwarding %v", err)
+		return
 	}
 
-	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", namespace, name)
+	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", namespace, podName)
 	hostIP := strings.TrimLeft(config.Host, "htps:/")
-	serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
+	serverURL := url.URL{
+		Scheme: "https",
+		Path:   path,
+		Host:   hostIP,
+	}
 
 	stopChan, readyChan := make(chan struct{}, 1), make(chan struct{}, 1)
-	out, errOut := new(bytes.Buffer), new(bytes.Buffer)
+	stdOut, stdErr := new(bytes.Buffer), new(bytes.Buffer)
 
-	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
+	dialer := spdy.NewDialer(upgrader,
+		&http.Client{
+			Transport: roundTripper,
+		},
+		http.MethodPost, &serverURL)
 
-	ports := []string{strconv.FormatUint(uint64(localPort), 10) + ":" + strconv.FormatUint(uint64(remotePort), 10)}
+	localPortStr := strconv.FormatUint(uint64(localPort), 10)
+	remotePortStr := strconv.FormatUint(uint64(remotePort), 10)
+	ports := []string{localPortStr + ":" + remotePortStr}
 
-	forwarder, err := portforward.New(dialer, ports, stopChan, readyChan, out, errOut)
+	forwarder, err := portforward.New(dialer, ports,
+		stopChan, readyChan,
+		stdErr, stdErr)
 	if err != nil {
 		panic(err)
 	}
 
 	go func() {
-		for range readyChan { // Kubernetes will close this channel when it has something to tell us.
+		// Kubernetes will close this channel when it has something to tell us.
+		for range readyChan {
 		}
-		if len(errOut.String()) != 0 {
-			panic(errOut.String())
-		} else if len(out.String()) != 0 {
-			fmt.Println(out.String())
+
+		if len(stdErr.String()) != 0 {
+			panic(stdErr.String())
+		} else if len(stdOut.String()) != 0 {
+			fmt.Println(stdOut.String())
 		}
 	}()
 
 	go func() {
-		if err = forwarder.ForwardPorts(); err != nil { // Locks until stopChan is closed.
+		err = forwarder.ForwardPorts()
+		if err != nil {
 			panic(err)
 		}
 	}()
@@ -196,6 +229,7 @@ func (c *K8sCluster) CleanupPortForwards() {
 	for _, stop := range c.forwardedPortsChans {
 		close(stop)
 	}
+
 	c.forwardedPortsChans = map[uint32]chan struct{}{}
 }
 
@@ -203,15 +237,18 @@ func (c *K8sCluster) VerifyKuma() error {
 	if err := c.VerifyKumaCtl(); err != nil {
 		return err
 	}
+
 	if err := c.VerifyKumaREST(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (c *K8sCluster) VerifyKumaCtl() error {
 	output, err := c.kumactl.RunKumactlAndGetOutputV(Verbose, "get", "dataplanes")
 	fmt.Println(output)
+
 	return err
 }
 
@@ -220,7 +257,7 @@ func (c *K8sCluster) VerifyKumaREST() error {
 		c.t,
 		"http://localhost:"+strconv.FormatUint(uint64(c.localCPPort), 10),
 		&tls.Config{},
-		defaultRetries/2,
+		defaultRetries,
 		defaultTiemout,
 		func(statusCode int, body string) bool {
 			return statusCode == http.StatusOK
@@ -243,6 +280,7 @@ func (c *K8sCluster) LabelNamespaceForSidecarInjection(namespace string) error {
 		},
 	}
 	_, err = clientset.CoreV1().Namespaces().Update(context.Background(), ns, metav1.UpdateOptions{})
+
 	return err
 }
 
@@ -262,22 +300,27 @@ func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions 
 	for _, ns := range namespace {
 		options.Namespace = ns
 	}
+
 	return options
 }
 
 func (c *K8sCluster) GetKumaCPLogs() (string, error) {
 	logs := ""
+
 	pods := c.GetKumaCPPods()
 	if len(pods) < 1 {
-		return "", fmt.Errorf("No kuma-cp pods found for logs.")
+		return "", errors.Errorf("no kuma-cp pods found for logs")
 	}
+
 	for _, p := range pods {
 		log, err := c.GetPodLogs(p)
 		if err != nil {
 			return "", err
 		}
+
 		logs = logs + "\n >>> " + p.Name + "\n" + log
 	}
+
 	return logs, nil
 }
 
@@ -286,20 +329,24 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	// creates the clientset
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
 	if err != nil {
-		return "", fmt.Errorf("error in getting access to K8S")
+		return "", errors.Wrapf(err, "error in getting access to K8S")
 	}
+
 	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
+
 	podLogs, err := req.Stream(context.Background())
 	if err != nil {
-		return "", fmt.Errorf("error in opening stream")
+		return "", errors.Wrapf(err, "error in opening stream")
 	}
 	defer podLogs.Close()
 
 	buf := new(bytes.Buffer)
+
 	_, err = io.Copy(buf, podLogs)
 	if err != nil {
-		return "", fmt.Errorf("error in copy information from podLogs to buf")
+		return "", errors.Wrap(err, "error in copy information from podLogs to buf")
 	}
+
 	str := buf.String()
 
 	return str, nil

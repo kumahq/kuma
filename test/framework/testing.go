@@ -1,16 +1,16 @@
 package framework
 
 import (
-	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo"
 )
 
 type TestingT struct {
-	GinkgoTInterface
-	desc GinkgoTestDescription
+	ginkgo.GinkgoTInterface
+	desc ginkgo.GinkgoTestDescription
 }
 
 func NewTestingT() *TestingT {
-	return &TestingT{GinkgoT(), CurrentGinkgoTestDescription()}
+	return &TestingT{ginkgo.GinkgoT(), ginkgo.CurrentGinkgoTestDescription()}
 }
 
 func (i *TestingT) Helper() {

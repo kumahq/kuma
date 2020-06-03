@@ -34,7 +34,7 @@ test/e2e/test:
 		$(GO_TEST) -v -timeout=30m ./test/e2e/...
 
 .PHONY: test/e2e
-test/e2e: vet build/kumactl images test/e2e/kind/start
+test/e2e: build/kumactl images test/e2e/kind/start
 	make test/e2e/test || \
 	(ret=$$?; \
 	make test/e2e/kind/stop && \

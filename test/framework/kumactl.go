@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/pkg/errors"
+
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
@@ -13,7 +15,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/shell"
 )
 
-// KumactlOptions represents common options necessary to specify for all Kumactl calls
 type KumactlOptions struct {
 	t          testing.TestingT
 	CPName     string
@@ -22,12 +23,12 @@ type KumactlOptions struct {
 	Verbose    bool
 }
 
-// NewKumactlOptions will return a pointer to new instance of KumactlOptions with the configured options
 func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*KumactlOptions, error) {
 	kumactl := os.Getenv(envKUMACTLBIN)
+
 	_, err := os.Stat(kumactl)
 	if kumactl == "" || os.IsNotExist(err) {
-		return nil, fmt.Errorf("Unable to find kumactl, please supply a valid KUMACTL environment variable.")
+		return nil, errors.Wrapf(err, "unable to find kumactl, please supply a valid KUMACTL environment variable")
 	}
 
 	configPath := os.ExpandEnv(fmt.Sprintf(defaultKumactlConfig, cpname))
@@ -55,6 +56,7 @@ func (o *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (
 	if o.ConfigPath != "" {
 		cmdArgs = append(cmdArgs, "--config-file", o.ConfigPath)
 	}
+
 	cmdArgs = append(cmdArgs, args...)
 	command := shell.Command{
 		Command: o.Kumactl,
@@ -64,6 +66,7 @@ func (o *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (
 	if !verbose {
 		command.Logger = logger.Discard
 	}
+
 	return shell.RunCommandAndGetOutputE(o.t, command)
 }
 
@@ -80,12 +83,15 @@ func (o *KumactlOptions) KumactlApplyFromString(configData string) error {
 	if err != nil {
 		return err
 	}
+
 	defer os.Remove(tmpfile)
+
 	return o.KumactlApply(tmpfile)
 }
 
 func storeConfigToTempFile(name string, configData string) (string, error) {
 	escapedTestName := url.PathEscape(name)
+
 	tmpfile, err := ioutil.TempFile("", escapedTestName)
 	if err != nil {
 		return "", err
@@ -93,6 +99,7 @@ func storeConfigToTempFile(name string, configData string) (string, error) {
 	defer tmpfile.Close()
 
 	_, err = tmpfile.WriteString(configData)
+
 	return tmpfile.Name(), err
 }
 
@@ -122,5 +129,6 @@ func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) err
 				"--name", name,
 				"--address", address)
 		})
+
 	return err
 }

@@ -1,4 +1,4 @@
-package e2e
+package e2e_test
 
 import (
 	"fmt"
@@ -17,13 +17,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = BeforeEach(func() {
-
-})
-
 var _ = Describe("Test K8s deployment with `kumactl install control-plane`", func() {
 
-	It("Deploy on Single K8s cluster and verify the Kuma CP REST API is accessible", func(done Done) {
+	It("Should deploy on Single K8s cluster and verify the Kuma.", func(done Done) {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1},
 			framework.Silent)
@@ -46,7 +42,7 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 		close(done)
 	}, 180)
 
-	It("Deploy on Two K8s cluster and verify the Kuma CP REST API is accessible. Use the Clusters Interface.", func(done Done) {
+	It("Should deploy on Two K8s cluster and verify the Kuma. Use the Clusters Interface.", func(done Done) {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1, framework.Kuma2},
 			framework.Silent)
@@ -68,7 +64,7 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 		close(done)
 	}, 180)
 
-	It("Check Kuma side-car injection", func(done Done) {
+	It("Should check Kuma side-car injection", func(done Done) {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1},
 			framework.Verbose)
@@ -87,7 +83,9 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 		err = c.LabelNamespaceForSidecarInjection("kuma-test")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = k8s.KubectlApplyE(c.GetTesting(), c.GetKubectlOptions("kuma-test"), filepath.Join("testdata", "example-app.yaml"))
+		err = k8s.KubectlApplyE(c.GetTesting(),
+			c.GetKubectlOptions("kuma-test"),
+			filepath.Join("testdata", "example-app.yaml"))
 		Expect(err).ToNot(HaveOccurred())
 
 		k8s.WaitUntilServiceAvailable(c.GetTesting(),
