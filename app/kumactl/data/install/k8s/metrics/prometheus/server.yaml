@@ -406,6 +406,8 @@ spec:
       labels:
         component: "server"
         app: prometheus
+      annotations:
+        kuma.io/direct-access-services: "*"
     spec:
       serviceAccountName: prometheus-server
       containers:
@@ -433,22 +435,6 @@ spec:
             - --web.enable-lifecycle
           ports:
             - containerPort: 9090
-          readinessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9090
-            initialDelaySeconds: 30
-            timeoutSeconds: 30
-            failureThreshold: 3
-            successThreshold: 1
-          livenessProbe:
-            httpGet:
-              path: /-/healthy
-              port: 9090
-            initialDelaySeconds: 30
-            timeoutSeconds: 30
-            failureThreshold: 3
-            successThreshold: 1
           resources:
             {}
           volumeMounts:
@@ -473,7 +459,6 @@ spec:
       securityContext:
         fsGroup: 65534
         runAsGroup: 65534
-        runAsNonRoot: true
         runAsUser: 65534
       terminationGracePeriodSeconds: 300
       volumes:

@@ -4,6 +4,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: kuma-metrics
+  labels:
+    kuma.io/sidecar-injection: enabled
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -4847,6 +4849,8 @@ spec:
       labels:
         component: "node-exporter"
         app: prometheus
+      annotations:
+        kuma.io/sidecar-injection: "disabled" # disabled for now, injecting DP crashes K8S cluster
     spec:
       serviceAccountName: prometheus-node-exporter
       containers:
@@ -4996,12 +5000,6 @@ spec:
             - --web.external-url=http://localhost:9093
           ports:
             - containerPort: 9093
-          readinessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9093
-            initialDelaySeconds: 30
-            timeoutSeconds: 30
           resources:
             {}
           volumeMounts:
@@ -5025,7 +5023,6 @@ spec:
       securityContext:
         fsGroup: 65534
         runAsGroup: 65534
-        runAsNonRoot: true
         runAsUser: 65534
       volumes:
         - name: config-volume
@@ -5068,7 +5065,6 @@ spec:
           resources:
             {}
       securityContext:
-        runAsNonRoot: true
         runAsUser: 65534
 ---
 apiVersion: apps/v1
@@ -5099,22 +5095,9 @@ spec:
           args:
           ports:
             - containerPort: 9091
-          livenessProbe:
-            httpGet:
-              path: /-/healthy
-              port: 9091
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9091
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
           resources:
             {}
       securityContext:
-        runAsNonRoot: true
         runAsUser: 65534
 ---
 apiVersion: apps/v1
@@ -5136,6 +5119,8 @@ spec:
       labels:
         component: "server"
         app: prometheus
+      annotations:
+        kuma.io/direct-access-services: "*"
     spec:
       serviceAccountName: prometheus-server
       containers:
@@ -5163,22 +5148,6 @@ spec:
             - --web.enable-lifecycle
           ports:
             - containerPort: 9090
-          readinessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9090
-            initialDelaySeconds: 30
-            timeoutSeconds: 30
-            failureThreshold: 3
-            successThreshold: 1
-          livenessProbe:
-            httpGet:
-              path: /-/healthy
-              port: 9090
-            initialDelaySeconds: 30
-            timeoutSeconds: 30
-            failureThreshold: 3
-            successThreshold: 1
           resources:
             {}
           volumeMounts:
@@ -5203,7 +5172,6 @@ spec:
       securityContext:
         fsGroup: 65534
         runAsGroup: 65534
-        runAsNonRoot: true
         runAsUser: 65534
       terminationGracePeriodSeconds: 300
       volumes:

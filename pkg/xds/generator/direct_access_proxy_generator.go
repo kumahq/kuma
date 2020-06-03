@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	manager_dataplane "github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
@@ -34,7 +35,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 
-	endpoints, err := directAccessEndpoints(proxy.Dataplane, ctx.Mesh.Dataplanes)
+	endpoints, err := directAccessEndpoints(proxy.Dataplane, ctx.Mesh.Dataplanes, ctx.Mesh.Resource)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +67,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 	return resources.List(), nil
 }
 
-func directAccessEndpoints(dataplane *mesh_core.DataplaneResource, other *mesh_core.DataplaneResourceList) (Endpoints, error) {
+func directAccessEndpoints(dataplane *mesh_core.DataplaneResource, other *mesh_core.DataplaneResourceList, mesh *mesh_core.MeshResource) (Endpoints, error) {
 	// collect endpoints that are already created so we don't create 2 listeners with same IP:PORT
 	takenEndpoints, err := takenEndpoints(dataplane)
 	if err != nil {
@@ -83,10 +84,14 @@ func directAccessEndpoints(dataplane *mesh_core.DataplaneResource, other *mesh_c
 		if dp.Meta.GetName() == dataplane.Meta.GetName() { // skip itself
 			continue
 		}
-		for i, inbound := range dp.Spec.GetNetworking().GetInbound() {
+		inbounds, err := manager_dataplane.AdditionalInbounds(dp, mesh)
+		if err != nil {
+			return nil, err
+		}
+		for _, inbound := range append(inbounds, dp.Spec.GetNetworking().GetInbound()...) {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			if services["*"] || services[service] {
-				iface, err := dp.Spec.GetNetworking().GetInboundInterfaceByIdx(i)
+				iface, err := dp.Spec.GetNetworking().ToInboundInterface(inbound)
 				if err != nil {
 					return nil, err
 				}

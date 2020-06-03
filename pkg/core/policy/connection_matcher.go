@@ -141,16 +141,10 @@ func SelectConnectionPolicies(dataplane *mesh_core.DataplaneResource, destinatio
 // SelectInboundConnectionPolicies picks a single the most specific policy for each inbound interface of a given Dataplane.
 // For each inbound we pick a policy that matches the most destination tags with inbound tags
 // Sources part of matched policies are later used in Envoy config to apply it only for connection that matches sources
-func SelectInboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, policies []ConnectionPolicy) (InboundConnectionPolicyMap, error) {
+func SelectInboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, inbounds []*mesh_proto.Dataplane_Networking_Inbound, policies []ConnectionPolicy) (InboundConnectionPolicyMap, error) {
 	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
-
 	policiesMap := make(InboundConnectionPolicyMap)
-	ifaces, err := dataplane.Spec.GetNetworking().GetInboundInterfaces()
-	if err != nil {
-		return nil, err
-	}
-
-	for i, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
+	for _, inbound := range inbounds {
 		var bestPolicy ConnectionPolicy
 		var bestRank mesh_proto.TagSelectorRank
 		sameRankCreatedLater := func(policy ConnectionPolicy, rank mesh_proto.TagSelectorRank) bool {
@@ -171,7 +165,11 @@ func SelectInboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, pol
 		}
 
 		if bestPolicy != nil {
-			policiesMap[ifaces[i]] = bestPolicy
+			iface, err := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+			if err != nil {
+				return nil, err
+			}
+			policiesMap[iface] = bestPolicy
 		}
 	}
 
