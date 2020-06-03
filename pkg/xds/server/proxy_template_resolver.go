@@ -47,3 +47,11 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 	log.V(2).Info("falling back to the default ProxyTemplate since there is no best match", "templates", templateList.Items)
 	return r.DefaultProxyTemplate
 }
+
+type staticProxyTemplateResolver struct {
+	template *mesh_proto.ProxyTemplate
+}
+
+func (r *staticProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
+	return r.template
+}

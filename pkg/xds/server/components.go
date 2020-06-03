@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/xds/ingress"
 	"time"
 
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
@@ -72,11 +73,18 @@ func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 	}
 }
 
-func DefaultIngressReconciler(rt core_runtime.Runtime) *IngressReconciler {
-	return NewIngressReconciler(rt.ResourceManager())
+func DefaultIngressReconciler(rt core_runtime.Runtime) SnapshotReconciler {
+	return &reconciler{
+		generator: &templateSnapshotGenerator{
+			ProxyTemplateResolver: &staticProxyTemplateResolver{
+				template: xds_template.IngressProxyTemplate,
+			},
+		},
+		cacher: &simpleSnapshotCacher{rt.XDS().Hasher(), rt.XDS().Cache()},
+	}
 }
 
-func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotReconciler, ingressReconciler *IngressReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
+func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressReconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	faultInjectionMatcher := faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
@@ -102,10 +110,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					return err
 				}
 
-				if dataplane.Spec.GetNetworking().GetIngress() != nil {
-					return ingressReconciler.Reconcile(core_model.MetaToResourceKey(dataplane.GetMeta()))
-				}
-
 				mesh := &mesh_core.MeshResource{}
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
@@ -115,6 +119,26 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler SnapshotRec
 					Mesh: xds_context.MeshContext{
 						Resource: mesh,
 					},
+				}
+
+				if dataplane.Spec.GetNetworking().GetIngress() != nil {
+					dataplanes, err := ingress.GetAllDataplanes(rt.ReadOnlyResourceManager())
+					if err != nil {
+						return err
+					}
+					// update inbound interfaces on Ingress
+					dataplane.Spec.Networking.Inbound = ingress.GetInbounds(dataplanes, dataplane.Spec.Networking.Inbound)
+					if err := rt.ResourceManager().Update(ctx, dataplane); err != nil {
+						return err
+					}
+					destinations := ingress.BuildDestinationMap(dataplane)
+					endpoints := xds_topology.BuildEndpointMap(destinations, dataplanes)
+					proxy := xds.Proxy{
+						Id:              proxyID,
+						Dataplane:       dataplane,
+						OutboundTargets: endpoints,
+					}
+					return ingressReconciler.Reconcile(envoyCtx, &proxy)
 				}
 
 				// pick a single the most specific route for each outbound interface
