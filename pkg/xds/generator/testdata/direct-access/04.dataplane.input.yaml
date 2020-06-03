@@ -1,0 +1,16 @@
+type: Dataplane
+name: web-1
+mesh: default
+networking:
+  address: 192.168.0.1
+  inbound:
+    - port: 1234
+      tags:
+        service: web
+  outbound:
+    - address: 192.168.0.4
+      port: 1234
+      service: redis
+  transparentProxying:
+    redirectPort: 15001
+    directAccessServices: ["backend"]

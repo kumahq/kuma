@@ -144,6 +144,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 5670
                           path: /metrics
+                          tags:
+                            service: dataplane-metrics
 `,
 				}),
 			)
@@ -328,7 +330,7 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
 				},
-				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are changed", testCase{
+				Entry("when both config is changed", testCase{
 					initial: `
                     metrics:
                       enabledBackend: prometheus-1
@@ -345,6 +347,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 					expected: `
                     metrics:
@@ -355,9 +359,11 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 				}),
-				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` remain unchanged", testCase{
+				Entry("when config remain unchanged", testCase{
 					initial: `
                     metrics:
                       enabledBackend: prometheus-1
@@ -367,6 +373,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 					updated: `
                     metrics:
@@ -377,6 +385,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 					expected: `
                     metrics:
@@ -387,6 +397,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 				}),
 			)

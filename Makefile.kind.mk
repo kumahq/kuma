@@ -80,6 +80,11 @@ kind/deploy/kuma: build/kumactl kind/load
     	echo "Waiting for the cluster to come up" && sleep 1; \
     done
 
+.PHONY: kind/deploy/metrics
+kind/deploy/metrics: build/kumactl
+	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install metrics $(KUMACTL_INSTALL_METRICS_IMAGES) | kubectl apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-metrics pods -l app=prometheus
+
 .PHONY: kind/deploy/example-app
 kind/deploy/example-app:
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true

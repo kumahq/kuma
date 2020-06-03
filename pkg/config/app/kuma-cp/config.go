@@ -116,6 +116,8 @@ type Config struct {
 	Reports *Reports `yaml:"reports"`
 	// GUI Server Config
 	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer"`
+	// Kuma Cp Mode
+	Mode core.CpMode `yaml:"mode"`
 }
 
 func (c *Config) Sanitize() {
@@ -162,6 +164,7 @@ name: default
 		},
 		General:   DefaultGeneralConfig(),
 		GuiServer: gui_server.DefaultGuiServerConfig(),
+		Mode:      core.Standalone,
 	}
 }
 
@@ -204,6 +207,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.GuiServer.Validate(); err != nil {
 		return errors.Wrap(err, "GuiServer validation failed")
+	}
+	if err := core.ValidateCpMode(c.Mode); err != nil {
+		return err
 	}
 	return nil
 }

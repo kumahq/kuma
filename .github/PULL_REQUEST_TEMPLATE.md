@@ -10,3 +10,7 @@ SUMMARY_GOES_HERE
 ### Issues resolved
 
 Fix #XXX
+
+### Documentation
+
+- [ ] Link to the website [documentation PR](https://github.com/Kong/kuma-website/pull/XXX)

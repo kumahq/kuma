@@ -816,6 +816,70 @@ _kumactl_generate()
     noun_aliases=()
 }
 
+_kumactl_get_circuit-breaker()
+{
+    last_command="kumactl_get_circuit-breaker"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_circuit-breakers()
+{
+    last_command="kumactl_get_circuit-breakers"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--size=")
+    two_word_flags+=("--size")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_get_dataplane()
 {
     last_command="kumactl_get_dataplane"
@@ -1459,6 +1523,8 @@ _kumactl_get()
     command_aliases=()
 
     commands=()
+    commands+=("circuit-breaker")
+    commands+=("circuit-breakers")
     commands+=("dataplane")
     commands+=("dataplanes")
     commands+=("fault-injection")
@@ -1615,6 +1681,9 @@ _kumactl_install_control-plane()
     flags+=("--injector-failure-policy=")
     two_word_flags+=("--injector-failure-policy")
     local_nonpersistent_flags+=("--injector-failure-policy=")
+    flags+=("--mode=")
+    two_word_flags+=("--mode")
+    local_nonpersistent_flags+=("--mode=")
     flags+=("--namespace=")
     two_word_flags+=("--namespace")
     local_nonpersistent_flags+=("--namespace=")

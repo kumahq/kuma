@@ -37,7 +37,7 @@ var _ = Describe("MeshResource", func() {
 
 		DescribeTable("should apply defaults on a target MeshResource",
 			applyDefaultsScenario,
-			Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are not set", testCase{
+			Entry("when defaults are not set", testCase{
 				input: `
                 metrics:
                   enabledBackend: prometheus-1
@@ -54,9 +54,11 @@ var _ = Describe("MeshResource", func() {
                     conf:
                       port: 5670
                       path: /metrics
+                      tags:
+                        service: dataplane-metrics
 `,
 			}),
-			Entry("when `metrics.prometheus.port` is not set", testCase{
+			Entry("when defaults are set", testCase{
 				input: `
                 metrics:
                   enabledBackend: prometheus-1
@@ -65,6 +67,10 @@ var _ = Describe("MeshResource", func() {
                     type: prometheus
                     conf:
                       path: /non-standard-path
+                      port: 1234
+                      tags:
+                        service: dataplane-metrics
+                      skipMTLS: true
 `,
 				expected: `
                 metrics:
@@ -73,29 +79,11 @@ var _ = Describe("MeshResource", func() {
                   - name: prometheus-1
                     type: prometheus
                     conf:
-                      port: 5670
                       path: /non-standard-path
-`,
-			}),
-			Entry("when `metrics.prometheus.path` is not set", testCase{
-				input: `
-                metrics:
-                  enabledBackend: prometheus-1
-                  backends:
-                  - name: prometheus-1
-                    type: prometheus
-                    conf:
                       port: 1234
-`,
-				expected: `
-                metrics:
-                  enabledBackend: prometheus-1
-                  backends:
-                  - name: prometheus-1
-                    type: prometheus
-                    conf:
-                      port: 1234
-                      path: /metrics
+                      tags:
+                        service: dataplane-metrics
+                      skipMTLS: true
 `,
 			}),
 		)
