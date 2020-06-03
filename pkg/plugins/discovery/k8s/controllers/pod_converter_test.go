@@ -196,6 +196,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			otherServices:   "06.other-services.yaml",
 			dataplane:       "06.dataplane.yaml",
 		}),
+		Entry("07.Pod with metrics override", testCase{
+			pod:            "07.pod.yaml",
+			servicesForPod: "07.services-for-pod.yaml",
+			dataplane:      "07.dataplane.yaml",
+		}),
 	)
 
 	Context("when Dataplane cannot be generated", func() {
