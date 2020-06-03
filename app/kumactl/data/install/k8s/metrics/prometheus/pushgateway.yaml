@@ -83,20 +83,7 @@ spec:
           args:
           ports:
             - containerPort: 9091
-          livenessProbe:
-            httpGet:
-              path: /-/healthy
-              port: 9091
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9091
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
           resources:
             {}
       securityContext:
-        runAsNonRoot: true
         runAsUser: 65534

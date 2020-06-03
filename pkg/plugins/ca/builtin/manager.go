@@ -3,7 +3,6 @@ package builtin
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
@@ -12,6 +11,7 @@ import (
 	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
+	mesh_helper "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -70,7 +70,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh
 
 	var opts []certOptsFn
 	if cfg.GetCaCert().GetExpiration() != "" {
-		duration, err := time.ParseDuration(cfg.GetCaCert().GetExpiration())
+		duration, err := mesh_helper.ParseDuration(cfg.GetCaCert().GetExpiration())
 		if err != nil {
 			return err
 		}
@@ -135,7 +135,7 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 
 	var opts []ca_issuer.CertOptsFn
 	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
-		duration, err := time.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		duration, err := mesh_helper.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
 		if err != nil {
 			return core_ca.KeyPair{}, err
 		}

@@ -22,6 +22,11 @@ func (mesh *MeshResource) Default() error {
 			if cfg.Path == "" {
 				cfg.Path = "/metrics"
 			}
+			if len(cfg.Tags) == 0 {
+				cfg.Tags = map[string]string{
+					mesh_proto.ServiceTag: "dataplane-metrics",
+				}
+			}
 
 			str, err := proto.ToStruct(&cfg)
 			if err != nil {

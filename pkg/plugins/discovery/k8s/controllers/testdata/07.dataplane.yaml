@@ -2,22 +2,17 @@ mesh: default
 metadata:
   creationTimestamp: null
 spec:
+  metrics:
+    conf:
+      path: /non-standard-path
+      port: 1234
+    type: prometheus
   networking:
     address: 192.168.0.1
     inbound:
-      - port: 8080
+      - port: 7070
         tags:
           app: example
           protocol: tcp
-          service: example.demo.svc:80
+          service: sample.playground.svc:7071
           version: "0.1"
-      - port: 8443
-        tags:
-          app: example
-          protocol: tcp
-          service: example.demo.svc:443
-          version: "0.1"
-    outbound:
-      - address: 10.244.0.25
-        port: 80
-        service: test-app.playground.svc:80

@@ -2,7 +2,6 @@ package provided
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/ca"
 	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
 	"github.com/Kong/kuma/pkg/core/datasource"
+	mesh_helper "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/plugins/ca/provided/config"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
@@ -114,7 +114,7 @@ func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh stri
 
 	var opts []ca_issuer.CertOptsFn
 	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
-		duration, err := time.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		duration, err := mesh_helper.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
 		if err != nil {
 			return ca.KeyPair{}, err
 		}

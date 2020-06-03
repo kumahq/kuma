@@ -196,12 +196,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			otherServices:   "06.other-services.yaml",
 			dataplane:       "06.dataplane.yaml",
 		}),
-		Entry("07. Pod with communication to headless services and direct access to this service should generate direct listener once", testCase{
-			pod:             "07.pod.yaml",
-			servicesForPod:  "07.services-for-pod.yaml",
-			otherDataplanes: "07.other-dataplanes.yaml",
-			otherServices:   "07.other-services.yaml",
-			dataplane:       "07.dataplane.yaml",
+		Entry("07.Pod with metrics override", testCase{
+			pod:            "07.pod.yaml",
+			servicesForPod: "07.services-for-pod.yaml",
+			dataplane:      "07.dataplane.yaml",
 		}),
 	)
 

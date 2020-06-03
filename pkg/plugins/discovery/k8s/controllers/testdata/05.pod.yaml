@@ -6,6 +6,7 @@ metadata:
     version: "0.1"
   annotations:
     kuma.io/direct-access-services: "test-app.playground.svc:80,test-app.playground.svc:443"
+    kuma.io/transparent-proxying: "enabled"
 spec:
   containers:
     - ports:

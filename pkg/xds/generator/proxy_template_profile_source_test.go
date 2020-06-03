@@ -201,6 +201,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 conf:
                   port: 1234
                   path: /non-standard-path
+                  skipMTLS: false
 `,
 			dataplane: `
             networking:
@@ -235,6 +236,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 conf:
                   port: 1234
                   path: /non-standard-path
+                  skipMTLS: false
 `,
 			dataplane: `
             networking:
@@ -255,210 +257,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			profile:         mesh_core.ProfileDefaultProxy,
 			envoyConfigFile: "4-envoy-config.golden.yaml",
-		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true; prometheus_port=inbound_listener_port", testCase{
-			mesh: `
-            mtls:
-              enabledBackend: builtin
-              backends:
-              - type: builtin
-                name: builtin
-            metrics:
-              enabledBackend: prometheus-1
-              backends:
-              - name: prometheus-1
-                type: prometheus
-                conf:
-                  port: 80
-                  path: /non-standard-path
-`,
-			dataplane: `
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 80
-                  servicePort: 8080
-              outbound:
-              - port: 54321
-                service: db
-              - port: 59200
-                service: elastic
-`,
-			profile: mesh_core.ProfileDefaultProxy,
-			// we do want to reuse golden file from use case #1 to ensure that
-			// Prometheus endpoint does not overshadow port of inbound listener
-			envoyConfigFile: "1-envoy-config.golden.yaml",
-		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true; prometheus_port=inbound_listener_port", testCase{
-			mesh: `
-            mtls:
-              enabledBackend: builtin
-              backends:
-              - type: builtin
-                name: builtin
-            metrics:
-              enabledBackend: prometheus-1
-              backends:
-              - name: prometheus-1
-                type: prometheus
-                conf:
-                  port: 80
-                  path: /non-standard-path
-`,
-			dataplane: `
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 80
-                  servicePort: 8080
-              outbound:
-              - port: 54321
-                service: db
-              - port: 59200
-                service: elastic
-              transparentProxying:
-                redirectPort: 15001
-`,
-			profile: mesh_core.ProfileDefaultProxy,
-			// we do want to reuse golden file from use case #2 to ensure that
-			// Prometheus endpoint does not overshadow port of inbound listener
-			envoyConfigFile: "2-envoy-config.golden.yaml",
-		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true; prometheus_port=application_port", testCase{
-			mesh: `
-            mtls:
-              enabledBackend: builtin
-              backends:
-              - type: builtin
-                name: builtin
-            metrics:
-              enabledBackend: prometheus-1
-              backends:
-              - name: prometheus-1
-                type: prometheus
-                conf:
-                  port: 8080
-                  path: /non-standard-path
-`,
-			dataplane: `
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 80
-                  servicePort: 8080
-              outbound:
-              - port: 54321
-                service: db
-              - port: 59200
-                service: elastic
-`,
-			profile: mesh_core.ProfileDefaultProxy,
-			// we do want to reuse golden file from use case #1 to ensure that
-			// Prometheus endpoint does not overshadow application port
-			envoyConfigFile: "1-envoy-config.golden.yaml",
-		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true; prometheus_port=application_port", testCase{
-			mesh: `
-            mtls:
-              enabledBackend: builtin
-              backends:
-              - type: builtin
-                name: builtin
-            metrics:
-              enabledBackend: prometheus-1
-              backends:
-              - name: prometheus-1
-                type: prometheus
-                conf:
-                  port: 8080
-                  path: /non-standard-path
-`,
-			dataplane: `
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 80
-                  servicePort: 8080
-              outbound:
-              - port: 54321
-                service: db
-              - port: 59200
-                service: elastic
-              transparentProxying:
-                redirectPort: 15001
-`,
-			profile: mesh_core.ProfileDefaultProxy,
-			// we do want to reuse golden file from use case #1 to ensure that
-			// Prometheus endpoint does not overshadow application port
-			envoyConfigFile: "2-envoy-config.golden.yaml",
-		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true; prometheus_port=outbound_listener_port", testCase{
-			mesh: `
-            mtls:
-              enabledBackend: builtin
-              backends:
-              - type: builtin
-                name: builtin
-            metrics:
-              enabledBackend: prometheus-1
-              backends:
-              - name: prometheus-1
-                type: prometheus
-                conf:
-                  port: 54321
-                  path: /non-standard-path
-`,
-			dataplane: `
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 80
-                  servicePort: 8080
-              outbound:
-              - port: 54321
-                service: db
-              - port: 59200
-                service: elastic
-`,
-			profile: mesh_core.ProfileDefaultProxy,
-			// we do want to reuse golden file from use case #1 to ensure that
-			// Prometheus endpoint does not overshadow port of outbound listener
-			envoyConfigFile: "1-envoy-config.golden.yaml",
-		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true; prometheus_port=outbound_listener_port", testCase{
-			mesh: `
-            mtls:
-              enabledBackend: builtin
-              backends:
-              - type: builtin
-                name: builtin
-            metrics:
-              enabledBackend: prometheus-1
-              backends:
-              - name: prometheus-1
-                type: prometheus
-                conf:
-                  port: 59200
-                  path: /non-standard-path
-`,
-			dataplane: `
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 80
-                  servicePort: 8080
-              outbound:
-              - port: 54321
-                service: db
-              - port: 59200
-                service: elastic
-              transparentProxying:
-                redirectPort: 15001
-`,
-			profile: mesh_core.ProfileDefaultProxy,
-			// we do want to reuse golden file from use case #2 to ensure that
-			// Prometheus endpoint does not overshadow port of outbound listener
-			envoyConfigFile: "2-envoy-config.golden.yaml",
 		}),
 	)
 })

@@ -6,6 +6,7 @@ metadata:
     version: "0.1"
   annotations:
     kuma.io/direct-access-services: "*"
+    kuma.io/transparent-proxying: "enabled"
 spec:
   containers:
     - ports:

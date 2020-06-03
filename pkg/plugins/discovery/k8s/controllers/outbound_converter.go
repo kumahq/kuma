@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -11,12 +10,10 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	injector_metadata "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 )
 
 func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_k8s.Dataplane) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
-	directAccessServices := directAccessServices(pod)
 	endpoints := endpointsByService(others)
 	for _, serviceTag := range endpoints.Services() {
 		service, port, err := p.k8sService(serviceTag)
@@ -25,7 +22,17 @@ func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
 		if isHeadlessService(service) {
-			directAccessServices[serviceTag] = true
+			// Generate outbound listeners for every endpoint of services.
+			for _, endpoint := range endpoints[serviceTag] {
+				if endpoint.Address == pod.Status.PodIP {
+					continue // ignore generating outbound for itself, otherwise we've got a conflict with inbound
+				}
+				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+					Address: endpoint.Address,
+					Port:    endpoint.Port,
+					Service: serviceTag,
+				})
+			}
 		} else {
 			// generate outbound based on ClusterIP. Transparent Proxy will work only if DNS name that resolves to ClusterIP is used
 			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
@@ -35,44 +42,7 @@ func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_
 			})
 		}
 	}
-
-	directAccessOutbounds := directAccessOutbounds(directAccessServices, endpoints)
-	return append(outbounds, directAccessOutbounds...), nil
-}
-
-func directAccessServices(pod *kube_core.Pod) map[string]bool {
-	result := map[string]bool{}
-	servicesRaw := pod.GetAnnotations()[injector_metadata.KumaDirectAccess]
-	services := strings.Split(servicesRaw, ",")
-	for _, service := range services {
-		result[service] = true
-	}
-	return result
-}
-
-// Generate outbound listeners for every endpoint of services.
-// This will enable consuming applications via transparent proxy by PodIP instead of ClusterIP of its service
-// Generating listener for every endpoint will cause XDS snapshot to be huge therefore it should be used only if really needed
-func directAccessOutbounds(services map[string]bool, endpointsByService EndpointsByService) []*mesh_proto.Dataplane_Networking_Outbound {
-	var sortedServices []string // service should be sorted so we generate consistent every time
-	if services[injector_metadata.KumaDirectAccessAll] {
-		sortedServices = endpointsByService.Services()
-	} else {
-		sortedServices = stringSetToSortedList(services)
-	}
-
-	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
-	for _, service := range sortedServices {
-		// services that are not found will be ignored
-		for _, endpoint := range endpointsByService[service] {
-			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
-				Address: endpoint.Address,
-				Port:    endpoint.Port,
-				Service: service,
-			})
-		}
-	}
-	return outbounds
+	return outbounds, nil
 }
 
 func isHeadlessService(svc *kube_core.Service) bool {
@@ -105,13 +75,4 @@ func ParseServiceFQDN(host string) (name string, namespace string, err error) {
 	}
 	name, namespace = segments[0], segments[1]
 	return
-}
-
-func stringSetToSortedList(set map[string]bool) []string {
-	list := make([]string, 0, len(set))
-	for key := range set {
-		list = append(list, key)
-	}
-	sort.Strings(list)
-	return list
 }

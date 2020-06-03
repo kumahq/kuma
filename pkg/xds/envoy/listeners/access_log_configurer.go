@@ -19,18 +19,26 @@ import (
 	"github.com/Kong/kuma/pkg/util/proto"
 )
 
+type TrafficDirection string
+
+const (
+	TrafficDirectionOutbound    TrafficDirection = "OUTBOUND"
+	TrafficDirectionInbound     TrafficDirection = "INBOUND"
+	TrafficDirectionUnspecified TrafficDirection = "UNSPECIFIED"
+)
+
 const accessLogSink = "access_log_sink"
 
 type AccessLogConfigurer struct {
 	mesh               string
-	trafficDirection   string
+	trafficDirection   TrafficDirection
 	sourceService      string
 	destinationService string
 	backend            *mesh_proto.LoggingBackend
 	proxy              *core_xds.Proxy
 }
 
-func convertLoggingBackend(mesh string, trafficDirection string, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*filter_accesslog.AccessLog, error) {
+func convertLoggingBackend(mesh string, trafficDirection TrafficDirection, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*filter_accesslog.AccessLog, error) {
 	if backend == nil {
 		return nil, nil
 	}
@@ -49,7 +57,7 @@ func convertLoggingBackend(mesh string, trafficDirection string, sourceService s
 		accesslog.CMD_KUMA_SOURCE_SERVICE:              sourceService,
 		accesslog.CMD_KUMA_DESTINATION_SERVICE:         destinationService,
 		accesslog.CMD_KUMA_MESH:                        mesh,
-		accesslog.CMD_KUMA_TRAFFIC_DIRECTION:           trafficDirection,
+		accesslog.CMD_KUMA_TRAFFIC_DIRECTION:           string(trafficDirection),
 	}
 
 	format, err = format.Interpolate(variables)

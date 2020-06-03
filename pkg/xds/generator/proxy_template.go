@@ -57,7 +57,7 @@ func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Pr
 var predefinedProfiles = make(map[string]ResourceGenerator)
 
 func NewDefaultProxyProfile() ResourceGenerator {
-	return CompositeResourceGenerator{PrometheusEndpointGenerator{}, TransparentProxyGenerator{}, InboundProxyGenerator{}, OutboundProxyGenerator{}}
+	return CompositeResourceGenerator{PrometheusEndpointGenerator{}, TransparentProxyGenerator{}, InboundProxyGenerator{}, OutboundProxyGenerator{}, DirectAccessProxyGenerator{}}
 }
 
 func init() {

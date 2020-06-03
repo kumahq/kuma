@@ -1,12 +1,10 @@
+---
 metadata:
-  namespace: demo
-  name: example
+  namespace: playground
+  name: sample
 spec:
-  clusterIP: None
+  clusterIP: 192.168.0.1
   ports:
-    - # protocol defaults to TCP
-      port: 80
-      targetPort: 8080
     - protocol: TCP
-      port: 443
-      targetPort: 8443
+      port: 7071
+      targetPort: 7070
