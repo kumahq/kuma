@@ -103,13 +103,22 @@ func storeConfigToTempFile(name string, configData string) (string, error) {
 	return tmpfile.Name(), err
 }
 
-func (o *KumactlOptions) KumactlInstallCP() (string, error) {
-	return o.RunKumactlAndGetOutputV(
-		false, // silence the log output of Install
+func (o *KumactlOptions) KumactlInstallCP(mode ...string) (string, error) {
+	args := []string{
 		"install", "control-plane",
 		"--control-plane-image", kumaCPImage,
 		"--dataplane-image", kumaDPImage,
-		"--dataplane-init-image", kumaInitImage)
+		"--dataplane-init-image", kumaInitImage,
+	}
+
+	for _, m := range mode {
+		args = append(args, "--mode", m)
+		break
+	}
+
+	return o.RunKumactlAndGetOutputV(
+		false, // silence the log output of Install
+		args...)
 }
 
 func (o *KumactlOptions) KumactlInstallMetrics() (string, error) {

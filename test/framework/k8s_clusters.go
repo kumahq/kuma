@@ -57,9 +57,9 @@ func (cs *K8sClusters) GetCluster(name string) Cluster {
 	return c
 }
 
-func (cs *K8sClusters) DeployKuma() error {
+func (cs *K8sClusters) DeployKuma(mode ...string) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployKuma(); err != nil {
+		if err := c.DeployKuma(mode...); err != nil {
 			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
 		}
 	}

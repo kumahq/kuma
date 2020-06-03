@@ -19,7 +19,7 @@ import (
 
 var _ = Describe("Test K8s deployment with `kumactl install control-plane`", func() {
 
-	It("Should deploy on Single K8s cluster and verify the Kuma.", func(done Done) {
+	It("Should deploy on Single K8s cluster and verify Kuma.", func(done Done) {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1},
 			framework.Silent)
@@ -42,7 +42,7 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 		close(done)
 	}, 180)
 
-	It("Should deploy on Two K8s cluster and verify the Kuma. Use the Clusters Interface.", func(done Done) {
+	It("Should deploy on Two K8s cluster and verify Kuma.", func(done Done) {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1, framework.Kuma2},
 			framework.Silent)

@@ -63,8 +63,8 @@ func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service s
 	return nil
 }
 
-func (c *K8sCluster) DeployKuma() error {
-	yaml, err := c.kumactl.KumactlInstallCP()
+func (c *K8sCluster) DeployKuma(mode ...string) error {
+	yaml, err := c.kumactl.KumactlInstallCP(mode...)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (c *K8sCluster) PortForwardPod(namespace string, podName string, localPort,
 
 	forwarder, err := portforward.New(dialer, ports,
 		stopChan, readyChan,
-		stdErr, stdErr)
+		stdOut, stdErr)
 	if err != nil {
 		panic(err)
 	}
@@ -216,7 +216,7 @@ func (c *K8sCluster) PortForwardPod(namespace string, podName string, localPort,
 	}()
 
 	go func() {
-		err = forwarder.ForwardPorts()
+		err := forwarder.ForwardPorts()
 		if err != nil {
 			panic(err)
 		}

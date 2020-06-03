@@ -11,7 +11,7 @@ type Clusters interface {
 }
 
 type Cluster interface {
-	DeployKuma() error
+	DeployKuma(mode ...string) error
 	VerifyKuma() error
 	GetKumaCPLogs() (string, error)
 	DeleteKuma() error
