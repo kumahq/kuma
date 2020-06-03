@@ -27,7 +27,9 @@ Changes:
 *  feat: owners for Dataplane on k8s [#742](github.com//Kong/kuma/pull/742) 
 *  chore: updating Alpine to 3.11 [#672](github.com//Kong/kuma/pull/672)
 
+NOTE:
 
+⚠️ This release introduces [Circuit Breaking](https://kuma.io/docs/0.5.1/policies/circuit-breaker/) as a superior alternative to [Passive Health Check](https://kuma.io/docs/0.5.1/policies/health-check/). The latter will be deprecated in 0.6.0. Please consider migrating your deployments.
 
 ## [0.5.0]
 
