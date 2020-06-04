@@ -71,29 +71,33 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
-			if err := sds_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up SDS server")
-				return err
-			}
-			if err := xds_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up xDS server")
-				return err
-			}
-			if err := mads_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up Monitoring Assignment server")
-				return err
-			}
-			if err := api_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up API server")
-				return err
+			if cfg.Mode != config_core.Global {
+				if err := sds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up SDS server")
+					return err
+				}
+				if err := xds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up xDS server")
+					return err
+				}
+				if err := api_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up API server")
+					return err
+				}
+				if err := mads_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up Monitoring Assignment server")
+					return err
+				}
 			}
 			if err := admin_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up Admin server")
 				return err
 			}
-			if err := ui_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up GUI server")
-				return err
+			if cfg.Mode != config_core.Local {
+				if err := ui_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up GUI server")
+					return err
+				}
 			}
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
