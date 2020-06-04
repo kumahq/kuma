@@ -281,6 +281,12 @@ func (c *K8sCluster) LabelNamespaceForSidecarInjection(namespace string) error {
 	}
 	_, err = clientset.CoreV1().Namespaces().Update(context.Background(), ns, metav1.UpdateOptions{})
 
+	if err != nil {
+		return err
+	}
+
+	err = c.VerifyKuma()
+
 	return err
 }
 
