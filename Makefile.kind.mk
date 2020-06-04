@@ -1,7 +1,7 @@
 
 KIND_KUBECONFIG_DIR ?= $(HOME)/.kube
-KIND_KUBECONFIG = $(KIND_KUBECONFIG_DIR)/kind-kuma-config
-KIND_CLUSTER_NAME = kuma
+KIND_KUBECONFIG ?= $(KIND_KUBECONFIG_DIR)/kind-kuma-config
+KIND_CLUSTER_NAME ?= kuma
 
 define KIND_EXAMPLE_DATAPLANE_MESH
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
@@ -10,8 +10,8 @@ define KIND_EXAMPLE_DATAPLANE_NAME
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
-CI_KIND_VERSION ?= v0.8.0
-CI_KUBERNETES_VERSION ?= v1.15.11@sha256:6cc31f3533deb138792db2c7d1ffc36f7456a06f1db5556ad3b6927641016f50
+CI_KIND_VERSION ?= v0.8.1
+CI_KUBERNETES_VERSION ?= v1.18.2@sha256:7b27a6d0f2517ff88ba444025beae41491b016bc6af573ba467b70c5e8e0d85f
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 
@@ -26,7 +26,7 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 			--name "$(KIND_CLUSTER_NAME)" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
 			--kubeconfig $(KIND_KUBECONFIG) \
-			--wait 120s && \
+			--quiet --wait 120s && \
 		until \
 			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
 		do echo "Waiting for the cluster to come up" && sleep 1; done )
@@ -42,24 +42,31 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 kind/stop:
 	@kind delete cluster --name $(KIND_CLUSTER_NAME)
 
+.PHONY: kind/stop/all
+kind/stop/all:
+	@kind delete clusters --all
+
 .PHONY: kind/load/control-plane
-kind/load/control-plane: image/kuma-cp
-	@kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=kuma
+kind/load/control-plane:
+	@kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/kuma-dp
-kind/load/kuma-dp: image/kuma-dp
-	@kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=kuma
+kind/load/kuma-dp:
+	@kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/kuma-init
-kind/load/kuma-init: image/kuma-init
-	@kind load docker-image $(KUMA_INIT_DOCKER_IMAGE) --name=kuma
+kind/load/kuma-init:
+	@kind load docker-image $(KUMA_INIT_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/kuma-prometheus-sd
-kind/load/kuma-prometheus-sd: image/kuma-prometheus-sd
-	@kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=kuma
+kind/load/kuma-prometheus-sd:
+	@kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
+
+.PHONY: kind/load/images
+kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd
 
 .PHONY: kind/load
-kind/load: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd
+kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd kind/load/images
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load
