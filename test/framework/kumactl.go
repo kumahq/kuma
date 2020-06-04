@@ -132,11 +132,17 @@ func (o *KumactlOptions) KumactlInstallTracing() (string, error) {
 func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
 	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", defaultRetries, defaultTiemout,
 		func() (string, error) {
-			return "", o.RunKumactl(
+			err := o.RunKumactl(
 				"config", "control-planes", "add",
 				"--overwrite",
 				"--name", name,
 				"--address", address)
+
+			if err != nil {
+				return "Unable to register Kuma CP. Try again.", fmt.Errorf("Unable to register Kuma CP. Try again.")
+			}
+
+			return "", nil
 		})
 
 	return err
