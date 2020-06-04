@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("Test Local and Global", func() {
 
-	It("Should deploy Local and Global on Two K8s cluster.", func(done Done) {
+	It("Should deploy Local and Global on Two K8s cluster.", func() {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1, framework.Kuma2},
 			framework.Silent)
@@ -41,7 +41,5 @@ var _ = Describe("Test Local and Global", func() {
 
 		_ = clusters.DeleteKuma()
 
-		// completed
-		close(done)
-	}, 180)
+	})
 })

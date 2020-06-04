@@ -19,7 +19,7 @@ import (
 
 var _ = Describe("Test K8s deployment with `kumactl install control-plane`", func() {
 
-	It("Should deploy on Single K8s cluster and verify Kuma.", func(done Done) {
+	It("Should deploy on Single K8s cluster and verify Kuma.", func() {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1},
 			framework.Silent)
@@ -38,11 +38,9 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 
 		_ = c.DeleteKuma()
 
-		// completed
-		close(done)
-	}, 180)
+	})
 
-	It("Should deploy on Two K8s cluster and verify Kuma.", func(done Done) {
+	It("Should deploy on Two K8s cluster and verify Kuma.", func() {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1, framework.Kuma2},
 			framework.Silent)
@@ -60,11 +58,9 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 
 		_ = clusters.DeleteKuma()
 
-		// completed
-		close(done)
-	}, 180)
+	})
 
-	It("Should check Kuma side-car injection", func(done Done) {
+	It("Should check Kuma side-car injection", func() {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1},
 			framework.Verbose)
@@ -97,7 +93,7 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 			metav1.ListOptions{
 				LabelSelector: "app=example-app",
 			},
-			1, 10, 3*time.Second)
+			1, defaultRetries, defaultTImeout)
 
 		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions("kuma-test"),
 			v1.ListOptions{
@@ -116,7 +112,5 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 
 		_ = c.DeleteKuma()
 
-		// completed
-		close(done)
-	}, 180)
+	})
 })
