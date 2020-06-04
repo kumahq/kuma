@@ -135,9 +135,9 @@ func (c *K8sCluster) WaitKumaNamespaceDelete() {
 				c.GetKubectlOptions(),
 				kumaNamespace)
 			if err != nil {
-				return "", nil
+				return "Namespace " + kumaNamespace + " deleted", nil
 			}
-			return "", errors.Wrapf(err, "kuma Namespace still not terminated")
+			return "Namespace available " + kumaNamespace, fmt.Errorf("Namespace %s still active", kumaNamespace)
 		})
 }
 
@@ -299,6 +299,7 @@ func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions 
 	}
 	for _, ns := range namespace {
 		options.Namespace = ns
+		break
 	}
 
 	return options

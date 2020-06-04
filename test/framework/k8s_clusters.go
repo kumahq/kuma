@@ -93,10 +93,16 @@ func (cs *K8sClusters) GetKumaCPLogs() (string, error) {
 }
 
 func (cs *K8sClusters) DeleteKuma() error {
+	failed := []string{}
 	for name, c := range cs.clusters {
 		if err := c.DeleteKuma(); err != nil {
-			return errors.Wrapf(err, "Delete Kuma on %s failed", name)
+			fmt.Printf("Delete Kuma on %s failed", name)
+			failed = append(failed, name)
 		}
+	}
+
+	if len(failed) > 0 {
+		return errors.Errorf("Clusters failed to delete %v", failed)
 	}
 
 	return nil
