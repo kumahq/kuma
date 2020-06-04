@@ -34,7 +34,8 @@ GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(GOFLAGS) $
 GO_RUN := CGO_ENABLED=0 go run $(GOFLAGS) $(LD_FLAGS)
 GO_TEST := go test $(GOFLAGS) $(LD_FLAGS)
 
-BUILD_DIR ?= build
+TOP := $(shell pwd)
+BUILD_DIR ?= $(TOP)/build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
 
@@ -261,12 +262,12 @@ test/kuma: # Dev: Run tests for the module github.com/Kong/kuma
 
 test/api: \
 	MODULE=./api \
-	COVERAGE_PROFILE=../$(BUILD_COVERAGE_DIR)/coverage-api.out
+	COVERAGE_PROFILE=$(BUILD_COVERAGE_DIR)/coverage-api.out
 test/api: test/module
 
 test/k8s: \
 	MODULE=./pkg/plugins/resources/k8s/native \
-	COVERAGE_PROFILE=../../../../../$(BUILD_COVERAGE_DIR)/coverage-k8s.out
+	COVERAGE_PROFILE=$(BUILD_COVERAGE_DIR)/coverage-k8s.out
 test/k8s: test/module
 
 test/module:
@@ -384,18 +385,23 @@ build/kuma-prometheus-sd/linux-amd64:
 docker/build: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-init docker/build/kuma-prometheus-sd ## Dev: Build all Docker images using existing artifacts from build
 
 docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp ## Dev: Build `kuma-cp` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
 docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp ## Dev: Build `kuma-dp` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
 docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl ## Dev: Build `kumactl` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMACTL_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kumactl .
 
 docker/build/kuma-init: ## Dev: Build `kuma-init` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-init .
 
 docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd ## Dev: Build `kuma-prometheus-sd` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-prometheus-sd .
 
 image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
@@ -490,3 +496,4 @@ run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
 include Makefile.kind.mk
 include Makefile.dev.mk
 include Makefile.e2e.mk
+include Makefile.e2e.new.mk
