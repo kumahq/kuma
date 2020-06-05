@@ -29,7 +29,7 @@ build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/Kong/
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags)"
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
-GOFLAGS := -mod=mod
+GOFLAGS :=
 GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(GOFLAGS) $(LD_FLAGS)
 GO_RUN := CGO_ENABLED=0 go run $(GOFLAGS) $(LD_FLAGS)
 GO_TEST := go test $(GOFLAGS) $(LD_FLAGS)
@@ -243,7 +243,7 @@ golangci-lint: ## Dev: Runs golangci-lint linter
 	$(GOLANGCI_LINT_DIR)/golangci-lint run -v
 
 imports: ## Dev: Runs goimports in order to organize imports
-	goimports -w -local github.com/Kong/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendor/*'`
+	goimports -w -local github.com/Kong/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
 
 check: generate fmt vet docs golangci-lint imports tidy ## Dev: Run code checks (go fmt, go vet, ...)
 	make generate manifests -C pkg/plugins/resources/k8s/native
