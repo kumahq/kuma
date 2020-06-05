@@ -2,6 +2,8 @@ package resolver
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/miekg/dns"
 
 	"github.com/Kong/kuma/pkg/core"
@@ -48,6 +50,7 @@ func (d *SimpleDNSResolver) Start(stop <-chan struct{}) error {
 		Addr: d.address,
 		Net:  "udp",
 	}
+
 	errChan := make(chan error)
 	go func() {
 		err := server.ListenAndServe()
@@ -72,6 +75,7 @@ func (d *SimpleDNSResolver) AddDomain(domain string) error {
 	if err != nil {
 		return err
 	}
+
 	_, found := d.domains[domain]
 	if !found {
 		d.domains[domain] = VIPList{}
@@ -85,12 +89,14 @@ func (d *SimpleDNSResolver) RemoveDomain(domain string) error {
 	if err != nil {
 		return err
 	}
+
 	_, found := d.domains[domain]
 	if !found {
 		return fmt.Errorf("Deleting domain [%s] not found.", domain)
 	}
 
 	delete(d.domains, domain)
+
 	return nil
 }
 
@@ -99,14 +105,17 @@ func (d *SimpleDNSResolver) AddServiceToDomain(service string, domain string) (s
 	if !found {
 		return "", fmt.Errorf("Domain [%s] not found.", domain)
 	}
+
 	_, found = entry[service]
 	if !found {
 		ip, err := d.allocateIP()
 		if err != nil {
 			return "", err
 		}
+
 		entry[service] = ip
 	}
+
 	return entry[service], nil
 }
 
@@ -120,10 +129,47 @@ func (d *SimpleDNSResolver) RemoveServiceFromDomain(service string, domain strin
 	if !found {
 		return fmt.Errorf("Service [%s] not found in domain [%s].", service, domain)
 	}
+
 	delete(entry, service)
+
 	err := d.freeIP(ip)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (d *SimpleDNSResolver) SyncServicesForDomain(services map[string]bool, domain string) error {
+	entry, found := d.domains[domain]
+	if !found {
+		return fmt.Errorf("Domain [%s] not found.", domain)
+	}
+
+	errors := []string{}
+	// ensure all services have entries in the domain
+	for service := range services {
+		_, found = entry[service]
+		if !found {
+			ip, err := d.allocateIP()
+			if err != nil {
+				errors = append(errors, fmt.Sprintf("unable to allocate an ip for service %s [%v]", service, err))
+			} else {
+				entry[service] = ip
+			}
+		}
+	}
+
+	// ensure all entries in the domain are present in the service list, and delete them otherwise
+	for service := range entry {
+		_, found := services[service]
+		if !found {
+			delete(entry, service)
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("%s", strings.Join(errors, ","))
 	}
 
 	return nil
@@ -134,14 +180,17 @@ func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	entry, found := d.domains[domain]
 	if !found {
 		return "", fmt.Errorf("Domain [%s] not found.", domain)
 	}
+
 	service, err := d.serviceFromName(name)
 	if err != nil {
 		return "", err
 	}
+
 	ip, found := entry[service]
 	if !found {
 		return "", fmt.Errorf("Service [%s] not found in domain [%s].", service, domain)
@@ -158,5 +207,6 @@ func (d *SimpleDNSResolver) ReverseLookup(ip string) (string, error) {
 			}
 		}
 	}
+
 	return "", fmt.Errorf("IP [%s] not found", ip)
 }

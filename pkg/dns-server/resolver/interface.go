@@ -6,6 +6,7 @@ type DNSResolver interface {
 	RemoveDomain(domain string) error
 	AddServiceToDomain(service string, domain string) (string, error)
 	RemoveServiceFromDomain(service string, domain string) error
+	SyncServicesForDomain(services map[string]bool, domain string) error
 	ForwardLookup(name string) (string, error)
 	ReverseLookup(ip string) (string, error)
 }

@@ -17,6 +17,7 @@ func (d *SimpleDNSResolver) initIPAM(cidr string) error {
 	}
 
 	d.ipam = &IPAM{*ipam}
+
 	return nil
 }
 
@@ -25,11 +26,13 @@ func (d *SimpleDNSResolver) allocateIP() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return ip.String(), nil
 }
 
 func (d *SimpleDNSResolver) freeIP(ip string) error {
 	parsedIP := net.ParseIP(ip)
+
 	// ensure the IP is reserved before deleting it
 	err := d.ipam.Reserve(parsedIP)
 	if err != nil {
@@ -37,6 +40,8 @@ func (d *SimpleDNSResolver) freeIP(ip string) error {
 			return err
 		}
 	}
+
 	d.ipam.Free(parsedIP)
+
 	return nil
 }

@@ -12,6 +12,7 @@ func (d *SimpleDNSResolver) domainFromName(name string) (string, error) {
 	if len(split) < 1 {
 		return "", fmt.Errorf("Wrong DNS name: %s", name)
 	}
+
 	return split[len(split)-1], nil
 }
 

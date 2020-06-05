@@ -142,4 +142,61 @@ var _ = Describe("DNS server", func() {
 		// ready
 		close(done)
 	})
+
+	It("DNS Server sync operation", func(done Done) {
+		resolver, err := NewSimpleDNSResolver("127.0.0.1", "5653", "240.0.0.0/4")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = resolver.AddDomain("kuma")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = resolver.AddDomain("other")
+		Expect(err).ToNot(HaveOccurred())
+
+		services := map[string]bool{
+			"one":   true,
+			"two":   true,
+			"three": true,
+			"four":  true,
+			"five":  true,
+		}
+
+		err = resolver.SyncServicesForDomain(services, "kuma")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = resolver.SyncServicesForDomain(services, "other")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = resolver.SyncServicesForDomain(services, "third")
+		Expect(err).To(HaveOccurred())
+
+		_, err = resolver.ForwardLookup("one.kuma")
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = resolver.ForwardLookup("five.kuma")
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = resolver.ForwardLookup("five.other")
+		Expect(err).ToNot(HaveOccurred())
+
+		delete(services, "five")
+
+		err = resolver.SyncServicesForDomain(services, "kuma")
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = resolver.ForwardLookup("five.kuma")
+		Expect(err).To(HaveOccurred())
+
+		_, err = resolver.ForwardLookup("five.other")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = resolver.SyncServicesForDomain(map[string]bool{}, "other")
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = resolver.ForwardLookup("five.other")
+		Expect(err).To(HaveOccurred())
+
+		// ready
+		close(done)
+	})
 })
