@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	simpleDNSLog = core.Log.WithName("dns-server-server")
+	simpleDNSLog = core.Log.WithName("dns-server-resolver")
 )
 
 type (
@@ -160,5 +160,3 @@ func (d *SimpleDNSResolver) ReverseLookup(ip string) (string, error) {
 	}
 	return "", fmt.Errorf("IP [%s] not found", ip)
 }
-
-
