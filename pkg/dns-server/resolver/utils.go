@@ -1,4 +1,4 @@
-package dns_server
+package resolver
 
 import (
 	"fmt"

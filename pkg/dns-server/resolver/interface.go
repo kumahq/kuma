@@ -1,4 +1,4 @@
-package dns_server
+package resolver
 
 type DNSResolver interface {
 	Start(<-chan struct{}) error

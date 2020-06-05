@@ -1,11 +1,7 @@
-package dns_server
+package resolver
 
 import (
 	"fmt"
-	"strconv"
-
-	"github.com/Kong/kuma/pkg/core/runtime"
-
 	"github.com/miekg/dns"
 
 	"github.com/Kong/kuma/pkg/core"
@@ -165,14 +161,4 @@ func (d *SimpleDNSResolver) ReverseLookup(ip string) (string, error) {
 	return "", fmt.Errorf("IP [%s] not found", ip)
 }
 
-func SetupServer(rt runtime.Runtime) error {
-	cfg := rt.Config()
-	dnsServer, err := NewSimpleDNSResolver(
-		cfg.General.AdvertisedHostname,
-		strconv.FormatUint(uint64(cfg.DNSServer.Port), 10),
-		cfg.DNSServer.CIDR)
-	if err != nil {
-		return err
-	}
-	return rt.Add(dnsServer)
-}
+
