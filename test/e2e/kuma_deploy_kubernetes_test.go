@@ -3,18 +3,13 @@ package e2e_test
 import (
 	"fmt"
 	"path/filepath"
-	"time"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/Kong/kuma/test/framework"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Test K8s deployment with `kumactl install control-plane`", func() {
@@ -63,7 +58,7 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 	It("Should check Kuma side-car injection", func() {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1},
-			framework.Verbose)
+			framework.Silent)
 		Expect(err).ToNot(HaveOccurred())
 		c := clusters.GetCluster(framework.Kuma1)
 
@@ -86,17 +81,17 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 
 		k8s.WaitUntilServiceAvailable(c.GetTesting(),
 			c.GetKubectlOptions("kuma-test"),
-			"example-app", 10, 3*time.Second)
+			"example-app", defaultRetries, defaultTimeout)
 
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(),
 			c.GetKubectlOptions(),
 			metav1.ListOptions{
 				LabelSelector: "app=example-app",
 			},
-			1, defaultRetries, defaultTImeout)
+			1, defaultRetries, defaultTimeout)
 
 		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions("kuma-test"),
-			v1.ListOptions{
+			metav1.ListOptions{
 				LabelSelector: "app=example-app",
 			})
 		Expect(err).ToNot(HaveOccurred())
@@ -109,6 +104,9 @@ var _ = Describe("Test K8s deployment with `kumactl install control-plane`", fun
 			}
 			return false
 		}()).To(Equal(true))
+
+		err = k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), "kuma-test")
+		Expect(err).ToNot(HaveOccurred())
 
 		_ = c.DeleteKuma()
 

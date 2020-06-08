@@ -1,14 +1,13 @@
 package e2e_test
 
 import (
-	"github.com/Kong/kuma/test/framework"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/test/framework"
 )
 
 var _ = Describe("Test Local and Global", func() {
-
 	It("Should deploy Local and Global on Two K8s cluster.", func() {
 		clusters, err := framework.NewK8sClusters(
 			[]string{framework.Kuma1, framework.Kuma2},
@@ -27,7 +26,6 @@ var _ = Describe("Test Local and Global", func() {
 		err = c1.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		//
 		err = c2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 

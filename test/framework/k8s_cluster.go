@@ -58,7 +58,7 @@ func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service s
 		options,
 		service,
 		defaultRetries,
-		defaultTiemout)
+		defaultTimeout)
 
 	return nil
 }
@@ -83,7 +83,7 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 		},
 		1,
 		defaultRetries,
-		defaultTiemout)
+		defaultTimeout)
 
 	kumacpPods := c.GetKumaCPPods()
 	if len(kumacpPods) != 1 {
@@ -94,7 +94,7 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 		c.GetKubectlOptions(kumaNamespace),
 		kumacpPods[0].Name,
 		defaultRetries,
-		defaultTiemout)
+		defaultTimeout)
 
 	c.localCPPort = c.PortForwardKumaCP()
 	kumacpURL := "http://localhost:" + strconv.FormatUint(uint64(c.localCPPort), 10)
@@ -129,7 +129,7 @@ func (c *K8sCluster) WaitKumaNamespaceDelete() {
 	retry.DoWithRetry(c.t,
 		"Wait the Kuma Namespace to terminate.",
 		defaultRetries,
-		defaultTiemout,
+		defaultTimeout,
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
@@ -258,7 +258,7 @@ func (c *K8sCluster) VerifyKumaREST() error {
 		"http://localhost:"+strconv.FormatUint(uint64(c.localCPPort), 10),
 		&tls.Config{},
 		defaultRetries,
-		defaultTiemout,
+		defaultTimeout,
 		func(statusCode int, body string) bool {
 			return statusCode == http.StatusOK
 		},
