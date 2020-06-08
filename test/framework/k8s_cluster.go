@@ -359,6 +359,40 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	return str, nil
 }
 
+func (c *K8sCluster) InjectDNS() error {
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	if err != nil {
+		return err
+	}
+
+	kumaCPSVC, err := k8s.GetServiceE(c.t, c.GetKubectlOptions("kuma-system"), "kuma-control-plane")
+	if err != nil {
+		return err
+	}
+
+	cpaddress := kumaCPSVC.Spec.ClusterIP
+
+	corednsConfigMap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(context.TODO(), "coredns", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	toappend := fmt.Sprintf(`kuma:53 {
+        errors
+        cache 30
+        forward . %s:5653
+    }`, cpaddress)
+
+	corednsConfigMap.Data["Corefile"] += toappend
+
+	_, err = clientset.CoreV1().ConfigMaps("kube-system").Update(context.TODO(), corednsConfigMap, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *K8sCluster) GetTesting() testing.TestingT {
 	return c.t
 }
