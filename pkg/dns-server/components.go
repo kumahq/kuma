@@ -8,7 +8,7 @@ import (
 	"github.com/Kong/kuma/pkg/dns-server/synchronizer"
 )
 
-const topLevelDomain = ".kuma"
+const topLevelDomain = "kuma"
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
@@ -17,6 +17,11 @@ func SetupServer(rt runtime.Runtime) error {
 		"0.0.0.0",
 		strconv.FormatUint(uint64(cfg.DNSServer.Port), 10),
 		cfg.DNSServer.CIDR)
+	if err != nil {
+		return err
+	}
+
+	err = dnsResolver.AddDomain(topLevelDomain)
 	if err != nil {
 		return err
 	}
