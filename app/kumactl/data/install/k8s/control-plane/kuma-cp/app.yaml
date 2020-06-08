@@ -23,6 +23,8 @@ spec:
     name: http-bootstrap-server
   - port: 5683
     name: gui-server
+  - port: 5653
+    name: dns-server
   selector:
     app: kuma-control-plane
 ---
@@ -134,6 +136,7 @@ spec:
         - containerPort: 5681
         - containerPort: 5682
         - containerPort: 5683
+        - containerPort: 5653
         livenessProbe:
           httpGet:
             path: /healthy
