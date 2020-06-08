@@ -109,12 +109,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 				ResourceWsDefinition: definition,
 				meshFromRequest:      meshFromPathParam("mesh"),
 			}
-			if !config.ReadOnly {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			} else {
+			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
 				endpoints.addDeleteEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			}
 			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
@@ -126,12 +126,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 				ResourceWsDefinition: definition,
 				meshFromRequest:      meshFromPathParam("name"),
 			}
-			if !config.ReadOnly {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
-				endpoints.addDeleteEndpoint(ws, "/meshes")
-			} else {
+			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
 				endpoints.addDeleteEndpointReadOnly(ws, "/meshes")
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
+				endpoints.addDeleteEndpoint(ws, "/meshes")
 			}
 			endpoints.addFindEndpoint(ws, "/meshes")
 			endpoints.addListEndpoint(ws, "/meshes")
@@ -166,7 +166,11 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
 	if cfg.Mode == config_core.Local {
-		cfg.ApiServer.ReadOnly = true
+		for _, definition := range definitions.All {
+			if definition.ResourceFactory().GetType() != mesh.DataplaneType {
+				definition.ReadOnly = true
+			}
+		}
 	}
 	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config().ApiServer, &cfg)
 	if err != nil {
