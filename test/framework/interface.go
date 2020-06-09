@@ -13,13 +13,17 @@ type Clusters interface {
 type Cluster interface {
 	DeployKuma(mode ...string) error
 	VerifyKuma() error
-	GetKumaCPLogs() (string, error)
 	DeleteKuma() error
+	GetKumaCPLogs() (string, error)
+	InjectDNS() error
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
+	CreateNamespace(namespace string) error
+	DeleteNamespace(namespace string) error
 	LabelNamespaceForSidecarInjection(namespace string) error
-	InjectDNS() error
+	DeployApp(namespace, appname string) error
+	DeleteApp(namespace, appname string) error
 
 	// Testing
 	GetTesting() testing.TestingT

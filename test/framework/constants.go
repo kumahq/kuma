@@ -13,7 +13,7 @@ const (
 	envK8SCLUSTERS = "K8SCLUSTERS"
 
 	maxClusters    = 3
-	defaultRetries = 30
+	defaultRetries = 60
 	defaultTimeout = 3 * time.Second
 
 	kumaNamespace   = "kuma-system"

@@ -77,23 +77,9 @@ func (cs *K8sClusters) VerifyKuma() error {
 	return nil
 }
 
-func (cs *K8sClusters) GetKumaCPLogs() (string, error) {
-	logs := ""
-
-	for name, c := range cs.clusters {
-		log, err := c.GetKumaCPLogs()
-		if err != nil {
-			return "", errors.Wrapf(err, "Verify Kuma on %s failed: %v", name, err)
-		}
-
-		logs = logs + "========== " + name + " ==========\n" + log + "\n"
-	}
-
-	return logs, nil
-}
-
 func (cs *K8sClusters) DeleteKuma() error {
 	failed := []string{}
+
 	for name, c := range cs.clusters {
 		if err := c.DeleteKuma(); err != nil {
 			fmt.Printf("Delete Kuma on %s failed", name)
@@ -108,18 +94,67 @@ func (cs *K8sClusters) DeleteKuma() error {
 	return nil
 }
 
+func (cs *K8sClusters) GetKumaCPLogs() (string, error) {
+	logs := ""
+
+	for name, c := range cs.clusters {
+		log, err := c.GetKumaCPLogs()
+		if err != nil {
+			return "", errors.Wrapf(err, "Verify Kuma on %s failed: %v", name, err)
+		}
+
+		logs = logs + "========== " + name + " ==========\n" + log + "\n"
+	}
+
+	return logs, nil
+}
 func (cs *K8sClusters) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
-	fmt.Println("Not supported at this level.")
+	panic("Not supported at this level.")
+}
+
+func (cs *K8sClusters) CreateNamespace(namespace string) error {
+	for name, c := range cs.clusters {
+		if err := c.CreateNamespace(namespace); err != nil {
+			return errors.Wrapf(err, "Creating Namespace %s on %s failed: %v", namespace, name, err)
+		}
+	}
+
 	return nil
 }
 
-func (cs *K8sClusters) GetTesting() testing.TestingT {
-	return cs.t
+func (cs *K8sClusters) DeleteNamespace(namespace string) error {
+	for name, c := range cs.clusters {
+		if err := c.DeleteNamespace(namespace); err != nil {
+			return errors.Wrapf(err, "Creating Namespace %s on %s failed: %v", namespace, name, err)
+		}
+	}
+
+	return nil
 }
 
 func (cs *K8sClusters) LabelNamespaceForSidecarInjection(namespace string) error {
 	for name, c := range cs.clusters {
 		if err := c.LabelNamespaceForSidecarInjection(namespace); err != nil {
+			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
+		}
+	}
+
+	return nil
+}
+
+func (cs *K8sClusters) DeployApp(namespace, appname string) error {
+	for name, c := range cs.clusters {
+		if err := c.DeployApp(namespace, appname); err != nil {
+			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
+		}
+	}
+
+	return nil
+}
+
+func (cs *K8sClusters) DeleteApp(namespace, appname string) error {
+	for name, c := range cs.clusters {
+		if err := c.DeleteApp(namespace, appname); err != nil {
 			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
 		}
 	}
@@ -134,6 +169,10 @@ func (cs *K8sClusters) InjectDNS() error {
 	}
 
 	return nil
+}
+
+func (cs *K8sClusters) GetTesting() testing.TestingT {
+	return cs.t
 }
 
 func IsK8sClustersStarted() bool {

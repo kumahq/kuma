@@ -21,8 +21,7 @@ spec:
     spec:
       containers:
       - name: client
-        image: "alpine:latest"
-        command: ["sh", "-c", "tail -f /dev/null"]
+        image: "nginx:alpine"
         imagePullPolicy: IfNotPresent
         resources:
           requests:

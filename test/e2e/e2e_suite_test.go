@@ -31,6 +31,6 @@ var _ = BeforeSuite(func() {
 })
 
 const (
-	defaultRetries = 30
+	defaultRetries = 60
 	defaultTimeout = 3 * time.Second
 )

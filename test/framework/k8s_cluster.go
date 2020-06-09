@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -62,70 +63,7 @@ func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service s
 
 	return nil
 }
-
-func (c *K8sCluster) DeployKuma(mode ...string) error {
-	yaml, err := c.kumactl.KumactlInstallCP(mode...)
-	if err != nil {
-		return err
-	}
-
-	err = k8s.KubectlApplyFromStringE(c.t,
-		c.GetKubectlOptions(),
-		yaml)
-	if err != nil {
-		return err
-	}
-
-	k8s.WaitUntilNumPodsCreated(c.t,
-		c.GetKubectlOptions(kumaNamespace),
-		metav1.ListOptions{
-			LabelSelector: "app=" + kumaServiceName,
-		},
-		1,
-		defaultRetries,
-		defaultTimeout)
-
-	kumacpPods := c.GetKumaCPPods()
-	if len(kumacpPods) != 1 {
-		return errors.Wrapf(err, "Kuma CP pods: %d", len(kumacpPods))
-	}
-
-	k8s.WaitUntilPodAvailable(c.t,
-		c.GetKubectlOptions(kumaNamespace),
-		kumacpPods[0].Name,
-		defaultRetries,
-		defaultTimeout)
-
-	c.localCPPort = c.PortForwardKumaCP()
-	kumacpURL := "http://localhost:" + strconv.FormatUint(uint64(c.localCPPort), 10)
-
-	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
-}
-
-func (c *K8sCluster) DeleteKuma() error {
-	c.CleanupPortForwards()
-
-	yaml, err := c.kumactl.KumactlInstallCP()
-	if err != nil {
-		return err
-	}
-
-	err = k8s.KubectlDeleteFromStringE(c.t,
-		c.GetKubectlOptions(),
-		yaml)
-
-	c.WaitKumaNamespaceDelete()
-
-	return err
-}
-
-func (c *K8sCluster) DeleteKumaNamespace() error {
-	return k8s.DeleteNamespaceE(c.t,
-		c.GetKubectlOptions(),
-		kumaNamespace)
-}
-
-func (c *K8sCluster) WaitKumaNamespaceDelete() {
+func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 	retry.DoWithRetry(c.t,
 		"Wait the Kuma Namespace to terminate.",
 		defaultRetries,
@@ -133,11 +71,28 @@ func (c *K8sCluster) WaitKumaNamespaceDelete() {
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
-				kumaNamespace)
+				namespace)
 			if err != nil {
-				return "Namespace " + kumaNamespace + " deleted", nil
+				return "Namespace not available " + namespace, fmt.Errorf("Namespace %s still active", namespace)
 			}
-			return "Namespace available " + kumaNamespace, fmt.Errorf("Namespace %s still active", kumaNamespace)
+
+			return "Namespace " + namespace + " created", nil
+		})
+}
+
+func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
+	retry.DoWithRetry(c.t,
+		"Wait the Kuma Namespace to terminate.",
+		defaultRetries,
+		defaultTimeout,
+		func() (string, error) {
+			_, err := k8s.GetNamespaceE(c.t,
+				c.GetKubectlOptions(),
+				namespace)
+			if err != nil {
+				return "Namespace " + namespace + " deleted", nil
+			}
+			return "Namespace available " + namespace, fmt.Errorf("Namespace %s still active", namespace)
 		})
 }
 
@@ -233,18 +188,6 @@ func (c *K8sCluster) CleanupPortForwards() {
 	c.forwardedPortsChans = map[uint32]chan struct{}{}
 }
 
-func (c *K8sCluster) VerifyKuma() error {
-	if err := c.VerifyKumaCtl(); err != nil {
-		return err
-	}
-
-	if err := c.VerifyKumaREST(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (c *K8sCluster) VerifyKumaCtl() error {
 	output, err := c.kumactl.RunKumactlAndGetOutputV(Verbose, "get", "dataplanes")
 	fmt.Println(output)
@@ -265,31 +208,6 @@ func (c *K8sCluster) VerifyKumaREST() error {
 	)
 }
 
-func (c *K8sCluster) LabelNamespaceForSidecarInjection(namespace string) error {
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
-	if err != nil {
-		return err
-	}
-
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: namespace,
-			Labels: map[string]string{
-				"kuma.io/sidecar-injection": "enabled",
-			},
-		},
-	}
-	_, err = clientset.CoreV1().Namespaces().Update(context.Background(), ns, metav1.UpdateOptions{})
-
-	if err != nil {
-		return err
-	}
-
-	err = c.VerifyKuma()
-
-	return err
-}
-
 func (c *K8sCluster) GetKumaCPPods() []v1.Pod {
 	return k8s.ListPods(c.t,
 		c.GetKubectlOptions(kumaNamespace),
@@ -297,38 +215,6 @@ func (c *K8sCluster) GetKumaCPPods() []v1.Pod {
 			LabelSelector: "app=" + kumaServiceName,
 		},
 	)
-}
-
-func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
-	options := &k8s.KubectlOptions{
-		ConfigPath: c.kubeconfig,
-	}
-	for _, ns := range namespace {
-		options.Namespace = ns
-		break
-	}
-
-	return options
-}
-
-func (c *K8sCluster) GetKumaCPLogs() (string, error) {
-	logs := ""
-
-	pods := c.GetKumaCPPods()
-	if len(pods) < 1 {
-		return "", errors.Errorf("no kuma-cp pods found for logs")
-	}
-
-	for _, p := range pods {
-		log, err := c.GetPodLogs(p)
-		if err != nil {
-			return "", err
-		}
-
-		logs = logs + "\n >>> " + p.Name + "\n" + log
-	}
-
-	return logs, nil
 }
 
 func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
@@ -357,6 +243,200 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	str := buf.String()
 
 	return str, nil
+}
+
+func (c *K8sCluster) DeployKuma(mode ...string) error {
+	yaml, err := c.kumactl.KumactlInstallCP(mode...)
+	if err != nil {
+		return err
+	}
+
+	err = k8s.KubectlApplyFromStringE(c.t,
+		c.GetKubectlOptions(),
+		yaml)
+	if err != nil {
+		return err
+	}
+
+	k8s.WaitUntilNumPodsCreated(c.t,
+		c.GetKubectlOptions(kumaNamespace),
+		metav1.ListOptions{
+			LabelSelector: "app=" + kumaServiceName,
+		},
+		1,
+		defaultRetries,
+		defaultTimeout)
+
+	kumacpPods := c.GetKumaCPPods()
+	if len(kumacpPods) != 1 {
+		return errors.Wrapf(err, "Kuma CP pods: %d", len(kumacpPods))
+	}
+
+	k8s.WaitUntilPodAvailable(c.t,
+		c.GetKubectlOptions(kumaNamespace),
+		kumacpPods[0].Name,
+		defaultRetries,
+		defaultTimeout)
+
+	c.localCPPort = c.PortForwardKumaCP()
+	kumacpURL := "http://localhost:" + strconv.FormatUint(uint64(c.localCPPort), 10)
+
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
+}
+
+func (c *K8sCluster) VerifyKuma() error {
+	if err := c.VerifyKumaCtl(); err != nil {
+		return err
+	}
+
+	if err := c.VerifyKumaREST(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *K8sCluster) DeleteKuma() error {
+	c.CleanupPortForwards()
+
+	yaml, err := c.kumactl.KumactlInstallCP()
+	if err != nil {
+		return err
+	}
+
+	err = k8s.KubectlDeleteFromStringE(c.t,
+		c.GetKubectlOptions(),
+		yaml)
+
+	c.WaitNamespaceDelete(kumaNamespace)
+
+	return err
+}
+
+func (c *K8sCluster) GetKumaCPLogs() (string, error) {
+	logs := ""
+
+	pods := c.GetKumaCPPods()
+	if len(pods) < 1 {
+		return "", errors.Errorf("no kuma-cp pods found for logs")
+	}
+
+	for _, p := range pods {
+		log, err := c.GetPodLogs(p)
+		if err != nil {
+			return "", err
+		}
+
+		logs = logs + "\n >>> " + p.Name + "\n" + log
+	}
+
+	return logs, nil
+}
+
+func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
+	options := &k8s.KubectlOptions{
+		ConfigPath: c.kubeconfig,
+	}
+	for _, ns := range namespace {
+		options.Namespace = ns
+		break
+	}
+
+	return options
+}
+
+func (c *K8sCluster) CreateNamespace(namespace string) error {
+	err := k8s.CreateNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
+	if err != nil {
+		return err
+	}
+
+	c.WaitNamespaceCreate(namespace)
+
+	return nil
+}
+
+func (c *K8sCluster) DeleteNamespace(namespace string) error {
+	err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
+	if err != nil {
+		return err
+	}
+
+	c.WaitNamespaceDelete(namespace)
+
+	return nil
+}
+
+func (c *K8sCluster) LabelNamespaceForSidecarInjection(namespace string) error {
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	if err != nil {
+		return err
+	}
+
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+			Labels: map[string]string{
+				"kuma.io/sidecar-injection": "enabled",
+			},
+		},
+	}
+	_, err = clientset.CoreV1().Namespaces().Update(context.Background(), ns, metav1.UpdateOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (c *K8sCluster) DeployApp(namespace, appname string) error {
+	retry.DoWithRetry(c.GetTesting(), "apply "+appname+" svc", defaultRetries, defaultTimeout,
+		func() (string, error) {
+			err := k8s.KubectlApplyE(c.GetTesting(),
+				c.GetKubectlOptions(namespace),
+				filepath.Join("testdata", appname+"-svc.yaml"))
+			return "", err
+		})
+
+	k8s.WaitUntilServiceAvailable(c.GetTesting(),
+		c.GetKubectlOptions(namespace),
+		appname, defaultRetries, defaultTimeout)
+
+	retry.DoWithRetry(c.GetTesting(), "apply "+appname, defaultRetries, defaultTimeout,
+		func() (string, error) {
+			err := k8s.KubectlApplyE(c.GetTesting(),
+				c.GetKubectlOptions(namespace),
+				filepath.Join("testdata", appname+".yaml"))
+			return "", err
+		})
+
+	k8s.WaitUntilNumPodsCreated(c.GetTesting(),
+		c.GetKubectlOptions(),
+		metav1.ListOptions{
+			LabelSelector: "app=" + appname,
+		},
+		1, defaultRetries, defaultTimeout)
+
+	return nil
+}
+
+func (c *K8sCluster) DeleteApp(namespace, appname string) error {
+	err := k8s.KubectlDeleteE(c.GetTesting(),
+		c.GetKubectlOptions(namespace),
+		filepath.Join("testdata", appname+"-svc.yaml"))
+	if err != nil {
+		return err
+	}
+
+	err = k8s.KubectlDeleteE(c.GetTesting(),
+		c.GetKubectlOptions(namespace),
+		filepath.Join("testdata", appname+".yaml"))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *K8sCluster) InjectDNS() error {
