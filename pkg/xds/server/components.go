@@ -2,8 +2,9 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/xds/ingress"
 	"time"
+
+	"github.com/Kong/kuma/pkg/xds/ingress"
 
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 

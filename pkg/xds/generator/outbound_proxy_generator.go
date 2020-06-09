@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"github.com/pkg/errors"
+
 	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/validators"
@@ -9,7 +11,6 @@ import (
 	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
-	"github.com/pkg/errors"
 
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"

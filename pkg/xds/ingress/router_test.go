@@ -1,11 +1,12 @@
 package ingress
 
 import (
+	. "github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/xds"
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
 )
 
 var _ = Describe("Ingress BuildDestinationMap", func() {

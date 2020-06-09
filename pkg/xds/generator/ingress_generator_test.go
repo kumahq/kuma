@@ -1,6 +1,13 @@
 package generator_test
 
 import (
+	"io/ioutil"
+	"path/filepath"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
@@ -8,11 +15,6 @@ import (
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/generator"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"path/filepath"
 )
 
 var _ = Describe("IngressGenerator", func() {

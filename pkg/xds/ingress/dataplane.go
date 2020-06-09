@@ -2,11 +2,12 @@ package ingress
 
 import (
 	"context"
+	"reflect"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
-	"reflect"
 )
 
 type ingressSet []*mesh_proto.Dataplane_Networking_Ingress
@@ -32,7 +33,7 @@ func GetIngressByDataplanes(others []*core_mesh.DataplaneResource) []*mesh_proto
 			}
 			ingress := &mesh_proto.Dataplane_Networking_Ingress{
 				Service: dpInbound.Tags[mesh_proto.ServiceTag],
-				Tags: map[string]string{},
+				Tags:    map[string]string{},
 			}
 			for k, v := range dpInbound.Tags {
 				if k == mesh_proto.ServiceTag {

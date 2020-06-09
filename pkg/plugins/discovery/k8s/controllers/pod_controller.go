@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 
 	"github.com/go-logr/logr"

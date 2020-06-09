@@ -1,10 +1,11 @@
 package generator_test
 
 import (
-	"github.com/Kong/kuma/pkg/xds/generator"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/Kong/kuma/pkg/xds/generator"
 )
 
 var _ = Describe("Permutation", func() {

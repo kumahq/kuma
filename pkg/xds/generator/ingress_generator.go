@@ -2,6 +2,10 @@ package generator
 
 import (
 	"fmt"
+	"regexp"
+	"sort"
+	"strings"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
@@ -10,9 +14,6 @@ import (
 	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
-	"regexp"
-	"sort"
-	"strings"
 )
 
 const (

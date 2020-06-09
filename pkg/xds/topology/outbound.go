@@ -2,6 +2,7 @@ package topology
 
 import (
 	"context"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
