@@ -128,14 +128,19 @@ func (m *Dataplane_Networking) Validate() error {
 		return nil
 	}
 
-	if v, ok := interface{}(m.GetIngress()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return Dataplane_NetworkingValidationError{
-				field:  "Ingress",
-				reason: "embedded message failed validation",
-				cause:  err,
+	for idx, item := range m.GetIngress() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return Dataplane_NetworkingValidationError{
+					field:  fmt.Sprintf("Ingress[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
 			}
 		}
+
 	}
 
 	// no validation rules for Address
@@ -256,6 +261,10 @@ func (m *Dataplane_Networking_Ingress) Validate() error {
 	if m == nil {
 		return nil
 	}
+
+	// no validation rules for Service
+
+	// no validation rules for Tags
 
 	return nil
 }

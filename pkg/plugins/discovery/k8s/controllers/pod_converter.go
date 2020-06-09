@@ -3,9 +3,11 @@ package controllers
 import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	injector_metadata "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/Kong/kuma/pkg/xds/generator"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,6 +28,17 @@ func (p *PodConverter) PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_c
 		return err
 	}
 	spec, err := util_proto.ToMap(dataplaneProto)
+	if err != nil {
+		return err
+	}
+	dataplane.Spec = spec
+	return nil
+}
+
+func (p *PodConverter) PodToIngress(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod) error {
+	dataplane.Mesh = core_model.DefaultMesh
+	ingressProto := p.IngressFor(pod)
+	spec, err := util_proto.ToMap(ingressProto)
 	if err != nil {
 		return err
 	}
@@ -69,6 +82,20 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 	dataplane.Networking.Outbound = ofaces
 
 	return dataplane, nil
+}
+
+func (p *PodConverter) IngressFor(pod *kube_core.Pod) *mesh_proto.Dataplane {
+	return &mesh_proto.Dataplane{
+		Networking: &mesh_proto.Dataplane_Networking{
+			Ingress: []*mesh_proto.Dataplane_Networking_Ingress{},
+			Address: pod.Status.PodIP,
+			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+				{
+					Port: generator.IngressPort,
+				},
+			},
+		},
+	}
 }
 
 func GatewayFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {

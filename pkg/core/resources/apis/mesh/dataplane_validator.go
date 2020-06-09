@@ -61,9 +61,30 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 	if len(networking.GetOutbound()) != 0 {
 		err.AddViolationAt(path, "dataplane cannot have outbounds in the ingress mode")
 	}
+	if len(networking.GetInbound()) != 1 {
+		err.AddViolationAt(path, "dataplane must have one inbound interface")
+	}
 	for i, inbound := range networking.GetInbound() {
-		result := validateInbound(inbound, networking.Address)
-		err.AddErrorAt(path.Field("inbound").Index(i), result)
+		p := path.Field("inbound").Index(i)
+		if inbound.Port < 1 || inbound.Port > 65535 {
+			err.AddViolationAt(p.Field("port"), `port has to be in range of [1, 65535]`)
+		}
+		if inbound.ServicePort != 0 {
+			err.AddViolationAt(p.Field("servicePort"), `doesn't make sense in ingress mode`)
+		}
+		if inbound.Address != "" {
+			err.AddViolationAt(p.Field("address"), `doesn't make sense in ingress mode`)
+		}
+		if len(inbound.Tags) != 0 {
+			err.AddViolationAt(p.Field("tags"), `doesn't make sense in ingress mode`)
+		}
+		err.AddErrorAt(p.Field("address"), validateTags(inbound.Tags))
+	}
+	for i, ingressInterface := range networking.GetIngress() {
+		if ingressInterface.Service == "" {
+			err.AddViolationAt(path.Field("ingress").Index(i).Field("service"), "cannot be empty")
+		}
+		err.AddErrorAt(path.Field("ingress").Index(i).Field("service"), validateTags(ingressInterface.GetTags()))
 	}
 	return err
 }

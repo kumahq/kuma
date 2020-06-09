@@ -62,16 +62,17 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress: {}
-              inbound:
-                - tags: 
-                    service: backend
+              ingress:
+                - service: backend
+                  tags:
                     version: v1
                     region: eu
-                - tags: 
-                    service: backend
+                - service: backend
+                  tags:
                     version: v2
                     region: us
+              inbound:
+                - port: 10001
 `,
 			expected: "01.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -96,5 +97,29 @@ var _ = Describe("IngressGenerator", func() {
 					},
 				},
 			},
-		}))
+		}),
+		Entry("02. empty ingress", testCase{
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              ingress: []
+              inbound:
+                - port: 10001
+`,
+			expected:        "02.envoy.golden.yaml",
+			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{},
+		}),
+	)
+
+	It("should parse tags from SNI", func() {
+		actual := generator.TagsBySNI("backend{version=v1,env=prod,region=eu,app=backend-app}")
+		expected := map[string]string{
+			"service": "backend",
+			"version": "v1",
+			"env":     "prod",
+			"region":  "eu",
+			"app":     "backend-app",
+		}
+		Expect(actual).To(Equal(expected))
+	})
 })

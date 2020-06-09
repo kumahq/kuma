@@ -21,14 +21,30 @@ func ClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadat
 	})
 }
 
+func ClientSideMTLSWithSNI(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, clientService string, sni string) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.Add(&clientSideMTLSConfigurer{
+			ctx:           ctx,
+			metadata:      metadata,
+			clientService: clientService,
+			sni:           sni,
+		})
+	})
+}
+
 type clientSideMTLSConfigurer struct {
 	ctx           xds_context.Context
 	metadata      *core_xds.DataplaneMetadata
 	clientService string
+	sni           string
 }
 
 func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
-	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata, c.clientService)
+	arg := []string{}
+	if c.sni != "" {
+		arg = []string{c.sni}
+	}
+	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata, c.clientService, arg...)
 	if err != nil {
 		return err
 	}

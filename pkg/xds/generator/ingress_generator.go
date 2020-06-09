@@ -2,7 +2,7 @@ package generator
 
 import (
 	"fmt"
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
@@ -10,6 +10,7 @@ import (
 	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -26,19 +27,26 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 	ingress := proxy.Dataplane
 	resources := &model.ResourceSet{}
 
-	// todo: create listener from inbounds
-	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), IngressPort)
+	inbound := ingress.Spec.Networking.Inbound[0]
+	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), inbound.Port)
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder().
-		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), IngressPort))
+		Configure(envoy_listeners.InboundListenerTLSInspector(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port))
 
-	for _, inbound := range ingress.Spec.Networking.Inbound {
-		service := inbound.GetTags()[mesh_proto.ServiceTag]
+	if len(ingress.Spec.Networking.Ingress) == 0 {
 		inboundListenerBuilder = inboundListenerBuilder.
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
-				Configure(envoy_listeners.FilterChainMatch(tagPermutations(service, inbound.GetTags())...)).
-				Configure(envoy_listeners.TcpProxyWithMetaMatch(service, envoy_common.ClusterInfo{Name: service, Tags: inbound.GetTags()})))) // todo: consider 'statsName'
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder()))
 	}
-
+	for _, inbound := range ingress.Spec.Networking.Ingress {
+		for _, perm := range TagPermutations(inbound.Service, inbound.GetTags()) {
+			inboundListenerBuilder = inboundListenerBuilder.
+				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+					Configure(envoy_listeners.FilterChainMatch(perm)).
+					Configure(envoy_listeners.TcpProxyWithMetaMatch(inbound.Service, envoy_common.ClusterInfo{
+						Name: inbound.Service,
+						Tags: TagsBySNI(perm),
+					}))))
+		}
+	}
 	listener, err := inboundListenerBuilder.Build()
 	if err != nil {
 		return nil, err
@@ -56,6 +64,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 
 func generateEds(proxy *model.Proxy) (resources []*model.Resource, _ error) {
 	for service, endpoints := range proxy.OutboundTargets {
+		fmt.Println("generateEds ", service, endpoints)
 		edsCluster, err := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.EdsCluster(service)).
 			Build()
@@ -74,18 +83,35 @@ func generateEds(proxy *model.Proxy) (resources []*model.Resource, _ error) {
 	return
 }
 
-func tagPermutations(service string, tags map[string]string) []string {
+func TagPermutations(service string, tags map[string]string) []string {
 	pairs := []string{}
 	for k, v := range tags {
-		if k == mesh_proto.ServiceTag {
-			continue
-		}
 		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(pairs)
 	rv := []string{}
-	for _, tagSet := range append(Permutation(pairs), []string{}) {
+	for _, tagSet := range Permutation(pairs) {
 		rv = append(rv, fmt.Sprintf("%s{%s}", service, strings.Join(tagSet, ",")))
+	}
+	return append(rv, service)
+}
+
+func TagsBySNI(sni string) map[string]string {
+	r := regexp.MustCompile(`(.*)\{(.*)\}`)
+	matches := r.FindStringSubmatch(sni)
+	if len(matches) == 0 {
+		return map[string]string{
+			v1alpha1.ServiceTag: sni,
+		}
+	}
+	service, tags := matches[1], matches[2]
+	pairs := strings.Split(tags, ",")
+	rv := map[string]string{
+		v1alpha1.ServiceTag: service,
+	}
+	for _, pair := range pairs {
+		kv := strings.Split(pair, "=")
+		rv[kv[0]] = kv[1]
 	}
 	return rv
 }

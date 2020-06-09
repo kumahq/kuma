@@ -32,6 +32,9 @@ func endpointsByService(dataplanes []*mesh_k8s.Dataplane) EndpointsByService {
 			converterLog.Error(err, "failed to parse Dataplane", "dataplane", other.Spec)
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
+		if dataplane.Networking.Ingress != nil {
+			continue
+		}
 		for _, inbound := range dataplane.Networking.GetInbound() {
 			svc, ok := inbound.GetTags()[mesh_proto.ServiceTag]
 			if !ok {

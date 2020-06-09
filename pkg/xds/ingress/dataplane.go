@@ -9,16 +9,9 @@ import (
 	"reflect"
 )
 
-var lastUsedPort uint32 = 10000
+type ingressSet []*mesh_proto.Dataplane_Networking_Ingress
 
-func getNewPort() uint32 {
-	lastUsedPort++
-	return lastUsedPort
-}
-
-type inboundSet []*mesh_proto.Dataplane_Networking_Inbound
-
-func (set inboundSet) getBy(tags map[string]string) *mesh_proto.Dataplane_Networking_Inbound {
+func (set ingressSet) getBy(tags map[string]string) *mesh_proto.Dataplane_Networking_Ingress {
 	for _, in := range set {
 		if reflect.DeepEqual(in.Tags, tags) {
 			return in
@@ -27,30 +20,30 @@ func (set inboundSet) getBy(tags map[string]string) *mesh_proto.Dataplane_Networ
 	return nil
 }
 
-func GetInbounds(others []*core_mesh.DataplaneResource, old []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
-	inbounds := make([]*mesh_proto.Dataplane_Networking_Inbound, 0, len(others))
+func GetIngressByDataplanes(others []*core_mesh.DataplaneResource) []*mesh_proto.Dataplane_Networking_Ingress {
+	ingresses := make([]*mesh_proto.Dataplane_Networking_Ingress, 0, len(others))
 	for _, dp := range others {
 		if dp.Spec.GetNetworking().GetIngress() != nil {
 			continue
 		}
 		for _, dpInbound := range dp.Spec.GetNetworking().GetInbound() {
-			if dup := inboundSet(inbounds).getBy(dpInbound.GetTags()); dup != nil {
+			if dup := ingressSet(ingresses).getBy(dpInbound.GetTags()); dup != nil {
 				continue
 			}
-			var port uint32
-			if prev := inboundSet(old).getBy(dpInbound.GetTags()); prev != nil {
-				port = prev.Port
-			} else {
-				port = getNewPort()
+			ingress := &mesh_proto.Dataplane_Networking_Ingress{
+				Service: dpInbound.Tags[mesh_proto.ServiceTag],
+				Tags: map[string]string{},
 			}
-
-			inbounds = append(inbounds, &mesh_proto.Dataplane_Networking_Inbound{
-				Port: port, //  picked automatically
-				Tags: dpInbound.GetTags(),
-			})
+			for k, v := range dpInbound.Tags {
+				if k == mesh_proto.ServiceTag {
+					continue
+				}
+				ingress.Tags[k] = v
+			}
+			ingresses = append(ingresses, ingress)
 		}
 	}
-	return inbounds
+	return ingresses
 }
 
 func GetAllDataplanes(resourceManager manager.ReadOnlyResourceManager) ([]*core_mesh.DataplaneResource, error) {

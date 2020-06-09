@@ -10,9 +10,34 @@ resources:
         - filterChainMatch:
             serverNames:
               - backend{region=eu}
+          filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      region: eu
+                      service: backend
+                statPrefix: backend
+        - filterChainMatch:
+            serverNames:
               - backend{version=v1}
+          filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      service: backend
+                      version: v1
+                statPrefix: backend
+        - filterChainMatch:
+            serverNames:
               - backend{region=eu,version=v1}
-              - backend{}
           filters:
             - name: envoy.tcp_proxy
               typedConfig:
@@ -27,10 +52,48 @@ resources:
                 statPrefix: backend
         - filterChainMatch:
             serverNames:
+              - backend
+          filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      service: backend
+                statPrefix: backend
+        - filterChainMatch:
+            serverNames:
               - backend{region=us}
+          filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      region: us
+                      service: backend
+                statPrefix: backend
+        - filterChainMatch:
+            serverNames:
               - backend{version=v2}
+          filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      service: backend
+                      version: v2
+                statPrefix: backend
+        - filterChainMatch:
+            serverNames:
               - backend{region=us,version=v2}
-              - backend{}
           filters:
             - name: envoy.tcp_proxy
               typedConfig:
@@ -43,6 +106,22 @@ resources:
                       service: backend
                       version: v2
                 statPrefix: backend
+        - filterChainMatch:
+            serverNames:
+              - backend
+          filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      service: backend
+                statPrefix: backend
+      listenerFilters:
+        - config: {}
+          name: envoy.listener.tls_inspector
       name: inbound:10.0.0.1:10001
       trafficDirection: INBOUND
   - name: backend

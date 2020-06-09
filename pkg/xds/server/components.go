@@ -126,8 +126,8 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					if err != nil {
 						return err
 					}
-					// update inbound interfaces on Ingress
-					dataplane.Spec.Networking.Inbound = ingress.GetInbounds(dataplanes, dataplane.Spec.Networking.Inbound)
+					// update Ingress
+					dataplane.Spec.Networking.Ingress = ingress.GetIngressByDataplanes(dataplanes)
 					if err := rt.ResourceManager().Update(ctx, dataplane); err != nil {
 						return err
 					}
@@ -137,6 +137,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 						Id:              proxyID,
 						Dataplane:       dataplane,
 						OutboundTargets: endpoints,
+						Metadata:        metadataTracker.Metadata(streamId),
 					}
 					return ingressReconciler.Reconcile(envoyCtx, &proxy)
 				}

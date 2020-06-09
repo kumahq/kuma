@@ -465,6 +465,52 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("ingress in the list of dataplanes", testCase{
+				destinations: core_xds.DestinationMap{
+					"redis": []mesh_proto.TagSelector{{"service": "redis"}},
+				},
+				dataplanes: []*mesh_core.DataplaneResource{
+					{
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{"service": "redis", "version": "v1"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
+								},
+							},
+						},
+					},
+					{
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "10.20.1.2",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags: map[string]string{"service": "ingress", "cluster": "cl1"},
+										Port: 10001,
+									},
+								},
+								Ingress: []*mesh_proto.Dataplane_Networking_Ingress{
+									{
+										Service: "redis",
+										Tags:    map[string]string{"version": "v2", "region": "eu"},
+									},
+								},
+							},
+						},
+					},
+				},
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{Target: "192.168.0.1", Port: 6379, Tags: map[string]string{"service": "redis", "version": "v1"}},
+						{Target: "10.20.1.2", Port: 10001, Tags: map[string]string{"service": "redis", "version": "v2", "region": "eu"}},
+					},
+				},
+			}),
 		)
 	})
 })

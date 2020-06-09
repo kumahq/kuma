@@ -24,7 +24,9 @@ func permutationN(n int, input []string, prev [][]string) [][]string {
 		idx := indexOf(input, lastElem)
 		rest := input[idx+1:]
 		for _, r := range rest {
-			rv = append(rv, append(p, r))
+			nstr := make([]string, len(p)+1)
+			copy(nstr, append(p, r))
+			rv = append(rv, nstr)
 		}
 	}
 	return rv

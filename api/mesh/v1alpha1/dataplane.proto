@@ -18,10 +18,13 @@ message Dataplane {
     // mode, dataplane has only inbound interfaces (outbound and gateway
     // prohibited). Every inbound interface matches with services that reside in
     // that cluster.
-    message Ingress {}
+    message Ingress {
+      string service = 1;
+      map<string, string> tags = 2;
+    }
 
     // Ingress if not nil, dataplane will be work in the Ingress mode
-    Ingress ingress = 6;
+    repeated Ingress ingress = 6;
 
     // Public IP on which the dataplane is accessible in the network.
     // Host names and DNS are not allowed.

@@ -2,7 +2,6 @@ package topology
 
 import (
 	"context"
-
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
@@ -29,6 +28,39 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 	}
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
+		if len(dataplane.Spec.Networking.Ingress) != 0 {
+			if _, ok := dataplane.Spec.Networking.Inbound[0].Tags["cluster"]; ok {
+				for _, ingress := range dataplane.Spec.Networking.GetIngress() {
+					selectors, ok := destinations[ingress.Service]
+					if !ok {
+						continue
+					}
+					tags := map[string]string{
+						mesh_proto.ServiceTag: ingress.Service,
+					}
+					for k, v := range ingress.Tags {
+						tags[k] = v
+					}
+					matches := false
+					for _, selector := range selectors {
+						if selector.Matches(tags) {
+							matches = true
+							break
+						}
+					}
+					if !matches {
+						continue
+					}
+
+					outbound[ingress.Service] = append(outbound[ingress.Service], core_xds.Endpoint{
+						Target: dataplane.Spec.Networking.Address,
+						Port:   dataplane.Spec.Networking.Inbound[0].Port,
+						Tags:   tags,
+					})
+				}
+				continue
+			}
+		}
 		for i, inbound := range dataplane.Spec.Networking.GetInbound() {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			selectors, ok := destinations[service]

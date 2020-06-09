@@ -110,8 +110,18 @@ var _ = Describe("Dataplane", func() {
             name: dp-1
             mesh: default
             networking:
-                ingress: {}
-                address: 192.168.0.1`,
+                address: 192.168.0.1
+                ingress: 
+                  - service: backend
+                    tags: 
+                      version: "1"
+                      region: us
+                  - service: web
+                    tags:
+                      version: v2
+                      region: eu
+                inbound:
+                  - port: 10001`,
 		),
 	)
 
@@ -626,8 +636,18 @@ var _ = Describe("Dataplane", func() {
                 name: dp-1
                 mesh: default
                 networking:
-                  ingress: {}
                   address: 192.168.0.1
+                  ingress:
+                    - service: backend
+                      tags: 
+                        version: "1"
+                        region: us
+                    - service: web
+                      tags:
+                        version: v2
+                        region: eu
+                  inbound:
+                    - port: 10001
                   outbound:
                     - port: 3333
                       service: redis`,
@@ -642,13 +662,75 @@ var _ = Describe("Dataplane", func() {
                 name: dp-1
                 mesh: default
                 networking:
-                  ingress: {}
+                  address: 192.168.0.1
+                  ingress:
+                    - service: backend
+                      tags: 
+                        version: "1"
+                        region: us
+                    - service: web
+                      tags:
+                        version: v2
+                        region: eu
                   gateway: {}
-                  address: 192.168.0.1`,
+                  inbound:
+                    - port: 10001`,
 			expected: `
                 violations:
                 - field: networking
                   message: gateway cannot be defined in the ingress mode`,
+		}),
+		Entry("networking.ingress: no inbound defined", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    - service: backend
+                      tags: 
+                        version: "1"
+                        region: us
+                    - service: web
+                      tags:
+                        version: v2
+                        region: eu`,
+			expected: `
+                violations:
+                - field: networking
+                  message: dataplane must have one inbound interface`,
+		}),
+		Entry("networking.ingress: inbound with redundant fields", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    - service: backend
+                      tags: 
+                        version: "1"
+                        region: us
+                    - service: web
+                      tags:
+                        version: v2
+                        region: eu
+                  inbound:
+                    - port: 10001
+                      servicePort: 5050
+                      address: 1.1.1.1
+                      tags:
+                        name: ingress-dp`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].servicePort
+                  message: doesn't make sense in ingress mode
+                - field: networking.inbound[0].address
+                  message: doesn't make sense in ingress mode
+                - field: networking.inbound[0].tags
+                  message: doesn't make sense in ingress mode`,
 		}),
 	)
 

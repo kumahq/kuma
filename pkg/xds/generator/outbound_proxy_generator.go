@@ -1,17 +1,15 @@
 package generator
 
 import (
+	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/validators"
+	model "github.com/Kong/kuma/pkg/core/xds"
+	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
-
 	"github.com/pkg/errors"
-
-	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
 
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
@@ -126,7 +124,7 @@ func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *mode
 		healthCheck := proxy.HealthChecks[serviceName]
 		edsCluster, err := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.EdsCluster(cluster.Name)).
-			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, cluster.Tags[kuma_mesh.ServiceTag])).
+			Configure(envoy_clusters.ClientSideMTLSWithSNI(ctx, proxy.Metadata, serviceName, cluster.Name)).
 			Configure(envoy_clusters.HealthCheck(healthCheck)).
 			Build()
 		if err != nil {
