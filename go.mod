@@ -59,7 +59,7 @@ replace (
 	github.com/Kong/kuma/api => ./api
 	github.com/Kong/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
 
-	github.com/prometheus/prometheus => ./vendor/github.com/prometheus/prometheus
+	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 	github.com/spiffe/spire/proto/spire => github.com/spiffe/spire/proto/spire v0.10.0
 	gopkg.in/fsnotify.v1 => gopkg.in/fsnotify.v1 v1.4.7
 	k8s.io/client-go => k8s.io/client-go v0.18.2
