@@ -13,8 +13,8 @@ const (
 	envK8SCLUSTERS = "K8SCLUSTERS"
 
 	maxClusters    = 3
-	defaultRetries = 30
-	defaultTiemout = 3 * time.Second
+	defaultRetries = 60
+	defaultTimeout = 3 * time.Second
 
 	kumaNamespace   = "kuma-system"
 	kumaServiceName = "kuma-control-plane"

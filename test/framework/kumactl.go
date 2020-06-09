@@ -28,7 +28,7 @@ func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*Kumact
 
 	_, err := os.Stat(kumactl)
 	if kumactl == "" || os.IsNotExist(err) {
-		return nil, errors.Wrapf(err, "unable to find kumactl, please supply a valid KUMACTL environment variable")
+		return nil, errors.Wrapf(err, "unable to find kumactl, please supply a valid KUMACTLBIN environment variable")
 	}
 
 	configPath := os.ExpandEnv(fmt.Sprintf(defaultKumactlConfig, cpname))
@@ -130,7 +130,7 @@ func (o *KumactlOptions) KumactlInstallTracing() (string, error) {
 }
 
 func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
-	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", defaultRetries, defaultTiemout,
+	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", defaultRetries, defaultTimeout,
 		func() (string, error) {
 			err := o.RunKumactl(
 				"config", "control-planes", "add",
