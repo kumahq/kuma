@@ -1,8 +1,11 @@
 package resolver
 
 import (
-	"fmt"
 	"strings"
+	"sync"
+
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/miekg/dns"
 
@@ -15,37 +18,32 @@ var (
 
 type (
 	VIPList           map[string]string
-	DomainList        map[string]VIPList
 	SimpleDNSResolver struct {
+		sync.RWMutex
+		domain  string
 		address string
-		domains DomainList
-		ipam    *IPAM
+		cidr    string
+		viplist VIPList
+		handler DNSHandler
+		ipam    IPAM
 	}
 )
 
-func NewSimpleDNSResolver(ip, port, cidr string) (DNSResolver, error) {
-	return newSimpleDNSResolver(ip, port, cidr)
-}
-
-func newSimpleDNSResolver(ip, port, cidr string) (*SimpleDNSResolver, error) {
+func NewSimpleDNSResolver(domain, ip, port, cidr string) (DNSResolver, error) {
 	resolver := &SimpleDNSResolver{
+		domain:  domain,
 		address: ip + ":" + port,
-		domains: DomainList{},
+		cidr:    cidr,
+		viplist: VIPList{},
 	}
 
-	err := resolver.initIPAM(cidr)
-	if err != nil {
-		simpleDNSLog.Error(err, "Unale to init the IPAM module in the DNS resolver.")
-		return nil, err
-	}
+	resolver.handler = NewSimpleDNSHandler(resolver)
+	resolver.ipam = NewSimpleIPAM(cidr)
 
 	return resolver, nil
 }
 
 func (d *SimpleDNSResolver) Start(stop <-chan struct{}) error {
-	// handlers for all domains
-	d.registerDNSHandlers()
-
 	server := &dns.Server{
 		Addr: d.address,
 		Net:  "udp",
@@ -60,7 +58,7 @@ func (d *SimpleDNSResolver) Start(stop <-chan struct{}) error {
 		}
 	}()
 
-	simpleDNSLog.Info("starting", "address", d.address, "CIDR", d.ipam.CIDR)
+	simpleDNSLog.Info("starting", "address", d.address, "CIDR", d.cidr)
 	select {
 	case <-stop:
 		simpleDNSLog.Info("Shutting down the DNS Server")
@@ -70,69 +68,39 @@ func (d *SimpleDNSResolver) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *SimpleDNSResolver) AddDomain(domain string) error {
-	domain, err := d.domainFromName(domain)
-	if err != nil {
-		return err
-	}
-
-	_, found := d.domains[domain]
-	if !found {
-		d.domains[domain] = VIPList{}
-	}
-
-	return nil
+func (d *SimpleDNSResolver) GetDomain() string {
+	return d.domain
 }
 
-func (d *SimpleDNSResolver) RemoveDomain(domain string) error {
-	domain, err := d.domainFromName(domain)
-	if err != nil {
-		return err
-	}
+func (d *SimpleDNSResolver) AddService(service string) (string, error) {
+	d.Lock()
+	defer d.Unlock()
 
-	_, found := d.domains[domain]
+	_, found := d.viplist[service]
 	if !found {
-		return fmt.Errorf("Deleting domain [%s] not found.", domain)
-	}
-
-	delete(d.domains, domain)
-
-	return nil
-}
-
-func (d *SimpleDNSResolver) AddServiceToDomain(service string, domain string) (string, error) {
-	entry, found := d.domains[domain]
-	if !found {
-		return "", fmt.Errorf("Domain [%s] not found.", domain)
-	}
-
-	_, found = entry[service]
-	if !found {
-		ip, err := d.allocateIP()
+		ip, err := d.ipam.AllocateIP()
 		if err != nil {
 			return "", err
 		}
 
-		entry[service] = ip
+		d.viplist[service] = ip
 	}
 
-	return entry[service], nil
+	return d.viplist[service], nil
 }
 
-func (d *SimpleDNSResolver) RemoveServiceFromDomain(service string, domain string) error {
-	entry, found := d.domains[domain]
+func (d *SimpleDNSResolver) RemoveService(service string) error {
+	d.Lock()
+	defer d.Unlock()
+
+	ip, found := d.viplist[service]
 	if !found {
-		return fmt.Errorf("Domain [%s] not found.", domain)
+		return errors.Errorf("Service [%s] not found in domain [%s].", service, d.domain)
 	}
 
-	ip, found := entry[service]
-	if !found {
-		return fmt.Errorf("Service [%s] not found in domain [%s].", service, domain)
-	}
+	delete(d.viplist, service)
 
-	delete(entry, service)
-
-	err := d.freeIP(ip)
+	err := d.ipam.FreeIP(ip)
 	if err != nil {
 		return err
 	}
@@ -140,50 +108,45 @@ func (d *SimpleDNSResolver) RemoveServiceFromDomain(service string, domain strin
 	return nil
 }
 
-func (d *SimpleDNSResolver) SyncServicesForDomain(services map[string]bool, domain string) error {
-	entry, found := d.domains[domain]
-	if !found {
-		return fmt.Errorf("Domain [%s] not found.", domain)
-	}
+func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) {
+	d.Lock()
+	defer d.Unlock()
 
-	errors := []string{}
 	// ensure all services have entries in the domain
 	for service := range services {
-		_, found = entry[service]
+		_, found := d.viplist[service]
 		if !found {
-			ip, err := d.allocateIP()
+			ip, err := d.ipam.AllocateIP()
 			if err != nil {
-				errors = append(errors, fmt.Sprintf("unable to allocate an ip for service %s [%v]", service, err))
+				errs = multierr.Append(errs, errors.Wrapf(err, "unable to allocate an ip for service %s", service))
 			} else {
-				entry[service] = ip
+				d.viplist[service] = ip
 			}
 		}
 	}
 
 	// ensure all entries in the domain are present in the service list, and delete them otherwise
-	for service := range entry {
+	for service := range d.viplist {
 		_, found := services[service]
 		if !found {
-			delete(entry, service)
+			_ = d.ipam.FreeIP(d.viplist[service])
+			delete(d.viplist, service)
 		}
-	}
-
-	if len(errors) > 0 {
-		return fmt.Errorf("%s", strings.Join(errors, ","))
 	}
 
 	return nil
 }
 
 func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
+	d.Lock()
+	defer d.Unlock()
 	domain, err := d.domainFromName(name)
 	if err != nil {
 		return "", err
 	}
 
-	entry, found := d.domains[domain]
-	if !found {
-		return "", fmt.Errorf("Domain [%s] not found.", domain)
+	if domain != d.domain {
+		return "", errors.Errorf("Domain [%s] not found.", domain)
 	}
 
 	service, err := d.serviceFromName(name)
@@ -191,22 +154,45 @@ func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
 		return "", err
 	}
 
-	ip, found := entry[service]
+	ip, found := d.viplist[service]
 	if !found {
-		return "", fmt.Errorf("Service [%s] not found in domain [%s].", service, domain)
+		return "", errors.Errorf("Service [%s] not found in domain [%s].", service, domain)
 	}
 
 	return ip, nil
 }
 
 func (d *SimpleDNSResolver) ReverseLookup(ip string) (string, error) {
-	for domain, entry := range d.domains {
-		for service, serviceIP := range entry {
-			if serviceIP == ip {
-				return service + "." + domain, nil
-			}
+	d.Lock()
+	defer d.Unlock()
+	for service, serviceIP := range d.viplist {
+		if serviceIP == ip {
+			return service + "." + d.domain, nil
 		}
 	}
 
-	return "", fmt.Errorf("IP [%s] not found", ip)
+	return "", errors.Errorf("IP [%s] not found", ip)
+}
+
+func (d *SimpleDNSResolver) domainFromName(name string) (string, error) {
+	split := dns.SplitDomainName(name)
+	if len(split) < 1 {
+		return "", errors.Errorf("Wrong DNS name: %s", name)
+	}
+
+	return split[len(split)-1], nil
+}
+
+func (d *SimpleDNSResolver) serviceFromName(name string) (string, error) {
+	split := dns.SplitDomainName(name)
+	if len(split) < 2 {
+		return "", errors.Errorf("Wrong DNS name: %s", name)
+	}
+
+	service := strings.Join(split[:len(split)-1], ".")
+	if service == "" {
+		return "", errors.Errorf("Wrong service in DNS name: %s", name)
+	}
+
+	return service, nil
 }

@@ -6,23 +6,26 @@ import (
 	"github.com/Nordix/simple-ipam/pkg/ipam"
 )
 
-type IPAM struct {
+type IPAM interface {
+	AllocateIP() (string, error)
+	FreeIP(ip string) error
+}
+
+type SimpleIPAM struct {
 	ipam.IPAM
 }
 
-func (d *SimpleDNSResolver) initIPAM(cidr string) error {
-	ipam, err := ipam.New(cidr)
+func NewSimpleIPAM(cidr string) IPAM {
+	newIPAM, err := ipam.New(cidr)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	d.ipam = &IPAM{*ipam}
-
-	return nil
+	return &SimpleIPAM{*newIPAM}
 }
 
-func (d *SimpleDNSResolver) allocateIP() (string, error) {
-	ip, err := d.ipam.Allocate()
+func (i *SimpleIPAM) AllocateIP() (string, error) {
+	ip, err := i.Allocate()
 	if err != nil {
 		return "", err
 	}
@@ -30,18 +33,16 @@ func (d *SimpleDNSResolver) allocateIP() (string, error) {
 	return ip.String(), nil
 }
 
-func (d *SimpleDNSResolver) freeIP(ip string) error {
+func (i *SimpleIPAM) FreeIP(ip string) error {
 	parsedIP := net.ParseIP(ip)
 
 	// ensure the IP is reserved before deleting it
-	err := d.ipam.Reserve(parsedIP)
-	if err != nil {
-		if err.Error() != "Address already allocated" {
-			return err
-		}
+	err := i.Reserve(parsedIP)
+	if err != nil && err.Error() != "Address already allocated" {
+		return err
 	}
 
-	d.ipam.Free(parsedIP)
+	i.Free(parsedIP)
 
 	return nil
 }

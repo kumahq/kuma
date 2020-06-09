@@ -14,6 +14,7 @@ func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
 
 	dnsResolver, err := resolver.NewSimpleDNSResolver(
+		topLevelDomain,
 		"0.0.0.0",
 		strconv.FormatUint(uint64(cfg.DNSServer.Port), 10),
 		cfg.DNSServer.CIDR)
@@ -21,12 +22,7 @@ func SetupServer(rt runtime.Runtime) error {
 		return err
 	}
 
-	err = dnsResolver.AddDomain(topLevelDomain)
-	if err != nil {
-		return err
-	}
-
-	resourceSynchronizer, err := synchronizer.NewResourceSynchronizer(topLevelDomain, rt.ResourceManager(), dnsResolver)
+	resourceSynchronizer, err := synchronizer.NewResourceSynchronizer(rt.ReadOnlyResourceManager(), dnsResolver)
 	if err != nil {
 		return err
 	}

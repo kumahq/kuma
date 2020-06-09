@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
@@ -21,8 +21,7 @@ type (
 	}
 
 	ResourceSynchronizer struct {
-		domain    string
-		rm        manager.ResourceManager
+		rm        manager.ReadOnlyResourceManager
 		resolver  resolver.DNSResolver
 		newTicker func() *time.Ticker
 	}
@@ -32,9 +31,8 @@ const (
 	tickInterval = 500 * time.Millisecond
 )
 
-func NewResourceSynchronizer(domain string, rm manager.ResourceManager, resolver resolver.DNSResolver) (Synchronizer, error) {
+func NewResourceSynchronizer(rm manager.ReadOnlyResourceManager, resolver resolver.DNSResolver) (Synchronizer, error) {
 	return &ResourceSynchronizer{
-		domain:   domain,
 		rm:       rm,
 		resolver: resolver,
 		newTicker: func() *time.Ticker {
@@ -53,14 +51,13 @@ func (d *ResourceSynchronizer) Start(stop <-chan struct{}) error {
 		case <-ticker.C:
 			d.synchronise()
 		case <-stop:
-			d.synchronise()
 			return nil
 		}
 	}
 }
 
 func (d *ResourceSynchronizer) synchronise() {
-	meshes := mesh.MeshResourceList{}
+	meshes := core_mesh.MeshResourceList{}
 
 	err := d.rm.List(context.Background(), &meshes)
 	if err != nil {
@@ -68,12 +65,12 @@ func (d *ResourceSynchronizer) synchronise() {
 		return
 	}
 
-	for _, m := range meshes.Items {
-		dataplanes := mesh.DataplaneResourceList{}
+	for _, mesh := range meshes.Items {
+		dataplanes := core_mesh.DataplaneResourceList{}
 
-		err := d.rm.List(context.Background(), &dataplanes, store.ListByMesh(m.Meta.GetName()))
+		err := d.rm.List(context.Background(), &dataplanes, store.ListByMesh(mesh.Meta.GetName()))
 		if err != nil {
-			synchroniserLog.Error(err, "unable to synchronise", "mesh", m.Meta.GetName())
+			synchroniserLog.Error(err, "unable to synchronise", "mesh", mesh.Meta.GetName())
 		}
 
 		serviceMap := make(map[string]bool)
@@ -85,7 +82,7 @@ func (d *ResourceSynchronizer) synchronise() {
 			}
 		}
 
-		err = d.resolver.SyncServicesForDomain(serviceMap, d.domain)
+		err = d.resolver.SyncServices(serviceMap)
 		if err != nil {
 			synchroniserLog.Error(err, "unable to synchronise", "serviceMap", serviceMap)
 		}
