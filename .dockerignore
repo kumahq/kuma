@@ -16,4 +16,4 @@ go.sum
 Makefile*
 pkg/*
 !pkg/config/*
-vendor
+vendored
