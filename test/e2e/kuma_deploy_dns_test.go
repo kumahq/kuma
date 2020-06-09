@@ -29,20 +29,25 @@ var _ = Describe("Test DNS", func() {
 		err = c.InjectDNS()
 		Expect(err).ToNot(HaveOccurred())
 
-		_ = k8s.CreateNamespaceE(c.GetTesting(), c.GetKubectlOptions(), "kuma-test")
-		//Expect(err).ToNot(HaveOccurred())
+		err = k8s.CreateNamespaceE(c.GetTesting(), c.GetKubectlOptions(), "kuma-test")
+		Expect(err).ToNot(HaveOccurred())
 
 		err = c.LabelNamespaceForSidecarInjection("kuma-test")
 		Expect(err).ToNot(HaveOccurred())
 
-		_ = k8s.KubectlApplyE(c.GetTesting(),
+		err = k8s.KubectlApplyE(c.GetTesting(),
 			c.GetKubectlOptions("kuma-test"),
-			filepath.Join("testdata", "example-app.yaml"))
-		//Expect(err).ToNot(HaveOccurred())
+			filepath.Join("testdata", "example-app-svc.yaml"))
+		Expect(err).ToNot(HaveOccurred())
 
 		k8s.WaitUntilServiceAvailable(c.GetTesting(),
 			c.GetKubectlOptions("kuma-test"),
 			"example-app", defaultRetries, defaultTimeout)
+
+		err = k8s.KubectlApplyE(c.GetTesting(),
+			c.GetKubectlOptions("kuma-test"),
+			filepath.Join("testdata", "example-app.yaml"))
+		Expect(err).ToNot(HaveOccurred())
 
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(),
 			c.GetKubectlOptions(),
@@ -53,12 +58,17 @@ var _ = Describe("Test DNS", func() {
 
 		err = k8s.KubectlApplyE(c.GetTesting(),
 			c.GetKubectlOptions("kuma-test"),
-			filepath.Join("testdata", "example-client.yaml"))
+			filepath.Join("testdata", "example-client-svc.yaml"))
 		Expect(err).ToNot(HaveOccurred())
 
 		k8s.WaitUntilServiceAvailable(c.GetTesting(),
 			c.GetKubectlOptions("kuma-test"),
 			"example-client", defaultRetries, defaultTimeout)
+
+		err = k8s.KubectlApplyE(c.GetTesting(),
+			c.GetKubectlOptions("kuma-test"),
+			filepath.Join("testdata", "example-client.yaml"))
+		Expect(err).ToNot(HaveOccurred())
 
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(),
 			c.GetKubectlOptions(),

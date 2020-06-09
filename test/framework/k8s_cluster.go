@@ -377,6 +377,10 @@ func (c *K8sCluster) InjectDNS() error {
 		return err
 	}
 
+	if strings.Contains(corednsConfigMap.Data["Corefile"], "kuma:53") {
+		return nil
+	}
+
 	toappend := fmt.Sprintf(`kuma:53 {
         errors
         cache 30

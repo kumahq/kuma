@@ -10,8 +10,7 @@ func (d *SimpleDNSResolver) parseQuery(m *dns.Msg) {
 	for _, q := range m.Question {
 		switch q.Qtype {
 		case dns.TypeA:
-			simpleDNSLog.Info("Query for %s\n", q.Name)
-
+			simpleDNSLog.Info("Query for " + q.Name)
 			ip, err := d.ForwardLookup(q.Name)
 			if err != nil {
 				simpleDNSLog.Error(err, "Unable to resolve ", "q.Name", q.Name)

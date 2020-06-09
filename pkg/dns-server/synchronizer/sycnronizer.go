@@ -47,6 +47,7 @@ func (d *ResourceSynchronizer) Start(stop <-chan struct{}) error {
 	ticker := d.newTicker()
 	defer ticker.Stop()
 
+	synchroniserLog.Info("Starting the syncroniser")
 	for {
 		select {
 		case <-ticker.C:
