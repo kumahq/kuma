@@ -1,16 +1,17 @@
 package generator
 
 import (
+	"github.com/Kong/kuma/pkg/core/validators"
+	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
+	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
+	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
+
 	"github.com/pkg/errors"
 
 	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/validators"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
-	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
 
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
@@ -20,39 +21,51 @@ import (
 type OutboundProxyGenerator struct {
 }
 
+type Clusters map[string][]envoy_common.ClusterInfo
+
+func (c Clusters) Add(infos ...envoy_common.ClusterInfo) {
+	for _, info := range infos {
+		c[info.Name] = append(c[info.Name], info)
+	}
+}
+
+func (c Clusters) Tags(name string) []envoy_common.Tags {
+	var result []envoy_common.Tags
+	for _, info := range c[name] {
+		result = append(result, info.Tags)
+	}
+	return result
+}
+
 func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
 	if len(outbounds) == 0 {
 		return nil, nil
 	}
 	resources := &model.ResourceSet{}
+	clusters := Clusters{}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 	ofaces, err := proxy.Dataplane.Spec.Networking.GetOutboundInterfaces()
 	if err != nil {
 		return nil, err
 	}
+
 	for i, outbound := range outbounds {
 		// pick a route
 		route := proxy.TrafficRoutes[outbound.Service]
-		if route == nil {
+		if route == nil { // should not happen since we always generate default route if TrafficRoute is not found
 			return nil, errors.Errorf("%s{service=%q}: has no TrafficRoute", validators.RootedAt("dataplane").Field("networking").Field("outbound").Index(i), outbound.Service)
 		}
 
 		// determine the list of destination clusters
-		clusters, err := g.determineClusters(ctx, proxy, route)
+		outboundClusters, err := g.determineClusters(ctx, proxy, route)
 		if err != nil {
 			return nil, err
 		}
+		clusters.Add(outboundClusters...)
 
-		// generate CDS and EDS resources
-		edsResources, endpoints, err := g.generateEds(ctx, proxy, clusters)
-		if err != nil {
-			return nil, err
-		}
-		resources.Add(edsResources...)
-
-		protocol := InferServiceProtocol(endpoints)
+		protocol := g.inferProtocol(proxy, outboundClusters)
 
 		// generate LDS resource
 		outboundListenerName := envoy_names.GetOutboundListenerName(ofaces[i].DataplaneIP, ofaces[i].DataplanePort)
@@ -73,7 +86,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			default:
 				// configuration for non-HTTP cases
 				filterChainBuilder.
-					Configure(envoy_listeners.TcpProxy(outbound.Service, clusters...)).
+					Configure(envoy_listeners.TcpProxy(outbound.Service, outboundClusters...)).
 					Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, destinationService, proxy.Logs[outbound.Service], proxy))
 			}
 			return filterChainBuilder
@@ -89,14 +102,68 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		resources.AddNamed(listener)
 
 		// generate RDS resources
-		rdsResources, err := g.generateRds(protocol, outbound.Service, outboundRouteName, clusters, proxy.Dataplane.Spec.Tags())
+		rdsResources, err := g.generateRds(protocol, outbound.Service, outboundRouteName, outboundClusters, proxy.Dataplane.Spec.Tags())
 		if err != nil {
 			return nil, err
 		}
 		resources.Add(rdsResources...)
 	}
 
+	cdsResources, err := g.generateCDS(ctx, proxy, clusters)
+	if err != nil {
+		return nil, err
+	}
+	resources.Add(cdsResources.List()...) // todo combine resource set
+
+	edsResources := g.generateEDS(proxy, clusters)
+	resources.Add(edsResources.List()...)
+
 	return resources.List(), nil
+}
+
+func (_ OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters Clusters) (model.ResourceSet, error) {
+	var resources model.ResourceSet
+	for clusterName, clusterInfos := range clusters {
+		serviceName := clusterInfos[0].Tags[kuma_mesh.ServiceTag]
+		healthCheck := proxy.HealthChecks[serviceName]
+		circuitBreaker := proxy.CircuitBreakers[serviceName]
+		edsCluster, err := envoy_clusters.NewClusterBuilder().
+			Configure(envoy_clusters.EdsCluster(clusterName)).
+			Configure(envoy_clusters.LbSubset(clusters.Tags(clusterName))).
+			Configure(envoy_clusters.ClientSideMTLSWithSNI(ctx, proxy.Metadata, serviceName, clusterName)).
+			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
+			Configure(envoy_clusters.HealthCheck(healthCheck)).
+			Build()
+		if err != nil {
+			return model.ResourceSet{}, err
+		}
+		resources.AddNamed(edsCluster)
+	}
+	return resources, nil
+}
+
+func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters Clusters) model.ResourceSet {
+	var resources model.ResourceSet
+	for clusterName, clusterInfos := range clusters {
+		serviceName := clusterInfos[0].Tags[kuma_mesh.ServiceTag]
+		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])
+		loadAssignment := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints)
+		resources.Add(&model.Resource{
+			Name:     clusterName,
+			Resource: loadAssignment,
+		})
+	}
+	return resources
+}
+
+func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []envoy_common.ClusterInfo) mesh_core.Protocol {
+	var allEndpoints []model.Endpoint
+	for _, cluster := range clusters {
+		serviceName := cluster.Tags[kuma_mesh.ServiceTag]
+		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])
+		allEndpoints = append(allEndpoints, endpoints...)
+	}
+	return InferServiceProtocol(allEndpoints)
 }
 
 func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy *model.Proxy, route *mesh_core.TrafficRouteResource) (clusters []envoy_common.ClusterInfo, err error) {
@@ -110,38 +177,10 @@ func (_ OutboundProxyGenerator) determineClusters(ctx xds_context.Context, proxy
 			continue
 		}
 		clusters = append(clusters, envoy_common.ClusterInfo{
-			Name:   envoy_names.GetDestinationClusterName(service, destination.Destination),
+			Name:   service,
 			Weight: destination.Weight,
 			Tags:   destination.Destination,
 		})
-	}
-	return
-}
-
-func (_ OutboundProxyGenerator) generateEds(ctx xds_context.Context, proxy *model.Proxy, clusters []envoy_common.ClusterInfo) (resources []*model.Resource, allEndpoints []model.Endpoint, _ error) {
-	for _, cluster := range clusters {
-		serviceName := cluster.Tags[kuma_mesh.ServiceTag]
-		healthCheck := proxy.HealthChecks[serviceName]
-		circuitBreaker := proxy.CircuitBreakers[serviceName]
-		edsCluster, err := envoy_clusters.NewClusterBuilder().
-			Configure(envoy_clusters.EdsCluster(cluster.Name)).
-			Configure(envoy_clusters.ClientSideMTLSWithSNI(ctx, proxy.Metadata, serviceName, cluster.Name)).
-			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
-			Configure(envoy_clusters.HealthCheck(healthCheck)).
-			Build()
-		if err != nil {
-			return nil, nil, err
-		}
-		resources = append(resources, &model.Resource{
-			Name:     cluster.Name,
-			Resource: edsCluster,
-		})
-		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName]).Filter(cluster.Tags)
-		resources = append(resources, &model.Resource{
-			Name:     cluster.Name,
-			Resource: envoy_endpoints.CreateClusterLoadAssignment(cluster.Name, endpoints),
-		})
-		allEndpoints = append(allEndpoints, endpoints...)
 	}
 	return
 }

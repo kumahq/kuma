@@ -44,7 +44,7 @@ type RouteConfigurer struct {
 
 func (c RouteConfigurer) routeAction() *envoy_route.RouteAction {
 	routeAction := envoy_route.RouteAction{}
-	if len(c.clusters) == 1 {
+	if len(c.clusters) == 1 && envoy_common.Metadata(c.clusters[0].Tags) == nil {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
 			Cluster: c.clusters[0].Name,
 		}
@@ -54,6 +54,7 @@ func (c RouteConfigurer) routeAction() *envoy_route.RouteAction {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
 				Name:   cluster.Name,
 				Weight: &wrappers.UInt32Value{Value: cluster.Weight},
+				MetadataMatch: envoy_common.Metadata(cluster.Tags),
 			})
 		}
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_WeightedClusters{

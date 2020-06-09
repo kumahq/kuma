@@ -1,6 +1,7 @@
 package listeners_test
 
 import (
+	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -21,6 +22,24 @@ var _ = Describe("TcpProxyConfigurer", func() {
 		clusters        []envoy_common.ClusterInfo
 		expected        string
 	}
+
+	FIt("test", func() {
+		x := MetadataMatch(envoy_common.ClusterInfo{
+			Tags: map[string]string{
+				"service": "a",
+				"version": "1.0",
+			},
+		})
+
+		y := MetadataMatch(envoy_common.ClusterInfo{
+			Tags: map[string]string{
+				"service": "a",
+				"version": "1.0",
+			},
+		})
+
+		Expect(proto.Equal(x, y)).To(BeTrue())
+	})
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {

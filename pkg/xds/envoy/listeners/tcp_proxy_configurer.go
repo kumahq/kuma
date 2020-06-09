@@ -1,13 +1,10 @@
 package listeners
 
 import (
-	"github.com/golang/protobuf/ptypes"
-
-	"github.com/Kong/kuma/pkg/xds/envoy/endpoints"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes"
 
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
@@ -22,21 +19,10 @@ func TcpProxy(statsName string, clusters ...envoy_common.ClusterInfo) FilterChai
 	})
 }
 
-func TcpProxyWithMetaMatch(statsName string, cluster envoy_common.ClusterInfo) FilterChainBuilderOpt {
-	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
-		config.Add(&TcpProxyConfigurer{
-			statsName: statsName,
-			clusters:  []envoy_common.ClusterInfo{cluster},
-			metaMatch: true,
-		})
-	})
-}
-
 type TcpProxyConfigurer struct {
 	statsName string
 	// Clusters to forward traffic to.
-	clusters  []envoy_common.ClusterInfo
-	metaMatch bool
+	clusters []envoy_common.ClusterInfo
 }
 
 func (c *TcpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -60,12 +46,9 @@ func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 	proxy := envoy_tcp.TcpProxy{
 		StatPrefix: util_xds.SanitizeMetric(c.statsName),
 	}
-	if len(c.clusters) == 1 {
+	if len(c.clusters) == 1 && envoy_common.Metadata(c.clusters[0].Tags) == nil {
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
 			Cluster: c.clusters[0].Name,
-		}
-		if c.metaMatch {
-			proxy.MetadataMatch = endpoints.CreateLbMetadata(c.clusters[0].Tags)
 		}
 	} else {
 		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
@@ -73,6 +56,7 @@ func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 			weightedClusters = append(weightedClusters, &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
 				Name:   cluster.Name,
 				Weight: cluster.Weight,
+				MetadataMatch: envoy_common.Metadata(cluster.Tags),
 			})
 		}
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_WeightedClusters{
