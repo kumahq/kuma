@@ -2,6 +2,8 @@ package resolver_test
 
 import (
 	"fmt"
+	"github.com/Kong/kuma/pkg/test"
+	"strconv"
 
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"
@@ -38,7 +40,11 @@ var _ = Describe("DNS server", func() {
 
 	It("DNS Server network functionality", func(done Done) {
 		// setup
-		resolver, err := NewSimpleDNSResolver("kuma", "127.0.0.1", "5653", "240.0.0.0/4")
+		p, err := test.GetFreePort()
+		Expect(err).ToNot(HaveOccurred())
+		port := strconv.Itoa(p)
+
+		resolver, err := NewSimpleDNSResolver("kuma", "127.0.0.1", port, "240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
@@ -60,7 +66,7 @@ var _ = Describe("DNS server", func() {
 		_ = message.SetQuestion("service.kuma.", dns.TypeA)
 		var response *dns.Msg
 		Eventually(func() error {
-			response, _, err = client.Exchange(message, "127.0.0.1:5653")
+			response, _, err = client.Exchange(message, "127.0.0.1:"+port)
 			return err
 		}).ShouldNot(HaveOccurred())
 		// then
@@ -69,7 +75,7 @@ var _ = Describe("DNS server", func() {
 		// when
 		message = new(dns.Msg)
 		_ = message.SetQuestion("backend.kuma.", dns.TypeA)
-		response, _, err = client.Exchange(message, "127.0.0.1:5653")
+		response, _, err = client.Exchange(message, "127.0.0.1:"+port)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
