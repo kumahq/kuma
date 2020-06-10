@@ -65,7 +65,6 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 
 func generateEds(proxy *model.Proxy) (resources []*model.Resource, _ error) {
 	for service, endpoints := range proxy.OutboundTargets {
-		fmt.Println("generateEds ", service, endpoints)
 		edsCluster, err := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.EdsCluster(service)).
 			Build()

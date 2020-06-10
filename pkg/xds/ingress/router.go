@@ -9,13 +9,8 @@ import (
 func BuildDestinationMap(ingress *core_mesh.DataplaneResource) core_xds.DestinationMap {
 	destinations := core_xds.DestinationMap{}
 	for _, ingress := range ingress.Spec.Networking.Ingress {
-		tags := map[string]string{
-			mesh_proto.ServiceTag: ingress.Service,
-		}
-		for k, v := range ingress.Tags {
-			tags[k] = v
-		}
-		destinations[ingress.Service] = destinations[ingress.Service].Add(tags)
+		tags := mesh_proto.SingleValueTagSet(ingress.Tags).Add(mesh_proto.ServiceTag, ingress.Service)
+		destinations[ingress.Service] = destinations[ingress.Service].Add(mesh_proto.MatchTags(tags))
 	}
 	return destinations
 }

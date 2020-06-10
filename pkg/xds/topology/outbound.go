@@ -30,29 +30,17 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
 		if len(dataplane.Spec.Networking.Ingress) != 0 {
+			// this is temporary check of presence of 'cluster' tag to avoid taking into account own Ingress
 			if _, ok := dataplane.Spec.Networking.Inbound[0].Tags["cluster"]; ok {
 				for _, ingress := range dataplane.Spec.Networking.GetIngress() {
 					selectors, ok := destinations[ingress.Service]
 					if !ok {
 						continue
 					}
-					tags := map[string]string{
-						mesh_proto.ServiceTag: ingress.Service,
-					}
-					for k, v := range ingress.Tags {
-						tags[k] = v
-					}
-					matches := false
-					for _, selector := range selectors {
-						if selector.Matches(tags) {
-							matches = true
-							break
-						}
-					}
-					if !matches {
+					tags := mesh_proto.SingleValueTagSet(ingress.Tags).Add(mesh_proto.ServiceTag, ingress.Service)
+					if !selectors.Matches(tags) {
 						continue
 					}
-
 					outbound[ingress.Service] = append(outbound[ingress.Service], core_xds.Endpoint{
 						Target: dataplane.Spec.Networking.Address,
 						Port:   dataplane.Spec.Networking.Inbound[0].Port,
@@ -68,14 +56,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 			if !ok {
 				continue
 			}
-			matches := false
-			for _, selector := range selectors {
-				if selector.Matches(inbound.Tags) {
-					matches = true
-					break
-				}
-			}
-			if !matches {
+			if !selectors.Matches(inbound.Tags) {
 				continue
 			}
 			iface, err := dataplane.Spec.Networking.GetInboundInterfaceByIdx(i)

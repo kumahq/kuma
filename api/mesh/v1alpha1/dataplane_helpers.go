@@ -344,6 +344,27 @@ func (t SingleValueTagSet) Keys() []string {
 	return keys
 }
 
+func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {
+	rv := SingleValueTagSet{}
+	for k, v := range t {
+		if k == key {
+			continue
+		}
+		rv[k] = v
+	}
+	return rv
+}
+
+func (t SingleValueTagSet) Add(key, value string) SingleValueTagSet {
+	rv := SingleValueTagSet{
+		key: value,
+	}
+	for k, v := range t {
+		rv[k] = v
+	}
+	return rv
+}
+
 // Set of tags that allows multiple values per key.
 type MultiValueTagSet map[string]map[string]bool
 

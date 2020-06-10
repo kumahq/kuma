@@ -31,17 +31,10 @@ func GetIngressByDataplanes(others []*core_mesh.DataplaneResource) []*mesh_proto
 			if dup := ingressSet(ingresses).getBy(dpInbound.GetTags()); dup != nil {
 				continue
 			}
-			ingress := &mesh_proto.Dataplane_Networking_Ingress{
+			ingresses = append(ingresses, &mesh_proto.Dataplane_Networking_Ingress{
 				Service: dpInbound.Tags[mesh_proto.ServiceTag],
-				Tags:    map[string]string{},
-			}
-			for k, v := range dpInbound.Tags {
-				if k == mesh_proto.ServiceTag {
-					continue
-				}
-				ingress.Tags[k] = v
-			}
-			ingresses = append(ingresses, ingress)
+				Tags:    mesh_proto.SingleValueTagSet(dpInbound.Tags).Exclude(mesh_proto.ServiceTag),
+			})
 		}
 	}
 	return ingresses
