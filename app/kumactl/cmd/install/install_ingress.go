@@ -18,6 +18,7 @@ func newInstallIngressCmd() *cobra.Command {
 		ImagePullPolicy string
 		Mesh            string
 		DrainTime       string
+		KumaCpAddress   string
 	}{
 		Namespace:       "kuma-system",
 		Image:           "kong-docker-kuma-docker.bintray.io/kuma-dp",
@@ -25,6 +26,7 @@ func newInstallIngressCmd() *cobra.Command {
 		ImagePullPolicy: "IfNotPresent",
 		Mesh:            "default",
 		DrainTime:       "30s",
+		KumaCpAddress:   "http://kuma-control-plane.kuma-system:5681",
 	}
 	cmd := &cobra.Command{
 		Use:   "ingress",
@@ -57,6 +59,7 @@ func newInstallIngressCmd() *cobra.Command {
 	cmd.Flags().StringVar(&args.Version, "version", args.Version, "version of Ingress component")
 	cmd.Flags().StringVar(&args.Image, "image", args.Image, "image of the Ingress component")
 	cmd.Flags().StringVar(&args.Mesh, "mesh", args.Mesh, "mesh for Ingress")
-	cmd.Flags().StringVar(&args.DrainTime, "drainTime", args.DrainTime, "drain time for Envoy proxy")
+	cmd.Flags().StringVar(&args.DrainTime, "drain-time", args.DrainTime, "drain time for Envoy proxy")
+	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
 	return cmd
 }

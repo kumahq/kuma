@@ -3,13 +3,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kuma-ingress
-  namespace: {{ .Namespace }}
+  namespace: kuma
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: kuma-ingress
-  namespace: {{ .Namespace }}
+  namespace: kuma
 spec:
   type: NodePort
   ports:
@@ -23,7 +23,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kuma-ingress
-  namespace: {{ .Namespace }}
+  namespace: kuma
   labels:
     app: kuma-ingress
 spec:
@@ -44,8 +44,8 @@ spec:
       serviceAccountName: kuma-ingress
       containers:
         - name: ingress
-          image: {{ .Image }}:{{ .Version }}
-          imagePullPolicy: {{ .ImagePullPolicy }}
+          image: kuma-ci/kuma-ingress:greatest
+          imagePullPolicy: Never
           env:
             - name: POD_NAME
               valueFrom:
@@ -56,15 +56,15 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: KUMA_CONTROL_PLANE_API_SERVER_URL
-              value: {{ .KumaCpAddress }}
+              value: http://kuma.local:5681
             - name: KUMA_DATAPLANE_MESH
-              value: {{ .Mesh }}
+              value: non-default-mesh
             - name: KUMA_DATAPLANE_NAME
               value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_ADMIN_PORT
               value: "9901"
             - name: KUMA_DATAPLANE_DRAIN_TIME
-              value: {{ .DrainTime }}
+              value: 0s
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
           args:

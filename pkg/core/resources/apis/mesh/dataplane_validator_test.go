@@ -728,8 +728,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.inbound[0].servicePort
                   message: doesn't make sense in ingress mode
                 - field: networking.inbound[0].address
-                  message: doesn't make sense in ingress mode
-                - field: networking.inbound[0].tags
                   message: doesn't make sense in ingress mode`,
 		}),
 	)

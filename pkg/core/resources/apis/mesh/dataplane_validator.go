@@ -75,9 +75,6 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 		if inbound.Address != "" {
 			err.AddViolationAt(p.Field("address"), `doesn't make sense in ingress mode`)
 		}
-		if len(inbound.Tags) != 0 {
-			err.AddViolationAt(p.Field("tags"), `doesn't make sense in ingress mode`)
-		}
 		err.AddErrorAt(p.Field("address"), validateTags(inbound.Tags))
 	}
 	for i, ingressInterface := range networking.GetIngress() {
