@@ -17,14 +17,14 @@ var _ = Describe("DNS server", func() {
 
 	It("DNS Server basic functionality", func(done Done) {
 		// setup
-		resolver, err := NewSimpleDNSResolver("kuma", "127.0.0.1", "5653", "240.0.0.0/4")
+		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		_, err = resolver.AddService("service")
 		Expect(err).ToNot(HaveOccurred())
 
-		ip, err := resolver.ForwardLookup("service.kuma")
+		ip, err := resolver.ForwardLookup("service.mesh")
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -33,7 +33,7 @@ var _ = Describe("DNS server", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(service).To(Equal("service.kuma"))
+		Expect(service).To(Equal("service.mesh"))
 
 		// ready
 		close(done)
@@ -45,14 +45,14 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		port := strconv.Itoa(p)
 
-		resolver, err := NewSimpleDNSResolver("kuma", "127.0.0.1", port, "240.0.0.0/4")
+		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", port, "240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		_, err = resolver.AddService("service")
 		Expect(err).ToNot(HaveOccurred())
 
-		ip, err := resolver.ForwardLookup("service.kuma")
+		ip, err := resolver.ForwardLookup("service.mesh")
 		Expect(err).ToNot(HaveOccurred())
 
 		stop := make(chan struct{})
@@ -64,18 +64,18 @@ var _ = Describe("DNS server", func() {
 		// when
 		client := new(dns.Client)
 		message := new(dns.Msg)
-		_ = message.SetQuestion("service.kuma.", dns.TypeA)
+		_ = message.SetQuestion("service.mesh.", dns.TypeA)
 		var response *dns.Msg
 		Eventually(func() error {
 			response, _, err = client.Exchange(message, "127.0.0.1:"+port)
 			return err
 		}).ShouldNot(HaveOccurred())
 		// then
-		Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.kuma.\t3600\tIN\tA\t%s", ip)))
+		Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.mesh.\t3600\tIN\tA\t%s", ip)))
 
 		// when
 		message = new(dns.Msg)
-		_ = message.SetQuestion("backend.kuma.", dns.TypeA)
+		_ = message.SetQuestion("backend.mesh.", dns.TypeA)
 		response, _, err = client.Exchange(message, "127.0.0.1:"+port)
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -91,7 +91,7 @@ var _ = Describe("DNS server", func() {
 
 	It("DNS Server service operation", func(done Done) {
 		// given
-		resolver, err := NewSimpleDNSResolver("kuma", "127.0.0.1", "5653", "240.0.0.0/4")
+		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -120,7 +120,7 @@ var _ = Describe("DNS server", func() {
 
 	It("DNS Server sync operation", func(done Done) {
 		// setup
-		resolver, err := NewSimpleDNSResolver("kuma", "127.0.0.1", "5653", "240.0.0.0/4")
+		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
 
 		services := map[string]bool{
@@ -136,12 +136,12 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookup("example-one.kuma")
+		_, err = resolver.ForwardLookup("example-one.mesh")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookup("example-five.kuma")
+		_, err = resolver.ForwardLookup("example-five.mesh")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -159,7 +159,7 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookup("example-five.kuma")
+		_, err = resolver.ForwardLookup("example-five.mesh")
 		// then
 		Expect(err).To(HaveOccurred())
 
@@ -169,7 +169,7 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookup("example-five.kuma")
+		_, err = resolver.ForwardLookup("example-five.mesh")
 		// then
 		Expect(err).To(HaveOccurred())
 

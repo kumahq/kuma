@@ -80,13 +80,13 @@ var _ = Describe("Test DNS", func() {
 		svcIP := strings.Split(out, " ")[0]
 
 		// and
-		retry.DoWithRetry(c.GetTesting(), "resolve example-app.kuma",
+		retry.DoWithRetry(c.GetTesting(), "resolve example-app.mesh",
 			defaultRetries, defaultTimeout,
 			func() (string, error) {
 				out, err = k8s.RunKubectlAndGetOutputE(c.GetTesting(),
 					c.GetKubectlOptions("kuma-test"),
 					"exec", clientPod.GetName(),
-					"-c", "client", "--", "getent", "hosts", "example-app.kuma")
+					"-c", "client", "--", "getent", "hosts", "example-app.mesh")
 				return out, err
 			})
 

@@ -35,7 +35,7 @@ var _ config.Config = &DNSServerConfig{}
 
 func DefaultDNSServerConfig() *DNSServerConfig {
 	return &DNSServerConfig{
-		Domain: "kuma",
+		Domain: "mesh",
 		Port:   5653,
 		CIDR:   "240.0.0.0/4",
 	}
