@@ -2,8 +2,9 @@ package resolver_test
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/pkg/test"
 	"strconv"
+
+	"github.com/Kong/kuma/pkg/test"
 
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"

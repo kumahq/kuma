@@ -52,7 +52,7 @@ func (d *SimpleDNSResolver) Start(stop <-chan struct{}) error {
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil {
-			simpleDNSLog.Error(err, "Failed to start the DNS listener.")
+			simpleDNSLog.Error(err, "failed to start the DNS listener.")
 			errChan <- err
 		}
 	}()
@@ -60,7 +60,7 @@ func (d *SimpleDNSResolver) Start(stop <-chan struct{}) error {
 	simpleDNSLog.Info("starting", "address", d.address, "CIDR", d.cidr)
 	select {
 	case <-stop:
-		simpleDNSLog.Info("Shutting down the DNS Server")
+		simpleDNSLog.Info("shutting down the DNS Server")
 		return server.Shutdown()
 	case err := <-errChan:
 		return err
@@ -94,7 +94,7 @@ func (d *SimpleDNSResolver) RemoveService(service string) error {
 
 	ip, found := d.viplist[service]
 	if !found {
-		return errors.Errorf("Service [%s] not found in domain [%s].", service, d.domain)
+		return errors.Errorf("service [%s] not found in domain [%s].", service, d.domain)
 	}
 
 	delete(d.viplist, service)
@@ -147,7 +147,7 @@ func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
 	}
 
 	if domain != d.domain {
-		return "", errors.Errorf("Domain [%s] not found.", domain)
+		return "", errors.Errorf("domain [%s] not found.", domain)
 	}
 
 	service, err := d.serviceFromName(name)
@@ -157,7 +157,7 @@ func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
 
 	ip, found := d.viplist[service]
 	if !found {
-		return "", errors.Errorf("Service [%s] not found in domain [%s].", service, domain)
+		return "", errors.Errorf("service [%s] not found in domain [%s].", service, domain)
 	}
 
 	return ip, nil
@@ -181,7 +181,7 @@ func (d *SimpleDNSResolver) normalizeServiceMap(services map[string]bool) map[st
 	for name, value := range services {
 		service, err := d.serviceFromName(name)
 		if err != nil {
-			simpleDNSLog.Error(err, "Unable to map service name", "name", name)
+			simpleDNSLog.Error(err, "unable to map service name", "name", name)
 		} else {
 			result[service] = value
 		}
@@ -193,7 +193,7 @@ func (d *SimpleDNSResolver) normalizeServiceMap(services map[string]bool) map[st
 func (d *SimpleDNSResolver) domainFromName(name string) (string, error) {
 	split := dns.SplitDomainName(name)
 	if len(split) < 1 {
-		return "", errors.Errorf("Wrong DNS name: %s", name)
+		return "", errors.Errorf("wrong DNS name: %s", name)
 	}
 
 	return split[len(split)-1], nil
@@ -202,7 +202,7 @@ func (d *SimpleDNSResolver) domainFromName(name string) (string, error) {
 func (d *SimpleDNSResolver) serviceFromName(name string) (string, error) {
 	split := dns.SplitDomainName(name)
 	if len(split) < 2 {
-		return "", errors.Errorf("Wrong DNS name: %s", name)
+		return "", errors.Errorf("wrong DNS name: %s", name)
 	}
 
 	service := split[0]

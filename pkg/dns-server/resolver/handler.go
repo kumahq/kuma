@@ -30,13 +30,13 @@ func (h *SimpleDNSHandler) parseQuery(m *dns.Msg) {
 			simpleDNSLog.Info("Query for " + q.Name)
 			ip, err := h.resolver.ForwardLookup(q.Name)
 			if err != nil {
-				simpleDNSLog.Error(err, "Unable to resolve", "q.Name", q.Name)
+				simpleDNSLog.Error(err, "unable to resolve", "q.Name", q.Name)
 				return
 			}
 
 			rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip))
 			if err != nil {
-				simpleDNSLog.Error(err, "Unable to create response for", "q.Name", q.Name)
+				simpleDNSLog.Error(err, "unable to create response for", "q.Name", q.Name)
 				return
 			}
 
@@ -57,7 +57,7 @@ func (h *SimpleDNSHandler) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 	err := w.WriteMsg(m)
 	if err != nil {
-		simpleDNSLog.Error(err, "Unable to write the DNS response.")
+		simpleDNSLog.Error(err, "unable to write the DNS response.")
 	}
 }
 
