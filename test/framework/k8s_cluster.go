@@ -440,12 +440,15 @@ func (c *K8sCluster) DeleteApp(namespace, appname string) error {
 }
 
 func (c *K8sCluster) InjectDNS() error {
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
+		c.GetKubectlOptions())
 	if err != nil {
 		return err
 	}
 
-	kumaCPSVC, err := k8s.GetServiceE(c.t, c.GetKubectlOptions("kuma-system"), "kuma-control-plane")
+	kumaCPSVC, err := k8s.GetServiceE(c.t,
+		c.GetKubectlOptions("kuma-system"),
+		"kuma-control-plane")
 	if err != nil {
 		return err
 	}
