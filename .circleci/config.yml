@@ -49,7 +49,7 @@ executors:
   mac:
     resource_class: large
     macos:
-      xcode: "9.0"
+      xcode: "11.5.0"
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
@@ -79,7 +79,7 @@ jobs:
 
   dev_ubuntu:
     docker:
-    - image: ubuntu:16.04
+    - image: ubuntu:18.04
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
@@ -88,16 +88,17 @@ jobs:
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
     steps:
-    - checkout
     - run:
-        name: "Install pre-requirements"
+        name: "Install prerequisites"
+        # make sure to deploy `git` befor checking out the code, otherwise Circle uses its own version, which behaves differently
         # `unzip` is necessary to install `protoc`
         # `gcc`   is necessary to run `go test -race`
-        command: apt update && apt install -y unzip gcc
+        command: |
+          apt update && apt install -y curl git make unzip gcc
+    - checkout
     - run:
         name: "Install Go"
         command: |
-          apt update && apt install -y curl git make
           # see https://golang.org/doc/install#tarball
           curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - run:

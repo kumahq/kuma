@@ -2,10 +2,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: example-app
+  name: example-client
   namespace: kuma-test
   labels:
-    app: example-app
+    app: example-client
 spec:
   strategy:
     rollingUpdate:
@@ -13,18 +13,16 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: example-app
+      app: example-client
   template:
     metadata:
       labels:
-        app: example-app
+        app: example-client
     spec:
       containers:
-      - name: nginx
+      - name: client
         image: "nginx:alpine"
         imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 80
         resources:
           requests:
             cpu: 10m
