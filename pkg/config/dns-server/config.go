@@ -9,6 +9,8 @@ import (
 
 // DNS Server configuration
 type DNSServerConfig struct {
+	// The domain that the server will resolve the services for
+	Domain string `yaml:"domain" envconfig:"kuma_dns_server_domain"`
 	// Port on which the server is exposed
 	Port uint32 `yaml:"port" envconfig:"kuma_dns_server_port"`
 	// CIDR used to allocate virtual IPs from
@@ -33,7 +35,8 @@ var _ config.Config = &DNSServerConfig{}
 
 func DefaultDNSServerConfig() *DNSServerConfig {
 	return &DNSServerConfig{
-		Port: 5653,
-		CIDR: "240.0.0.0/4",
+		Domain: "kuma",
+		Port:   5653,
+		CIDR:   "240.0.0.0/4",
 	}
 }

@@ -113,8 +113,9 @@ var _ = Describe("Config WS", func() {
             "mesh": "type: Mesh\nname: default\n"
           },
           "dnsServer": {
-            "CIDR": "240.0.0.0/4",
-            "port": 5653
+            "domain": "kuma",
+            "port": 5653,
+            "CIDR": "240.0.0.0/4"
           },
           "environment": "universal",
           "general": {

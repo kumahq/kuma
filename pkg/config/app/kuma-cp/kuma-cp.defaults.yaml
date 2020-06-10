@@ -250,7 +250,9 @@ guiServer:
 mode: standalone # Configured from args. By default autoconfigured to standalone
 # DNS Server configuration
 dnsServer:
+  # The domain that the server will resolve the services for
+  domain: "kuma" # ENV: KUMA_DNS_SERVER_DOMAIN
   # Port on which the server is exposed
   port: 5653 # ENV: KUMA_DNS_SERVER_PORT
   # The CIDR range used to allocate
-  CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_CIDR
+  CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
