@@ -716,9 +716,10 @@ function _kumactl_install_control-plane {
 
 function _kumactl_install_ingress {
   _arguments \
-    '--drainTime[drain time for Envoy proxy]:' \
+    '--drain-time[drain time for Envoy proxy]:' \
     '--image[image of the Ingress component]:' \
     '--image-pull-policy[image pull policy for Ingress]:' \
+    '--kuma-cp-address[the address of Kuma CP]:' \
     '--namespace[namespace to install Ingress to]:' \
     '--version[version of Ingress component]:' \
     '--config-file[path to the configuration file to use]:' \
