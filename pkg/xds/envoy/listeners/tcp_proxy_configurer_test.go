@@ -1,7 +1,6 @@
 package listeners_test
 
 import (
-	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -22,24 +21,6 @@ var _ = Describe("TcpProxyConfigurer", func() {
 		clusters        []envoy_common.ClusterInfo
 		expected        string
 	}
-
-	FIt("test", func() {
-		x := MetadataMatch(envoy_common.ClusterInfo{
-			Tags: map[string]string{
-				"service": "a",
-				"version": "1.0",
-			},
-		})
-
-		y := MetadataMatch(envoy_common.ClusterInfo{
-			Tags: map[string]string{
-				"service": "a",
-				"version": "1.0",
-			},
-		})
-
-		Expect(proto.Equal(x, y)).To(BeTrue())
-	})
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -88,17 +69,15 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerPort:    5432,
 			statsName:       "db",
 			clusters: []envoy_common.ClusterInfo{{
-				Name:   "db{version=v1}",
+				Name:   "db",
 				Weight: 10,
 				Tags:   map[string]string{"service": "db", "version": "v1"},
 			}, {
-				Name:   "db{version=v2}",
+				Name:   "db",
 				Weight: 90,
 				Tags:   map[string]string{"service": "db", "version": "v2"},
 			}},
 			expected: `
-            name: inbound:127.0.0.1:5432
-            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -111,11 +90,20 @@ var _ = Describe("TcpProxyConfigurer", func() {
                   statPrefix: db
                   weightedClusters:
                     clusters:
-                    - name: db{version=v1}
+                    - metadataMatch:
+                        filterMetadata:
+                          envoy.lb:
+                            version: v1
+                      name: db
                       weight: 10
-                    - name: db{version=v2}
+                    - metadataMatch:
+                        filterMetadata:
+                          envoy.lb:
+                            version: v2
+                      name: db
                       weight: 90
-`,
+            name: inbound:127.0.0.1:5432
+            trafficDirection: INBOUND`,
 		}),
 	)
 })

@@ -32,4 +32,3 @@ func Metadata(tags Tags) *envoy_core.Metadata {
 	}
 	return metadata
 }
-

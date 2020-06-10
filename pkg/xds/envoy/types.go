@@ -22,7 +22,7 @@ func (t Tags) WithoutTag(tag string) Tags {
 
 func (t Tags) Keys() []string {
 	var keys []string
-	for key, _ := range t {
+	for key := range t {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)

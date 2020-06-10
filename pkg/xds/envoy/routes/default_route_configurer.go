@@ -52,8 +52,8 @@ func (c RouteConfigurer) routeAction() *envoy_route.RouteAction {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
 		for _, cluster := range c.clusters {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
-				Name:   cluster.Name,
-				Weight: &wrappers.UInt32Value{Value: cluster.Weight},
+				Name:          cluster.Name,
+				Weight:        &wrappers.UInt32Value{Value: cluster.Weight},
 				MetadataMatch: envoy_common.Metadata(cluster.Tags),
 			})
 		}

@@ -54,8 +54,8 @@ func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
 		for _, cluster := range c.clusters {
 			weightedClusters = append(weightedClusters, &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
-				Name:   cluster.Name,
-				Weight: cluster.Weight,
+				Name:          cluster.Name,
+				Weight:        cluster.Weight,
 				MetadataMatch: envoy_common.Metadata(cluster.Tags),
 			})
 		}
