@@ -32,14 +32,14 @@ var _ = Describe("Test Local and Global", func() {
 	})
 
 	It("Should deploy on Two K8s cluster and verify Kuma", func() {
-		// given
+		// when
 		err := clusters.DeployKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		// when
+		// then
 		err = clusters.VerifyKuma()
 
-		//then
+		// then
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -48,17 +48,18 @@ var _ = Describe("Test Local and Global", func() {
 		c1 := clusters.GetCluster(framework.Kuma1)
 		c2 := clusters.GetCluster(framework.Kuma2)
 
+		// when
 		err := c1.DeployKuma("global")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c2.DeployKuma("local")
 		Expect(err).ToNot(HaveOccurred())
 
-		// when
+		// then
 		err = clusters.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		// then
+		// and
 		logs1, err := c1.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))

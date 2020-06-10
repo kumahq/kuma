@@ -189,7 +189,7 @@ func (c *K8sCluster) CleanupPortForwards() {
 }
 
 func (c *K8sCluster) VerifyKumaCtl() error {
-	output, err := c.kumactl.RunKumactlAndGetOutputV(Verbose, "get", "dataplanes")
+	output, err := c.kumactl.RunKumactlAndGetOutputV(c.verbose, "get", "dataplanes")
 	fmt.Println(output)
 
 	return err

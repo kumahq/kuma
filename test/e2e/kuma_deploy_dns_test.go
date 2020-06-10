@@ -1,7 +1,10 @@
 package e2e_test
 
 import (
+	"strings"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,8 +74,26 @@ var _ = Describe("Test DNS", func() {
 		// then
 		out, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(),
 			c.GetKubectlOptions("kuma-test"),
-			"exec", clientPod.GetName(), "--", "nslookup", "example-app.kuma")
+			"exec", clientPod.GetName(),
+			"-c", "client", "--", "getent", "hosts", "example-app")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(out).To(ContainSubstring("240.0.0"))
+		svcIP := strings.Split(out, " ")[0]
+
+		// and
+		retry.DoWithRetry(c.GetTesting(), "resolve example-app.kuma",
+			defaultRetries, defaultTimeout,
+			func() (string, error) {
+				out, err = k8s.RunKubectlAndGetOutputE(c.GetTesting(),
+					c.GetKubectlOptions("kuma-test"),
+					"exec", clientPod.GetName(),
+					"-c", "client", "--", "getent", "hosts", "example-app.kuma")
+				return out, err
+			})
+
+		virtualIP := strings.Split(out, " ")[0]
+
+		// and
+		Expect(virtualIP).To(ContainSubstring("240.0.0"))
+		Expect(virtualIP).ToNot(Equal(svcIP))
 	})
 })
