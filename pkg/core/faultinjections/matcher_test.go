@@ -73,7 +73,8 @@ var _ = Describe("Match", func() {
 			manager := core_manager.NewResourceManager(memory.NewStore())
 			matcher := FaultInjectionMatcher{ResourceManager: manager}
 
-			err := manager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default"))
+			mesh := &mesh.MeshResource{}
+			err := manager.Create(context.Background(), mesh, store.CreateByKey("default", "default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, p := range given.policies {
@@ -81,7 +82,7 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			bestMatched, err := matcher.Match(context.Background(), given.dataplane)
+			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bestMatched).To(Equal(given.expected))
 		},

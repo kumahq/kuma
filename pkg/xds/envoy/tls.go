@@ -40,11 +40,18 @@ func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Data
 // The downstream client exposes for the upstream server cert with multiple URI SANs, which means that if DP has inbound with services "web" and "web-api" and communicates with "backend"
 // the upstream server ("backend") will see that DP with TLS certificate of URIs of "web" and "web-api".
 // There is no way to correlate incoming request to "web" or "web-api" with outgoing request to "backend" to expose only one URI SAN.
+//
+// Pass "*" for upstreamService to validate that upstream service is a service that is part of the mesh (but not specific one)
 func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, upstreamService string, sni ...string) (*envoy_auth.UpstreamTlsContext, error) {
 	if !ctx.Mesh.Resource.MTLSEnabled() {
 		return nil, nil
 	}
-	validationSANMatcher := ServiceSpiffeIDMatcher(ctx.Mesh.Resource.Meta.GetName(), upstreamService)
+	var validationSANMatcher *envoy_type_matcher.StringMatcher
+	if upstreamService == "*" {
+		validationSANMatcher = MeshSpiffeIDPrefixMatcher(ctx.Mesh.Resource.Meta.GetName())
+	} else {
+		validationSANMatcher = ServiceSpiffeIDMatcher(ctx.Mesh.Resource.Meta.GetName(), upstreamService)
+	}
 	commonTlsContext, err := CreateCommonTlsContext(ctx, metadata, validationSANMatcher)
 	if err != nil {
 		return nil, err

@@ -9,6 +9,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/ca"
 	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
 	"github.com/Kong/kuma/pkg/core/datasource"
+	mesh_helper "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/plugins/ca/provided/config"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
@@ -112,8 +113,11 @@ func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh stri
 	}
 
 	var opts []ca_issuer.CertOptsFn
-	if backend.GetDpCert().GetRotation().GetExpiration() != nil {
-		duration := util_proto.ToDuration(*backend.GetDpCert().GetRotation().Expiration)
+	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
+		duration, err := mesh_helper.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		if err != nil {
+			return ca.KeyPair{}, err
+		}
 		opts = append(opts, ca_issuer.WithExpirationTime(duration))
 	}
 	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, services, opts...)

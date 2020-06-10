@@ -1,6 +1,35 @@
 # CHANGELOG
 
-## master
+## [0.5.1]
+
+> Released on  2020/06/03
+
+Changes:
+
+*  chore: Prometheus overrides on Kubernetes [#808](github.com//Kong/kuma/pull/808) 
+*  feat: Prometheus metrics over mTLS [#793](github.com//Kong/kuma/pull/793) 
+*  feat: GUI build for 0.5.1 [#785](github.com//Kong/kuma/pull/785)
+*  feat: circuit breaker [#751](github.com//Kong/kuma/pull/751)[#781](github.com//Kong/kuma/pull/781)
+*  feat: CA rotation time supports months and year [#750](github.com//Kong/kuma/pull/750)
+[#794](github.com//Kong/kuma/pull/794) 
+ 👍contributed by @tharun208
+*  feat: send start signal [#783](github.com//Kong/kuma/pull/783) 
+*  fix: mesh delete validation [#770](github.com//Kong/kuma/pull/770) 
+*  feat: Improve certificate verification [#779](github.com//Kong/kuma/pull/779) 
+*  feat: generate cert with multiple SAN URIs [#774](github.com//Kong/kuma/pull/774) 
+*  fix: reject conflicting bootstrap when AdminPort is set [#758](github.com//Kong/kuma/pull/758) 
+*  feat: limit number subscription [#747](github.com//Kong/kuma/pull/747) 
+*  fix: OpenShift owner role [#780](github.com//Kong/kuma/pull/780) 
+*  chore: refactor cluster generation [#752](github.com//Kong/kuma/pull/752)
+*  feat: secrets delete validation [#746](github.com//Kong/kuma/pull/746)
+*  fix: allow slash validation so standard K8S tags are supported [#762](github.com//Kong/kuma/pull/762)
+*  feat: direct access to services and support for Headless Service [#749](github.com//Kong/kuma/pull/749) [#790](github.com//Kong/kuma/pull/790) 
+*  feat: owners for Dataplane on k8s [#742](github.com//Kong/kuma/pull/742) 
+*  chore: updating Alpine to 3.11 [#672](github.com//Kong/kuma/pull/672)
+
+NOTE:
+
+⚠️ This release introduces [Circuit Breaking](https://kuma.io/docs/0.5.1/policies/circuit-breaker/) as a superior alternative to [Passive Health Check](https://kuma.io/docs/0.5.1/policies/health-check/). The latter will be deprecated in 0.6.0. Please consider migrating your deployments.
 
 ## [0.5.0]
 

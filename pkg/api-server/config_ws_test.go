@@ -126,6 +126,7 @@ var _ = Describe("Config WS", func() {
               "subscriptionLimit": 10
             }
           },
+          "mode": "standalone",
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
             "grpcPort": 5676

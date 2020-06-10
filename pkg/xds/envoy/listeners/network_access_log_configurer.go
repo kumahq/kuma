@@ -11,7 +11,7 @@ import (
 const defaultNetworkAccessLogFormat = `[%START_TIME%] %RESPONSE_FLAGS% %KUMA_MESH% %KUMA_SOURCE_ADDRESS_WITHOUT_PORT%(%KUMA_SOURCE_SERVICE%)->%UPSTREAM_HOST%(%KUMA_DESTINATION_SERVICE%) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
 ` // intentional newline at the end
 
-func NetworkAccessLog(mesh string, trafficDirection string, sourceService string, destinationService string, backend *v1alpha1.LoggingBackend, proxy *core_xds.Proxy) FilterChainBuilderOpt {
+func NetworkAccessLog(mesh string, trafficDirection TrafficDirection, sourceService string, destinationService string, backend *v1alpha1.LoggingBackend, proxy *core_xds.Proxy) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		if backend != nil {
 			config.Add(&NetworkAccessLogConfigurer{

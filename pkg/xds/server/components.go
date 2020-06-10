@@ -115,11 +115,21 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
+				dataplanes := &mesh_core.DataplaneResourceList{}
+				if err := rt.ReadOnlyResourceManager().List(ctx, dataplanes, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
+					return err
+				}
 				envoyCtx := xds_context.Context{
 					ControlPlane: envoyCpCtx,
 					Mesh: xds_context.MeshContext{
-						Resource: mesh,
+						Resource:   mesh,
+						Dataplanes: dataplanes,
 					},
+				}
+
+				otherDataplanes := &mesh_core.DataplaneResourceList{}
+				if err := rt.ReadOnlyResourceManager().List(ctx, otherDataplanes, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
+					return err
 				}
 
 				if dataplane.Spec.GetNetworking().GetIngress() != nil {
@@ -153,12 +163,17 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound, err := xds_topology.GetOutboundTargets(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
+				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes)
 				if err != nil {
 					return err
 				}
 
 				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
+				if err != nil {
+					return err
+				}
+
+				circuitBreakers, err := xds_topology.GetCircuitBreakers(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
 				if err != nil {
 					return err
 				}
@@ -172,7 +187,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					tracingBackend = mesh.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
 				}
 
-				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane)
+				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane, mesh)
 				if err != nil {
 					return err
 				}
@@ -182,7 +197,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
-				faultInjection, err := faultInjectionMatcher.Match(ctx, dataplane)
+				faultInjection, err := faultInjectionMatcher.Match(ctx, dataplane, mesh)
 				if err != nil {
 					return err
 				}
@@ -195,6 +210,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					OutboundSelectors:  destinations,
 					OutboundTargets:    outbound,
 					HealthChecks:       healthChecks,
+					CircuitBreakers:    circuitBreakers,
 					Logs:               matchedLogs,
 					TrafficTrace:       trafficTrace,
 					TracingBackend:     tracingBackend,

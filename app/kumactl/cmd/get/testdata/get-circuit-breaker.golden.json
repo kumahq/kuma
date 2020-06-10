@@ -1,0 +1,34 @@
+{
+  "type": "CircuitBreaker",
+  "mesh": "default",
+  "name": "circuit-breaker-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "sources": [
+    {
+      "match": {
+        "service": "frontend",
+        "version": "0.1"
+      }
+    }
+  ],
+  "destinations": [
+    {
+      "match": {
+        "service": "backend"
+      }
+    }
+  ],
+  "conf": {
+    "interval": "5s",
+    "baseEjectionTime": "5s",
+    "maxEjectionPercent": 50,
+    "detectors": {
+      "totalErrors": {},
+      "gatewayErrors": {},
+      "localErrors": {},
+      "standardDeviation": {},
+      "failure": {}
+    }
+  }
+}

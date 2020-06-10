@@ -37,7 +37,14 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	if mtls.GetEnabledBackend() != "" && !usedNames[mtls.GetEnabledBackend()] {
 		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
 	}
-	// validation of CA backend type is omitted since it can change when you load plugins
+	for _, backend := range mtls.Backends {
+		if backend.GetDpCert() != nil {
+			_, err := ParseDuration(backend.GetDpCert().GetRotation().GetExpiration())
+			if err != nil {
+				verr.AddViolation("dpcert.rotation.expiration", "has to be a valid format")
+			}
+		}
+	}
 	return verr
 }
 

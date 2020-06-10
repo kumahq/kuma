@@ -49,7 +49,7 @@ executors:
   mac:
     resource_class: large
     macos:
-      xcode: "9.0"
+      xcode: "11.5.0"
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
@@ -79,7 +79,7 @@ jobs:
 
   dev_ubuntu:
     docker:
-    - image: ubuntu:16.04
+    - image: ubuntu:18.04
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
@@ -88,16 +88,17 @@ jobs:
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
     steps:
-    - checkout
     - run:
-        name: "Install pre-requirements"
+        name: "Install prerequisites"
+        # make sure to deploy `git` befor checking out the code, otherwise Circle uses its own version, which behaves differently
         # `unzip` is necessary to install `protoc`
         # `gcc`   is necessary to run `go test -race`
-        command: apt update && apt install -y unzip gcc
+        command: |
+          apt update && apt install -y curl git make unzip gcc
+    - checkout
     - run:
         name: "Install Go"
         command: |
-          apt update && apt install -y curl git make
           # see https://golang.org/doc/install#tarball
           curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - run:
@@ -296,6 +297,11 @@ jobs:
 
   integration:
     executor: vm
+    parameters:
+      target:
+        description: The integration make target.
+        type: string
+        default: integration
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
@@ -333,7 +339,7 @@ jobs:
         name: "Run integration tests"
         command: | 
           export PATH=$HOME/go/bin:$PATH
-          make integration
+          make << parameters.target >>
     - store_artifacts:
         path: build/coverage
         destination: /coverage
@@ -367,7 +373,8 @@ jobs:
     # Mount files from the upstream jobs
     - attach_workspace:
         at: build
-    - setup_remote_docker
+    - setup_remote_docker:
+        version: 19.03.8
     - run:
         name: Build Docker images
         command: make docker/build
@@ -501,7 +508,8 @@ jobs:
     executor: golang
     steps:
     - checkout
-    - setup_remote_docker
+    - setup_remote_docker:
+        version: 19.03.8
     - restore_cache:
         keys:
         # prefer the exact match
@@ -513,7 +521,7 @@ jobs:
     - run:
         name: "Install Docker client"
         command: |
-          VER="17.03.0-ce"
+          VER="19.03.8"
           curl -L -o /tmp/docker-$VER.tgz https://download.docker.com/linux/static/stable/x86_64/docker-$VER.tgz
           tar -xz -C /tmp -f /tmp/docker-$VER.tgz
           mv /tmp/docker/docker /usr/bin
@@ -614,6 +622,17 @@ workflows:
         # custom parameters
         kubernetes_version: v1.18.2
         use_local_kuma_images: true
+    - integration:
+        name: test/e2e
+        requires:
+          - minikube_v1_13_0
+          - minikube_v1_14_0
+          - minikube_v1_15_0
+          - minikube_v1_16_0
+          - minikube_v1_17_0
+          - minikube_v1_18_2
+        # custom parameters
+        target: test/e2e
 
   kuma-release:
     jobs:

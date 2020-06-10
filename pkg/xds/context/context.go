@@ -20,7 +20,8 @@ type ControlPlaneContext struct {
 }
 
 type MeshContext struct {
-	Resource *mesh_core.MeshResource
+	Resource   *mesh_core.MeshResource
+	Dataplanes *mesh_core.DataplaneResourceList
 }
 
 func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, error) {

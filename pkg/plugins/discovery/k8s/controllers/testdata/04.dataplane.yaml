@@ -21,12 +21,6 @@ spec:
       - address: 10.108.144.24
         port: 80
         service: test-app.playground.svc:80
-      - address: 10.244.0.26
-        port: 80
-        service: second-test-app.playground.svc:80
-      - address: 10.244.0.25
-        port: 443
-        service: test-app.playground.svc:443
-      - address: 10.244.0.25
-        port: 80
-        service: test-app.playground.svc:80
+    transparentProxying:
+      directAccessServices:
+        - '*'

@@ -1,0 +1,4 @@
+MESH      NAME   AGE
+default   cb1    292y
+
+Rerun command with --offset=1 argument to retrieve more resources

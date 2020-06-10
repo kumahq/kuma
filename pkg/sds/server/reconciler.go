@@ -20,13 +20,13 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/ca/issuer"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	mesh_helper "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
 	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 // DataplaneReconciler keeps the state of the Cache for SDS consistent
@@ -110,8 +110,11 @@ func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_
 		return false, "", errors.Wrap(err, `invalid snapshot version format. Format should be "UnixNano;NameOfTheCA"`)
 	}
 	expiration := issuer.DefaultWorkloadCertValidityPeriod
-	if mesh.GetEnabledCertificateAuthorityBackend().GetDpCert().GetRotation().GetExpiration() != nil {
-		expiration = util_proto.ToDuration(*mesh.GetEnabledCertificateAuthorityBackend().GetDpCert().GetRotation().GetExpiration())
+	if mesh.GetEnabledCertificateAuthorityBackend().GetDpCert().GetRotation().GetExpiration() != "" {
+		expiration, err = mesh_helper.ParseDuration(mesh.GetEnabledCertificateAuthorityBackend().GetDpCert().GetRotation().GetExpiration())
+		if err != nil {
+			return false, "", nil
+		}
 	}
 	generationTime := time.Unix(0, int64(generationUnixNano))
 	expirationTime := generationTime.Add(expiration)

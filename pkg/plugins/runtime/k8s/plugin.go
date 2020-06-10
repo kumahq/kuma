@@ -122,7 +122,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	composite.AddValidator(handler)
 
 	coreMeshValidator := managers_mesh.MeshValidator{CaManagers: rt.CaManagers()}
-	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, k8s_resources.DefaultConverter())
+	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, k8s_resources.DefaultConverter(), rt.ResourceManager())
 	composite.AddValidator(k8sMeshValidator)
 
 	path := "/validate-kuma-io-v1alpha1"

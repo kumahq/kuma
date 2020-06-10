@@ -56,6 +56,9 @@ type LogMap map[ServiceName]*mesh_proto.LoggingBackend
 // HealthCheckMap holds the most specific HealthCheck for each reachable service.
 type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
 
+// CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
+type CircuitBreakerMap map[ServiceName]*mesh_core.CircuitBreakerResource
+
 // FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
 type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
 
@@ -71,6 +74,7 @@ type Proxy struct {
 	OutboundSelectors  DestinationMap
 	OutboundTargets    EndpointMap
 	HealthChecks       HealthCheckMap
+	CircuitBreakers    CircuitBreakerMap
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	Metadata           *DataplaneMetadata

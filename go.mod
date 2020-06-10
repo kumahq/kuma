@@ -6,7 +6,7 @@ require (
 	github.com/Kong/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/Kong/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/Masterminds/goutils v1.1.0 // indirect
-	github.com/Masterminds/semver v1.4.2 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emicklei/go-restful v2.9.6+incompatible
@@ -18,7 +18,7 @@ require (
 	github.com/go-logr/zapr v0.1.0
 	github.com/golang-migrate/migrate/v4 v4.8.0
 	github.com/golang/protobuf v1.3.2
-	github.com/gorilla/mux v1.7.2 // indirect
+	github.com/gruntwork-io/terratest v0.27.5
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -27,7 +27,7 @@ require (
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.0
 	github.com/prometheus/common v0.9.1
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749
@@ -40,13 +40,13 @@ require (
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
 	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4 // indirect
 	golang.org/x/tools v0.0.0-20200520220537-cf2d1e09c845 // indirect
-	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
+	google.golang.org/genproto v0.0.0-20200108215221-bd8f9a0ef82f
 	google.golang.org/grpc v1.26.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/fsnotify.v1 v1.4.9 // indirect
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.18.2
-	k8s.io/apimachinery v0.18.2
+	k8s.io/api v0.18.3
+	k8s.io/apimachinery v0.18.3
 	k8s.io/client-go v10.0.0+incompatible
 	k8s.io/helm v2.14.3+incompatible
 	sigs.k8s.io/controller-runtime v0.6.0
@@ -57,7 +57,7 @@ replace (
 	github.com/Kong/kuma/api => ./api
 	github.com/Kong/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
 
-	github.com/prometheus/prometheus => ./vendor/github.com/prometheus/prometheus
+	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 	github.com/spiffe/spire/proto/spire => github.com/spiffe/spire/proto/spire v0.10.0
 	gopkg.in/fsnotify.v1 => gopkg.in/fsnotify.v1 v1.4.7
 	k8s.io/client-go => k8s.io/client-go v0.18.2
