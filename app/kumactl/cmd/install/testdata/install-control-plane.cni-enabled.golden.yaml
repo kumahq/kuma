@@ -4648,6 +4648,7 @@ spec:
       name: gui-server
     - port: 5653
       name: dns-server
+      protocol: UDP
   selector:
     app: kuma-control-plane
 ---
@@ -4800,6 +4801,7 @@ spec:
             - containerPort: 5682
             - containerPort: 5683
             - containerPort: 5653
+              protocol: UDP
           livenessProbe:
             httpGet:
               path: /healthy
