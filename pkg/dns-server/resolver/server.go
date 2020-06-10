@@ -1,7 +1,6 @@
 package resolver
 
 import (
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -112,6 +111,8 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 	d.Lock()
 	defer d.Unlock()
 
+	services = d.normalizeServiceMap(services)
+
 	// ensure all services have entries in the domain
 	for service := range services {
 		_, found := d.viplist[service]
@@ -134,7 +135,7 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 		}
 	}
 
-	return nil
+	return errs
 }
 
 func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
@@ -174,6 +175,21 @@ func (d *SimpleDNSResolver) ReverseLookup(ip string) (string, error) {
 	return "", errors.Errorf("IP [%s] not found", ip)
 }
 
+func (d *SimpleDNSResolver) normalizeServiceMap(services map[string]bool) map[string]bool {
+	result := map[string]bool{}
+
+	for name, value := range services {
+		service, err := d.serviceFromName(name)
+		if err != nil {
+			simpleDNSLog.Error(err, "Unable to map service name", "name", name)
+		} else {
+			result[service] = value
+		}
+	}
+
+	return result
+}
+
 func (d *SimpleDNSResolver) domainFromName(name string) (string, error) {
 	split := dns.SplitDomainName(name)
 	if len(split) < 1 {
@@ -189,10 +205,7 @@ func (d *SimpleDNSResolver) serviceFromName(name string) (string, error) {
 		return "", errors.Errorf("Wrong DNS name: %s", name)
 	}
 
-	service := strings.Join(split[:len(split)-1], ".")
-	if service == "" {
-		return "", errors.Errorf("Wrong service in DNS name: %s", name)
-	}
+	service := split[0]
 
 	return service, nil
 }

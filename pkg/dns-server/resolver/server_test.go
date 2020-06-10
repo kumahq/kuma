@@ -94,37 +94,37 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		services := map[string]bool{
-			"one":   true,
-			"two":   true,
-			"three": true,
-			"four":  true,
-			"five":  true,
+			"example-one.kuma-test.svc:80":   true,
+			"example-two.kuma-test.svc:80":   true,
+			"example-three.kuma-test.svc:80": true,
+			"example-four.kuma-test.svc:80":  true,
+			"example-five.kuma-test.svc:80":  true,
 		}
 
 		err = resolver.SyncServices(services)
 		Expect(err).ToNot(HaveOccurred())
 
-		_, err = resolver.ForwardLookup("one.kuma")
+		_, err = resolver.ForwardLookup("example-one.kuma")
 		Expect(err).ToNot(HaveOccurred())
 
-		_, err = resolver.ForwardLookup("five.kuma")
+		_, err = resolver.ForwardLookup("example-five.kuma")
 		Expect(err).ToNot(HaveOccurred())
 
-		_, err = resolver.ForwardLookup("five.other")
+		_, err = resolver.ForwardLookup("example-five.other")
 		Expect(err).To(HaveOccurred())
 
-		delete(services, "five")
+		delete(services, "example-five.kuma-test.svc:80")
 
 		err = resolver.SyncServices(services)
 		Expect(err).ToNot(HaveOccurred())
 
-		_, err = resolver.ForwardLookup("five.kuma")
+		_, err = resolver.ForwardLookup("example-five.kuma")
 		Expect(err).To(HaveOccurred())
 
 		err = resolver.SyncServices(map[string]bool{})
 		Expect(err).ToNot(HaveOccurred())
 
-		_, err = resolver.ForwardLookup("five.kuma")
+		_, err = resolver.ForwardLookup("example-five.kuma")
 		Expect(err).To(HaveOccurred())
 
 		// ready
