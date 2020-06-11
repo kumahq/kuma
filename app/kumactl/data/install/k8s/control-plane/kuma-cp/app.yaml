@@ -159,11 +159,11 @@ spec:
         resources:
 {{- if eq .KumaCpMode "global"}}
           requests:
-            cpu: 100m
+            cpu: 500m
             memory: 256Mi
 {{- else }}
           requests:
-            cpu: 500m
+            cpu: 100m
             memory: 256Mi
 {{- end }}
         volumeMounts:
