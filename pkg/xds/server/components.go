@@ -37,7 +37,7 @@ func SetupDiagnosticsServer(rt core_runtime.Runtime) error {
 }
 
 func SetupServer(rt core_runtime.Runtime) error {
-	err:= SetupDiagnosticsServer(rt)
+	err := SetupDiagnosticsServer(rt)
 	if err != nil {
 		return err
 	}
