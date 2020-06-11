@@ -9,6 +9,8 @@ import (
 type DNSHandler interface {
 }
 
+const dnsTTL = "60"
+
 type SimpleDNSHandler struct {
 	resolver DNSResolver
 }
@@ -30,13 +32,13 @@ func (h *SimpleDNSHandler) parseQuery(m *dns.Msg) {
 			simpleDNSLog.Info("Query for " + q.Name)
 			ip, err := h.resolver.ForwardLookup(q.Name)
 			if err != nil {
-				simpleDNSLog.Error(err, "unable to resolve", "q.Name", q.Name)
+				simpleDNSLog.Error(err, "unable to resolve", "Name", q.Name)
 				return
 			}
 
-			rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip))
+			rr, err := dns.NewRR(fmt.Sprintf("%s %s IN A %s", q.Name, dnsTTL, ip))
 			if err != nil {
-				simpleDNSLog.Error(err, "unable to create response for", "q.Name", q.Name)
+				simpleDNSLog.Error(err, "unable to create response for", "Name", q.Name)
 				return
 			}
 

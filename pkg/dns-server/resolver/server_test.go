@@ -71,7 +71,7 @@ var _ = Describe("DNS server", func() {
 			return err
 		}).ShouldNot(HaveOccurred())
 		// then
-		Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.mesh.\t3600\tIN\tA\t%s", ip)))
+		Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.mesh.\t60\tIN\tA\t%s", ip)))
 
 		// when
 		message = new(dns.Msg)
