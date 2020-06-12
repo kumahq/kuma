@@ -3,12 +3,13 @@ package framework
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"time"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"path/filepath"
-	"time"
 )
 
 type InstallFunc func(cluster Cluster) error

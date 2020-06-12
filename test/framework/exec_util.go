@@ -2,13 +2,14 @@ package framework
 
 import (
 	"bytes"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"io"
+	"net/url"
+	"strings"
+
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
-	"net/url"
-	"strings"
 
 	restclient "k8s.io/client-go/rest"
 

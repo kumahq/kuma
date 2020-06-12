@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"k8s.io/client-go/kubernetes"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -14,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/Kong/kuma/pkg/config/core"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/pkg/errors"
 

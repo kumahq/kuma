@@ -2,13 +2,15 @@ package e2e
 
 import (
 	"fmt"
-	. "github.com/Kong/kuma/test/framework"
+	"time"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
+
+	. "github.com/Kong/kuma/test/framework"
 )
 
 var _ = Describe("Ingress", func() {
