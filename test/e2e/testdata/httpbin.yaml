@@ -1,0 +1,43 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: kuma-test
+spec:
+  ports:
+    - port: 80
+      name: http
+  selector:
+    app: httpbin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: kuma-test
+  labels:
+    app: httpbin
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+        - name: httpbin
+          image: "kennethreitz/httpbin"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi

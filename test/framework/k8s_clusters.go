@@ -43,6 +43,11 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 				forwardedPortsChans: map[uint32]chan struct{}{},
 			},
 		}
+
+		clusters[name].clientset, err = k8s.GetKubernetesClientFromOptionsE(t, clusters[name].GetKubectlOptions())
+		if err != nil {
+			return nil, errors.Wrapf(err, "error in getting access to K8S")
+		}
 	}
 
 	return &K8sClusters{
@@ -50,6 +55,9 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 		clusters: clusters,
 		verbose:  verbose,
 	}, nil
+}
+func (cs *K8sClusters) ExecCommandInContainerWithFullOutput(namespace, podName, containerName string, cmd ...string) (string, string, error) {
+	panic("not supported")
 }
 
 func (cs *K8sClusters) GetCluster(name string) Cluster {
@@ -133,6 +141,11 @@ func (cs *K8sClusters) DeleteNamespace(namespace string) error {
 		}
 	}
 
+	return nil
+}
+
+func (c *K8sClusters) GetKumactlOptions() *KumactlOptions {
+	fmt.Println("Not supported at this level.")
 	return nil
 }
 

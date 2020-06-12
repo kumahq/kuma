@@ -142,6 +142,14 @@ func (o *KumactlOptions) KumactlInstallTracing() (string, error) {
 	return o.RunKumactlAndGetOutput("install", "tracing")
 }
 
+func (o *KumactlOptions) KumactlInstallIngress() (string, error) {
+	args := []string{
+		"install", "ingress",
+		"--image", kumaDPImage,
+	}
+	return o.RunKumactlAndGetOutput(args...)
+}
+
 func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
 	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", defaultRetries, defaultTimeout,
 		func() (string, error) {

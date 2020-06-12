@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"k8s.io/client-go/kubernetes"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -17,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
-	"github.com/gruntwork-io/terratest/modules/k8s"
+	k8s "github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	v1 "k8s.io/api/core/v1"
@@ -44,6 +45,7 @@ type K8sCluster struct {
 	kumactl    *KumactlOptions
 	portFwd    PortFwd
 	verbose    bool
+	clientset  *kubernetes.Clientset
 }
 
 func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
@@ -352,6 +354,10 @@ func (c *K8sCluster) DeleteKuma() error {
 	c.WaitNamespaceDelete(kumaNamespace)
 
 	return err
+}
+
+func (c *K8sCluster) GetKumactlOptions() *KumactlOptions {
+	return c.kumactl
 }
 
 func (c *K8sCluster) GetKumaCPLogs() (string, error) {
