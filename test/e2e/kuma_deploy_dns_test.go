@@ -46,7 +46,7 @@ var _ = Describe("Test DNS", func() {
 		_ = clusters.DeleteKuma()
 	})
 
-	It("Should deploy two apps", func() {
+	It("Should resolve with two apps", func() {
 		// given
 		c := clusters.GetCluster(framework.Kuma1)
 

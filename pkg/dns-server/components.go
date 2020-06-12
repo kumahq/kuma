@@ -1,29 +1,15 @@
 package dns_server
 
 import (
-	"strconv"
-
 	"github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/dns-server/resolver"
 	"github.com/Kong/kuma/pkg/dns-server/synchronizer"
 )
 
 func SetupServer(rt runtime.Runtime) error {
-	cfg := rt.Config()
-
-	dnsResolver, err := resolver.NewSimpleDNSResolver(
-		cfg.DNSServer.Domain,
-		"0.0.0.0",
-		strconv.FormatUint(uint64(cfg.DNSServer.Port), 10),
-		cfg.DNSServer.CIDR)
+	resourceSynchronizer, err := synchronizer.NewResourceSynchronizer(rt.ReadOnlyResourceManager(), rt.DNSResolver())
 	if err != nil {
 		return err
 	}
 
-	resourceSynchronizer, err := synchronizer.NewResourceSynchronizer(rt.ReadOnlyResourceManager(), dnsResolver)
-	if err != nil {
-		return err
-	}
-
-	return rt.Add(dnsResolver, resourceSynchronizer)
+	return rt.Add(rt.DNSResolver(), resourceSynchronizer)
 }
