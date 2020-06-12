@@ -53,7 +53,7 @@ var _ = Describe("Test Local and Global", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c2.DeployKuma("local")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(HaveOccurred())
 
 		// then
 		err = clusters.VerifyKuma()

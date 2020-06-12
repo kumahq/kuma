@@ -15,4 +15,5 @@ var SampleTrafficRouteWsDefinition = definitions.ResourceWsDefinition{
 	ResourceListFactory: func() model.ResourceList {
 		return &sample_model.TrafficRouteResourceList{}
 	},
+	ReadOnly: false,
 }

@@ -7,4 +7,5 @@ type ResourceWsDefinition struct {
 	Path                string
 	ResourceFactory     func() model.Resource
 	ResourceListFactory func() model.ResourceList
+	ReadOnly            bool
 }
