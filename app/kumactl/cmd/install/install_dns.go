@@ -83,6 +83,8 @@ This command requires that the KUBECONFIG environment is set`,
 	return cmd
 }
 
+// CoreDNS before 1.4 (K8s < 1.16) uses the verb `proxy` to denote the forwarding
+// All later versions user `forward`. Detect what is used in the ConfigMap's Corefile
 func getCoreFileForwardVerb(corefile string) string {
 	if strings.Contains(corefile, "proxy . /etc/resolv.conf") {
 		return "proxy"
