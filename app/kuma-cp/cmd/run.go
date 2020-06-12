@@ -49,12 +49,12 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 			cfg := kuma_cp.DefaultConfig()
+			cfg.Mode = args.kumaCpMode
 			err := config.Load(args.configPath, &cfg)
 			if err != nil {
 				runLog.Error(err, "could not load the configuration")
 				return err
 			}
-			cfg.Mode = args.kumaCpMode
 			rt, err := bootstrap.Bootstrap(cfg)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")
