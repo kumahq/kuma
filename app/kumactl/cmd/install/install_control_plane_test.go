@@ -130,6 +130,18 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources for Global", testCase{
+			extraArgs: []string{
+				"--mode", "global",
+			},
+			goldenFile: "install-control-plane.global.golden.yaml",
+		}),
+		Entry("should generate Kubernetes resources for Local", testCase{
+			extraArgs: []string{
+				"--mode", "local",
+			},
+			goldenFile: "install-control-plane.local.golden.yaml",
+		}),
 	)
 	It("should fail to install control plane when `kumactl install control-plane run with unknown mode`", func() {
 		// given

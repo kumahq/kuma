@@ -18,15 +18,17 @@ spec:
     name: grpc-xds
   - port: 5679
     name: http-xds
-{{- end}}
+{{- end }}
   - port: 5681
     name: http-api-server
 {{- if ne .KumaCpMode "global"}}
   - port: 5682
     name: http-bootstrap-server
-{{- end}}
+{{- end }}
+{{- if ne .KumaCpMode "local"}}
   - port: 5683
     name: gui-server
+{{- end }}
   selector:
     app: kuma-control-plane
 ---
@@ -142,12 +144,14 @@ spec:
         - containerPort: 5677
         - containerPort: 5678
         - containerPort: 5679
-{{- end}}
+{{- end }}
         - containerPort: 5681
 {{- if ne .KumaCpMode "global"}}
         - containerPort: 5682
-{{- end}}
+{{- end }}
+{{- if ne .KumaCpMode "local"}}
         - containerPort: 5683
+{{- end }}
         livenessProbe:
           httpGet:
             path: /healthy

@@ -74,11 +74,9 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
 			switch cfg.Mode {
 			case config_core.Standalone:
-				if cfg.Mode != config_core.Local {
-					if err := ui_server.SetupServer(rt); err != nil {
-						runLog.Error(err, "unable to set up GUI server")
-						return err
-					}
+				if err := ui_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up GUI server")
+					return err
 				}
 				fallthrough
 			case config_core.Local:
