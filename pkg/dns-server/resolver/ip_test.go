@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("DNS ip", func() {
 
-	It("should allocate and free IP", func(done Done) {
+	It("should allocate and free IP", func() {
 		// given
 		ipam := NewSimpleIPAM("192.168.0.1/32")
 		Expect(ipam).ToNot(BeNil())
@@ -35,12 +35,9 @@ var _ = Describe("DNS ip", func() {
 		err = ipam.FreeIP(ip2)
 		// then
 		Expect(err).To(HaveOccurred())
-
-		// ready
-		close(done)
 	})
 
-	It("should allocate 2^16 IP addresses", func(done Done) {
+	It("should allocate 2^16 IP addresses", func() {
 		// given
 		ipam := NewSimpleIPAM("240.0.0.0/4")
 		Expect(ipam).ToNot(BeNil())
@@ -51,8 +48,5 @@ var _ = Describe("DNS ip", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		}
-
-		// ready
-		close(done)
 	})
 })

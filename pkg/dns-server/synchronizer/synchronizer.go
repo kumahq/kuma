@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	synchroniserLog = core.Log.WithName("dns-server-synchronizer")
+	synchronizerLog = core.Log.WithName("dns-server-synchronizer")
 )
 
 type (
@@ -45,23 +45,23 @@ func (d *ResourceSynchronizer) Start(stop <-chan struct{}) error {
 	ticker := d.newTicker()
 	defer ticker.Stop()
 
-	synchroniserLog.Info("starting the synchronizer")
+	synchronizerLog.Info("starting the synchronizer")
 	for {
 		select {
 		case <-ticker.C:
-			d.synchronise()
+			d.synchronize()
 		case <-stop:
 			return nil
 		}
 	}
 }
 
-func (d *ResourceSynchronizer) synchronise() {
+func (d *ResourceSynchronizer) synchronize() {
 	meshes := core_mesh.MeshResourceList{}
 
 	err := d.rm.List(context.Background(), &meshes)
 	if err != nil {
-		synchroniserLog.Error(err, "unable to synchronise")
+		synchronizerLog.Error(err, "unable to synchronise")
 		return
 	}
 
@@ -70,7 +70,7 @@ func (d *ResourceSynchronizer) synchronise() {
 
 		err := d.rm.List(context.Background(), &dataplanes, store.ListByMesh(mesh.Meta.GetName()))
 		if err != nil {
-			synchroniserLog.Error(err, "unable to synchronise", "mesh", mesh.Meta.GetName())
+			synchronizerLog.Error(err, "unable to synchronize", "mesh", mesh.Meta.GetName())
 		}
 
 		serviceMap := make(map[string]bool)
@@ -84,7 +84,7 @@ func (d *ResourceSynchronizer) synchronise() {
 
 		err = d.resolver.SyncServices(serviceMap)
 		if err != nil {
-			synchroniserLog.Error(err, "unable to synchronise", "serviceMap", serviceMap)
+			synchronizerLog.Error(err, "unable to synchronize", "serviceMap", serviceMap)
 		}
 	}
 }

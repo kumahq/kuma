@@ -139,8 +139,8 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 }
 
 func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	domain, err := d.domainFromName(name)
 	if err != nil {
 		return "", err
@@ -164,8 +164,8 @@ func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
 }
 
 func (d *SimpleDNSResolver) ReverseLookup(ip string) (string, error) {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	for service, serviceIP := range d.viplist {
 		if serviceIP == ip {
 			return service + "." + d.domain, nil

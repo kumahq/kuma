@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("DNS server", func() {
 
-	It("DNS Server basic functionality", func(done Done) {
+	It("DNS Server basic functionality", func() {
 		// setup
 		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
@@ -34,12 +34,9 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(service).To(Equal("service.mesh"))
-
-		// ready
-		close(done)
 	})
 
-	It("DNS Server network functionality", func(done Done) {
+	It("DNS Server network functionality", func() {
 		// setup
 		p, err := test.GetFreePort()
 		Expect(err).ToNot(HaveOccurred())
@@ -84,12 +81,9 @@ var _ = Describe("DNS server", func() {
 
 		// stop the resolver
 		stop <- struct{}{}
-
-		// ready
-		close(done)
 	})
 
-	It("DNS Server service operation", func(done Done) {
+	It("DNS Server service operation", func() {
 		// given
 		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
@@ -113,12 +107,9 @@ var _ = Describe("DNS server", func() {
 		err = resolver.RemoveService("backend")
 		// then
 		Expect(err).ToNot(HaveOccurred())
-
-		// ready
-		close(done)
 	})
 
-	It("DNS Server sync operation", func(done Done) {
+	It("DNS Server sync operation", func() {
 		// setup
 		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
@@ -172,8 +163,5 @@ var _ = Describe("DNS server", func() {
 		_, err = resolver.ForwardLookup("example-five.mesh")
 		// then
 		Expect(err).To(HaveOccurred())
-
-		// ready
-		close(done)
 	})
 })
