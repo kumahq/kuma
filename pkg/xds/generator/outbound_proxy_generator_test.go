@@ -74,6 +74,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				Id: model.ProxyId{Name: "side-car", Mesh: "default"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
+						Name: "dp-1",
+						Mesh: given.ctx.Mesh.Resource.Meta.GetName(),
 						Version: "1",
 					},
 					Spec: dataplane,
