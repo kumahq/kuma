@@ -1,8 +1,6 @@
 package generator
 
 import (
-	"sort"
-
 	"github.com/Kong/kuma/pkg/core/validators"
 	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
@@ -23,38 +21,13 @@ import (
 type OutboundProxyGenerator struct {
 }
 
-type Clusters map[string][]envoy_common.ClusterInfo
-
-func (c Clusters) ClusterNames() []string {
-	var keys []string
-	for key := range c {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
-}
-
-func (c Clusters) Add(infos ...envoy_common.ClusterInfo) {
-	for _, info := range infos {
-		c[info.Name] = append(c[info.Name], info)
-	}
-}
-
-func (c Clusters) Tags(name string) []envoy_common.Tags {
-	var result []envoy_common.Tags
-	for _, info := range c[name] {
-		result = append(result, info.Tags)
-	}
-	return result
-}
-
 func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
 	if len(outbounds) == 0 {
 		return nil, nil
 	}
 	resources := &model.ResourceSet{}
-	clusters := Clusters{}
+	clusters := envoy_common.Clusters{}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 	ofaces, err := proxy.Dataplane.Spec.Networking.GetOutboundInterfaces()
@@ -138,7 +111,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	return resources.List(), nil
 }
 
-func (_ OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters Clusters) (model.ResourceSet, error) {
+func (_ OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (model.ResourceSet, error) {
 	var resources model.ResourceSet
 	for _, clusterName := range clusters.ClusterNames() {
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
@@ -159,7 +132,7 @@ func (_ OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 	return resources, nil
 }
 
-func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters Clusters) model.ResourceSet {
+func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) model.ResourceSet {
 	var resources model.ResourceSet
 	for _, clusterName := range clusters.ClusterNames() {
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
