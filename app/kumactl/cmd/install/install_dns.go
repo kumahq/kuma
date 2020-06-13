@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const appendTemplate = `kuma:53 {
+const appendTemplate = `mesh:53 {
         errors
         cache 30
         %s . %s:5653
@@ -58,7 +58,7 @@ This command requires that the KUBECONFIG environment is set`,
 				return err
 			}
 
-			if !strings.Contains(corednsConfigMap.Data["Corefile"], "kuma:53") {
+			if !strings.Contains(corednsConfigMap.Data["Corefile"], "mesh:53") {
 				forwardVerb := getCoreFileForwardVerb(corednsConfigMap.Data["Corefile"])
 				toappend := fmt.Sprintf(appendTemplate, forwardVerb, cpaddress)
 				corednsConfigMap.Data["Corefile"] += toappend

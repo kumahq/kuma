@@ -7,6 +7,7 @@ import (
 	api_server "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
+	dns_server "github.com/Kong/kuma/pkg/config/dns-server"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/config/mads"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
@@ -118,6 +119,8 @@ type Config struct {
 	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer"`
 	// Kuma Cp Mode
 	Mode core.CpMode `yaml:"mode"`
+	// DNS Server Config
+	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer"`
 }
 
 func (c *Config) Sanitize() {
@@ -134,6 +137,7 @@ func (c *Config) Sanitize() {
 	c.Metrics.Sanitize()
 	c.Defaults.Sanitize()
 	c.GuiServer.Sanitize()
+	c.DNSServer.Sanitize()
 }
 
 func DefaultConfig() Config {
@@ -165,6 +169,7 @@ name: default
 		General:   DefaultGeneralConfig(),
 		GuiServer: gui_server.DefaultGuiServerConfig(),
 		Mode:      core.Standalone,
+		DNSServer: dns_server.DefaultDNSServerConfig(),
 	}
 }
 
@@ -220,7 +225,9 @@ func (c *Config) Validate() error {
 	if err := c.Defaults.Validate(); err != nil {
 		return errors.Wrap(err, "Defaults validation failed")
 	}
-
+	if err := c.DNSServer.Validate(); err != nil {
+		return errors.Wrap(err, "DNSServer validation failed")
+	}
 	return nil
 }
 

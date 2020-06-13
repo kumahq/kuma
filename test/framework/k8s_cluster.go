@@ -207,7 +207,7 @@ func (c *K8sCluster) CleanupPortForwards() {
 }
 
 func (c *K8sCluster) VerifyKumaCtl() error {
-	output, err := c.kumactl.RunKumactlAndGetOutputV(Verbose, "get", "dataplanes")
+	output, err := c.kumactl.RunKumactlAndGetOutputV(c.verbose, "get", "dataplanes")
 	fmt.Println(output)
 
 	return err
@@ -478,6 +478,24 @@ func (c *K8sCluster) DeleteApp(namespace, appname string) error {
 	}
 
 	return nil
+}
+
+func (c *K8sCluster) InjectDNS() error {
+	// store the kumactl environment
+	oldEnv := c.kumactl.Env
+	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
+
+	yaml, err := c.kumactl.RunKumactlAndGetOutput("install", "dns")
+	if err != nil {
+		return err
+	}
+
+	// restore kumactl environment
+	c.kumactl.Env = oldEnv
+
+	return k8s.KubectlApplyFromStringE(c.t,
+		c.GetKubectlOptions(),
+		yaml)
 }
 
 func (c *K8sCluster) GetTesting() testing.TestingT {

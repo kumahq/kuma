@@ -15,6 +15,7 @@ type Cluster interface {
 	VerifyKuma() error
 	DeleteKuma() error
 	GetKumaCPLogs() (string, error)
+	InjectDNS() error
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions

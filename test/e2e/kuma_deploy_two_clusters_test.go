@@ -32,11 +32,11 @@ var _ = Describe("Test Local and Global", func() {
 	})
 
 	It("Should deploy on Two K8s cluster and verify Kuma", func() {
-		// given
+		// when
 		err := clusters.DeployKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		// when
+		// then
 		err = clusters.VerifyKuma()
 		//then
 		Expect(err).ToNot(HaveOccurred())
