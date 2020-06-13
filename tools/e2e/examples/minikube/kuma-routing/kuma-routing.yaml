@@ -168,7 +168,7 @@ spec:
     spec:
       containers:
       - name: kuma-example-backend
-        image: envoyproxy/envoy-alpine:v1.14.1
+        image: envoyproxy/envoy-alpine:v1.14.2
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7070
@@ -216,7 +216,7 @@ spec:
     spec:
       containers:
       - name: kuma-example-backend
-        image: envoyproxy/envoy-alpine:v1.14.1
+        image: envoyproxy/envoy-alpine:v1.14.2
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7070
