@@ -39,20 +39,20 @@ type lbSubsetConfigurer struct {
 
 func (e *lbSubsetConfigurer) Configure(c *envoy_api.Cluster) error {
 	var selectors []*envoy_api.Cluster_LbSubsetConfig_LbSubsetSelector
-	subsetUsed := map[string]bool{}
+	subsets := map[string]bool{} // we only need unique subsets
 	for _, tags := range e.tags {
-		keys := tags.WithoutTag(v1alpha1.ServiceTag).Keys()
+		keys := tags.WithoutTag(v1alpha1.ServiceTag).Keys() // service tag is not included in metadata
 		if len(keys) == 0 {
 			continue
 		}
 		joinedTags := strings.Join(keys, ",")
-		if !subsetUsed[joinedTags] {
+		if !subsets[joinedTags] {
 			selectors = append(selectors, &envoy_api.Cluster_LbSubsetConfig_LbSubsetSelector{
-				Keys:           keys,
+				Keys: keys,
 				// if there is a split by "version", and there is no endpoint with such version we should not fallback to all endpoints of the service
 				FallbackPolicy: envoy_api.Cluster_LbSubsetConfig_LbSubsetSelector_NO_FALLBACK,
 			})
-			subsetUsed[joinedTags] = true
+			subsets[joinedTags] = true
 		}
 	}
 	if len(selectors) > 0 {

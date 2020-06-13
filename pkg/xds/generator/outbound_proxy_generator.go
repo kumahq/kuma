@@ -1,11 +1,12 @@
 package generator
 
 import (
+	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+
 	"github.com/Kong/kuma/pkg/core/validators"
 	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
 	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
 	"github.com/pkg/errors"
 
