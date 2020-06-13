@@ -69,11 +69,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get prometheus inbound interface")
 	}
-	iface, err := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not convert inbound interface")
-	}
 
+	iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 	var listener *envoy_api.Listener
 	if secureMetrics(prometheusEndpoint, ctx.Mesh.Resource) {
 		listener, err = envoy_listeners.NewListenerBuilder().

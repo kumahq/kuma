@@ -134,29 +134,21 @@ func (n *Dataplane_Networking) GetOutboundInterfaces() ([]OutboundInterface, err
 	}
 	ofaces := make([]OutboundInterface, len(n.Outbound))
 	for i, outbound := range n.Outbound {
-		oface, err := n.ToOutboundInterface(outbound)
-		if err != nil {
-			return nil, err
-		}
-		ofaces[i] = oface
+		ofaces[i] = n.ToOutboundInterface(outbound)
 	}
 	return ofaces, nil
 }
 
-func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networking_Outbound) (OutboundInterface, error) {
-	if outbound.Interface != "" { // legacy format
-		return ParseOutboundInterface(outbound.Interface)
-	} else {
-		oface := OutboundInterface{
-			DataplanePort: outbound.Port,
-		}
-		if outbound.Address != "" {
-			oface.DataplaneIP = outbound.Address
-		} else {
-			oface.DataplaneIP = "127.0.0.1"
-		}
-		return oface, nil
+func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networking_Outbound) OutboundInterface {
+	oface := OutboundInterface{
+		DataplanePort: outbound.Port,
 	}
+	if outbound.Address != "" {
+		oface.DataplaneIP = outbound.Address
+	} else {
+		oface.DataplaneIP = "127.0.0.1"
+	}
+	return oface
 }
 
 func ParsePort(text string) (uint32, error) {
@@ -182,8 +174,8 @@ func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInte
 		if inbound.Tags[ServiceTag] != service {
 			continue
 		}
-		iface, err := n.ToInboundInterface(inbound)
-		return &iface, err
+		iface := n.ToInboundInterface(inbound)
+		return &iface, nil
 	}
 	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
 }
@@ -194,34 +186,26 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 	}
 	ifaces := make([]InboundInterface, len(n.Inbound))
 	for i, inbound := range n.Inbound {
-		iface, err := n.ToInboundInterface(inbound)
-		if err != nil {
-			return nil, err
-		}
-		ifaces[i] = iface
+		ifaces[i] = n.ToInboundInterface(inbound)
 	}
 	return ifaces, nil
 }
 
-func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) (InboundInterface, error) {
-	if inbound.Interface != "" {
-		return ParseInboundInterface(inbound.Interface)
-	} else {
-		iface := InboundInterface{
-			DataplanePort: inbound.Port,
-		}
-		if inbound.Address != "" {
-			iface.DataplaneIP = inbound.Address
-		} else {
-			iface.DataplaneIP = n.Address
-		}
-		if inbound.ServicePort != 0 {
-			iface.WorkloadPort = inbound.ServicePort
-		} else {
-			iface.WorkloadPort = inbound.Port
-		}
-		return iface, nil
+func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
+	iface := InboundInterface{
+		DataplanePort: inbound.Port,
 	}
+	if inbound.Address != "" {
+		iface.DataplaneIP = inbound.Address
+	} else {
+		iface.DataplaneIP = n.Address
+	}
+	if inbound.ServicePort != 0 {
+		iface.WorkloadPort = inbound.ServicePort
+	} else {
+		iface.WorkloadPort = inbound.Port
+	}
+	return iface
 }
 
 // Matches is simply an alias for MatchTags to make source code more aesthetic.
