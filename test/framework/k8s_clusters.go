@@ -25,19 +25,23 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 
 	clusters := map[string]*K8sCluster{}
 
-	for _, name := range clusterNames {
+	for i, name := range clusterNames {
 		options, err := NewKumactlOptions(t, name, verbose)
 		if err != nil {
 			return nil, err
 		}
 
 		clusters[name] = &K8sCluster{
-			t:                   t,
-			name:                name,
-			kubeconfig:          os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, name)),
-			kumactl:             options,
-			verbose:             verbose,
-			forwardedPortsChans: map[uint32]chan struct{}{},
+			t:          t,
+			name:       name,
+			kubeconfig: os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, name)),
+			kumactl:    options,
+			verbose:    verbose,
+			portFwd: PortFwd{
+				lowFwdPort:          uint32(kumaCPAPIPortFwdLow + i*1000),
+				hiFwdPort:           uint32(kumaCPAPIPortFwdLow + (i+1)*1000 - 1),
+				forwardedPortsChans: map[uint32]chan struct{}{},
+			},
 		}
 	}
 
