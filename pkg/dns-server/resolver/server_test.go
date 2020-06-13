@@ -4,16 +4,107 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Kong/kuma/pkg/test"
-
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	. "github.com/Kong/kuma/pkg/dns-server/resolver"
+	"github.com/Kong/kuma/pkg/test"
 )
 
 var _ = Describe("DNS server", func() {
+
+	Describe("Network Operation", func() {
+
+		var ip, port string
+		stop := make(chan struct{})
+		done := make(chan struct{})
+		BeforeEach(func() {
+			// setup
+			p, err := test.GetFreePort()
+			Expect(err).ToNot(HaveOccurred())
+			port = strconv.Itoa(p)
+
+			resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", port, "240.0.0.0/4")
+			Expect(err).ToNot(HaveOccurred())
+
+			// given
+			_, err = resolver.AddService("service")
+			Expect(err).ToNot(HaveOccurred())
+
+			ip, err = resolver.ForwardLookup("service.mesh")
+			Expect(err).ToNot(HaveOccurred())
+
+			go func() {
+				err := resolver.Start(stop)
+				Expect(err).ToNot(HaveOccurred())
+				done <- struct{}{}
+			}()
+		})
+
+		AfterEach(func() {
+			// stop the resolver
+			stop <- struct{}{}
+			<-done
+		})
+
+		It("Should resolve", func() {
+			// when
+			client := new(dns.Client)
+			message := new(dns.Msg)
+			_ = message.SetQuestion("service.mesh.", dns.TypeA)
+			var response *dns.Msg
+			var err error
+			Eventually(func() error {
+				response, _, err = client.Exchange(message, "127.0.0.1:"+port)
+				return err
+			}).ShouldNot(HaveOccurred())
+			// then
+			Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.mesh.\t60\tIN\tA\t%s", ip)))
+		})
+
+		It("Should resolve concurrent", func() {
+			resolved := make(chan struct{})
+			for i := 0; i < 100; i++ {
+				go func() {
+					// when
+					client := new(dns.Client)
+					message := new(dns.Msg)
+					_ = message.SetQuestion("service.mesh.", dns.TypeA)
+					var response *dns.Msg
+					var err error
+					Eventually(func() error {
+						response, _, err = client.Exchange(message, "127.0.0.1:"+port)
+						return err
+					}).ShouldNot(HaveOccurred())
+					// then
+					Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.mesh.\t60\tIN\tA\t%s", ip)))
+					resolved <- struct{}{}
+				}()
+			}
+
+			for i := 0; i < 100; i++ {
+				<-resolved
+			}
+		})
+
+		It("Should not resolve", func() {
+			// when
+			client := new(dns.Client)
+			message := new(dns.Msg)
+			_ = message.SetQuestion("backend.mesh.", dns.TypeA)
+			var response *dns.Msg
+			var err error
+			Eventually(func() error {
+				response, _, err = client.Exchange(message, "127.0.0.1:"+port)
+				return err
+			}).ShouldNot(HaveOccurred())
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(len(response.Answer)).To(Equal(0))
+		})
+	})
 
 	It("DNS Server basic functionality", func() {
 		// setup
@@ -34,53 +125,6 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(service).To(Equal("service.mesh"))
-	})
-
-	It("DNS Server network functionality", func() {
-		// setup
-		p, err := test.GetFreePort()
-		Expect(err).ToNot(HaveOccurred())
-		port := strconv.Itoa(p)
-
-		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", port, "240.0.0.0/4")
-		Expect(err).ToNot(HaveOccurred())
-
-		// given
-		_, err = resolver.AddService("service")
-		Expect(err).ToNot(HaveOccurred())
-
-		ip, err := resolver.ForwardLookup("service.mesh")
-		Expect(err).ToNot(HaveOccurred())
-
-		stop := make(chan struct{})
-		go func() {
-			err := resolver.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
-
-		// when
-		client := new(dns.Client)
-		message := new(dns.Msg)
-		_ = message.SetQuestion("service.mesh.", dns.TypeA)
-		var response *dns.Msg
-		Eventually(func() error {
-			response, _, err = client.Exchange(message, "127.0.0.1:"+port)
-			return err
-		}).ShouldNot(HaveOccurred())
-		// then
-		Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.mesh.\t60\tIN\tA\t%s", ip)))
-
-		// when
-		message = new(dns.Msg)
-		_ = message.SetQuestion("backend.mesh.", dns.TypeA)
-		response, _, err = client.Exchange(message, "127.0.0.1:"+port)
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(len(response.Answer)).To(Equal(0))
-
-		// stop the resolver
-		stop <- struct{}{}
 	})
 
 	It("DNS Server service operation", func() {
