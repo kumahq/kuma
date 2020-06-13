@@ -56,7 +56,12 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 		verbose:  verbose,
 	}, nil
 }
-func (cs *K8sClusters) ExecCommandInContainerWithFullOutput(namespace, podName, containerName string, cmd ...string) (string, string, error) {
+
+func (cs *K8sClusters) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
+	panic("not supported")
+}
+
+func (cs *K8sClusters) ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error) {
 	panic("not supported")
 }
 

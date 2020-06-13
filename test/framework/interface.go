@@ -25,7 +25,8 @@ type Cluster interface {
 	LabelNamespaceForSidecarInjection(namespace string) error
 	DeployApp(namespace, appname string) error
 	DeleteApp(namespace, appname string) error
-	ExecCommandInContainerWithFullOutput(namespace, podName, containerName string, cmd ...string) (string, string, error)
+	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
+	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
 
 	// Testing
 	GetTesting() testing.TestingT

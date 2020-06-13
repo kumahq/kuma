@@ -16,7 +16,7 @@ type InstallFunc func(cluster Cluster) error
 
 func Yaml(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
-		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", defaultRetries, defaultTimeout,
+		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
 			func() (s string, err error) {
 				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
 			})
@@ -26,7 +26,7 @@ func Yaml(yaml string) InstallFunc {
 
 func YamlPath(path string) InstallFunc {
 	return func(cluster Cluster) error {
-		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource by path", defaultRetries, defaultTimeout,
+		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource by path", DefaultRetries, DefaultTimeout,
 			func() (s string, err error) {
 				return "", k8s.KubectlApplyE(cluster.GetTesting(), cluster.GetKubectlOptions(), path)
 			})
@@ -52,7 +52,7 @@ func WaitNumPods(num int, app string) InstallFunc {
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(),
 			kube_meta.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
-			}, num, defaultRetries, defaultTimeout)
+			}, num, DefaultRetries, DefaultTimeout)
 		return nil
 	}
 }
@@ -65,7 +65,7 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 			return err
 		}
 		for _, p := range pods {
-			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), defaultRetries, defaultTimeout)
+			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
 			if err != nil {
 				return err
 			}
@@ -74,12 +74,13 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 	}
 }
 
-func HttpBin() InstallFunc {
+func EchoServer() InstallFunc {
+	const name = "echo-server"
 	return Combine(
-		YamlPath(filepath.Join("testdata", "httpbin.yaml")),
-		WaitService("kuma-test", "httpbin"),
-		WaitNumPods(1, "httpbin"),
-		WaitPodsAvailable("kuma-test", "httpbin"),
+		YamlPath(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
+		WaitService(TestNamespace, name),
+		WaitNumPods(1, name),
+		WaitPodsAvailable(TestNamespace, name),
 	)
 }
 
@@ -89,6 +90,7 @@ type IngressDesc struct {
 }
 
 func Ingress(ingress *IngressDesc) InstallFunc {
+	const name = "kuma-ingress"
 	return func(c Cluster) error {
 		yaml, err := c.GetKumactlOptions().KumactlInstallIngress()
 		if err != nil {
@@ -96,16 +98,16 @@ func Ingress(ingress *IngressDesc) InstallFunc {
 		}
 		return Combine(
 			Yaml(yaml),
-			WaitService("kuma-system", "kuma-ingress"),
-			WaitNumPods(1, "kuma-ingress"),
-			WaitPodsAvailable("kuma-system", "kuma-ingress"),
+			WaitService(kumaNamespace, name),
+			WaitNumPods(1, name),
+			WaitPodsAvailable(kumaNamespace, name),
 			func(cluster Cluster) error {
 				ctx := context.Background()
 				cs, err := k8s.GetKubernetesClientFromOptionsE(c.GetTesting(), c.GetKubectlOptions())
 				if err != nil {
 					return err
 				}
-				ingressSvc, err := cs.CoreV1().Services("kuma-system").Get(ctx, "kuma-ingress", kube_meta.GetOptions{})
+				ingressSvc, err := cs.CoreV1().Services(kumaNamespace).Get(ctx, name, kube_meta.GetOptions{})
 				if err != nil {
 					return nil
 				}
@@ -128,11 +130,12 @@ func Ingress(ingress *IngressDesc) InstallFunc {
 }
 
 func DemoClient() InstallFunc {
+	const name = "demo-client"
 	return Combine(
-		YamlPath(filepath.Join("testdata", "demo-client.yaml")),
-		WaitService("kuma-test", "demo-client"),
-		WaitNumPods(1, "demo-client"),
-		WaitPodsAvailable("kuma-test", "demo-client"),
+		YamlPath(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
+		WaitService(TestNamespace, name),
+		WaitNumPods(1, name),
+		WaitPodsAvailable(TestNamespace, name),
 	)
 }
 

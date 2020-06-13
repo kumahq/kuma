@@ -2,10 +2,8 @@ package e2e
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,22 +46,24 @@ spec:
       service: '*'
 `
 
-	const namespaceWithSidecarInjection = `
+	namespaceWithSidecarInjection := func(namespace string) string {
+		return fmt.Sprintf(`
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma-test
+  name: %s
   labels:
     kuma.io/sidecar-injection: "enabled"
-`
+`, namespace)
+	}
 
-	headlessService := func(port int32) string {
+	headlessService := func(namespace string, port int32) string {
 		return fmt.Sprintf(`
 apiVersion: v1
 kind: Service
 metadata:
-  name: httpbin
-  namespace: kuma-test
+  name: echo-server
+  namespace: %s
 spec:
   clusterIP: None
   selector:
@@ -72,25 +72,25 @@ spec:
     - protocol: TCP
       port: %d
       targetPort: %d
-`, port, port)
+`, namespace, port, port)
 	}
 
-	fakeDpForOutbound := func(ingressIP string, port int32) string {
+	fakeDpForOutbound := func(namespace, ingressIP string, port int32) string {
 		return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Dataplane
 mesh: default
 metadata:
   name: ingress-dp
-  namespace: kuma-test
+  namespace: %s
 spec:
   networking:
     address: %s
     inbound:
     - port: %d
       tags:
-        service: httpbin.kuma-test.svc:80
-`, ingressIP, port)
+        service: echo-server.%s.svc:80
+`, namespace, ingressIP, port, namespace)
 	}
 
 	var c1 Cluster
@@ -110,8 +110,8 @@ spec:
 			Install(Kuma()).
 			Install(Yaml(meshWithProvidedCA)).
 			Install(Yaml(trafficPermission)).
-			Install(Yaml(namespaceWithSidecarInjection)).
-			Install(HttpBin()).
+			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
+			Install(EchoServer()).
 			Install(Ingress(&ingress)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
@@ -120,10 +120,10 @@ spec:
 			Install(Kuma()).
 			Install(Yaml(meshWithProvidedCA)).
 			Install(Yaml(trafficPermission)).
-			Install(Yaml(namespaceWithSidecarInjection)).
+			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClient()).
-			Install(Yaml(headlessService(ingress.Port))).
-			Install(Yaml(fakeDpForOutbound(ingress.IP, ingress.Port))).
+			Install(Yaml(headlessService(TestNamespace, ingress.Port))).
+			Install(Yaml(fakeDpForOutbound(TestNamespace, ingress.IP, ingress.Port))).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -131,21 +131,23 @@ spec:
 	AfterEach(func() {
 		_ = c1.DeleteKuma()
 		_ = c2.DeleteKuma()
-		_ = k8s.KubectlDeleteFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), namespaceWithSidecarInjection)
-		_ = k8s.KubectlDeleteFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), namespaceWithSidecarInjection)
+		_ = k8s.KubectlDeleteFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
+		_ = k8s.KubectlDeleteFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
 	})
 
 	It("should deploy ingress", func() {
-		pods, err := k8s.ListPodsE(c2.GetTesting(), c2.GetKubectlOptions("kuma-test"), kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", "demo-client")})
+		pods, err := k8s.ListPodsE(
+			c2.GetTesting(),
+			c2.GetKubectlOptions(TestNamespace),
+			kube_meta.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
+			},
+		)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(pods).To(HaveLen(1))
 
-		var stderr string
-		_, err = retry.DoWithRetryE(c2.GetTesting(), fmt.Sprintf("kubectl exec -- curl %s:%d/headers", ingress.IP, ingress.Port), 30, 3*time.Second, func() (string, error) {
-			_, stderr, err = c2.ExecCommandInContainerWithFullOutput("kuma-test", pods[0].GetName(), "demo-client",
-				"curl", "-v", fmt.Sprintf("%s:%d/status/200", ingress.IP, ingress.Port))
-			return "", err
-		})
+		_, stderr, err := c2.ExecWithRetries(TestNamespace, pods[0].GetName(), "demo-client",
+			"curl", "-v", fmt.Sprintf("%s:%d", ingress.IP, ingress.Port))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})

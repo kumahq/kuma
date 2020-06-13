@@ -2,9 +2,12 @@ package framework
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/url"
 	"strings"
+
+	"github.com/gruntwork-io/terratest/modules/retry"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	kube_core "k8s.io/api/core/v1"
@@ -66,9 +69,9 @@ func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error
 	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
 }
 
-// ExecCommandInContainerWithFullOutput executes a command in the
+// Exec executes a command in the
 // specified container and return stdout, stderr and error
-func (c *K8sCluster) ExecCommandInContainerWithFullOutput(namespace, podName, containerName string, cmd ...string) (string, string, error) {
+func (c *K8sCluster) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
 	return c.ExecWithOptions(ExecOptions{
 		Command:       cmd,
 		Namespace:     namespace,
@@ -80,6 +83,23 @@ func (c *K8sCluster) ExecCommandInContainerWithFullOutput(namespace, podName, co
 		CaptureStderr:      true,
 		PreserveWhitespace: false,
 	})
+}
+
+func (c *K8sCluster) ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error) {
+	var stdout string
+	var stderr string
+	_, err := retry.DoWithRetryE(
+		c.t,
+		fmt.Sprintf("kubectl exec -- %s", strings.Join(cmd, " ")),
+		DefaultRetries,
+		DefaultTimeout,
+		func() (string, error) {
+			var err error
+			stdout, stderr, err = c.Exec(namespace, podName, containerName, cmd...)
+			return "", err
+		},
+	)
+	return stdout, stderr, err
 }
 
 func execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {

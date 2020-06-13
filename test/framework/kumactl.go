@@ -151,7 +151,7 @@ func (o *KumactlOptions) KumactlInstallIngress() (string, error) {
 }
 
 func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
-	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", defaultRetries, defaultTimeout,
+	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			err := o.RunKumactl(
 				"config", "control-planes", "add",

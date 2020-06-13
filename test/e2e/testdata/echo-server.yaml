@@ -2,22 +2,22 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: httpbin
+  name: echo-server
   namespace: kuma-test
 spec:
   ports:
     - port: 80
       name: http
   selector:
-    app: httpbin
+    app: echo-server
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: httpbin
+  name: echo-server
   namespace: kuma-test
   labels:
-    app: httpbin
+    app: echo-server
 spec:
   strategy:
     rollingUpdate:
@@ -25,18 +25,27 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: httpbin
+      app: echo-server
   template:
     metadata:
       labels:
-        app: httpbin
+        app: echo-server
     spec:
       containers:
-        - name: httpbin
-          image: "kennethreitz/httpbin"
+        - name: echo-server
+          image: alpine
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+          command:
+            - nc
+            - -lk
+            - -p
+            - "80"
+            - -e
+            - echo
+            - -e
+            - "HTTP/1.1 200 OK"
           resources:
             requests:
               cpu: 10m
