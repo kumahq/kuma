@@ -6,6 +6,12 @@ metadata:
   namespace: {{ .Namespace }}
 spec:
   ports:
+  - port: 5681
+    name: http-api-server
+{{- if ne .KumaCpMode "local"}}
+  - port: 5683
+    name: gui-server
+{{- end }}
 {{- if ne .KumaCpMode "global"}}
   - port: 443
     name: https-admission-server
@@ -18,20 +24,12 @@ spec:
     name: grpc-xds
   - port: 5679
     name: http-xds
-{{- end }}
-  - port: 5681
-    name: http-api-server
-{{- if ne .KumaCpMode "global"}}
   - port: 5682
     name: http-bootstrap-server
-{{- end }}
-{{- if ne .KumaCpMode "local"}}
-  - port: 5683
-    name: gui-server
-{{- end }}
   - port: 5653
     name: dns-server
     protocol: UDP
+{{- end }}
   selector:
     app: kuma-control-plane
 ---
@@ -142,21 +140,19 @@ spec:
         - --log-level=info
         - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
         ports:
+        - containerPort: 5681
+{{- if ne .KumaCpMode "local"}}
+        - containerPort: 5683
+{{- end }}
 {{- if ne .KumaCpMode "global"}}
         - containerPort: 5443
         - containerPort: 5677
         - containerPort: 5678
         - containerPort: 5679
-{{- end }}
-        - containerPort: 5681
-{{- if ne .KumaCpMode "global"}}
         - containerPort: 5682
-{{- end }}
-{{- if ne .KumaCpMode "local"}}
-        - containerPort: 5683
-{{- end }}
         - containerPort: 5653
           protocol: UDP
+{{- end }}
         livenessProbe:
           httpGet:
             path: /healthy

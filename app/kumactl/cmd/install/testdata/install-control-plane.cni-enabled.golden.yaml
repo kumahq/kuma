@@ -4629,6 +4629,10 @@ metadata:
   namespace: kuma-system
 spec:
   ports:
+    - port: 5681
+      name: http-api-server
+    - port: 5683
+      name: gui-server
     - port: 443
       name: https-admission-server
       targetPort: 5443
@@ -4640,12 +4644,8 @@ spec:
       name: grpc-xds
     - port: 5679
       name: http-xds
-    - port: 5681
-      name: http-api-server
     - port: 5682
       name: http-bootstrap-server
-    - port: 5683
-      name: gui-server
     - port: 5653
       name: dns-server
       protocol: UDP
@@ -4793,13 +4793,13 @@ spec:
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
+            - containerPort: 5681
+            - containerPort: 5683
             - containerPort: 5443
             - containerPort: 5677
             - containerPort: 5678
             - containerPort: 5679
-            - containerPort: 5681
             - containerPort: 5682
-            - containerPort: 5683
             - containerPort: 5653
               protocol: UDP
           livenessProbe:
