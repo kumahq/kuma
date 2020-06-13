@@ -312,6 +312,17 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 		DefaultRetries,
 		DefaultTimeout)
 
+	_, err = retry.DoWithRetryE(c.t,
+		"get default mesh",
+		DefaultRetries,
+		DefaultTimeout,
+		func() (s string, err error) {
+			return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+		})
+	if err != nil {
+		return err
+	}
+
 	c.portFwd.localCPAPIPort, c.portFwd.localCPGUIPort = c.PortForwardKumaCP()
 
 	// Figure out a better way to handle Local
