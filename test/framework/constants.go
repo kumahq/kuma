@@ -13,7 +13,7 @@ const (
 	envK8SCLUSTERS = "K8SCLUSTERS"
 
 	maxClusters    = 3
-	defaultRetries = 60
+	defaultRetries = 30
 	defaultTimeout = 3 * time.Second
 
 	kumaNamespace   = "kuma-system"
@@ -28,6 +28,7 @@ const (
 	Kuma3 = "kuma-3"
 
 	kumaCPAPIPort       = 5681
+	kumaCPGUIPort       = 5683
 	kumaCPAPIPortFwdLow = 32000 + kumaCPAPIPort
 	kumaCPAPIPortFwdHi  = 42000 + kumaCPAPIPort
 )

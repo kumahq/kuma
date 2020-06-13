@@ -6,6 +6,7 @@ metadata:
   namespace: {{ .Namespace }}
 spec:
   ports:
+{{- if ne .KumaCpMode "global"}}
   - port: 443
     name: https-admission-server
     targetPort: 5443
@@ -17,12 +18,17 @@ spec:
     name: grpc-xds
   - port: 5679
     name: http-xds
+{{- end }}
   - port: 5681
     name: http-api-server
+{{- if ne .KumaCpMode "global"}}
   - port: 5682
     name: http-bootstrap-server
+{{- end }}
+{{- if ne .KumaCpMode "local"}}
   - port: 5683
     name: gui-server
+{{- end }}
   selector:
     app: kuma-control-plane
 ---
@@ -31,6 +37,7 @@ kind: ServiceAccount
 metadata:
   name: kuma-control-plane
   namespace: {{ .Namespace }}
+{{- if ne .KumaCpMode "global"}}
 ---
 apiVersion: v1
 kind: Secret
@@ -51,6 +58,7 @@ metadata:
 data:
   tls.crt: {{ .AdmissionServerTlsCert | b64enc }}
   tls.key: {{ .AdmissionServerTlsKey | b64enc }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -97,12 +105,15 @@ spec:
           value: {{ .Namespace }}
         - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
           value: {{ .ControlPlaneServiceName }}.{{ .Namespace }}
+{{- if ne .KumaCpMode "global"}}
         - name: KUMA_SDS_SERVER_GRPC_PORT
           value: "5677"
         - name: KUMA_XDS_SERVER_GRPC_PORT
           value: "5678"
+{{- end }}
         - name: KUMA_API_SERVER_PORT
           value: "5681"
+{{- if ne .KumaCpMode "global"}}
         - name: KUMA_BOOTSTRAP_SERVER_PORT
           value: "5682"
         - name: KUMA_SDS_SERVER_TLS_CERT_FILE
@@ -121,19 +132,26 @@ spec:
           value: {{ .DataplaneImage }}:{{ .ControlPlaneVersion }}
         - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
           value: {{ .DataplaneInitImage }}:{{ .ControlPlaneVersion }}
+{{- end }}
         args:
         - run
         - --mode={{ .KumaCpMode }}
         - --log-level=info
         - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
         ports:
+{{- if ne .KumaCpMode "global"}}
         - containerPort: 5443
         - containerPort: 5677
         - containerPort: 5678
         - containerPort: 5679
+{{- end }}
         - containerPort: 5681
+{{- if ne .KumaCpMode "global"}}
         - containerPort: 5682
+{{- end }}
+{{- if ne .KumaCpMode "local"}}
         - containerPort: 5683
+{{- end }}
         livenessProbe:
           httpGet:
             path: /healthy
@@ -143,29 +161,40 @@ spec:
             path: /ready
             port: 5680
         resources:
+{{- if eq .KumaCpMode "global"}}
+          requests:
+            cpu: 500m
+            memory: 256Mi
+{{- else }}
           requests:
             cpu: 100m
             memory: 256Mi
+{{- end }}
         volumeMounts:
+{{- if ne .KumaCpMode "global"}}
         - name: kuma-sds-tls-cert
           mountPath: /var/run/secrets/kuma.io/kuma-sds/tls-cert
           readOnly: true
         - name: kuma-admission-server-tls-cert
           mountPath: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
           readOnly: true
+{{- end }}
         - name: kuma-control-plane-config
           mountPath: /etc/kuma.io/kuma-control-plane
           readOnly: true
       volumes:
+{{- if ne .KumaCpMode "global"}}
       - name: kuma-sds-tls-cert
         secret:
           secretName: kuma-sds-tls-cert
       - name: kuma-admission-server-tls-cert
         secret:
           secretName: kuma-admission-server-tls-cert
+{{- end }}
       - name: kuma-control-plane-config
         configMap:
           name: kuma-control-plane-config
+{{- if ne .KumaCpMode "global"}}
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
@@ -308,3 +337,4 @@ webhooks:
           - DELETE
         resources:
           - secrets
+{{- end }}

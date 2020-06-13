@@ -4,6 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/Kong/kuma/pkg/config/core"
+
 	"github.com/Kong/kuma/test/framework"
 )
 
@@ -31,14 +33,34 @@ var _ = Describe("Test Local and Global", func() {
 		_ = clusters.DeleteKuma()
 	})
 
-	It("Should deploy on Two K8s cluster and verify Kuma", func() {
+	It("Should deploy Local and Global on 2 clusters", func() {
 		// given
-		err := clusters.DeployKuma()
+		c1 := clusters.GetCluster(framework.Kuma1)
+		c2 := clusters.GetCluster(framework.Kuma2)
+
+		err := c1.DeployKuma(core.Global)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = c2.DeployKuma(core.Local)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = clusters.VerifyKuma()
-		//then
+		err = c1.VerifyKuma()
+		// then
 		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		err = c2.VerifyKuma()
+		// then
+		Expect(err).To(HaveOccurred())
+
+		// then
+		logs1, err := c1.GetKumaCPLogs()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))
+
+		logs2, err := c2.GetKumaCPLogs()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(logs2).To(ContainSubstring("\"mode\":\"local\""))
 	})
 })

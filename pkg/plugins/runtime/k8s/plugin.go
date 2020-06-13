@@ -11,6 +11,7 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	core_config "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
 	managers_mesh "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
@@ -40,6 +41,10 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
+	if rt.Config().Mode == core_config.Global {
+		return nil
+	}
+
 	mgr, ok := k8s_runtime.FromManagerContext(rt.Extensions())
 	if !ok {
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
