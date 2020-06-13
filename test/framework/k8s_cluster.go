@@ -440,44 +440,21 @@ func (c *K8sCluster) DeleteApp(namespace, appname string) error {
 }
 
 func (c *K8sCluster) InjectDNS() error {
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
-		c.GetKubectlOptions())
+	// store the kumactl environment
+	oldEnv := c.kumactl.Env
+	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
+
+	yaml, err := c.kumactl.RunKumactlAndGetOutput("install", "dns")
 	if err != nil {
 		return err
 	}
 
-	kumaCPSVC, err := k8s.GetServiceE(c.t,
-		c.GetKubectlOptions("kuma-system"),
-		"kuma-control-plane")
-	if err != nil {
-		return err
-	}
+	// restore kumactl environment
+	c.kumactl.Env = oldEnv
 
-	cpaddress := kumaCPSVC.Spec.ClusterIP
-
-	corednsConfigMap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(context.TODO(), "coredns", metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	if strings.Contains(corednsConfigMap.Data["Corefile"], "mesh:53") {
-		return nil
-	}
-
-	toappend := fmt.Sprintf(`mesh:53 {
-        errors
-        cache 30
-        forward . %s:5653
-    }`, cpaddress)
-
-	corednsConfigMap.Data["Corefile"] += toappend
-
-	_, err = clientset.CoreV1().ConfigMaps("kube-system").Update(context.TODO(), corednsConfigMap, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return k8s.KubectlApplyFromStringE(c.t,
+		c.GetKubectlOptions(),
+		yaml)
 }
 
 func (c *K8sCluster) GetTesting() testing.TestingT {
