@@ -4,14 +4,16 @@ import (
 	"fmt"
 
 	dns_server "github.com/Kong/kuma/pkg/dns-server"
+	"github.com/Kong/kuma/pkg/globalcp"
 
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	api_server "github.com/Kong/kuma/pkg/api-server"
 
 	"github.com/spf13/cobra"
 
+	kuma_version "github.com/Kong/kuma/pkg/version"
+
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/Kong/kuma/pkg/admin-server"
-	api_server "github.com/Kong/kuma/pkg/api-server"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -100,6 +102,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := ui_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up GUI server")
+					return err
+				}
+				if err := globalcp.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up Global CP server")
 					return err
 				}
 			}

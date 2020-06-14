@@ -121,6 +121,9 @@ var _ = Describe("Config WS", func() {
           "general": {
             "advertisedHostname": "localhost"
           },
+          "globalCP": {
+            "localCPs": {}
+          },
           "guiServer": {
             "port": 5683,
             "apiServerUrl": ""

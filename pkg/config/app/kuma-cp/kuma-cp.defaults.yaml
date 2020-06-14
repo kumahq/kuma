@@ -256,3 +256,6 @@ dnsServer:
   port: 5653 # ENV: KUMA_DNS_SERVER_PORT
   # The CIDR range used to allocate
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
+
+globalCP:
+  localCPs: {}
