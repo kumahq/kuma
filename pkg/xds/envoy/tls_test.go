@@ -233,7 +233,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			metadata := &core_xds.DataplaneMetadata{}
 
 			// when
-			snippet, err := CreateUpstreamTlsContext(ctx, metadata, "backend")
+			snippet, err := CreateUpstreamTlsContext(ctx, metadata, "backend", "backend")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -279,7 +279,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := CreateUpstreamTlsContext(ctx, given.metadata, given.upstreamService)
+				snippet, err := CreateUpstreamTlsContext(ctx, given.metadata, given.upstreamService, "")
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when

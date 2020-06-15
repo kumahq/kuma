@@ -265,6 +265,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
+          sni: db
       type: EDS
   - name: db
     resource:
@@ -349,6 +350,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
+          sni: elastic
       type: EDS
   - name: elastic
     resource:

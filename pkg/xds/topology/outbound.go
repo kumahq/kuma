@@ -21,20 +21,31 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 	}
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
+		if dataplane.Spec.IsRemoteIngress() && dataplane.Spec.HasAvailableServices() {
+			for _, ingress := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
+				service := ingress.Tags[mesh_proto.ServiceTag]
+				selectors, ok := destinations[service]
+				if !ok {
+					continue
+				}
+				if !selectors.Matches(ingress.Tags) {
+					continue
+				}
+				outbound[service] = append(outbound[service], core_xds.Endpoint{
+					Target: dataplane.Spec.Networking.Address,
+					Port:   dataplane.Spec.Networking.Inbound[0].Port,
+					Tags:   ingress.Tags,
+				})
+			}
+			continue
+		}
 		for _, inbound := range dataplane.Spec.Networking.GetInbound() {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			selectors, ok := destinations[service]
 			if !ok {
 				continue
 			}
-			matches := false
-			for _, selector := range selectors {
-				if selector.Matches(inbound.Tags) {
-					matches = true
-					break
-				}
-			}
-			if !matches {
+			if !selectors.Matches(inbound.Tags) {
 				continue
 			}
 			iface, err := dataplane.Spec.Networking.ToInboundInterface(inbound)
