@@ -30,7 +30,7 @@ func (s *sender) Connect() error {
 }
 
 func (s *sender) Send(record string) error {
-	_, err := s.conn.Write(append([]byte(record), byte('\n')))
+	_, err := s.conn.Write([]byte(record))
 	return errors.Wrapf(err, "failed to send a log entry to a TCP logging backend: %s", s.address)
 }
 
