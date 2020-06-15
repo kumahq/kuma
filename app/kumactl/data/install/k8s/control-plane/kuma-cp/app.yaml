@@ -29,6 +29,9 @@ spec:
   - port: 5653
     name: dns-server
     protocol: UDP
+{{- else}}
+  - port: 5656
+    name: globalcp-status
 {{- end }}
   selector:
     app: kuma-control-plane
@@ -155,6 +158,8 @@ spec:
         - containerPort: 5682
         - containerPort: 5653
           protocol: UDP
+{{- else }}
+        - containerPort: 5656
 {{- end }}
         livenessProbe:
           httpGet:
