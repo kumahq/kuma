@@ -669,6 +669,7 @@ function _kumactl_install {
       "control-plane:Install Kuma Control Plane on Kubernetes"
       "dns:Install DNS to Kubernetes"
       "ingress:Install Ingress on Kubernetes"
+      "logging:Install Logging backend in Kubernetes cluster (Loki)"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
       "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
     )
@@ -685,6 +686,9 @@ function _kumactl_install {
     ;;
   ingress)
     _kumactl_install_ingress
+    ;;
+  logging)
+    _kumactl_install_logging
     ;;
   metrics)
     _kumactl_install_metrics
@@ -733,6 +737,14 @@ function _kumactl_install_ingress {
     '--kuma-cp-address[the address of Kuma CP]:' \
     '--namespace[namespace to install Ingress to]:' \
     '--version[version of Ingress component]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_logging {
+  _arguments \
+    '--namespace[namespace to install logging to]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
