@@ -147,9 +147,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.dns == nil {
 		return nil, errors.Errorf("DNS has been misconfigured")
 	}
-	//if b.globalcp == nil {
-	//	return nil, errors.Errorf("Global CP has been misconfigured")
-	//}
 	return &runtime{
 		RuntimeInfo: &runtimeInfo{
 			instanceId: core.NewUUID(),

@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -29,17 +30,22 @@ type (
 	GlobalCPPoller struct {
 		sync.RWMutex
 		localCPMap LocalCPMap
+		client     http.Client
 		newTicker  func() *time.Ticker
 	}
 )
 
 const (
-	tickInterval = 5 * time.Second
+	tickInterval = 1 * time.Second
+	httpTimeout  = tickInterval / 100
 )
 
 func NewGlobalCPPoller(localCPList map[string]string) (GlobalCP, error) {
 	poller := &GlobalCPPoller{
 		localCPMap: LocalCPMap{},
+		client: http.Client{
+			Timeout: httpTimeout,
+		},
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
 		},
@@ -72,24 +78,23 @@ func (g *GlobalCPPoller) Start(stop <-chan struct{}) error {
 }
 
 func (g *GlobalCPPoller) pollLocalCPs() {
+	g.Lock()
+	defer g.Unlock()
+
 	for name, localCP := range g.localCPMap {
-		response, err := http.Get(localCP.URL)
+		response, err := g.client.Get(localCP.URL)
 		if err != nil {
 			if localCP.Active {
-				globalCPLog.Info(name + " at " + localCP.URL + " did not respond")
-				g.Lock()
+				globalCPLog.Info(fmt.Sprintf("%s at %s did not respond", name, localCP.URL))
 				localCP.Active = false
-				g.Unlock()
 			}
 
 			continue
 		}
 
-		g.Lock()
 		localCP.Active = response.StatusCode == http.StatusOK
-		g.Unlock()
 		if !localCP.Active {
-			globalCPLog.Info(name + " at " + localCP.URL + " responded with" + response.Status)
+			globalCPLog.Info(fmt.Sprintf("%s at %s responded with %s", name, localCP.URL, response.Status))
 		}
 
 		response.Body.Close()

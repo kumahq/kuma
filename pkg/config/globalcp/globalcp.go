@@ -1,6 +1,12 @@
 package globalcp
 
-import "github.com/Kong/kuma/pkg/config"
+import (
+	"net/url"
+
+	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/config"
+)
 
 var _ config.Config = &GlobalCPConfig{}
 
@@ -11,10 +17,16 @@ type GlobalCPConfig struct {
 	LocalCPs map[string]string `yaml:"localCPs,omitempty"`
 }
 
-func (a *GlobalCPConfig) Sanitize() {
+func (g *GlobalCPConfig) Sanitize() {
 }
 
-func (a *GlobalCPConfig) Validate() error {
+func (g *GlobalCPConfig) Validate() error {
+	for name, localcpurl := range g.LocalCPs {
+		_, err := url.ParseRequestURI(localcpurl)
+		if err != nil {
+			return errors.Wrapf(err, "Local CP %s has invalid url %s", name, localcpurl)
+		}
+	}
 	return nil
 }
 
