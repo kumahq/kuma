@@ -205,7 +205,8 @@ func (m *Dataplane_Networking_Ingress) GetAvailableServices() []*Dataplane_Netwo
 	return nil
 }
 
-// AvailableService contains tags that represent unique subset of endpoints
+// AvailableService contains tags that represent unique subset of
+// endpoints
 type Dataplane_Networking_Ingress_AvailableService struct {
 	Tags                 map[string]string `protobuf:"bytes,1,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
