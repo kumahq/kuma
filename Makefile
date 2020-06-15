@@ -192,19 +192,23 @@ protoc/plugins:
 	$(PROTOC_GO) pkg/plugins/ca/provided/config/*.proto
 	$(PROTOC_GO) pkg/plugins/ca/builtin/config/*.proto
 
-# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
 generate/kumactl/install/k8s/control-plane:
 	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/control-plane/...
 
-# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
+generate/kumactl/install/k8s/ingress:
+	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/ingress/...
+
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
 generate/kumactl/install/k8s/kuma-cni:
 	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/kuma-cni/...
 
-# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
 generate/kumactl/install/k8s/metrics:
 	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/metrics/...
 
-# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
 generate/kumactl/install/k8s/tracing:
 	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/tracing/...
 

@@ -62,6 +62,7 @@ func NewDefaultProxyProfile() ResourceGenerator {
 
 func init() {
 	predefinedProfiles[mesh_core.ProfileDefaultProxy] = NewDefaultProxyProfile()
+	predefinedProfiles[IngressProxy] = &IngressGenerator{}
 }
 
 type ProxyTemplateProfileSource struct {

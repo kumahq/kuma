@@ -90,6 +90,15 @@ func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
 	return append(s, new)
 }
 
+func (s TagSelectorSet) Matches(tags map[string]string) bool {
+	for _, selector := range s {
+		if selector.Matches(tags) {
+			return true
+		}
+	}
+	return false
+}
+
 func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
 	var endpoints EndpointList
 	for _, endpoint := range l {

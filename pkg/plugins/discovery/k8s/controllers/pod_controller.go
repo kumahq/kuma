@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/core/resources/model"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
@@ -61,13 +63,18 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, err
 	}
 
-	// only Pods with injected Kuma need a Dataplane descriptor
-	if !injector_metadata.HasKumaSidecar(pod) {
+	// skip a Pod if it doesn't have an IP address yet
+	if pod.Status.PodIP == "" {
 		return kube_ctrl.Result{}, nil
 	}
 
-	// skip a Pod if it doesn't have an IP address yet
-	if pod.Status.PodIP == "" {
+	// for Pods marked with ingress annotation special type of Dataplane will be injected
+	if enabled := pod.Annotations[injector_metadata.KumaIngressAnnotation]; enabled == injector_metadata.KumaIngressEnabled {
+		return kube_ctrl.Result{}, r.createOrUpdateIngress(pod)
+	}
+
+	// only Pods with injected Kuma need a Dataplane descriptor
+	if !injector_metadata.HasKumaSidecar(pod) {
 		return kube_ctrl.Result{}, nil
 	}
 
@@ -160,6 +167,40 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Dataplane: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", pod.Name)
+	}
+	return nil
+}
+
+func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod) error {
+	ctx := context.Background()
+
+	ingress := &mesh_k8s.Dataplane{
+		ObjectMeta: kube_meta.ObjectMeta{
+			Namespace: pod.Namespace,
+			Name:      pod.Name,
+		},
+		Mesh: model.DefaultMesh,
+	}
+	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ingress, func() error {
+		if err := r.PodConverter.PodToIngress(ingress, pod); err != nil {
+			return errors.Wrap(err, "unable to translate a Pod into a Ingress")
+		}
+		if err := kube_controllerutil.SetControllerReference(pod, ingress, r.Scheme); err != nil {
+			return errors.Wrap(err, "unable to set Ingress's controller reference to Pod")
+		}
+		return nil
+	})
+	if err != nil {
+		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
+		log.Error(err, "unable to create/update Ingress", "operationResult", operationResult)
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Ingress: %s", err.Error())
+		return err
+	}
+	switch operationResult {
+	case kube_controllerutil.OperationResultCreated:
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Ingress: %s", pod.Name)
+	case kube_controllerutil.OperationResultUpdated:
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Ingress: %s", pod.Name)
 	}
 	return nil
 }

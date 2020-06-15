@@ -668,6 +668,7 @@ function _kumactl_install {
     commands=(
       "control-plane:Install Kuma Control Plane on Kubernetes"
       "dns:Install DNS to Kubernetes"
+      "ingress:Install Ingress on Kubernetes"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
       "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
     )
@@ -681,6 +682,9 @@ function _kumactl_install {
     ;;
   dns)
     _kumactl_install_dns
+    ;;
+  ingress)
+    _kumactl_install_ingress
     ;;
   metrics)
     _kumactl_install_metrics
@@ -716,6 +720,19 @@ function _kumactl_install_control-plane {
 
 function _kumactl_install_dns {
   _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_ingress {
+  _arguments \
+    '--drain-time[drain time for Envoy proxy]:' \
+    '--image[image of the Ingress component]:' \
+    '--image-pull-policy[image pull policy for Ingress]:' \
+    '--kuma-cp-address[the address of Kuma CP]:' \
+    '--namespace[namespace to install Ingress to]:' \
+    '--version[version of Ingress component]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

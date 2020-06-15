@@ -1733,6 +1733,51 @@ _kumactl_install_dns()
     noun_aliases=()
 }
 
+_kumactl_install_ingress()
+{
+    last_command="kumactl_install_ingress"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--drain-time=")
+    two_word_flags+=("--drain-time")
+    local_nonpersistent_flags+=("--drain-time=")
+    flags+=("--image=")
+    two_word_flags+=("--image")
+    local_nonpersistent_flags+=("--image=")
+    flags+=("--image-pull-policy=")
+    two_word_flags+=("--image-pull-policy")
+    local_nonpersistent_flags+=("--image-pull-policy=")
+    flags+=("--kuma-cp-address=")
+    two_word_flags+=("--kuma-cp-address")
+    local_nonpersistent_flags+=("--kuma-cp-address=")
+    flags+=("--namespace=")
+    two_word_flags+=("--namespace")
+    local_nonpersistent_flags+=("--namespace=")
+    flags+=("--version=")
+    two_word_flags+=("--version")
+    local_nonpersistent_flags+=("--version=")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_install_metrics()
 {
     last_command="kumactl_install_metrics"
@@ -1811,6 +1856,7 @@ _kumactl_install()
     commands=()
     commands+=("control-plane")
     commands+=("dns")
+    commands+=("ingress")
     commands+=("metrics")
     commands+=("tracing")
 

@@ -42,7 +42,7 @@ func CreateDownstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Data
 // There is no way to correlate incoming request to "web" or "web-api" with outgoing request to "backend" to expose only one URI SAN.
 //
 // Pass "*" for upstreamService to validate that upstream service is a service that is part of the mesh (but not specific one)
-func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, upstreamService string) (*envoy_auth.UpstreamTlsContext, error) {
+func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, upstreamService string, sni string) (*envoy_auth.UpstreamTlsContext, error) {
 	if !ctx.Mesh.Resource.MTLSEnabled() {
 		return nil, nil
 	}
@@ -56,8 +56,14 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Datapl
 	if err != nil {
 		return nil, err
 	}
+	if sni == "" {
+		return &envoy_auth.UpstreamTlsContext{
+			CommonTlsContext: commonTlsContext,
+		}, nil
+	}
 	return &envoy_auth.UpstreamTlsContext{
 		CommonTlsContext: commonTlsContext,
+		Sni:              sni,
 	}, nil
 }
 
