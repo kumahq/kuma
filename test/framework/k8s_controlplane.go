@@ -291,7 +291,7 @@ func (c *K8sControlPlane) InjectDNS() error {
 func (c *K8sControlPlane) GetHostAPI() string {
 	pod := c.GetKumaCPPods()[0]
 
-	return "http://" + pod.Status.HostIP + ":5681"
+	return "http://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(localCPSyncNodePort), 10)
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
