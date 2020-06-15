@@ -38,6 +38,7 @@ spec:
     metadata:
       annotations:
         kuma.io/ingress: enabled
+        kuma.io/mesh: default
       labels:
         app: kuma-ingress
     spec:

@@ -705,7 +705,9 @@ type Dataplane_Networking_Ingress_AvailableServiceValidationError struct {
 func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) Reason() string { return e.reason }
+func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) Reason() string {
+	return e.reason
+}
 
 // Cause function returns cause value.
 func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) Cause() error { return e.cause }

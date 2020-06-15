@@ -11,7 +11,6 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	injector_metadata "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
@@ -44,7 +43,7 @@ func (p *PodConverter) PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_c
 }
 
 func (p *PodConverter) PodToIngress(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod) error {
-	dataplane.Mesh = core_model.DefaultMesh
+	dataplane.Mesh = MeshFor(pod)
 	ingressProto := p.IngressFor(pod)
 	spec, err := util_proto.ToMap(ingressProto)
 	if err != nil {
