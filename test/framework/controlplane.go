@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ghodss/yaml"
+	"github.com/Kong/kuma/pkg/config/globalcp"
+
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -21,15 +23,19 @@ import (
 )
 
 type ControlPlane interface {
+	GetName() string
 	AddLocalCP(name, url string) error
-	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
+	GetKumaCPLogs() (string, error)
+	GetHostAPI() string
+	GetGlobaStatusAPI() string
 }
 
 type PortFwd struct {
-	lowFwdPort     uint32
-	hiFwdPort      uint32
-	localCPAPIPort uint32
-	localCPGUIPort uint32
+	lowFwdPort              uint32
+	hiFwdPort               uint32
+	localGlobalCPStatusPort uint32
+	localAPIPort            uint32
+	localGUIPort            uint32
 }
 
 type K8sControlPlane struct {
@@ -43,10 +49,11 @@ type K8sControlPlane struct {
 	verbose    bool
 }
 
-func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, name string,
+func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, clusterName string,
 	kubeconfig string, cluster *K8sCluster,
 	loPort, hiPort uint32,
 	verbose bool) *K8sControlPlane {
+	name := clusterName + "-" + mode
 	kumactl, _ := NewKumactlOptions(t, name, verbose)
 	return &K8sControlPlane{
 		t:          t,
@@ -56,11 +63,15 @@ func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, name string,
 		kumactl:    kumactl,
 		cluster:    cluster,
 		portFwd: PortFwd{
-			localCPAPIPort: loPort,
-			localCPGUIPort: hiPort,
+			localAPIPort: loPort,
+			localGUIPort: hiPort,
 		},
 		verbose: verbose,
 	}
+}
+
+func (c *K8sControlPlane) GetName() string {
+	return c.name
 }
 
 func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
@@ -88,21 +99,27 @@ func (c *K8sControlPlane) AddLocalCP(name, url string) error {
 	}
 
 	cfg := kuma_cp.Config{}
-	err = yaml.Unmarshal([]byte(kumaCM.Data["config.yaml"]), cfg)
+	err = yaml.Unmarshal([]byte(kumaCM.Data["config.yaml"]), &cfg)
 	if err != nil {
 		return err
 	}
 
+	if cfg.GlobalCP == nil {
+		cfg.GlobalCP = &globalcp.GlobalCPConfig{
+			LocalCPs: map[string]string{},
+		}
+	}
+
 	cfg.GlobalCP.LocalCPs[name] = url
 
-	yamlBytes, err := yaml.Marshal(cfg)
+	yamlBytes, err := yaml.Marshal(&cfg)
 	if err != nil {
 		return err
 	}
 
 	kumaCM.Data["config.yaml"] = string(yamlBytes)
 
-	_, err = clientset.CoreV1().ConfigMaps("kube-system").Update(context.TODO(), kumaCM, metav1.UpdateOptions{})
+	_, err = clientset.CoreV1().ConfigMaps("kuma-system").Update(context.TODO(), kumaCM, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -110,34 +127,50 @@ func (c *K8sControlPlane) AddLocalCP(name, url string) error {
 	return nil
 }
 
-func (c *K8sControlPlane) PortForwardKumaCP() (uint32, uint32) {
+func (c *K8sControlPlane) PortForwardKumaCP() error {
+	var statusPort, apiPort, guiPort uint32
+	var err error
+
 	kumacpPods := c.GetKumaCPPods()
 	if len(kumacpPods) != 1 {
-		fmt.Printf("Kuma CP pods: %d", len(kumacpPods))
-		return 0, 0
+		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
 	}
 
 	kumacpPodName := kumacpPods[0].Name
 
-	//find a free local port
-	localAPIPort, err := util_net.PickTCPPort("", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
-	if err != nil {
-		fmt.Println("No free port found in range: ", kumaCPAPIPortFwdLow, " - ", kumaCPAPIPortFwdHi)
-		return 0, 0
+	// Global CP Status
+	if c.mode == core.Global {
+		statusPort, err = util_net.PickTCPPort("", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
+		if err != nil {
+			return errors.Errorf("No free port found in range: %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
+		}
+
+		c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, statusPort, globalCPStatusPort)
 	}
 
-	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, localAPIPort, kumaCPAPIPort)
+	// API
+	if c.mode != core.Global {
+		apiPort, err = util_net.PickTCPPort("", c.portFwd.lowFwdPort+1, c.portFwd.hiFwdPort)
+		if err != nil {
+			return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
+		}
 
-	//find a free local port
-	localGUIPort, err := util_net.PickTCPPort("", localAPIPort+1, c.portFwd.hiFwdPort)
-	if err != nil {
-		fmt.Println("No free port found in range: ", kumaCPAPIPortFwdLow, " - ", kumaCPAPIPortFwdHi)
-		return 0, 0
+		c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
 	}
 
-	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, localGUIPort, kumaCPGUIPort)
+	// GUI
+	guiPort, err = util_net.PickTCPPort("", c.portFwd.lowFwdPort+2, c.portFwd.hiFwdPort)
+	if err != nil {
+		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
+	}
 
-	return localAPIPort, localGUIPort
+	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, guiPort, kumaCPGUIPort)
+
+	c.portFwd.localGlobalCPStatusPort = statusPort
+	c.portFwd.localAPIPort = apiPort
+	c.portFwd.localGUIPort = guiPort
+
+	return nil
 }
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
@@ -150,6 +183,14 @@ func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
 }
 
 func (c *K8sControlPlane) VerifyKumaCtl() error {
+	if c.mode == core.Global {
+		return nil
+	}
+
+	if c.portFwd.localAPIPort == 0 {
+		return errors.Errorf("API port not forwarded")
+	}
+
 	output, err := c.kumactl.RunKumactlAndGetOutputV(c.verbose, "get", "dataplanes")
 	fmt.Println(output)
 
@@ -157,9 +198,17 @@ func (c *K8sControlPlane) VerifyKumaCtl() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaREST() error {
+	if c.mode == core.Global {
+		return nil
+	}
+
+	if c.portFwd.localAPIPort == 0 {
+		return errors.Errorf("API port not forwarded")
+	}
+
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
-		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localCPAPIPort), 10),
+		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10),
 		&tls.Config{},
 		defaultRetries,
 		defaultTimeout,
@@ -170,9 +219,17 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
+	if c.mode == core.Local {
+		return nil
+	}
+
+	if c.portFwd.localGUIPort == 0 {
+		return errors.Errorf("API port not forwarded")
+	}
+
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
-		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localCPGUIPort), 10),
+		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localGUIPort), 10),
 		&tls.Config{},
 		3,
 		defaultTimeout,
@@ -202,15 +259,16 @@ func (c *K8sControlPlane) GetKumaCPLogs() (string, error) {
 	return logs, nil
 }
 
-func (c *K8sControlPlane) FinalizeAdd(apiPort uint32, guiPort uint32) error {
-	if c.mode == core.Local {
+func (c *K8sControlPlane) FinalizeAdd() error {
+	if err := c.PortForwardKumaCP(); err != nil {
+		return err
+	}
+
+	if c.mode == core.Global {
 		return nil
 	}
 
-	c.portFwd.localCPAPIPort = apiPort
-	c.portFwd.localCPGUIPort = guiPort
-
-	kumacpURL := "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localCPAPIPort), 10)
+	kumacpURL := "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)
 
 	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
 }
@@ -235,4 +293,15 @@ func (c *K8sControlPlane) InjectDNS() error {
 	return k8s.KubectlApplyFromStringE(c.t,
 		c.GetKubectlOptions(),
 		yaml)
+}
+
+// A naive implementation to find the URL where Local CP exposes its API
+func (c *K8sControlPlane) GetHostAPI() string {
+	pod := c.GetKumaCPPods()[0]
+
+	return "http://" + pod.Status.HostIP + ":5681"
+}
+
+func (c *K8sControlPlane) GetGlobaStatusAPI() string {
+	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localGlobalCPStatusPort), 10)
 }

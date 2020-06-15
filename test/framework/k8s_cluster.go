@@ -195,7 +195,7 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	return str, nil
 }
 
-func (c *K8sCluster) DeployKuma(mode ...string) error {
+func (c *K8sCluster) DeployKuma(mode ...string) (ControlPlane, error) {
 	if len(mode) == 0 {
 		mode = []string{core.Standalone}
 	}
@@ -203,14 +203,14 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 		c, c.loPort, c.hiPort, c.verbose)
 	yaml, err := c.controlplane.InstallCP()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = k8s.KubectlApplyFromStringE(c.t,
 		c.GetKubectlOptions(),
 		yaml)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	k8s.WaitUntilNumPodsCreated(c.t,
@@ -224,7 +224,7 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 
 	kumacpPods := c.controlplane.GetKumaCPPods()
 	if len(kumacpPods) != 1 {
-		return errors.Wrapf(err, "Kuma CP pods: %d", len(kumacpPods))
+		return nil, errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
 	}
 
 	k8s.WaitUntilPodAvailable(c.t,
@@ -233,7 +233,69 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 		defaultRetries,
 		defaultTimeout)
 
-	return c.controlplane.FinalizeAdd(c.controlplane.PortForwardKumaCP())
+	err = c.controlplane.FinalizeAdd()
+	if err != nil {
+		return nil, err
+	}
+
+	return c.controlplane, nil
+}
+
+func (c *K8sCluster) RestartKuma() error {
+	c.CleanupPortForwards()
+
+	kumacpPods := c.controlplane.GetKumaCPPods()
+	if len(kumacpPods) != 1 {
+		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
+	}
+	oldPod := kumacpPods[0]
+
+	// creates the clientset
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	if err != nil {
+		return errors.Wrapf(err, "error in getting access to K8S")
+	}
+
+	// delete the pod
+	err = clientset.CoreV1().Pods(oldPod.Namespace).Delete(context.TODO(), oldPod.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+
+	// wait for pod to terminate
+	for {
+		_, err := clientset.CoreV1().Pods(oldPod.Namespace).Get(context.TODO(), oldPod.Name, metav1.GetOptions{})
+		if err != nil {
+			break
+		}
+	}
+
+	k8s.WaitUntilNumPodsCreated(c.t,
+		c.GetKubectlOptions(kumaNamespace),
+		metav1.ListOptions{
+			LabelSelector: "app=" + kumaServiceName,
+		},
+		1,
+		defaultRetries,
+		defaultTimeout)
+
+	kumacpPods = c.controlplane.GetKumaCPPods()
+	if len(kumacpPods) != 1 {
+		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
+	}
+
+	k8s.WaitUntilPodAvailable(c.t,
+		c.GetKubectlOptions(kumaNamespace),
+		kumacpPods[0].Name,
+		defaultRetries,
+		defaultTimeout)
+
+	err = c.controlplane.FinalizeAdd()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *K8sCluster) VerifyKuma() error {
@@ -267,10 +329,6 @@ func (c *K8sCluster) DeleteKuma() error {
 	c.WaitNamespaceDelete(kumaNamespace)
 
 	return err
-}
-
-func (c *K8sCluster) GetKumaCPLogs() (string, error) {
-	return c.controlplane.GetKumaCPLogs()
 }
 
 func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {

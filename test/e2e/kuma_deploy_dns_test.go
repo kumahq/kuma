@@ -29,7 +29,7 @@ var _ = Describe("Test DNS", func() {
 		err = clusters.LabelNamespaceForSidecarInjection("kuma-test")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.DeployKuma()
+		_, err = clusters.DeployKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = clusters.VerifyKuma()

@@ -1,11 +1,15 @@
 package e2e_test
 
 import (
+	"encoding/json"
+	"net/http"
+
+	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/pkg/config/core"
-
+	"github.com/Kong/kuma/pkg/globalcp"
 	"github.com/Kong/kuma/test/framework"
 )
 
@@ -38,10 +42,10 @@ var _ = Describe("Test Local and Global", func() {
 		c1 := clusters.GetCluster(framework.Kuma1)
 		c2 := clusters.GetCluster(framework.Kuma2)
 
-		err := c1.DeployKuma(core.Global)
+		global, err := c1.DeployKuma(core.Global)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = c2.DeployKuma(core.Local)
+		local, err := c2.DeployKuma(core.Local)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -52,15 +56,34 @@ var _ = Describe("Test Local and Global", func() {
 		// when
 		err = c2.VerifyKuma()
 		// then
-		Expect(err).To(HaveOccurred())
+		Expect(err).ToNot(HaveOccurred())
+
+		err = global.AddLocalCP(local.GetName(), local.GetHostAPI())
+		Expect(err).ToNot(HaveOccurred())
+
+		err = c1.RestartKuma()
+		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		logs1, err := c1.GetKumaCPLogs()
+		logs1, err := global.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))
 
-		logs2, err := c2.GetKumaCPLogs()
+		// and
+		logs2, err := local.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs2).To(ContainSubstring("\"mode\":\"local\""))
+
+		status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
+		Expect(status).To(Equal(http.StatusOK))
+		Expect(func() bool {
+			localCPMap := globalcp.LocalCPMap{}
+			_ = json.Unmarshal([]byte(response), &localCPMap)
+			if localCP, ok := localCPMap[local.GetName()]; ok {
+				return localCP.Active
+			}
+			return false
+		}()).To(BeTrue())
+
 	})
 })

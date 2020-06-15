@@ -26,7 +26,7 @@ var _ = Describe("Test App deployment", func() {
 		err = clusters.LabelNamespaceForSidecarInjection("kuma-test")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.DeployKuma()
+		_, err = clusters.DeployKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = clusters.VerifyKuma()

@@ -27,8 +27,8 @@ const (
 	Kuma2 = "kuma-2"
 	Kuma3 = "kuma-3"
 
-	kumaCPAPIPort       = 5681
-	kumaCPGUIPort       = 5683
-	kumaCPAPIPortFwdLow = 32000 + kumaCPAPIPort
-	kumaCPAPIPortFwdHi  = 42000 + kumaCPAPIPort
+	globalCPStatusPort   = 5656
+	kumaCPAPIPort        = 5681
+	kumaCPGUIPort        = 5683
+	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 )

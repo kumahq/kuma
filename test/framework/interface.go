@@ -11,10 +11,10 @@ type Clusters interface {
 }
 
 type Cluster interface {
-	DeployKuma(mode ...string) error
+	DeployKuma(mode ...string) (ControlPlane, error)
 	VerifyKuma() error
+	RestartKuma() error
 	DeleteKuma() error
-	GetKumaCPLogs() (string, error)
 	InjectDNS() error
 
 	// K8s
