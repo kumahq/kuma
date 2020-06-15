@@ -3,6 +3,8 @@ package runtime
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/dns-server/resolver"
+
 	"github.com/Kong/kuma/pkg/core/ca"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -33,6 +35,7 @@ type RuntimeContext interface {
 	SecretManager() secret_manager.SecretManager
 	CaManagers() ca.Managers
 	Extensions() context.Context
+	DNSResolver() resolver.DNSResolver
 }
 
 var _ Runtime = &runtime{}
@@ -64,6 +67,7 @@ type runtimeContext struct {
 	cam ca.Managers
 	xds core_xds.XdsContext
 	ext context.Context
+	dns resolver.DNSResolver
 }
 
 func (rc *runtimeContext) CaManagers() ca.Managers {
@@ -89,4 +93,8 @@ func (rc *runtimeContext) SecretManager() secret_manager.SecretManager {
 }
 func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext
+}
+
+func (rc *runtimeContext) DNSResolver() resolver.DNSResolver {
+	return rc.dns
 }

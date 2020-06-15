@@ -1,7 +1,11 @@
 package bootstrap
 
 import (
+	"strconv"
+
 	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/dns-server/resolver"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
@@ -38,6 +42,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeDiscovery(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeDNSResolver(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -252,6 +259,21 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	} else {
 		builder.WithReadOnlyResourceManager(customizableManager)
 	}
+}
+
+func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	dnsResolver, err := resolver.NewSimpleDNSResolver(
+		cfg.DNSServer.Domain,
+		"0.0.0.0",
+		strconv.FormatUint(uint64(cfg.DNSServer.Port), 10),
+		cfg.DNSServer.CIDR)
+	if err != nil {
+		return err
+	}
+
+	builder.WithDNSResolver(dnsResolver)
+
+	return nil
 }
 
 func customizeRuntime(rt core_runtime.Runtime) error {

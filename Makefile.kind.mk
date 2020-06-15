@@ -15,6 +15,9 @@ CI_KUBERNETES_VERSION ?= v1.18.2@sha256:7b27a6d0f2517ff88ba444025beae41491b016bc
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 
+KUMA_MODE ?= standalone
+KUMA_NAMESPACE ?= kuma-system
+
 .PHONY: ${KIND_KUBECONFIG_DIR}
 ${KIND_KUBECONFIG_DIR}:
 	@mkdir -p ${KIND_KUBECONFIG_DIR}
@@ -70,15 +73,23 @@ kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd 
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load
-	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
+	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
 	@until \
     	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
     do \
     	echo "Waiting for the cluster to come up" && sleep 1; \
     done
+
+.PHONY: kind/deploy/kuma/global
+kind/deploy/kuma/global: KUMA_MODE=global
+kind/deploy/kuma/global: kind/deploy/kuma
+
+.PHONY: kind/deploy/kuma/local
+kind/deploy/kuma/local: KUMA_MODE=local
+kind/deploy/kuma/local: kind/deploy/kuma
 
 .PHONY: kind/deploy/metrics
 kind/deploy/metrics: build/kumactl

@@ -197,6 +197,7 @@ Usage:
 
 Available Commands:
   control-plane Install Kuma Control Plane on Kubernetes
+  dns           Install DNS to Kubernetes
   ingress       Install Ingress on Kubernetes
   metrics       Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
   tracing       Install Tracing backend in Kubernetes cluster (Jaeger)

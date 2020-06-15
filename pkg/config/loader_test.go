@@ -205,6 +205,9 @@ guiServer:
   port: 8888
   apiServerUrl: http://localhost:1234
 mode: standalone
+dnsServer:
+  port: 15653
+  CIDR: 127.1.0.0/16
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -258,6 +261,8 @@ mode: standalone
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                          "https://kuma,https://someapi",
 				"KUMA_GUI_SERVER_PORT":                                          "8888",
 				"KUMA_GUI_SERVER_API_SERVER_URL":                                "http://localhost:1234",
+				"KUMA_DNS_SERVER_PORT":                                          "15653",
+				"KUMA_DNS_CIDR":                                                 "127.1.0.0/16",
 			},
 			yamlFileConfig: "",
 		}),

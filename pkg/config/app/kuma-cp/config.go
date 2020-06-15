@@ -7,6 +7,7 @@ import (
 	api_server "github.com/Kong/kuma/pkg/config/api-server"
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
+	dns_server "github.com/Kong/kuma/pkg/config/dns-server"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/config/mads"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
@@ -118,6 +119,8 @@ type Config struct {
 	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer"`
 	// Kuma Cp Mode
 	Mode core.CpMode `yaml:"mode"`
+	// DNS Server Config
+	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer"`
 }
 
 func (c *Config) Sanitize() {
@@ -134,6 +137,7 @@ func (c *Config) Sanitize() {
 	c.Metrics.Sanitize()
 	c.Defaults.Sanitize()
 	c.GuiServer.Sanitize()
+	c.DNSServer.Sanitize()
 }
 
 func DefaultConfig() Config {
@@ -165,30 +169,52 @@ name: default
 		General:   DefaultGeneralConfig(),
 		GuiServer: gui_server.DefaultGuiServerConfig(),
 		Mode:      core.Standalone,
+		DNSServer: dns_server.DefaultDNSServerConfig(),
 	}
 }
 
 func (c *Config) Validate() error {
-	if err := c.XdsServer.Validate(); err != nil {
-		return errors.Wrap(err, "Xds Server validation failed")
+	if err := core.ValidateCpMode(c.Mode); err != nil {
+		return err
 	}
-	if err := c.BootstrapServer.Validate(); err != nil {
-		return errors.Wrap(err, "Bootstrap Server validation failed")
-	}
-	if err := c.SdsServer.Validate(); err != nil {
-		return errors.Wrap(err, "SDS Server validation failed")
-	}
-	if err := c.DataplaneTokenServer.Validate(); err != nil {
-		return errors.Wrap(err, "Dataplane Token Server validation failed")
-	}
-	if err := c.MonitoringAssignmentServer.Validate(); err != nil {
-		return errors.Wrap(err, "Monitoring Assignment Server validation failed")
+	switch c.Mode {
+	case core.Global:
+		if err := c.GuiServer.Validate(); err != nil {
+			return errors.Wrap(err, "GuiServer validation failed")
+		}
+	case core.Standalone:
+		if err := c.GuiServer.Validate(); err != nil {
+			return errors.Wrap(err, "GuiServer validation failed")
+		}
+		fallthrough
+	case core.Local:
+		if err := c.XdsServer.Validate(); err != nil {
+			return errors.Wrap(err, "Xds Server validation failed")
+		}
+		if err := c.BootstrapServer.Validate(); err != nil {
+			return errors.Wrap(err, "Bootstrap Server validation failed")
+		}
+		if err := c.SdsServer.Validate(); err != nil {
+			return errors.Wrap(err, "SDS Server validation failed")
+		}
+		if err := c.DataplaneTokenServer.Validate(); err != nil {
+			return errors.Wrap(err, "Dataplane Token Server validation failed")
+		}
+		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
+			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
+		}
+		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
+			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
+		}
+		if err := c.Runtime.Validate(c.Environment); err != nil {
+			return errors.Wrap(err, "Runtime validation failed")
+		}
+		if err := c.Metrics.Validate(); err != nil {
+			return errors.Wrap(err, "Metrics validation failed")
+		}
 	}
 	if err := c.AdminServer.Validate(); err != nil {
 		return errors.Wrap(err, "Admin Server validation failed")
-	}
-	if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
-		return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
 	}
 	if err := c.Store.Validate(); err != nil {
 		return errors.Wrap(err, "Store validation failed")
@@ -196,20 +222,11 @@ func (c *Config) Validate() error {
 	if err := c.ApiServer.Validate(); err != nil {
 		return errors.Wrap(err, "ApiServer validation failed")
 	}
-	if err := c.Runtime.Validate(c.Environment); err != nil {
-		return errors.Wrap(err, "Runtime validation failed")
-	}
-	if err := c.Metrics.Validate(); err != nil {
-		return errors.Wrap(err, "Metrics validation failed")
-	}
 	if err := c.Defaults.Validate(); err != nil {
 		return errors.Wrap(err, "Defaults validation failed")
 	}
-	if err := c.GuiServer.Validate(); err != nil {
-		return errors.Wrap(err, "GuiServer validation failed")
-	}
-	if err := core.ValidateCpMode(c.Mode); err != nil {
-		return err
+	if err := c.DNSServer.Validate(); err != nil {
+		return errors.Wrap(err, "DNSServer validation failed")
 	}
 	return nil
 }

@@ -72,6 +72,8 @@ runtime:
       certDir: %s
 guiServer:
   port: 0
+dnsServer:
+  port: 0
 `,
 			admissionServerPort,
 			filepath.Join("testdata"))

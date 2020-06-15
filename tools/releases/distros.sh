@@ -12,7 +12,7 @@ DISTRIBUTIONS=(debian:linux ubuntu:linux rhel:linux centos:linux darwin:darwin)
 BINTRAY_ENDPOINT="https://api.bintray.com/"
 BINTRAY_SUBJECT="kong"
 [ -z "$BINTRAY_REPOSITORY" ] && BINTRAY_REPOSITORY="kuma"
-ENVOY_VERSION=1.14.1
+ENVOY_VERSION=1.14.2
 
 function msg_green {
   builtin echo -en "\033[1;32m"

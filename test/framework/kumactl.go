@@ -21,6 +21,7 @@ type KumactlOptions struct {
 	Kumactl    string
 	ConfigPath string
 	Verbose    bool
+	Env        map[string]string
 }
 
 func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*KumactlOptions, error) {
@@ -28,7 +29,7 @@ func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*Kumact
 
 	_, err := os.Stat(kumactl)
 	if kumactl == "" || os.IsNotExist(err) {
-		return nil, errors.Wrapf(err, "unable to find kumactl, please supply a valid KUMACTL environment variable")
+		return nil, errors.Wrapf(err, "unable to find kumactl, please supply a valid KUMACTLBIN environment variable")
 	}
 
 	configPath := os.ExpandEnv(fmt.Sprintf(defaultKumactlConfig, cpname))
@@ -39,6 +40,7 @@ func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*Kumact
 		Kumactl:    kumactl,
 		ConfigPath: configPath,
 		Verbose:    verbose,
+		Env:        map[string]string{},
 	}, nil
 }
 
@@ -61,6 +63,7 @@ func (o *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (
 	command := shell.Command{
 		Command: o.Kumactl,
 		Args:    cmdArgs,
+		Env:     o.Env,
 	}
 
 	if !verbose {
@@ -121,6 +124,16 @@ func (o *KumactlOptions) KumactlInstallCP(mode ...string) (string, error) {
 		args...)
 }
 
+func (o *KumactlOptions) KumactlInstallDNS() (string, error) {
+	args := []string{
+		"install", "dns",
+	}
+
+	return o.RunKumactlAndGetOutputV(
+		false, // silence the log output of Install
+		args...)
+}
+
 func (o *KumactlOptions) KumactlInstallMetrics() (string, error) {
 	return o.RunKumactlAndGetOutput("install", "metrics")
 }
@@ -130,7 +143,7 @@ func (o *KumactlOptions) KumactlInstallTracing() (string, error) {
 }
 
 func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
-	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", defaultRetries, defaultTiemout,
+	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", defaultRetries, defaultTimeout,
 		func() (string, error) {
 			err := o.RunKumactl(
 				"config", "control-planes", "add",

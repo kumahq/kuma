@@ -14,7 +14,7 @@ const (
 
 	maxClusters    = 3
 	defaultRetries = 30
-	defaultTiemout = 3 * time.Second
+	defaultTimeout = 3 * time.Second
 
 	kumaNamespace   = "kuma-system"
 	kumaServiceName = "kuma-control-plane"
@@ -28,6 +28,7 @@ const (
 	Kuma3 = "kuma-3"
 
 	kumaCPAPIPort       = 5681
+	kumaCPGUIPort       = 5683
 	kumaCPAPIPortFwdLow = 32000 + kumaCPAPIPort
 	kumaCPAPIPortFwdHi  = 42000 + kumaCPAPIPort
 )

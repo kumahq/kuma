@@ -3,6 +3,8 @@ package runtime
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/dns-server/resolver"
+
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -25,6 +27,7 @@ type BuilderContext interface {
 	SecretManager() secret_manager.SecretManager
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
+	DNSResolver() resolver.DNSResolver
 }
 
 var _ BuilderContext = &Builder{}
@@ -41,6 +44,7 @@ type Builder struct {
 	xds core_xds.XdsContext
 	dsl datasource.Loader
 	ext context.Context
+	dns resolver.DNSResolver
 }
 
 func BuilderFor(cfg kuma_cp.Config) *Builder {
@@ -101,6 +105,11 @@ func (b *Builder) WithExtensions(ext context.Context) *Builder {
 	return b
 }
 
+func (b *Builder) WithDNSResolver(dns resolver.DNSResolver) *Builder {
+	b.dns = dns
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -126,6 +135,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.ext == nil {
 		return nil, errors.Errorf("Extensions have been misconfigured")
 	}
+	if b.dns == nil {
+		return nil, errors.Errorf("DNS has been misconfigured")
+	}
 	return &runtime{
 		RuntimeInfo: &runtimeInfo{
 			instanceId: core.NewUUID(),
@@ -138,6 +150,7 @@ func (b *Builder) Build() (Runtime, error) {
 			cam: b.cam,
 			xds: b.xds,
 			ext: b.ext,
+			dns: b.dns,
 		},
 		Manager: b.cm,
 	}, nil
@@ -172,4 +185,7 @@ func (b *Builder) DataSourceLoader() datasource.Loader {
 }
 func (b *Builder) Extensions() context.Context {
 	return b.ext
+}
+func (b *Builder) DNSResolver() resolver.DNSResolver {
+	return b.dns
 }

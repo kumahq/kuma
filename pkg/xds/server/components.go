@@ -31,7 +31,18 @@ var (
 	xdsServerLog = core.Log.WithName("xds-server")
 )
 
+func SetupDiagnosticsServer(rt core_runtime.Runtime) error {
+	return rt.Add(
+		// diagnostics server
+		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort},
+	)
+}
+
 func SetupServer(rt core_runtime.Runtime) error {
+	err := SetupDiagnosticsServer(rt)
+	if err != nil {
+		return err
+	}
 	reconciler := DefaultReconciler(rt)
 
 	metadataTracker := NewDataplaneMetadataTracker()
@@ -52,8 +63,6 @@ func SetupServer(rt core_runtime.Runtime) error {
 	return rt.Add(
 		// xDS gRPC API
 		&grpcServer{srv, rt.Config().XdsServer.GrpcPort, rt.Config().XdsServer.TlsCertFile, rt.Config().XdsServer.TlsKeyFile},
-		// diagnostics server
-		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort},
 		// bootstrap server
 		&xds_bootstrap.BootstrapServer{
 			Port:      rt.Config().BootstrapServer.Port,

@@ -667,6 +667,7 @@ function _kumactl_install {
   cmnds)
     commands=(
       "control-plane:Install Kuma Control Plane on Kubernetes"
+      "dns:Install DNS to Kubernetes"
       "ingress:Install Ingress on Kubernetes"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
       "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
@@ -678,6 +679,9 @@ function _kumactl_install {
   case "$words[1]" in
   control-plane)
     _kumactl_install_control-plane
+    ;;
+  dns)
+    _kumactl_install_dns
     ;;
   ingress)
     _kumactl_install_ingress
@@ -709,6 +713,13 @@ function _kumactl_install_control-plane {
     '--namespace[namespace to install Kuma Control Plane to]:' \
     '--sds-tls-cert[TLS certificate for the SDS server]:' \
     '--sds-tls-key[TLS key for the SDS server]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_dns {
+  _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
