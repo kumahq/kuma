@@ -74,16 +74,19 @@ var _ = Describe("Test Local and Global", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs2).To(ContainSubstring("\"mode\":\"local\""))
 
+		// when
 		status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
+		// then
 		Expect(status).To(Equal(http.StatusOK))
-		Expect(func() bool {
-			localCPMap := globalcp.LocalCPMap{}
-			_ = json.Unmarshal([]byte(response), &localCPMap)
-			if localCP, ok := localCPMap[local.GetName()]; ok {
-				return localCP.Active
-			}
-			return false
-		}()).To(BeTrue())
+
+		// when
+		localCPMap := globalcp.LocalCPMap{}
+		_ = json.Unmarshal([]byte(response), &localCPMap)
+		// then
+		Expect(localCPMap).To(HaveKey(local.GetName()))
+		// and
+		Expect(localCPMap[local.GetName()].Active).To(BeTrue())
+
 
 	})
 })
