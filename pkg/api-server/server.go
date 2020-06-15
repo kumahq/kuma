@@ -29,6 +29,10 @@ type ApiServer struct {
 	server *http.Server
 }
 
+func (a *ApiServer) NeedLeaderElection() bool {
+	return false
+}
+
 func (a *ApiServer) Address() string {
 	return a.server.Addr
 }

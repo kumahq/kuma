@@ -28,6 +28,10 @@ type (
 	}
 )
 
+func (d *SimpleDNSResolver) NeedLeaderElection() bool {
+	return false
+}
+
 func NewSimpleDNSResolver(domain, ip, port, cidr string) (DNSResolver, error) {
 	resolver := &SimpleDNSResolver{
 		domain:  domain,

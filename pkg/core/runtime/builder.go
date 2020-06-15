@@ -45,6 +45,7 @@ type Builder struct {
 	dsl datasource.Loader
 	ext context.Context
 	dns resolver.DNSResolver
+	*runtimeInfo
 }
 
 func BuilderFor(cfg kuma_cp.Config) *Builder {
@@ -52,6 +53,9 @@ func BuilderFor(cfg kuma_cp.Config) *Builder {
 		cfg: cfg,
 		ext: context.Background(),
 		cam: core_ca.Managers{},
+		runtimeInfo: &runtimeInfo{
+			instanceId: core.NewUUID(),
+		},
 	}
 }
 
@@ -139,9 +143,7 @@ func (b *Builder) Build() (Runtime, error) {
 		return nil, errors.Errorf("DNS has been misconfigured")
 	}
 	return &runtime{
-		RuntimeInfo: &runtimeInfo{
-			instanceId: core.NewUUID(),
-		},
+		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
 			cfg: b.cfg,
 			rm:  b.rm,
