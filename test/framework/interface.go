@@ -28,3 +28,11 @@ type Cluster interface {
 	// Testing
 	GetTesting() testing.TestingT
 }
+
+type ControlPlane interface {
+	GetName() string
+	AddLocalCP(name, url string) error
+	GetKumaCPLogs() (string, error)
+	GetHostAPI() string
+	GetGlobaStatusAPI() string
+}

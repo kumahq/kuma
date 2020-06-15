@@ -22,14 +22,6 @@ import (
 	util_net "github.com/Kong/kuma/pkg/util/net"
 )
 
-type ControlPlane interface {
-	GetName() string
-	AddLocalCP(name, url string) error
-	GetKumaCPLogs() (string, error)
-	GetHostAPI() string
-	GetGlobaStatusAPI() string
-}
-
 type PortFwd struct {
 	lowFwdPort              uint32
 	hiFwdPort               uint32
