@@ -133,16 +133,12 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				}
 
 				if dataplane.Spec.IsIngress() {
-					dataplanes, err := ingress.GetAllDataplanes(rt.ReadOnlyResourceManager())
-					if err != nil {
-						return err
-					}
 					// update Ingress
-					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, dataplanes); err != nil {
+					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, dataplanes.Items); err != nil {
 						return err
 					}
 					destinations := ingress.BuildDestinationMap(dataplane)
-					endpoints := xds_topology.BuildEndpointMap(destinations, dataplanes)
+					endpoints := xds_topology.BuildEndpointMap(destinations, dataplanes.Items)
 					proxy := xds.Proxy{
 						Id:              proxyID,
 						Dataplane:       dataplane,
