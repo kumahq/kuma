@@ -1,7 +1,6 @@
-package globalcp
+package server
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
@@ -17,6 +16,7 @@ var (
 type (
 	GlobalCP interface {
 		Start(<-chan struct{}) error
+		StatusHandler(writer http.ResponseWriter)
 	}
 
 	LocalCP struct {
@@ -29,24 +29,17 @@ type (
 	GlobalCPPoller struct {
 		sync.RWMutex
 		localCPMap LocalCPMap
-		server     *http.Server
 		newTicker  func() *time.Ticker
 	}
 )
 
 const (
-	tickInterval            = 5 * time.Second
-	globalCPStatisticsAddrt = ":5656"
+	tickInterval = 5 * time.Second
 )
 
 func NewGlobalCPPoller(localCPList map[string]string) (GlobalCP, error) {
-	mux := http.NewServeMux()
 	poller := &GlobalCPPoller{
 		localCPMap: LocalCPMap{},
-		server: &http.Server{
-			Addr:    globalCPStatisticsAddrt,
-			Handler: mux,
-		},
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
 		},
@@ -56,7 +49,6 @@ func NewGlobalCPPoller(localCPList map[string]string) (GlobalCP, error) {
 		poller.localCPMap[name] = &LocalCP{URL: url, Active: true}
 	}
 
-	mux.HandleFunc("/", poller.StatusHandler)
 	return poller, nil
 }
 
@@ -67,20 +59,6 @@ func (g *GlobalCPPoller) Start(stop <-chan struct{}) error {
 	// update the status before running the API
 	g.pollLocalCPs()
 
-	errChan := make(chan error)
-	go func() {
-		err := g.server.ListenAndServe()
-		if err != nil {
-			switch err {
-			case http.ErrServerClosed:
-				globalCPLog.Info("Shutting down server")
-			default:
-				globalCPLog.Error(err, "Could not start an HTTP Server")
-				errChan <- err
-			}
-		}
-	}()
-
 	globalCPLog.Info("starting the Global CP polling")
 	for {
 		select {
@@ -88,9 +66,7 @@ func (g *GlobalCPPoller) Start(stop <-chan struct{}) error {
 			g.pollLocalCPs()
 		case <-stop:
 			globalCPLog.Info("Stopping down API Server")
-			return g.server.Shutdown(context.Background())
-		case err := <-errChan:
-			return err
+			return nil
 		}
 	}
 }
@@ -120,7 +96,7 @@ func (g *GlobalCPPoller) pollLocalCPs() {
 	}
 }
 
-func (g *GlobalCPPoller) StatusHandler(writer http.ResponseWriter, request *http.Request) {
+func (g *GlobalCPPoller) StatusHandler(writer http.ResponseWriter) {
 	g.RLock()
 	defer g.RUnlock()
 	writer.WriteHeader(http.StatusOK)

@@ -6,7 +6,8 @@ var _ config.Config = &GlobalCPConfig{}
 
 // Global CP configuration
 type GlobalCPConfig struct {
-	// Registered Loca CPs for this Global CP
+	// Registered Local CP name to sync URL for this Global CP
+	// The sync URL is used in the synchronisation process between Global and Local CPs
 	LocalCPs map[string]string `yaml:"localCPs,omitempty"`
 }
 

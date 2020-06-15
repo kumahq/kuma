@@ -4547,8 +4547,6 @@ spec:
     name: http-api-server
   - port: 5683
     name: gui-server
-  - port: 5656
-    name: globalcp-status
   selector:
     app: kuma-control-plane
 ---
@@ -4596,7 +4594,6 @@ spec:
         ports:
         - containerPort: 5681
         - containerPort: 5683
-        - containerPort: 5656
         livenessProbe:
           httpGet:
             path: /healthy

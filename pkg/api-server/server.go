@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 
+	globalcp "github.com/Kong/kuma/pkg/globalcp/server"
+
 	"github.com/emicklei/go-restful"
 	"github.com/pkg/errors"
 
@@ -51,7 +53,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, globalcp globalcp.GlobalCP, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
@@ -85,6 +87,9 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
 	container.Add(configWs)
+
+	globalcpWs := globalcpWs(globalcp)
+	container.Add(globalcpWs)
 
 	container.Filter(cors.Filter)
 	return &ApiServer{
@@ -172,7 +177,7 @@ func SetupServer(rt runtime.Runtime) error {
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config().ApiServer, &cfg)
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.GlobalCP(), definitions.All, rt.Config().ApiServer, &cfg)
 	if err != nil {
 		return err
 	}

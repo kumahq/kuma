@@ -3,6 +3,8 @@ package runtime
 import (
 	"context"
 
+	globalcp "github.com/Kong/kuma/pkg/globalcp/server"
+
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
 
 	"github.com/pkg/errors"
@@ -28,23 +30,25 @@ type BuilderContext interface {
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
 	DNSResolver() resolver.DNSResolver
+	GlobalCP() globalcp.GlobalCP
 }
 
 var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg kuma_cp.Config
-	cm  component.Manager
-	rs  core_store.ResourceStore
-	rm  core_manager.ResourceManager
-	rom core_manager.ReadOnlyResourceManager
-	sm  secret_manager.SecretManager
-	cam core_ca.Managers
-	xds core_xds.XdsContext
-	dsl datasource.Loader
-	ext context.Context
-	dns resolver.DNSResolver
+	cfg      kuma_cp.Config
+	cm       component.Manager
+	rs       core_store.ResourceStore
+	rm       core_manager.ResourceManager
+	rom      core_manager.ReadOnlyResourceManager
+	sm       secret_manager.SecretManager
+	cam      core_ca.Managers
+	xds      core_xds.XdsContext
+	dsl      datasource.Loader
+	ext      context.Context
+	dns      resolver.DNSResolver
+	globalcp globalcp.GlobalCP
 }
 
 func BuilderFor(cfg kuma_cp.Config) *Builder {
@@ -110,6 +114,11 @@ func (b *Builder) WithDNSResolver(dns resolver.DNSResolver) *Builder {
 	return b
 }
 
+func (b *Builder) WithGlobalCP(globalcp globalcp.GlobalCP) *Builder {
+	b.globalcp = globalcp
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -138,19 +147,23 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.dns == nil {
 		return nil, errors.Errorf("DNS has been misconfigured")
 	}
+	//if b.globalcp == nil {
+	//	return nil, errors.Errorf("Global CP has been misconfigured")
+	//}
 	return &runtime{
 		RuntimeInfo: &runtimeInfo{
 			instanceId: core.NewUUID(),
 		},
 		RuntimeContext: &runtimeContext{
-			cfg: b.cfg,
-			rm:  b.rm,
-			rom: b.rom,
-			sm:  b.sm,
-			cam: b.cam,
-			xds: b.xds,
-			ext: b.ext,
-			dns: b.dns,
+			cfg:      b.cfg,
+			rm:       b.rm,
+			rom:      b.rom,
+			sm:       b.sm,
+			cam:      b.cam,
+			xds:      b.xds,
+			ext:      b.ext,
+			dns:      b.dns,
+			globalcp: b.globalcp,
 		},
 		Manager: b.cm,
 	}, nil
@@ -188,4 +201,7 @@ func (b *Builder) Extensions() context.Context {
 }
 func (b *Builder) DNSResolver() resolver.DNSResolver {
 	return b.dns
+}
+func (b *Builder) GlobalCP() globalcp.GlobalCP {
+	return b.globalcp
 }

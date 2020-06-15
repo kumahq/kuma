@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"strconv"
 
+	globalcp "github.com/Kong/kuma/pkg/globalcp/server"
+
 	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
@@ -45,6 +47,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeDNSResolver(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeGlobalCP(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -273,6 +278,16 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 
 	builder.WithDNSResolver(dnsResolver)
 
+	return nil
+}
+
+func initializeGlobalCP(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	globalcp, err := globalcp.NewGlobalCPPoller(cfg.GlobalCP.LocalCPs)
+	if err != nil {
+		return err
+	}
+
+	builder.WithGlobalCP(globalcp)
 	return nil
 }
 

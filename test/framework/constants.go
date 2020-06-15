@@ -27,7 +27,6 @@ const (
 	Kuma2 = "kuma-2"
 	Kuma3 = "kuma-3"
 
-	globalCPStatusPort   = 5656
 	localCPSyncNodePort  = 30681
 	kumaCPAPIPort        = 5681
 	kumaCPGUIPort        = 5683

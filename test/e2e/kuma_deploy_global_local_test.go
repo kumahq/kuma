@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
+	globalcp "github.com/Kong/kuma/pkg/globalcp/server"
+
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/pkg/config/core"
-	"github.com/Kong/kuma/pkg/globalcp"
 	"github.com/Kong/kuma/test/framework"
 )
 
@@ -86,7 +87,6 @@ var _ = Describe("Test Local and Global", func() {
 		Expect(localCPMap).To(HaveKey(local.GetName()))
 		// and
 		Expect(localCPMap[local.GetName()].Active).To(BeTrue())
-
 
 	})
 })
