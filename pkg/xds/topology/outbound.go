@@ -21,26 +21,23 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 	}
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
-		if len(dataplane.Spec.Networking.Ingress) != 0 {
-			// this is temporary check of presence of 'cluster' tag to avoid taking into account own Ingress
-			if _, ok := dataplane.Spec.Networking.Inbound[0].Tags["cluster"]; ok {
-				for _, ingress := range dataplane.Spec.Networking.GetIngress() {
-					selectors, ok := destinations[ingress.Service]
-					if !ok {
-						continue
-					}
-					tags := mesh_proto.SingleValueTagSet(ingress.Tags).Add(mesh_proto.ServiceTag, ingress.Service)
-					if !selectors.Matches(tags) {
-						continue
-					}
-					outbound[ingress.Service] = append(outbound[ingress.Service], core_xds.Endpoint{
-						Target: dataplane.Spec.Networking.Address,
-						Port:   dataplane.Spec.Networking.Inbound[0].Port,
-						Tags:   tags,
-					})
+		if dataplane.Spec.IsRemoteIngress() && dataplane.Spec.HasAvailableServices() {
+			for _, ingress := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
+				service := ingress.Tags[mesh_proto.ServiceTag]
+				selectors, ok := destinations[service]
+				if !ok {
+					continue
 				}
-				continue
+				if !selectors.Matches(ingress.Tags) {
+					continue
+				}
+				outbound[service] = append(outbound[service], core_xds.Endpoint{
+					Target: dataplane.Spec.Networking.Address,
+					Port:   dataplane.Spec.Networking.Inbound[0].Port,
+					Tags:   ingress.Tags,
+				})
 			}
+			continue
 		}
 		for _, inbound := range dataplane.Spec.Networking.GetInbound() {
 			service := inbound.Tags[mesh_proto.ServiceTag]

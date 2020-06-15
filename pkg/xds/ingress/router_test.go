@@ -14,18 +14,17 @@ var _ = Describe("Ingress BuildDestinationMap", func() {
 		ingress := &mesh.DataplaneResource{
 			Spec: mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
-					Ingress: []*mesh_proto.Dataplane_Networking_Ingress{
-						{
-							Service: "backend",
-							Tags:    map[string]string{"version": "v1", "region": "us"},
-						},
-						{
-							Service: "backend",
-							Tags:    map[string]string{},
-						},
-						{
-							Service: "web",
-							Tags:    map[string]string{"version": "v2", "region": "eu"},
+					Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+						AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+							{
+								Tags: map[string]string{"service": "backend", "version": "v1", "region": "us"},
+							},
+							{
+								Tags: map[string]string{"service": "backend"},
+							},
+							{
+								Tags: map[string]string{"service": "web", "version": "v2", "region": "eu"},
+							},
 						},
 					},
 				},

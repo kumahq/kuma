@@ -111,15 +111,16 @@ var _ = Describe("Dataplane", func() {
             mesh: default
             networking:
                 address: 192.168.0.1
-                ingress: 
-                  - service: backend
-                    tags: 
-                      version: "1"
-                      region: us
-                  - service: web
-                    tags:
-                      version: v2
-                      region: eu
+                ingress:
+                  availableServices:
+                    - tags:
+                        service: backend
+                        version: "1"
+                        region: us
+                    - tags:
+                        service: web
+                        version: v2
+                        region: eu
                 inbound:
                   - port: 10001`,
 		),
@@ -638,14 +639,15 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   address: 192.168.0.1
                   ingress:
-                    - service: backend
-                      tags: 
-                        version: "1"
-                        region: us
-                    - service: web
-                      tags:
-                        version: v2
-                        region: eu
+                    availableServices:
+                      - tags:
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu
                   inbound:
                     - port: 10001
                   outbound:
@@ -664,14 +666,15 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   address: 192.168.0.1
                   ingress:
-                    - service: backend
-                      tags: 
-                        version: "1"
-                        region: us
-                    - service: web
-                      tags:
-                        version: v2
-                        region: eu
+                    availableServices:
+                      - tags:
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu
                   gateway: {}
                   inbound:
                     - port: 10001`,
@@ -688,14 +691,15 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   address: 192.168.0.1
                   ingress:
-                    - service: backend
-                      tags: 
-                        version: "1"
-                        region: us
-                    - service: web
-                      tags:
-                        version: v2
-                        region: eu`,
+                    availableServices:
+                      - tags: 
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu`,
 			expected: `
                 violations:
                 - field: networking
@@ -709,14 +713,15 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   address: 192.168.0.1
                   ingress:
-                    - service: backend
-                      tags: 
-                        version: "1"
-                        region: us
-                    - service: web
-                      tags:
-                        version: v2
-                        region: eu
+                    availableServices:
+                      - tags: 
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu
                   inbound:
                     - port: 10001
                       servicePort: 5050
@@ -726,9 +731,9 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.inbound[0].servicePort
-                  message: doesn't make sense in ingress mode
+                  message: cannot be defined in the ingress mode
                 - field: networking.inbound[0].address
-                  message: doesn't make sense in ingress mode`,
+                  message: cannot be defined in the ingress mode`,
 		}),
 	)
 

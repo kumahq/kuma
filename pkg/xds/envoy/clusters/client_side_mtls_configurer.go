@@ -40,11 +40,7 @@ type clientSideMTLSConfigurer struct {
 }
 
 func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
-	arg := []string{}
-	if c.sni != "" {
-		arg = []string{c.sni}
-	}
-	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata, c.clientService, arg...)
+	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata, c.clientService, c.sni)
 	if err != nil {
 		return err
 	}

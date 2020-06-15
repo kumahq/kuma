@@ -10,7 +10,7 @@ import (
 
 func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
-	if d.Spec.GetNetworking().GetIngress() != nil {
+	if d.Spec.IsIngress() {
 		err.Add(validateIngressNetworking(d.Spec.GetNetworking()))
 	} else {
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
@@ -70,18 +70,19 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 			err.AddViolationAt(p.Field("port"), `port has to be in range of [1, 65535]`)
 		}
 		if inbound.ServicePort != 0 {
-			err.AddViolationAt(p.Field("servicePort"), `doesn't make sense in ingress mode`)
+			err.AddViolationAt(p.Field("servicePort"), `cannot be defined in the ingress mode`)
 		}
 		if inbound.Address != "" {
-			err.AddViolationAt(p.Field("address"), `doesn't make sense in ingress mode`)
+			err.AddViolationAt(p.Field("address"), `cannot be defined in the ingress mode`)
 		}
 		err.AddErrorAt(p.Field("address"), validateTags(inbound.Tags))
 	}
-	for i, ingressInterface := range networking.GetIngress() {
-		if ingressInterface.Service == "" {
-			err.AddViolationAt(path.Field("ingress").Index(i).Field("service"), "cannot be empty")
+	for i, ingressInterface := range networking.GetIngress().GetAvailableServices() {
+		p := path.Field("ingress").Field("availableService").Index(i)
+		if _, ok := ingressInterface.Tags[mesh_proto.ServiceTag]; !ok {
+			err.AddViolationAt(p.Field("tags").Key(mesh_proto.ServiceTag), "cannot be empty")
 		}
-		err.AddErrorAt(path.Field("ingress").Index(i).Field("service"), validateTags(ingressInterface.GetTags()))
+		err.AddErrorAt(p.Field("tags"), validateTags(ingressInterface.GetTags()))
 	}
 	return err
 }

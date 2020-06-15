@@ -6,20 +6,23 @@ import (
 
 	"github.com/pkg/errors"
 
+	kube_core "k8s.io/api/core/v1"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	injector_metadata "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/generator"
-
-	kube_core "k8s.io/api/core/v1"
-	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
 	converterLog = core.Log.WithName("discovery").WithName("k8s").WithName("pod-to-dataplane-converter")
+)
+
+const (
+	ingressPort = 10001
 )
 
 type PodConverter struct {
@@ -100,11 +103,11 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 func (p *PodConverter) IngressFor(pod *kube_core.Pod) *mesh_proto.Dataplane {
 	return &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
-			Ingress: []*mesh_proto.Dataplane_Networking_Ingress{},
+			Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
 			Address: pod.Status.PodIP,
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 				{
-					Port: generator.IngressPort,
+					Port: ingressPort,
 				},
 			},
 		},

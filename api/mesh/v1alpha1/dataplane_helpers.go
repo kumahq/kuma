@@ -351,16 +351,6 @@ func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {
 	return rv
 }
 
-func (t SingleValueTagSet) Add(key, value string) SingleValueTagSet {
-	rv := SingleValueTagSet{
-		key: value,
-	}
-	for k, v := range t {
-		rv[k] = v
-	}
-	return rv
-}
-
 // Set of tags that allows multiple values per key.
 type MultiValueTagSet map[string]map[string]bool
 
@@ -412,6 +402,28 @@ func (d *Dataplane) GetIdentifyingService() string {
 		return services[0]
 	}
 	return ServiceUnknown
+}
+
+func (d *Dataplane) IsIngress() bool {
+	return d.Networking.Ingress != nil
+}
+
+func (d *Dataplane) HasAvailableServices() bool {
+	if !d.IsIngress() {
+		return false
+	}
+	return len(d.Networking.Ingress.AvailableServices) != 0
+}
+
+func (d *Dataplane) IsRemoteIngress() bool {
+	if !d.IsIngress() {
+		return false
+	}
+	// todo: take into account value itself, not just presence of the 'cluster' tag
+	if _, ok := d.Networking.Inbound[0].Tags["cluster"]; ok {
+		return true
+	}
+	return false
 }
 
 func (t MultiValueTagSet) String() string {

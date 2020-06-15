@@ -10,9 +10,9 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 )
 
-type ingressSet []*mesh_proto.Dataplane_Networking_Ingress
+type serviceSet []*mesh_proto.Dataplane_Networking_Ingress_AvailableService
 
-func (set ingressSet) getBy(tags map[string]string) *mesh_proto.Dataplane_Networking_Ingress {
+func (set serviceSet) getBy(tags map[string]string) *mesh_proto.Dataplane_Networking_Ingress_AvailableService {
 	for _, in := range set {
 		if reflect.DeepEqual(in.Tags, tags) {
 			return in
@@ -21,23 +21,34 @@ func (set ingressSet) getBy(tags map[string]string) *mesh_proto.Dataplane_Networ
 	return nil
 }
 
-func GetIngressByDataplanes(others []*core_mesh.DataplaneResource) []*mesh_proto.Dataplane_Networking_Ingress {
-	ingresses := make([]*mesh_proto.Dataplane_Networking_Ingress, 0, len(others))
+func UpdateAvailableServices(ctx context.Context, rm manager.ResourceManager, ingress *core_mesh.DataplaneResource, others []*core_mesh.DataplaneResource) error {
+	availableServices := GetIngressAvailableServices(others)
+	if reflect.DeepEqual(availableServices, ingress.Spec.GetNetworking().GetIngress().GetAvailableServices()) {
+		return nil
+	}
+	ingress.Spec.Networking.Ingress.AvailableServices = availableServices
+	if err := rm.Update(ctx, ingress); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_proto.Dataplane_Networking_Ingress_AvailableService {
+	availableServices := make([]*mesh_proto.Dataplane_Networking_Ingress_AvailableService, 0, len(others))
 	for _, dp := range others {
-		if dp.Spec.GetNetworking().GetIngress() != nil {
+		if dp.Spec.IsIngress() {
 			continue
 		}
 		for _, dpInbound := range dp.Spec.GetNetworking().GetInbound() {
-			if dup := ingressSet(ingresses).getBy(dpInbound.GetTags()); dup != nil {
+			if dup := serviceSet(availableServices).getBy(dpInbound.GetTags()); dup != nil {
 				continue
 			}
-			ingresses = append(ingresses, &mesh_proto.Dataplane_Networking_Ingress{
-				Service: dpInbound.Tags[mesh_proto.ServiceTag],
-				Tags:    mesh_proto.SingleValueTagSet(dpInbound.Tags).Exclude(mesh_proto.ServiceTag),
+			availableServices = append(availableServices, &mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+				Tags: dpInbound.Tags,
 			})
 		}
 	}
-	return ingresses
+	return availableServices
 }
 
 func GetAllDataplanes(resourceManager manager.ReadOnlyResourceManager) ([]*core_mesh.DataplaneResource, error) {

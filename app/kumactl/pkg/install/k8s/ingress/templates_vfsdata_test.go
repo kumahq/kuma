@@ -17,8 +17,8 @@ import (
 var _ = Describe("Templates", func() {
 
 	kumactlSrcDir := filepath.Join("..", "..", "..", "..")
-	kumacniTemplatesDir := ingress.TemplatesDir(kumactlSrcDir)
-	kumacniTemplatesTestEntries := vfsgen.GenerateEntries(kumacniTemplatesDir)
+	ingressTemplatesDir := ingress.TemplatesDir(kumactlSrcDir)
+	ingressTemplatesTestEntries := vfsgen.GenerateEntries(ingressTemplatesDir)
 
 	DescribeTable("generated Go code must be in sync with the original template files",
 		func(given vfsgen.FileTestCase) {
@@ -34,6 +34,6 @@ var _ = Describe("Templates", func() {
 			// and
 			Expect(string(actualContents)).To(Equal(string(given.ExpectedContents)), "generated Go code is no longer in sync with the original template files. To re-generate it, run `make generate/kumactl/install/k8s/ingress`")
 		},
-		kumacniTemplatesTestEntries...,
+		ingressTemplatesTestEntries...,
 	)
 })

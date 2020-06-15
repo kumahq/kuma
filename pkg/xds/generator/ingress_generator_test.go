@@ -65,14 +65,15 @@ var _ = Describe("IngressGenerator", func() {
             networking:
               address: 10.0.0.1
               ingress:
-                - service: backend
-                  tags:
-                    version: v1
-                    region: eu
-                - service: backend
-                  tags:
-                    version: v2
-                    region: us
+                availableServices:
+                  - tags:
+                      service: backend
+                      version: v1
+                      region: eu
+                  - tags:
+                      service: backend
+                      version: v2
+                      region: us
               inbound:
                 - port: 10001
 `,
@@ -104,7 +105,7 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress: []
+              ingress: {}
               inbound:
                 - port: 10001
 `,

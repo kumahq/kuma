@@ -132,14 +132,13 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
-				if dataplane.Spec.GetNetworking().GetIngress() != nil {
+				if dataplane.Spec.IsIngress() {
 					dataplanes, err := ingress.GetAllDataplanes(rt.ReadOnlyResourceManager())
 					if err != nil {
 						return err
 					}
 					// update Ingress
-					dataplane.Spec.Networking.Ingress = ingress.GetIngressByDataplanes(dataplanes)
-					if err := rt.ResourceManager().Update(ctx, dataplane); err != nil {
+					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, dataplanes); err != nil {
 						return err
 					}
 					destinations := ingress.BuildDestinationMap(dataplane)

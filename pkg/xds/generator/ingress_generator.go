@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	model "github.com/Kong/kuma/pkg/core/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
@@ -18,7 +18,6 @@ import (
 
 const (
 	IngressProxy = "ingress-proxy"
-	IngressPort  = 10001
 )
 
 type IngressGenerator struct {
@@ -31,19 +30,22 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 	inbound := ingress.Spec.Networking.Inbound[0]
 	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), inbound.Port)
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder().
-		Configure(envoy_listeners.InboundListenerTLSInspector(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port))
+		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port)).
+		Configure(envoy_listeners.TLSInspector())
 
-	if len(ingress.Spec.Networking.Ingress) == 0 {
+	if !ingress.Spec.HasAvailableServices() {
 		inboundListenerBuilder = inboundListenerBuilder.
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder()))
 	}
-	for _, inbound := range ingress.Spec.Networking.Ingress {
-		for _, perm := range TagPermutations(inbound.Service, inbound.GetTags()) {
+	for _, inbound := range ingress.Spec.GetNetworking().GetIngress().GetAvailableServices() {
+		service := inbound.Tags[mesh_proto.ServiceTag]
+		permutations := TagPermutations(service, mesh_proto.SingleValueTagSet(inbound.GetTags()).Exclude(mesh_proto.ServiceTag))
+		for _, perm := range permutations {
 			inboundListenerBuilder = inboundListenerBuilder.
 				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
 					Configure(envoy_listeners.FilterChainMatch(perm)).
-					Configure(envoy_listeners.TcpProxyWithMetaMatch(inbound.Service, envoy_common.ClusterInfo{
-						Name: inbound.Service,
+					Configure(envoy_listeners.TcpProxyWithMetaMatch(service, envoy_common.ClusterInfo{
+						Name: service,
 						Tags: TagsBySNI(perm),
 					}))))
 		}
@@ -54,7 +56,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 	}
 	resources.AddNamed(listener)
 
-	edsResources, err := generateEds(proxy)
+	edsResources, err := i.generateEds(proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +65,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 	return resources.List(), nil
 }
 
-func generateEds(proxy *model.Proxy) (resources []*model.Resource, _ error) {
+func (_ IngressGenerator) generateEds(proxy *model.Proxy) (resources []*model.Resource, _ error) {
 	for service, endpoints := range proxy.OutboundTargets {
 		edsCluster, err := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.EdsCluster(service)).
@@ -101,13 +103,13 @@ func TagsBySNI(sni string) map[string]string {
 	matches := r.FindStringSubmatch(sni)
 	if len(matches) == 0 {
 		return map[string]string{
-			v1alpha1.ServiceTag: sni,
+			mesh_proto.ServiceTag: sni,
 		}
 	}
 	service, tags := matches[1], matches[2]
 	pairs := strings.Split(tags, ",")
 	rv := map[string]string{
-		v1alpha1.ServiceTag: service,
+		mesh_proto.ServiceTag: service,
 	}
 	for _, pair := range pairs {
 		kv := strings.Split(pair, "=")

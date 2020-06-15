@@ -447,10 +447,11 @@ var _ = Describe("TrafficRoute", func() {
 										Port: 10001,
 									},
 								},
-								Ingress: []*mesh_proto.Dataplane_Networking_Ingress{
-									{
-										Service: "redis",
-										Tags:    map[string]string{"version": "v2", "region": "eu"},
+								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+										{
+											Tags: map[string]string{"service": "redis", "version": "v2", "region": "eu"},
+										},
 									},
 								},
 							},

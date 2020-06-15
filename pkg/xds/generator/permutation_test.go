@@ -20,15 +20,6 @@ var _ = Describe("Permutation", func() {
 			Expect(actual).To(Equal(given.expected))
 		},
 		Entry("basic", testCase{
-			input: []string{"a", "b", "c", "d"},
-			expected: [][]string{
-				{"a"}, {"b"}, {"c"}, {"d"},
-				{"a", "b"}, {"a", "c"}, {"a", "d"}, {"b", "c"}, {"b", "d"}, {"c", "d"},
-				{"a", "b", "c"}, {"a", "b", "d"}, {"a", "c", "d"}, {"b", "c", "d"},
-				{"a", "b", "c", "d"},
-			},
-		}),
-		Entry("5 items", testCase{
 			input: []string{"a", "b", "c", "d", "e"},
 			expected: [][]string{
 				{"a"},
