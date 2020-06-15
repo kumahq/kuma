@@ -89,41 +89,41 @@ type Reports struct {
 
 type Config struct {
 	// General configuration
-	General *GeneralConfig `yaml:"general"`
+	General *GeneralConfig `yaml:"general,omitempty"`
 	// Environment Type, can be either "kubernetes" or "universal"
-	Environment core.EnvironmentType `yaml:"environment" envconfig:"kuma_environment"`
+	Environment core.EnvironmentType `yaml:"environment,omitempty" envconfig:"kuma_environment"`
 	// Resource Store configuration
-	Store *store.StoreConfig `yaml:"store"`
+	Store *store.StoreConfig `yaml:"store,omitempty"`
 	// Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
-	BootstrapServer *bootstrap.BootstrapServerConfig `yaml:"bootstrapServer"`
+	BootstrapServer *bootstrap.BootstrapServerConfig `yaml:"bootstrapServer,omitempty"`
 	// Envoy XDS server configuration
-	XdsServer *xds.XdsServerConfig `yaml:"xdsServer"`
+	XdsServer *xds.XdsServerConfig `yaml:"xdsServer,omitempty"`
 	// Envoy SDS server configuration
-	SdsServer *sds.SdsServerConfig `yaml:"sdsServer"`
+	SdsServer *sds.SdsServerConfig `yaml:"sdsServer,omitempty"`
 	// Dataplane Token server configuration (DEPRECATED: use adminServer)
-	DataplaneTokenServer *token_server.DataplaneTokenServerConfig `yaml:"dataplaneTokenServer"`
+	DataplaneTokenServer *token_server.DataplaneTokenServerConfig `yaml:"dataplaneTokenServer,omitempty"`
 	// Monitoring Assignment Discovery Service (MADS) server configuration
-	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer"`
+	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer,omitempty"`
 	// Admin server configuration
-	AdminServer *admin_server.AdminServerConfig `yaml:"adminServer"`
+	AdminServer *admin_server.AdminServerConfig `yaml:"adminServer,omitempty"`
 	// API Server configuration
-	ApiServer *api_server.ApiServerConfig `yaml:"apiServer"`
+	ApiServer *api_server.ApiServerConfig `yaml:"apiServer,omitempty"`
 	// Environment-specific configuration
 	Runtime *runtime.RuntimeConfig
 	// Default Kuma entities configuration
-	Defaults *Defaults `yaml:"defaults"`
+	Defaults *Defaults `yaml:"defaults,omitempty"`
 	// Metrics configuration
-	Metrics *Metrics `yaml:"metrics"`
+	Metrics *Metrics `yaml:"metrics,omitempty"`
 	// Reports configuration
-	Reports *Reports `yaml:"reports"`
+	Reports *Reports `yaml:"reports,omitempty"`
 	// GUI Server Config
-	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer"`
+	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer,omitempty"`
 	// Kuma CP Mode
-	Mode core.CpMode `yaml:"mode"`
+	Mode core.CpMode `yaml:"mode,omitempty"`
 	// DNS Server Config
-	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer"`
+	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
 	// Global CP config
-	GlobalCP *globalcp.GlobalCPConfig `yaml:"globalCP"`
+	GlobalCP *globalcp.GlobalCPConfig `yaml:"globalCP,omitempty"`
 }
 
 func (c *Config) Sanitize() {
