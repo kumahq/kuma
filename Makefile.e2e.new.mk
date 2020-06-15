@@ -17,6 +17,10 @@ test/e2e/kind/stop/cluster/$1:
 	KIND_CLUSTER_NAME=$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
 		make kind/stop
+
+.PHONE: kind/load/images/$1
+kind/load/images/$1:
+	KIND_CLUSTER_NAME=$1 make kind/load/images
 endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))

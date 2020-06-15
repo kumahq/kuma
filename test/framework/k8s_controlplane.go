@@ -180,8 +180,8 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 		c.t,
 		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10),
 		&tls.Config{},
-		defaultRetries,
-		defaultTimeout,
+		DefaultRetries,
+		DefaultTimeout,
 		func(statusCode int, body string) bool {
 			return statusCode == http.StatusOK
 		},
@@ -202,7 +202,7 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localGUIPort), 10),
 		&tls.Config{},
 		3,
-		defaultTimeout,
+		DefaultTimeout,
 		func(statusCode int, body string) bool {
 			return statusCode == http.StatusOK
 		},

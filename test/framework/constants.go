@@ -6,15 +6,24 @@ const (
 	Verbose = true
 	Silent  = false
 
+	TestNamespace = "kuma-test"
+
+	Kuma1 = "kuma-1"
+	Kuma2 = "kuma-2"
+	Kuma3 = "kuma-3"
+
+	DefaultRetries = 30
+	DefaultTimeout = 3 * time.Second
+)
+
+const (
 	defaultKumactlConfig         = "${HOME}/.kumactl/%s-config"
 	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-%s-config"
 
 	envKUMACTLBIN  = "KUMACTLBIN"
 	envK8SCLUSTERS = "K8SCLUSTERS"
 
-	maxClusters    = 3
-	defaultRetries = 30
-	defaultTimeout = 3 * time.Second
+	maxClusters = 3
 
 	kumaNamespace   = "kuma-system"
 	kumaServiceName = "kuma-control-plane"
@@ -22,10 +31,6 @@ const (
 	kumaCPImage   = "kuma/kuma-cp"
 	kumaDPImage   = "kuma/kuma-dp"
 	kumaInitImage = "kuma/kuma-init"
-
-	Kuma1 = "kuma-1"
-	Kuma2 = "kuma-2"
-	Kuma3 = "kuma-3"
 
 	localCPSyncNodePort  = 30681
 	kumaCPAPIPort        = 5681
