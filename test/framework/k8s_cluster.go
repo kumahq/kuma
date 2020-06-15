@@ -14,10 +14,12 @@ import (
 
 	"github.com/Kong/kuma/pkg/config/core"
 
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/pkg/errors"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
-	"github.com/gruntwork-io/terratest/modules/k8s"
+	k8s "github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	v1 "k8s.io/api/core/v1"
@@ -44,6 +46,7 @@ type K8sCluster struct {
 	kumactl    *KumactlOptions
 	portFwd    PortFwd
 	verbose    bool
+	clientset  *kubernetes.Clientset
 }
 
 func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
@@ -67,16 +70,16 @@ func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service s
 	k8s.WaitUntilServiceAvailable(c.t,
 		options,
 		service,
-		defaultRetries,
-		defaultTimeout)
+		DefaultRetries,
+		DefaultTimeout)
 
 	return nil
 }
 func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 	retry.DoWithRetry(c.t,
 		"Wait the Kuma Namespace to terminate.",
-		defaultRetries,
-		defaultTimeout,
+		DefaultRetries,
+		DefaultTimeout,
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
@@ -92,8 +95,8 @@ func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 	retry.DoWithRetry(c.t,
 		"Wait the Kuma Namespace to terminate.",
-		defaultRetries,
-		defaultTimeout,
+		DefaultRetries,
+		DefaultTimeout,
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
@@ -218,8 +221,8 @@ func (c *K8sCluster) VerifyKumaREST() error {
 		c.t,
 		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localCPAPIPort), 10),
 		&tls.Config{},
-		defaultRetries,
-		defaultTimeout,
+		DefaultRetries,
+		DefaultTimeout,
 		func(statusCode int, body string) bool {
 			return statusCode == http.StatusOK
 		},
@@ -232,7 +235,7 @@ func (c *K8sCluster) VerifyKumaGUI() error {
 		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localCPGUIPort), 10),
 		&tls.Config{},
 		3,
-		defaultTimeout,
+		DefaultTimeout,
 		func(statusCode int, body string) bool {
 			return statusCode == http.StatusOK
 		},
@@ -295,8 +298,8 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 			LabelSelector: "app=" + kumaServiceName,
 		},
 		1,
-		defaultRetries,
-		defaultTimeout)
+		DefaultRetries,
+		DefaultTimeout)
 
 	kumacpPods := c.GetKumaCPPods()
 	if len(kumacpPods) != 1 {
@@ -306,8 +309,19 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 	k8s.WaitUntilPodAvailable(c.t,
 		c.GetKubectlOptions(kumaNamespace),
 		kumacpPods[0].Name,
-		defaultRetries,
-		defaultTimeout)
+		DefaultRetries,
+		DefaultTimeout)
+
+	_, err = retry.DoWithRetryE(c.t,
+		"get default mesh",
+		DefaultRetries,
+		DefaultTimeout,
+		func() (s string, err error) {
+			return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+		})
+	if err != nil {
+		return err
+	}
 
 	c.portFwd.localCPAPIPort, c.portFwd.localCPGUIPort = c.PortForwardKumaCP()
 
@@ -352,6 +366,10 @@ func (c *K8sCluster) DeleteKuma() error {
 	c.WaitNamespaceDelete(kumaNamespace)
 
 	return err
+}
+
+func (c *K8sCluster) GetKumactlOptions() *KumactlOptions {
+	return c.kumactl
 }
 
 func (c *K8sCluster) GetKumaCPLogs() (string, error) {
@@ -432,7 +450,7 @@ func (c *K8sCluster) LabelNamespaceForSidecarInjection(namespace string) error {
 }
 
 func (c *K8sCluster) DeployApp(namespace, appname string) error {
-	retry.DoWithRetry(c.GetTesting(), "apply "+appname+" svc", defaultRetries, defaultTimeout,
+	retry.DoWithRetry(c.GetTesting(), "apply "+appname+" svc", DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			err := k8s.KubectlApplyE(c.GetTesting(),
 				c.GetKubectlOptions(namespace),
@@ -442,9 +460,9 @@ func (c *K8sCluster) DeployApp(namespace, appname string) error {
 
 	k8s.WaitUntilServiceAvailable(c.GetTesting(),
 		c.GetKubectlOptions(namespace),
-		appname, defaultRetries, defaultTimeout)
+		appname, DefaultRetries, DefaultTimeout)
 
-	retry.DoWithRetry(c.GetTesting(), "apply "+appname, defaultRetries, defaultTimeout,
+	retry.DoWithRetry(c.GetTesting(), "apply "+appname, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			err := k8s.KubectlApplyE(c.GetTesting(),
 				c.GetKubectlOptions(namespace),
@@ -457,7 +475,7 @@ func (c *K8sCluster) DeployApp(namespace, appname string) error {
 		metav1.ListOptions{
 			LabelSelector: "app=" + appname,
 		},
-		1, defaultRetries, defaultTimeout)
+		1, DefaultRetries, DefaultTimeout)
 
 	return nil
 }
