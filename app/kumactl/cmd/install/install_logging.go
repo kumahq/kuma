@@ -1,10 +1,11 @@
 package install
 
 import (
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
+	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s/logging"
 )
