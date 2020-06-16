@@ -235,16 +235,16 @@ func (c *K8sCluster) DeployKuma(mode ...string) (ControlPlane, error) {
 		DefaultRetries,
 		DefaultTimeout)
 
-	_, err = retry.DoWithRetryE(c.t,
-		"get default mesh",
-		DefaultRetries,
-		DefaultTimeout,
-		func() (s string, err error) {
-			return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
-		})
-	if err != nil {
-		return nil, err
-	}
+	//_, err = retry.DoWithRetryE(c.t,
+	//	"get default mesh",
+	//	DefaultRetries,
+	//	DefaultTimeout,
+	//	func() (s string, err error) {
+	//		return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+	//	})
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	err = c.controlplane.FinalizeAdd()
 	if err != nil {
