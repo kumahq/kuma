@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"strconv"
 
-	globalcp "github.com/Kong/kuma/pkg/globalcp/server"
+	clusters "github.com/Kong/kuma/pkg/clusters/server"
 
 	"github.com/pkg/errors"
 
@@ -49,7 +49,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDNSResolver(cfg, builder); err != nil {
 		return nil, err
 	}
-	if err := initializeGlobalCP(cfg, builder); err != nil {
+	if err := initializeClusters(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -281,13 +281,13 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	return nil
 }
 
-func initializeGlobalCP(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	globalcp, err := globalcp.NewGlobalCPPoller(cfg.GlobalCP.LocalCPs)
+func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	clusters, err := clusters.NewClustersStatusPoller(cfg.Clusters)
 	if err != nil {
 		return err
 	}
 
-	builder.WithGlobalCP(globalcp)
+	builder.WithClusters(clusters)
 	return nil
 }
 

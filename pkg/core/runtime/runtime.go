@@ -3,7 +3,7 @@ package runtime
 import (
 	"context"
 
-	globalcp "github.com/Kong/kuma/pkg/globalcp/server"
+	clusters "github.com/Kong/kuma/pkg/clusters/server"
 
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
 
@@ -38,7 +38,7 @@ type RuntimeContext interface {
 	CaManagers() ca.Managers
 	Extensions() context.Context
 	DNSResolver() resolver.DNSResolver
-	GlobalCP() globalcp.GlobalCP
+	Clusters() clusters.ClusterStatusServer
 }
 
 var _ Runtime = &runtime{}
@@ -71,7 +71,7 @@ type runtimeContext struct {
 	xds      core_xds.XdsContext
 	ext      context.Context
 	dns      resolver.DNSResolver
-	globalcp globalcp.GlobalCP
+	clusters clusters.ClusterStatusServer
 }
 
 func (rc *runtimeContext) CaManagers() ca.Managers {
@@ -103,6 +103,6 @@ func (rc *runtimeContext) DNSResolver() resolver.DNSResolver {
 	return rc.dns
 }
 
-func (rc *runtimeContext) GlobalCP() globalcp.GlobalCP {
-	return rc.globalcp
+func (rc *runtimeContext) Clusters() clusters.ClusterStatusServer {
+	return rc.clusters
 }

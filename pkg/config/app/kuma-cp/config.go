@@ -5,10 +5,10 @@ import (
 	"github.com/Kong/kuma/pkg/config"
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	api_server "github.com/Kong/kuma/pkg/config/api-server"
+	"github.com/Kong/kuma/pkg/config/clusters"
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	dns_server "github.com/Kong/kuma/pkg/config/dns-server"
-	"github.com/Kong/kuma/pkg/config/globalcp"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
 	"github.com/Kong/kuma/pkg/config/mads"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
@@ -123,7 +123,7 @@ type Config struct {
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
 	// Global CP config
-	GlobalCP *globalcp.GlobalCPConfig `yaml:"globalCP,omitempty"`
+	Clusters *clusters.ClustersConfig `yaml:"clusters,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -141,7 +141,7 @@ func (c *Config) Sanitize() {
 	c.Defaults.Sanitize()
 	c.GuiServer.Sanitize()
 	c.DNSServer.Sanitize()
-	c.GlobalCP.Sanitize()
+	c.Clusters.Sanitize()
 }
 
 func DefaultConfig() Config {
@@ -174,7 +174,7 @@ name: default
 		GuiServer: gui_server.DefaultGuiServerConfig(),
 		Mode:      core.Standalone,
 		DNSServer: dns_server.DefaultDNSServerConfig(),
-		GlobalCP:  globalcp.DefaultGlobalCPConfig(),
+		Clusters:  clusters.DefaultClustersConfig(),
 	}
 }
 
@@ -233,7 +233,7 @@ func (c *Config) Validate() error {
 	if err := c.DNSServer.Validate(); err != nil {
 		return errors.Wrap(err, "DNSServer validation failed")
 	}
-	if err := c.GlobalCP.Validate(); err != nil {
+	if err := c.Clusters.Validate(); err != nil {
 		return errors.Wrap(err, "Global CP validation failed")
 	}
 	return nil

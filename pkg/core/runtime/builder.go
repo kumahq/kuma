@@ -3,7 +3,7 @@ package runtime
 import (
 	"context"
 
-	globalcp "github.com/Kong/kuma/pkg/globalcp/server"
+	clusters "github.com/Kong/kuma/pkg/clusters/server"
 
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
 
@@ -30,7 +30,7 @@ type BuilderContext interface {
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
 	DNSResolver() resolver.DNSResolver
-	GlobalCP() globalcp.GlobalCP
+	Clusters() clusters.ClusterStatusServer
 }
 
 var _ BuilderContext = &Builder{}
@@ -48,7 +48,7 @@ type Builder struct {
 	dsl      datasource.Loader
 	ext      context.Context
 	dns      resolver.DNSResolver
-	globalcp globalcp.GlobalCP
+	clusters clusters.ClusterStatusServer
 }
 
 func BuilderFor(cfg kuma_cp.Config) *Builder {
@@ -114,8 +114,8 @@ func (b *Builder) WithDNSResolver(dns resolver.DNSResolver) *Builder {
 	return b
 }
 
-func (b *Builder) WithGlobalCP(globalcp globalcp.GlobalCP) *Builder {
-	b.globalcp = globalcp
+func (b *Builder) WithClusters(clusters clusters.ClusterStatusServer) *Builder {
+	b.clusters = clusters
 	return b
 }
 
@@ -160,7 +160,7 @@ func (b *Builder) Build() (Runtime, error) {
 			xds:      b.xds,
 			ext:      b.ext,
 			dns:      b.dns,
-			globalcp: b.globalcp,
+			clusters: b.clusters,
 		},
 		Manager: b.cm,
 	}, nil
@@ -199,6 +199,6 @@ func (b *Builder) Extensions() context.Context {
 func (b *Builder) DNSResolver() resolver.DNSResolver {
 	return b.dns
 }
-func (b *Builder) GlobalCP() globalcp.GlobalCP {
-	return b.globalcp
+func (b *Builder) Clusters() clusters.ClusterStatusServer {
+	return b.clusters
 }

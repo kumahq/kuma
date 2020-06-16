@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/Kong/kuma/pkg/clusters"
 	dns_server "github.com/Kong/kuma/pkg/dns-server"
-	"github.com/Kong/kuma/pkg/globalcp"
 
 	api_server "github.com/Kong/kuma/pkg/api-server"
 
@@ -104,7 +104,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up GUI server")
 					return err
 				}
-				if err := globalcp.SetupServer(rt); err != nil {
+				if err := clusters.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Global CP server")
 					return err
 				}

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	globalcp "github.com/Kong/kuma/pkg/globalcp/server"
+	clusters_server "github.com/Kong/kuma/pkg/clusters/server"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	. "github.com/onsi/ginkgo"
@@ -59,7 +59,7 @@ var _ = Describe("Test Local and Global", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.AddLocalCP(local.GetName(), local.GetHostAPI())
+		err = global.AddCluster(local.GetName(), local.GetHostAPI())
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c1.RestartKuma()
@@ -81,12 +81,19 @@ var _ = Describe("Test Local and Global", func() {
 		Expect(status).To(Equal(http.StatusOK))
 
 		// when
-		localCPMap := globalcp.LocalCPMap{}
-		_ = json.Unmarshal([]byte(response), &localCPMap)
+		clustersStatus := clusters_server.Clusters{}
+		_ = json.Unmarshal([]byte(response), &clustersStatus)
 		// then
-		Expect(localCPMap).To(HaveKey(local.GetName()))
-		// and
-		Expect(localCPMap[local.GetName()].Active).To(BeTrue())
+
+		found := false
+		for _, cluster := range clustersStatus {
+			if cluster.URL == local.GetHostAPI() {
+				Expect(cluster.Active).To(BeTrue())
+				found = true
+				break
+			}
+		}
+		Expect(found).To(BeTrue())
 
 	})
 })

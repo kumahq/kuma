@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Kong/kuma/pkg/config/globalcp"
+	"github.com/Kong/kuma/pkg/config/clusters"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -77,7 +77,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) AddLocalCP(name, url string) error {
+func (c *K8sControlPlane) AddCluster(name, url string) error {
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
 		c.GetKubectlOptions())
 	if err != nil {
@@ -95,13 +95,18 @@ func (c *K8sControlPlane) AddLocalCP(name, url string) error {
 		return err
 	}
 
-	if cfg.GlobalCP == nil {
-		cfg.GlobalCP = &globalcp.GlobalCPConfig{
-			LocalCPs: map[string]string{},
+	if cfg.Clusters == nil {
+		cfg.Clusters = &clusters.ClustersConfig{
+			Clusters: []*clusters.ClusterConfig{},
 		}
 	}
 
-	cfg.GlobalCP.LocalCPs[name] = url
+	cfg.Clusters.Clusters = append(cfg.Clusters.Clusters, &clusters.ClusterConfig{
+		Local: clusters.EndpointConfig{
+			Address: url,
+		},
+		Ingress: clusters.EndpointConfig{},
+	})
 
 	yamlBytes, err := yaml.Marshal(&cfg)
 	if err != nil {
@@ -269,5 +274,5 @@ func (c *K8sControlPlane) GetHostAPI() string {
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
-	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/globalcp"
+	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/clusters"
 }
