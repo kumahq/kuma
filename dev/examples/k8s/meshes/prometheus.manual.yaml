@@ -8,6 +8,6 @@ spec:
     backends:
       - name: prom-1
         type: prometheus
-        config:
+        conf:
           port: 1234
           path: /non-standard-path

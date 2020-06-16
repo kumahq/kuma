@@ -29,12 +29,13 @@ build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/Kong/
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags)"
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
-GOFLAGS := -mod=mod
+GOFLAGS :=
 GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(GOFLAGS) $(LD_FLAGS)
-GO_RUN := CGO_ENABLED=0 go run $(LD_FLAGS)
+GO_RUN := CGO_ENABLED=0 go run $(GOFLAGS) $(LD_FLAGS)
 GO_TEST := go test $(GOFLAGS) $(LD_FLAGS)
 
-BUILD_DIR ?= build
+TOP := $(shell pwd)
+BUILD_DIR ?= $(TOP)/build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
 
@@ -106,7 +107,8 @@ endif
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 GOLANG_PROTOBUF_VERSION := v1.3.2
-GOLANGCI_LINT_VERSION := v1.21.0
+GOLANGCI_LINT_VERSION := v1.26.0
+GINKGO_VERSION := v1.12.0
 
 CI_KUBEBUILDER_VERSION ?= 2.0.0
 CI_MINIKUBE_VERSION ?= v1.9.2
@@ -188,28 +190,33 @@ protoc/pkg/test/apis/sample/v1alpha1:
 
 protoc/plugins:
 	$(PROTOC_GO) pkg/plugins/ca/provided/config/*.proto
+	$(PROTOC_GO) pkg/plugins/ca/builtin/config/*.proto
 
-# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
 generate/kumactl/install/k8s/control-plane:
-	go generate ./app/kumactl/pkg/install/k8s/control-plane/...
+	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/control-plane/...
 
-# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
+generate/kumactl/install/k8s/ingress:
+	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/ingress/...
+
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
 generate/kumactl/install/k8s/kuma-cni:
-	go generate ./app/kumactl/pkg/install/k8s/kuma-cni/...
+	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/kuma-cni/...
 
-# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
 generate/kumactl/install/k8s/metrics:
-	go generate ./app/kumactl/pkg/install/k8s/metrics/...
+	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/metrics/...
 
-# Notice that this command is not include into `make generate` by intention (since generated code differes between dev host and ci server)
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
 generate/kumactl/install/k8s/tracing:
-	go generate ./app/kumactl/pkg/install/k8s/tracing/...
+	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/tracing/...
 
 generate/kuma-cp/migrations:
-	go generate ./pkg/plugins/resources/postgres/migrations/...
+	GOFLAGS='${GOFLAGS}' go generate ./pkg/plugins/resources/postgres/migrations/...
 
-generate/gui: ## Generate go files with GUI static files to embed it into binary
-	go generate ./app/kuma-ui/pkg/resources/...
+generate/gui: ## Generate gGOFLAGSo files with GUI static files to embed it into binary
+	GOFLAGS='${GOFLAGS}' go generate ./app/kuma-ui/pkg/resources/...
 
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
@@ -226,13 +233,23 @@ vet: ## Dev: Run go vet
 	@# for consistency with `fmt`
 	make vet -C pkg/plugins/resources/k8s/native
 
+.PHONY: tidy
+tidy:
+	@TOP=$(shell pwd) && \
+	for m in . ./api/ ./pkg/plugins/resources/k8s/native; do \
+		cd $$m ; \
+		rm go.sum ; \
+		go mod tidy ; \
+		cd $$TOP; \
+	done
+
 golangci-lint: ## Dev: Runs golangci-lint linter
-	$(GOLANGCI_LINT_DIR)/golangci-lint run -v
+	$(GOLANGCI_LINT_DIR)/golangci-lint run --timeout=10m -v
 
 imports: ## Dev: Runs goimports in order to organize imports
-	goimports -w -local github.com/Kong/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendor/*'`
+	goimports -w -local github.com/Kong/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
 
-check: generate fmt vet docs golangci-lint imports ## Dev: Run code checks (go fmt, go vet, ...)
+check: generate fmt vet docs golangci-lint imports tidy ## Dev: Run code checks (go fmt, go vet, ...)
 	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
@@ -249,12 +266,12 @@ test/kuma: # Dev: Run tests for the module github.com/Kong/kuma
 
 test/api: \
 	MODULE=./api \
-	COVERAGE_PROFILE=../$(BUILD_COVERAGE_DIR)/coverage-api.out
+	COVERAGE_PROFILE=$(BUILD_COVERAGE_DIR)/coverage-api.out
 test/api: test/module
 
 test/k8s: \
 	MODULE=./pkg/plugins/resources/k8s/native \
-	COVERAGE_PROFILE=../../../../../$(BUILD_COVERAGE_DIR)/coverage-k8s.out
+	COVERAGE_PROFILE=$(BUILD_COVERAGE_DIR)/coverage-k8s.out
 test/k8s: test/module
 
 test/module:
@@ -372,18 +389,23 @@ build/kuma-prometheus-sd/linux-amd64:
 docker/build: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-init docker/build/kuma-prometheus-sd ## Dev: Build all Docker images using existing artifacts from build
 
 docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp ## Dev: Build `kuma-cp` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
 docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp ## Dev: Build `kuma-dp` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
 docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl ## Dev: Build `kumactl` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMACTL_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kumactl .
 
 docker/build/kuma-init: ## Dev: Build `kuma-init` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-init .
 
 docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd ## Dev: Build `kuma-prometheus-sd` Docker image using existing artifact
+	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-prometheus-sd .
 
 image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
@@ -467,12 +489,15 @@ print/kubebuilder/test_assets: ## Dev: Print Kubebuilder Environment variables
 	@echo export TEST_ASSET_ETCD=$(TEST_ASSET_ETCD)
 	@echo export TEST_ASSET_KUBECTL=$(TEST_ASSET_KUBECTL)
 
-run/kuma-dp: ## Dev: Run `kuma-dp` locally
+run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
+	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --dataplane=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
+	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token \
 	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
 
 include Makefile.kind.mk
 include Makefile.dev.mk
 include Makefile.e2e.mk
+include Makefile.e2e.new.mk

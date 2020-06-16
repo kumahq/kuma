@@ -85,7 +85,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					"some-service": {
 						Name: "file",
 						Type: mesh_proto.LoggingFileType,
-						Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+						Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 							Path: "/var/log",
 						}),
 					},
@@ -140,7 +140,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					"pass_through": {
 						Name: "file",
 						Type: mesh_proto.LoggingFileType,
-						Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+						Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 							Path: "/var/log",
 						}),
 					},

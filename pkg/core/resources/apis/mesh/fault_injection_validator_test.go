@@ -37,7 +37,7 @@ var _ = Describe("FaultInjection", func() {
                     service: backend
                     protocol: http
                     region: eu
-                    valid: abcd.123-456.under_score_.:80
+                    kuma.io/valid: abcd.123-456.under_score_.:80
                 conf:
                   delay:
                     percentage: 50
@@ -254,9 +254,9 @@ var _ = Describe("FaultInjection", func() {
 				expected: `
                violations:
                - field: sources[0].match["invalidTag"]
-                 message: tag value must consist of alphanumeric characters, dots, dashes and underscores or be "*"
+                 message: tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"
                - field: destinations[0].match["invalidTag"]
-                 message: tag value must consist of alphanumeric characters, dots, dashes and underscores or be "*"`}),
+                 message: tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`}),
 			Entry("tag name: invalid character set", testCase{
 				faultInjection: `
                 sources:
@@ -276,9 +276,9 @@ var _ = Describe("FaultInjection", func() {
 				expected: `
                violations:
                - field: sources[0].match["inv@lidT@g#"]
-                 message: tag name must consist of alphanumeric characters, dots, dashes and underscores
+                 message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores
                - field: destinations[0].match["inv@lidT@g#"]
-                 message: tag name must consist of alphanumeric characters, dots, dashes and underscores`}),
+                 message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`}),
 		)
 	})
 })

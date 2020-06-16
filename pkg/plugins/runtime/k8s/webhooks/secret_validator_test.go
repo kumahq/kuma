@@ -2,20 +2,18 @@ package webhooks_test
 
 import (
 	"context"
-
-	"path/filepath"
+	"fmt"
 
 	"github.com/ghodss/yaml"
 
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	secrets_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
+	core_validators "github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	. "github.com/onsi/ginkgo"
@@ -25,53 +23,51 @@ import (
 
 var _ = Describe("ServiceValidator", func() {
 
-	var decoder *kube_admission.Decoder
-	var testEnv *envtest.Environment
-	var k8sClient client.Client
-
-	BeforeSuite(func() {
-		// setup K8S with Kuma CRDs
-		testEnv = &envtest.Environment{
-			CRDDirectoryPaths: []string{
-				filepath.Join("..", "..", "..", "resources", "k8s", "native", "config", "crd", "bases"),
-			},
-		}
-		cfg, err := testEnv.Start()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(cfg).ToNot(BeNil())
-
-		scheme := kube_runtime.NewScheme()
-		Expect(kube_core.AddToScheme(scheme)).To(Succeed())
-		Expect(mesh_k8s.AddToScheme(scheme)).To(Succeed())
-
-		decoder, err = kube_admission.NewDecoder(scheme)
-		Expect(err).ToNot(HaveOccurred())
-
-		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(k8sClient).ToNot(BeNil())
-
-		// create default mesh
-		mesh := mesh_k8s.Mesh{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name: "default",
-			},
-		}
-		err = k8sClient.Create(context.Background(), &mesh)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
 	type testCase struct {
 		request  string
 		expected string
 	}
 
+	BeforeEach(func() {
+		secret := &kube_core.Secret{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      "secret-in-use",
+				Namespace: "default",
+			},
+			Data: map[string][]byte{
+				"value": []byte("dGVzdAo="),
+			},
+			Type: "system.kuma.io/secret",
+		}
+		err := k8sClient.Create(context.Background(), secret)
+		Expect(err).ToNot(HaveOccurred())
+
+		secret = &kube_core.Secret{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      "secret-not-in-use",
+				Namespace: "default",
+			},
+			Data: map[string][]byte{
+				"value": []byte("dGVzdAo="),
+			},
+			Type: "system.kuma.io/secret",
+		}
+		err = k8sClient.Create(context.Background(), secret)
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		err := k8sClient.DeleteAllOf(context.Background(), &kube_core.Secret{}, kube_client.InNamespace("default"))
+		Expect(err).ToNot(HaveOccurred())
+	})
+
 	DescribeTable("should make a proper admission verdict",
 		func(given testCase) {
 			// given
 			validator := &webhooks.SecretValidator{
-				Decoder: decoder,
-				Client:  k8sClient,
+				Decoder:   decoder,
+				Client:    k8sClient,
+				Validator: &testSecretValidator{},
 			}
 			admissionReview := admissionv1beta1.AdmissionReview{}
 			err := yaml.Unmarshal([]byte(given.request), &admissionReview)
@@ -291,5 +287,107 @@ var _ = Describe("ServiceValidator", func() {
             uid: ""
 `,
 		}),
+		Entry("should not allow deleting secret in use", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Secret
+                version: v1
+              name: secret-in-use
+              namespace: default
+              operation: DELETE
+`,
+			expected: `
+            allowed: false
+            status:
+              code: 422
+              details:
+                causes:
+                - field: name
+                  message: The secret "secret-in-use" that you are trying to remove is currently
+                    in use in Mesh "default" in mTLS backend "ca-1". Please remove the reference
+                    from the "ca-1" backend before removing the secret.
+                  reason: FieldValueInvalid
+                name: secret-in-use
+              message: 'name: The secret "secret-in-use" that you are trying to remove is currently
+                in use in Mesh "default" in mTLS backend "ca-1". Please remove the reference from
+                the "ca-1" backend before removing the secret.'
+              metadata: {}
+              reason: Invalid
+              status: Failure
+            uid: ""`,
+		}),
+		Entry("should not allow deleting secret in use", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Secret
+                version: v1
+              name: secret-in-use
+              namespace: default
+              operation: DELETE
+`,
+			expected: `
+            allowed: false
+            status:
+              code: 422
+              details:
+                causes:
+                - field: name
+                  message: The secret "secret-in-use" that you are trying to remove is currently
+                    in use in Mesh "default" in mTLS backend "ca-1". Please remove the reference
+                    from the "ca-1" backend before removing the secret.
+                  reason: FieldValueInvalid
+                name: secret-in-use
+              message: 'name: The secret "secret-in-use" that you are trying to remove is currently
+                in use in Mesh "default" in mTLS backend "ca-1". Please remove the reference from
+                the "ca-1" backend before removing the secret.'
+              metadata: {}
+              reason: Invalid
+              status: Failure
+            uid: ""`,
+		}),
+		Entry("should not allow deleting secret in use", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Secret
+                version: v1
+              name: secret-not-in-use
+              namespace: default
+              operation: DELETE
+`,
+			expected: `
+            allowed: true
+            status:
+              code: 200
+              metadata: {}
+            uid: ""`,
+		}),
 	)
 })
+
+type testSecretValidator struct {
+}
+
+func (t *testSecretValidator) ValidateDelete(ctx context.Context, secretName string, secretMesh string) error {
+	var verr core_validators.ValidationError
+	if secretName == "secret-in-use" {
+		verr.AddViolation("name", fmt.Sprintf(`The secret %q that you are trying to remove is currently in use in Mesh %q in mTLS backend %q. Please remove the reference from the %q backend before removing the secret.`, secretName, secretMesh, "ca-1", "ca-1"))
+	}
+	return verr.OrNil()
+}
+
+var _ secrets_manager.SecretValidator = &testSecretValidator{}

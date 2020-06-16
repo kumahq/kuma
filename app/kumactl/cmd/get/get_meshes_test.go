@@ -50,7 +50,7 @@ var _ = Describe("kumactl get meshes", func() {
 						{
 							Name: "prometheus-1",
 							Type: mesh_proto.MetricsPrometheusType,
-							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+							Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 								Port: 1234,
 								Path: "/non-standard-path",
 							}),
@@ -58,7 +58,7 @@ var _ = Describe("kumactl get meshes", func() {
 						{
 							Name: "prometheus-2",
 							Type: mesh_proto.MetricsPrometheusType,
-							Config: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+							Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 								Port: 1235,
 								Path: "/non-standard-path",
 							}),
@@ -70,14 +70,14 @@ var _ = Describe("kumactl get meshes", func() {
 						{
 							Name: "logstash",
 							Type: mesh_proto.LoggingTcpType,
-							Config: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+							Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
 								Address: "127.0.0.1:5000",
 							}),
 						},
 						{
 							Name: "file",
 							Type: mesh_proto.LoggingFileType,
-							Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+							Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 								Path: "/tmp/service.log",
 							}),
 						},
@@ -88,14 +88,14 @@ var _ = Describe("kumactl get meshes", func() {
 						{
 							Name: "zipkin-us",
 							Type: mesh_proto.TracingZipkinType,
-							Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+							Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 								Url: "http://zipkin.us:8080/v1/spans",
 							}),
 						},
 						{
 							Name: "zipkin-eu",
 							Type: mesh_proto.TracingZipkinType,
-							Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+							Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 								Url: "http://zipkin.eu:8080/v1/spans",
 							}),
 						},

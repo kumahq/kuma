@@ -33,6 +33,9 @@ func addPodReconciler(mgr kube_ctrl.Manager) error {
 		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
 		Scheme:        mgr.GetScheme(),
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
+		PodConverter: controllers.PodConverter{
+			ServiceGetter: mgr.GetClient(),
+		},
 	}
 	return reconciler.SetupWithManager(mgr)
 }

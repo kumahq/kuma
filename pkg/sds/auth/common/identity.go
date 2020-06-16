@@ -18,9 +18,8 @@ func GetDataplaneIdentity(dataplane *core_mesh.DataplaneResource) (sds_auth.Iden
 	if len(services) == 0 {
 		return sds_auth.Identity{}, errors.Errorf("Dataplane has no services associated with it")
 	}
-	service := services[0]
 	return sds_auth.Identity{
-		Mesh:    dataplane.Meta.GetMesh(),
-		Service: service,
+		Mesh:     dataplane.Meta.GetMesh(),
+		Services: services,
 	}, nil
 }

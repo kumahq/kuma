@@ -1,0 +1,15 @@
+resources:
+  - name: inbound:10.0.0.1:10001
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 10.0.0.1
+          portValue: 10001
+      filterChains:
+        - {}
+      listenerFilters:
+        - config: {}
+          name: envoy.listener.tls_inspector
+      name: inbound:10.0.0.1:10001
+      trafficDirection: INBOUND

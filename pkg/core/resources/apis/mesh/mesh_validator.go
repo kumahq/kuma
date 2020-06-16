@@ -37,7 +37,14 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	if mtls.GetEnabledBackend() != "" && !usedNames[mtls.GetEnabledBackend()] {
 		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
 	}
-	// validation of CA backend type is omitted since it can change when you load plugins
+	for _, backend := range mtls.Backends {
+		if backend.GetDpCert() != nil {
+			_, err := ParseDuration(backend.GetDpCert().GetRotation().GetExpiration())
+			if err != nil {
+				verr.AddViolation("dpcert.rotation.expiration", "has to be a valid format")
+			}
+		}
+	}
 	return verr
 }
 
@@ -70,9 +77,9 @@ func validateLoggingBackend(backend *mesh_proto.LoggingBackend) validators.Valid
 	}
 	switch backend.GetType() {
 	case mesh_proto.LoggingFileType:
-		verr.AddError("config", validateLoggingFile(backend.Config))
+		verr.AddError("config", validateLoggingFile(backend.Conf))
 	case mesh_proto.LoggingTcpType:
-		verr.AddError("config", validateLoggingTcp(backend.Config))
+		verr.AddError("config", validateLoggingTcp(backend.Conf))
 	default:
 		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q, %q", mesh_proto.LoggingTcpType, mesh_proto.LoggingFileType))
 	}
@@ -139,7 +146,7 @@ func validateTracingBackend(backend *mesh_proto.TracingBackend) validators.Valid
 		verr.AddViolation("sampling", "has to be in [0.0 - 100.0] range")
 	}
 	if backend.GetType() == mesh_proto.TracingZipkinType {
-		verr.AddError("config", validateZipkin(backend.Config))
+		verr.AddError("config", validateZipkin(backend.Conf))
 	}
 	return verr
 }

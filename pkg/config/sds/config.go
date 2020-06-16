@@ -1,6 +1,8 @@
 package sds
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/pkg/config"
@@ -8,7 +10,8 @@ import (
 
 func DefaultSdsServerConfig() *SdsServerConfig {
 	return &SdsServerConfig{
-		GrpcPort: 5677,
+		GrpcPort:                              5677,
+		DataplaneConfigurationRefreshInterval: 1 * time.Second,
 	}
 }
 
@@ -20,6 +23,9 @@ type SdsServerConfig struct {
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_sds_server_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_sds_server_tls_key_file"`
+
+	// Interval for re-genarting configuration for Dataplanes connected to the Control Plane
+	DataplaneConfigurationRefreshInterval time.Duration `yaml:"dataplaneConfigurationRefreshInterval" envconfig:"kuma_sds_server_dataplane_configuration_refresh_interval"`
 }
 
 var _ config.Config = &SdsServerConfig{}

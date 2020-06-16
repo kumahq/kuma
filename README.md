@@ -2,7 +2,8 @@
 
 [![CircleCI](https://circleci.com/gh/Kong/kuma.svg?style=svg&circle-token=e3f6c5429ee47ca0eb4bd2542e4b8801a7856373)](https://circleci.com/gh/Kong/kuma)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Kong/kuma/blob/master/LICENSE)
-[![Twitter](https://img.shields.io/twitter/follow/thekonginc.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=thekonginc)
+[![Slack](https://chat.kuma.io/badge.svg)](https://chat.kuma.io/)
+[![Twitter](https://img.shields.io/twitter/follow/KumaMesh.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=KumaMesh)
 
 Kuma is a platform agnostic open-source control plane for Service Mesh and Microservices. It can run and be operated natively across both Kubernetes and VM environments, making it easy to adopt by every team in the organization.
 
@@ -16,8 +17,7 @@ Built by Envoy contributors at Kong 🦍.
 
 [Installation](https://kuma.io/install) |
 [Documentation](https://kuma.io/docs) |
-[Slack Chat](https://chat.kuma.io) |
-[Community](https://kuma.io/community) |
+[Community + Slack Chat](https://kuma.io/community) |
 [Blog](https://konghq.com/blog) |
 [Kong](https://konghq.com)
 
@@ -47,16 +47,20 @@ Kuma embraces the sidecar proxy model by bundling Envoy as its sidecar data-plan
 * **Automatic DP Injection**: No code changes required in K8s. Easy YAML specification for VM and Bare Metal deployments.
 * **Multi-Tenancy**: To setup multiple isolated Meshes in one cluster and one Control Plane, lowering OPs cost.
 * **mTLS**: Automatic mTLS issuing, identity and encryption with optional support for third-party CA.
+* **TLS Rotation**: Automatic certificate rotation for all the data planes, with configurable settings.
 * **Traffic Permissions**: To firewall traffic between the services of a Mesh.
 * **Traffic Routing**: With dynamic load-balancing for blue/green, canary, versioning and rollback deployments.
+* **Fault Injection**: To harden our systems by injecting controlled artificial faults and observe the behavior.
 * **Traffic Logs**: To log all the activity to a third-party service, like Splunk or ELK.
-* **Traffic Metrics**: For every Envoy dataplane managed by Kuma, via Prometheus and other integrations.
+* **Traffic Tracing**: To observe the full trace of the service traffic and determine bottlenecks.
+* **Traffic Metrics**: For every Envoy dataplane managed by Kuma with native Prometheus/Grafana support.
 * **Proxy Configuration Templating**: The easiest way to run and configure Envoy with low-level configuration.
 * **Gateway Support**: To support any API Gateway or Ingress, like [Kong Gateway](https://github.com/Kong/kong).
 * **Healthchecks**: Both active and passive.
 * **GUI**: Out of the box browser GUI to explore all the Service Meshes configured in the system.
 * **Tagging Selectors**: To apply sophisticated regional, cloud-specific and team-oriented policies.
-* **Platform-Agnostic**: Support for K8s, VMs, and bare metal.
+* **Platform-Agnostic**: Support for Kubernetes, VMs, and bare metal. Including hybrid deployments.
+* **Network Overlay**: Create a configurable Mesh overlay across different Kubernetes clusters and namespaces.
 
 Below you can find a snapshot of the GUI that ships with Kuma:
 
@@ -99,6 +103,6 @@ limitations under the License.
 ```
 
 [kuma-url]: https://kuma.io/
-[kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo.png
-[kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui.png
-[kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits.jpg
+[kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
+[kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui-v2.png
+[kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits-v2.png

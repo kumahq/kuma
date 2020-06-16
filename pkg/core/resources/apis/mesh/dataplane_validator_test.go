@@ -100,10 +100,29 @@ var _ = Describe("Dataplane", func() {
                 tags:
                   service: backend
                   version: "1"
-                  valid: abc.0123-789.under_score:90
+                  kuma.io/valid: abc.0123-789.under_score:90
               outbound:
                 - port: 3333
                   service: redis`,
+		),
+		Entry("dataplane in ingress mode", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+                address: 192.168.0.1
+                ingress:
+                  availableServices:
+                    - tags:
+                        service: backend
+                        version: "1"
+                        region: us
+                    - tags:
+                        service: web
+                        version: v2
+                        region: eu
+                inbound:
+                  - port: 10001`,
 		),
 	)
 
@@ -589,7 +608,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.inbound[0].tags["inv@lidT/gN%me"]
-                  message: tag name must consist of alphanumeric characters, dots, dashes and underscores`,
+                  message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`,
 		}),
 		Entry("networking.inbound: tag value with invalid characters", testCase{
 			dataplane: `
@@ -611,6 +630,110 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.inbound[0].tags["invalidTagValue"]
                   message: tag value must consist of alphanumeric characters, dots, dashes and underscores`,
+		}),
+		Entry("networking.ingress: outbound is not empty", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags:
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu
+                  inbound:
+                    - port: 10001
+                  outbound:
+                    - port: 3333
+                      service: redis`,
+			expected: `
+                violations:
+                - field: networking
+                  message: dataplane cannot have outbounds in the ingress mode`,
+		}),
+		Entry("networking.ingress: gateway defined", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags:
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu
+                  gateway: {}
+                  inbound:
+                    - port: 10001`,
+			expected: `
+                violations:
+                - field: networking
+                  message: gateway cannot be defined in the ingress mode`,
+		}),
+		Entry("networking.ingress: no inbound defined", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags: 
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu`,
+			expected: `
+                violations:
+                - field: networking
+                  message: dataplane must have one inbound interface`,
+		}),
+		Entry("networking.ingress: inbound with redundant fields", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags: 
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu
+                  inbound:
+                    - port: 10001
+                      servicePort: 5050
+                      address: 1.1.1.1
+                      tags:
+                        name: ingress-dp`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].servicePort
+                  message: cannot be defined in the ingress mode
+                - field: networking.inbound[0].address
+                  message: cannot be defined in the ingress mode`,
 		}),
 	)
 

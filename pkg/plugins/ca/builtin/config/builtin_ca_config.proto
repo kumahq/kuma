@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package kuma.plugins.ca;
+
+option go_package = "config";
+
+import "google/protobuf/wrappers.proto";
+
+// BuiltinCertificateAuthorityConfig defines configuration for Builtin CA
+// plugin
+message BuiltinCertificateAuthorityConfig {
+  // CaCert defines configuration for Certificate of CA.
+  message CaCert {
+    // RSAbits of the certificate
+    google.protobuf.UInt32Value RSAbits = 1;
+    // Expiration time of the certificate
+    string expiration = 2;
+  }
+
+  // Configuration of CA Certificate
+  CaCert caCert = 1;
+}

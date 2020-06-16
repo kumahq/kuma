@@ -35,7 +35,7 @@ var _ = Describe("Mesh Manager", func() {
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None())
+		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
 		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
 		providedCaManager := provided.NewProvidedCaManager(datasource.NewDataSourceLoader(secretManager))
 		caManagers := core_ca.Managers{
@@ -141,9 +141,11 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 5670
                           path: /metrics
+                          tags:
+                            service: dataplane-metrics
 `,
 				}),
 			)
@@ -328,7 +330,7 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
 				},
-				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are changed", testCase{
+				Entry("when both config is changed", testCase{
 					initial: `
                     metrics:
                       enabledBackend: prometheus-1
@@ -342,9 +344,11 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 					expected: `
                     metrics:
@@ -352,21 +356,25 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 				}),
-				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` remain unchanged", testCase{
+				Entry("when config remain unchanged", testCase{
 					initial: `
                     metrics:
                       enabledBackend: prometheus-1
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 					updated: `
                     metrics:
@@ -374,9 +382,11 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 					expected: `
                     metrics:
@@ -384,86 +394,14 @@ var _ = Describe("Mesh Manager", func() {
                       backends:
                       - name: prometheus-1
                         type: prometheus
-                        config:
+                        conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 				}),
 			)
-		})
-	})
-
-	Describe("Delete()", func() {
-		It("should delete all associated resources", func() {
-			// given mesh
-			meshName := "mesh-1"
-
-			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "builtin-1",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "builtin-1",
-								Type: "builtin",
-							},
-							{
-								Name: "builtin-2",
-								Type: "builtin",
-							},
-						},
-					},
-				},
-			}
-			resKey := model.ResourceKey{
-				Mesh: meshName,
-				Name: meshName,
-			}
-			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
-			Expect(err).ToNot(HaveOccurred())
-
-			// and resource associated with it
-			dp := core_mesh.DataplaneResource{}
-			err = resStore.Create(context.Background(), &dp, store.CreateByKey("dp-1", meshName))
-			Expect(err).ToNot(HaveOccurred())
-
-			// when mesh is deleted
-			err = resManager.Delete(context.Background(), &mesh, store.DeleteBy(resKey))
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// and resource is deleted
-			err = resStore.Get(context.Background(), &core_mesh.DataplaneResource{}, store.GetByKey("dp-1", meshName))
-			Expect(store.IsResourceNotFound(err)).To(BeTrue())
-
-			// and built-in mesh CA is deleted
-			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, *mesh.Spec.Mtls.Backends[0])
-			Expect(err).ToNot(BeNil())
-			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "mesh-1" and backend "builtin-1": Resource not found: type="Secret" name="mesh-1.ca-builtin-cert-builtin-1" mesh="mesh-1"`)) // todo(jakubdyszkiewicz) make error msg consistent
-		})
-
-		It("should delete all associated resources even if mesh is already removed", func() {
-			// given resource that was not deleted with mesh
-			dp := core_mesh.DataplaneResource{}
-			dpKey := model.ResourceKey{
-				Mesh: "already-deleted",
-				Name: "dp-1",
-			}
-			err := resStore.Create(context.Background(), &dp, store.CreateBy(dpKey))
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			mesh := core_mesh.MeshResource{}
-			err = resManager.Delete(context.Background(), &mesh, store.DeleteByKey("already-deleted", "already-deleted"))
-
-			// then not found error is thrown
-			Expect(err).To(HaveOccurred())
-			Expect(store.IsResourceNotFound(err)).To(BeTrue())
-
-			// but the resource in this mesh is deleted anyway
-			err = resStore.Get(context.Background(), &dp, store.GetBy(dpKey))
-			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 		})
 	})
 })

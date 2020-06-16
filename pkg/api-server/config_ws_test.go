@@ -112,6 +112,11 @@ var _ = Describe("Config WS", func() {
           "defaults": {
             "mesh": "type: Mesh\nname: default\n"
           },
+          "dnsServer": {
+            "domain": "mesh",
+            "port": 5653,
+            "CIDR": "240.0.0.0/4"
+          },
           "environment": "universal",
           "general": {
             "advertisedHostname": "localhost"
@@ -120,6 +125,13 @@ var _ = Describe("Config WS", func() {
             "port": 5683,
             "apiServerUrl": ""
           },
+          "metrics": {
+            "dataplane": {
+              "enabled": true,
+              "subscriptionLimit": 10
+            }
+          },
+          "mode": "standalone",
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
             "grpcPort": 5676
@@ -176,7 +188,8 @@ var _ = Describe("Config WS", func() {
           "sdsServer": {
             "grpcPort": 5677,
             "tlsCertFile": "",
-            "tlsKeyFile": ""
+            "tlsKeyFile": "",
+            "dataplaneConfigurationRefreshInterval": "1s"
           },
           "store": {
             "kubernetes": {

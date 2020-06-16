@@ -11,6 +11,8 @@ import (
 	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s"
 	controlplane "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/control-plane"
 	kumacni "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
+	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
+	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/tls"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
@@ -37,6 +39,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		CNIEnabled              bool
 		CNIImage                string
 		CNIVersion              string
+		KumaCpMode              string
 	}{
 		Namespace:               "kuma-system",
 		ImagePullPolicy:         "IfNotPresent",
@@ -52,12 +55,16 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		SdsTlsKey:               "",
 		CNIImage:                "lobkovilya/install-cni",
 		CNIVersion:              "0.0.1",
+		KumaCpMode:              core.Standalone,
 	}
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
 		Long:  `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := core.ValidateCpMode(args.KumaCpMode); err != nil {
+				return err
+			}
 			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
 				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
 				// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
@@ -135,5 +142,6 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().BoolVar(&args.CNIEnabled, "cni-enabled", args.CNIEnabled, "install Kuma with CNI instead of proxy init container")
 	cmd.Flags().StringVar(&args.CNIImage, "cni-image", args.CNIImage, "image of Kuma CNI component, if CNIEnabled equals true")
 	cmd.Flags().StringVar(&args.CNIVersion, "cni-version", args.CNIVersion, "version of the CNIImage")
+	cmd.Flags().StringVar(&args.KumaCpMode, "mode", args.KumaCpMode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "local", "global"))
 	return cmd
 }

@@ -13,12 +13,15 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
+// StreamID represents a stream opened by XDS
+type StreamID = int64
+
 type ProxyId struct {
 	Mesh string
 	Name string
 }
 
-func (id *ProxyId) String() string {
+func (id ProxyId) String() string {
 	return fmt.Sprintf("%s.%s", id.Mesh, id.Name)
 }
 
@@ -53,6 +56,9 @@ type LogMap map[ServiceName]*mesh_proto.LoggingBackend
 // HealthCheckMap holds the most specific HealthCheck for each reachable service.
 type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
 
+// CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
+type CircuitBreakerMap map[ServiceName]*mesh_core.CircuitBreakerResource
+
 // FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
 type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
 
@@ -68,6 +74,7 @@ type Proxy struct {
 	OutboundSelectors  DestinationMap
 	OutboundTargets    EndpointMap
 	HealthChecks       HealthCheckMap
+	CircuitBreakers    CircuitBreakerMap
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	Metadata           *DataplaneMetadata
@@ -81,6 +88,15 @@ func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
 		}
 	}
 	return append(s, new)
+}
+
+func (s TagSelectorSet) Matches(tags map[string]string) bool {
+	for _, selector := range s {
+		if selector.Matches(tags) {
+			return true
+		}
+	}
+	return false
 }
 
 func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {

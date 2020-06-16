@@ -69,11 +69,8 @@ func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*ProxyTemplateResource)(nil), r)
 	}
 }
-func (l *ProxyTemplateResourceList) GetPagination() model.Pagination {
-	return l.Pagination
-}
-func (l *ProxyTemplateResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
+func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
 }
 
 func init() {

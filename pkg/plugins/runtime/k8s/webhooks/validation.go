@@ -38,6 +38,10 @@ func (h *validatingHandler) InjectDecoder(d *admission.Decoder) error {
 }
 
 func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
+	if req.Operation == v1beta1.Delete {
+		return admission.Allowed("")
+	}
+
 	resType := core_model.ResourceType(req.Kind.Kind)
 
 	coreRes, err := h.coreRegistry.NewObject(resType)

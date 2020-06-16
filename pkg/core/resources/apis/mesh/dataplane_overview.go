@@ -80,12 +80,8 @@ func (l *DataplaneOverviewResourceList) AddItem(r model.Resource) error {
 	}
 }
 
-func (l *DataplaneOverviewResourceList) GetPagination() model.Pagination {
-	return l.Pagination
-}
-
-func (l *DataplaneOverviewResourceList) SetPagination(pagination model.Pagination) {
-	l.Pagination = pagination
+func (l *DataplaneOverviewResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
 }
 
 func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneInsightResourceList) DataplaneOverviewResourceList {

@@ -61,7 +61,7 @@ var _ = Describe("Components", func() {
 			reconciler := eventSnapshotReconciler{}
 			reconciler.events = make(chan event)
 			// and
-			tracker, err := DefaultDataplaneSyncTracker(runtime, &reconciler, NewDataplaneMetadataTracker())
+			tracker, err := DefaultDataplaneSyncTracker(runtime, &reconciler, nil, NewDataplaneMetadataTracker())
 			Expect(err).ToNot(HaveOccurred())
 
 			// given

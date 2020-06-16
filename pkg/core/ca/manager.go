@@ -17,11 +17,13 @@ type Manager interface {
 	ValidateBackend(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error
 	// Ensure ensures that CA of given name is available
 	Ensure(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error
+	// UsedSecrets returns a list of secrets that are used by the manager
+	UsedSecrets(mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]string, error)
 
 	// GetRootCert returns root certificates of the CA
 	GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]Cert, error)
-	// GenerateDataplaneCert generates cert for a dataplanes with service tag
-	GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (KeyPair, error)
+	// GenerateDataplaneCert generates cert for a dataplane with service tags
+	GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, services []string) (KeyPair, error)
 }
 
 // Managers hold Manager instance for each type of backend available (by default: builtin, provided)

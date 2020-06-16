@@ -1,0 +1,5 @@
+*
+!build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd
+!tools/releases/templates/LICENSE
+!tools/releases/templates/NOTICE
+!tools/releases/templates/README

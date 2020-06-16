@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spiffe/go-spiffe/spiffe"
 
+	"github.com/Kong/kuma/pkg/core"
 	core_ca "github.com/Kong/kuma/pkg/core/ca"
 	util_tls "github.com/Kong/kuma/pkg/tls"
 )
@@ -23,19 +24,31 @@ const (
 	DefaultCACertValidityPeriod = 10 * 365 * 24 * time.Hour
 )
 
-func newRootCa(mesh string) (*core_ca.KeyPair, error) {
-	key, err := rsa.GenerateKey(rand.Reader, DefaultRsaBits)
+type certOptsFn = func(*x509.Certificate)
+
+func withExpirationTime(expiration time.Duration) certOptsFn {
+	return func(certificate *x509.Certificate) {
+		now := core.Now()
+		certificate.NotAfter = now.Add(expiration)
+	}
+}
+
+func newRootCa(mesh string, rsaBits int, certOpts ...certOptsFn) (*core_ca.KeyPair, error) {
+	if rsaBits == 0 {
+		rsaBits = DefaultRsaBits
+	}
+	key, err := rsa.GenerateKey(rand.Reader, rsaBits)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate a private key")
 	}
-	cert, err := newCACert(key, mesh)
+	cert, err := newCACert(key, mesh, certOpts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate X509 certificate")
 	}
 	return util_tls.ToKeyPair(key, cert)
 }
 
-func newCACert(signer crypto.Signer, trustDomain string) ([]byte, error) {
+func newCACert(signer crypto.Signer, trustDomain string, certOpts ...certOptsFn) ([]byte, error) {
 	spiffeID := &url.URL{
 		Scheme: "spiffe",
 		Host:   trustDomain,
@@ -45,13 +58,17 @@ func newCACert(signer crypto.Signer, trustDomain string) ([]byte, error) {
 		OrganizationalUnit: []string{"Mesh"},
 		CommonName:         trustDomain,
 	}
-	now := time.Now()
+	now := core.Now()
 	notBefore := now.Add(-DefaultAllowedClockSkew)
 	notAfter := now.Add(DefaultCACertValidityPeriod)
 
 	template, err := caTemplate(spiffeID.String(), trustDomain, subject, signer.Public(), notBefore, notAfter, big.NewInt(0))
 	if err != nil {
 		return nil, err
+	}
+
+	for _, opt := range certOpts {
+		opt(template)
 	}
 	return x509.CreateCertificate(rand.Reader, template, template, signer.Public(), signer)
 }

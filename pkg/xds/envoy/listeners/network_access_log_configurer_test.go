@@ -33,7 +33,6 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			meshName := "demo"
 			sourceService := "backend"
 			destinationService := "db"
-			trafficDirection := "OUTBOUND"
 			proxy := &core_xds.Proxy{
 				Id: xds.ProxyId{
 					Name: "backend",
@@ -64,7 +63,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder().
 					Configure(TcpProxy(given.statsName, given.clusters...)).
-					Configure(NetworkAccessLog(meshName, trafficDirection, sourceService, destinationService, given.backend, proxy)))).
+					Configure(NetworkAccessLog(meshName, TrafficDirectionUnspecified, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -107,7 +106,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			backend: &mesh_proto.LoggingBackend{
 				Name: "file",
 				Type: mesh_proto.LoggingFileType,
-				Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 					Path: "/tmp/log",
 				}),
 			},
@@ -147,7 +146,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 "%RESP(SERVER):5%" "%TRAILER(GRPC-MESSAGE):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
 `, // intentional newline at the end
 				Type: mesh_proto.LoggingTcpType,
-				Config: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
 					Address: "127.0.0.1:1234",
 				}),
 			},

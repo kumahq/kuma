@@ -33,21 +33,21 @@ var _ = Describe("Matcher", func() {
 		backendFile1 = &mesh_proto.LoggingBackend{
 			Name: "file1",
 			Type: mesh_proto.LoggingFileType,
-			Config: proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+			Conf: proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 				Path: "/tmp/access.logs",
 			}),
 		}
 		backendFile2 = &mesh_proto.LoggingBackend{
 			Name: "file2",
 			Type: mesh_proto.LoggingFileType,
-			Config: proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+			Conf: proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 				Path: "/tmp/access.logs",
 			}),
 		}
 		backendFile3 = &mesh_proto.LoggingBackend{
 			Name: "file3",
 			Type: mesh_proto.LoggingFileType,
-			Config: proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+			Conf: proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 				Path: "/tmp/access.logs",
 			}),
 		}

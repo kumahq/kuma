@@ -1,6 +1,8 @@
 package mesh_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -88,14 +90,14 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
 								{
 									Name: "zipkin-eu",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.eu:8080/v1/spans",
 									}),
 								},
@@ -115,7 +117,7 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
@@ -135,14 +137,14 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
 								{
 									Name: "zipkin-eu",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.eu:8080/v1/spans",
 									}),
 								},
@@ -161,7 +163,7 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
@@ -219,14 +221,14 @@ var _ = Describe("MeshResource", func() {
 							{
 								Name: "zipkin-us",
 								Type: mesh_proto.TracingZipkinType,
-								Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 									Url: "http://zipkin.us:8080/v1/spans",
 								}),
 							},
 							{
 								Name: "zipkin-eu",
 								Type: mesh_proto.TracingZipkinType,
-								Config: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 									Url: "http://zipkin.eu:8080/v1/spans",
 								}),
 							},
@@ -249,5 +251,35 @@ var _ = Describe("MeshResource", func() {
 			backends := mesh.GetTracingBackends()
 			Expect(backends).To(Equal(""))
 		})
+	})
+	Describe("ParseDuration", func() {
+
+		type testCase struct {
+			input  string
+			output time.Duration
+		}
+
+		DescribeTable("should return the correct duration",
+			func(given testCase) {
+				duration, _ := ParseDuration(given.input)
+				Expect(given.output).To(Equal(duration))
+			},
+			Entry("should return 0 if seconds is 0", testCase{
+				input:  "0s",
+				output: 0,
+			}),
+			Entry("should return minute", testCase{
+				input:  "5m",
+				output: 5 * time.Minute,
+			}),
+			Entry("should return day", testCase{
+				input:  "4d",
+				output: 4 * 24 * time.Hour,
+			}),
+			Entry("should return year", testCase{
+				input:  "5y",
+				output: 5 * 365 * 24 * time.Hour,
+			}),
+		)
 	})
 })

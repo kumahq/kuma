@@ -88,7 +88,7 @@ items:
       selector:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: all-in-one
-      type: LoadBalancer
+      type: ClusterIP
   - apiVersion: v1
     kind: Service
     metadata:

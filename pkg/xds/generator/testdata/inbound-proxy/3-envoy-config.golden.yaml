@@ -53,7 +53,7 @@ resources:
                           safeRegexMatch:
                             googleRe2:
                               maxProgramSize: 500
-                            regex: '&service=[^&]*frontend[,&].*'
+                            regex: .*&service=[^&]*frontend[,&].*
                   - name: envoy.router
                 routeConfig:
                   name: inbound:backend1
@@ -75,6 +75,23 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
+                combinedValidationContext:
+                  defaultValidationContext:
+                    matchSubjectAltNames:
+                      - prefix: spiffe://default/
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-system:5677
                 tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -88,19 +105,6 @@ resources:
                                     inlineBytes: MTIzNDU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
-                validationContextSdsSecretConfig:
-                  name: mesh_ca
-                  sdsConfig:
-                    apiConfigSource:
-                      apiType: GRPC
-                      grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: MTIzNDU=
-                            statPrefix: sds_mesh_ca
-                            targetUri: kuma-system:5677
               requireClientCertificate: true
       name: inbound:192.168.0.1:80
       trafficDirection: INBOUND
@@ -144,6 +148,23 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
+                combinedValidationContext:
+                  defaultValidationContext:
+                    matchSubjectAltNames:
+                      - prefix: spiffe://default/
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-system:5677
                 tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -157,19 +178,6 @@ resources:
                                     inlineBytes: MTIzNDU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
-                validationContextSdsSecretConfig:
-                  name: mesh_ca
-                  sdsConfig:
-                    apiConfigSource:
-                      apiType: GRPC
-                      grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: MTIzNDU=
-                            statPrefix: sds_mesh_ca
-                            targetUri: kuma-system:5677
               requireClientCertificate: true
       name: inbound:192.168.0.1:443
       trafficDirection: INBOUND
@@ -212,6 +220,23 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
+                combinedValidationContext:
+                  defaultValidationContext:
+                    matchSubjectAltNames:
+                      - prefix: spiffe://default/
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-system:5677
                 tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -225,19 +250,6 @@ resources:
                                     inlineBytes: MTIzNDU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
-                validationContextSdsSecretConfig:
-                  name: mesh_ca
-                  sdsConfig:
-                    apiConfigSource:
-                      apiType: GRPC
-                      grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: MTIzNDU=
-                            statPrefix: sds_mesh_ca
-                            targetUri: kuma-system:5677
               requireClientCertificate: true
       name: inbound:192.168.0.2:80
       trafficDirection: INBOUND
@@ -265,6 +277,23 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
+                combinedValidationContext:
+                  defaultValidationContext:
+                    matchSubjectAltNames:
+                      - prefix: spiffe://default/
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-system:5677
                 tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -278,19 +307,6 @@ resources:
                                     inlineBytes: MTIzNDU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
-                validationContextSdsSecretConfig:
-                  name: mesh_ca
-                  sdsConfig:
-                    apiConfigSource:
-                      apiType: GRPC
-                      grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: MTIzNDU=
-                            statPrefix: sds_mesh_ca
-                            targetUri: kuma-system:5677
               requireClientCertificate: true
       name: inbound:192.168.0.2:443
       trafficDirection: INBOUND

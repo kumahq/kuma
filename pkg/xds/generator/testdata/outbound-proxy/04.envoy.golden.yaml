@@ -12,6 +12,23 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                  - exact: spiffe://mesh1/backend
+              validationContextSdsSecretConfig:
+                name: mesh_ca
+                sdsConfig:
+                  apiConfigSource:
+                    apiType: GRPC
+                    grpcServices:
+                      - googleGrpc:
+                          channelCredentials:
+                            sslCredentials:
+                              rootCerts:
+                                inlineBytes: MTIzNDU=
+                          statPrefix: sds_mesh_ca
+                          targetUri: kuma-system:5677
             tlsCertificateSdsSecretConfigs:
               - name: identity_cert
                 sdsConfig:
@@ -25,19 +42,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-            validationContextSdsSecretConfig:
-              name: mesh_ca
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+          sni: backend
       type: EDS
   - name: backend
     resource:
@@ -87,6 +92,23 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                  - exact: spiffe://mesh1/db
+              validationContextSdsSecretConfig:
+                name: mesh_ca
+                sdsConfig:
+                  apiConfigSource:
+                    apiType: GRPC
+                    grpcServices:
+                      - googleGrpc:
+                          channelCredentials:
+                            sslCredentials:
+                              rootCerts:
+                                inlineBytes: MTIzNDU=
+                          statPrefix: sds_mesh_ca
+                          targetUri: kuma-system:5677
             tlsCertificateSdsSecretConfigs:
               - name: identity_cert
                 sdsConfig:
@@ -100,19 +122,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-            validationContextSdsSecretConfig:
-              name: mesh_ca
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+          sni: db{role=master}
       type: EDS
   - name: db{role=master}
     resource:
@@ -144,6 +154,23 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                  - exact: spiffe://mesh1/db
+              validationContextSdsSecretConfig:
+                name: mesh_ca
+                sdsConfig:
+                  apiConfigSource:
+                    apiType: GRPC
+                    grpcServices:
+                      - googleGrpc:
+                          channelCredentials:
+                            sslCredentials:
+                              rootCerts:
+                                inlineBytes: MTIzNDU=
+                          statPrefix: sds_mesh_ca
+                          targetUri: kuma-system:5677
             tlsCertificateSdsSecretConfigs:
               - name: identity_cert
                 sdsConfig:
@@ -157,19 +184,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-            validationContextSdsSecretConfig:
-              name: mesh_ca
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+          sni: db{role=replica}
       type: EDS
   - name: db{role=replica}
     resource:
@@ -208,11 +223,34 @@ resources:
         edsConfig:
           ads: {}
       name: api-http
+      outlierDetection:
+        enforcingConsecutive5xx: 100
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                  - exact: spiffe://mesh1/api-http
+              validationContextSdsSecretConfig:
+                name: mesh_ca
+                sdsConfig:
+                  apiConfigSource:
+                    apiType: GRPC
+                    grpcServices:
+                      - googleGrpc:
+                          channelCredentials:
+                            sslCredentials:
+                              rootCerts:
+                                inlineBytes: MTIzNDU=
+                          statPrefix: sds_mesh_ca
+                          targetUri: kuma-system:5677
             tlsCertificateSdsSecretConfigs:
               - name: identity_cert
                 sdsConfig:
@@ -226,19 +264,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-            validationContextSdsSecretConfig:
-              name: mesh_ca
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+          sni: api-http
       type: EDS
   - name: api-http
     resource:
@@ -329,6 +355,23 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
           commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                  - exact: spiffe://mesh1/api-tcp
+              validationContextSdsSecretConfig:
+                name: mesh_ca
+                sdsConfig:
+                  apiConfigSource:
+                    apiType: GRPC
+                    grpcServices:
+                      - googleGrpc:
+                          channelCredentials:
+                            sslCredentials:
+                              rootCerts:
+                                inlineBytes: MTIzNDU=
+                          statPrefix: sds_mesh_ca
+                          targetUri: kuma-system:5677
             tlsCertificateSdsSecretConfigs:
               - name: identity_cert
                 sdsConfig:
@@ -342,19 +385,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-            validationContextSdsSecretConfig:
-              name: mesh_ca
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+          sni: api-tcp
       type: EDS
   - name: api-tcp
     resource:

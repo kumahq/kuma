@@ -35,6 +35,24 @@ func (ds *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscript
 	return -1, nil
 }
 
+func (ds *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time) error {
+	if ds.MTLS == nil {
+		ds.MTLS = &DataplaneInsight_MTLS{}
+	}
+	ts, err := ptypes.TimestampProto(expiration)
+	if err != nil {
+		return err
+	}
+	ds.MTLS.CertificateExpirationTime = ts
+	ds.MTLS.CertificateRegenerations++
+	ts, err = ptypes.TimestampProto(generation)
+	if err != nil {
+		return err
+	}
+	ds.MTLS.LastCertificateRegeneration = ts
+	return nil
+}
+
 func (ds *DataplaneInsight) UpdateSubscription(s *DiscoverySubscription) {
 	if ds == nil {
 		return

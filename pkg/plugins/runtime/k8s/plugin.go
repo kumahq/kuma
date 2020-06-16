@@ -4,10 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
+	"github.com/Kong/kuma/pkg/core/secrets/manager"
 
 	"github.com/pkg/errors"
+	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
+	kube_ctrl "sigs.k8s.io/controller-runtime"
+	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	core_config "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
 	managers_mesh "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
@@ -20,11 +24,8 @@ import (
 	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	k8s_controllers "github.com/Kong/kuma/pkg/plugins/runtime/k8s/controllers"
 	k8s_webhooks "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
+	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
-
-	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
-	kube_ctrl "sigs.k8s.io/controller-runtime"
-	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 var (
@@ -40,6 +41,10 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
+	if rt.Config().Mode == core_config.Global {
+		return nil
+	}
+
 	mgr, ok := k8s_runtime.FromManagerContext(rt.Extensions())
 	if !ok {
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
@@ -122,7 +127,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	composite.AddValidator(handler)
 
 	coreMeshValidator := managers_mesh.MeshValidator{CaManagers: rt.CaManagers()}
-	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, k8s_resources.DefaultConverter())
+	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, k8s_resources.DefaultConverter(), rt.ResourceManager())
 	composite.AddValidator(k8sMeshValidator)
 
 	path := "/validate-kuma-io-v1alpha1"
@@ -133,7 +138,8 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
 
 	secretValidator := &k8s_webhooks.SecretValidator{
-		Client: mgr.GetClient(),
+		Client:    mgr.GetClient(),
+		Validator: manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 	log.Info("Registering a validation webhook for v1/Secret", "path", "/validate-v1-secret")
@@ -148,4 +154,13 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) {
 		mgr.GetClient(),
 	)
 	mgr.GetWebhookServer().Register("/inject-sidecar", k8s_webhooks.PodMutatingWebhook(kumaInjector.InjectKuma))
+
+	ownerRefMutator := &k8s_webhooks.OwnerReferenceMutator{
+		Client:       mgr.GetClient(),
+		CoreRegistry: core_registry.Global(),
+		K8sRegistry:  k8s_registry.Global(),
+		Converter:    k8s_resources.DefaultConverter(),
+		Scheme:       mgr.GetScheme(),
+	}
+	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 }

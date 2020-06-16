@@ -174,11 +174,11 @@ func ParseIP(text string) (string, error) {
 }
 
 func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInterface, error) {
-	for i, inbound := range n.Inbound {
+	for _, inbound := range n.Inbound {
 		if inbound.Tags[ServiceTag] != service {
 			continue
 		}
-		iface, err := n.GetInboundInterfaceByIdx(i)
+		iface, err := n.ToInboundInterface(inbound)
 		return &iface, err
 	}
 	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
@@ -189,8 +189,8 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 		return nil, nil
 	}
 	ifaces := make([]InboundInterface, len(n.Inbound))
-	for i, _ := range n.Inbound {
-		iface, err := n.GetInboundInterfaceByIdx(i)
+	for i, inbound := range n.Inbound {
+		iface, err := n.ToInboundInterface(inbound)
 		if err != nil {
 			return nil, err
 		}
@@ -199,11 +199,7 @@ func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error
 	return ifaces, nil
 }
 
-func (n *Dataplane_Networking) GetInboundInterfaceByIdx(idx int) (InboundInterface, error) {
-	if idx >= len(n.Inbound) {
-		return InboundInterface{}, errors.Errorf("there is no inbound for index %d. Dataplane has %d inbounds", idx, len(n.Inbound))
-	}
-	inbound := n.Inbound[idx]
+func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) (InboundInterface, error) {
 	if inbound.Interface != "" {
 		return ParseInboundInterface(inbound.Interface)
 	} else {
@@ -344,6 +340,17 @@ func (t SingleValueTagSet) Keys() []string {
 	return keys
 }
 
+func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {
+	rv := SingleValueTagSet{}
+	for k, v := range t {
+		if k == key {
+			continue
+		}
+		rv[k] = v
+	}
+	return rv
+}
+
 // Set of tags that allows multiple values per key.
 type MultiValueTagSet map[string]map[string]bool
 
@@ -395,6 +402,28 @@ func (d *Dataplane) GetIdentifyingService() string {
 		return services[0]
 	}
 	return ServiceUnknown
+}
+
+func (d *Dataplane) IsIngress() bool {
+	return d.Networking.Ingress != nil
+}
+
+func (d *Dataplane) HasAvailableServices() bool {
+	if !d.IsIngress() {
+		return false
+	}
+	return len(d.Networking.Ingress.AvailableServices) != 0
+}
+
+func (d *Dataplane) IsRemoteIngress() bool {
+	if !d.IsIngress() {
+		return false
+	}
+	// todo: take into account value itself, not just presence of the 'cluster' tag
+	if _, ok := d.Networking.Inbound[0].Tags["cluster"]; ok {
+		return true
+	}
+	return false
 }
 
 func (t MultiValueTagSet) String() string {

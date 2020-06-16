@@ -1,12 +1,17 @@
 package bootstrap
 
 import (
+	"strconv"
+
 	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/dns-server/resolver"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/datasource"
+	"github.com/Kong/kuma/pkg/core/managers/apis/dataplaneinsight"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -37,6 +42,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeDiscovery(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeDNSResolver(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +194,8 @@ func initializeSecretManager(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if secretStore, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		builder.WithSecretManager(secret_manager.NewSecretManager(secretStore, cipher))
+		validator := secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
+		builder.WithSecretManager(secret_manager.NewSecretManager(secretStore, cipher, validator))
 		return nil
 	}
 }
@@ -239,6 +248,10 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	}
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.SecretManager(), builder.CaManagers(), registry.Global(), validator)
 	customManagers[mesh.MeshType] = meshManager
+
+	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
+	customManagers[mesh.DataplaneInsightType] = dpInsightManager
+
 	builder.WithResourceManager(customizableManager)
 
 	if builder.Config().Store.Cache.Enabled {
@@ -246,6 +259,21 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	} else {
 		builder.WithReadOnlyResourceManager(customizableManager)
 	}
+}
+
+func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	dnsResolver, err := resolver.NewSimpleDNSResolver(
+		cfg.DNSServer.Domain,
+		"0.0.0.0",
+		strconv.FormatUint(uint64(cfg.DNSServer.Port), 10),
+		cfg.DNSServer.CIDR)
+	if err != nil {
+		return err
+	}
+
+	builder.WithDNSResolver(dnsResolver)
+
+	return nil
 }
 
 func customizeRuntime(rt core_runtime.Runtime) error {

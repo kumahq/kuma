@@ -1,0 +1,31 @@
+mesh: default
+metadata:
+  creationTimestamp: null
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+      - port: 8080
+        tags:
+          app: example
+          protocol: http
+          service: example.demo.svc:80
+          version: "0.1"
+      - port: 8443
+        tags:
+          app: example
+          protocol: tcp
+          service: example.demo.svc:443
+          version: "0.1"
+      - port: 7070
+        tags:
+          app: example
+          protocol: MONGO
+          service: sample.playground.svc:7071
+          version: "0.1"
+      - port: 6060
+        tags:
+          app: example
+          protocol: tcp
+          service: sample.playground.svc:6061
+          version: "0.1"

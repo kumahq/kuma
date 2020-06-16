@@ -3,9 +3,9 @@ logging:
   backends:
     - name: logstash
       type: tcp
-      config:
+      conf:
         address: 127.0.0.1:5000
-    - config:
+    - conf:
         path: /tmp/service.log
       type: file
       name: file
@@ -14,7 +14,7 @@ metrics:
   backends:
     - name: prometheus-1
       type: prometheus
-      config:
+      conf:
         path: /non-standard-path
         port: 1234
 modificationTime: 0001-01-01T00:00:00Z
@@ -28,10 +28,10 @@ tracing:
   backends:
     - name: zipkin-us
       type: zipkin
-      config:
+      conf:
         url: http://zipkin.us:8080/v1/spans
     - name: zipkin-eu
       type: zipkin
-      config:
+      conf:
         url: http://zipkin.eu:8080/v1/spans
 type: Mesh

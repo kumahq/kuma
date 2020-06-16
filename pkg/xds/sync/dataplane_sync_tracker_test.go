@@ -2,6 +2,7 @@ package sync_test
 
 import (
 	"context"
+	"sync/atomic"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -128,6 +129,61 @@ var _ = Describe("Sync", func() {
 
 			close(done)
 		}, 5)
+
+		It("should start only one watchdog per dataplane", func() {
+			// setup
+			var activeWatchdogs int32
+			tracker := NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
+				return WatchdogFunc(func(stop <-chan struct{}) {
+					atomic.AddInt32(&activeWatchdogs, 1)
+					<-stop
+					atomic.AddInt32(&activeWatchdogs, -1)
+				})
+			})
+
+			// when one stream for backend-01 is connected and request is sent
+			streamID := int64(1)
+			err := tracker.OnStreamOpen(context.Background(), streamID, "")
+			Expect(err).ToNot(HaveOccurred())
+			err = tracker.OnStreamRequest(streamID, &envoy.DiscoveryRequest{
+				Node: &envoy_core.Node{
+					Id: "default.backend-01",
+				},
+			})
+			Expect(err).ToNot(HaveOccurred())
+
+			// and when new stream from backend-01 is connected  and request is sent
+			streamID = 2
+			err = tracker.OnStreamOpen(context.Background(), streamID, "")
+			Expect(err).ToNot(HaveOccurred())
+			err = tracker.OnStreamRequest(streamID, &envoy.DiscoveryRequest{
+				Node: &envoy_core.Node{
+					Id: "default.backend-01",
+				},
+			})
+			Expect(err).ToNot(HaveOccurred())
+
+			// then only one watchdog is active
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&activeWatchdogs)
+			}, "5s", "10ms").Should(Equal(int32(1)))
+
+			// when first stream is closed
+			tracker.OnStreamClosed(1)
+
+			// then watchdog is still active because other stream is opened
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&activeWatchdogs)
+			}, "5s", "10ms").Should(Equal(int32(1)))
+
+			// when other stream is closed
+			tracker.OnStreamClosed(2)
+
+			// then no watchdog is stopped
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&activeWatchdogs)
+			}, "5s", "10ms").Should(Equal(int32(0)))
+		})
 	})
 })
 

@@ -32,7 +32,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			mesh := "demo"
 			sourceService := "web"
 			destinationService := "backend"
-			trafficDirection := "OUTBOUND"
 			proxy := &core_xds.Proxy{
 				Id: xds.ProxyId{
 					Name: "web",
@@ -62,7 +61,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 				Configure(FilterChain(NewFilterChainBuilder().
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpOutboundRoute(given.routeName)).
-					Configure(HttpAccessLog(mesh, trafficDirection, sourceService, destinationService, given.backend, proxy)))).
+					Configure(HttpAccessLog(mesh, TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -110,7 +109,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			backend: &mesh_proto.LoggingBackend{
 				Name: "file",
 				Type: mesh_proto.LoggingFileType,
-				Config: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
 					Path: "/tmp/log",
 				}),
 			},
@@ -155,7 +154,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 "%RESP(SERVER):5%" "%TRAILER(GRPC-MESSAGE):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
 `, // intentional newline at the end
 				Type: mesh_proto.LoggingTcpType,
-				Config: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
 					Address: "127.0.0.1:1234",
 				}),
 			},

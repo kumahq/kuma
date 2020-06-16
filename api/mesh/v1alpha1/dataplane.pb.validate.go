@@ -128,6 +128,16 @@ func (m *Dataplane_Networking) Validate() error {
 		return nil
 	}
 
+	if v, ok := interface{}(m.GetIngress()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return Dataplane_NetworkingValidationError{
+				field:  "Ingress",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for Address
 
 	if v, ok := interface{}(m.GetGateway()).(interface{ Validate() error }); ok {
@@ -238,6 +248,89 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Dataplane_NetworkingValidationError{}
+
+// Validate checks the field values on Dataplane_Networking_Ingress with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *Dataplane_Networking_Ingress) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	for idx, item := range m.GetAvailableServices() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return Dataplane_Networking_IngressValidationError{
+					field:  fmt.Sprintf("AvailableServices[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// Dataplane_Networking_IngressValidationError is the validation error returned
+// by Dataplane_Networking_Ingress.Validate if the designated constraints
+// aren't met.
+type Dataplane_Networking_IngressValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Dataplane_Networking_IngressValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Dataplane_Networking_IngressValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Dataplane_Networking_IngressValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Dataplane_Networking_IngressValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Dataplane_Networking_IngressValidationError) ErrorName() string {
+	return "Dataplane_Networking_IngressValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Dataplane_Networking_IngressValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDataplane_Networking_Ingress.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Dataplane_Networking_IngressValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Dataplane_Networking_IngressValidationError{}
 
 // Validate checks the field values on Dataplane_Networking_Inbound with the
 // rules defined in the proto definition for this message. If any rules are
@@ -583,3 +676,76 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Dataplane_Networking_TransparentProxyingValidationError{}
+
+// Validate checks the field values on
+// Dataplane_Networking_Ingress_AvailableService with the rules defined in the
+// proto definition for this message. If any rules are violated, an error is returned.
+func (m *Dataplane_Networking_Ingress_AvailableService) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Tags
+
+	return nil
+}
+
+// Dataplane_Networking_Ingress_AvailableServiceValidationError is the
+// validation error returned by
+// Dataplane_Networking_Ingress_AvailableService.Validate if the designated
+// constraints aren't met.
+type Dataplane_Networking_Ingress_AvailableServiceValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) Reason() string {
+	return e.reason
+}
+
+// Cause function returns cause value.
+func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) ErrorName() string {
+	return "Dataplane_Networking_Ingress_AvailableServiceValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Dataplane_Networking_Ingress_AvailableServiceValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDataplane_Networking_Ingress_AvailableService.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Dataplane_Networking_Ingress_AvailableServiceValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Dataplane_Networking_Ingress_AvailableServiceValidationError{}

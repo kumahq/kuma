@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Kong/kuma/pkg/core/resources/registry"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -14,14 +16,19 @@ import (
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
+type resourceKey struct {
+	Name         string
+	Mesh         string
+	ResourceType string
+}
+
 type memoryStoreRecord struct {
-	ResourceType     string
-	Name             string
-	Mesh             string
+	resourceKey
 	Version          memoryVersion
 	Spec             string
 	CreationTime     time.Time
 	ModificationTime time.Time
+	Children         []*resourceKey
 }
 type memoryStoreRecords = []*memoryStoreRecord
 
@@ -112,6 +119,14 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 		return err
 	}
 
+	if opts.Owner != nil {
+		_, ownerRecord := c.findRecord(string(opts.Owner.GetType()), opts.Owner.GetMeta().GetName(), opts.Owner.GetMeta().GetMesh())
+		if ownerRecord == nil {
+			return store.ErrorResourceNotFound(opts.Owner.GetType(), opts.Owner.GetMeta().GetName(), opts.Owner.GetMeta().GetMesh())
+		}
+		ownerRecord.Children = append(ownerRecord.Children, &record.resourceKey)
+	}
+
 	// persist
 	c.records = append(c.records, record)
 	return nil
@@ -146,12 +161,17 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 
 	// persist
 	c.records[idx] = record
+
+	r.SetMeta(meta)
 	return nil
 }
-func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
+func (c *memoryStore) Delete(ctx context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.delete(ctx, r, fs...)
+}
 
+func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
 	_, ok := (r.GetMeta()).(memoryMeta)
@@ -163,6 +183,22 @@ func (c *memoryStore) Delete(_ context.Context, r model.Resource, fs ...store.De
 	idx, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh)
 	if record == nil {
 		return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
+	}
+	for _, child := range record.Children {
+		_, childRecord := c.findRecord(child.ResourceType, child.Name, child.Mesh)
+		if childRecord == nil {
+			return store.ErrorResourceNotFound(model.ResourceType(child.ResourceType), child.Name, child.Mesh)
+		}
+		obj, err := registry.Global().NewObject(model.ResourceType(child.ResourceType))
+		if err != nil {
+			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
+		}
+		if err := c.unmarshalRecord(childRecord, obj); err != nil {
+			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
+		}
+		if err := c.delete(ctx, obj, store.DeleteByKey(childRecord.Name, childRecord.Mesh)); err != nil {
+			return fmt.Errorf("MemoryStore.Delete() couldn't delete linked child resource")
+		}
 	}
 	c.records = append(c.records[:idx], c.records[idx+1:]...)
 	return nil
@@ -221,10 +257,11 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		if offset+pageSize < len(records) { // set new offset only if we did not reach the end of the collection
 			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
-		rs.SetPagination(model.Pagination{
-			NextOffset: nextOffset,
-		})
+		rs.GetPagination().SetNextOffset(nextOffset)
 	}
+
+	rs.GetPagination().SetTotal(uint32(len(records)))
+
 	return nil
 }
 
@@ -259,10 +296,12 @@ func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec m
 		return nil, err
 	}
 	return &memoryStoreRecord{
-		ResourceType: resourceType,
-		// Name must be provided via CreateOptions
-		Name:             meta.Name,
-		Mesh:             meta.Mesh,
+		resourceKey: resourceKey{
+			ResourceType: resourceType,
+			// Name must be provided via CreateOptions
+			Name: meta.Name,
+			Mesh: meta.Mesh,
+		},
 		Version:          meta.Version,
 		Spec:             string(content),
 		CreationTime:     meta.CreationTime,

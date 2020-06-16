@@ -103,8 +103,8 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(string(body)).To(Or(
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json1, json2)),
-				MatchJSON(fmt.Sprintf(`{"items": [%s,%s], "next": null}`, json2, json1)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json1, json2)),
+				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json2, json1)),
 			))
 		})
 	})
@@ -144,7 +144,7 @@ var _ = Describe("Resource Endpoints", func() {
 							{
 								Name: "zipkin-us",
 								Type: v1alpha1.TracingZipkinType,
-								Config: util_proto.MustToStruct(&v1alpha1.ZipkinTracingBackendConfig{
+								Conf: util_proto.MustToStruct(&v1alpha1.ZipkinTracingBackendConfig{
 									Url: "http://zipkin-us:9090/v2/spans",
 								}),
 							},

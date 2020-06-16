@@ -120,6 +120,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--dataplane-init-image", "kuma-ci/kuma-init",
 				"--sds-tls-cert", "SdsCert",
 				"--sds-tls-key", "SdsKey",
+				"--mode", "local",
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
 		}),
@@ -129,5 +130,27 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources for Global", testCase{
+			extraArgs: []string{
+				"--mode", "global",
+			},
+			goldenFile: "install-control-plane.global.golden.yaml",
+		}),
+		Entry("should generate Kubernetes resources for Local", testCase{
+			extraArgs: []string{
+				"--mode", "local",
+			},
+			goldenFile: "install-control-plane.local.golden.yaml",
+		}),
 	)
+	It("should fail to install control plane when `kumactl install control-plane run with unknown mode`", func() {
+		// given
+		rootCmd := cmd.DefaultRootCmd()
+		rootCmd.SetArgs([]string{"install", "control-plane", "--mode", "test"})
+		//when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("invalid mode. Available modes: standalone, local, global"))
+	})
 })

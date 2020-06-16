@@ -6,8 +6,8 @@
 .golangci.yml
 api
 app
-build/coverage/
-build/docker-images/
+build/*
+!build/artifacts-linux-amd64
 dev
 docs
 examples
@@ -16,4 +16,4 @@ go.sum
 Makefile*
 pkg/*
 !pkg/config/*
-vendor
+vendored

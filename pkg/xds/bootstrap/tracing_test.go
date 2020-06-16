@@ -41,7 +41,7 @@ var _ = Describe("Bootstrap Tracing", func() {
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-us",
 				Type: mesh_proto.TracingZipkinType,
-				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url: "http://zipkin:9090/api/v1/spans",
 				}),
 			},
@@ -73,7 +73,7 @@ var _ = Describe("Bootstrap Tracing", func() {
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
 				Type: mesh_proto.TracingZipkinType,
-				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url: "http://zipkin:9090/api/v2/spans",
 				}),
 			},
@@ -106,7 +106,7 @@ var _ = Describe("Bootstrap Tracing", func() {
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
 				Type: mesh_proto.TracingZipkinType,
-				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url:        "http://zipkin:9090/api/v2/spans",
 					ApiVersion: "httpJsonV1",
 				}),
@@ -139,7 +139,7 @@ var _ = Describe("Bootstrap Tracing", func() {
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
 				Type: mesh_proto.TracingZipkinType,
-				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url:        "http://zipkin:9090/some/path",
 					ApiVersion: "httpJson",
 				}),
@@ -173,7 +173,7 @@ var _ = Describe("Bootstrap Tracing", func() {
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
 				Type: mesh_proto.TracingZipkinType,
-				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url:        "http://zipkin:9090/some/path",
 					ApiVersion: "httpProto",
 				}),
@@ -207,7 +207,7 @@ var _ = Describe("Bootstrap Tracing", func() {
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
 				Type: mesh_proto.TracingZipkinType,
-				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url: "http://zipkin:9090/some/path",
 				}),
 			},
@@ -240,7 +240,7 @@ var _ = Describe("Bootstrap Tracing", func() {
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin-eu",
 				Type: mesh_proto.TracingZipkinType,
-				Config: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url:           "http://zipkin:9090/api/v2/spans",
 					TraceId128Bit: true,
 				}),

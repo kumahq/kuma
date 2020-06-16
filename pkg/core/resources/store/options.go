@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 )
 
 type CreateOptions struct {
 	Name         string
 	Mesh         string
 	CreationTime time.Time
+	Owner        core_model.Resource
 }
 
 type CreateOptionsFunc func(*CreateOptions)
@@ -23,7 +24,7 @@ func NewCreateOptions(fs ...CreateOptionsFunc) *CreateOptions {
 	return opts
 }
 
-func CreateBy(key model.ResourceKey) CreateOptionsFunc {
+func CreateBy(key core_model.ResourceKey) CreateOptionsFunc {
 	return CreateByKey(key.Name, key.Mesh)
 }
 
@@ -37,6 +38,12 @@ func CreateByKey(name, mesh string) CreateOptionsFunc {
 func CreatedAt(creationTime time.Time) CreateOptionsFunc {
 	return func(opts *CreateOptions) {
 		opts.CreationTime = creationTime
+	}
+}
+
+func CreateWithOwner(owner core_model.Resource) CreateOptionsFunc {
+	return func(opts *CreateOptions) {
+		opts.Owner = owner
 	}
 }
 
@@ -75,7 +82,7 @@ func NewDeleteOptions(fs ...DeleteOptionsFunc) *DeleteOptions {
 	return opts
 }
 
-func DeleteBy(key model.ResourceKey) DeleteOptionsFunc {
+func DeleteBy(key core_model.ResourceKey) DeleteOptionsFunc {
 	return DeleteByKey(key.Name, key.Mesh)
 }
 
@@ -122,7 +129,7 @@ func NewGetOptions(fs ...GetOptionsFunc) *GetOptions {
 	return opts
 }
 
-func GetBy(key model.ResourceKey) GetOptionsFunc {
+func GetBy(key core_model.ResourceKey) GetOptionsFunc {
 	return GetByKey(key.Name, key.Mesh)
 }
 

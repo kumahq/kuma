@@ -241,7 +241,10 @@ func (rc *RootContext) cpOnTheSameMachine() (bool, error) {
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {
-	return rc.Args.ConfigFile == "" && !util_files.FileExists(config.DefaultConfigFile)
+	if rc.Args.ConfigFile != "" {
+		return !util_files.FileExists(rc.Args.ConfigFile)
+	}
+	return !util_files.FileExists(config.DefaultConfigFile)
 }
 
 func (rc *RootContext) CurrentApiClient() (kumactl_resources.ApiServerClient, error) {

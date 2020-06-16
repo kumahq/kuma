@@ -50,7 +50,7 @@ var SupportedProtocols = ProtocolList{
 // Service that indicates L4 pass through cluster
 const PassThroughService = "pass_through"
 
-var ipv4loopback = net.IPv4(127, 0, 0, 1)
+var IPv4Loopback = net.IPv4(127, 0, 0, 1)
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
 	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
@@ -70,7 +70,7 @@ func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bo
 			return true
 		}
 		// compare against port and IP address of the application
-		if port == iface.WorkloadPort && overlap(address, ipv4loopback) {
+		if port == iface.WorkloadPort && overlap(address, IPv4Loopback) {
 			return true
 		}
 	}
@@ -108,14 +108,14 @@ func (d *DataplaneResource) GetPrometheusEndpoint(mesh *MeshResource) (*mesh_pro
 		return nil, nil
 	}
 	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
-	strCfg := mesh.GetEnabledMetricsBackend().Config
+	strCfg := mesh.GetEnabledMetricsBackend().Conf
 	if err := util_proto.ToTyped(strCfg, &cfg); err != nil {
 		return nil, err
 	}
 
 	if d.Spec.GetMetrics().GetType() == mesh_proto.MetricsPrometheusType {
 		dpCfg := mesh_proto.PrometheusMetricsBackendConfig{}
-		if err := util_proto.ToTyped(d.Spec.Metrics.Config, &dpCfg); err != nil {
+		if err := util_proto.ToTyped(d.Spec.Metrics.Conf, &dpCfg); err != nil {
 			return nil, err
 		}
 		proto.Merge(&cfg, &dpCfg)
@@ -134,7 +134,7 @@ func (d *DataplaneResource) GetIP() string {
 	if len(d.Spec.Networking.Inbound) == 0 {
 		return ""
 	}
-	iface, err := d.Spec.Networking.GetInboundInterfaceByIdx(0)
+	iface, err := d.Spec.Networking.ToInboundInterface(d.Spec.Networking.Inbound[0])
 	if err != nil {
 		return ""
 	}

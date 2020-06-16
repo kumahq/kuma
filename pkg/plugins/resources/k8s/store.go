@@ -9,7 +9,9 @@ import (
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -25,12 +27,14 @@ var _ store.ResourceStore = &KubernetesStore{}
 type KubernetesStore struct {
 	Client    kube_client.Client
 	Converter Converter
+	Scheme    *kube_runtime.Scheme
 }
 
-func NewStore(client kube_client.Client) (store.ResourceStore, error) {
+func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme) (store.ResourceStore, error) {
 	return &KubernetesStore{
 		Client:    client,
 		Converter: DefaultConverter(),
+		Scheme:    scheme,
 	}, nil
 }
 
@@ -47,6 +51,17 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	obj.SetMesh(opts.Mesh)
 	obj.GetObjectMeta().SetName(name)
 	obj.GetObjectMeta().SetNamespace(namespace)
+
+	if opts.Owner != nil {
+		k8sOwner, err := s.Converter.ToKubernetesObject(opts.Owner)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert core model into k8s counterpart")
+		}
+		if err := controllerutil.SetOwnerReference(k8sOwner, obj, s.Scheme); err != nil {
+			return errors.Wrap(err, "failed to set owner reference for object")
+		}
+	}
+
 	if err := s.Client.Create(ctx, obj); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
 			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
@@ -160,7 +175,38 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if err := s.Converter.ToCoreList(obj, rs, predicate); err != nil {
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
+
+	total, err := s.countK8sResources(ctx, rs, opts.Mesh)
+	if err != nil {
+		return err
+	}
+	rs.GetPagination().SetTotal(uint32(total))
+
 	return nil
+}
+
+func (s *KubernetesStore) countK8sResources(ctx context.Context, rs core_model.ResourceList, mesh string) (int, error) {
+	obj, err := s.Converter.ToKubernetesList(rs)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
+	}
+
+	if err := s.Client.List(ctx, obj, &kube_client.ListOptions{}); err != nil {
+		return 0, errors.Wrap(err, "failed to list k8s resources")
+	}
+
+	if mesh == "" {
+		return len(obj.GetItems()), nil
+	}
+
+	total := 0
+	for _, item := range obj.GetItems() {
+		if item.GetMesh() == mesh {
+			total++
+		}
+	}
+
+	return total, nil
 }
 
 func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, error) {
@@ -289,8 +335,6 @@ func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model
 			_ = out.AddItem(r)
 		}
 	}
-	out.SetPagination(core_model.Pagination{
-		NextOffset: in.GetContinue(),
-	})
+	out.GetPagination().SetNextOffset(in.GetContinue())
 	return nil
 }

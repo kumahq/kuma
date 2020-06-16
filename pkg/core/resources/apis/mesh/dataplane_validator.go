@@ -10,7 +10,11 @@ import (
 
 func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
-	err.Add(validateNetworking(d.Spec.GetNetworking()))
+	if d.Spec.IsIngress() {
+		err.Add(validateIngressNetworking(d.Spec.GetNetworking()))
+	} else {
+		err.Add(validateNetworking(d.Spec.GetNetworking()))
+	}
 	return err.OrNil()
 }
 
@@ -44,6 +48,41 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)
 		err.AddErrorAt(path.Field("outbound").Index(i), result)
+	}
+	return err
+}
+
+func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
+	var err validators.ValidationError
+	path := validators.RootedAt("networking")
+	if networking.Gateway != nil {
+		err.AddViolationAt(path, "gateway cannot be defined in the ingress mode")
+	}
+	if len(networking.GetOutbound()) != 0 {
+		err.AddViolationAt(path, "dataplane cannot have outbounds in the ingress mode")
+	}
+	if len(networking.GetInbound()) != 1 {
+		err.AddViolationAt(path, "dataplane must have one inbound interface")
+	}
+	for i, inbound := range networking.GetInbound() {
+		p := path.Field("inbound").Index(i)
+		if inbound.Port < 1 || inbound.Port > 65535 {
+			err.AddViolationAt(p.Field("port"), `port has to be in range of [1, 65535]`)
+		}
+		if inbound.ServicePort != 0 {
+			err.AddViolationAt(p.Field("servicePort"), `cannot be defined in the ingress mode`)
+		}
+		if inbound.Address != "" {
+			err.AddViolationAt(p.Field("address"), `cannot be defined in the ingress mode`)
+		}
+		err.AddErrorAt(p.Field("address"), validateTags(inbound.Tags))
+	}
+	for i, ingressInterface := range networking.GetIngress().GetAvailableServices() {
+		p := path.Field("ingress").Field("availableService").Index(i)
+		if _, ok := ingressInterface.Tags[mesh_proto.ServiceTag]; !ok {
+			err.AddViolationAt(p.Field("tags").Key(mesh_proto.ServiceTag), "cannot be empty")
+		}
+		err.AddErrorAt(p.Field("tags"), validateTags(ingressInterface.GetTags()))
 	}
 	return err
 }
@@ -141,7 +180,7 @@ func validateTags(tags map[string]string) validators.ValidationError {
 			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value cannot be empty`)
 		}
 		if !tagNameCharacterSet.MatchString(name) {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag name must consist of alphanumeric characters, dots, dashes and underscores`)
+			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`)
 		}
 		if !tagValueCharacterSet.MatchString(value) {
 			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value must consist of alphanumeric characters, dots, dashes and underscores`)

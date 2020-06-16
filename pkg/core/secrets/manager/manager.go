@@ -20,10 +20,11 @@ type SecretManager interface {
 	List(context.Context, *secret_model.SecretResourceList, ...core_store.ListOptionsFunc) error
 }
 
-func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher.Cipher) SecretManager {
+func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher.Cipher, validator SecretValidator) SecretManager {
 	return &secretManager{
 		secretStore: secretStore,
 		cipher:      cipher,
+		validator:   validator,
 	}
 }
 
@@ -32,6 +33,7 @@ var _ SecretManager = &secretManager{}
 type secretManager struct {
 	secretStore secret_store.SecretStore
 	cipher      secret_cipher.Cipher
+	validator   SecretValidator
 }
 
 func (s *secretManager) Get(ctx context.Context, secret *secret_model.SecretResource, fs ...core_store.GetOptionsFunc) error {
@@ -74,6 +76,10 @@ func (s *secretManager) Update(ctx context.Context, secret *secret_model.SecretR
 }
 
 func (s *secretManager) Delete(ctx context.Context, secret *secret_model.SecretResource, fs ...core_store.DeleteOptionsFunc) error {
+	opts := core_store.NewDeleteOptions(fs...)
+	if err := s.validator.ValidateDelete(ctx, opts.Name, opts.Mesh); err != nil {
+		return err
+	}
 	return s.secretStore.Delete(ctx, secret, fs...)
 }
 
