@@ -45,8 +45,8 @@ func convertLoggingBackend(mesh string, trafficDirection TrafficDirection, sourc
 	if backend.Format != "" {
 		formatString = backend.Format
 	}
-
 	format, err := accesslog.ParseFormat(formatString + "\n")
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid access log format string: %s", formatString)
 	}
