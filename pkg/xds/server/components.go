@@ -136,11 +136,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					},
 				}
 
-				otherDataplanes := &mesh_core.DataplaneResourceList{}
-				if err := rt.ReadOnlyResourceManager().List(ctx, otherDataplanes, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
-					return err
-				}
-
 				if dataplane.Spec.IsIngress() {
 					// update Ingress
 					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, dataplanes.Items); err != nil {
