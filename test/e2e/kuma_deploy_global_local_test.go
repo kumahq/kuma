@@ -11,28 +11,28 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/pkg/config/core"
-	"github.com/Kong/kuma/test/framework"
+	. "github.com/Kong/kuma/test/framework"
 )
 
 var _ = Describe("Test Local and Global", func() {
-	var clusters framework.Clusters
+	var clusters Clusters
 
 	BeforeEach(func() {
 		var err error
-		clusters, err = framework.NewK8sClusters(
-			[]string{framework.Kuma1, framework.Kuma2},
-			framework.Verbose)
+		clusters, err = NewK8sClusters(
+			[]string{Kuma1, Kuma2},
+			Verbose)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.CreateNamespace("kuma-test")
+		err = clusters.CreateNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.LabelNamespaceForSidecarInjection("kuma-test")
+		err = clusters.LabelNamespaceForSidecarInjection(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		err := clusters.DeleteNamespace("kuma-test")
+		err := clusters.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		_ = clusters.DeleteKuma()
@@ -40,8 +40,8 @@ var _ = Describe("Test Local and Global", func() {
 
 	It("Should deploy Local and Global on 2 clusters", func() {
 		// given
-		c1 := clusters.GetCluster(framework.Kuma1)
-		c2 := clusters.GetCluster(framework.Kuma2)
+		c1 := clusters.GetCluster(Kuma1)
+		c2 := clusters.GetCluster(Kuma2)
 
 		global, err := c1.DeployKuma(core.Global)
 		Expect(err).ToNot(HaveOccurred())
