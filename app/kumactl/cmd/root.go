@@ -43,7 +43,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				kumactlLog.Error(err, "Unable to get index client")
 			} else {
-				kumaBuildVersion, err = client.GetVersion()
+				kumaBuildVersion, _ = client.GetVersion()
 			}
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {

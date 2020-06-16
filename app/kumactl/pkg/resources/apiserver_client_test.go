@@ -16,6 +16,7 @@ var _ = Describe("httpApiServerClient", func() {
 	Describe("GetVersion()", func() {
 		It("should parse response", func() {
 			hostname, err := os.Hostname()
+			Expect(err).ToNot(HaveOccurred())
 			buildVersion := fmt.Sprintf(`
 			{
 				"hostname": "%s",
