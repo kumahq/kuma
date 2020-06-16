@@ -2,9 +2,10 @@ package postgres
 
 import (
 	"fmt"
-	"math/rand"
+	"strings"
 
 	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/Kong/kuma/pkg/core"
 )
 
 func CreateRandomDb(cfg postgres.PostgresStoreConfig) (string, error) {
@@ -12,7 +13,7 @@ func CreateRandomDb(cfg postgres.PostgresStoreConfig) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dbName := fmt.Sprintf("kuma_%d", rand.Int())
+	dbName := fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
 	statement := fmt.Sprintf("CREATE DATABASE %s", dbName)
 	if _, err = db.Exec(statement); err != nil {
 		return "", err
