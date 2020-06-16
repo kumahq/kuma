@@ -138,7 +138,18 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 	return errs
 }
 
-func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
+func (d *SimpleDNSResolver) ForwardLookup(service string) (string, error) {
+	d.RLock()
+	defer d.RUnlock()
+
+	ip, found := d.viplist[service]
+	if !found {
+		return "", errors.Errorf("service [%s] not found in domain [%s].", service, d.domain)
+	}
+	return ip, nil
+}
+
+func (d *SimpleDNSResolver) ForwardLookupFQDN(name string) (string, error) {
 	d.RLock()
 	defer d.RUnlock()
 	domain, err := d.domainFromName(name)
