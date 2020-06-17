@@ -173,6 +173,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
+          sni: api-http
       type: EDS
   - name: api-tcp
     resource:
@@ -217,6 +218,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
+          sni: api-tcp
       type: EDS
   - name: backend
     resource:
@@ -261,6 +263,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
+          sni: backend
       type: EDS
   - name: db
     resource:
@@ -311,6 +314,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
+          sni: db
       type: EDS
   - name: api-http
     resource:
