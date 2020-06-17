@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	clusters_server "github.com/Kong/kuma/pkg/clusters/server"
+	"github.com/Kong/kuma/pkg/clusters/poller"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	. "github.com/onsi/ginkgo"
@@ -81,7 +81,7 @@ var _ = Describe("Test Local and Global", func() {
 		Expect(status).To(Equal(http.StatusOK))
 
 		// when
-		clustersStatus := clusters_server.Clusters{}
+		clustersStatus := poller.Clusters{}
 		_ = json.Unmarshal([]byte(response), &clustersStatus)
 		// then
 

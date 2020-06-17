@@ -1,4 +1,4 @@
-package server
+package poller
 
 import (
 	"encoding/json"
@@ -17,9 +17,9 @@ var (
 )
 
 type (
-	ClusterStatusServer interface {
+	ClusterStatusPoller interface {
 		Start(<-chan struct{}) error
-		StatusHandler(writer http.ResponseWriter)
+		EncodeClusters(encoder *json.Encoder) error
 	}
 
 	Cluster struct {
@@ -43,7 +43,7 @@ const (
 	httpTimeout  = tickInterval / 100
 )
 
-func NewClustersStatusPoller(clusters *clusters.ClustersConfig) (ClusterStatusServer, error) {
+func NewClustersStatusPoller(clusters *clusters.ClustersConfig) (ClusterStatusPoller, error) {
 	poller := &ClustersStatusPoller{
 		clusters: []*Cluster{},
 		client: http.Client{
@@ -109,11 +109,8 @@ func (p *ClustersStatusPoller) pollClusters() {
 	}
 }
 
-func (p *ClustersStatusPoller) StatusHandler(writer http.ResponseWriter) {
+func (p *ClustersStatusPoller) EncodeClusters(encoder *json.Encoder) error {
 	p.RLock()
 	defer p.RUnlock()
-	writer.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(writer).Encode(p.clusters); err != nil {
-		clusterStatusLog.Error(err, "failed marshaling response")
-	}
+	return encoder.Encode(p.clusters)
 }

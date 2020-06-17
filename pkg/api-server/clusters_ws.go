@@ -1,14 +1,20 @@
 package api_server
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 
-	clusters "github.com/Kong/kuma/pkg/clusters/server"
+	"github.com/Kong/kuma/pkg/clusters/poller"
 )
 
-func clustersWs(clusters clusters.ClusterStatusServer) *restful.WebService {
+func clustersWs(clusters poller.ClusterStatusPoller) *restful.WebService {
 	ws := new(restful.WebService).Path("/status/clusters")
 	return ws.Route(ws.GET("").To(func(request *restful.Request, response *restful.Response) {
-		clusters.StatusHandler(response)
+		response.WriteHeader(http.StatusOK)
+		if err := clusters.EncodeClusters(json.NewEncoder(response)); err != nil {
+			log.Error(err, "failed marshaling response")
+		}
 	}))
 }

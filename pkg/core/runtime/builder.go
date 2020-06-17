@@ -3,7 +3,7 @@ package runtime
 import (
 	"context"
 
-	clusters "github.com/Kong/kuma/pkg/clusters/server"
+	"github.com/Kong/kuma/pkg/clusters/poller"
 
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
 
@@ -30,7 +30,7 @@ type BuilderContext interface {
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
 	DNSResolver() resolver.DNSResolver
-	Clusters() clusters.ClusterStatusServer
+	Clusters() poller.ClusterStatusPoller
 }
 
 var _ BuilderContext = &Builder{}
@@ -48,7 +48,7 @@ type Builder struct {
 	dsl      datasource.Loader
 	ext      context.Context
 	dns      resolver.DNSResolver
-	clusters clusters.ClusterStatusServer
+	clusters poller.ClusterStatusPoller
 }
 
 func BuilderFor(cfg kuma_cp.Config) *Builder {
@@ -114,7 +114,7 @@ func (b *Builder) WithDNSResolver(dns resolver.DNSResolver) *Builder {
 	return b
 }
 
-func (b *Builder) WithClusters(clusters clusters.ClusterStatusServer) *Builder {
+func (b *Builder) WithClusters(clusters poller.ClusterStatusPoller) *Builder {
 	b.clusters = clusters
 	return b
 }
@@ -199,6 +199,6 @@ func (b *Builder) Extensions() context.Context {
 func (b *Builder) DNSResolver() resolver.DNSResolver {
 	return b.dns
 }
-func (b *Builder) Clusters() clusters.ClusterStatusServer {
+func (b *Builder) Clusters() poller.ClusterStatusPoller {
 	return b.clusters
 }

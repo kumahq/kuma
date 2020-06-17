@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	clusters "github.com/Kong/kuma/pkg/clusters/server"
+	"github.com/Kong/kuma/pkg/clusters/poller"
 
 	"github.com/emicklei/go-restful"
 	"github.com/pkg/errors"
@@ -53,7 +53,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, clusters clusters.ClusterStatusServer, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, clusters poller.ClusterStatusPoller, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
