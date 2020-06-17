@@ -142,13 +142,15 @@ var _ = Describe("TrafficRoute", func() {
 			// and
 			Expect(routes).To(HaveLen(2))
 			// and
-			Expect(routes).To(HaveKey("redis"))
-			Expect(routes["redis"].Meta.GetName()).To(Equal(routeRedis.Meta.GetName()))
-			Expect(routes["redis"].Spec).To(Equal(routeRedis.Spec))
+			out1 := mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: 10001}
+			Expect(routes).To(HaveKey(out1))
+			Expect(routes[out1].Meta.GetName()).To(Equal(routeRedis.Meta.GetName()))
+			Expect(routes[out1].Spec).To(Equal(routeRedis.Spec))
 			// and
-			Expect(routes).To(HaveKey("elastic"))
-			Expect(routes["elastic"].Meta.GetName()).To(Equal(routeElastic.Meta.GetName()))
-			Expect(routes["elastic"].Spec).To(Equal(routeElastic.Spec))
+			out2 := mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: 10002}
+			Expect(routes).To(HaveKey(out2))
+			Expect(routes[out2].Meta.GetName()).To(Equal(routeElastic.Meta.GetName()))
+			Expect(routes[out2].Spec).To(Equal(routeElastic.Spec))
 		})
 	})
 
@@ -218,15 +220,24 @@ var _ = Describe("TrafficRoute", func() {
 								{Tags: map[string]string{"service": "backend"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis"},
-								{Service: "elastic"},
+								{
+									Port:    1234,
+									Service: "redis",
+								},
+								{
+									Port:    1235,
+									Service: "elastic",
+								},
 							},
 						},
 					},
 				},
 				routes: nil,
 				expected: core_xds.RouteMap{
-					"redis": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 1234,
+					}: &mesh_core.TrafficRouteResource{
 						Meta: &PseudoMeta{
 							Name: "(implicit default route)",
 						},
@@ -243,7 +254,10 @@ var _ = Describe("TrafficRoute", func() {
 							}},
 						},
 					},
-					"elastic": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 1235,
+					}: &mesh_core.TrafficRouteResource{
 						Meta: &PseudoMeta{
 							Name: "(implicit default route)",
 						},
@@ -270,8 +284,14 @@ var _ = Describe("TrafficRoute", func() {
 								{Tags: map[string]string{"service": "backend"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis"},
-								{Service: "elastic"},
+								{
+									Port:    1234,
+									Service: "redis",
+								},
+								{
+									Port:    1235,
+									Service: "elastic",
+								},
 							},
 						},
 					},
@@ -298,7 +318,10 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				expected: core_xds.RouteMap{
-					"redis": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 1234,
+					}: &mesh_core.TrafficRouteResource{
 						Meta: &PseudoMeta{
 							Name: "(implicit default route)",
 						},
@@ -315,7 +338,10 @@ var _ = Describe("TrafficRoute", func() {
 							}},
 						},
 					},
-					"elastic": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 1235,
+					}: &mesh_core.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "everything-to-elastic-v1",
 						},
@@ -330,7 +356,10 @@ var _ = Describe("TrafficRoute", func() {
 								{Tags: map[string]string{"service": "backend"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis"},
+								{
+									Port:    1234,
+									Service: "redis",
+								},
 							},
 						},
 					},
@@ -378,7 +407,10 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				expected: core_xds.RouteMap{
-					"redis": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 1234,
+					}: &mesh_core.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "everything-to-hollygrail",
 						},
@@ -393,7 +425,10 @@ var _ = Describe("TrafficRoute", func() {
 								{Tags: map[string]string{"service": "backend", "region": "eu"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis"},
+								{
+									Port:    1234,
+									Service: "redis",
+								},
 							},
 						},
 					},
@@ -439,7 +474,10 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				expected: core_xds.RouteMap{
-					"redis": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 1234,
+					}: &mesh_core.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
@@ -454,7 +492,10 @@ var _ = Describe("TrafficRoute", func() {
 								{Tags: map[string]string{"service": "backend", "region": "eu"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis"},
+								{
+									Port:    1234,
+									Service: "redis",
+								},
 							},
 						},
 					},
@@ -500,7 +541,10 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				expected: core_xds.RouteMap{
-					"redis": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 1234,
+					}: &mesh_core.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
@@ -515,7 +559,10 @@ var _ = Describe("TrafficRoute", func() {
 								{Tags: map[string]string{"service": "backend", "region": "eu"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis"},
+								{
+									Port:    1234,
+									Service: "redis",
+								},
 							},
 						},
 					},
@@ -561,7 +608,10 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				expected: core_xds.RouteMap{
-					"redis": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 1234,
+					}: &mesh_core.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
@@ -576,7 +626,10 @@ var _ = Describe("TrafficRoute", func() {
 								{Tags: map[string]string{"service": "backend", "region": "eu"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis"},
+								{
+									Port:    1234,
+									Service: "redis",
+								},
 							},
 						},
 					},
@@ -624,7 +677,10 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				expected: core_xds.RouteMap{
-					"redis": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 1234,
+					}: &mesh_core.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "equally-specific-2",
 						},
@@ -685,7 +741,10 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				routes: core_xds.RouteMap{
-					"redis": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 10001,
+					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
 								{
@@ -699,7 +758,10 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
-					"elastic": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 10002,
+					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
 								{

@@ -18,7 +18,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
-		clusters        []envoy_common.ClusterInfo
+		clusters        []envoy_common.ClusterSubset
 		expected        string
 	}
 
@@ -45,7 +45,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			listenerAddress: "0.0.0.0",
 			listenerPort:    12345,
 			statsName:       "pass_through",
-			clusters:        []envoy_common.ClusterInfo{{Name: "pass_through", Weight: 200}},
+			clusters:        []envoy_common.ClusterSubset{{ClusterName: "pass_through", Weight: 200}},
 			expected: `
             name: catch_all
             trafficDirection: OUTBOUND

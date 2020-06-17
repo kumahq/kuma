@@ -44,9 +44,9 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 			inboundListenerBuilder = inboundListenerBuilder.
 				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
 					Configure(envoy_listeners.FilterChainMatch(perm)).
-					Configure(envoy_listeners.TcpProxyWithMetaMatch(service, envoy_common.ClusterInfo{
-						Name: service,
-						Tags: TagsBySNI(perm),
+					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
+						ClusterName: service,
+						Tags:        TagsBySNI(perm),
 					}))))
 		}
 	}

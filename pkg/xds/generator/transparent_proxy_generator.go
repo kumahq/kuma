@@ -24,7 +24,7 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	listener, err := envoy_listeners.NewListenerBuilder().
 		Configure(envoy_listeners.OutboundListener("catch_all", "0.0.0.0", redirectPort)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
-			Configure(envoy_listeners.TcpProxy("pass_through", envoy_common.ClusterInfo{Name: "pass_through"})).
+			Configure(envoy_listeners.TcpProxy("pass_through", envoy_common.ClusterSubset{ClusterName: "pass_through"})).
 			Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionUnspecified, sourceService, "external", proxy.Logs[mesh_core.PassThroughService], proxy)))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
