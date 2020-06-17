@@ -158,8 +158,15 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		}
 	}
 
-	if outbound.Service == "" {
-		result.AddViolation("service", "cannot be empty")
+	if len(outbound.Tags) == 0 {
+		if outbound.Service == "" {
+			result.AddViolation("service", "cannot be empty")
+		}
+	} else {
+		if _, exist := outbound.Tags[mesh_proto.ServiceTag]; !exist {
+			result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
+		}
+		result.Add(validateTags(outbound.Tags))
 	}
 	return result
 }

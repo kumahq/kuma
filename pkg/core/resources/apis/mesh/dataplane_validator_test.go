@@ -41,7 +41,8 @@ var _ = Describe("Dataplane", func() {
                     version: "1"
               outbound:
                 - interface: :3333
-                  service: redis`,
+                  tags:
+                    service: redis`,
 		),
 		Entry("dataplane with inbounds", `
             type: Dataplane
@@ -56,7 +57,8 @@ var _ = Describe("Dataplane", func() {
                     version: "1"
               outbound:
                 - port: 3333
-                  service: redis`,
+                  tags:
+                    service: redis`,
 		),
 		Entry("dataplane with full inbounds and outbounds", `
             type: Dataplane
@@ -71,6 +73,24 @@ var _ = Describe("Dataplane", func() {
                   tags:
                     service: backend
                     version: "1"
+              outbound:
+                - port: 3333
+                  address: 127.0.0.1
+                  tags:
+                    service: redis`,
+		),
+		Entry("dataplane with legacy outbounds", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 127.0.0.1
+                  tags:
+                    service: backend
               outbound:
                 - port: 3333
                   address: 127.0.0.1
@@ -103,7 +123,8 @@ var _ = Describe("Dataplane", func() {
                   kuma.io/valid: abc.0123-789.under_score:90
               outbound:
                 - port: 3333
-                  service: redis`,
+                  tags:
+                    service: redis`,
 		),
 		Entry("dataplane in ingress mode", `
             type: Dataplane
@@ -410,6 +431,27 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.outbound[0].service
                   message: cannot be empty`,
+		}),
+		Entry("networking.outbound: empty service tag", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 1234
+                      tags:
+                        service: backend
+                        version: "v1"
+                  outbound:
+                    - port: 3333
+                      tags:
+                        version: v1`,
+			expected: `
+                violations:
+                - field: networking.outbound[0].tags["service"]
+                  message: tag has to exist`,
 		}),
 		Entry("networking.outbound: port out of the range", testCase{
 			dataplane: `

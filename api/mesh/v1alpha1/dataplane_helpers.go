@@ -134,25 +134,29 @@ func (n *Dataplane_Networking) GetOutboundInterfaces() ([]OutboundInterface, err
 	}
 	ofaces := make([]OutboundInterface, len(n.Outbound))
 	for i, outbound := range n.Outbound {
-		if outbound.Interface != "" { // legacy format
-			oface, err := ParseOutboundInterface(outbound.Interface)
-			if err != nil {
-				return nil, err
-			}
-			ofaces[i] = oface
-		} else {
-			oface := OutboundInterface{
-				DataplanePort: outbound.Port,
-			}
-			if outbound.Address != "" {
-				oface.DataplaneIP = outbound.Address
-			} else {
-				oface.DataplaneIP = "127.0.0.1"
-			}
-			ofaces[i] = oface
+		oface, err := n.ToOutboundInterface(outbound)
+		if err != nil {
+			return nil, err
 		}
+		ofaces[i] = oface
 	}
 	return ofaces, nil
+}
+
+func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networking_Outbound) (OutboundInterface, error) {
+	if outbound.Interface != "" { // legacy format
+		return ParseOutboundInterface(outbound.Interface)
+	} else {
+		oface := OutboundInterface{
+			DataplanePort: outbound.Port,
+		}
+		if outbound.Address != "" {
+			oface.DataplaneIP = outbound.Address
+		} else {
+			oface.DataplaneIP = "127.0.0.1"
+		}
+		return oface, nil
+	}
 }
 
 func ParsePort(text string) (uint32, error) {
@@ -273,8 +277,18 @@ func (d *Dataplane_Networking_Inbound) MatchTags(selector TagSelector) bool {
 }
 
 func (d *Dataplane_Networking_Outbound) MatchTags(selector TagSelector) bool {
-	service := selector[ServiceTag]
-	return service == MatchAllTag || service == d.Service
+	return selector.Matches(d.GetTagsIncludingLegacy())
+}
+
+// GetTagsIncludingLegacy returns tags but taking on account old legacy format of "service" field in outbound
+// Remove it and migrate to GetTags() once "service" field is removed.
+func (d *Dataplane_Networking_Outbound) GetTagsIncludingLegacy() map[string]string {
+	if d.Tags == nil {
+		return map[string]string{
+			ServiceTag: d.Service,
+		}
+	}
+	return d.Tags
 }
 
 const MatchAllTag = "*"

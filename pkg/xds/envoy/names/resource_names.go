@@ -2,10 +2,6 @@ package names
 
 import (
 	"fmt"
-	"sort"
-	"strings"
-
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
 func GetLocalClusterName(port uint32) string {
@@ -34,19 +30,4 @@ func GetEnvoyAdminClusterName() string {
 
 func GetPrometheusListenerName() string {
 	return "kuma:metrics:prometheus"
-}
-
-func GetDestinationClusterName(service string, selector map[string]string) string {
-	var pairs []string
-	for key, value := range selector {
-		if key == mesh_proto.ServiceTag {
-			continue
-		}
-		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
-	}
-	if len(pairs) == 0 {
-		return service
-	}
-	sort.Strings(pairs)
-	return fmt.Sprintf("%s{%s}", service, strings.Join(pairs, ","))
 }

@@ -96,7 +96,6 @@ var _ = Describe("Endpoints", func() {
                       filterMetadata:
                         envoy.lb:
                           region: us
-                          service: backend
                   - endpoint:
                       address:
                         socketAddress:
@@ -106,64 +105,6 @@ var _ = Describe("Endpoints", func() {
                       filterMetadata:
                         envoy.lb:
                           region: eu
-                          service: backend
-`,
-			}),
-		)
-	})
-
-	Describe("CreateLbMetadata()", func() {
-
-		It("should handle `nil` map of tags", func() {
-			// when
-			metadata := CreateLbMetadata(nil)
-			// then
-			Expect(metadata).To(BeNil())
-		})
-
-		It("should handle empty map of tags", func() {
-			// when
-			metadata := CreateLbMetadata(map[string]string{})
-			// then
-			Expect(metadata).To(BeNil())
-		})
-
-		type testCase struct {
-			tags     map[string]string
-			expected string
-		}
-		DescribeTable("should generate Envoy metadata",
-			func(given testCase) {
-				// when
-				metadata := CreateLbMetadata(given.tags)
-				// and
-				actual, err := util_proto.ToYAML(metadata)
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				Expect(actual).To(MatchYAML(given.expected))
-			},
-			Entry("map with 1 tag", testCase{
-				tags: map[string]string{
-					"service": "redis",
-				},
-				expected: `
-                filterMetadata:
-                  envoy.lb:
-                    service: redis
-`,
-			}),
-			Entry("map with multiple tags", testCase{
-				tags: map[string]string{
-					"service": "redis",
-					"version": "v1",
-					"region":  "eu",
-				},
-				expected: `
-                filterMetadata:
-                  envoy.lb:
-                    service: redis
-                    version: v1
-                    region: eu
 `,
 			}),
 		)

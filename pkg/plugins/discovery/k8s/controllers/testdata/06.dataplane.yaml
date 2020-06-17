@@ -20,4 +20,5 @@ spec:
     outbound:
       - address: 10.244.0.25
         port: 80
-        service: test-app.playground.svc:80
+        tags:
+          service: test-app.playground.svc:80
