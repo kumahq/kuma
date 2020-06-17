@@ -2,8 +2,9 @@ package server
 
 import (
 	"context"
-	config_core "github.com/Kong/kuma/pkg/config/core"
 	"time"
+
+	config_core "github.com/Kong/kuma/pkg/config/core"
 
 	"github.com/Kong/kuma/pkg/xds/ingress"
 

@@ -1,6 +1,8 @@
 package topology
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -24,7 +26,12 @@ func PatchDataplaneWithVIPOutbounds(dataplane *mesh_core.DataplaneResource,
 
 			vip, err := resolver.ForwardLookup(inService)
 			if err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "unable to resolve %s", inService))
+				// try to get the first part of the FQDN service and look it up
+				split := strings.Split(inService, ".")
+				vip, err = resolver.ForwardLookup(split[0])
+				if err != nil {
+					errs = multierr.Append(errs, errors.Wrapf(err, "unable to resolve %s", inService))
+				}
 			}
 			serviceVIPMap[inService] = vip
 		}

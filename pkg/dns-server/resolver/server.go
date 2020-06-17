@@ -122,6 +122,7 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 				errs = multierr.Append(errs, errors.Wrapf(err, "unable to allocate an ip for service %s", service))
 			} else {
 				d.viplist[service] = ip
+				simpleDNSLog.Info("Adding ", "service", service, "ip", ip)
 			}
 		}
 	}
@@ -212,7 +213,7 @@ func (d *SimpleDNSResolver) domainFromName(name string) (string, error) {
 
 func (d *SimpleDNSResolver) serviceFromName(name string) (string, error) {
 	split := dns.SplitDomainName(name)
-	if len(split) < 2 {
+	if len(split) < 1 {
 		return "", errors.Errorf("wrong DNS name: %s", name)
 	}
 
