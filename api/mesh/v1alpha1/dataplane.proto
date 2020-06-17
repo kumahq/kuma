@@ -87,8 +87,12 @@ message Dataplane {
       // Port on which the service will be available to this dataplane.
       uint32 port = 4;
 
+      // DEPRECATED: use networking.outbound[].tags
       // Service name.
       string service = 2 [ (validate.rules).string.hostname = true ];
+
+      // Tags
+      map<string, string> tags = 5;
     }
 
     // Gateway describes a service that ingress should not be proxied.

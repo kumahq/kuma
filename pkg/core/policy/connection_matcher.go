@@ -30,7 +30,7 @@ func ToOutboundServicesOf(dataplane *mesh_core.DataplaneResource) ServiceIterato
 		}
 		oface := dataplane.Spec.Networking.GetOutbound()[idx]
 		idx++
-		return oface.Service, true
+		return oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag], true
 	})
 }
 

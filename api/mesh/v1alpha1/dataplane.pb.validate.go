@@ -437,6 +437,8 @@ func (m *Dataplane_Networking_Outbound) Validate() error {
 		}
 	}
 
+	// no validation rules for Tags
+
 	return nil
 }
 

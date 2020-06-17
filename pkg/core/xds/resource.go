@@ -81,6 +81,11 @@ func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
 	return s
 }
 
+func (s *ResourceSet) AddSet(set ResourceSet) *ResourceSet {
+	s.Add(set.List()...)
+	return s
+}
+
 func (s *ResourceSet) AddNamed(namedPayloads ...NamedResourcePayload) *ResourceSet {
 	for _, namedPayload := range namedPayloads {
 		s.Add(&Resource{

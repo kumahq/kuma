@@ -65,7 +65,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					Spec: dataplane,
 				},
 				TrafficRoutes: model.RouteMap{
-					"db": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 54321,
+					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 								Weight:      100,
@@ -73,7 +76,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							}},
 						},
 					},
-					"elastic": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 59200,
+					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 								Weight:      100,

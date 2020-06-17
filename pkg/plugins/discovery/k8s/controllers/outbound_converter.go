@@ -30,7 +30,9 @@ func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_
 				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 					Address: endpoint.Address,
 					Port:    endpoint.Port,
-					Service: serviceTag,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: serviceTag,
+					},
 				})
 			}
 		} else {
@@ -38,7 +40,9 @@ func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_
 			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 				Address: service.Spec.ClusterIP,
 				Port:    port,
-				Service: serviceTag,
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: serviceTag,
+				},
 			})
 		}
 	}
