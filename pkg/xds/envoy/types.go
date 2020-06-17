@@ -2,10 +2,10 @@ package envoy
 
 import "sort"
 
-type ClusterInfo struct {
-	Name   string
-	Weight uint32
-	Tags   Tags
+type ClusterSubset struct {
+	ClusterName string
+	Weight      uint32
+	Tags        Tags
 }
 
 type Tags map[string]string
@@ -29,7 +29,7 @@ func (t Tags) Keys() []string {
 	return keys
 }
 
-type Clusters map[string][]ClusterInfo
+type Clusters map[string][]ClusterSubset
 
 func (c Clusters) ClusterNames() []string {
 	var keys []string
@@ -40,9 +40,9 @@ func (c Clusters) ClusterNames() []string {
 	return keys
 }
 
-func (c Clusters) Add(infos ...ClusterInfo) {
+func (c Clusters) Add(infos ...ClusterSubset) {
 	for _, info := range infos {
-		c[info.Name] = append(c[info.Name], info)
+		c[info.ClusterName] = append(c[info.ClusterName], info)
 	}
 }
 

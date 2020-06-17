@@ -10,7 +10,7 @@ import (
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
 
-func TcpProxy(statsName string, clusters ...envoy_common.ClusterInfo) FilterChainBuilderOpt {
+func TcpProxy(statsName string, clusters ...envoy_common.ClusterSubset) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.Add(&TcpProxyConfigurer{
 			statsName: statsName,
@@ -22,7 +22,7 @@ func TcpProxy(statsName string, clusters ...envoy_common.ClusterInfo) FilterChai
 type TcpProxyConfigurer struct {
 	statsName string
 	// Clusters to forward traffic to.
-	clusters []envoy_common.ClusterInfo
+	clusters []envoy_common.ClusterSubset
 }
 
 func (c *TcpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -48,13 +48,13 @@ func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 	}
 	if len(c.clusters) == 1 && envoy_common.Metadata(c.clusters[0].Tags) == nil {
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
-			Cluster: c.clusters[0].Name,
+			Cluster: c.clusters[0].ClusterName,
 		}
 	} else {
 		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
 		for _, cluster := range c.clusters {
 			weightedClusters = append(weightedClusters, &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
-				Name:          cluster.Name,
+				Name:          cluster.ClusterName,
 				Weight:        cluster.Weight,
 				MetadataMatch: envoy_common.Metadata(cluster.Tags),
 			})

@@ -9,7 +9,7 @@ import (
 	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
 )
 
-func HttpInboundRoute(service string, cluster envoy_common.ClusterInfo) FilterChainBuilderOpt {
+func HttpInboundRoute(service string, cluster envoy_common.ClusterSubset) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.Add(&HttpInboundRouteConfigurer{
 			service: service,
@@ -21,7 +21,7 @@ func HttpInboundRoute(service string, cluster envoy_common.ClusterInfo) FilterCh
 type HttpInboundRouteConfigurer struct {
 	service string
 	// Cluster to forward traffic to.
-	cluster envoy_common.ClusterInfo
+	cluster envoy_common.ClusterSubset
 }
 
 func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {

@@ -18,7 +18,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
-		clusters        []envoy_common.ClusterInfo
+		clusters        []envoy_common.ClusterSubset
 		expected        string
 	}
 
@@ -44,8 +44,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters: []envoy_common.ClusterInfo{
-				{Name: "localhost:8080", Weight: 200},
+			clusters: []envoy_common.ClusterSubset{
+				{ClusterName: "localhost:8080", Weight: 200},
 			},
 			expected: `
         name: inbound:192.168.0.1:8080
@@ -68,14 +68,14 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
-			clusters: []envoy_common.ClusterInfo{{
-				Name:   "db",
-				Weight: 10,
-				Tags:   map[string]string{"service": "db", "version": "v1"},
+			clusters: []envoy_common.ClusterSubset{{
+				ClusterName: "db",
+				Weight:      10,
+				Tags:        map[string]string{"service": "db", "version": "v1"},
 			}, {
-				Name:   "db",
-				Weight: 90,
-				Tags:   map[string]string{"service": "db", "version": "v2"},
+				ClusterName: "db",
+				Weight:      90,
+				Tags:        map[string]string{"service": "db", "version": "v2"},
 			}},
 			expected: `
             address:

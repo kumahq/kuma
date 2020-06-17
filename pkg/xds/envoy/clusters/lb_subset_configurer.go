@@ -5,7 +5,7 @@ import (
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/xds/envoy"
 )
 
@@ -41,7 +41,7 @@ func (e *lbSubsetConfigurer) Configure(c *envoy_api.Cluster) error {
 	var selectors []*envoy_api.Cluster_LbSubsetConfig_LbSubsetSelector
 	subsets := map[string]bool{} // we only need unique subsets
 	for _, tags := range e.tags {
-		keys := tags.WithoutTag(v1alpha1.ServiceTag).Keys() // service tag is not included in metadata
+		keys := tags.WithoutTag(mesh_proto.ServiceTag).Keys() // service tag is not included in metadata
 		if len(keys) == 0 {
 			continue
 		}
