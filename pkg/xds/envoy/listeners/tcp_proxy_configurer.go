@@ -46,9 +46,12 @@ func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 	proxy := envoy_tcp.TcpProxy{
 		StatPrefix: util_xds.SanitizeMetric(c.statsName),
 	}
-	if len(c.clusters) == 1 && envoy_common.Metadata(c.clusters[0].Tags) == nil {
+	if len(c.clusters) == 1 {
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
 			Cluster: c.clusters[0].ClusterName,
+		}
+		if envoy_common.Metadata(c.clusters[0].Tags) != nil {
+			proxy.MetadataMatch = envoy_common.Metadata(c.clusters[0].Tags)
 		}
 	} else {
 		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
