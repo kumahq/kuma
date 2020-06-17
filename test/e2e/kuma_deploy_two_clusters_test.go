@@ -7,7 +7,7 @@ import (
 	"github.com/Kong/kuma/test/framework"
 )
 
-var _ = Describe("Test Local and Global", func() {
+var _ = XDescribe("Test Local and Global", func() {
 	var clusters framework.Clusters
 
 	BeforeEach(func() {

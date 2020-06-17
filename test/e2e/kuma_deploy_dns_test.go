@@ -12,7 +12,7 @@ import (
 	"github.com/Kong/kuma/test/framework"
 )
 
-var _ = Describe("Test DNS", func() {
+var _ = XDescribe("Test DNS", func() {
 
 	var clusters framework.Clusters
 
