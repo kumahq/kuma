@@ -73,7 +73,7 @@ func (p *ClustersStatusPoller) Start(stop <-chan struct{}) error {
 	// update the status before running the API
 	p.pollClusters()
 
-	clusterStatusLog.Info("starting the Global CP polling")
+	clusterStatusLog.Info("starting the Clusters polling")
 	for {
 		select {
 		case <-ticker.C:

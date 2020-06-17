@@ -105,7 +105,9 @@ func (c *K8sControlPlane) AddCluster(name, url string) error {
 		Local: clusters.EndpointConfig{
 			Address: url,
 		},
-		Ingress: clusters.EndpointConfig{},
+		Ingress: clusters.EndpointConfig{
+			Address: url,
+		},
 	})
 
 	yamlBytes, err := yaml.Marshal(&cfg)
@@ -274,5 +276,5 @@ func (c *K8sControlPlane) GetHostAPI() string {
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
-	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/clusters"
+	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/clusters"
 }

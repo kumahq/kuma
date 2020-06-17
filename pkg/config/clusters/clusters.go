@@ -19,7 +19,7 @@ type ClusterConfig struct {
 	Ingress EndpointConfig `yaml:"ingress,omitempty"`
 }
 
-// Global CP configuration
+// Clusters configuration
 type ClustersConfig struct {
 	Clusters []*ClusterConfig `yaml:"clusters,omitempty"`
 }
@@ -35,7 +35,7 @@ func (g *ClustersConfig) Validate() error {
 		}
 		_, err = url.ParseRequestURI(cluster.Ingress.Address)
 		if err != nil {
-			return errors.Wrapf(err, "Invalid url for cluster %s", cluster.Local.Address)
+			return errors.Wrapf(err, "Invalid url for cluster %s", cluster.Ingress.Address)
 		}
 	}
 	return nil

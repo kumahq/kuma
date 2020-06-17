@@ -122,7 +122,7 @@ type Config struct {
 	Mode core.CpMode `yaml:"mode,omitempty"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
-	// Global CP config
+	// Clusters config
 	Clusters *clusters.ClustersConfig `yaml:"clusters,omitempty"`
 }
 
@@ -234,7 +234,7 @@ func (c *Config) Validate() error {
 		return errors.Wrap(err, "DNSServer validation failed")
 	}
 	if err := c.Clusters.Validate(); err != nil {
-		return errors.Wrap(err, "Global CP validation failed")
+		return errors.Wrap(err, "Clusters validation failed")
 	}
 	return nil
 }

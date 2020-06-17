@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/onsi/gomega"
 	"io"
 	"net/http"
 	"net/url"
@@ -278,12 +279,19 @@ func (c *K8sCluster) RestartKuma() error {
 	}
 
 	// wait for pod to terminate
-	for {
-		_, err := clientset.CoreV1().Pods(oldPod.Namespace).Get(context.TODO(), oldPod.Name, metav1.GetOptions{})
-		if err != nil {
-			break
-		}
-	}
+	retry.DoWithRetry(c.t,
+		"Wait the Kuma CP pod to terminate.",
+		DefaultRetries,
+		DefaultTimeout,
+		func() (string, error) {
+			_, err := k8s.GetPodE(c.t,
+				c.GetKubectlOptions(oldPod.Namespace),
+				oldPod.Name)
+			if err != nil {
+				return "Pod " + oldPod.Name + " deleted", nil
+			}
+			return "Pod available " + oldPod.Name, fmt.Errorf("Pod %s still active", oldPod.Name)
+		})
 
 	k8s.WaitUntilNumPodsCreated(c.t,
 		c.GetKubectlOptions(kumaNamespace),
@@ -299,9 +307,12 @@ func (c *K8sCluster) RestartKuma() error {
 		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
 	}
 
+	newPod := kumacpPods[0]
+	gomega.Expect(oldPod.Name).ToNot(gomega.Equal(newPod.Name))
+
 	k8s.WaitUntilPodAvailable(c.t,
 		c.GetKubectlOptions(kumaNamespace),
-		kumacpPods[0].Name,
+		newPod.Name,
 		DefaultRetries,
 		DefaultTimeout)
 

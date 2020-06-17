@@ -105,7 +105,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					return err
 				}
 				if err := clusters.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up Global CP server")
+					runLog.Error(err, "unable to set up Clusters server")
 					return err
 				}
 			}
