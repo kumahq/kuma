@@ -31,11 +31,11 @@ func (g *ClustersConfig) Validate() error {
 	for _, cluster := range g.Clusters {
 		_, err := url.ParseRequestURI(cluster.Local.Address)
 		if err != nil {
-			return errors.Wrapf(err, "Invalid url for cluster %s", cluster.Local.Address)
+			return errors.Wrapf(err, "Invalid local url for cluster %s", cluster.Local.Address)
 		}
 		_, err = url.ParseRequestURI(cluster.Ingress.Address)
 		if err != nil {
-			return errors.Wrapf(err, "Invalid url for cluster %s", cluster.Ingress.Address)
+			return errors.Wrapf(err, "Invalid ingress url for cluster %s", cluster.Ingress.Address)
 		}
 	}
 	return nil
