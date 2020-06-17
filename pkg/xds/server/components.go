@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	config_core "github.com/Kong/kuma/pkg/config/core"
 	"time"
 
 	"github.com/Kong/kuma/pkg/xds/ingress"
@@ -152,9 +153,12 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return ingressReconciler.Reconcile(envoyCtx, &proxy)
 				}
 
-				err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, rt.DNSResolver())
-				if err != nil {
-					return err
+				// Generate VIP outbounds only when in Kubernetes
+				if rt.Config().Environment == config_core.KubernetesEnvironment {
+					err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, rt.DNSResolver())
+					if err != nil {
+						return err
+					}
 				}
 
 				// pick a single the most specific route for each outbound interface
