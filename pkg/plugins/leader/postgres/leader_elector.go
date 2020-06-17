@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -77,4 +79,15 @@ func (p *postgresLeaderElector) setLeader(leader bool) {
 
 func (p *postgresLeaderElector) IsLeader() bool {
 	return atomic.LoadInt32(&(p.leader)) == 1
+}
+
+type KumaPqLockLogger struct {
+}
+
+func (k *KumaPqLockLogger) Println(msgParts ...interface{}) {
+	stringParts := make([]string, len(msgParts))
+	for i, msgPart := range msgParts {
+		stringParts[i] = fmt.Sprint(msgPart)
+	}
+	log.Info(strings.Join(stringParts, " "))
 }
