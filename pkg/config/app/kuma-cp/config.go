@@ -122,8 +122,8 @@ type Config struct {
 	Mode core.CpMode `yaml:"mode,omitempty"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
-	// Clusters config
-	Clusters *clusters.ClustersConfig `yaml:"clusters,omitempty"`
+	// KumaClusters config
+	KumaClusters *clusters.ClustersConfig `yaml:"kumaClusters,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -141,7 +141,7 @@ func (c *Config) Sanitize() {
 	c.Defaults.Sanitize()
 	c.GuiServer.Sanitize()
 	c.DNSServer.Sanitize()
-	c.Clusters.Sanitize()
+	c.KumaClusters.Sanitize()
 }
 
 func DefaultConfig() Config {
@@ -170,11 +170,11 @@ name: default
 		Reports: &Reports{
 			Enabled: true,
 		},
-		General:   DefaultGeneralConfig(),
-		GuiServer: gui_server.DefaultGuiServerConfig(),
-		Mode:      core.Standalone,
-		DNSServer: dns_server.DefaultDNSServerConfig(),
-		Clusters:  clusters.DefaultClustersConfig(),
+		General:      DefaultGeneralConfig(),
+		GuiServer:    gui_server.DefaultGuiServerConfig(),
+		Mode:         core.Standalone,
+		DNSServer:    dns_server.DefaultDNSServerConfig(),
+		KumaClusters: clusters.DefaultClustersConfig(),
 	}
 }
 
@@ -233,8 +233,8 @@ func (c *Config) Validate() error {
 	if err := c.DNSServer.Validate(); err != nil {
 		return errors.Wrap(err, "DNSServer validation failed")
 	}
-	if err := c.Clusters.Validate(); err != nil {
-		return errors.Wrap(err, "Clusters validation failed")
+	if err := c.KumaClusters.Validate(); err != nil {
+		return errors.Wrap(err, "KumaClusters validation failed")
 	}
 	return nil
 }

@@ -95,13 +95,13 @@ func (c *K8sControlPlane) AddCluster(name, url string) error {
 		return err
 	}
 
-	if cfg.Clusters == nil {
-		cfg.Clusters = &clusters.ClustersConfig{
+	if cfg.KumaClusters == nil {
+		cfg.KumaClusters = &clusters.ClustersConfig{
 			Clusters: []*clusters.ClusterConfig{},
 		}
 	}
 
-	cfg.Clusters.Clusters = append(cfg.Clusters.Clusters, &clusters.ClusterConfig{
+	cfg.KumaClusters.Clusters = append(cfg.KumaClusters.Clusters, &clusters.ClusterConfig{
 		Local: clusters.EndpointConfig{
 			Address: url,
 		},

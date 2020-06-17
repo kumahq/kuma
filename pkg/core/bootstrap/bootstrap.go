@@ -282,7 +282,7 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 }
 
 func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	clusters, err := clusters.NewClustersStatusPoller(cfg.Clusters)
+	clusters, err := clusters.NewClustersStatusPoller(cfg.KumaClusters)
 	if err != nil {
 		return err
 	}

@@ -258,5 +258,5 @@ dnsServer:
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
 
 # Clusters configuration
-clusters:
+kumaClusters:
   clusters: []
