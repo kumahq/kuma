@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	config_core "github.com/Kong/kuma/pkg/config/core"
-
 	"github.com/Kong/kuma/pkg/xds/ingress"
 
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
@@ -154,8 +152,8 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return ingressReconciler.Reconcile(envoyCtx, &proxy)
 				}
 
-				// Generate VIP outbounds only when in Kubernetes
-				if rt.Config().Environment == config_core.KubernetesEnvironment {
+				// Generate VIP outbounds only when not Ingress and Transparent Proxying is enabled
+				if !dataplane.Spec.IsIngress() && dataplane.Spec.Networking.GetTransparentProxying() != nil {
 					err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, rt.DNSResolver())
 					if err != nil {
 						return err

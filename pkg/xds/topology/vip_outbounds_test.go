@@ -82,6 +82,10 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 		// and
 		Expect(len(dataplane.Spec.Networking.Outbound)).To(Equal(4))
 		// and
+		Expect(dataplane.Spec.Networking.Outbound[3].GetService()).To(Equal("service-5"))
+		// and
+		Expect(dataplane.Spec.Networking.Outbound[3].GetTags()[mesh_proto.ServiceTag]).To(Equal("service-5"))
+		// and
 		Expect(dataplane.Spec.Networking.Outbound[3].Port).To(Equal(topology.VIPListenPort))
 	})
 
