@@ -73,11 +73,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 }
 
 func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_common.ClusterSubset, outbound *kuma_mesh.Dataplane_Networking_Outbound, protocol mesh_core.Protocol) (*envoy_api_v2.Listener, error) {
-	oface, err := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-	if err != nil {
-		return nil, err
-	}
-
+	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	serviceName := outbound.GetTagsIncludingLegacy()[kuma_mesh.ServiceTag]
@@ -160,10 +156,7 @@ func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []env
 }
 
 func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *kuma_mesh.Dataplane_Networking_Outbound) (subsets []envoy_common.ClusterSubset, err error) {
-	oface, err := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-	if err != nil {
-		return nil, err
-	}
+	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 	route := proxy.TrafficRoutes[oface]
 	if route == nil { // should not happen since we always generate default route if TrafficRoute is not found
 		return nil, errors.Errorf("no TrafficRoute for outbound %s", oface)
