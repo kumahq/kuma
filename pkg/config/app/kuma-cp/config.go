@@ -9,6 +9,7 @@ import (
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	dns_server "github.com/Kong/kuma/pkg/config/dns-server"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
+	"github.com/Kong/kuma/pkg/config/kds"
 	"github.com/Kong/kuma/pkg/config/mads"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
 	"github.com/Kong/kuma/pkg/config/sds"
@@ -121,6 +122,8 @@ type Config struct {
 	Mode core.CpMode `yaml:"mode"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer"`
+	// KdsServer configuration
+	KdsServer *kds.KumaDiscoveryServerConfig `yaml:"kdsServer"`
 }
 
 func (c *Config) Sanitize() {
@@ -170,6 +173,7 @@ name: default
 		GuiServer: gui_server.DefaultGuiServerConfig(),
 		Mode:      core.Standalone,
 		DNSServer: dns_server.DefaultDNSServerConfig(),
+		KdsServer: kds.DefaultKumaDiscoveryServerConfig(),
 	}
 }
 

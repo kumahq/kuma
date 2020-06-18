@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	kds_server "github.com/Kong/kuma/pkg/kds/server"
+
 	dns_server "github.com/Kong/kuma/pkg/dns-server"
 
 	kuma_version "github.com/Kong/kuma/pkg/version"
@@ -100,6 +102,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := ui_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up GUI server")
+					return err
+				}
+				if err := kds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS server")
 					return err
 				}
 			}
