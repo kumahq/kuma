@@ -22,7 +22,7 @@ type KumaDiscoveryServerConfig struct {
 	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_discovery_server_grpc_port"`
 
 	// Interval for refreshing state of the world
-	RefreshInterval time.Duration `yaml:"assignmentRefreshInterval" envconfig:"kuma_discovery_server_refresh_interval"`
+	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_discovery_server_refresh_interval"`
 }
 
 var _ config.Config = &KumaDiscoveryServerConfig{}
