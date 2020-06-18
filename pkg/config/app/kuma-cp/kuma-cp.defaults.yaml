@@ -256,3 +256,10 @@ dnsServer:
   port: 5653 # ENV: KUMA_DNS_SERVER_PORT
   # The CIDR range used to allocate
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
+
+# Kuma Discovery Service configuration
+kdsServer:
+  # Port of GRPC server that Local Kuma CP connects to
+  grpcPort: 5685
+  # Interval for regenerating Snapshot
+  refreshInterval: 1s
