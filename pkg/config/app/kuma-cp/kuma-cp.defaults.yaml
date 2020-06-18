@@ -238,6 +238,8 @@ general:
   # Hostname that other components should use in order to connect to the Control Plane.
   # Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
   advertisedHostname: localhost # ENV: KUMA_GENERAL_ADVERTISED_HOSTNAME
+  # Kuma Cluster name used to mark the local dataplane resources
+  clusterName: kuma.local
 
 # Web GUI Server configuration
 guiServer:

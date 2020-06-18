@@ -1,6 +1,9 @@
 package kuma_cp
 
 import (
+	"github.com/asaskevich/govalidator"
+	"github.com/pkg/errors"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/config"
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
@@ -18,8 +21,6 @@ import (
 	"github.com/Kong/kuma/pkg/config/xds/bootstrap"
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	"github.com/Kong/kuma/pkg/util/proto"
-
-	"github.com/pkg/errors"
 )
 
 var _ config.Config = &Config{}
@@ -243,6 +244,8 @@ type GeneralConfig struct {
 	// Hostname that other components should use in order to connect to the Control Plane.
 	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
 	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_general_advertised_hostname"`
+	// Kuma Cluster name used to mark the local dataplane resources
+	ClusterName string `yaml:"clusterName,omitempty"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -251,11 +254,15 @@ func (g *GeneralConfig) Sanitize() {
 }
 
 func (g *GeneralConfig) Validate() error {
+	if g.ClusterName != "" && !govalidator.IsDNSName(g.ClusterName) {
+		return errors.Errorf("Wrong cluster name [%s]", g.ClusterName)
+	}
 	return nil
 }
 
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
 		AdvertisedHostname: "localhost",
+		ClusterName:        "kuma.local",
 	}
 }
