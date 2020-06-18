@@ -1,12 +1,11 @@
 package listeners
 
 import (
-	"github.com/golang/protobuf/ptypes"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
@@ -32,7 +31,7 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 		// notice that route configuration is left up to other configurers
 	}
 
-	pbst, err := ptypes.MarshalAny(config)
+	pbst, err := util_proto.MarshalAnyDeterministic(config)
 	if err != nil {
 		return err
 	}

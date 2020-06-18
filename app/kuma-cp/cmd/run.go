@@ -3,8 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	dns_server "github.com/Kong/kuma/pkg/dns-server"
-
 	kuma_version "github.com/Kong/kuma/pkg/version"
 
 	"github.com/spf13/cobra"
@@ -18,6 +16,7 @@ import (
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/bootstrap"
+	dns_server "github.com/Kong/kuma/pkg/dns-server"
 	mads_server "github.com/Kong/kuma/pkg/mads/server"
 	sds_server "github.com/Kong/kuma/pkg/sds/server"
 	xds_server "github.com/Kong/kuma/pkg/xds/server"
