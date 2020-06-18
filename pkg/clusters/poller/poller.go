@@ -1,7 +1,6 @@
 package poller
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -19,7 +18,7 @@ var (
 type (
 	ClusterStatusPoller interface {
 		Start(<-chan struct{}) error
-		EncodeClusters(encoder *json.Encoder) error
+		Clusters() Clusters
 	}
 
 	Cluster struct {
@@ -28,7 +27,7 @@ type (
 		Active bool   `json:"active"`
 	}
 
-	Clusters []*Cluster
+	Clusters []Cluster
 
 	ClustersStatusPoller struct {
 		sync.RWMutex
@@ -45,7 +44,7 @@ const (
 
 func NewClustersStatusPoller(clusters *clusters.ClustersConfig) (ClusterStatusPoller, error) {
 	poller := &ClustersStatusPoller{
-		clusters: []*Cluster{},
+		clusters: []Cluster{},
 		client: http.Client{
 			Timeout: httpTimeout,
 		},
@@ -56,7 +55,7 @@ func NewClustersStatusPoller(clusters *clusters.ClustersConfig) (ClusterStatusPo
 
 	for _, cluster := range clusters.Clusters {
 		// ignore the Ingress for now
-		poller.clusters = append(poller.clusters, &Cluster{
+		poller.clusters = append(poller.clusters, Cluster{
 			Name:   cluster.Local.Address, // init the name of the cluster with its address
 			URL:    cluster.Local.Address,
 			Active: false,
@@ -109,8 +108,9 @@ func (p *ClustersStatusPoller) pollClusters() {
 	}
 }
 
-func (p *ClustersStatusPoller) EncodeClusters(encoder *json.Encoder) error {
+func (p *ClustersStatusPoller) Clusters() Clusters {
 	p.RLock()
 	defer p.RUnlock()
-	return encoder.Encode(p.clusters)
+	newClusters := Clusters{}
+	return append(newClusters, p.clusters...)
 }
