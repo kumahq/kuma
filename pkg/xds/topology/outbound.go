@@ -48,11 +48,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 			if !selectors.Matches(inbound.Tags) {
 				continue
 			}
-			iface, err := dataplane.Spec.Networking.ToInboundInterface(inbound)
-			if err != nil {
-				// skip dataplanes with invalid configuration
-				continue
-			}
+			iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
 			outbound[service] = append(outbound[service], core_xds.Endpoint{

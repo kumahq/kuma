@@ -40,15 +40,17 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 				Dataplane: &mesh_core.DataplaneResource{
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-								Interface: "192.168.0.1:80:8080",
+								Port:        80,
+								ServicePort: 8080,
 								Tags: map[string]string{
 									"service": "web",
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
-								Interface: ":27070",
-								Service:   "backend",
+								Port:    27070,
+								Service: "backend",
 							}},
 						},
 					},
