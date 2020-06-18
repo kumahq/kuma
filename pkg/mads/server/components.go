@@ -31,12 +31,12 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
 	return mads_reconcile.NewReconciler(hasher, cache, generator, versioner)
 }
 
-func NewSyncTracker(rt core_runtime.Runtime, reconciler mads_reconcile.Reconciler) envoy_xds.Callbacks {
+func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {
 	return util_xds.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
 		log := madsServerLog.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
-				return time.NewTicker(rt.Config().MonitoringAssignmentServer.AssignmentRefreshInterval)
+				return time.NewTicker(refresh)
 			},
 			OnTick: func() error {
 				log.V(1).Info("on tick")

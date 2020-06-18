@@ -13,6 +13,7 @@ import (
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	dns_server "github.com/Kong/kuma/pkg/config/dns-server"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
+	"github.com/Kong/kuma/pkg/config/kds"
 	"github.com/Kong/kuma/pkg/config/mads"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
 	"github.com/Kong/kuma/pkg/config/sds"
@@ -125,6 +126,8 @@ type Config struct {
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
 	// KumaClusters config
 	KumaClusters *clusters.ClustersConfig `yaml:"kumaClusters,omitempty"`
+	// KdsServer configuration
+	KdsServer *kds.KumaDiscoveryServerConfig `yaml:"kdsServer,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -143,6 +146,7 @@ func (c *Config) Sanitize() {
 	c.GuiServer.Sanitize()
 	c.DNSServer.Sanitize()
 	c.KumaClusters.Sanitize()
+	c.KdsServer.Sanitize()
 }
 
 func DefaultConfig() Config {
@@ -176,6 +180,7 @@ name: default
 		Mode:         core.Standalone,
 		DNSServer:    dns_server.DefaultDNSServerConfig(),
 		KumaClusters: clusters.DefaultClustersConfig(),
+		KdsServer: kds.DefaultKumaDiscoveryServerConfig(),
 	}
 }
 
@@ -236,6 +241,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.KumaClusters.Validate(); err != nil {
 		return errors.Wrap(err, "KumaClusters validation failed")
+	}
+	if err := c.KdsServer.Validate(); err != nil {
+		return errors.Wrap(err, "KDSServer validation failed")
 	}
 	return nil
 }
