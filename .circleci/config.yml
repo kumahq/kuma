@@ -625,12 +625,7 @@ workflows:
     - integration:
         name: test/e2e
         requires:
-          - minikube_v1_13_0
-          - minikube_v1_14_0
-          - minikube_v1_15_0
-          - minikube_v1_16_0
-          - minikube_v1_17_0
-          - minikube_v1_18_2
+          - images
         # custom parameters
         target: test/e2e
 

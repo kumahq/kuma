@@ -15,13 +15,11 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 statPrefix: backend
-                weightedClusters:
-                  clusters:
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            region: eu
-                      name: backend
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      region: eu
         - filterChainMatch:
             serverNames:
               - backend{version=v1}
@@ -30,13 +28,11 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 statPrefix: backend
-                weightedClusters:
-                  clusters:
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            version: v1
-                      name: backend
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      version: v1
         - filterChainMatch:
             serverNames:
               - backend{region=eu,version=v1}
@@ -45,14 +41,12 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 statPrefix: backend
-                weightedClusters:
-                  clusters:
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            region: eu
-                            version: v1
-                      name: backend
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      region: eu
+                      version: v1
         - filterChainMatch:
             serverNames:
               - backend
@@ -70,13 +64,11 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 statPrefix: backend
-                weightedClusters:
-                  clusters:
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            region: us
-                      name: backend
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      region: us
         - filterChainMatch:
             serverNames:
               - backend{version=v2}
@@ -85,13 +77,11 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 statPrefix: backend
-                weightedClusters:
-                  clusters:
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            version: v2
-                      name: backend
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      version: v2
         - filterChainMatch:
             serverNames:
               - backend{region=us,version=v2}
@@ -100,14 +90,12 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 statPrefix: backend
-                weightedClusters:
-                  clusters:
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            region: us
-                            version: v2
-                      name: backend
+                cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      region: us
+                      version: v2
         - filterChainMatch:
             serverNames:
               - backend

@@ -28,14 +28,11 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 statPrefix: db_kuma-system
-                weightedClusters:
-                  clusters:
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            version: 3.2.0
-                      name: db
-                      weight: 100
+                cluster: db
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      version: 3.2.0
       name: outbound:127.0.0.1:54321
       trafficDirection: OUTBOUND
   - name: backend.kuma-system
