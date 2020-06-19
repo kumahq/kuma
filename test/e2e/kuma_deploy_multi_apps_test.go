@@ -7,18 +7,18 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/Kong/kuma/test/framework"
+	. "github.com/Kong/kuma/test/framework"
 )
 
 var _ = Describe("Test App deployment", func() {
 
-	var clusters framework.Clusters
+	var clusters Clusters
 
 	BeforeEach(func() {
 		var err error
-		clusters, err = framework.NewK8sClusters(
-			[]string{framework.Kuma1},
-			framework.Verbose)
+		clusters, err = NewK8sClusters(
+			[]string{Kuma1},
+			Verbose)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = clusters.CreateNamespace("kuma-test")
@@ -27,7 +27,7 @@ var _ = Describe("Test App deployment", func() {
 		err = clusters.LabelNamespaceForSidecarInjection("kuma-test")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.DeployKuma()
+		_, err = clusters.DeployKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = clusters.VerifyKuma()
@@ -46,17 +46,17 @@ var _ = Describe("Test App deployment", func() {
 
 	It("Should deploy two apps", func() {
 		// setup
-		c := clusters.GetCluster(framework.Kuma1)
+		c := clusters.GetCluster(Kuma1)
 
 		// given
-		err := c.DeployApp("kuma-test", "example-app")
+		err := c.DeployApp(TestNamespace, "example-app")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = c.DeployApp("kuma-test", "example-client")
+		err = c.DeployApp(TestNamespace, "example-client")
 		Expect(err).ToNot(HaveOccurred())
 
 		clientPods := k8s.ListPods(c.GetTesting(),
-			c.GetKubectlOptions("kuma-test"),
+			c.GetKubectlOptions(TestNamespace),
 			metav1.ListOptions{
 				LabelSelector: "app=example-client",
 			})
@@ -65,13 +65,13 @@ var _ = Describe("Test App deployment", func() {
 		clientPod := clientPods[0]
 
 		k8s.WaitUntilPodAvailable(c.GetTesting(),
-			c.GetKubectlOptions("kuma-test"),
+			c.GetKubectlOptions(TestNamespace),
 			clientPod.GetName(),
 			defaultRetries, defaultTimeout)
 
 		// when
 		out, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(),
-			c.GetKubectlOptions("kuma-test"),
+			c.GetKubectlOptions(TestNamespace),
 			"exec", clientPod.GetName(), "--", "/usr/bin/curl", "example-app")
 		// then
 		Expect(err).ToNot(HaveOccurred())

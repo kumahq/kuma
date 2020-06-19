@@ -9,27 +9,27 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/Kong/kuma/test/framework"
+	. "github.com/Kong/kuma/test/framework"
 )
 
 var _ = XDescribe("Test DNS", func() {
 
-	var clusters framework.Clusters
+	var clusters Clusters
 
 	BeforeEach(func() {
 		var err error
-		clusters, err = framework.NewK8sClusters(
-			[]string{framework.Kuma1},
-			framework.Verbose)
+		clusters, err = NewK8sClusters(
+			[]string{Kuma1},
+			Verbose)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.CreateNamespace("kuma-test")
+		err = clusters.CreateNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.LabelNamespaceForSidecarInjection("kuma-test")
+		err = clusters.LabelNamespaceForSidecarInjection(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.DeployKuma()
+		_, err = clusters.DeployKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = clusters.VerifyKuma()
@@ -40,7 +40,7 @@ var _ = XDescribe("Test DNS", func() {
 	})
 
 	AfterEach(func() {
-		err := clusters.DeleteNamespace("kuma-test")
+		err := clusters.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		_ = clusters.DeleteKuma()
@@ -48,17 +48,17 @@ var _ = XDescribe("Test DNS", func() {
 
 	It("Should resolve with two apps", func() {
 		// given
-		c := clusters.GetCluster(framework.Kuma1)
+		c := clusters.GetCluster(Kuma1)
 
 		// when
-		err := c.DeployApp("kuma-test", "example-app")
+		err := c.DeployApp(TestNamespace, "example-app")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = c.DeployApp("kuma-test", "example-client")
+		err = c.DeployApp(TestNamespace, "example-client")
 		Expect(err).ToNot(HaveOccurred())
 
 		clientPods := k8s.ListPods(c.GetTesting(),
-			c.GetKubectlOptions("kuma-test"),
+			c.GetKubectlOptions(TestNamespace),
 			metav1.ListOptions{
 				LabelSelector: "app=example-client",
 			})
@@ -67,13 +67,13 @@ var _ = XDescribe("Test DNS", func() {
 		clientPod := clientPods[0]
 
 		k8s.WaitUntilPodAvailable(c.GetTesting(),
-			c.GetKubectlOptions("kuma-test"),
+			c.GetKubectlOptions(TestNamespace),
 			clientPod.GetName(),
 			defaultRetries, defaultTimeout)
 
 		// then
 		out, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(),
-			c.GetKubectlOptions("kuma-test"),
+			c.GetKubectlOptions(TestNamespace),
 			"exec", clientPod.GetName(),
 			"-c", "client", "--", "getent", "hosts", "example-app")
 		Expect(err).ToNot(HaveOccurred())
@@ -84,7 +84,7 @@ var _ = XDescribe("Test DNS", func() {
 			defaultRetries, defaultTimeout,
 			func() (string, error) {
 				out, err = k8s.RunKubectlAndGetOutputE(c.GetTesting(),
-					c.GetKubectlOptions("kuma-test"),
+					c.GetKubectlOptions(TestNamespace),
 					"exec", clientPod.GetName(),
 					"-c", "client", "--", "getent", "hosts", "example-app.mesh")
 				return out, err
