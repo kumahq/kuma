@@ -14,7 +14,7 @@ import (
 var _ = Describe("DefaultRouteConfigurer", func() {
 
 	type testCase struct {
-		clusters []envoy_common.ClusterInfo
+		clusters []envoy_common.ClusterSubset
 		expected string
 	}
 
@@ -35,8 +35,8 @@ var _ = Describe("DefaultRouteConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic VirtualHost with a single destination cluster", testCase{
-			clusters: []envoy_common.ClusterInfo{
-				{Name: "backend", Weight: 200},
+			clusters: []envoy_common.ClusterSubset{
+				{ClusterName: "backend", Weight: 200},
 			},
 			expected: `
             routes:
@@ -47,9 +47,9 @@ var _ = Describe("DefaultRouteConfigurer", func() {
 `,
 		}),
 		Entry("basic VirtualHost with weighted destination clusters", testCase{
-			clusters: []envoy_common.ClusterInfo{
-				{Name: "backend{version=v1}", Weight: 30},
-				{Name: "backend{version=v2}", Weight: 70},
+			clusters: []envoy_common.ClusterSubset{
+				{ClusterName: "backend", Weight: 30, Tags: map[string]string{"version": "v1"}},
+				{ClusterName: "backend", Weight: 70, Tags: map[string]string{"version": "v2"}},
 			},
 			expected: `
             routes:
@@ -58,9 +58,17 @@ var _ = Describe("DefaultRouteConfigurer", func() {
               route:
                 weightedClusters:
                   clusters:
-                  - name: backend{version=v1}
+                  - metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          version: v1
+                    name: backend
                     weight: 30
-                  - name: backend{version=v2}
+                  - metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          version: v2
+                    name: backend
                     weight: 70
 `,
 		}),

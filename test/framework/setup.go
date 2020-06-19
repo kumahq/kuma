@@ -36,7 +36,8 @@ func YamlPath(path string) InstallFunc {
 
 func Kuma() InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployKuma()
+		_, err := cluster.DeployKuma()
+		return err
 	}
 }
 

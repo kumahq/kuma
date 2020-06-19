@@ -108,7 +108,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	resources := manager.NewResourceManager(store)
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, defs, cfg.ApiServer, &cfg)
+	apiServer, err := api_server.NewApiServer(resources, nil, defs, cfg.ApiServer, &cfg)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

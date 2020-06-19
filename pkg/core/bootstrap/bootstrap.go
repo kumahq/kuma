@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"strconv"
 
+	"github.com/Kong/kuma/pkg/clusters/poller"
+
 	"github.com/pkg/errors"
 
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
@@ -45,6 +47,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeDNSResolver(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeClusters(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -273,6 +278,16 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 
 	builder.WithDNSResolver(dnsResolver)
 
+	return nil
+}
+
+func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	poller, err := poller.NewClustersStatusPoller(cfg.KumaClusters)
+	if err != nil {
+		return err
+	}
+
+	builder.WithClusters(poller)
 	return nil
 }
 

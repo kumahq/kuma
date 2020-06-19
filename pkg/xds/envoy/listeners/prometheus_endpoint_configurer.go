@@ -1,14 +1,13 @@
 package listeners
 
 import (
-	"github.com/golang/protobuf/ptypes"
-
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
+	"github.com/Kong/kuma/pkg/util/proto"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
@@ -59,7 +58,7 @@ func (c *PrometheusEndpointConfigurer) Configure(filterChain *envoy_listener.Fil
 			},
 		},
 	}
-	pbst, err := ptypes.MarshalAny(config)
+	pbst, err := proto.MarshalAnyDeterministic(config)
 	if err != nil {
 		return err
 	}

@@ -4573,6 +4573,7 @@ metadata:
   name: kuma-control-plane
   namespace: kuma-system
 spec:
+  type: ClusterIP
   ports:
   - port: 5681
     name: http-api-server
@@ -4592,6 +4593,20 @@ spec:
   - port: 5653
     name: dns-server
     protocol: UDP
+  selector:
+    app: kuma-control-plane
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: global-local-sync
+  namespace: kuma-system
+spec:
+  type: NodePort
+  ports:
+    - port: 5681
+      nodePort: 30681
+      name: global-local-sync
   selector:
     app: kuma-control-plane
 ---

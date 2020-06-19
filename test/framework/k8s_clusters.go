@@ -26,24 +26,17 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	clusters := map[string]*K8sCluster{}
 
 	for i, name := range clusterNames {
-		options, err := NewKumactlOptions(t, name, verbose)
-		if err != nil {
-			return nil, err
-		}
-
 		clusters[name] = &K8sCluster{
-			t:          t,
-			name:       name,
-			kubeconfig: os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, name)),
-			kumactl:    options,
-			verbose:    verbose,
-			portFwd: PortFwd{
-				lowFwdPort:          uint32(kumaCPAPIPortFwdLow + i*1000),
-				hiFwdPort:           uint32(kumaCPAPIPortFwdLow + (i+1)*1000 - 1),
-				forwardedPortsChans: map[uint32]chan struct{}{},
-			},
+			t:                   t,
+			name:                name,
+			kubeconfig:          os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, name)),
+			loPort:              uint32(kumaCPAPIPortFwdBase + i*1000),
+			hiPort:              uint32(kumaCPAPIPortFwdBase + (i+1)*1000 - 1),
+			forwardedPortsChans: map[uint32]chan struct{}{},
+			verbose:             verbose,
 		}
 
+		var err error
 		clusters[name].clientset, err = k8s.GetKubernetesClientFromOptionsE(t, clusters[name].GetKubectlOptions())
 		if err != nil {
 			return nil, errors.Wrapf(err, "error in getting access to K8S")
@@ -74,10 +67,20 @@ func (cs *K8sClusters) GetCluster(name string) Cluster {
 	return c
 }
 
-func (cs *K8sClusters) DeployKuma(mode ...string) error {
+func (cs *K8sClusters) DeployKuma(mode ...string) (ControlPlane, error) {
 	for name, c := range cs.clusters {
-		if err := c.DeployKuma(mode...); err != nil {
-			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
+		if _, err := c.DeployKuma(mode...); err != nil {
+			return nil, errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
+		}
+	}
+
+	return nil, nil
+}
+
+func (cs *K8sClusters) RestartKuma() error {
+	for name, c := range cs.clusters {
+		if err := c.RestartKuma(); err != nil {
+			return errors.Wrapf(err, "Restart Kuma on %s failed: %v", name, err)
 		}
 	}
 
@@ -111,20 +114,6 @@ func (cs *K8sClusters) DeleteKuma() error {
 	return nil
 }
 
-func (cs *K8sClusters) GetKumaCPLogs() (string, error) {
-	logs := ""
-
-	for name, c := range cs.clusters {
-		log, err := c.GetKumaCPLogs()
-		if err != nil {
-			return "", errors.Wrapf(err, "Verify Kuma on %s failed: %v", name, err)
-		}
-
-		logs = logs + "========== " + name + " ==========\n" + log + "\n"
-	}
-
-	return logs, nil
-}
 func (cs *K8sClusters) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
 	panic("Not supported at this level.")
 }

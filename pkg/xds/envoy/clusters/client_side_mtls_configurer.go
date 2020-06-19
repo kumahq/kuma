@@ -4,9 +4,9 @@ import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes"
 
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	"github.com/Kong/kuma/pkg/util/proto"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 	"github.com/Kong/kuma/pkg/xds/envoy"
 )
@@ -45,7 +45,7 @@ func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 		return err
 	}
 	if tlsContext != nil {
-		pbst, err := ptypes.MarshalAny(tlsContext)
+		pbst, err := proto.MarshalAnyDeterministic(tlsContext)
 		if err != nil {
 			return err
 		}

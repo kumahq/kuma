@@ -121,6 +121,8 @@ var _ = Describe("Config WS", func() {
           "general": {
             "advertisedHostname": "localhost"
           },
+          "kumaClusters": {
+          },
           "guiServer": {
             "port": 5683,
             "apiServerUrl": ""

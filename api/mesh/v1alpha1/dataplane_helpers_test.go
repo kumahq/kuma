@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	gomega_types "github.com/onsi/gomega/types"
 
 	. "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
@@ -343,18 +342,6 @@ var _ = Describe("Dataplane_Networking", func() {
 					input:    &Dataplane_Networking{},
 					expected: []OutboundInterface{},
 				}),
-				Entry("legacy - 2 outbound interfaces", testCase{
-					input: &Dataplane_Networking{
-						Outbound: []*Dataplane_Networking_Outbound{
-							{Interface: ":8080"},
-							{Interface: "192.168.0.1:443"},
-						},
-					},
-					expected: []OutboundInterface{
-						{DataplaneIP: "127.0.0.1", DataplanePort: 8080},
-						{DataplaneIP: "192.168.0.1", DataplanePort: 443},
-					},
-				}),
 				Entry("2 outbound interfaces", testCase{
 					input: &Dataplane_Networking{
 						Outbound: []*Dataplane_Networking_Outbound{
@@ -371,32 +358,6 @@ var _ = Describe("Dataplane_Networking", func() {
 						{DataplaneIP: "127.0.0.1", DataplanePort: 8080},
 						{DataplaneIP: "192.168.0.1", DataplanePort: 443},
 					},
-				}),
-			)
-		})
-
-		Context("invalid input values", func() {
-			type testCase struct {
-				input       *Dataplane_Networking
-				expectedErr gomega_types.GomegaMatcher
-			}
-
-			DescribeTable("should fail on invalid input values",
-				func(given testCase) {
-					// when
-					ifaces, err := given.input.GetOutboundInterfaces()
-					// then
-					Expect(ifaces).To(BeNil())
-					// and
-					Expect(err.Error()).To(given.expectedErr)
-				},
-				Entry("dataplane IP address is missing", testCase{
-					input: &Dataplane_Networking{
-						Outbound: []*Dataplane_Networking_Outbound{
-							{Interface: ":443:8443"},
-						},
-					},
-					expectedErr: Equal(`invalid format: expected "[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT", got ":443:8443"`),
 				}),
 			)
 		})
@@ -427,18 +388,6 @@ var _ = Describe("Dataplane_Networking", func() {
 					input:    &Dataplane_Networking{},
 					expected: []InboundInterface{},
 				}),
-				Entry("legacy - 2 inbound interfaces", testCase{
-					input: &Dataplane_Networking{
-						Inbound: []*Dataplane_Networking_Inbound{
-							{Interface: "192.168.0.1:80:8080"},
-							{Interface: "192.168.0.1:443:8443"},
-						},
-					},
-					expected: []InboundInterface{
-						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadPort: 8080},
-						{DataplaneIP: "192.168.0.1", DataplanePort: 443, WorkloadPort: 8443},
-					},
-				}),
 				Entry("2 inbound interfaces", testCase{
 					input: &Dataplane_Networking{
 						Address: "192.168.0.1",
@@ -460,33 +409,6 @@ var _ = Describe("Dataplane_Networking", func() {
 				}),
 			)
 		})
-
-		Context("invalid input values", func() {
-			type testCase struct {
-				input       *Dataplane_Networking
-				expectedErr gomega_types.GomegaMatcher
-			}
-
-			DescribeTable("should fail on invalid input values",
-				func(given testCase) {
-					// when
-					ifaces, err := given.input.GetInboundInterfaces()
-					// then
-					Expect(ifaces).To(BeNil())
-					// and
-					Expect(err.Error()).To(given.expectedErr)
-				},
-				Entry("dataplane IP address is missing", testCase{
-					input: &Dataplane_Networking{
-						Inbound: []*Dataplane_Networking_Inbound{
-							{Interface: "192.168.0.1:80:8080"},
-							{Interface: ":443:8443"},
-						},
-					},
-					expectedErr: Equal(`invalid DATAPLANE_IP in ":443:8443": "" is not a valid IP address`),
-				}),
-			)
-		})
 	})
 })
 
@@ -500,8 +422,7 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 		func(given testCase) {
 			//given
 			outbound := Dataplane_Networking_Outbound{
-				Interface: "sdf",
-				Service:   given.serviceTag,
+				Service: given.serviceTag,
 			}
 
 			// when

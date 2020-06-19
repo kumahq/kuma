@@ -3,6 +3,8 @@ package runtime
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/clusters/poller"
+
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
 
 	"github.com/pkg/errors"
@@ -28,23 +30,25 @@ type BuilderContext interface {
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
 	DNSResolver() resolver.DNSResolver
+	Clusters() poller.ClusterStatusPoller
 }
 
 var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg kuma_cp.Config
-	cm  component.Manager
-	rs  core_store.ResourceStore
-	rm  core_manager.ResourceManager
-	rom core_manager.ReadOnlyResourceManager
-	sm  secret_manager.SecretManager
-	cam core_ca.Managers
-	xds core_xds.XdsContext
-	dsl datasource.Loader
-	ext context.Context
-	dns resolver.DNSResolver
+	cfg      kuma_cp.Config
+	cm       component.Manager
+	rs       core_store.ResourceStore
+	rm       core_manager.ResourceManager
+	rom      core_manager.ReadOnlyResourceManager
+	sm       secret_manager.SecretManager
+	cam      core_ca.Managers
+	xds      core_xds.XdsContext
+	dsl      datasource.Loader
+	ext      context.Context
+	dns      resolver.DNSResolver
+	clusters poller.ClusterStatusPoller
 	*runtimeInfo
 }
 
@@ -114,6 +118,11 @@ func (b *Builder) WithDNSResolver(dns resolver.DNSResolver) *Builder {
 	return b
 }
 
+func (b *Builder) WithClusters(clusters poller.ClusterStatusPoller) *Builder {
+	b.clusters = clusters
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -145,14 +154,15 @@ func (b *Builder) Build() (Runtime, error) {
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
-			cfg: b.cfg,
-			rm:  b.rm,
-			rom: b.rom,
-			sm:  b.sm,
-			cam: b.cam,
-			xds: b.xds,
-			ext: b.ext,
-			dns: b.dns,
+			cfg:      b.cfg,
+			rm:       b.rm,
+			rom:      b.rom,
+			sm:       b.sm,
+			cam:      b.cam,
+			xds:      b.xds,
+			ext:      b.ext,
+			dns:      b.dns,
+			clusters: b.clusters,
 		},
 		Manager: b.cm,
 	}, nil
@@ -190,4 +200,7 @@ func (b *Builder) Extensions() context.Context {
 }
 func (b *Builder) DNSResolver() resolver.DNSResolver {
 	return b.dns
+}
+func (b *Builder) Clusters() poller.ClusterStatusPoller {
+	return b.clusters
 }

@@ -58,11 +58,13 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 
 	routeMap := core_xds.RouteMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
-		policy, exists := policyMap[oface.Service]
+		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		policy, exists := policyMap[serviceName]
+		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		if exists {
-			routeMap[oface.Service] = policy.(*mesh_core.TrafficRouteResource)
+			routeMap[outbound] = policy.(*mesh_core.TrafficRouteResource)
 		} else {
-			routeMap[oface.Service] = &mesh_core.TrafficRouteResource{
+			routeMap[outbound] = &mesh_core.TrafficRouteResource{
 				Meta: &pseudoMeta{
 					Name: "(implicit default route)",
 				},
@@ -71,11 +73,11 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 						Match: mesh_proto.MatchAnyService(),
 					}},
 					Destinations: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchService(oface.Service),
+						Match: mesh_proto.MatchService(serviceName),
 					}},
 					Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 						Weight:      100,
-						Destination: mesh_proto.MatchService(oface.Service),
+						Destination: mesh_proto.MatchTags(oface.GetTagsIncludingLegacy()),
 					}},
 				},
 			}
@@ -89,7 +91,9 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds.RouteMap) core_xds.DestinationMap {
 	destinations := core_xds.DestinationMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
-		route, ok := routes[oface.Service]
+		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
+		route, ok := routes[outbound]
 		if ok {
 			for _, destination := range route.Spec.Conf {
 				service, ok := destination.Destination[mesh_proto.ServiceTag]
@@ -101,7 +105,7 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 				destinations[service] = destinations[service].Add(mesh_proto.MatchTags(destination.Destination))
 			}
 		} else {
-			destinations[oface.Service] = destinations[oface.Service].Add(mesh_proto.MatchService(oface.Service))
+			destinations[serviceName] = destinations[serviceName].Add(mesh_proto.MatchService(serviceName))
 		}
 	}
 	return destinations
