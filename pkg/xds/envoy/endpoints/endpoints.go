@@ -38,7 +38,7 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 	lbEndpoints := make([]*envoy_endpoint.LbEndpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
 		lbEndpoints = append(lbEndpoints, &envoy_endpoint.LbEndpoint{
-			Metadata: envoy_common.Metadata(ep.Tags),
+			Metadata: envoy_common.EndpointMetadata(ep.Tags),
 			HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoy_endpoint.Endpoint{
 					Address: &envoy_core.Address{

@@ -56,11 +56,6 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Datapl
 	if err != nil {
 		return nil, err
 	}
-	if sni == "" {
-		return &envoy_auth.UpstreamTlsContext{
-			CommonTlsContext: commonTlsContext,
-		}, nil
-	}
 	return &envoy_auth.UpstreamTlsContext{
 		CommonTlsContext: commonTlsContext,
 		Sni:              sni,

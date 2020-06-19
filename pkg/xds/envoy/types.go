@@ -1,6 +1,10 @@
 package envoy
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+	"strings"
+)
 
 type ClusterSubset struct {
 	ClusterName string
@@ -27,6 +31,30 @@ func (t Tags) Keys() []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+func (t Tags) String() string {
+	var pairs []string
+	for _, key := range t.Keys() {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", key, t[key]))
+	}
+	return strings.Join(pairs, ",")
+}
+
+func DistinctTags(tags []Tags) []Tags {
+	if len(tags) == 0 {
+		return tags
+	}
+	used := map[string]bool{}
+	var result []Tags
+	for _, tag := range tags {
+		str := tag.String()
+		if !used[str] {
+			result = append(result, tag)
+			used[str] = true
+		}
+	}
+	return result
 }
 
 type Clusters map[string][]ClusterSubset
