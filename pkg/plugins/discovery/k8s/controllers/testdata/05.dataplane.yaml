@@ -11,6 +11,7 @@ spec:
           protocol: tcp
           service: example.demo.svc:80
           version: "0.1"
+          cluster: "cluster-1"
     outbound:
       - address: 10.108.144.25
         port: 80

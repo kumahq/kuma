@@ -24,10 +24,10 @@ func (p *plugin) StartDiscovering(pc core_plugins.PluginContext, _ core_plugins.
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
 	// convert Pods into Dataplanes
-	return addPodReconciler(mgr)
+	return addPodReconciler(pc.Config().General.ClusterName, mgr)
 }
 
-func addPodReconciler(mgr kube_ctrl.Manager) error {
+func addPodReconciler(clusterName string, mgr kube_ctrl.Manager) error {
 	reconciler := &controllers.PodReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
@@ -35,6 +35,7 @@ func addPodReconciler(mgr kube_ctrl.Manager) error {
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
 		PodConverter: controllers.PodConverter{
 			ServiceGetter: mgr.GetClient(),
+			ClusterName:   clusterName,
 		},
 	}
 	return reconciler.SetupWithManager(mgr)
