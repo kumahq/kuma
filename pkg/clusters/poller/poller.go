@@ -88,18 +88,18 @@ func (p *ClustersStatusPoller) pollClusters() {
 	p.Lock()
 	defer p.Unlock()
 
-	for _, cluster := range p.clusters {
+	for i, cluster := range p.clusters {
 		response, err := p.client.Get(cluster.URL)
 		if err != nil {
 			if cluster.Active {
 				clusterStatusLog.Info(fmt.Sprintf("%s at %s did not respond", cluster.Name, cluster.URL))
-				cluster.Active = false
+				p.clusters[i].Active = false
 			}
 
 			continue
 		}
 
-		cluster.Active = response.StatusCode == http.StatusOK
+		p.clusters[i].Active = response.StatusCode == http.StatusOK
 		if !cluster.Active {
 			clusterStatusLog.Info(fmt.Sprintf("%s at %s responded with %s", cluster.Name, cluster.URL, response.Status))
 		}
