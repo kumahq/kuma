@@ -4559,6 +4559,7 @@ metadata:
   name: kuma-control-plane
   namespace: kuma-system
 spec:
+  type: ClusterIP
   ports:
     - port: 5681
       name: http-api-server
