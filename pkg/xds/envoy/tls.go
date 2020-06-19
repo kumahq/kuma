@@ -7,11 +7,11 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	"github.com/Kong/kuma/pkg/sds/server"
+	"github.com/Kong/kuma/pkg/util/proto"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	xds_context "github.com/Kong/kuma/pkg/xds/context"
 )
@@ -104,7 +104,7 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 				},
 			},
 		}
-		typedConfig, err := ptypes.MarshalAny(config)
+		typedConfig, err := proto.MarshalAnyDeterministic(config)
 		if err != nil {
 			return nil, err
 		}

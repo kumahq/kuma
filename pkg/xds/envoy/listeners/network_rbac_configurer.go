@@ -3,8 +3,6 @@ package listeners
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/ptypes"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
@@ -12,6 +10,7 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/util/proto"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	"github.com/Kong/kuma/pkg/xds/envoy"
 )
@@ -45,7 +44,7 @@ func (c *NetworkRBACConfigurer) Configure(filterChain *envoy_listener.FilterChai
 
 func createRbacFilter(statsName string, permission *mesh_core.TrafficPermissionResource) (*envoy_listener.Filter, error) {
 	rbacRule := createRbacRule(statsName, permission)
-	rbacMarshalled, err := ptypes.MarshalAny(rbacRule)
+	rbacMarshalled, err := proto.MarshalAnyDeterministic(rbacRule)
 	if err != nil {
 		return nil, err
 	}

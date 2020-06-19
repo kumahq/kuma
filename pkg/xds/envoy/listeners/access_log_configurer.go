@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/golang/protobuf/ptypes"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
 
@@ -96,7 +95,7 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 	if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
 	}
-	marshalled, err := ptypes.MarshalAny(httpGrpcAccessLog)
+	marshalled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", httpGrpcAccessLog)
 	}
@@ -120,7 +119,7 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 		},
 		Path: cfg.Path,
 	}
-	marshalled, err := ptypes.MarshalAny(fileAccessLog)
+	marshalled, err := proto.MarshalAnyDeterministic(fileAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", fileAccessLog)
 	}

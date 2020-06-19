@@ -10,7 +10,6 @@ import (
 	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	envoy_config_trace_v2 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v2"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
@@ -55,7 +54,7 @@ func zipkinConfig(bootstrap *envoy_bootstrap.Bootstrap, cfgStr *structpb.Struct,
 		TraceId_128Bit:           cfg.TraceId128Bit,
 		CollectorEndpointVersion: apiVersion(&cfg, url),
 	}
-	zipkinConfigAny, err := ptypes.MarshalAny(&zipkinConfig)
+	zipkinConfigAny, err := proto.MarshalAnyDeterministic(&zipkinConfig)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -370,7 +370,10 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("ingress in the list of dataplanes", testCase{
 				destinations: core_xds.DestinationMap{
-					"redis": []mesh_proto.TagSelector{{"service": "redis"}},
+					"redis": []mesh_proto.TagSelector{
+						{"service": "redis"},
+						{"service": "redis", "version": "v2"},
+					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
 					{
@@ -402,6 +405,9 @@ var _ = Describe("TrafficRoute", func() {
 										{
 											Tags: map[string]string{"service": "redis", "version": "v2", "region": "eu"},
 										},
+										{
+											Tags: map[string]string{"service": "redis", "version": "v3"},
+										},
 									},
 								},
 							},
@@ -412,6 +418,7 @@ var _ = Describe("TrafficRoute", func() {
 					"redis": []core_xds.Endpoint{
 						{Target: "192.168.0.1", Port: 6379, Tags: map[string]string{"service": "redis", "version": "v1"}},
 						{Target: "10.20.1.2", Port: 10001, Tags: map[string]string{"service": "redis", "version": "v2", "region": "eu"}},
+						{Target: "10.20.1.2", Port: 10001, Tags: map[string]string{"service": "redis", "version": "v3"}},
 					},
 				},
 			}),
