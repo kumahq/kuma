@@ -424,29 +424,6 @@ var _ = Describe("Dataplane", func() {
 `,
 				expected: "192.168.0.1",
 			}),
-			Entry("legacy - dataplane with 1 inbound interface", testCase{
-				dataplane: `
-                networking:
-                  inbound:
-                  - interface: 192.168.0.1:80:8080
-                    tags:
-                      service: backend
-`,
-				expected: "192.168.0.1",
-			}),
-			Entry("legacy - dataplane with 2 inbound interfaces", testCase{
-				dataplane: `
-                networking:
-                  inbound:
-                  - interface: 192.168.0.1:80:8080
-                    tags:
-                      service: backend
-                  - interface: 192.168.0.2:443:8443
-                    tags:
-                      service: backend-https
-`,
-				expected: "192.168.0.1",
-			}),
 			Entry("dataplane with invalid inbound interface", testCase{
 				dataplane: `
                 networking:

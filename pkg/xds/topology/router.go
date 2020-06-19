@@ -60,11 +60,7 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 		policy, exists := policyMap[serviceName]
-		outbound, err := dataplane.Spec.Networking.ToOutboundInterface(oface)
-		if err != nil {
-			// ignore invalid outbounds
-			continue
-		}
+		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		if exists {
 			routeMap[outbound] = policy.(*mesh_core.TrafficRouteResource)
 		} else {
@@ -96,11 +92,7 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 	destinations := core_xds.DestinationMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-		outbound, err := dataplane.Spec.Networking.ToOutboundInterface(oface)
-		if err != nil {
-			// ignore invalid outbounds
-			continue
-		}
+		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		route, ok := routes[outbound]
 		if ok {
 			for _, destination := range route.Spec.Conf {

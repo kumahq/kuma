@@ -34,19 +34,6 @@ message Dataplane {
 
     // Inbound describes a service implemented by the dataplane.
     message Inbound {
-
-      // DEPRECATED: use networking.address, networking.inbound[].port and
-      // networking.inbound[].servicePort Interface describes networking rules
-      // for incoming traffic. The value is a string formatted as
-      // <DATAPLANE_IP>:<DATAPLANE_PORT>:<WORKLOAD_PORT>, which means
-      // that dataplane must listen on <DATAPLANE_IP>:<DATAPLANE_PORT>
-      // and must dispatch to 127.0.0.1:<WORKLOAD_PORT>.
-      //
-      // E.g.,
-      // "192.168.0.100:9090:8080" in case of IPv4 or
-      // "[2001:db8::1]:7070:6060" in case of IPv6.
-      string interface = 1;
-
       // Port of the inbound interface that will forward requests to the
       // service.
       uint32 port = 3;
@@ -66,20 +53,6 @@ message Dataplane {
 
     // Outbound describes a service consumed by the dataplane.
     message Outbound {
-
-      // DEPRECATED: use networking.address and networking.outbound[].port
-      // Interface describes networking rules for outgoing traffic.
-      // The value is a string formatted as <DATAPLANE_IP>:<DATAPLANE_PORT>,
-      // which means that dataplane must listen on
-      // <DATAPLANE_IP>:<DATAPLANE_PORT> and must be dispatch to
-      // <SERVICE>:<SERVICE_PORT>.
-      //
-      // E.g.,
-      // "127.0.0.1:9090" in case of IPv4 or
-      // "[::1]:8080" in case of IPv6 or
-      // ":7070".
-      string interface = 1;
-
       // Address on which the service will be available to this dataplane.
       // Defaults to 127.0.0.1
       string address = 3;

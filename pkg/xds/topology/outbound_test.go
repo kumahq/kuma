@@ -218,56 +218,6 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				expected: core_xds.EndpointMap{},
 			}),
-			Entry("dataplane with invalid inbound interface", testCase{
-				destinations: core_xds.DestinationMap{
-					"redis": []mesh_proto.TagSelector{{"service": "redis"}},
-				},
-				dataplanes: []*mesh_core.DataplaneResource{
-					{
-						Spec: mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "192.168.0.1",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags:        map[string]string{"service": "redis", "version": "v1"},
-										Port:        6379,
-										ServicePort: 16379,
-									},
-								},
-							},
-						},
-					},
-					{
-						Spec: mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{Interface: "invalid value", Tags: map[string]string{"service": "redis", "version": "v2"}},
-								},
-							},
-						},
-					},
-					{
-						Spec: mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "192.168.0.3",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags:        map[string]string{"service": "redis", "version": "v3"},
-										Port:        6379,
-										ServicePort: 36379,
-									},
-								},
-							},
-						},
-					},
-				},
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{Target: "192.168.0.1", Port: 6379, Tags: map[string]string{"service": "redis", "version": "v1"}},
-						{Target: "192.168.0.3", Port: 6379, Tags: map[string]string{"service": "redis", "version": "v3"}},
-					},
-				},
-			}),
 			Entry("destination with multiple selectors", testCase{
 				destinations: core_xds.DestinationMap{
 					"redis": []mesh_proto.TagSelector{
