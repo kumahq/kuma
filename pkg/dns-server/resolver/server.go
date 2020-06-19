@@ -115,8 +115,6 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 	d.Lock()
 	defer d.Unlock()
 
-	services = d.normalizeServiceMap(services)
-
 	// ensure all services have entries in the domain
 	for service := range services {
 		_, found := d.viplist[service]
@@ -189,21 +187,6 @@ func (d *SimpleDNSResolver) ReverseLookup(ip string) (string, error) {
 	}
 
 	return "", errors.Errorf("IP [%s] not found", ip)
-}
-
-func (d *SimpleDNSResolver) normalizeServiceMap(services map[string]bool) map[string]bool {
-	result := map[string]bool{}
-
-	for name, value := range services {
-		service, err := d.serviceFromName(name)
-		if err != nil {
-			simpleDNSLog.Error(err, "unable to map service name", "name", name)
-		} else {
-			result[service] = value
-		}
-	}
-
-	return result
 }
 
 func (d *SimpleDNSResolver) domainFromName(name string) (string, error) {
