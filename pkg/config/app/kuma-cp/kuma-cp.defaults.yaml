@@ -257,6 +257,10 @@ dnsServer:
   # The CIDR range used to allocate
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
 
+# Clusters configuration
+kumaClusters:
+  clusters: []
+
 # Kuma Discovery Service configuration
 kdsServer:
   # Port of GRPC server that Local Kuma CP connects to

@@ -11,10 +11,10 @@ type Clusters interface {
 }
 
 type Cluster interface {
-	DeployKuma(mode ...string) error
+	DeployKuma(mode ...string) (ControlPlane, error)
 	VerifyKuma() error
+	RestartKuma() error
 	DeleteKuma() error
-	GetKumaCPLogs() (string, error)
 	InjectDNS() error
 	GetKumactlOptions() *KumactlOptions
 
@@ -30,4 +30,12 @@ type Cluster interface {
 
 	// Testing
 	GetTesting() testing.TestingT
+}
+
+type ControlPlane interface {
+	GetName() string
+	AddCluster(name, url string) error
+	GetKumaCPLogs() (string, error)
+	GetHostAPI() string
+	GetGlobaStatusAPI() string
 }

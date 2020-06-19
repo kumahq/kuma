@@ -3,6 +3,8 @@ package runtime
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/clusters/poller"
+
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
 
 	"github.com/Kong/kuma/pkg/core/ca"
@@ -36,6 +38,7 @@ type RuntimeContext interface {
 	CaManagers() ca.Managers
 	Extensions() context.Context
 	DNSResolver() resolver.DNSResolver
+	Clusters() poller.ClusterStatusPoller
 }
 
 var _ Runtime = &runtime{}
@@ -59,15 +62,16 @@ func (i *runtimeInfo) GetInstanceId() string {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg kuma_cp.Config
-	rm  core_manager.ResourceManager
-	rs  core_store.ResourceStore
-	rom core_manager.ReadOnlyResourceManager
-	sm  secret_manager.SecretManager
-	cam ca.Managers
-	xds core_xds.XdsContext
-	ext context.Context
-	dns resolver.DNSResolver
+	cfg      kuma_cp.Config
+	rm       core_manager.ResourceManager
+	rs       core_store.ResourceStore
+	rom      core_manager.ReadOnlyResourceManager
+	sm       secret_manager.SecretManager
+	cam      ca.Managers
+	xds      core_xds.XdsContext
+	ext      context.Context
+	dns      resolver.DNSResolver
+	clusters poller.ClusterStatusPoller
 }
 
 func (rc *runtimeContext) CaManagers() ca.Managers {
@@ -97,4 +101,8 @@ func (rc *runtimeContext) Extensions() context.Context {
 
 func (rc *runtimeContext) DNSResolver() resolver.DNSResolver {
 	return rc.dns
+}
+
+func (rc *runtimeContext) Clusters() poller.ClusterStatusPoller {
+	return rc.clusters
 }
