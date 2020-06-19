@@ -3,20 +3,23 @@ package cmd
 import (
 	"fmt"
 
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	"github.com/Kong/kuma/pkg/clusters"
+	dns_server "github.com/Kong/kuma/pkg/dns-server"
+
+	api_server "github.com/Kong/kuma/pkg/api-server"
 
 	"github.com/spf13/cobra"
 
+	kuma_version "github.com/Kong/kuma/pkg/version"
+
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/Kong/kuma/pkg/admin-server"
-	api_server "github.com/Kong/kuma/pkg/api-server"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/bootstrap"
-	dns_server "github.com/Kong/kuma/pkg/dns-server"
 	mads_server "github.com/Kong/kuma/pkg/mads/server"
 	sds_server "github.com/Kong/kuma/pkg/sds/server"
 	xds_server "github.com/Kong/kuma/pkg/xds/server"
@@ -99,6 +102,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := ui_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up GUI server")
+					return err
+				}
+				if err := clusters.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up Clusters server")
 					return err
 				}
 			}

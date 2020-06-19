@@ -4,28 +4,28 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/test/framework"
+	. "github.com/Kong/kuma/test/framework"
 )
 
 var _ = Describe("Test Local and Global", func() {
-	var clusters framework.Clusters
+	var clusters Clusters
 
 	BeforeEach(func() {
 		var err error
-		clusters, err = framework.NewK8sClusters(
-			[]string{framework.Kuma1, framework.Kuma2},
-			framework.Verbose)
+		clusters, err = NewK8sClusters(
+			[]string{Kuma1, Kuma2},
+			Verbose)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.CreateNamespace("kuma-test")
+		err = clusters.CreateNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.LabelNamespaceForSidecarInjection("kuma-test")
+		err = clusters.LabelNamespaceForSidecarInjection(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		err := clusters.DeleteNamespace("kuma-test")
+		err := clusters.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		_ = clusters.DeleteKuma()
@@ -33,7 +33,7 @@ var _ = Describe("Test Local and Global", func() {
 
 	It("Should deploy on Two K8s cluster and verify Kuma", func() {
 		// when
-		err := clusters.DeployKuma()
+		_, err := clusters.DeployKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
