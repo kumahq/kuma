@@ -4,8 +4,8 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes"
 
+	"github.com/Kong/kuma/pkg/util/proto"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
@@ -28,7 +28,7 @@ type TcpProxyConfigurer struct {
 func (c *TcpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	tcpProxy := c.tcpProxy()
 
-	pbst, err := ptypes.MarshalAny(tcpProxy)
+	pbst, err := proto.MarshalAnyDeterministic(tcpProxy)
 	if err != nil {
 		return err
 	}
