@@ -3,11 +3,9 @@ package cmd
 import (
 	"fmt"
 	"github.com/Kong/kuma/pkg/clusters"
-
+	dns_server "github.com/Kong/kuma/pkg/dns-server"
 	kds_server "github.com/Kong/kuma/pkg/kds/server"
 	"github.com/go-errors/errors"
-	dns_server "github.com/Kong/kuma/pkg/dns-server"
-
 	api_server "github.com/Kong/kuma/pkg/api-server"
 
 	"github.com/spf13/cobra"

@@ -51,7 +51,7 @@ var _ util_xds.Snapshot = &Snapshot{}
 
 func (s *Snapshot) GetSupportedTypes() (types []string) {
 	for _, typ := range kds.SupportedTypes {
-		types = append(types, kds.TypeURL(typ))
+		types = append(types, string(typ))
 	}
 	return
 }

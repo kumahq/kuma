@@ -2,8 +2,15 @@ package server_test
 
 import (
 	"context"
-	"fmt"
 	"time"
+
+	"github.com/gogo/protobuf/proto"
+
+	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/Kong/kuma/pkg/kds"
+	test_grpc "github.com/Kong/kuma/pkg/test/grpc"
+	kds_verifier "github.com/Kong/kuma/pkg/test/kds/verifier"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -12,8 +19,6 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -21,13 +26,10 @@ import (
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
-	"github.com/Kong/kuma/pkg/kds"
 	kds_server "github.com/Kong/kuma/pkg/kds/server"
-	mads_server "github.com/Kong/kuma/pkg/mads/server"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
@@ -42,53 +44,6 @@ var (
 const (
 	defaultTimeout = 3 * time.Second
 )
-
-type mockStream struct {
-	ctx       context.Context
-	recv      chan *v2.DiscoveryRequest
-	sent      chan *v2.DiscoveryResponse
-	nonce     int
-	sendError bool
-	grpc.ServerStream
-}
-
-func (stream *mockStream) Context() context.Context {
-	return stream.ctx
-}
-
-func (stream *mockStream) Send(resp *v2.DiscoveryResponse) error {
-	// check that nonce is monotonically incrementing
-	stream.nonce++
-	Expect(resp.Nonce).To(Equal(fmt.Sprintf("%d", stream.nonce)))
-	Expect(resp.VersionInfo).ToNot(BeEmpty())
-	Expect(resp.Resources).ToNot(BeEmpty())
-	Expect(resp.TypeUrl).ToNot(BeEmpty())
-	for _, res := range resp.Resources {
-		Expect(res.TypeUrl).To(Equal(resp.TypeUrl))
-	}
-
-	stream.sent <- resp
-	if stream.sendError {
-		return errors.New("send error")
-	}
-	return nil
-}
-
-func (stream *mockStream) Recv() (*v2.DiscoveryRequest, error) {
-	req, more := <-stream.recv
-	if !more {
-		return nil, errors.New("empty")
-	}
-	return req, nil
-}
-
-func makeMockStream() *mockStream {
-	return &mockStream{
-		ctx:  context.Background(),
-		sent: make(chan *v2.DiscoveryResponse, 10),
-		recv: make(chan *v2.DiscoveryRequest, 10),
-	}
-}
 
 type testRuntimeContext struct {
 	runtime.Runtime
@@ -108,124 +63,6 @@ func (t *testRuntimeContext) ReadOnlyResourceManager() manager.ReadOnlyResourceM
 func (t *testRuntimeContext) Add(c ...component.Component) error {
 	t.components = append(t.components, c...)
 	return nil
-}
-
-type fn func(ctx testContext) error
-
-func create(ctx context.Context, r model.Resource, opts ...store.CreateOptionsFunc) fn {
-	return func(tc testContext) error {
-		return tc.store().Create(ctx, r, opts...)
-	}
-}
-
-func discoveryRequest(resourceType model.ResourceType) fn {
-	return func(tc testContext) error {
-		tc.stream().recv <- &v2.DiscoveryRequest{
-			Node:    node,
-			TypeUrl: kds.TypeURL(resourceType),
-		}
-		return nil
-	}
-}
-
-func ack(resourceType model.ResourceType) fn {
-	return func(tc testContext) error {
-		tc.stream().recv <- &v2.DiscoveryRequest{
-			Node:          node,
-			TypeUrl:       kds.TypeURL(resourceType),
-			ResponseNonce: tc.lastResponse(kds.TypeURL(resourceType)).Nonce,
-			VersionInfo:   tc.lastResponse(kds.TypeURL(resourceType)).VersionInfo,
-		}
-		return nil
-	}
-}
-
-func waitResponse(timeout time.Duration, testFunc func(krs []*mesh_proto.KumaResource)) fn {
-	return func(tc testContext) error {
-		select {
-		case resp := <-tc.stream().sent:
-			krs, err := kumaResources(resp)
-			if err != nil {
-				return err
-			}
-			if len(krs) > 0 {
-				tc.saveLastResponse(krs[0].Spec.TypeUrl, resp)
-			}
-			testFunc(krs)
-		case <-time.After(timeout):
-			return fmt.Errorf("timeout exceeded")
-		}
-		return nil
-	}
-}
-
-func closeStream() fn {
-	return func(tc testContext) error {
-		close(tc.stream().recv)
-		return nil
-	}
-}
-
-type verifier interface {
-	exec(fn) verifier
-	verify(testContext) error
-}
-
-func newVerifier() verifier {
-	return &verifierImpl{}
-}
-
-type verifierImpl struct {
-	fns []fn
-}
-
-func (v *verifierImpl) exec(f fn) verifier {
-	v.fns = append(v.fns, f)
-	return v
-}
-
-func (v *verifierImpl) verify(tc testContext) error {
-	for _, f := range v.fns {
-		if err := f(tc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type testContext interface {
-	store() store.ResourceStore
-	stream() *mockStream
-	stop() chan struct{}
-	saveLastResponse(typ string, response *v2.DiscoveryResponse)
-	lastResponse(typeURL string) *v2.DiscoveryResponse
-}
-
-type testContextImpl struct {
-	resourceStore store.ResourceStore
-	mockStream    *mockStream
-	stopCh        chan struct{}
-	responses     map[string]*v2.DiscoveryResponse
-}
-
-func (t *testContextImpl) store() store.ResourceStore {
-	return t.resourceStore
-}
-
-func (t *testContextImpl) stream() *mockStream {
-	return t.mockStream
-}
-
-func (t *testContextImpl) stop() chan struct{} {
-	return t.stopCh
-}
-
-func (t *testContextImpl) saveLastResponse(typ string, response *v2.DiscoveryResponse) {
-	t.responses[typ] = response
-}
-
-func (t *testContextImpl) lastResponse(typ string) *v2.DiscoveryResponse {
-	return t.responses[typ]
 }
 
 var (
@@ -255,6 +92,16 @@ var (
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				"service": "*",
+				"tag0":    "version0",
+				"tag1":    "version1",
+				"tag2":    "version2",
+				"tag3":    "version3",
+				"tag4":    "version4",
+				"tag5":    "version5",
+				"tag6":    "version6",
+				"tag7":    "version7",
+				"tag8":    "version8",
+				"tag9":    "version9",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
@@ -375,27 +222,19 @@ var (
 			Imports: []string{"default-kuma-profile"},
 		},
 	}
-)
-
-func kumaResources(response *v2.DiscoveryResponse) (resources []*mesh_proto.KumaResource, _ error) {
-	for _, r := range response.Resources {
-		kr := &mesh_proto.KumaResource{}
-		if err := ptypes.UnmarshalAny(r, kr); err != nil {
-			return nil, err
-		}
-		resources = append(resources, kr)
+	s1 = system_proto.Secret{
+		Data: &wrappers.BytesValue{Value: []byte("secret key")},
 	}
-	return
-}
+)
 
 var _ = Describe("KDS Server", func() {
 	createServer := func(rt runtime.Runtime) kds_server.Server {
 		log := core.Log
-		hasher, cache := mads_server.NewXdsContext(log)
+		hasher, cache := kds_server.NewXdsContext(log)
 		generator := kds_server.NewSnapshotGenerator(rt)
-		versioner := mads_server.NewVersioner()
-		reconciler := mads_server.NewReconciler(hasher, cache, generator, versioner)
-		syncTracker := mads_server.NewSyncTracker(reconciler, rt.Config().KdsServer.RefreshInterval)
+		versioner := kds_server.NewVersioner()
+		reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
+		syncTracker := kds_server.NewSyncTracker(reconciler, rt.Config().KDSServer.RefreshInterval)
 		callbacks := util_xds.CallbacksChain{
 			util_xds.LoggingCallbacks{Log: log},
 			syncTracker,
@@ -403,19 +242,19 @@ var _ = Describe("KDS Server", func() {
 		return kds_server.NewServer(cache, callbacks, log)
 	}
 
-	var tc testContext
+	var tc kds_verifier.TestContext
 	BeforeEach(func() {
 		s := memory.NewStore()
 		mgr := manager.NewResourceManager(s)
 		srv := createServer(&testRuntimeContext{
 			rom: mgr,
 			cfg: kuma_cp.Config{
-				KdsServer: &kds_config.KumaDiscoveryServerConfig{
-					RefreshInterval: 1 * time.Second,
+				KDSServer: &kds_config.KumaDiscoveryServerConfig{
+					RefreshInterval: 100 * time.Millisecond,
 				},
 			},
 		})
-		stream := makeMockStream()
+		stream := test_grpc.MakeMockStream()
 		stop := make(chan struct{})
 		go func() {
 			err := srv.StreamKumaResources(stream)
@@ -423,206 +262,236 @@ var _ = Describe("KDS Server", func() {
 			close(stop)
 		}()
 
-		tc = &testContextImpl{
-			resourceStore: s,
-			mockStream:    stream,
-			stopCh:        stop,
-			responses:     map[string]*v2.DiscoveryResponse{},
+		tc = &kds_verifier.TestContextImpl{
+			ResourceStore: s,
+			MockStream:    stream,
+			StopCh:        stop,
+			Responses:     map[string]*v2.DiscoveryResponse{},
 		}
 	})
 
 	It("should support all existing resource types", func() {
 		ctx := context.Background()
 
-		vrf := newVerifier().
-			exec(create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
-			exec(create(ctx, &mesh.DataplaneResource{Spec: ingress}, store.CreateByKey("ingress-1", "mesh-1"))).
-			exec(create(ctx, &mesh.CircuitBreakerResource{Spec: cb1}, store.CreateByKey("cb-1", "mesh-1"))).
-			exec(create(ctx, &mesh.FaultInjectionResource{Spec: fi1}, store.CreateByKey("fi-1", "mesh-1"))).
-			exec(create(ctx, &mesh.HealthCheckResource{Spec: hc1}, store.CreateByKey("hc-1", "mesh-1"))).
-			exec(create(ctx, &mesh.TrafficLogResource{Spec: tl1}, store.CreateByKey("tl-1", "mesh-1"))).
-			exec(create(ctx, &mesh.TrafficPermissionResource{Spec: tp1}, store.CreateByKey("tp-1", "mesh-1"))).
-			exec(create(ctx, &mesh.TrafficRouteResource{Spec: tr1}, store.CreateByKey("tr-1", "mesh-1"))).
-			exec(create(ctx, &mesh.TrafficTraceResource{Spec: tt1}, store.CreateByKey("tt-1", "mesh-1"))).
-			exec(create(ctx, &mesh.ProxyTemplateResource{Spec: pt1}, store.CreateByKey("pt-1", "mesh-1"))).
-			exec(discoveryRequest(mesh.MeshType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+		// Just to don't forget to update this test after updating 'kds.SupportedTypes
+		Expect([]proto.Message{&mesh1, &ingress, &cb1, &fi1, &hc1, &tl1, &tp1, &tr1, &tt1, &pt1, &s1}).To(HaveLen(len(kds.SupportedTypes)))
+
+		vrf := kds_verifier.New().
+			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.DataplaneResource{Spec: ingress}, store.CreateByKey("ingress-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.CircuitBreakerResource{Spec: cb1}, store.CreateByKey("cb-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.FaultInjectionResource{Spec: fi1}, store.CreateByKey("fi-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.HealthCheckResource{Spec: hc1}, store.CreateByKey("hc-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.TrafficLogResource{Spec: tl1}, store.CreateByKey("tl-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.TrafficPermissionResource{Spec: tp1}, store.CreateByKey("tp-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.TrafficRouteResource{Spec: tr1}, store.CreateByKey("tr-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.TrafficTraceResource{Spec: tt1}, store.CreateByKey("tt-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.ProxyTemplateResource{Spec: pt1}, store.CreateByKey("pt-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &system.SecretResource{Spec: s1}, store.CreateByKey("s-1", "mesh-1"))).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.Mesh{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&mesh1))
 			})).
-			exec(discoveryRequest(mesh.DataplaneType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.DataplaneType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.Dataplane{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&ingress))
 			})).
-			exec(discoveryRequest(mesh.CircuitBreakerType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.CircuitBreakerType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.CircuitBreaker{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&cb1))
 			})).
-			exec(discoveryRequest(mesh.FaultInjectionType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.FaultInjectionType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.FaultInjection{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&fi1))
 			})).
-			exec(discoveryRequest(mesh.HealthCheckType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.HealthCheckType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.HealthCheck{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&hc1))
 			})).
-			exec(discoveryRequest(mesh.TrafficLogType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.TrafficLogType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.TrafficLog{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&tl1))
 			})).
-			exec(discoveryRequest(mesh.TrafficPermissionType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.TrafficPermissionType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.TrafficPermission{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&tp1))
 			})).
-			exec(discoveryRequest(mesh.TrafficRouteType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.TrafficRouteType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.TrafficRoute{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&tr1))
 			})).
-			exec(discoveryRequest(mesh.TrafficTraceType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.TrafficTraceType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.TrafficTrace{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&tt1))
 			})).
-			exec(discoveryRequest(mesh.ProxyTemplateType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.ProxyTemplateType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.ProxyTemplate{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&pt1))
 			})).
-			exec(closeStream())
+			Exec(kds_verifier.DiscoveryRequest(node, system.SecretType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+				Expect(krs).To(HaveLen(1))
+				m := &system_proto.Secret{}
+				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
+				Expect(m).To(Equal(&s1))
+			})).
+			Exec(kds_verifier.CloseStream())
 
-		err := vrf.verify(tc)
+		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.stop()
+		<-tc.Stop()
 	})
 
 	It("should accept request independently for each type", func() {
 		ctx := context.Background()
 
-		vrf := newVerifier().
-			exec(create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
-			exec(create(ctx, &mesh.FaultInjectionResource{Spec: fi1}, store.CreateByKey("fi1", "mesh-2"))).
-			exec(discoveryRequest(mesh.MeshType)).
-			exec(discoveryRequest(mesh.FaultInjectionType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+		vrf := kds_verifier.New().
+			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.FaultInjectionResource{Spec: fi1}, store.CreateByKey("fi1", "mesh-2"))).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.FaultInjectionType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 			})).
-			exec(ack(mesh.MeshType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 			})).
-			exec(ack(mesh.FaultInjectionType)).
-			exec(closeStream())
+			Exec(kds_verifier.Ack(node, mesh.MeshType)).
+			Exec(kds_verifier.Ack(node, mesh.FaultInjectionType)).
+			Exec(kds_verifier.CloseStream())
 
-		err := vrf.verify(tc)
+		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.stop()
+		<-tc.Stop()
 	})
 
 	It("should send response for resources created after DiscoveryRequest", func() {
 		ctx := context.Background()
 
-		vrf := newVerifier().
-			exec(discoveryRequest(mesh.MeshType)).
-			exec(create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+		vrf := kds_verifier.New().
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
+			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 			})).
-			exec(ack(mesh.MeshType)).
-			exec(closeStream())
+			Exec(kds_verifier.Ack(node, mesh.MeshType)).
+			Exec(kds_verifier.CloseStream())
 
-		err := vrf.verify(tc)
+		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.stop()
+		<-tc.Stop()
 	})
 
 	It("should send response for resources created before ACK", func() {
 		ctx := context.Background()
 
-		vrf := newVerifier().
-			exec(create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
-			exec(discoveryRequest(mesh.MeshType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+		vrf := kds_verifier.New().
+			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 			})).
-			exec(create(ctx, &mesh.MeshResource{Spec: mesh2}, store.CreateByKey("mesh-2", "mesh-2"))).
-			exec(ack(mesh.MeshType)).
-			exec(waitResponse(10*time.Second, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: mesh2}, store.CreateByKey("mesh-2", "mesh-2"))).
+			Exec(kds_verifier.Ack(node, mesh.MeshType)).
+			Exec(kds_verifier.WaitResponse(10*time.Second, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(2))
 			})).
-			exec(closeStream())
+			Exec(kds_verifier.CloseStream())
 
-		err := vrf.verify(tc)
+		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.stop()
+		<-tc.Stop()
 	})
 
 	It("should support update", func() {
 		ctx := context.Background()
 
-		vrf := newVerifier().
-			exec(create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
-			exec(discoveryRequest(mesh.MeshType)).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+		vrf := kds_verifier.New().
+			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.Mesh{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&mesh1))
 			})).
-			exec(ack(mesh.MeshType)).
-			exec(func(tc testContext) error {
+			Exec(kds_verifier.Ack(node, mesh.MeshType)).
+			Exec(func(tc kds_verifier.TestContext) error {
 				var meshRes mesh.MeshResource
-				if err := tc.store().Get(ctx, &meshRes, store.GetByKey("mesh-1", "mesh-1")); err != nil {
+				if err := tc.Store().Get(ctx, &meshRes, store.GetByKey("mesh-1", "mesh-1")); err != nil {
 					return err
 				}
 				meshRes.Spec = mesh2
-				if err := tc.store().Update(ctx, &meshRes); err != nil {
+				if err := tc.Store().Update(ctx, &meshRes); err != nil {
 					return err
 				}
 				return nil
 			}).
-			exec(waitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
 				Expect(krs).To(HaveLen(1))
 				m := &mesh_proto.Mesh{}
 				Expect(ptypes.UnmarshalAny(krs[0].Spec, m)).ToNot(HaveOccurred())
 				Expect(m).To(Equal(&mesh2))
 			})).
-			exec(closeStream())
+			Exec(kds_verifier.CloseStream())
 
-		err := vrf.verify(tc)
+		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.stop()
+		<-tc.Stop()
+	})
+
+	It("should have deterministic MarshalAny to avoid excess snapshot versions", func() {
+		ctx := context.Background()
+
+		vrf := kds_verifier.New().
+			Exec(kds_verifier.Create(ctx, &mesh.FaultInjectionResource{Spec: fi1}, store.CreateByKey("fi-1", "mesh-1"))).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.FaultInjectionType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(krs []*mesh_proto.KumaResource) {
+				Expect(krs).To(HaveLen(1))
+			})).
+			Exec(kds_verifier.Ack(node, mesh.FaultInjectionType)).
+			Exec(kds_verifier.ExpectNoResponseDuring(200 * time.Millisecond)).
+			Exec(kds_verifier.CloseStream())
+
+		err := vrf.Verify(tc)
+		Expect(err).ToNot(HaveOccurred())
+
+		<-tc.Stop()
 
 	})
 })

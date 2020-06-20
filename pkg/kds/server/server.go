@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/Kong/kuma/pkg/core"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	mads_server "github.com/Kong/kuma/pkg/mads/server"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
@@ -12,17 +11,17 @@ var (
 )
 
 func SetupServer(rt core_runtime.Runtime) error {
-	hasher, cache := mads_server.NewXdsContext(kdsServerLog)
+	hasher, cache := NewXdsContext(kdsServerLog)
 	generator := NewSnapshotGenerator(rt)
-	versioner := mads_server.NewVersioner()
-	reconciler := mads_server.NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := mads_server.NewSyncTracker(reconciler, rt.Config().KdsServer.RefreshInterval)
+	versioner := NewVersioner()
+	reconciler := NewReconciler(hasher, cache, generator, versioner)
+	syncTracker := NewSyncTracker(reconciler, rt.Config().KDSServer.RefreshInterval)
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: kdsServerLog},
 		syncTracker,
 	}
 	srv := NewServer(cache, callbacks, kdsServerLog)
 	return rt.Add(
-		&grpcServer{srv, *rt.Config().KdsServer},
+		&grpcServer{srv, *rt.Config().KDSServer},
 	)
 }
