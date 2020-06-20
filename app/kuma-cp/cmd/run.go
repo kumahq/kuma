@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/Kong/kuma/pkg/clusters"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
 	dns_server "github.com/Kong/kuma/pkg/dns-server"
+	kds_server "github.com/Kong/kuma/pkg/kds/server"
 
 	api_server "github.com/Kong/kuma/pkg/api-server"
 

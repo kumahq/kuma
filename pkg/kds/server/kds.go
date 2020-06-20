@@ -5,6 +5,9 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/Kong/kuma/pkg/core/resources/model"
+
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
@@ -19,7 +22,6 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/kds"
 )
 
@@ -62,6 +64,7 @@ type watches struct {
 	trafficRoutes      chan envoy_cache.Response
 	trafficTraces      chan envoy_cache.Response
 	proxyTemplates     chan envoy_cache.Response
+	secrets            chan envoy_cache.Response
 
 	meshesCancel             func()
 	ingressesCancel          func()
@@ -73,6 +76,7 @@ type watches struct {
 	trafficRoutesCancel      func()
 	trafficTracesCancel      func()
 	proxyTemplatesCancel     func()
+	secretsCancel            func()
 
 	meshesNonce             string
 	ingressesNonce          string
@@ -84,6 +88,7 @@ type watches struct {
 	trafficRoutesNonce      string
 	trafficTracesNonce      string
 	proxyTemplatesNonce     string
+	secretsNonce            string
 }
 
 // Cancel all watches
@@ -117,6 +122,9 @@ func (values watches) Cancel() {
 	}
 	if values.proxyTemplatesCancel != nil {
 		values.proxyTemplatesCancel()
+	}
+	if values.secretsCancel != nil {
+		values.secretsCancel()
 	}
 }
 
@@ -173,9 +181,9 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 	}()
 
 	// sends a response by serializing to protobuf Any
-	send := func(resp envoy_cache.Response, resourceType model.ResourceType) (string, error) {
-		typeURL := kds.TypeURL("KumaResource")
-		out, err := createResponse(&resp, typeURL)
+	send := func(resp envoy_cache.Response) (string, error) {
+		out, err := createResponse(&resp, kds.KumaResource)
+
 		if err != nil {
 			return "", err
 		}
@@ -205,7 +213,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "meshes watch failed")
 			}
-			nonce, err := send(resp, mesh_core.MeshType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
@@ -215,7 +223,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "ingresses watch failed")
 			}
-			nonce, err := send(resp, mesh_core.DataplaneType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
@@ -225,7 +233,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "circuitBreakers watch failed")
 			}
-			nonce, err := send(resp, mesh_core.CircuitBreakerType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
@@ -235,7 +243,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "faultInjections watch failed")
 			}
-			nonce, err := send(resp, mesh_core.FaultInjectionType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
@@ -245,7 +253,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "healthChecks watch failed")
 			}
-			nonce, err := send(resp, mesh_core.HealthCheckType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
@@ -255,7 +263,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "trafficLogs watch failed")
 			}
-			nonce, err := send(resp, mesh_core.TrafficLogType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
@@ -265,7 +273,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "trafficPermissions watch failed")
 			}
-			nonce, err := send(resp, mesh_core.TrafficPermissionType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
@@ -275,7 +283,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "trafficRoutes watch failed")
 			}
-			nonce, err := send(resp, mesh_core.TrafficRouteType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
@@ -285,7 +293,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "trafficTraces watch failed")
 			}
-			nonce, err := send(resp, mesh_core.TrafficTraceType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
@@ -295,11 +303,21 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "proxyTemplates watch failed")
 			}
-			nonce, err := send(resp, mesh_core.ProxyTemplateType)
+			nonce, err := send(resp)
 			if err != nil {
 				return err
 			}
 			values.proxyTemplatesNonce = nonce
+
+		case resp, more := <-values.secrets:
+			if !more {
+				return status.Errorf(codes.Unavailable, "secrets watch failed")
+			}
+			nonce, err := send(resp)
+			if err != nil {
+				return err
+			}
+			values.secretsNonce = nonce
 
 		case req, more := <-reqCh:
 			// input stream ended or errored out
@@ -331,58 +349,64 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 				}
 			}
 
+			requestResourceType := model.ResourceType(req.TypeUrl)
 			// cancel existing watches to (re-)request a newer version
 			switch {
-			case req.TypeUrl == kds.TypeURL(mesh_core.MeshType) && (values.meshesNonce == "" || values.meshesNonce == nonce):
+			case requestResourceType == mesh_core.MeshType && (values.meshesNonce == "" || values.meshesNonce == nonce):
 				if values.meshesCancel != nil {
 					values.meshesCancel()
 				}
 				values.meshes, values.meshesCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == kds.TypeURL(mesh_core.DataplaneType) && (values.ingressesNonce == "" || values.ingressesNonce == nonce):
+			case requestResourceType == mesh_core.DataplaneType && (values.ingressesNonce == "" || values.ingressesNonce == nonce):
 				if values.ingressesCancel != nil {
 					values.ingressesCancel()
 				}
 				values.ingresses, values.ingressesCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == kds.TypeURL(mesh_core.CircuitBreakerType) && (values.circuitBreakersNonce == "" || values.circuitBreakersNonce == nonce):
+			case requestResourceType == mesh_core.CircuitBreakerType && (values.circuitBreakersNonce == "" || values.circuitBreakersNonce == nonce):
 				if values.circuitBreakersCancel != nil {
 					values.circuitBreakersCancel()
 				}
 				values.circuitBreakers, values.circuitBreakersCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == kds.TypeURL(mesh_core.FaultInjectionType) && (values.faultInjectionsNonce == "" || values.faultInjectionsNonce == nonce):
+			case requestResourceType == mesh_core.FaultInjectionType && (values.faultInjectionsNonce == "" || values.faultInjectionsNonce == nonce):
 				if values.faultInjectionsCancel != nil {
 					values.faultInjectionsCancel()
 				}
 				values.faultInjections, values.faultInjectionsCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == kds.TypeURL(mesh_core.HealthCheckType) && (values.healthChecksNonce == "" || values.healthChecksNonce == nonce):
+			case requestResourceType == mesh_core.HealthCheckType && (values.healthChecksNonce == "" || values.healthChecksNonce == nonce):
 				if values.healthChecksCancel != nil {
 					values.healthChecksCancel()
 				}
 				values.healthChecks, values.healthChecksCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == kds.TypeURL(mesh_core.TrafficLogType) && (values.trafficLogsNonce == "" || values.trafficLogsNonce == nonce):
+			case requestResourceType == mesh_core.TrafficLogType && (values.trafficLogsNonce == "" || values.trafficLogsNonce == nonce):
 				if values.trafficLogsCancel != nil {
 					values.trafficLogsCancel()
 				}
 				values.trafficLogs, values.trafficLogsCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == kds.TypeURL(mesh_core.TrafficPermissionType) && (values.trafficPermissionsNonce == "" || values.trafficPermissionsNonce == nonce):
+			case requestResourceType == mesh_core.TrafficPermissionType && (values.trafficPermissionsNonce == "" || values.trafficPermissionsNonce == nonce):
 				if values.trafficPermissionsCancel != nil {
 					values.trafficPermissionsCancel()
 				}
 				values.trafficPermissions, values.trafficPermissionsCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == kds.TypeURL(mesh_core.TrafficRouteType) && (values.trafficRoutesNonce == "" || values.trafficRoutesNonce == nonce):
+			case requestResourceType == mesh_core.TrafficRouteType && (values.trafficRoutesNonce == "" || values.trafficRoutesNonce == nonce):
 				if values.trafficRoutesCancel != nil {
 					values.trafficRoutesCancel()
 				}
 				values.trafficRoutes, values.trafficRoutesCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == kds.TypeURL(mesh_core.TrafficTraceType) && (values.trafficTracesNonce == "" || values.trafficTracesNonce == nonce):
+			case requestResourceType == mesh_core.TrafficTraceType && (values.trafficTracesNonce == "" || values.trafficTracesNonce == nonce):
 				if values.trafficTracesCancel != nil {
 					values.trafficTracesCancel()
 				}
 				values.trafficTraces, values.trafficTracesCancel = s.cache.CreateWatch(*req)
-			case req.TypeUrl == kds.TypeURL(mesh_core.ProxyTemplateType) && (values.proxyTemplatesNonce == "" || values.proxyTemplatesNonce == nonce):
+			case requestResourceType == mesh_core.ProxyTemplateType && (values.proxyTemplatesNonce == "" || values.proxyTemplatesNonce == nonce):
 				if values.proxyTemplatesCancel != nil {
 					values.proxyTemplatesCancel()
 				}
 				values.proxyTemplates, values.proxyTemplatesCancel = s.cache.CreateWatch(*req)
+			case requestResourceType == system.SecretType && (values.secretsNonce == "" || values.secretsNonce == nonce):
+				if values.secretsCancel != nil {
+					values.secretsCancel()
+				}
+				values.secrets, values.secretsCancel = s.cache.CreateWatch(*req)
 			}
 		}
 	}

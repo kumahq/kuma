@@ -4,6 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "v1alpha1";
 
+import "google/protobuf/timestamp.proto";
 import "envoy/api/v2/discovery.proto";
 import "google/protobuf/any.proto";
 
@@ -23,6 +24,9 @@ message KumaResource {
   message Meta {
     string name = 1;
     string mesh = 2;
+    google.protobuf.Timestamp creation_time = 3;
+    google.protobuf.Timestamp modification_time = 4;
+    string version = 5;
   }
   Meta meta = 1;
   google.protobuf.Any spec = 2;

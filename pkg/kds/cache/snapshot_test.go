@@ -9,7 +9,6 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/kds"
 	"github.com/Kong/kuma/pkg/kds/cache"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -37,7 +36,7 @@ var _ = Describe("Snapshot", func() {
 
 			// when
 			snapshot = cache.NewSnapshotBuilder().
-				With(kds.TypeURL(mesh_core.MeshType), []envoy_types.Resource{
+				With(string(mesh_core.MeshType), []envoy_types.Resource{
 					&mesh_proto.KumaResource{
 						Meta: &mesh_proto.KumaResource_Meta{Name: "mesh1", Mesh: "mesh1"},
 						Spec: mustMarshalAny(&mesh_proto.Mesh{}),
@@ -54,7 +53,7 @@ var _ = Describe("Snapshot", func() {
 			// when
 			var snapshot *cache.Snapshot
 			// then
-			Expect(snapshot.GetResources(kds.TypeURL(mesh_core.MeshType))).To(BeNil())
+			Expect(snapshot.GetResources(string(mesh_core.MeshType))).To(BeNil())
 		})
 
 		It("should return Meshes", func() {
@@ -65,13 +64,13 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(kds.TypeURL(mesh_core.MeshType), []envoy_types.Resource{resources}).
+				With(string(mesh_core.MeshType), []envoy_types.Resource{resources}).
 				Build("v1")
 			// then
 			expected := map[string]envoy_types.Resource{
 				"mesh1": resources,
 			}
-			Expect(snapshot.GetResources(kds.TypeURL(mesh_core.MeshType))).To(Equal(expected))
+			Expect(snapshot.GetResources(string(mesh_core.MeshType))).To(Equal(expected))
 		})
 
 		It("should return `nil` for unsupported resource types", func() {
@@ -82,7 +81,7 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(kds.TypeURL(mesh_core.MeshType), []envoy_types.Resource{resources}).
+				With(string(mesh_core.MeshType), []envoy_types.Resource{resources}).
 				Build("v1")
 			// then
 			Expect(snapshot.GetResources("UnsupportedType")).To(BeNil())
@@ -94,7 +93,7 @@ var _ = Describe("Snapshot", func() {
 			// when
 			var snapshot *cache.Snapshot
 			// then
-			Expect(snapshot.GetVersion(kds.TypeURL(mesh_core.MeshType))).To(Equal(""))
+			Expect(snapshot.GetVersion(string(mesh_core.MeshType))).To(Equal(""))
 		})
 
 		It("should return proper version for a supported resource type", func() {
@@ -105,10 +104,10 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(kds.TypeURL(mesh_core.MeshType), []envoy_types.Resource{resources}).
+				With(string(mesh_core.MeshType), []envoy_types.Resource{resources}).
 				Build("v1")
 			// then
-			Expect(snapshot.GetVersion(kds.TypeURL(mesh_core.MeshType))).To(Equal("v1"))
+			Expect(snapshot.GetVersion(string(mesh_core.MeshType))).To(Equal("v1"))
 		})
 
 		It("should return an empty string for unsupported resource type", func() {
@@ -119,7 +118,7 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(kds.TypeURL(mesh_core.MeshType), []envoy_types.Resource{resources}).
+				With(string(mesh_core.MeshType), []envoy_types.Resource{resources}).
 				Build("v1")
 			// then
 			Expect(snapshot.GetVersion("unsupported type")).To(Equal(""))
@@ -131,7 +130,7 @@ var _ = Describe("Snapshot", func() {
 			// given
 			var snapshot *cache.Snapshot
 			// when
-			actual := snapshot.WithVersion(kds.TypeURL(mesh_core.MeshType), "v1")
+			actual := snapshot.WithVersion(string(mesh_core.MeshType), "v1")
 			// then
 			Expect(actual).To(BeNil())
 		})
@@ -144,14 +143,14 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(kds.TypeURL(mesh_core.MeshType), []envoy_types.Resource{resources}).
+				With(string(mesh_core.MeshType), []envoy_types.Resource{resources}).
 				Build("v1")
 			// when
-			actual := snapshot.WithVersion(kds.TypeURL(mesh_core.MeshType), "v2")
+			actual := snapshot.WithVersion(string(mesh_core.MeshType), "v2")
 			// then
-			Expect(actual.GetVersion(kds.TypeURL(mesh_core.MeshType))).To(Equal("v2"))
+			Expect(actual.GetVersion(string(mesh_core.MeshType))).To(Equal("v2"))
 			// and
-			Expect(actual.GetVersion(kds.TypeURL(mesh_core.CircuitBreakerType))).To(Equal("v1"))
+			Expect(actual.GetVersion(string(mesh_core.CircuitBreakerType))).To(Equal("v1"))
 		})
 
 		It("should return the same snapshot if version has not changed", func() {
@@ -162,12 +161,12 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(kds.TypeURL(mesh_core.MeshType), []envoy_types.Resource{resources}).
+				With(string(mesh_core.MeshType), []envoy_types.Resource{resources}).
 				Build("v1")
 			// when
-			actual := snapshot.WithVersion(kds.TypeURL(mesh_core.MeshType), "v1")
+			actual := snapshot.WithVersion(string(mesh_core.MeshType), "v1")
 			// then
-			Expect(actual.GetVersion(kds.TypeURL(mesh_core.MeshType))).To(Equal("v1"))
+			Expect(actual.GetVersion(string(mesh_core.MeshType))).To(Equal("v1"))
 			// and
 			Expect(actual).To(BeIdenticalTo(snapshot))
 		})
@@ -180,12 +179,12 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(kds.TypeURL(mesh_core.MeshType), []envoy_types.Resource{resources}).
+				With(string(mesh_core.MeshType), []envoy_types.Resource{resources}).
 				Build("v1")
 			// when
 			actual := snapshot.WithVersion("unsupported type", "v2")
 			// then
-			Expect(actual.GetVersion(kds.TypeURL(mesh_core.MeshType))).To(Equal("v1"))
+			Expect(actual.GetVersion(string(mesh_core.MeshType))).To(Equal("v1"))
 			// and
 			Expect(actual).To(BeIdenticalTo(snapshot))
 		})

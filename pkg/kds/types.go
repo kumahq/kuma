@@ -2,18 +2,22 @@
 package kds
 
 import (
+	"strings"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
 const (
-	prefix = "type.googleapis.com/kuma.mesh.v1alpha1."
+	googleApis   = "type.googleapis.com/"
+	KumaResource = googleApis + "kuma.mesh.v1alpha1.KumaResource"
 )
 
 var (
 	SupportedTypes = []model.ResourceType{
 		mesh.MeshType,
-		mesh.DataplaneType, // for Ingress
+		mesh.DataplaneType,
 		mesh.CircuitBreakerType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,
@@ -22,9 +26,11 @@ var (
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
+		system.SecretType,
 	}
 )
 
-func TypeURL(resourceType model.ResourceType) string {
-	return prefix + string(resourceType)
+func ResourceType(typeURL string) string {
+	s := strings.Split(typeURL, ".")
+	return s[len(s)-1]
 }

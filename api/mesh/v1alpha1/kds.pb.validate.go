@@ -133,6 +133,28 @@ func (m *KumaResource_Meta) Validate() error {
 
 	// no validation rules for Mesh
 
+	if v, ok := interface{}(m.GetCreationTime()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return KumaResource_MetaValidationError{
+				field:  "CreationTime",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetModificationTime()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return KumaResource_MetaValidationError{
+				field:  "ModificationTime",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Version
+
 	return nil
 }
 
