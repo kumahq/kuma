@@ -119,8 +119,7 @@ var _ = Describe("Config WS", func() {
           },
           "environment": "universal",
           "general": {
-            "advertisedHostname": "localhost",
-			"clusterName": "kuma.local"
+            "advertisedHostname": "localhost"
           },
           "kumaClusters": {
           },

@@ -245,7 +245,7 @@ type GeneralConfig struct {
 	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
 	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_general_advertised_hostname"`
 	// Kuma Cluster name used to mark the local dataplane resources
-	ClusterName string `yaml:"clusterName,omitempty"`
+	ClusterName string `yaml:"clusterName,omitempty" envconfig:"kuma_general_cluster_name"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -263,6 +263,6 @@ func (g *GeneralConfig) Validate() error {
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
 		AdvertisedHostname: "localhost",
-		ClusterName:        "kuma.local",
+		ClusterName:        "",
 	}
 }
