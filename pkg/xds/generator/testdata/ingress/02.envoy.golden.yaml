@@ -9,7 +9,9 @@ resources:
       filterChains:
         - {}
       listenerFilters:
-        - config: {}
-          name: envoy.listener.tls_inspector
+        - name: envoy.filters.listener.tls_inspector
+          typedConfig:
+            '@type': type.googleapis.com/google.protobuf.Empty
+            value: {}
       name: inbound:10.0.0.1:10001
       trafficDirection: INBOUND
