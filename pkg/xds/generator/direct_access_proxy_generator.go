@@ -46,7 +46,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		listener, err := envoy_listeners.NewListenerBuilder().
 			Configure(envoy_listeners.OutboundListener(name, endpoint.Address, endpoint.Port)).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
-				Configure(envoy_listeners.TcpProxy(name, envoy_common.ClusterInfo{Name: "direct_access"})).
+				Configure(envoy_listeners.TcpProxy(name, envoy_common.ClusterSubset{ClusterName: "direct_access"})).
 				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, name, proxy.Logs[mesh_core.PassThroughService], proxy)))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()
@@ -91,10 +91,7 @@ func directAccessEndpoints(dataplane *mesh_core.DataplaneResource, other *mesh_c
 		for _, inbound := range append(inbounds, dp.Spec.GetNetworking().GetInbound()...) {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			if services["*"] || services[service] {
-				iface, err := dp.Spec.GetNetworking().ToInboundInterface(inbound)
-				if err != nil {
-					return nil, err
-				}
+				iface := dp.Spec.GetNetworking().ToInboundInterface(inbound)
 				endpoint := Endpoint{
 					Address: iface.DataplaneIP,
 					Port:    iface.DataplanePort,

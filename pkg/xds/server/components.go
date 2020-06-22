@@ -136,11 +136,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					},
 				}
 
-				otherDataplanes := &mesh_core.DataplaneResourceList{}
-				if err := rt.ReadOnlyResourceManager().List(ctx, otherDataplanes, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
-					return err
-				}
-
 				if dataplane.Spec.IsIngress() {
 					// update Ingress
 					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, dataplanes.Items); err != nil {
@@ -155,6 +150,14 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 						Metadata:        metadataTracker.Metadata(streamId),
 					}
 					return ingressReconciler.Reconcile(envoyCtx, &proxy)
+				}
+
+				// Generate VIP outbounds only when not Ingress and Transparent Proxying is enabled
+				if !dataplane.Spec.IsIngress() && dataplane.Spec.Networking.GetTransparentProxying() != nil {
+					err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, rt.DNSResolver())
+					if err != nil {
+						return err
+					}
 				}
 
 				// pick a single the most specific route for each outbound interface

@@ -35,10 +35,7 @@ func (f *FaultInjectionMatcher) Match(ctx context.Context, dataplane *mesh_core.
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-	policyMap, err := policy.SelectInboundConnectionPolicies(dataplane, inbounds, policies)
-	if err != nil {
-		return nil, err
-	}
+	policyMap := policy.SelectInboundConnectionPolicies(dataplane, inbounds, policies)
 
 	result := core_xds.FaultInjectionMap{}
 	for inbound, connectionPolicy := range policyMap {

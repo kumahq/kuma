@@ -14,13 +14,16 @@ spec:
     outbound:
       - address: 10.108.144.25
         port: 80
-        service: second-test-app.playground.svc:80
+        tags:
+          service: second-test-app.playground.svc:80
       - address: 10.108.144.24
         port: 443
-        service: test-app.playground.svc:443
+        tags:
+          service: test-app.playground.svc:443
       - address: 10.108.144.24
         port: 80
-        service: test-app.playground.svc:80
+        tags:
+          service: test-app.playground.svc:80
     transparentProxying:
       directAccessServices:
         - test-app.playground.svc:80

@@ -32,7 +32,7 @@ var _ = Describe("DNS server", func() {
 			_, err = resolver.AddService("service")
 			Expect(err).ToNot(HaveOccurred())
 
-			ip, err = resolver.ForwardLookup("service.mesh")
+			ip, err = resolver.ForwardLookupFQDN("service.mesh")
 			Expect(err).ToNot(HaveOccurred())
 
 			go func() {
@@ -115,16 +115,21 @@ var _ = Describe("DNS server", func() {
 		_, err = resolver.AddService("service")
 		Expect(err).ToNot(HaveOccurred())
 
-		ip, err := resolver.ForwardLookup("service.mesh")
+		ipService, err := resolver.ForwardLookup("service")
+		Expect(err).ToNot(HaveOccurred())
+
+		ipFQDN, err := resolver.ForwardLookupFQDN("service.mesh")
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		service, err := resolver.ReverseLookup(ip)
+		service, err := resolver.ReverseLookup(ipFQDN)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(service).To(Equal("service.mesh"))
+		// and
+		Expect(ipService).To(Equal(ipFQDN))
 	})
 
 	It("DNS Server service operation", func() {
@@ -171,17 +176,17 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookup("example-one.mesh")
+		_, err = resolver.ForwardLookupFQDN("example-one.mesh")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookup("example-five.mesh")
+		_, err = resolver.ForwardLookupFQDN("example-five.mesh")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookup("example-five.other")
+		_, err = resolver.ForwardLookupFQDN("example-five.other")
 		// then
 		Expect(err).To(HaveOccurred())
 
@@ -194,7 +199,7 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookup("example-five.mesh")
+		_, err = resolver.ForwardLookupFQDN("example-five.mesh")
 		// then
 		Expect(err).To(HaveOccurred())
 
@@ -204,7 +209,7 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookup("example-five.mesh")
+		_, err = resolver.ForwardLookupFQDN("example-five.mesh")
 		// then
 		Expect(err).To(HaveOccurred())
 	})

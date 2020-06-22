@@ -29,12 +29,14 @@ func (id ProxyId) String() string {
 type ServiceName = string
 
 // RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
-type RouteMap map[ServiceName]*mesh_core.TrafficRouteResource
+type RouteMap map[mesh_proto.OutboundInterface]*mesh_core.TrafficRouteResource
 
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
 
 // DestinationMap holds a set of selectors for all reachable Dataplanes grouped by service name.
+// DestinationMap is based on ServiceName and not on the OutboundInterface because TrafficRoute can introduce new service destinations that were not included in a outbound section.
+// Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
 type DestinationMap map[ServiceName]TagSelectorSet
 
 // Endpoint holds routing-related information about a single endpoint.

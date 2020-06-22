@@ -340,8 +340,6 @@ func (m *Dataplane_Networking_Inbound) Validate() error {
 		return nil
 	}
 
-	// no validation rules for Interface
-
 	// no validation rules for Port
 
 	// no validation rules for ServicePort
@@ -423,8 +421,6 @@ func (m *Dataplane_Networking_Outbound) Validate() error {
 		return nil
 	}
 
-	// no validation rules for Interface
-
 	// no validation rules for Address
 
 	// no validation rules for Port
@@ -436,6 +432,8 @@ func (m *Dataplane_Networking_Outbound) Validate() error {
 			cause:  err,
 		}
 	}
+
+	// no validation rules for Tags
 
 	return nil
 }

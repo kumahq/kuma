@@ -1,13 +1,12 @@
 package endpoints
 
 import (
-	pstruct "github.com/golang/protobuf/ptypes/struct"
-
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.ClusterLoadAssignment {
@@ -39,7 +38,7 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 	lbEndpoints := make([]*envoy_endpoint.LbEndpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
 		lbEndpoints = append(lbEndpoints, &envoy_endpoint.LbEndpoint{
-			Metadata: CreateLbMetadata(ep.Tags),
+			Metadata: envoy_common.Metadata(ep.Tags),
 			HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoy_endpoint.Endpoint{
 					Address: &envoy_core.Address{
@@ -61,26 +60,5 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 		Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
 			LbEndpoints: lbEndpoints,
 		}},
-	}
-}
-
-func CreateLbMetadata(tags map[string]string) *envoy_core.Metadata {
-	if len(tags) == 0 {
-		return nil
-	}
-	fields := map[string]*pstruct.Value{}
-	for key, value := range tags {
-		fields[key] = &pstruct.Value{
-			Kind: &pstruct.Value_StringValue{
-				StringValue: value,
-			},
-		}
-	}
-	return &envoy_core.Metadata{
-		FilterMetadata: map[string]*pstruct.Struct{
-			"envoy.lb": &pstruct.Struct{
-				Fields: fields,
-			},
-		},
 	}
 }

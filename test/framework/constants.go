@@ -32,8 +32,8 @@ const (
 	kumaDPImage   = "kuma/kuma-dp"
 	kumaInitImage = "kuma/kuma-init"
 
-	kumaCPAPIPort       = 5681
-	kumaCPGUIPort       = 5683
-	kumaCPAPIPortFwdLow = 32000 + kumaCPAPIPort
-	kumaCPAPIPortFwdHi  = 42000 + kumaCPAPIPort
+	localCPSyncNodePort  = 30681
+	kumaCPAPIPort        = 5681
+	kumaCPGUIPort        = 5683
+	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 )

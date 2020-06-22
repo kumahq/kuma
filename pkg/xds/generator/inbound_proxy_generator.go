@@ -51,12 +51,12 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
 					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
-					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterInfo{Name: localClusterName}))
+					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterSubset{ClusterName: localClusterName}))
 			case mesh_core.ProtocolTCP:
 				fallthrough
 			default:
 				// configuration for non-HTTP cases
-				filterChainBuilder.Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.ClusterInfo{Name: localClusterName}))
+				filterChainBuilder.Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.ClusterSubset{ClusterName: localClusterName}))
 			}
 			return filterChainBuilder.
 				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
