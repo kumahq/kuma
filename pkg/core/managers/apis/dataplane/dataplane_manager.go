@@ -38,14 +38,9 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		return err
 	}
 
-	if m.clusterName != "" {
-		for _, inbound := range dp.Spec.Networking.Inbound {
-			if inbound.Tags == nil {
-				inbound.Tags = make(map[string]string)
-			}
-			inbound.Tags[mesh_proto.ClusterTag] = m.clusterName
-		}
-	}
+	m.setInboundsClusterTag(dp)
+	m.setGatewayClusterTag(dp)
+
 	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()))...)
 }
 
@@ -55,14 +50,9 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 		return err
 	}
 
-	if m.clusterName != "" {
-		for _, inbound := range dp.Spec.Networking.Inbound {
-			if inbound.Tags == nil {
-				inbound.Tags = make(map[string]string)
-			}
-			inbound.Tags[mesh_proto.ClusterTag] = m.clusterName
-		}
-	}
+	m.setInboundsClusterTag(dp)
+	m.setGatewayClusterTag(dp)
+
 	return m.ResourceManager.Update(ctx, resource, fs...)
 }
 
@@ -72,4 +62,27 @@ func (m *dataplaneManager) dataplane(resource core_model.Resource) (*core_mesh.D
 		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.DataplaneResource)(nil), resource)
 	}
 	return dp, nil
+}
+
+func (m *dataplaneManager) setInboundsClusterTag(dp *core_mesh.DataplaneResource) {
+	if m.clusterName == "" || dp.Spec.Networking == nil {
+		return
+	}
+
+	for _, inbound := range dp.Spec.Networking.Inbound {
+		if inbound.Tags == nil {
+			inbound.Tags = make(map[string]string)
+		}
+		inbound.Tags[mesh_proto.ClusterTag] = m.clusterName
+	}
+}
+
+func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource) {
+	if m.clusterName == "" || dp.Spec.Networking == nil || dp.Spec.Networking.Gateway == nil {
+		return
+	}
+	if dp.Spec.Networking.Gateway.Tags == nil {
+		dp.Spec.Networking.Gateway.Tags = make(map[string]string)
+	}
+	dp.Spec.Networking.Gateway.Tags[mesh_proto.ClusterTag] = m.clusterName
 }
