@@ -24,6 +24,7 @@ import (
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
+	kuma_version "github.com/Kong/kuma/pkg/version"
 )
 
 type testApiServerClient struct {
@@ -31,7 +32,7 @@ type testApiServerClient struct {
 
 func (c *testApiServerClient) GetVersion() (*types.IndexResponse, error) {
 	return &types.IndexResponse{
-		Version: "0.4.0",
+		Version: kuma_version.Build.Version,
 	}, nil
 }
 
