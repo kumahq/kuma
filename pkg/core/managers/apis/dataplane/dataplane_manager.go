@@ -3,6 +3,8 @@ package dataplane
 import (
 	"context"
 
+	"github.com/go-errors/errors"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 
 	"github.com/Kong/kuma/pkg/core"
@@ -31,12 +33,11 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	if err := resource.Validate(); err != nil {
 		return err
 	}
-	opts := core_store.NewCreateOptions(fs...)
-
-	dp := core_mesh.DataplaneResource{}
-	if err := m.store.Get(ctx, &dp, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
+	dp, err := m.dataplane(resource)
+	if err != nil {
 		return err
 	}
+
 	if m.clusterName != "" {
 		for _, inbound := range dp.Spec.Networking.Inbound {
 			if inbound.Tags == nil {
@@ -45,9 +46,30 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 			inbound.Tags[mesh_proto.ClusterTag] = m.clusterName
 		}
 	}
-	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()), core_store.CreateWithOwner(&dp))...)
+	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()))...)
 }
 
 func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
+	dp, err := m.dataplane(resource)
+	if err != nil {
+		return err
+	}
+
+	if m.clusterName != "" {
+		for _, inbound := range dp.Spec.Networking.Inbound {
+			if inbound.Tags == nil {
+				inbound.Tags = make(map[string]string)
+			}
+			inbound.Tags[mesh_proto.ClusterTag] = m.clusterName
+		}
+	}
 	return m.ResourceManager.Update(ctx, resource, fs...)
+}
+
+func (m *dataplaneManager) dataplane(resource core_model.Resource) (*core_mesh.DataplaneResource, error) {
+	dp, ok := resource.(*core_mesh.DataplaneResource)
+	if !ok {
+		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.DataplaneResource)(nil), resource)
+	}
+	return dp, nil
 }
