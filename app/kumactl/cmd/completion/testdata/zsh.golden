@@ -699,6 +699,7 @@ function _kumactl_install_control-plane {
   _arguments \
     '--admission-server-tls-cert[TLS certificate for the admission web hooks implemented by the Kuma Control Plane]:' \
     '--admission-server-tls-key[TLS key for the admission web hooks implemented by the Kuma Control Plane]:' \
+    '--cluster-name[set the Kuma cluster name]:' \
     '--cni-enabled[install Kuma with CNI instead of proxy init container]' \
     '--cni-image[image of Kuma CNI component, if CNIEnabled equals true]:' \
     '--cni-version[version of the CNIImage]:' \

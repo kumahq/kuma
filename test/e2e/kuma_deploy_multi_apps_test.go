@@ -45,8 +45,8 @@ metadata:
 	})
 
 	AfterEach(func() {
-		//_ = c1.DeleteKuma()
-		//_ = k8s.KubectlDeleteFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
+		_ = c1.DeleteKuma()
+		_ = k8s.KubectlDeleteFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
 	})
 
 	It("Should deploy two apps", func() {

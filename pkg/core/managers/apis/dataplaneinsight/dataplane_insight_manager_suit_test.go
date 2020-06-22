@@ -9,5 +9,5 @@ import (
 
 func TestDataplainInsightManaget(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Mesh Manager Suite")
+	RunSpecs(t, "Dataplane Insights Manager Suite")
 }
