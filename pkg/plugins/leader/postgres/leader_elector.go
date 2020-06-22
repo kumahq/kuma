@@ -11,11 +11,15 @@ import (
 
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
+	util_channels "github.com/Kong/kuma/pkg/util/channels"
 )
 
 var log = core.Log.WithName("postgres-leader")
 
-const kumaLockName = "kuma-cp-lock"
+const (
+	kumaLockName = "kuma-cp-lock"
+	backoffTime  = 5 * time.Second
+)
 
 // postgresLeaderElector implements leader election using PostgreSQL DB.
 // pglock does not rely on timestamps, which eliminates the problem of clock skews, but the cost is that first leader election can happen only after lease duration
@@ -38,6 +42,7 @@ func (p *postgresLeaderElector) Start(stop <-chan struct{}) {
 	ctx, cancelFn := context.WithCancel(context.Background())
 	go func() {
 		<-stop
+		log.Info("Stopping Leader Elector")
 		cancelFn()
 	}()
 
@@ -61,8 +66,13 @@ func (p *postgresLeaderElector) Start(stop <-chan struct{}) {
 		if err != nil {
 			log.Error(err, "error waiting for lock")
 		}
-		time.Sleep(5 * time.Second)
+
+		if util_channels.IsClosed(stop) {
+			break
+		}
+		time.Sleep(backoffTime)
 	}
+	log.Info("Leader Elector stopped")
 }
 
 func (p *postgresLeaderElector) AddCallbacks(callbacks component.LeaderCallbacks) {

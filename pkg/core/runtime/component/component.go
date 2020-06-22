@@ -1,9 +1,10 @@
 package component
 
 import (
-	"sync/atomic"
+	"sync"
 
 	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/util/channels"
 )
 
 var log = core.Log.WithName("bootstrap")
@@ -90,19 +91,22 @@ func (cm *manager) startLeaderComponents(stop <-chan struct{}, errCh chan error)
 	// leader stop channel needs to be stored in atomic because it will be written by leader elector goroutine
 	// and read by the last goroutine in this function.
 	// we need separate channel for leader components because they can be restarted
-	atomicLeaderStopCh := atomic.Value{}
+	mutex := sync.Mutex{}
+	leaderStopCh := make(chan struct{})
 	closeLeaderCh := func() {
-		val := atomicLeaderStopCh.Load()
-		if val != nil {
-			ch := val.(chan struct{})
-			close(ch)
+		mutex.Lock()
+		defer mutex.Unlock()
+		if channels.IsClosed(leaderStopCh) {
+			close(leaderStopCh)
 		}
 	}
 
 	cm.leaderElector.AddCallbacks(LeaderCallbacks{
 		OnStartedLeading: func() {
 			log.Info("Leader acquired")
-			leaderStopCh := make(chan struct{})
+			mutex.Lock()
+			defer mutex.Unlock()
+			leaderStopCh = make(chan struct{})
 			for _, component := range cm.components {
 				if component.NeedLeaderElection() {
 					go func(c Component) {
@@ -112,7 +116,6 @@ func (cm *manager) startLeaderComponents(stop <-chan struct{}, errCh chan error)
 					}(component)
 				}
 			}
-			atomicLeaderStopCh.Store(leaderStopCh)
 		},
 		OnStoppedLeading: func() {
 			log.Info("Leader lost")
