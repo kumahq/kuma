@@ -38,8 +38,8 @@ metadata:
 			Install(Kuma()).
 			Install(KumaDNS()).
 			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClient()).
-			Install(EchoServer()).
+			Install(DemoClientK8s()).
+			Install(EchoServerK8s()).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 	})

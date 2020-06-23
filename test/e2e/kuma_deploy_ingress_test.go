@@ -111,7 +111,7 @@ spec:
 			Install(Yaml(meshWithProvidedCA)).
 			Install(Yaml(trafficPermission)).
 			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
-			Install(EchoServer()).
+			Install(EchoServerK8s()).
 			Install(Ingress(&ingress)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
@@ -121,7 +121,7 @@ spec:
 			Install(Yaml(meshWithProvidedCA)).
 			Install(Yaml(trafficPermission)).
 			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClient()).
+			Install(DemoClientK8s()).
 			Install(Yaml(headlessService(TestNamespace, ingress.Port))).
 			Install(Yaml(fakeDpForOutbound(TestNamespace, ingress.IP, ingress.Port))).
 			Setup(c2)

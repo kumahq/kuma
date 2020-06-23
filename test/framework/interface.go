@@ -11,6 +11,9 @@ type Clusters interface {
 }
 
 type Cluster interface {
+	// Cluster
+	DismissCluster() error
+	// Generic
 	DeployKuma(mode ...string) error
 	GetKuma() ControlPlane
 	VerifyKuma() error

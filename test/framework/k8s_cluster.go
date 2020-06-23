@@ -443,3 +443,7 @@ func (c *K8sCluster) InjectDNS() error {
 func (c *K8sCluster) GetTesting() testing.TestingT {
 	return c.t
 }
+
+func (c *K8sCluster) DismissCluster() error {
+	return nil
+}

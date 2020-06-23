@@ -59,8 +59,8 @@ metadata:
 			Install(Kuma(core.Remote)).
 			Install(KumaDNS()).
 			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClient()).
-			Install(EchoServer()).
+			Install(DemoClientK8s()).
+			Install(EchoServerK8s()).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 
