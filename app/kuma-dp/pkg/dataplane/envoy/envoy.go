@@ -52,6 +52,10 @@ type Envoy struct {
 	opts Opts
 }
 
+func (e *Envoy) NeedLeaderElection() bool {
+	return false
+}
+
 func getSelfPath() (string, error) {
 	ex, err := os.Executable()
 	if err != nil {

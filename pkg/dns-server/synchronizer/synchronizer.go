@@ -18,6 +18,7 @@ var (
 type (
 	Synchronizer interface {
 		Start(<-chan struct{}) error
+		NeedLeaderElection() bool
 	}
 
 	ResourceSynchronizer struct {
@@ -39,6 +40,10 @@ func NewResourceSynchronizer(rm manager.ReadOnlyResourceManager, resolver resolv
 			return time.NewTicker(tickInterval)
 		},
 	}, nil
+}
+
+func (d *ResourceSynchronizer) NeedLeaderElection() bool {
+	return false
 }
 
 func (d *ResourceSynchronizer) Start(stop <-chan struct{}) error {

@@ -31,6 +31,10 @@ type AdminServer struct {
 	container *restful.Container
 }
 
+func (a *AdminServer) NeedLeaderElection() bool {
+	return false
+}
+
 func NewAdminServer(cfg admin_server.AdminServerConfig, services ...*restful.WebService) *AdminServer {
 	container := restful.NewContainer()
 	for _, service := range services {
