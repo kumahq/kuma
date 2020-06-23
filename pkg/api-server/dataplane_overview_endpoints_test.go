@@ -50,31 +50,11 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	BeforeEach(func() {
-		// given
+	createDpWithInsights := func(name string, dp v1alpha1.Dataplane) {
 		dpResource := mesh_core.DataplaneResource{
-			Spec: v1alpha1.Dataplane{
-				Networking: &v1alpha1.Dataplane_Networking{
-					Address: "127.0.0.1",
-					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
-						{
-							Port:        9090,
-							ServicePort: 9091,
-							Tags: map[string]string{
-								"service": "sample",
-								"version": "v1",
-							},
-						},
-					},
-					Gateway: &v1alpha1.Dataplane_Networking_Gateway{
-						Tags: map[string]string{
-							"service": "gateway",
-						},
-					},
-				},
-			},
+			Spec: dp,
 		}
-		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("dp1", "mesh1"), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey(name, "mesh1"), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
@@ -90,14 +70,55 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				},
 			},
 		}
-		err = resourceStore.Create(context.Background(), &insightResource, store.CreateByKey("dp1", "mesh1"))
+		err = resourceStore.Create(context.Background(), &insightResource, store.CreateByKey(name, "mesh1"))
 		Expect(err).ToNot(HaveOccurred())
+	}
+
+	BeforeEach(func() {
+		// given
+		createDpWithInsights("dp-1", v1alpha1.Dataplane{
+			Networking: &v1alpha1.Dataplane_Networking{
+				Address: "127.0.0.1",
+				Gateway: &v1alpha1.Dataplane_Networking_Gateway{
+					Tags: map[string]string{
+						"service": "gateway",
+					},
+				},
+			},
+		})
+
+		createDpWithInsights("dp-2", v1alpha1.Dataplane{
+			Networking: &v1alpha1.Dataplane_Networking{
+				Address: "127.0.0.1",
+				Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
+					{
+						Port: 1234,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v1",
+						},
+					},
+				},
+			},
+		})
+
+		createDpWithInsights("dp-3", v1alpha1.Dataplane{
+			Networking: &v1alpha1.Dataplane_Networking{
+				Address: "127.0.0.1",
+				Ingress: &v1alpha1.Dataplane_Networking_Ingress{},
+				Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
+					{
+						Port: 1234,
+					},
+				},
+			},
+		})
 	})
 
-	sampleJson := `
+	dp1Json := `
 {
 	"type": "DataplaneOverview",
-	"name": "dp1",
+	"name": "dp-1",
 	"mesh": "mesh1",
 	"creationTime": "2018-07-17T16:05:36.995Z",
 	"modificationTime": "2018-07-17T16:05:36.995Z",
@@ -108,13 +129,42 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				"tags": {
 					"service": "gateway"
 				}
-            },
+            }
+		}
+	},
+	"dataplaneInsight": {
+		"subscriptions": [
+			{
+				"id": "stream-id-1",
+				"controlPlaneInstanceId": "cp-1",
+				"connectTime": "2019-07-01T00:00:00Z",
+				"status": {
+					"total": {},
+					"cds": {},
+					"eds": {},
+					"lds": {},
+					"rds": {}
+				}
+			}
+		]
+	}
+}`
+
+	dp2Json := `
+{
+	"type": "DataplaneOverview",
+	"name": "dp-2",
+	"mesh": "mesh1",
+	"creationTime": "2018-07-17T16:05:36.995Z",
+	"modificationTime": "2018-07-17T16:05:36.995Z",
+	"dataplane": {
+		"networking": {
+			"address": "127.0.0.1",
 			"inbound": [
 				{
-					"port": 9090,
-					"servicePort": 9091,
+					"port": 1234,
 					"tags": {
-						"service": "sample",
+						"service": "backend",
 						"version": "v1"
 					}
 				}
@@ -137,20 +187,55 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			}
 		]
 	}
-}
-`
+}`
+
+	dp3Json := `
+{
+	"type": "DataplaneOverview",
+	"name": "dp-3",
+	"mesh": "mesh1",
+	"creationTime": "2018-07-17T16:05:36.995Z",
+	"modificationTime": "2018-07-17T16:05:36.995Z",
+	"dataplane": {
+		"networking": {
+			"address": "127.0.0.1",
+			"ingress": {},
+			"inbound": [
+				{
+					"port": 1234
+				}
+			]
+		}
+	},
+	"dataplaneInsight": {
+		"subscriptions": [
+			{
+				"id": "stream-id-1",
+				"controlPlaneInstanceId": "cp-1",
+				"connectTime": "2019-07-01T00:00:00Z",
+				"status": {
+					"total": {},
+					"cds": {},
+					"eds": {},
+					"lds": {},
+					"rds": {}
+				}
+			}
+		]
+	}
+}`
 
 	Describe("On GET", func() {
 		It("should return an existing resource", func() {
 			// when
-			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights/dp1")
+			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights/dp-1")
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(body).To(MatchJSON(sampleJson))
+			Expect(body).To(MatchJSON(dp1Json))
 		})
 
 		type testCase struct {
@@ -173,27 +258,27 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 			Entry("should list all when no tag is provided", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
-			}),
-			Entry("should list all when no tag is provided", testCase{
-				url:          "/dataplanes+insights",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
+				expectedJson: fmt.Sprintf(`{"total": 3, "items": [%s,%s,%s], "next": null}`, dp1Json, dp2Json, dp3Json),
 			}),
 			Entry("should list with only one matching tag", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
+				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend",
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp2Json),
 			}),
 			Entry("should list all with all matching tags", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample&tag=version:v1",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
+				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v1",
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp2Json),
 			}),
 			Entry("should not list when any tag is not matching", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?tag=service:sample&tag=version:v2",
-				expectedJson: `{"total": 1, "items": [], "next": null}`,
+				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v2",
+				expectedJson: `{"total": 0, "items": [], "next": null}`,
 			}),
 			Entry("should list only gateway dataplanes", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?gateway=true",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, sampleJson),
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
+			}),
+			Entry("should list only ingress dataplanes", testCase{
+				url:          "/meshes/mesh1/dataplanes+insights?ingress=true",
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp3Json),
 			}),
 		)
 	})

@@ -131,3 +131,14 @@ func (l *DataplaneOverviewResourceList) RetainGatewayDataplanes() {
 	}
 	l.Items = result
 }
+
+// RetainIngressDataplanes to get only ingress Dataplanes
+func (l *DataplaneOverviewResourceList) RetainIngressDataplanes() {
+	result := []*DataplaneOverviewResource{}
+	for _, overview := range l.Items {
+		if overview.Spec.GetDataplane().GetNetworking().GetIngress() != nil {
+			result = append(result, overview)
+		}
+	}
+	l.Items = result
+}
