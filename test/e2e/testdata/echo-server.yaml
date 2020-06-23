@@ -48,5 +48,5 @@ spec:
             - "HTTP/1.1 200 OK"
           resources:
             requests:
-              cpu: 10m
+              cpu: 100m
               memory: 32Mi

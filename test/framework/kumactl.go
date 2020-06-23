@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/Kong/kuma/pkg/config/core"
+
 	"github.com/pkg/errors"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
@@ -116,7 +118,9 @@ func (o *KumactlOptions) KumactlInstallCP(mode ...string) (string, error) {
 
 	for _, m := range mode {
 		args = append(args, "--mode", m)
-		break
+		if m == core.Local {
+			args = append(args, "--cluster-name", o.CPName)
+		}
 	}
 
 	return o.RunKumactlAndGetOutputV(

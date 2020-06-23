@@ -126,6 +126,7 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 				errs = multierr.Append(errs, errors.Wrapf(err, "unable to allocate an ip for service %s", service))
 			} else {
 				d.viplist[service] = ip
+				simpleDNSLog.Info("Adding ", "service", service, "ip", ip)
 			}
 		}
 	}
@@ -142,7 +143,18 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 	return errs
 }
 
-func (d *SimpleDNSResolver) ForwardLookup(name string) (string, error) {
+func (d *SimpleDNSResolver) ForwardLookup(service string) (string, error) {
+	d.RLock()
+	defer d.RUnlock()
+
+	ip, found := d.viplist[service]
+	if !found {
+		return "", errors.Errorf("service [%s] not found in domain [%s].", service, d.domain)
+	}
+	return ip, nil
+}
+
+func (d *SimpleDNSResolver) ForwardLookupFQDN(name string) (string, error) {
 	d.RLock()
 	defer d.RUnlock()
 	domain, err := d.domainFromName(name)
@@ -205,7 +217,7 @@ func (d *SimpleDNSResolver) domainFromName(name string) (string, error) {
 
 func (d *SimpleDNSResolver) serviceFromName(name string) (string, error) {
 	split := dns.SplitDomainName(name)
-	if len(split) < 2 {
+	if len(split) < 1 {
 		return "", errors.Errorf("wrong DNS name: %s", name)
 	}
 

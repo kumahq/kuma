@@ -16,3 +16,4 @@ spec:
           protocol: tcp
           service: sample.playground.svc:7071
           version: "0.1"
+          cluster: "cluster-1"

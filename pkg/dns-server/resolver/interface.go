@@ -8,6 +8,7 @@ type DNSResolver interface {
 	AddService(service string) (string, error)
 	RemoveService(service string) error
 	SyncServices(services map[string]bool) error
-	ForwardLookup(name string) (string, error)
+	ForwardLookup(service string) (string, error)
+	ForwardLookupFQDN(name string) (string, error)
 	ReverseLookup(ip string) (string, error)
 }
