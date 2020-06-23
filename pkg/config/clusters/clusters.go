@@ -19,9 +19,14 @@ type ClusterConfig struct {
 	Ingress EndpointConfig `yaml:"ingress,omitempty"`
 }
 
+type LBConfig struct {
+	Address string `yaml:"address,omitempty"`
+}
+
 // Clusters configuration
 type ClustersConfig struct {
 	Clusters []*ClusterConfig `yaml:"clusters,omitempty"`
+	LBConfig LBConfig         `yaml:"lbconfig,omitempty"`
 }
 
 func (g *ClustersConfig) Sanitize() {
