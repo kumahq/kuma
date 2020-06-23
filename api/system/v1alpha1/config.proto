@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package kuma.system.v1alpha1;
+
+option go_package = "v1alpha1";
+
+// System is s generic internal resource
+message Config { string Config = 1; }
