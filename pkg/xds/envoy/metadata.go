@@ -7,11 +7,42 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 )
 
-func Metadata(tags Tags) *envoy_core.Metadata {
+func EndpointMetadata(tags Tags) *envoy_core.Metadata {
 	tags = tags.WithoutTag(mesh_proto.ServiceTag) // service name is already in cluster name, we don't need it in metadata
 	if len(tags) == 0 {
 		return nil
 	}
+	fields := MetadataFields(tags)
+	metadata := &envoy_core.Metadata{
+		FilterMetadata: map[string]*pstruct.Struct{
+			"envoy.lb": {
+				Fields: fields,
+			},
+			"envoy.transport_socket_match": {
+				Fields: fields,
+			},
+		},
+	}
+	return metadata
+}
+
+func LbMetadata(tags Tags) *envoy_core.Metadata {
+	tags = tags.WithoutTag(mesh_proto.ServiceTag) // service name is already in cluster name, we don't need it in metadata
+	if len(tags) == 0 {
+		return nil
+	}
+	fields := MetadataFields(tags)
+	metadata := &envoy_core.Metadata{
+		FilterMetadata: map[string]*pstruct.Struct{
+			"envoy.lb": {
+				Fields: fields,
+			},
+		},
+	}
+	return metadata
+}
+
+func MetadataFields(tags Tags) map[string]*pstruct.Value {
 	fields := map[string]*pstruct.Value{}
 	for key, value := range tags {
 		if key == mesh_proto.ServiceTag {
@@ -23,12 +54,5 @@ func Metadata(tags Tags) *envoy_core.Metadata {
 			},
 		}
 	}
-	metadata := &envoy_core.Metadata{
-		FilterMetadata: map[string]*pstruct.Struct{
-			"envoy.lb": {
-				Fields: fields,
-			},
-		},
-	}
-	return metadata
+	return fields
 }

@@ -17,6 +17,10 @@ type diagnosticsServer struct {
 	port int
 }
 
+func (s *diagnosticsServer) NeedLeaderElection() bool {
+	return false
+}
+
 // Make sure that grpcServer implements all relevant interfaces
 var (
 	_ component.Component = &diagnosticsServer{}
