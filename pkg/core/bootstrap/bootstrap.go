@@ -3,6 +3,9 @@ package bootstrap
 import (
 	"strconv"
 
+	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
+	config_store "github.com/Kong/kuma/pkg/core/config/store"
+
 	"github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
 
 	"github.com/Kong/kuma/pkg/clusters/poller"
@@ -52,6 +55,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeClusters(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeConfigManager(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -293,6 +299,13 @@ func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error
 	}
 
 	builder.WithClusters(poller)
+	return nil
+}
+
+func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	store := config_store.NewConfigStore(builder.ResourceStore())
+	configm := config_manager.NewConfigManager(store)
+	builder.WithConfigManager(configm)
 	return nil
 }
 

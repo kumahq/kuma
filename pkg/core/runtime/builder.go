@@ -12,6 +12,7 @@ import (
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
 	core_ca "github.com/Kong/kuma/pkg/core/ca"
+	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
 	"github.com/Kong/kuma/pkg/core/datasource"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
@@ -31,6 +32,7 @@ type BuilderContext interface {
 	Extensions() context.Context
 	DNSResolver() resolver.DNSResolver
 	Clusters() poller.ClusterStatusPoller
+	ConfigManager() config_manager.ConfigManager
 }
 
 var _ BuilderContext = &Builder{}
@@ -49,6 +51,7 @@ type Builder struct {
 	ext      context.Context
 	dns      resolver.DNSResolver
 	clusters poller.ClusterStatusPoller
+	configm  config_manager.ConfigManager
 	*runtimeInfo
 }
 
@@ -123,6 +126,11 @@ func (b *Builder) WithClusters(clusters poller.ClusterStatusPoller) *Builder {
 	return b
 }
 
+func (b *Builder) WithConfigManager(configm config_manager.ConfigManager) *Builder {
+	b.configm = configm
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -163,6 +171,7 @@ func (b *Builder) Build() (Runtime, error) {
 			ext:      b.ext,
 			dns:      b.dns,
 			clusters: b.clusters,
+			configm:  b.configm,
 		},
 		Manager: b.cm,
 	}, nil
@@ -203,4 +212,7 @@ func (b *Builder) DNSResolver() resolver.DNSResolver {
 }
 func (b *Builder) Clusters() poller.ClusterStatusPoller {
 	return b.clusters
+}
+func (b *Builder) ConfigManager() config_manager.ConfigManager {
+	return b.configm
 }
