@@ -50,16 +50,14 @@ func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
 			Cluster: c.clusters[0].ClusterName,
 		}
-		if envoy_common.Metadata(c.clusters[0].Tags) != nil {
-			proxy.MetadataMatch = envoy_common.Metadata(c.clusters[0].Tags)
-		}
+		proxy.MetadataMatch = envoy_common.LbMetadata(c.clusters[0].Tags)
 	} else {
 		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
 		for _, cluster := range c.clusters {
 			weightedClusters = append(weightedClusters, &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
 				Name:          cluster.ClusterName,
 				Weight:        cluster.Weight,
-				MetadataMatch: envoy_common.Metadata(cluster.Tags),
+				MetadataMatch: envoy_common.LbMetadata(cluster.Tags),
 			})
 		}
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_WeightedClusters{

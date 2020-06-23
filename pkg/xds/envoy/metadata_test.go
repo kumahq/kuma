@@ -12,21 +12,21 @@ var _ = Describe("Metadata()", func() {
 
 	It("should handle `nil` map of tags", func() {
 		// when
-		metadata := Metadata(nil)
+		metadata := EndpointMetadata(nil)
 		// then
 		Expect(metadata).To(BeNil())
 	})
 
 	It("should handle empty map of tags", func() {
 		// when
-		metadata := Metadata(map[string]string{})
+		metadata := EndpointMetadata(map[string]string{})
 		// then
 		Expect(metadata).To(BeNil())
 	})
 
 	It("should skip service tag", func() {
 		// when
-		metadata := Metadata(map[string]string{
+		metadata := EndpointMetadata(map[string]string{
 			"service": "backend",
 		})
 		// then
@@ -40,7 +40,7 @@ var _ = Describe("Metadata()", func() {
 	DescribeTable("should generate Envoy metadata",
 		func(given testCase) {
 			// when
-			metadata := Metadata(given.tags)
+			metadata := EndpointMetadata(given.tags)
 			// and
 			actual, err := util_proto.ToYAML(metadata)
 			// then
@@ -54,11 +54,13 @@ var _ = Describe("Metadata()", func() {
 				"region":  "eu",
 			},
 			expected: `
-                filterMetadata:
-                  envoy.lb:
-                    version: v1
-                    region: eu
-`,
+            filterMetadata:
+              envoy.lb:
+                region: eu
+                version: v1
+              envoy.transport_socket_match:
+                region: eu
+                version: v1`,
 		}),
 	)
 })
