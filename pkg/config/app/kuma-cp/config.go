@@ -193,7 +193,7 @@ func (c *Config) Validate() error {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
 		fallthrough
-	case core.Local:
+	case core.Remote:
 		if err := c.XdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "Xds Server validation failed")
 		}
@@ -244,7 +244,7 @@ type GeneralConfig struct {
 	// Hostname that other components should use in order to connect to the Control Plane.
 	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
 	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_general_advertised_hostname"`
-	// Kuma Cluster name used to mark the local dataplane resources
+	// Kuma Cluster name used to mark the remote dataplane resources
 	ClusterName string `yaml:"clusterName,omitempty" envconfig:"kuma_general_cluster_name"`
 }
 

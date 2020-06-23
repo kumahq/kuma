@@ -56,8 +56,8 @@ func NewClustersStatusPoller(clusters *clusters.ClustersConfig) (ClusterStatusPo
 	for _, cluster := range clusters.Clusters {
 		// ignore the Ingress for now
 		poller.clusters = append(poller.clusters, Cluster{
-			Name:   cluster.Local.Address, // init the name of the cluster with its address
-			URL:    cluster.Local.Address,
+			Name:   cluster.Remote.Address, // init the name of the cluster with its address
+			URL:    cluster.Remote.Address,
 			Active: false,
 		})
 	}
