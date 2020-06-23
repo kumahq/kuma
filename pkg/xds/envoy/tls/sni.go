@@ -9,22 +9,19 @@ import (
 	"github.com/Kong/kuma/pkg/xds/envoy"
 )
 
+const sniRegexp = `(.*)\{(.*)\}`
+
 func SNIFromTags(tags envoy.Tags) string {
-	nonServiceTags := tags.WithoutTag(mesh_proto.ServiceTag)
-	var pairs []string
-	for _, key := range nonServiceTags.Keys() {
-		value := nonServiceTags[key]
-		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
-	}
+	extraTags := tags.WithoutTag(mesh_proto.ServiceTag).String()
 	service := tags[mesh_proto.ServiceTag]
-	if len(pairs) == 0 {
+	if extraTags == "" {
 		return service
 	}
-	return fmt.Sprintf("%s{%s}", service, strings.Join(pairs, ","))
+	return fmt.Sprintf("%s{%s}", service, extraTags)
 }
 
 func TagsFromSNI(sni string) map[string]string {
-	r := regexp.MustCompile(`(.*)\{(.*)\}`)
+	r := regexp.MustCompile(sniRegexp)
 	matches := r.FindStringSubmatch(sni)
 	if len(matches) == 0 {
 		return map[string]string{

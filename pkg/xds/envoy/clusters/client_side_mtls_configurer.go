@@ -47,7 +47,7 @@ func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	if !c.ctx.Mesh.Resource.MTLSEnabled() {
 		return nil
 	}
-	// there might be a situation when there are multiple sam tags passed here for example two outbound listeners with the same tags, therefore we need to distinct them.
+	// there might be a situation when there are multiple sam tags passed here for example two outbound listeners with the same tags, therefore we need to distinguish between them.
 	distinctTags := envoy.DistinctTags(c.tags)
 	switch {
 	case len(distinctTags) == 0:

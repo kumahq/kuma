@@ -42,9 +42,6 @@ func (t Tags) String() string {
 }
 
 func DistinctTags(tags []Tags) []Tags {
-	if len(tags) == 0 {
-		return tags
-	}
 	used := map[string]bool{}
 	var result []Tags
 	for _, tag := range tags {
