@@ -30,7 +30,7 @@ func (c *KumaDiscoveryServerConfig) Sanitize() {
 }
 
 func (c *KumaDiscoveryServerConfig) Validate() (errs error) {
-	if 65535 < c.GrpcPort {
+	if c.GrpcPort > 65535 {
 		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
 	}
 	if c.RefreshInterval <= 0 {
