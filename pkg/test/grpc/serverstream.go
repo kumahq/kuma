@@ -23,11 +23,6 @@ func (stream *MockServerStream) Context() context.Context {
 func (stream *MockServerStream) Send(resp *v2.DiscoveryResponse) error {
 	// check that nonce is monotonically incrementing
 	stream.Nonce++
-	//Expect(resp.Nonce).To(Equal(fmt.Sprintf("%d", stream.Nonce)))
-	//Expect(resp.VersionInfo).ToNot(BeEmpty())
-	//Expect(resp.Resources).ToNot(BeEmpty())
-	//Expect(resp.TypeUrl).ToNot(BeEmpty())
-
 	stream.SentCh <- resp
 	return nil
 }
