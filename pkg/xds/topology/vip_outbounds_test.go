@@ -3,6 +3,10 @@ package topology_test
 import (
 	"strconv"
 
+	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
+	config_store "github.com/Kong/kuma/pkg/core/config/store"
+	resources_memory "github.com/Kong/kuma/pkg/plugins/resources/memory"
+
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
 	"github.com/Kong/kuma/pkg/test"
 
@@ -16,6 +20,9 @@ import (
 )
 
 var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
+
+	store := config_store.NewConfigStore(resources_memory.NewStore())
+	configm := config_manager.NewConfigManager(store)
 
 	It("should update outbounds", func() {
 		dataplane := &core_mesh.DataplaneResource{
@@ -43,8 +50,9 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 		Expect(err).ToNot(HaveOccurred())
 		port := strconv.Itoa(p)
 
-		resolver, err := resolver.NewSimpleDNSResolver("mesh", "127.0.0.1", port, "240.0.0.0/4")
+		resolver, err := resolver.NewSimpleDNSResolver("mesh", "127.0.0.1", port, "240.0.0.0/4", configm)
 		Expect(err).ToNot(HaveOccurred())
+		resolver.SetElectedLeader(true)
 
 		// given
 		dataplanes := core_mesh.DataplaneResourceList{}

@@ -3,6 +3,8 @@ package resolver
 import (
 	"sync"
 
+	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
+
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -19,13 +21,14 @@ type (
 	VIPList           map[string]string
 	SimpleDNSResolver struct {
 		sync.RWMutex
-		domain   string
-		address  string
-		cidr     string
-		isLeader bool
-		viplist  VIPList
-		handler  DNSHandler
-		ipam     IPAM
+		domain      string
+		address     string
+		cidr        string
+		isLeader    bool
+		viplist     VIPList
+		persistence *DNSPersistence
+		handler     DNSHandler
+		ipam        IPAM
 	}
 	ElectedDNSResolver struct {
 		resolver DNSResolver
@@ -36,16 +39,17 @@ func (d *SimpleDNSResolver) NeedLeaderElection() bool {
 	return false
 }
 
-func NewSimpleDNSResolver(domain, ip, port, cidr string) (DNSResolver, error) {
+func NewSimpleDNSResolver(domain, ip, port, cidr string, configm config_manager.ConfigManager) (DNSResolver, error) {
 	resolver := &SimpleDNSResolver{
 		domain:  domain,
 		address: ip + ":" + port,
 		cidr:    cidr,
-		viplist: VIPList{},
 	}
 
 	resolver.handler = NewSimpleDNSHandler(resolver)
 	resolver.ipam = NewSimpleIPAM(cidr)
+	resolver.persistence = NewDNSPersistence(configm)
+	resolver.viplist = resolver.persistence.Get()
 
 	return resolver, nil
 }
@@ -83,6 +87,10 @@ func (d *SimpleDNSResolver) AddService(service string) (string, error) {
 	d.Lock()
 	defer d.Unlock()
 
+	if !d.isLeader {
+		return "", errors.Errorf("Can't add a service when not a leader")
+	}
+
 	_, found := d.viplist[service]
 	if !found {
 		ip, err := d.ipam.AllocateIP()
@@ -91,6 +99,7 @@ func (d *SimpleDNSResolver) AddService(service string) (string, error) {
 		}
 
 		d.viplist[service] = ip
+		d.persistence.Set(d.viplist)
 	}
 
 	return d.viplist[service], nil
@@ -99,6 +108,10 @@ func (d *SimpleDNSResolver) AddService(service string) (string, error) {
 func (d *SimpleDNSResolver) RemoveService(service string) error {
 	d.Lock()
 	defer d.Unlock()
+
+	if !d.isLeader {
+		return errors.Errorf("Can't remove a service when not a leader")
+	}
 
 	ip, found := d.viplist[service]
 	if !found {
@@ -118,6 +131,10 @@ func (d *SimpleDNSResolver) RemoveService(service string) error {
 func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) {
 	d.Lock()
 	defer d.Unlock()
+
+	if !d.isLeader {
+		return errors.Errorf("Can't sync services when not a leader")
+	}
 
 	services = d.normalizeServiceMap(services)
 
@@ -144,6 +161,7 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 		}
 	}
 
+	d.persistence.Set(d.viplist)
 	return errs
 }
 
@@ -152,6 +170,11 @@ func (d *SimpleDNSResolver) ForwardLookup(service string) (string, error) {
 	defer d.RUnlock()
 
 	ip, found := d.viplist[service]
+	if !found && !d.isLeader {
+		d.viplist = d.persistence.Get()
+		ip, found = d.viplist[service]
+	}
+
 	if !found {
 		return "", errors.Errorf("service [%s] not found in domain [%s].", service, d.domain)
 	}
@@ -176,6 +199,11 @@ func (d *SimpleDNSResolver) ForwardLookupFQDN(name string) (string, error) {
 	}
 
 	ip, found := d.viplist[service]
+	if !found && !d.isLeader {
+		d.viplist = d.persistence.Get()
+		ip, found = d.viplist[service]
+	}
+
 	if !found {
 		return "", errors.Errorf("service [%s] not found in domain [%s].", service, domain)
 	}
@@ -186,6 +214,10 @@ func (d *SimpleDNSResolver) ForwardLookupFQDN(name string) (string, error) {
 func (d *SimpleDNSResolver) ReverseLookup(ip string) (string, error) {
 	d.RLock()
 	defer d.RUnlock()
+	if !d.isLeader {
+		d.viplist = d.persistence.Get()
+	}
+
 	for service, serviceIP := range d.viplist {
 		if serviceIP == ip {
 			return service + "." + d.domain, nil

@@ -26,7 +26,7 @@ func TestKubernetes(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecsWithDefaultAndCustomReporters(t,
-		"Kubernetes Secrets Suite",
+		"Kubernetes Config Suite",
 		[]Reporter{printer.NewlineReporter{}})
 }
 

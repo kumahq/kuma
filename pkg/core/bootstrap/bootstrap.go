@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
-	config_store "github.com/Kong/kuma/pkg/core/config/store"
 
 	"github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
 
@@ -51,13 +50,13 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
-	if err := initializeDNSResolver(cfg, builder); err != nil {
-		return nil, err
-	}
 	if err := initializeClusters(cfg, builder); err != nil {
 		return nil, err
 	}
 	if err := initializeConfigManager(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeDNSResolver(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -282,7 +281,8 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 		cfg.DNSServer.Domain,
 		"0.0.0.0",
 		strconv.FormatUint(uint64(cfg.DNSServer.Port), 10),
-		cfg.DNSServer.CIDR)
+		cfg.DNSServer.CIDR,
+		builder.ConfigManager())
 	if err != nil {
 		return err
 	}
@@ -303,10 +303,26 @@ func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error
 }
 
 func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	store := config_store.NewConfigStore(builder.ResourceStore())
-	configm := config_manager.NewConfigManager(store)
-	builder.WithConfigManager(configm)
-	return nil
+	var pluginName core_plugins.PluginName
+	var pluginConfig core_plugins.PluginConfig
+	switch cfg.Store.Type {
+	case store.KubernetesStore:
+		pluginName = core_plugins.Kubernetes
+	case store.MemoryStore, store.PostgresStore:
+		pluginName = core_plugins.Universal
+	default:
+		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+	}
+	plugin, err := core_plugins.Plugins().ConfigStore(pluginName)
+	if err != nil {
+		return errors.Wrapf(err, "could not retrieve config store %s plugin", pluginName)
+	}
+	if configStore, err := plugin.NewConfigStore(builder, pluginConfig); err != nil {
+		return err
+	} else {
+		builder.WithConfigManager(config_manager.NewConfigManager(configStore))
+		return nil
+	}
 }
 
 func customizeRuntime(rt core_runtime.Runtime) error {

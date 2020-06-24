@@ -19,7 +19,7 @@ import (
 var _ config_store.ConfigStore = &KubernetesStore{}
 
 const (
-	configMapName = "KumaInternalConfig"
+	configMapName = "kuma-internal-config"
 	configMapKey  = "config"
 )
 
@@ -107,7 +107,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs *config_model.ConfigResou
 		"name": configMapName,
 	}
 	if err := s.client.List(ctx, cmlist, kube_client.InNamespace(s.namespace), fields); err != nil {
-		return errors.Wrap(err, "failed to list k8s Secrets")
+		return errors.Wrap(err, "failed to list k8s internal config")
 	}
 	for _, cm := range cmlist.Items {
 		rs.Items = append(rs.Items, &config_model.ConfigResource{
@@ -118,92 +118,3 @@ func (s *KubernetesStore) List(ctx context.Context, rs *config_model.ConfigResou
 	}
 	return nil
 }
-
-//var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
-//
-//type KubernetesMetaAdapter struct {
-//	kube_meta.ObjectMeta
-//}
-//
-//func (m *KubernetesMetaAdapter) GetNameExtensions() core_model.ResourceNameExtensions {
-//	return common_k8s.ResourceNameExtensions(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
-//}
-//
-//func (m *KubernetesMetaAdapter) GetVersion() string {
-//	return m.ObjectMeta.GetResourceVersion()
-//}
-//
-//func (m *KubernetesMetaAdapter) GetMesh() string {
-//	mesh, exist := m.Labels[meshLabel]
-//	if !exist {
-//		mesh = core_model.DefaultMesh
-//	}
-//	return mesh
-//}
-//
-//func (m *KubernetesMetaAdapter) GetCreationTime() time.Time {
-//	return m.GetObjectMeta().GetCreationTimestamp().Time
-//}
-//
-//func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
-//	return m.GetObjectMeta().GetCreationTimestamp().Time
-//}
-//
-//type Converter interface {
-//	ToKubernetesObject(*secret_model.SecretResource) (*kube_core.Secret, error)
-//	ToCoreResource(secret *kube_core.Secret, out *secret_model.SecretResource) error
-//	ToCoreList(list *kube_core.SecretList, out *secret_model.SecretResourceList) error
-//}
-//
-//func DefaultConverter() Converter {
-//	return &SimpleConverter{}
-//}
-//
-//var _ Converter = &SimpleConverter{}
-//
-//type SimpleConverter struct {
-//}
-//
-//func (c *SimpleConverter) ToKubernetesObject(r *secret_model.SecretResource) (*kube_core.Secret, error) {
-//	secret := &kube_core.Secret{}
-//	secret.Type = secretType
-//	secret.Data = map[string][]byte{
-//		"value": r.Spec.GetData().GetValue(),
-//	}
-//	if r.GetMeta() != nil {
-//		if adapter, ok := r.GetMeta().(*KubernetesMetaAdapter); ok {
-//			secret.ObjectMeta = adapter.ObjectMeta
-//			labels := map[string]string{
-//				meshLabel: r.GetMeta().GetMesh(),
-//			}
-//			secret.SetLabels(labels)
-//		} else {
-//			return nil, fmt.Errorf("meta has unexpected type: %#v", r.GetMeta())
-//		}
-//	}
-//	return secret, nil
-//}
-//
-//func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out *secret_model.SecretResource) error {
-//	out.SetMeta(&KubernetesMetaAdapter{secret.ObjectMeta})
-//	if secret.Data != nil {
-//		out.Spec = system_proto.Secret{
-//			Data: &wrappers.BytesValue{
-//				Value: secret.Data["value"],
-//			},
-//		}
-//	}
-//	return nil
-//}
-//
-//func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out *secret_model.SecretResourceList) error {
-//	out.Items = make([]*secret_model.SecretResource, len(in.Items))
-//	for i, secret := range in.Items {
-//		r := &secret_model.SecretResource{}
-//		if err := c.ToCoreResource(&secret, r); err != nil {
-//			return err
-//		}
-//		out.Items[i] = r
-//	}
-//	return nil
-//}

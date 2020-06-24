@@ -3,6 +3,9 @@ package runtime
 import (
 	"strconv"
 
+	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
+	config_store "github.com/Kong/kuma/pkg/core/config/store"
+
 	"github.com/Kong/kuma/pkg/core/datasource"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -49,9 +52,17 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.SecretManager()))
 
+	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)
 
 	return builder
+}
+
+func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	store := config_store.NewConfigStore(builder.ResourceStore())
+	configm := config_manager.NewConfigManager(store)
+	builder.WithConfigManager(configm)
+	return nil
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
@@ -64,7 +75,8 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 		cfg.DNSServer.Domain,
 		"127.0.0.1",
 		strconv.FormatUint(uint64(actualPort), 10),
-		cfg.DNSServer.CIDR)
+		cfg.DNSServer.CIDR,
+		builder.ConfigManager())
 	if err != nil {
 		return err
 	}

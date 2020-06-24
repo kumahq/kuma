@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
+	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
+	config_store "github.com/Kong/kuma/pkg/core/config/store"
+	resources_memory "github.com/Kong/kuma/pkg/plugins/resources/memory"
+
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,6 +17,9 @@ import (
 )
 
 var _ = Describe("DNS server", func() {
+
+	store := config_store.NewConfigStore(resources_memory.NewStore())
+	configm := config_manager.NewConfigManager(store)
 
 	Describe("Network Operation", func() {
 
@@ -25,8 +32,9 @@ var _ = Describe("DNS server", func() {
 			Expect(err).ToNot(HaveOccurred())
 			port = strconv.Itoa(p)
 
-			resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", port, "240.0.0.0/4")
+			resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", port, "240.0.0.0/4", configm)
 			Expect(err).ToNot(HaveOccurred())
+			resolver.SetElectedLeader(true)
 
 			// given
 			_, err = resolver.AddService("service")
@@ -108,8 +116,9 @@ var _ = Describe("DNS server", func() {
 
 	It("DNS Server basic functionality", func() {
 		// setup
-		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4")
+		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4", configm)
 		Expect(err).ToNot(HaveOccurred())
+		resolver.SetElectedLeader(true)
 
 		// given
 		_, err = resolver.AddService("service")
@@ -134,8 +143,9 @@ var _ = Describe("DNS server", func() {
 
 	It("DNS Server service operation", func() {
 		// given
-		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4")
+		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4", configm)
 		Expect(err).ToNot(HaveOccurred())
+		resolver.SetElectedLeader(true)
 
 		// when
 		_, err = resolver.AddService("service")
@@ -160,8 +170,9 @@ var _ = Describe("DNS server", func() {
 
 	It("DNS Server sync operation", func() {
 		// setup
-		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4")
+		resolver, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4", configm)
 		Expect(err).ToNot(HaveOccurred())
+		resolver.SetElectedLeader(true)
 
 		services := map[string]bool{
 			"example-one.kuma-test.svc:80":   true,
