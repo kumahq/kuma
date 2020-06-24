@@ -180,6 +180,9 @@ resources:
                   envoy.lb:
                     protocol: http
                     region: us
+                  envoy.transport_socket_match:
+                    protocol: http
+                    region: us
             - endpoint:
                 address:
                   socketAddress:
@@ -188,6 +191,9 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    protocol: http
+                    region: eu
+                  envoy.transport_socket_match:
                     protocol: http
                     region: eu
   - name: api-tcp
@@ -206,6 +212,9 @@ resources:
                   envoy.lb:
                     protocol: http
                     region: us
+                  envoy.transport_socket_match:
+                    protocol: http
+                    region: us
             - endpoint:
                 address:
                   socketAddress:
@@ -214,6 +223,8 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    region: eu
+                  envoy.transport_socket_match:
                     region: eu
   - name: backend
     resource:
@@ -229,6 +240,8 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    region: us
+                  envoy.transport_socket_match:
                     region: us
             - endpoint:
                 address:
@@ -249,4 +262,6 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    role: master
+                  envoy.transport_socket_match:
                     role: master

@@ -22,6 +22,7 @@ import (
 	config_types "github.com/Kong/kuma/pkg/config/types"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
+	leader_memory "github.com/Kong/kuma/pkg/plugins/leader/memory"
 	util_net "github.com/Kong/kuma/pkg/util/net"
 )
 
@@ -112,7 +113,7 @@ func newRunCmd() *cobra.Command {
 			}
 			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
-			componentMgr := component.NewManager()
+			componentMgr := component.NewManager(leader_memory.NewNeverLeaderElector())
 			if err := componentMgr.Add(server, dataplane); err != nil {
 				return err
 			}

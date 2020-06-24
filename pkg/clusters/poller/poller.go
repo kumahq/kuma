@@ -18,6 +18,7 @@ var (
 type (
 	ClusterStatusPoller interface {
 		Start(<-chan struct{}) error
+		NeedLeaderElection() bool
 		Clusters() Clusters
 	}
 
@@ -82,6 +83,10 @@ func (p *ClustersStatusPoller) Start(stop <-chan struct{}) error {
 			return nil
 		}
 	}
+}
+
+func (p *ClustersStatusPoller) NeedLeaderElection() bool {
+	return false
 }
 
 func (p *ClustersStatusPoller) pollClusters() {
