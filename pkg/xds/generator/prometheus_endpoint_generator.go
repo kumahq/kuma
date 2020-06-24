@@ -108,6 +108,5 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 }
 
 func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *mesh_core.MeshResource) bool {
-	// We assume that skipMTLS = nil is the same as skipMTLS = false, so we don't break deployments between 0.5 and 0.5.1
-	return cfg.SkipMTLS != nil && !cfg.SkipMTLS.Value && mesh.MTLSEnabled()
+	return !cfg.SkipMTLS.GetValue() && mesh.MTLSEnabled()
 }

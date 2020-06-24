@@ -370,6 +370,66 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			},
 			expectedFile: "default-mtls.envoy-config.golden.yaml",
 		}),
+		Entry("should support a Dataplane with mTLS on (skipMTLS not explicitly defined)", testCase{
+			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					SdsLocation: "kuma-system:5677",
+					SdsTlsCert:  []byte("12345"),
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+						Spec: mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{
+								EnabledBackend: "builtin",
+								Backends: []*mesh_proto.CertificateAuthorityBackend{
+									{
+										Name: "builtin",
+										Type: "builtin",
+									},
+								},
+							},
+							Metrics: &mesh_proto.Metrics{
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port: 1234,
+											Path: "/non-standard-path",
+											Tags: map[string]string{
+												"service": "dataplane-metrics",
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			proxy: &model.Proxy{
+				Id: model.ProxyId{Name: "demo.backend-01"},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
+				},
+				Metadata: &core_xds.DataplaneMetadata{
+					AdminPort: 9902,
+				},
+			},
+			expectedFile: "default-mtls.envoy-config.golden.yaml",
+		}),
 		Entry("should support a Dataplane with mTLS on but skipMTLS true", testCase{
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
