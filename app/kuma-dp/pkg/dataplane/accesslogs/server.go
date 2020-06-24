@@ -28,6 +28,10 @@ type accessLogServer struct {
 	streamCount int64
 }
 
+func (s *accessLogServer) NeedLeaderElection() bool {
+	return false
+}
+
 func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
 	return &accessLogServer{
 		server:     grpc.NewServer(),

@@ -3,6 +3,8 @@ package component
 import (
 	"time"
 
+	k8s_manager "sigs.k8s.io/controller-runtime/pkg/manager"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 )
@@ -11,7 +13,7 @@ const (
 	backoffTime = 5 * time.Second
 )
 
-type ComponentFactory func(log logr.Logger) Component
+type ComponentFactory func(log logr.Logger) k8s_manager.Runnable
 
 type resilientComponent struct {
 	log     logr.Logger
@@ -56,4 +58,8 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 		}
 		<-time.After(backoffTime)
 	}
+}
+
+func (r *resilientComponent) NeedLeaderElection() bool {
+	return false
 }

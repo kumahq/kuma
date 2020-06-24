@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
@@ -31,6 +32,8 @@ import (
 var (
 	runLog = controlPlaneLog.WithName("run")
 )
+
+const gracefullyShutdownDuration = 3 * time.Second
 
 func newRunCmd() *cobra.Command {
 	return newRunCmdWithOpts(runCmdOpts{
@@ -144,7 +147,9 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 
-			runLog.Info("stopping Control Plane")
+			runLog.Info("Stop signal received. Waiting 3 seconds for components to stop gracefully...")
+			time.Sleep(gracefullyShutdownDuration)
+			runLog.Info("Stopping Control Plane")
 			return nil
 		},
 	}

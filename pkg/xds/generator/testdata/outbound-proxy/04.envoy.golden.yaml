@@ -279,42 +279,85 @@ resources:
             keys:
               - role
       name: db
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchSubjectAltNames:
-                  - exact: spiffe://mesh1/db
-              validationContextSdsSecretConfig:
-                name: mesh_ca
-                sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                      - googleGrpc:
-                          channelCredentials:
-                            sslCredentials:
-                              rootCerts:
-                                inlineBytes: MTIzNDU=
-                          statPrefix: sds_mesh_ca
-                          targetUri: kuma-system:5677
-            tlsCertificateSdsSecretConfigs:
-              - name: identity_cert
-                sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                      - googleGrpc:
-                          channelCredentials:
-                            sslCredentials:
-                              rootCerts:
-                                inlineBytes: MTIzNDU=
-                          statPrefix: sds_identity_cert
-                          targetUri: kuma-system:5677
-          sni: db
+      transportSocketMatches:
+        - match:
+            role: master
+          name: db{role=master}
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+              commonTlsContext:
+                combinedValidationContext:
+                  defaultValidationContext:
+                    matchSubjectAltNames:
+                      - exact: spiffe://mesh1/db
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-system:5677
+                tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_identity_cert
+                              targetUri: kuma-system:5677
+              sni: db{role=master}
+        - match:
+            role: replica
+          name: db{role=replica}
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+              commonTlsContext:
+                combinedValidationContext:
+                  defaultValidationContext:
+                    matchSubjectAltNames:
+                      - exact: spiffe://mesh1/db
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-system:5677
+                tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_identity_cert
+                              targetUri: kuma-system:5677
+              sni: db{role=replica}
       type: EDS
   - name: api-http
     resource:
@@ -332,6 +375,9 @@ resources:
                   envoy.lb:
                     protocol: http
                     region: us
+                  envoy.transport_socket_match:
+                    protocol: http
+                    region: us
             - endpoint:
                 address:
                   socketAddress:
@@ -340,6 +386,9 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    protocol: http
+                    region: eu
+                  envoy.transport_socket_match:
                     protocol: http
                     region: eu
   - name: api-tcp
@@ -358,6 +407,9 @@ resources:
                   envoy.lb:
                     protocol: http
                     region: us
+                  envoy.transport_socket_match:
+                    protocol: http
+                    region: us
             - endpoint:
                 address:
                   socketAddress:
@@ -366,6 +418,8 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    region: eu
+                  envoy.transport_socket_match:
                     region: eu
   - name: backend
     resource:
@@ -381,6 +435,8 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    region: us
+                  envoy.transport_socket_match:
                     region: us
             - endpoint:
                 address:
@@ -401,4 +457,6 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    role: master
+                  envoy.transport_socket_match:
                     role: master

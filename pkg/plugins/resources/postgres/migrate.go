@@ -12,6 +12,7 @@ import (
 	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
 	postgres_cfg "github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
+	common_postgres "github.com/Kong/kuma/pkg/plugins/common/postgres"
 	"github.com/Kong/kuma/pkg/plugins/resources/postgres/migrations"
 )
 
@@ -49,7 +50,7 @@ func migrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, er
 }
 
 func newMigrate(cfg postgres_cfg.PostgresStoreConfig) (*migrate.Migrate, error) {
-	db, err := connectToDb(cfg)
+	db, err := common_postgres.ConnectToDb(cfg)
 	if err != nil {
 		return nil, err
 	}

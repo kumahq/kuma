@@ -247,6 +247,8 @@ resources:
                 filterMetadata:
                   envoy.lb:
                     role: master
+                  envoy.transport_socket_match:
+                    role: master
   - name: elastic
     resource:
       '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment

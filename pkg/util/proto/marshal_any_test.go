@@ -17,7 +17,7 @@ var _ = Describe("MarshalAnyDeterministic", func() {
 			"version": "v1",
 			"cloud":   "aws",
 		}
-		metadata := envoy.Metadata(tags)
+		metadata := envoy.EndpointMetadata(tags)
 		for i := 0; i < 100; i++ {
 			any1, _ := util_proto.MarshalAnyDeterministic(metadata)
 			any2, _ := util_proto.MarshalAnyDeterministic(metadata)

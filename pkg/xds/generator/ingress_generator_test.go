@@ -113,16 +113,4 @@ var _ = Describe("IngressGenerator", func() {
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{},
 		}),
 	)
-
-	It("should parse tags from SNI", func() {
-		actual := generator.TagsBySNI("backend{version=v1,env=prod,region=eu,app=backend-app}")
-		expected := map[string]string{
-			"service": "backend",
-			"version": "v1",
-			"env":     "prod",
-			"region":  "eu",
-			"app":     "backend-app",
-		}
-		Expect(actual).To(Equal(expected))
-	})
 })

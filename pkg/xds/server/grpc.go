@@ -27,6 +27,10 @@ type grpcServer struct {
 	tlsKeyFile  string
 }
 
+func (s *grpcServer) NeedLeaderElection() bool {
+	return false
+}
+
 // Make sure that grpcServer implements all relevant interfaces
 var (
 	_ component.Component = &grpcServer{}

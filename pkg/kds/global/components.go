@@ -2,6 +2,9 @@ package global
 
 import (
 	"github.com/go-logr/logr"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/Kong/kuma/pkg/plugins/leader/memory"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
@@ -38,8 +41,8 @@ func Callbacks(s store.SyncResourceStore) *client.Callbacks {
 
 func SetupServer(rt runtime.Runtime) error {
 	syncStore := store.NewSyncResourceStore(rt.ResourceStore())
-	resilient := component.NewResilientComponent(kdsDataplaneSinkLog, func(log logr.Logger) component.Component {
-		mgr := component.NewManager()
+	resilient := component.NewResilientComponent(kdsDataplaneSinkLog, func(log logr.Logger) manager.Runnable {
+		mgr := component.NewManager(memory.NewAlwaysLeaderElector())
 		for _, cluster := range rt.Config().KumaClusters.Clusters {
 			_ = mgr.Add(client.NewKDSSink(log, resourceTypes, func() (kdsClient client.KDSClient, err error) {
 				return client.New(cluster.Local.Address)

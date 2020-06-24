@@ -3,6 +3,8 @@ package setup
 import (
 	"fmt"
 
+	"github.com/Kong/kuma/pkg/plugins/leader/memory"
+
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/pkg/core"
@@ -25,7 +27,7 @@ func (m *mockKDSClient) Close() error {
 }
 
 func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client.Callbacks) {
-	mgr := component.NewManager()
+	mgr := component.NewManager(memory.NewAlwaysLeaderElector())
 	fmt.Println("len", len(clientStreams))
 	for i := 0; i < len(clientStreams); i++ {
 		item := clientStreams[i]
