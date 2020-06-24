@@ -20,6 +20,7 @@ require (
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.0
+	github.com/gogo/protobuf v1.3.1
 	github.com/golang-migrate/migrate/v4 v4.8.0
 	github.com/golang/protobuf v1.3.2
 	github.com/gruntwork-io/terratest v0.27.5
