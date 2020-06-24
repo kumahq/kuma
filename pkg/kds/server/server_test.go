@@ -2,10 +2,12 @@ package server_test
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	kds_samples "github.com/Kong/kuma/pkg/test/kds/samples"
 	kds_setup "github.com/Kong/kuma/pkg/test/kds/setup"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -40,13 +42,14 @@ var _ = Describe("KDS Server", func() {
 	BeforeEach(func() {
 		s := memory.NewStore()
 
-		waitCh := make(chan struct{})
-		stream := kds_setup.StartServer(s, waitCh)
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+		stream := kds_setup.StartServer(s, wg)
 
 		tc = &kds_verifier.TestContextImpl{
 			ResourceStore:      s,
 			MockStream:         stream,
-			StopCh:             waitCh,
+			Wg:                 wg,
 			Responses:          map[string]*v2.DiscoveryResponse{},
 			LastACKedResponses: map[string]*v2.DiscoveryResponse{},
 		}
@@ -130,7 +133,7 @@ var _ = Describe("KDS Server", func() {
 		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.Stop()
+		tc.WaitGroup().Wait()
 	})
 
 	It("should accept request independently for each type", func() {
@@ -154,7 +157,7 @@ var _ = Describe("KDS Server", func() {
 		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.Stop()
+		tc.WaitGroup().Wait()
 	})
 
 	It("should send response for resources created after DiscoveryRequest", func() {
@@ -172,7 +175,7 @@ var _ = Describe("KDS Server", func() {
 		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.Stop()
+		tc.WaitGroup().Wait()
 	})
 
 	It("should send response for resources created before ACK", func() {
@@ -194,7 +197,7 @@ var _ = Describe("KDS Server", func() {
 		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.Stop()
+		tc.WaitGroup().Wait()
 	})
 
 	It("should support update", func() {
@@ -228,7 +231,7 @@ var _ = Describe("KDS Server", func() {
 		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.Stop()
+		tc.WaitGroup().Wait()
 	})
 
 	It("should have deterministic MarshalAny to avoid excess snapshot versions", func() {
@@ -247,7 +250,7 @@ var _ = Describe("KDS Server", func() {
 		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.Stop()
+		tc.WaitGroup().Wait()
 	})
 
 	It("should repeat DiscoveryResponse after NACK", func() {
@@ -273,6 +276,6 @@ var _ = Describe("KDS Server", func() {
 		err := vrf.Verify(tc)
 		Expect(err).ToNot(HaveOccurred())
 
-		<-tc.Stop()
+		tc.WaitGroup().Wait()
 	})
 })

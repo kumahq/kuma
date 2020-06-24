@@ -3,17 +3,20 @@ package verifier
 import (
 	"context"
 	"fmt"
+	"time"
+
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"github.com/golang/protobuf/ptypes/any"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	kds_client "github.com/Kong/kuma/pkg/kds/client"
 	"github.com/Kong/kuma/pkg/util/proto"
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/golang/protobuf/ptypes/any"
-	"time"
+
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
 func Create(ctx context.Context, r model.Resource, opts ...store.CreateOptionsFunc) Executable {

@@ -1,6 +1,12 @@
 package client_test
 
 import (
+	"time"
+
+	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	test_grpc "github.com/Kong/kuma/pkg/test/grpc"
@@ -8,10 +14,6 @@ import (
 	kds_setup "github.com/Kong/kuma/pkg/test/kds/setup"
 	kds_verifier "github.com/Kong/kuma/pkg/test/kds/verifier"
 	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"time"
 )
 
 const (

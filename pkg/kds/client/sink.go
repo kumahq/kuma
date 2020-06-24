@@ -1,12 +1,14 @@
 package client
 
 import (
-	model "github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	"io"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"io"
+
+	model "github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
 
 type ClientFactory func() (KDSClient, error)

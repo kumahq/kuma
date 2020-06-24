@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"fmt"
+
+	"github.com/go-errors/errors"
+	"github.com/spf13/cobra"
+
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	"github.com/Kong/kuma/pkg/clusters"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -10,8 +14,6 @@ import (
 	kds_global "github.com/Kong/kuma/pkg/kds/global"
 	kds_server "github.com/Kong/kuma/pkg/kds/server"
 	kuma_version "github.com/Kong/kuma/pkg/version"
-	"github.com/go-errors/errors"
-	"github.com/spf13/cobra"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/Kong/kuma/pkg/admin-server"

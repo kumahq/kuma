@@ -2,12 +2,14 @@ package setup
 
 import (
 	"fmt"
+
+	. "github.com/onsi/gomega"
+
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 	kds_client "github.com/Kong/kuma/pkg/kds/client"
 	"github.com/Kong/kuma/pkg/test/grpc"
-	. "github.com/onsi/gomega"
 )
 
 type mockKDSClient struct {

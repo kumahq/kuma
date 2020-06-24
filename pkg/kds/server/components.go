@@ -2,8 +2,9 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/model"
 	"time"
+
+	"github.com/Kong/kuma/pkg/core/resources/model"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"

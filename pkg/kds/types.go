@@ -27,4 +27,3 @@ var (
 		system.SecretType,
 	}
 )
-

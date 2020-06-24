@@ -1,6 +1,11 @@
 package setup
 
 import (
+	"sync"
+	"time"
+
+	. "github.com/onsi/gomega"
+
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	kds_config "github.com/Kong/kuma/pkg/config/kds"
 	"github.com/Kong/kuma/pkg/core"
@@ -12,9 +17,6 @@ import (
 	kds_server "github.com/Kong/kuma/pkg/kds/server"
 	test_grpc "github.com/Kong/kuma/pkg/test/grpc"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
-	. "github.com/onsi/gomega"
-	"sync"
-	"time"
 )
 
 type testRuntimeContext struct {

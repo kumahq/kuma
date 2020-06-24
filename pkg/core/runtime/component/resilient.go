@@ -1,9 +1,10 @@
 package component
 
 import (
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"time"
 )
 
 const (

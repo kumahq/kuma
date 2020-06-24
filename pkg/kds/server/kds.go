@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/kds"
 	"strconv"
 	"sync/atomic"
+
+	"github.com/Kong/kuma/pkg/kds"
 
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"

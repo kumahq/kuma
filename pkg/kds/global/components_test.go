@@ -3,6 +3,11 @@ package global_test
 import (
 	"context"
 	"fmt"
+	"sync"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -12,9 +17,6 @@ import (
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	"github.com/Kong/kuma/pkg/test/grpc"
 	kds_setup "github.com/Kong/kuma/pkg/test/kds/setup"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"sync"
 )
 
 var _ = Describe("Global Sync", func() {

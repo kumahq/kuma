@@ -1,6 +1,8 @@
 package global
 
 import (
+	"github.com/go-logr/logr"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -9,7 +11,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 	"github.com/Kong/kuma/pkg/kds/client"
 	"github.com/Kong/kuma/pkg/kds/store"
-	"github.com/go-logr/logr"
 )
 
 var (

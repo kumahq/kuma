@@ -3,6 +3,10 @@ package store_test
 import (
 	"context"
 	"fmt"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -10,8 +14,6 @@ import (
 	sync_store "github.com/Kong/kuma/pkg/kds/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 	model2 "github.com/Kong/kuma/pkg/test/resources/model"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("SyncResourceStore", func() {

@@ -1,6 +1,8 @@
 package verifier
 
 import (
+	"sync"
+
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
 	"github.com/Kong/kuma/pkg/core/resources/store"
@@ -16,6 +18,7 @@ type TestContext interface {
 	LastResponse(typeURL string) *v2.DiscoveryResponse
 	SaveLastACKedResponse(typ string, response *v2.DiscoveryResponse)
 	LastACKedResponse(typ string) *v2.DiscoveryResponse
+	WaitGroup() *sync.WaitGroup
 }
 
 type TestContextImpl struct {
@@ -23,6 +26,7 @@ type TestContextImpl struct {
 	MockStream         *test_grpc.MockServerStream
 	MockClientStream   *test_grpc.MockClientStream
 	StopCh             chan struct{}
+	Wg                 *sync.WaitGroup
 	Responses          map[string]*v2.DiscoveryResponse
 	LastACKedResponses map[string]*v2.DiscoveryResponse
 }
@@ -57,4 +61,8 @@ func (t *TestContextImpl) SaveLastACKedResponse(typ string, response *v2.Discove
 
 func (t *TestContextImpl) LastACKedResponse(typ string) *v2.DiscoveryResponse {
 	return t.LastACKedResponses[typ]
+}
+
+func (t *TestContextImpl) WaitGroup() *sync.WaitGroup {
+	return t.Wg
 }

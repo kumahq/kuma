@@ -2,11 +2,13 @@ package client
 
 import (
 	"fmt"
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/model"
+
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"google.golang.org/genproto/googleapis/rpc/status"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	"github.com/Kong/kuma/pkg/core/resources/model"
 )
 
 type KDSStream interface {
