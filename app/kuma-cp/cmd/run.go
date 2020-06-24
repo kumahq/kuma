@@ -8,6 +8,7 @@ import (
 
 	"github.com/Kong/kuma/pkg/clusters"
 	dns_server "github.com/Kong/kuma/pkg/dns-server"
+	kds_server "github.com/Kong/kuma/pkg/kds/server"
 
 	api_server "github.com/Kong/kuma/pkg/api-server"
 
@@ -114,6 +115,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := clusters.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Clusters server")
+					return err
+				}
+				if err := kds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS server")
 					return err
 				}
 			}
