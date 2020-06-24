@@ -1,12 +1,7 @@
 package e2e_test
 
 import (
-	"encoding/json"
-	"net/http"
-
-	"github.com/Kong/kuma/pkg/clusters/poller"
-
-	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -38,7 +33,7 @@ var _ = Describe("Test Local and Global", func() {
 		_ = clusters.DeleteKuma()
 	})
 
-	It("Should deploy Local and Global on 2 clusters", func() {
+	It("should deploy Local and Global on 2 clusters and sync dataplanes", func() {
 		// given
 		c1 := clusters.GetCluster(Kuma1)
 		c2 := clusters.GetCluster(Kuma2)
@@ -75,25 +70,13 @@ var _ = Describe("Test Local and Global", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs2).To(ContainSubstring("\"mode\":\"local\""))
 
-		// when
-		status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
-		// then
-		Expect(status).To(Equal(http.StatusOK))
+		err = DemoClient()(c2)
+		Expect(err).ToNot(HaveOccurred())
 
-		// when
-		clustersStatus := poller.Clusters{}
-		_ = json.Unmarshal([]byte(response), &clustersStatus)
-		// then
-
-		found := false
-		for _, cluster := range clustersStatus {
-			if cluster.URL == local.GetHostAPI() {
-				Expect(cluster.Active).To(BeTrue())
-				found = true
-				break
-			}
-		}
-		Expect(found).To(BeTrue())
-
+		Eventually(func() string {
+			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("kuma-test"), "get", "dataplanes")
+			Expect(err).ToNot(HaveOccurred())
+			return output
+		}, "5s", "500ms").Should(ContainSubstring("demo-client-"))
 	})
 })

@@ -9,25 +9,34 @@ import (
 
 type TestContext interface {
 	Store() store.ResourceStore
-	Stream() *test_grpc.MockStream
+	ServerStream() *test_grpc.MockServerStream
+	ClientStream() *test_grpc.MockClientStream
 	Stop() chan struct{}
 	SaveLastResponse(typ string, response *v2.DiscoveryResponse)
 	LastResponse(typeURL string) *v2.DiscoveryResponse
+	SaveLastACKedResponse(typ string, response *v2.DiscoveryResponse)
+	LastACKedResponse(typ string) *v2.DiscoveryResponse
 }
 
 type TestContextImpl struct {
-	ResourceStore store.ResourceStore
-	MockStream    *test_grpc.MockStream
-	StopCh        chan struct{}
-	Responses     map[string]*v2.DiscoveryResponse
+	ResourceStore      store.ResourceStore
+	MockStream         *test_grpc.MockServerStream
+	MockClientStream   *test_grpc.MockClientStream
+	StopCh             chan struct{}
+	Responses          map[string]*v2.DiscoveryResponse
+	LastACKedResponses map[string]*v2.DiscoveryResponse
 }
 
 func (t *TestContextImpl) Store() store.ResourceStore {
 	return t.ResourceStore
 }
 
-func (t *TestContextImpl) Stream() *test_grpc.MockStream {
+func (t *TestContextImpl) ServerStream() *test_grpc.MockServerStream {
 	return t.MockStream
+}
+
+func (t *TestContextImpl) ClientStream() *test_grpc.MockClientStream {
+	return t.MockClientStream
 }
 
 func (t *TestContextImpl) Stop() chan struct{} {
@@ -40,4 +49,12 @@ func (t *TestContextImpl) SaveLastResponse(typ string, response *v2.DiscoveryRes
 
 func (t *TestContextImpl) LastResponse(typ string) *v2.DiscoveryResponse {
 	return t.Responses[typ]
+}
+
+func (t *TestContextImpl) SaveLastACKedResponse(typ string, response *v2.DiscoveryResponse) {
+	t.LastACKedResponses[typ] = response
+}
+
+func (t *TestContextImpl) LastACKedResponse(typ string) *v2.DiscoveryResponse {
+	return t.LastACKedResponses[typ]
 }

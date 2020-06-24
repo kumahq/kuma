@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/resources/model"
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -16,8 +17,8 @@ import (
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
-func NewSnapshotGenerator(rt core_runtime.Runtime) reconcile.SnapshotGenerator {
-	return reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager())
+func NewSnapshotGenerator(rt core_runtime.Runtime, resourceTypes []model.ResourceType) reconcile.SnapshotGenerator {
+	return reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), resourceTypes)
 }
 
 func NewVersioner() util_xds.SnapshotVersioner {

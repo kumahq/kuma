@@ -12,24 +12,25 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
-	"github.com/Kong/kuma/pkg/kds"
 	"github.com/Kong/kuma/pkg/kds/cache"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager) SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceTypes []model.ResourceType) SnapshotGenerator {
 	return &snapshotGenerator{
 		resourceManager: resourceManager,
+		resourceTypes:   resourceTypes,
 	}
 }
 
 type snapshotGenerator struct {
 	resourceManager core_manager.ReadOnlyResourceManager
+	resourceTypes   []model.ResourceType
 }
 
 func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.Node) (util_xds.Snapshot, error) {
 	builder := cache.NewSnapshotBuilder()
-	for _, typ := range kds.SupportedTypes {
+	for _, typ := range s.resourceTypes {
 		resources, err := s.getResources(ctx, typ)
 		if err != nil {
 			return nil, err
