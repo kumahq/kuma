@@ -88,6 +88,7 @@ var _ = Describe("IngressGenerator", func() {
 							"version": "v1",
 							"region":  "eu",
 						},
+						Weight: 1,
 					},
 					{
 						Target: "192.168.0.2",
@@ -97,6 +98,7 @@ var _ = Describe("IngressGenerator", func() {
 							"version": "v2",
 							"region":  "us",
 						},
+						Weight: 1,
 					},
 				},
 			},
