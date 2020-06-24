@@ -1,12 +1,11 @@
 package e2e_test
 
 import (
+	"github.com/Kong/kuma/pkg/config/core"
+	. "github.com/Kong/kuma/test/framework"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/Kong/kuma/pkg/config/core"
-	. "github.com/Kong/kuma/test/framework"
 )
 
 var _ = Describe("Test Local and Global", func() {

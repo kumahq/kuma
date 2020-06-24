@@ -3,6 +3,8 @@ package client
 import (
 	"fmt"
 
+	"github.com/Kong/kuma/pkg/kds/util"
+
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -52,7 +54,7 @@ func (s *stream) Receive() (model.ResourceList, error) {
 	if err != nil {
 		return nil, err
 	}
-	rs, err := ToKumaResources(resp)
+	rs, err := util.ToCoreResourceList(resp)
 	if err != nil {
 		return nil, err
 	}

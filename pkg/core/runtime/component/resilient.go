@@ -3,8 +3,6 @@ package component
 import (
 	"time"
 
-	k8s_manager "sigs.k8s.io/controller-runtime/pkg/manager"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 )
@@ -13,17 +11,15 @@ const (
 	backoffTime = 5 * time.Second
 )
 
-type ComponentFactory func(log logr.Logger) k8s_manager.Runnable
-
 type resilientComponent struct {
-	log     logr.Logger
-	factory ComponentFactory
+	log       logr.Logger
+	component Component
 }
 
-func NewResilientComponent(log logr.Logger, factory ComponentFactory) Component {
+func NewResilientComponent(log logr.Logger, component Component) Component {
 	return &resilientComponent{
-		log:     log,
-		factory: factory,
+		log:       log,
+		component: component,
 	}
 }
 
@@ -44,8 +40,7 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 				}
 			}()
 
-			comp := r.factory(r.log.WithValues("generationID", generationID))
-			errCh <- comp.Start(stop)
+			errCh <- r.component.Start(stop)
 		}(errCh)
 		select {
 		case <-stop:
@@ -61,5 +56,5 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 }
 
 func (r *resilientComponent) NeedLeaderElection() bool {
-	return false
+	return r.component.NeedLeaderElection()
 }

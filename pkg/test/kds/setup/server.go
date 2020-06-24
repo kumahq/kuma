@@ -46,7 +46,7 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup) *test_grpc.MockS
 		generator := kds_server.NewSnapshotGenerator(rt, kds.SupportedTypes)
 		versioner := kds_server.NewVersioner()
 		reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
-		syncTracker := kds_server.NewSyncTracker(reconciler, rt.Config().KDSServer.RefreshInterval)
+		syncTracker := kds_server.NewSyncTracker(core.Log, reconciler, rt.Config().KDSServer.RefreshInterval)
 		callbacks := util_xds.CallbacksChain{
 			util_xds.LoggingCallbacks{Log: log},
 			syncTracker,

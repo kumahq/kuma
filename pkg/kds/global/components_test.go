@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/Kong/kuma/pkg/core"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -22,7 +24,8 @@ import (
 var _ = Describe("Global Sync", func() {
 
 	var localStores []store.ResourceStore
-	var globalStore sync_store.SyncResourceStore
+	var globalStore store.ResourceStore
+	var globalSyncer sync_store.ResourceSyncer
 	var closeFunc func()
 
 	BeforeEach(func() {
@@ -37,19 +40,17 @@ var _ = Describe("Global Sync", func() {
 			localStores = append(localStores, localStore)
 		}
 
-		globalStore = sync_store.NewSyncResourceStore(memory.NewStore())
+		globalStore = memory.NewStore()
+		globalSyncer = sync_store.NewSyncResourceStore(core.Log, globalStore)
 		stopCh := make(chan struct{})
 		clientStreams := []*grpc.MockClientStream{}
 		for _, ss := range serverStreams {
-			clientStreams = append(clientStreams, ss.ClientStream())
+			clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 		}
-		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalStore))
+		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer))
 
 		closeFunc = func() {
 			close(stopCh)
-			for _, ss := range serverStreams {
-				close(ss.RecvCh)
-			}
 			wg.Wait()
 		}
 	})

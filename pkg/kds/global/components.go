@@ -1,11 +1,6 @@
 package global
 
 import (
-	"github.com/go-logr/logr"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	"github.com/Kong/kuma/pkg/plugins/leader/memory"
-
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -21,11 +16,19 @@ var (
 	resourceTypes       = []model.ResourceType{mesh.DataplaneType}
 )
 
-func clusterTag(r model.Resource) string {
-	return r.GetSpec().(*mesh_proto.Dataplane).GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ClusterTag]
+func SetupComponent(rt runtime.Runtime) error {
+	syncStore := store.NewSyncResourceStore(kdsDataplaneSinkLog, rt.ResourceStore())
+	for _, cluster := range rt.Config().KumaClusters.Clusters {
+		log := kdsDataplaneSinkLog.WithValues("clusterIP", cluster.Local.Address)
+		dataplaneSink := client.NewKDSSink(log, rt.Config().General.ClusterName, resourceTypes, clientFactory(cluster.Local.Address), Callbacks(syncStore))
+		if err := rt.Add(component.NewResilientComponent(log, dataplaneSink)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func Callbacks(s store.SyncResourceStore) *client.Callbacks {
+func Callbacks(s store.ResourceSyncer) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(rs model.ResourceList) error {
 			if len(rs.GetItems()) == 0 {
@@ -39,16 +42,12 @@ func Callbacks(s store.SyncResourceStore) *client.Callbacks {
 	}
 }
 
-func SetupServer(rt runtime.Runtime) error {
-	syncStore := store.NewSyncResourceStore(rt.ResourceStore())
-	resilient := component.NewResilientComponent(kdsDataplaneSinkLog, func(log logr.Logger) manager.Runnable {
-		mgr := component.NewManager(memory.NewAlwaysLeaderElector())
-		for _, cluster := range rt.Config().KumaClusters.Clusters {
-			_ = mgr.Add(client.NewKDSSink(log, resourceTypes, func() (kdsClient client.KDSClient, err error) {
-				return client.New(cluster.Local.Address)
-			}, Callbacks(syncStore)))
-		}
-		return mgr
-	})
-	return rt.Add(resilient)
+func clusterTag(r model.Resource) string {
+	return r.GetSpec().(*mesh_proto.Dataplane).GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ClusterTag]
+}
+
+func clientFactory(clusterIP string) client.ClientFactory {
+	return func() (kdsClient client.KDSClient, err error) {
+		return client.New(clusterIP)
+	}
 }

@@ -12,7 +12,6 @@ type MockClientStream struct {
 	Ctx    context.Context
 	SentCh chan *v2.DiscoveryRequest
 	RecvCh chan *v2.DiscoveryResponse
-	//Nonce     int
 	grpc.ClientStream
 }
 
@@ -42,5 +41,6 @@ func MakeMockClientStream() *MockClientStream {
 }
 
 func (stream *MockClientStream) CloseSend() error {
+	close(stream.SentCh)
 	return nil
 }

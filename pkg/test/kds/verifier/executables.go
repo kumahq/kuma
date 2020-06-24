@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"github.com/Kong/kuma/pkg/kds/util"
+
 	"github.com/golang/protobuf/ptypes/any"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	kds_client "github.com/Kong/kuma/pkg/kds/client"
 	"github.com/Kong/kuma/pkg/util/proto"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -64,7 +63,7 @@ func WaitResponse(timeout time.Duration, testFunc func(rs []model.Resource)) Exe
 	return func(tc TestContext) error {
 		select {
 		case resp := <-tc.ServerStream().SentCh:
-			rs, err := kds_client.ToKumaResources(resp)
+			rs, err := util.ToCoreResourceList(resp)
 			if err != nil {
 				return err
 			}
@@ -112,7 +111,7 @@ func WaitRequest(timeout time.Duration, testFunc func(rs *v2.DiscoveryRequest)) 
 
 func DiscoveryResponse(rs model.ResourceList, nonce, version string) Executable {
 	return func(tc TestContext) error {
-		envoyRes, err := convert(rs)
+		envoyRes, err := util.ToEnvoyResources(rs)
 		if err != nil {
 			return err
 		}
@@ -132,25 +131,4 @@ func DiscoveryResponse(rs model.ResourceList, nonce, version string) Executable 
 		}
 		return nil
 	}
-}
-
-func convert(rlist model.ResourceList) ([]envoy_types.Resource, error) {
-	rv := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
-	for _, r := range rlist.GetItems() {
-		pbany, err := proto.MarshalAnyDeterministic(r.GetSpec())
-		if err != nil {
-			return nil, err
-		}
-		rv = append(rv, &mesh_proto.KumaResource{
-			Meta: &mesh_proto.KumaResource_Meta{
-				Name:             r.GetMeta().GetName(),
-				Mesh:             r.GetMeta().GetMesh(),
-				CreationTime:     proto.MustTimestampProto(r.GetMeta().GetCreationTime()),
-				ModificationTime: proto.MustTimestampProto(r.GetMeta().GetModificationTime()),
-				Version:          r.GetMeta().GetVersion(),
-			},
-			Spec: pbany,
-		})
-	}
-	return rv, nil
 }

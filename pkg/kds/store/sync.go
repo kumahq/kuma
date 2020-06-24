@@ -2,18 +2,25 @@ package store
 
 import (
 	"context"
+	"reflect"
+
+	"github.com/go-logr/logr"
 
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 )
 
-// SyncResourceStore extends ResourceStore with Sync method
-type SyncResourceStore interface {
-	store.ResourceStore
+// ResourceSyncer allows to synchronize resources in Store
+type ResourceSyncer interface {
 	// Sync method takes 'upstream' as a basis and synchronize underlying store.
 	// It deletes all resources that absent in 'upstream', creates new resources that
 	// are not represented in store yet and updates the rest.
+	// Using 'PrefilterBy' option Sync allows to select scope of resources that will be
+	// affected by Sync
+	//
+	// Sync takes into account only 'Name' and 'Mesh' when it comes to upstream's Meta.
+	// 'Version', 'CreationTime' and 'ModificationTime' are managed by downstream store.
 	Sync(upstream model.ResourceList, fs ...SyncOptionFunc) error
 }
 
@@ -38,12 +45,14 @@ func PrefilterBy(predicate func(r model.Resource) bool) SyncOptionFunc {
 }
 
 type syncResourceStore struct {
-	store.ResourceStore
+	log           logr.Logger
+	resourceStore store.ResourceStore
 }
 
-func NewSyncResourceStore(resourceStore store.ResourceStore) SyncResourceStore {
+func NewSyncResourceStore(log logr.Logger, resourceStore store.ResourceStore) ResourceSyncer {
 	return &syncResourceStore{
-		ResourceStore: resourceStore,
+		log:           log,
+		resourceStore: resourceStore,
 	}
 }
 
@@ -55,29 +64,25 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	if err != nil {
 		return err
 	}
-	if err := s.ResourceStore.List(ctx, downstream); err != nil {
+	if err := s.resourceStore.List(ctx, downstream); err != nil {
 		return err
 	}
 
 	if opts.Predicate != nil {
-		filtered, err := registry.Global().NewList(upstream.GetItemType())
-		if err != nil {
+		if filtered, err := filter(downstream, opts.Predicate); err != nil {
 			return err
+		} else {
+			downstream = filtered
 		}
-		for _, r := range downstream.GetItems() {
-			if opts.Predicate(r) {
-				if err := filtered.AddItem(r); err != nil {
-					return err
-				}
-			}
-		}
-		downstream = filtered
 	}
+
+	indexedUpstream := newIndexed(upstream)
+	indexedDownstream := newIndexed(downstream)
 
 	// 1. delete resources from store which are not represented in 'upstream'
 	onDelete := []model.Resource{}
 	for _, r := range downstream.GetItems() {
-		if !set(upstream.GetItems()).contains(model.MetaToResourceKey(r.GetMeta())) {
+		if indexedUpstream.get(model.MetaToResourceKey(r.GetMeta())) == nil {
 			onDelete = append(onDelete, r)
 		}
 	}
@@ -86,31 +91,38 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	onCreate := []model.Resource{}
 	onUpdate := []model.Resource{}
 	for _, r := range upstream.GetItems() {
-		if existing := set(downstream.GetItems()).get(model.MetaToResourceKey(r.GetMeta())); existing != nil {
+		existing := indexedDownstream.get(model.MetaToResourceKey(r.GetMeta()))
+		if existing == nil {
+			onCreate = append(onCreate, r)
+			continue
+		}
+		if !reflect.DeepEqual(existing.GetSpec(), r.GetSpec()) {
 			// we have to use meta of the current store during update
 			r.SetMeta(existing.GetMeta())
 			onUpdate = append(onUpdate, r)
-		} else {
-			onCreate = append(onCreate, r)
 		}
 	}
 
 	for _, r := range onDelete {
-		if err := s.ResourceStore.Delete(ctx, r, store.DeleteBy(model.MetaToResourceKey(r.GetMeta()))); err != nil {
+		rk := model.MetaToResourceKey(r.GetMeta())
+		s.log.Info("deleting a resource since it's no longer available in the upstream", "resourceKey", rk)
+		if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
 			return err
 		}
 	}
 
 	for _, r := range onCreate {
 		rk := model.MetaToResourceKey(r.GetMeta())
+		s.log.Info("creating a new resource from upstream", "resourceKey", rk)
 		r.SetMeta(nil)
-		if err := s.ResourceStore.Create(ctx, r, store.CreateBy(rk)); err != nil {
+		if err := s.resourceStore.Create(ctx, r, store.CreateBy(rk)); err != nil {
 			return err
 		}
 	}
 
 	for _, r := range onUpdate {
-		if err := s.ResourceStore.Update(ctx, r); err != nil {
+		s.log.Info("updating a resource", "resourceKey", model.MetaToResourceKey(r.GetMeta()))
+		if err := s.resourceStore.Update(ctx, r); err != nil {
 			return err
 		}
 	}
@@ -118,22 +130,33 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	return nil
 }
 
-type set []model.Resource
-
-func (s set) contains(rk model.ResourceKey) bool {
-	for _, r := range s {
-		if rk == model.MetaToResourceKey(r.GetMeta()) {
-			return true
+func filter(rs model.ResourceList, predicate func(r model.Resource) bool) (model.ResourceList, error) {
+	rv, err := registry.Global().NewList(rs.GetItemType())
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range rs.GetItems() {
+		if predicate(r) {
+			if err := rv.AddItem(r); err != nil {
+				return nil, err
+			}
 		}
 	}
-	return false
+	return rv, nil
 }
 
-func (s set) get(rk model.ResourceKey) model.Resource {
-	for _, r := range s {
-		if rk == model.MetaToResourceKey(r.GetMeta()) {
-			return r
-		}
+type indexed struct {
+	indexByResourceKey map[model.ResourceKey]model.Resource
+}
+
+func (i *indexed) get(rk model.ResourceKey) model.Resource {
+	return i.indexByResourceKey[rk]
+}
+
+func newIndexed(rs model.ResourceList) *indexed {
+	idxByRk := map[model.ResourceKey]model.Resource{}
+	for _, r := range rs.GetItems() {
+		idxByRk[model.MetaToResourceKey(r.GetMeta())] = r
 	}
-	return nil
+	return &indexed{indexByResourceKey: idxByRk}
 }

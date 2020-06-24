@@ -3,12 +3,11 @@ package reconcile
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/util/proto"
+	"github.com/Kong/kuma/pkg/kds/util"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
@@ -49,26 +48,5 @@ func (s *snapshotGenerator) getResources(context context.Context, typ model.Reso
 	if err := s.resourceManager.List(context, rlist); err != nil {
 		return nil, err
 	}
-	return convert(rlist)
-}
-
-func convert(rlist model.ResourceList) ([]envoy_types.Resource, error) {
-	rv := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
-	for _, r := range rlist.GetItems() {
-		pbany, err := proto.MarshalAnyDeterministic(r.GetSpec())
-		if err != nil {
-			return nil, err
-		}
-		rv = append(rv, &mesh_proto.KumaResource{
-			Meta: &mesh_proto.KumaResource_Meta{
-				Name:             r.GetMeta().GetName(),
-				Mesh:             r.GetMeta().GetMesh(),
-				CreationTime:     proto.MustTimestampProto(r.GetMeta().GetCreationTime()),
-				ModificationTime: proto.MustTimestampProto(r.GetMeta().GetModificationTime()),
-				Version:          r.GetMeta().GetVersion(),
-			},
-			Spec: pbany,
-		})
-	}
-	return rv, nil
+	return util.ToEnvoyResources(rlist)
 }

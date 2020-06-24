@@ -35,11 +35,35 @@ func (stream *MockServerStream) Recv() (*v2.DiscoveryRequest, error) {
 	return req, nil
 }
 
-func (stream *MockServerStream) ClientStream() *MockClientStream {
+func (stream *MockServerStream) ClientStream(stopCh chan struct{}) *MockClientStream {
+	sentCh := make(chan *v2.DiscoveryRequest)
+	recvCh := make(chan *v2.DiscoveryResponse)
+	go func() {
+		for {
+			r, more := <-sentCh
+			if more {
+				stream.RecvCh <- r
+			} else {
+				close(stream.RecvCh)
+				return
+			}
+		}
+	}()
+	go func() {
+		for {
+			select {
+			case <-stopCh:
+				close(recvCh)
+				return
+			case r := <-stream.SentCh:
+				recvCh <- r
+			}
+		}
+	}()
 	return &MockClientStream{
 		Ctx:    stream.Ctx,
-		SentCh: stream.RecvCh,
-		RecvCh: stream.SentCh,
+		SentCh: sentCh,
+		RecvCh: recvCh,
 	}
 }
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Kong/kuma/pkg/core"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -17,7 +19,8 @@ import (
 )
 
 var _ = Describe("SyncResourceStore", func() {
-	var s sync_store.SyncResourceStore
+	var syncer sync_store.ResourceSyncer
+	var resourceStore store.ResourceStore
 
 	meshBuilder := func(idx int) *mesh.MeshResource {
 		ca := fmt.Sprintf("ca-%d", idx)
@@ -42,7 +45,8 @@ var _ = Describe("SyncResourceStore", func() {
 	}
 
 	BeforeEach(func() {
-		s = sync_store.NewSyncResourceStore(memory.NewStore())
+		resourceStore = memory.NewStore()
+		syncer = sync_store.NewSyncResourceStore(core.Log, resourceStore)
 	})
 
 	It("should create new resources in empty store", func() {
@@ -54,11 +58,11 @@ var _ = Describe("SyncResourceStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		err := s.Sync(upstream)
+		err := syncer.Sync(upstream)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
-		err = s.List(context.Background(), actual)
+		err = resourceStore.List(context.Background(), actual)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Items).To(Equal(upstream.Items))
 	})
@@ -66,16 +70,16 @@ var _ = Describe("SyncResourceStore", func() {
 	It("should delete all resources", func() {
 		for i := 0; i < 10; i++ {
 			m := meshBuilder(i)
-			err := s.Create(context.Background(), m, store.CreateBy(model.MetaToResourceKey(m.GetMeta())))
+			err := resourceStore.Create(context.Background(), m, store.CreateBy(model.MetaToResourceKey(m.GetMeta())))
 			Expect(err).ToNot(HaveOccurred())
 		}
 
 		upstream := &mesh.MeshResourceList{}
-		err := s.Sync(upstream)
+		err := syncer.Sync(upstream)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
-		err = s.List(context.Background(), actual)
+		err = resourceStore.List(context.Background(), actual)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Items).To(BeEmpty())
 	})
@@ -83,7 +87,7 @@ var _ = Describe("SyncResourceStore", func() {
 	It("should delete resources which are not represented in upstream and create new", func() {
 		for i := 0; i < 10; i++ {
 			m := meshBuilder(i)
-			err := s.Create(context.Background(), m, store.CreateBy(model.MetaToResourceKey(m.GetMeta())))
+			err := resourceStore.Create(context.Background(), m, store.CreateBy(model.MetaToResourceKey(m.GetMeta())))
 			Expect(err).ToNot(HaveOccurred())
 		}
 
@@ -95,12 +99,15 @@ var _ = Describe("SyncResourceStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		err := s.Sync(upstream)
+		err := syncer.Sync(upstream)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
-		err = s.List(context.Background(), actual)
+		err = resourceStore.List(context.Background(), actual)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(actual.Items).To(Equal(upstream.Items))
+		Expect(len(actual.Items)).To(Equal(len(upstream.Items)))
+		for i, item := range actual.Items {
+			Expect(item.Spec).To(Equal(upstream.Items[i].Spec))
+		}
 	})
 })

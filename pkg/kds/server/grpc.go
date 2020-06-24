@@ -28,6 +28,10 @@ var (
 	_ component.Component = &grpcServer{}
 )
 
+func NewKDSServer(srv Server, config kds_config.KumaDiscoveryServerConfig) component.Component {
+	return &grpcServer{server: srv, config: config}
+}
+
 func (s *grpcServer) Start(stop <-chan struct{}) error {
 	var grpcOptions []grpc.ServerOption
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))

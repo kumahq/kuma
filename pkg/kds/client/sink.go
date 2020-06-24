@@ -22,14 +22,16 @@ type kdsSink struct {
 	resourceTypes []model.ResourceType
 	clientFactory ClientFactory
 	callbacks     *Callbacks
+	clusterName   string
 }
 
-func NewKDSSink(log logr.Logger, rt []model.ResourceType, factory ClientFactory, cb *Callbacks) component.Component {
+func NewKDSSink(log logr.Logger, clusterName string, rt []model.ResourceType, factory ClientFactory, cb *Callbacks) component.Component {
 	return &kdsSink{
 		log:           log,
 		resourceTypes: rt,
 		clientFactory: factory,
 		callbacks:     cb,
+		clusterName:   clusterName,
 	}
 }
 
@@ -60,8 +62,8 @@ func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 
 	for _, typ := range s.resourceTypes {
 		s.log.Info("sending DiscoveryRequest ...", "type", typ)
-		if err := stream.DiscoveryRequest("", typ); err != nil {
-			return errors.Wrap(err, "discovering failed ...")
+		if err := stream.DiscoveryRequest(s.clusterName, typ); err != nil {
+			return errors.Wrap(err, "discovering failed")
 		}
 	}
 
