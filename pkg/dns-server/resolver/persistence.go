@@ -25,13 +25,13 @@ func (p *DNSPersistence) Get() VIPList {
 	err := p.manager.Get(context.Background(), resource, store.GetByKey("kuma-internal-config", ""))
 	if err != nil {
 		//simpleDNSLog.Error(err, "unable to get stored VIP list")
-		return VIPList{}
+		return nil
 	}
 
 	err = json.Unmarshal([]byte(resource.Spec.Config), &viplist)
 	if err != nil {
 		simpleDNSLog.Error(err, "unable to unmarshall stored VIP list")
-		return VIPList{}
+		return nil
 	}
 
 	return viplist

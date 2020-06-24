@@ -44,12 +44,17 @@ func NewSimpleDNSResolver(domain, ip, port, cidr string, configm config_manager.
 		domain:  domain,
 		address: ip + ":" + port,
 		cidr:    cidr,
+		viplist: VIPList{},
 	}
 
 	resolver.handler = NewSimpleDNSHandler(resolver)
 	resolver.ipam = NewSimpleIPAM(cidr)
 	resolver.persistence = NewDNSPersistence(configm)
-	resolver.viplist = resolver.persistence.Get()
+
+	viplist := resolver.persistence.Get()
+	if viplist != nil {
+		resolver.viplist = viplist
+	}
 
 	return resolver, nil
 }
@@ -133,7 +138,8 @@ func (d *SimpleDNSResolver) SyncServices(services map[string]bool) (errs error) 
 	defer d.Unlock()
 
 	if !d.isLeader {
-		return errors.Errorf("Can't sync services when not a leader")
+		d.viplist = d.persistence.Get()
+		return nil
 	}
 
 	services = d.normalizeServiceMap(services)

@@ -18,8 +18,12 @@ import (
 
 var _ = Describe("DNS server", func() {
 
-	store := config_store.NewConfigStore(resources_memory.NewStore())
-	configm := config_manager.NewConfigManager(store)
+	var configm config_manager.ConfigManager
+
+	BeforeEach(func() {
+		store := config_store.NewConfigStore(resources_memory.NewStore())
+		configm = config_manager.NewConfigManager(store)
+	})
 
 	Describe("Network Operation", func() {
 
@@ -223,5 +227,62 @@ var _ = Describe("DNS server", func() {
 		_, err = resolver.ForwardLookupFQDN("example-five.mesh")
 		// then
 		Expect(err).To(HaveOccurred())
+	})
+
+	It("should sync leader and follower", func() {
+		// setup
+		leader, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "5653", "240.0.0.0/4", configm)
+		Expect(err).ToNot(HaveOccurred())
+		leader.SetElectedLeader(true)
+
+		follower, err := NewSimpleDNSResolver("mesh", "127.0.0.1", "15653", "240.0.0.0/4", configm)
+		Expect(err).ToNot(HaveOccurred())
+
+		services := map[string]bool{
+			"example-one.kuma-test.svc:80":   true,
+			"example-two.kuma-test.svc:80":   true,
+			"example-three.kuma-test.svc:80": true,
+			"example-four.kuma-test.svc:80":  true,
+			"example-five.kuma-test.svc:80":  true,
+		}
+
+		// given
+		err = leader.SyncServices(services)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = follower.SyncServices(services)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		ip1, err := leader.ForwardLookupFQDN("example-one.mesh")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		ip2, err := follower.ForwardLookupFQDN("example-one.mesh")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ip1).To(Equal(ip2))
+
+		// given
+		delete(services, "example-five.kuma-test.svc:80")
+
+		// when
+		err = leader.SyncServices(services)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		err = follower.SyncServices(services)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		_, err = leader.ForwardLookupFQDN("example-five.mesh")
+		// then
+		Expect(err).To(HaveOccurred())
+
+		// when
+		_, err = follower.ForwardLookupFQDN("example-five.mesh")
+		// then
+		Expect(err).To(HaveOccurred())
+
 	})
 })
