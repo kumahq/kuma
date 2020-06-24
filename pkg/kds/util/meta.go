@@ -16,6 +16,13 @@ type resourceMeta struct {
 	modificationTime *time.Time
 }
 
+func ResourceKeyToMeta(name, mesh string) model.ResourceMeta {
+	return &resourceMeta{
+		name: name,
+		mesh: mesh,
+	}
+}
+
 func kumaResourceMetaToResourceMeta(meta *mesh_proto.KumaResource_Meta) model.ResourceMeta {
 	return &resourceMeta{
 		name:             meta.Name,

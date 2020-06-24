@@ -131,4 +131,21 @@ var _ = Describe("Global Sync", func() {
 		closeFunc()
 	})
 
+	It("should support same dataplane names through clusters", func() {
+		dp1 := dataplaneFunc("kuma-cluster-1", "backend")
+		err := localStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp1}, store.CreateByKey("dp-1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp2 := dataplaneFunc("kuma-cluster-2", "web")
+		err = localStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp2}, store.CreateByKey("dp-1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(func() int {
+			actual := mesh.DataplaneResourceList{}
+			err := globalStore.List(context.Background(), &actual)
+			Expect(err).ToNot(HaveOccurred())
+			return len(actual.Items)
+		}, "3s", "100ms").Should(Equal(2))
+	})
+
 })

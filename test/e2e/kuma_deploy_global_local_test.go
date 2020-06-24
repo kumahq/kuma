@@ -77,6 +77,6 @@ var _ = Describe("Test Local and Global", func() {
 			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("kuma-test"), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("demo-client-"))
+		}, "5s", "500ms").Should(ContainSubstring("kuma-2-local.demo-client-"))
 	})
 })
