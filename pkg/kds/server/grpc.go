@@ -62,3 +62,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 		return err
 	}
 }
+
+func (s *grpcServer) NeedLeaderElection() bool {
+	return false
+}

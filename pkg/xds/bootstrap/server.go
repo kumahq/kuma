@@ -21,6 +21,10 @@ type BootstrapServer struct {
 	Generator BootstrapGenerator
 }
 
+func (b *BootstrapServer) NeedLeaderElection() bool {
+	return false
+}
+
 var _ component.Component = &BootstrapServer{}
 
 func (b *BootstrapServer) Start(stop <-chan struct{}) error {

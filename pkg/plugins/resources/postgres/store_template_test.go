@@ -3,15 +3,13 @@
 package postgres
 
 import (
-	"fmt"
-	"math/rand"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/Kong/kuma/pkg/config"
 	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/kuma/pkg/core/resources/store"
+	common_postgres "github.com/Kong/kuma/pkg/plugins/common/postgres"
 	test_store "github.com/Kong/kuma/pkg/test/store"
 )
 
@@ -21,7 +19,7 @@ var _ = Describe("PostgresStore template", func() {
 		err := config.Load("", &cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		dbName, err := createRandomDb(cfg)
+		dbName, err := common_postgres.CreateRandomDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		cfg.DbName = dbName
 
@@ -37,19 +35,3 @@ var _ = Describe("PostgresStore template", func() {
 	test_store.ExecuteStoreTests(createStore)
 	test_store.ExecuteOwnerTests(createStore)
 })
-
-func createRandomDb(cfg postgres.PostgresStoreConfig) (string, error) {
-	db, err := connectToDb(cfg)
-	if err != nil {
-		return "", err
-	}
-	dbName := fmt.Sprintf("kuma_%d", rand.Int())
-	statement := fmt.Sprintf("CREATE DATABASE %s", dbName)
-	if _, err = db.Exec(statement); err != nil {
-		return "", err
-	}
-	if err = db.Close(); err != nil {
-		return "", err
-	}
-	return dbName, err
-}

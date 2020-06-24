@@ -2,7 +2,6 @@ package clusters_test
 
 import (
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/envoy"
 	"github.com/Kong/kuma/pkg/xds/envoy/clusters"
 
 	. "github.com/onsi/ginkgo"
@@ -14,7 +13,7 @@ var _ = Describe("LbSubset", func() {
 
 	type testCase struct {
 		clusterName string
-		tags        []envoy.Tags
+		tags        [][]string
 		expected    string
 	}
 
@@ -33,13 +32,9 @@ var _ = Describe("LbSubset", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("LbSubset is empty if there is only a service tag", testCase{
+		Entry("LbSubset is empty if there are no tags", testCase{
 			clusterName: "backend",
-			tags: []envoy.Tags{
-				{
-					"service": "backend",
-				},
-			},
+			tags:        [][]string{},
 			expected: `
             connectTimeout: 5s
             edsClusterConfig:
@@ -50,20 +45,9 @@ var _ = Describe("LbSubset", func() {
 		}),
 		Entry("LbSubset is set when more than service tag is set", testCase{
 			clusterName: "backend",
-			tags: []envoy.Tags{
-				{
-					"service": "backend",
-					"version": "v1",
-				},
-				{
-					"service": "backend",
-					"version": "v2",
-				},
-				{
-					"service": "backend",
-					"version": "v3",
-					"cluster": "k8s-1",
-				},
+			tags: [][]string{
+				{"version"},
+				{"cluster", "version"},
 			},
 			expected: `
             connectTimeout: 5s

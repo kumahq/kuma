@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"strconv"
 
+	"github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
+
 	"github.com/Kong/kuma/pkg/clusters/poller"
 
 	"github.com/pkg/errors"
@@ -253,6 +255,9 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	}
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.SecretManager(), builder.CaManagers(), registry.Global(), validator)
 	customManagers[mesh.MeshType] = meshManager
+
+	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().General.ClusterName)
+	customManagers[mesh.DataplaneType] = dpManager
 
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
 	customManagers[mesh.DataplaneInsightType] = dpInsightManager

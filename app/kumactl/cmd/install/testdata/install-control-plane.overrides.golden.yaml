@@ -37,6 +37,10 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
+    # General configuration
+    general:
+      # Kuma Cluster name used to mark the local dataplane resources
+      clusterName: cluster-1
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -4531,6 +4535,18 @@ rules:
       - ""
     resources:
       - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
     verbs:
       - get
       - list

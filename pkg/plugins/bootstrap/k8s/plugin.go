@@ -10,6 +10,7 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_cache "sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
 )
@@ -35,9 +36,12 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 				return kube_client.New(config, options)
 			},
 			// Admission WebHook Server
-			Host:    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
-			Port:    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
-			CertDir: b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+			Host:                    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
+			Port:                    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
+			CertDir:                 b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+			LeaderElection:          true,
+			LeaderElectionID:        "kuma-cp-leader",
+			LeaderElectionNamespace: b.Config().Store.Kubernetes.SystemNamespace,
 		},
 	)
 	if err != nil {
@@ -53,6 +57,11 @@ type kubeComponentManager struct {
 }
 
 var _ component.Manager = &kubeComponentManager{}
+
+// Extra check that component.Component implements LeaderElectionRunnable so the leader election works so we won't break leader election on K8S when refactoring component.Component
+var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-chan struct{}) error {
+	return nil
+})
 
 func (k *kubeComponentManager) Add(components ...component.Component) error {
 	for _, c := range components {

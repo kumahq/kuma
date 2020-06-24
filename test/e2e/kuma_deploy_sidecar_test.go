@@ -9,7 +9,7 @@ import (
 	. "github.com/Kong/kuma/test/framework"
 )
 
-var _ = Describe("Test K8s deployment with `kumactl install control-plane`", func() {
+var _ = XDescribe("Test K8s deployment with `kumactl install control-plane`", func() {
 
 	var clusters Clusters
 

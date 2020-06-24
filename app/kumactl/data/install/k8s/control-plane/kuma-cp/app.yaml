@@ -88,6 +88,12 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
+{{- if .ClusterName }}
+    # General configuration
+    general:
+      # Kuma Cluster name used to mark the local dataplane resources
+      clusterName: {{ .ClusterName }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment

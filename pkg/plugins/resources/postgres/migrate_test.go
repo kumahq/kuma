@@ -6,6 +6,7 @@ import (
 	"github.com/Kong/kuma/pkg/config"
 	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/Kong/kuma/pkg/core/plugins"
+	common_postgres "github.com/Kong/kuma/pkg/plugins/common/postgres"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,7 +21,7 @@ var _ = Describe("Migrate", func() {
 		err := config.Load("", &cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		dbName, err := createRandomDb(cfg)
+		dbName, err := common_postgres.CreateRandomDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		cfg.DbName = dbName
 	})
@@ -31,14 +32,14 @@ var _ = Describe("Migrate", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ver).To(Equal(plugins.DbVersion(1589041445)))
+		Expect(ver).To(Equal(plugins.DbVersion(1592232449)))
 
 		// and when migrating again
 		ver, err = migrateDb(cfg)
 
 		// then
 		Expect(err).To(Equal(plugins.AlreadyMigrated))
-		Expect(ver).To(Equal(plugins.DbVersion(1589041445)))
+		Expect(ver).To(Equal(plugins.DbVersion(1592232449)))
 	})
 
 	It("should throw an error when trying to run migrations on newer migration version of DB than in Kuma", func() {
@@ -46,7 +47,7 @@ var _ = Describe("Migrate", func() {
 		_, err := migrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		sql, err := connectToDb(cfg)
+		sql, err := common_postgres.ConnectToDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		res, err := sql.Exec("UPDATE schema_migrations SET version = 9999999999")
 		Expect(err).ToNot(HaveOccurred())
@@ -56,7 +57,7 @@ var _ = Describe("Migrate", func() {
 		_, err = migrateDb(cfg)
 
 		// then
-		Expect(err).To(MatchError("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version 1589041445. Run newer version of Kuma"))
+		Expect(err).To(MatchError("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version 1592232449. Run newer version of Kuma"))
 	})
 
 	It("should indicate if db is migrated", func() {

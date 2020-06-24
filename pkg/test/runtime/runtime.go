@@ -16,6 +16,7 @@ import (
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
 	"github.com/Kong/kuma/pkg/dns-server/resolver"
 	"github.com/Kong/kuma/pkg/plugins/ca/builtin"
+	leader_memory "github.com/Kong/kuma/pkg/plugins/leader/memory"
 	"github.com/Kong/kuma/pkg/util/net"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -35,7 +36,7 @@ func (i TestRuntimeInfo) GetInstanceId() string {
 
 func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	builder := core_runtime.BuilderFor(cfg).
-		WithComponentManager(component.NewManager()).
+		WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())).
 		WithResourceStore(resources_memory.NewStore()).
 		WithXdsContext(core_xds.NewXdsContext())
 

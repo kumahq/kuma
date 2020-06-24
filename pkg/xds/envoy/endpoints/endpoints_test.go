@@ -96,6 +96,8 @@ var _ = Describe("Endpoints", func() {
                       filterMetadata:
                         envoy.lb:
                           region: us
+                        envoy.transport_socket_match:
+                          region: us
                   - endpoint:
                       address:
                         socketAddress:
@@ -105,7 +107,8 @@ var _ = Describe("Endpoints", func() {
                       filterMetadata:
                         envoy.lb:
                           region: eu
-`,
+                        envoy.transport_socket_match:
+                          region: eu`,
 			}),
 		)
 	})
