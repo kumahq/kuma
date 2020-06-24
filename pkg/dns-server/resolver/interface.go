@@ -11,4 +11,5 @@ type DNSResolver interface {
 	ForwardLookup(service string) (string, error)
 	ForwardLookupFQDN(name string) (string, error)
 	ReverseLookup(ip string) (string, error)
+	SetElectedLeader(elected bool)
 }

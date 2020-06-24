@@ -19,12 +19,16 @@ type (
 	VIPList           map[string]string
 	SimpleDNSResolver struct {
 		sync.RWMutex
-		domain  string
-		address string
-		cidr    string
-		viplist VIPList
-		handler DNSHandler
-		ipam    IPAM
+		domain   string
+		address  string
+		cidr     string
+		isLeader bool
+		viplist  VIPList
+		handler  DNSHandler
+		ipam     IPAM
+	}
+	ElectedDNSResolver struct {
+		resolver DNSResolver
 	}
 )
 
@@ -224,4 +228,26 @@ func (d *SimpleDNSResolver) serviceFromName(name string) (string, error) {
 	service := split[0]
 
 	return service, nil
+}
+
+func (d *SimpleDNSResolver) SetElectedLeader(elected bool) {
+	d.Lock()
+	defer d.Unlock()
+	simpleDNSLog.Info("DNS elected as a leader.")
+	d.isLeader = elected
+}
+
+func NewElectedDNSResolver(resolver DNSResolver) (*ElectedDNSResolver, error) {
+	return &ElectedDNSResolver{
+		resolver: resolver,
+	}, nil
+}
+
+func (e *ElectedDNSResolver) Start(stop <-chan struct{}) error {
+	e.resolver.SetElectedLeader(true)
+	return nil
+}
+
+func (e *ElectedDNSResolver) NeedLeaderElection() bool {
+	return true
 }
