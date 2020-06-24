@@ -65,8 +65,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "could not load the configuration")
 				return err
 			}
-			if cfg.Mode == config_core.Local && cfg.General.ClusterName == "" {
-				return errors.Errorf("setting cluster name in config or environment is mandatory in `local` mode")
+			if cfg.Mode == config_core.Remote && cfg.General.ClusterName == "" {
+				return errors.Errorf("setting cluster name in config or environment is mandatory in `remote` mode")
 			}
 			rt, err := bootstrap.Bootstrap(cfg)
 			if err != nil {
@@ -91,7 +91,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					return err
 				}
 				fallthrough
-			case config_core.Local:
+			case config_core.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
 					return err
@@ -151,6 +151,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 	}
 	// flags
 	cmd.PersistentFlags().StringVarP(&args.configPath, "config-file", "c", "", "configuration file")
-	cmd.PersistentFlags().StringVar(&args.kumaCpMode, "mode", config_core.Standalone, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "local", "global"))
+	cmd.PersistentFlags().StringVar(&args.kumaCpMode, "mode", config_core.Standalone, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
 	return cmd
 }

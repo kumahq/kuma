@@ -17,11 +17,11 @@ of their type - Kubernetes or Universal.
 
 Kuma Multicluster introduces a centralised mesh control of mutli-cluster deployments, unifying the management of Kubernetes
 and Universal Kuma Control planes. In this mode, the Kuma control plane is split into a central Global entity, and per-cluster
-Local Control planes, which replace the `kuma-cp` as used in Single Cluster mode.
+Remote Control planes, which replace the `kuma-cp` as used in Single Cluster mode.
 
 ### Installation
 
-The installation process consists of deploying a single Kuma Global and a Kuma Local Control Planes per cluster.
+The installation process consists of deploying a single Kuma Global and a Kuma Remote Control Planes per cluster.
 
 We do recommend running the Kuma Global on a dedicated Linux VM (Ubuntu, CentOS or RedHat preferred). The installation procedure is
 as simple as:
@@ -34,11 +34,11 @@ This will deploy kuma as a systemd service and run it accordingly. It will also 
 
 Enabling Kuma on a Kubernetes cluster and adding it to the global, assuming kubectl is pointing to the cluster:
 ```
-cluster > curl -L https://kuma.io/k8s_local.sh | sh -
+cluster > curl -L https://kuma.io/k8s_remote.sh | sh -
 
-The Kuma Local CP was installed in cluster my-k8s-cluster with token qt57zu.wuvqh64un13trr7x 
+The Kuma Remote CP was installed in cluster my-k8s-cluster with token qt57zu.wuvqh64un13trr7x 
 
-global > kumactl join --local qt57zu.wuvqh64un13trr7x
+global > kumactl join --remote qt57zu.wuvqh64un13trr7x
 
 Cluster my-k8s-cluster at IP was added to the global
 
@@ -46,15 +46,15 @@ Cluster my-k8s-cluster at IP was added to the global
 
 Similarly, joining a Universal cluster:
 ```
-cluster > curl -L https://kuma.io/uni_local.sh | sh -
+cluster > curl -L https://kuma.io/uni_remote.sh | sh -
 
-The Kuma Local CP was installed with token qt57zu.wuvqh64un13trr7x 
+The Kuma Remote CP was installed with token qt57zu.wuvqh64un13trr7x 
 
-global > kumactl join --local qt57zu.wuvqh64un13trr7x
+global > kumactl join --remote qt57zu.wuvqh64un13trr7x
 Cluster at IP 1.1.1.1 was added to the global.
 ```
 
-As Kuma Local exposes the same port and API to have local Dataplane management in Universal, adding new workloads
+As Kuma Remote exposes the same port and API to have remote Dataplane management in Universal, adding new workloads
 follows the standard procedure.
 
 ### Consuming services
@@ -119,7 +119,7 @@ request URLs to use the `.kuma` DNS zone, and ensure smooth cross-cluster experi
 ## Architecture
 
 The model decouples managing dataplanes in a clusters and managing policies for the whole mesh, with a top-level Kuma Global Control Plane that will handle
-the user-facing API and GUI requests. Each Cluster (Kubernetes or Universal) runs Kuma Local. The described solution
+the user-facing API and GUI requests. Each Cluster (Kubernetes or Universal) runs Kuma Remote. The described solution
 leverages the Universal configuraton model to the whole multi-cluster deployment, regardless of the actual type of
 the clusters managed with the Global Contol Plane.
 
@@ -144,7 +144,7 @@ The high-level architecture is depicted at the picture below.
           |                      |                       |                      |                       |
 +---------v----------+ +---------v----------+  +---------v----------+ +---------v----------+  +---------v----------+
 |       +----------+ | |       +----------+ |  |       +----------+ | |       +----------+ |  |       +----------+ |
-| ⎈ K8s |Kuma Local| | | ⚙ Uni |Kuma Local| |  | ⚙ Uni |Kuma Local| | | ⎈ K8s |Kuma Local| |  | ⎈ K8s |Kuma Local| |
+| ⎈ K8s |Kuma Remot| | | ⚙ Uni |Kuma Remot| |  | ⚙ Uni |Kuma Remot| | | ⎈ K8s |Kuma Remot| |  | ⎈ K8s |Kuma Remot| |
 |       +----------+ | |       +----------+ |  |       +----------+ | |       +----------+ |  |       +----------+ |
 |                    | |                    |  |                    | |                    |  |                    |
 | +----------------+ | | +----------------+ |  | +----------------+ | | +----------------+ |  | +----------------+ |
@@ -170,15 +170,15 @@ This is the top-level component that exposes central management point for contro
     * Does **not** handle any Dataplane registrations
     * Does **not** accept connections from Dataplanes (XDS/SDS etc.)
  * Southbound operations
-    * Periodically push the new resource updates to all registered Local CPs (policies and ingresses)
-    * Poll all registered Local CPs for their active registered Dataplanes (to have list in GUI)
+    * Periodically push the new resource updates to all registered Remote CPs (policies and ingresses)
+    * Poll all registered Remote CPs for their active registered Dataplanes (to have list in GUI)
 
-Communication format between Global and Local is Kuma Core Resource, therefore Kuma GLobal CP can be deployed either on Universal on Kubernetes.
+Communication format between Global and Remote is Kuma Core Resource, therefore Kuma GLobal CP can be deployed either on Universal on Kubernetes.
 
-### Local CP
+### Remote CP
 
-The Local CP is the termination point of the API requests to the Global. Its functionality includes:
- * Register the local available dataplanes (manual in Universal and automated in Kubernetes)
+The Remote CP is the termination point of the API requests to the Global. Its functionality includes:
+ * Register the available dataplanes (manual in Universal and automated in Kubernetes)
  * Receive the resource updates from the upstream (policies and dataplane ingress from other clusters) and stores the copy in their own storage.
  * Respond to polls for dumping the full dataplane available resources to upstream
  * Implements a DNS name resolver to ensure sustainable cross-cluster service name resolving
@@ -213,7 +213,7 @@ which is reachable by the other clusters in the Kuma Multicluster deployment.
 ```
 
 ### Ingress
-The Ingress resource plays a crucial role in the Multicluster Kuma architecture. It will be **automatically** created by the local Kuma Local CP upon the registration of a new Dataplane.
+The Ingress resource plays a crucial role in the Multicluster Kuma architecture. It will be **automatically** created by the Kuma Remote CP upon the registration of a new Dataplane.
 The Ingress resource is not the same as the Gateway, we still want the full fledged Kuma control over the traffic that passes between the clusters.
 
 This Dataplane will have inbounds for all services (not instances) available within the cluster (it has to include every possible tag set).
@@ -231,7 +231,7 @@ networking:
   - port: 18080 # picked automatically 
     tags:
       service: elastic
-      cluster: k8s-cluster-1 # cluster name will be provided when starting a Local CP and used here
+      cluster: k8s-cluster-1 # cluster name will be provided when starting a Remote CP and used here
   - port: 18081
     tags:
       service: redis
@@ -254,10 +254,10 @@ listeneres in Envoy's side-car.
 
 
 #### Kubernetes
-In order for the service consumers to have a predictable and controlled IP resolving, the Kuma Local CP also implements a DNS
+In order for the service consumers to have a predictable and controlled IP resolving, the Kuma Remote CP also implements a DNS
 resolver. It produces predictable responses, such that will be consistent with the generated oubound listeners for Envoy.
 Since Kubernetes 1.11, the de-facto standard DNS resolver is CoreDNS, and it is configured through a ConfigMap. 
-The Kuma Local CP Resolver is added like this:
+The Kuma Remote CP Resolver is added like this:
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -283,14 +283,14 @@ data:
     kuma:53 {
         errors
         cache 30
-        forward . 10.150.0.1 # the Kuma Local CP service IP
+        forward . 10.150.0.1 # the Kuma Remote CP service IP
     }
 ```
 
 #### Universal
 There is no DNS name resolving from the Application side on Universal. It always uses `localhost` in conjuction with the port 
 of the outbound section that was configured in the Dataplane entity.
-In the future, the Kuma Local CP Resolver can be used to allow for the workloads run in Universal to take advantage of the
+In the future, the Kuma Remote CP Resolver can be used to allow for the workloads run in Universal to take advantage of the
 `.kuma` DNS zone for globally accessing the named services.
 
 #### Avoiding name clashes
@@ -305,62 +305,62 @@ Idea how to migrate from having `service: backend.kuma-demo:1234` in resources t
 
 ## Implementation
 
-### Kuma Local CP registration
-Kuma Global CP will have list of all clusters, their gateways and Local CPs.
+### Kuma Remote CP registration
+Kuma Global CP will have list of all clusters, their gateways and Remote CPs.
 
 **Example:** Kuma global configuration:
 ```yaml
 clusters:
-- local:
-    address: 192.168.0.2 # Load balancer for many Local CPs in this cluster
+- remote:
+    address: 192.168.0.2 # Load balancer for many Remote CPs in this cluster
   gateway:
     address: 192.168.0.1 # Load balancer for many gateways in this cluster
-- local:
-    address: 192.168.2.2 # Load balancer for many Local CPs in this cluster
+- remote:
+    address: 192.168.2.2 # Load balancer for many Remote CPs in this cluster
   gateway:
     address: 192.168.2.1 # Load balancer for many gateways in this cluster
 ```
 
-The communication between the upstream API entities and the Kuma Local CP will be signed with a JWT token, to verify the integrity of its data. Additionally,
+The communication between the upstream API entities and the Kuma Remote CP will be signed with a JWT token, to verify the integrity of its data. Additionally,
 it will provide API security and allow only for the Kuma Global Northbound interface to be available for the users of the multicluster Kuma deployment.
 
 ### Synchronization
-Ideally communication between Global and Local will be held using XDS.
+Ideally communication between Global and Remote will be held using XDS.
 
 Given two clusters: `k8s-cluster-1`, `k8s-cluster-2`, the `k8s-cluster-1` needs to know only about Ingress of `k8s-cluster-2`.
 This means that XDS can be segmented and does not have to use all the dataplanes from `k8s-cluster-2`.
 Even if there are many instances of Ingresses in `k8s-cluster-2`, `k8s-cluster-1` needs to only know about one of them. It will use the gateway load balancer address described in section above.
 
-We need to take into account that both Local and Global CPs should be deployed with multiple instances.
+We need to take into account that both Remote and Global CPs should be deployed with multiple instances.
 Synchronization is a job that should be executed only by one instance.
-We need leader election either in Globals that will be pushing policies to Local CPs and polling Dataplanes or in Local CPs that will be pulling policies from Global and pushing Dataplanes to Local CPs.
+We need leader election either in Globals that will be pushing policies to Remote CPs and polling Dataplanes or in Remote CPs that will be pulling policies from Global and pushing Dataplanes to Remote CPs.
 
 Additionally, we need to block modifying/ignore policies that are created via `kubectl` in local K8S clusters. 
 
 ### Secrets
-The proposal is that all the secrets get synced from the Global down to the Local CPs.
-This way we ensure that CA is synchronized to Local CPs and new DPs can receive certificates even when Global is down.
+The proposal is that all the secrets get synced from the Global down to the Remote CPs.
+This way we ensure that CA is synchronized to Remote CPs and new DPs can receive certificates even when Global is down.
 
 This implies that synchronization process is secured by TLS + Auth.
 
 ### Binaries
-The Kuma Global, Kuma Local effectively split the implementation of the existing Kuma-CP. Therefore,
+The Kuma Global, Kuma Remote effectively split the implementation of the existing Kuma-CP. Therefore,
 the proposal is to effectively keep `kuma-cp` and add more options/flags to implement a different role. For example `kuma-cp --global` will effectively
 disable the newly added Southbound Operations and disable accepting Dataplane Registration on the Northbound Interface. 
 
-### Resource localisation
-The Kuma Local CP will leverage the cluster name passed when Local CP is running to tag all its Dataplanes and Ingress resources as a response to the Global's dataplane
+### Resource remoteisation
+The Kuma Remote CP will leverage the cluster name passed when Remote CP is running to tag all its Dataplanes and Ingress resources as a response to the Global's dataplane
 polling requests.
 
 ## Migration path
 The ability to extend an existing cluster with an additional one should be trivial. The migration path shall be detailed later.
 Roughly it includes the following stages:
- * replace the local Kuma-CP with Kuma Loocal CP
+ * replace the remote Kuma-CP with Kuma Loocal CP
  * deploy the new cluster(s) enabled for Multi-cluster
- * deploy the Kuma Global and register All the Kuma Local CPs
+ * deploy the Kuma Global and register All the Kuma Remote CPs
 
 ## Upgrade path
-Provide instructions which component should we upgrade first, Globals, Locals, DPs.
+Provide instructions which component should we upgrade first, Globals, Remotes, DPs.
 
 ## Disasters
 
@@ -370,13 +370,13 @@ Here are several scenarios what will happen if something goes wrong.
 
 * You cannot apply new/modify policies
 * You can still apply/start Dataplanes in local clusters and generate certs from the CA.
-* All clusters have local copy of policies - Local CPs can be restarted.
+* All clusters have remote copy of policies - Remote CPs can be restarted.
 
-### Local CP instances in one of the clusters are down
+### Remote CP instances in one of the clusters are down
 
 * You can apply new/modify policies
 * You can apply/start Dataplane in other clusters and generate certs from the CA.
-* You cannot apply/start Dataplanes in this local cluster. Also DPs that went down won't be removed from XDS (but they can be excluded with healthchecks)
+* You cannot apply/start Dataplanes in this remote cluster. Also DPs that went down won't be removed from XDS (but they can be excluded with healthchecks)
 
 ## Support for flat networking
 
@@ -384,17 +384,17 @@ We could also support flat networking with this architecture. Assuming there is 
 However, this won't be scalable, with hundreds of thousands Dataplanes we would have to generate XDS using all of them. 
 
 ## MVP
- * Global + Local CPs
+ * Global + Remote CPs
  * `.kuma` zone support for naming services
  * Exchanging policies over XDS
  * Fix `service: backend.kuma-demo:1234` intro more structured clusters
  * Universal
     * Kuma DP + separate
  * K8s
-    * kumactl install local (deploys local cp and ingress)
+    * kumactl install remote (deploys remote cp and ingress)
 
 ### Not in MVP
-* Blocking adding policies on local K8S clusters
+* Blocking adding policies on remote K8S clusters
 * Migration path
 * Upgrade path
 * Support for flat networking
