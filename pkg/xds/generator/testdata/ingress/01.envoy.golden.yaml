@@ -136,6 +136,7 @@ resources:
                   socketAddress:
                     address: 192.168.0.1
                     portValue: 2521
+              loadBalancingWeight: 1
               metadata:
                 filterMetadata:
                   envoy.lb:
@@ -149,6 +150,7 @@ resources:
                   socketAddress:
                     address: 192.168.0.2
                     portValue: 2521
+              loadBalancingWeight: 1
               metadata:
                 filterMetadata:
                   envoy.lb:

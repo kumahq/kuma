@@ -80,47 +80,9 @@ var _ = Describe("Ingress Dataplane", func() {
                     version: "2"
                     region: us
 `,
-			},
-			expected: `
-            - tags:
-                service: backend
-                region: eu
-                version: "1"
-            - tags:
-                service: backend
-                region: us
-                version: "2"
-`,
-		}))
-	Entry("duplicate service tags", testCase{
-		dataplanes: []string{
-			`
+				`
             type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              inbound:
-                - address: 127.0.0.1
-                  port: 1010
-                  servicePort: 2020
-                  tags:
-                    service: backend
-`,
-			`
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              inbound:
-                - address: 1.1.1.1
-                  port: 1010
-                  servicePort: 2020
-                  tags:
-                    service: backend
-`,
-			`
-            type: Dataplane
-            name: dp-2
+            name: dp-3
             mesh: default
             networking:
               inbound:
@@ -132,15 +94,20 @@ var _ = Describe("Ingress Dataplane", func() {
                     version: "2"
                     region: us
 `,
-		},
-		expected: `
-            - service: backend
-            - service: backend
+			},
+			expected: `
+            - instances: 1
               tags:
+                service: backend
+                region: eu
+                version: "1"
+            - instances: 2
+              tags:
+                service: backend
                 region: us
                 version: "2"
 `,
-	})
+		}))
 
 	It("should not update store if ingress haven't changed", func() {
 		ctx := context.Background()
@@ -152,6 +119,7 @@ var _ = Describe("Ingress Dataplane", func() {
 					Ingress: &mesh_proto.Dataplane_Networking_Ingress{
 						AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 							{
+								Instances: 1,
 								Tags: map[string]string{
 									"service": "backend",
 									"version": "v1",
@@ -159,6 +127,7 @@ var _ = Describe("Ingress Dataplane", func() {
 								},
 							},
 							{
+								Instances: 2,
 								Tags: map[string]string{
 									"service": "web",
 									"version": "v2",
@@ -181,6 +150,21 @@ var _ = Describe("Ingress Dataplane", func() {
 									"service": "backend",
 									"version": "v1",
 									"region":  "eu",
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags: map[string]string{
+									"service": "web",
+									"version": "v2",
+									"region":  "us",
 								},
 							},
 						},

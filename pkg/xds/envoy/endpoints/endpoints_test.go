@@ -58,8 +58,16 @@ var _ = Describe("Endpoints", func() {
 			Entry("without tags", testCase{
 				cluster: "127.0.0.1:8080",
 				endpoints: []core_xds.Endpoint{
-					{Target: "192.168.0.1", Port: 8081},
-					{Target: "192.168.0.2", Port: 8082},
+					{
+						Target: "192.168.0.1",
+						Port:   8081,
+						Weight: 2,
+					},
+					{
+						Target: "192.168.0.2",
+						Port:   8082,
+						Weight: 1,
+					},
 				},
 				expected: `
                 clusterName: 127.0.0.1:8080
@@ -70,18 +78,30 @@ var _ = Describe("Endpoints", func() {
                         socketAddress:
                           address: 192.168.0.1
                           portValue: 8081
+                    loadBalancingWeight: 2
                   - endpoint:
                       address:
                         socketAddress:
                           address: 192.168.0.2
                           portValue: 8082
+                    loadBalancingWeight: 1
 `,
 			}),
 			Entry("with tags", testCase{
 				cluster: "127.0.0.1:8080",
 				endpoints: []core_xds.Endpoint{
-					{Target: "192.168.0.1", Port: 8081, Tags: map[string]string{"service": "backend", "region": "us"}},
-					{Target: "192.168.0.2", Port: 8082, Tags: map[string]string{"service": "backend", "region": "eu"}},
+					{
+						Target: "192.168.0.1",
+						Port:   8081,
+						Tags:   map[string]string{"service": "backend", "region": "us"},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.2",
+						Port:   8082,
+						Tags:   map[string]string{"service": "backend", "region": "eu"},
+						Weight: 2,
+					},
 				},
 				expected: `
                 clusterName: 127.0.0.1:8080
@@ -98,6 +118,7 @@ var _ = Describe("Endpoints", func() {
                           region: us
                         envoy.transport_socket_match:
                           region: us
+                    loadBalancingWeight: 1
                   - endpoint:
                       address:
                         socketAddress:
@@ -108,7 +129,9 @@ var _ = Describe("Endpoints", func() {
                         envoy.lb:
                           region: eu
                         envoy.transport_socket_match:
-                          region: eu`,
+                          region: eu
+                    loadBalancingWeight: 2
+`,
 			}),
 		)
 	})
