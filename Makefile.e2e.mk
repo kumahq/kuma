@@ -337,7 +337,7 @@ wait/example/minikube: ## Minikube: Wait for demo setup to get ready
 
 wait/example/minikube/mtls: ## Minikube: Wait until incoming Listener and outgoing Cluster have been configured for mTLS
 	$(call kubectl_exec,kuma-demo,demo-client,demo-client) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,3000) ) -eq 1 ]]; then echo "listener has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for mTLS" ; exit 1'
-	$(call kubectl_exec,kuma-demo,demo-client,demo-client) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,demo-app.kuma-demo.svc:8000) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-demo,demo-client,demo-client) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,demo-app_kuma-demo_svc_8000) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
 
 curl/example/minikube: ## Minikube: Make sample requests to demo setup
 	$(call kubectl_exec,kuma-demo,demo-client,demo-client) $(call curl_example_client)
@@ -409,7 +409,7 @@ wait/traffic-routing/minikube/mtls: ## Minikube: Wait until incoming Listener an
 	@echo "Waiting until incoming Listener and outgoing Cluster have been configured for mTLS ..."
 	@echo
 	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,6060) ) -eq 1 ]]; then echo "listener has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener has not been configured for mTLS" ; exit 1'
-	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend.kuma-example.svc:7070) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend_kuma-example_svc_7070) ) -eq 1 ]]; then echo "cluster has been configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster has not been configured for mTLS" ; exit 1'
 
 apply/traffic-routing/minikube/no-mtls: ## Minikube: disable mTLS
 	@echo
@@ -422,7 +422,7 @@ wait/traffic-routing/minikube/no-mtls: ## Minikube: Wait until mTLS has been dis
 	@echo "Waiting until mTLS has been disabled on incoming Listener and outgoing Cluster ..."
 	@echo
 	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_listeners_count,inbound,6060) ) -eq 0 ]]; then echo "listener is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: listener is still configured for mTLS" ; exit 1'
-	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend.kuma-example.svc:7070) ) -eq 0 ]]; then echo "cluster is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for mTLS" ; exit 1'
+	$(call kubectl_exec,kuma-example,kuma-example-web,kuma-example-web) sh -c 'for i in `seq 1 10`; do echo -n "try #$$i: " ; if [[ $$( $(call envoy_active_mtls_clusters_count,kuma-example-backend_kuma-example_svc_7070) ) -eq 0 ]]; then echo "cluster is no longer configured for mTLS "; exit 0; fi; sleep 1; done; echo -e "\nError: cluster is still configured for mTLS" ; exit 1'
 
 wait/traffic-routing/minikube: ## Minikube: Wait for example setup for TrafficRoute to get ready
 	@echo

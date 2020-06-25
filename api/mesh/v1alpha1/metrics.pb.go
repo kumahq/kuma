@@ -145,10 +145,7 @@ type PrometheusMetricsBackendConfig struct {
 	// `service` tag is mandatory.
 	Tags map[string]string `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// If true then endpoints for scraping metrics won't require mTLS even if mTLS
-	// is enabled in Mesh. If nil, then it is treated as set to true.
-	//
-	// todo(jakubdyszkiewicz) In next major version of Kuma, change BoolValue to
-	// bool, so the default is false
+	// is enabled in Mesh. If nil, then it is treated as false.
 	SkipMTLS             *wrappers.BoolValue `protobuf:"bytes,4,opt,name=skipMTLS,proto3" json:"skipMTLS,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`

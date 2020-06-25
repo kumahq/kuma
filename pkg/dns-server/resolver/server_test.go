@@ -164,11 +164,11 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		services := map[string]bool{
-			"example-one.kuma-test.svc:80":   true,
-			"example-two.kuma-test.svc:80":   true,
-			"example-three.kuma-test.svc:80": true,
-			"example-four.kuma-test.svc:80":  true,
-			"example-five.kuma-test.svc:80":  true,
+			"example-one_kuma-test_svc_80":   true,
+			"example-two_kuma-test_svc_80":   true,
+			"example-three_kuma-test_svc_80": true,
+			"example-four_kuma-test_svc_80":  true,
+			"example-five_kuma-test_svc_80":  true,
 		}
 
 		// given
@@ -176,12 +176,12 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookupFQDN("example-one.mesh")
+		_, err = resolver.ForwardLookupFQDN("example-one_kuma-test_svc_80.mesh")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookupFQDN("example-five.mesh")
+		_, err = resolver.ForwardLookupFQDN("example-five_kuma-test_svc_80.mesh")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -191,7 +191,7 @@ var _ = Describe("DNS server", func() {
 		Expect(err).To(HaveOccurred())
 
 		// given
-		delete(services, "example-five.kuma-test.svc:80")
+		delete(services, "example-five_kuma-test_svc_80")
 
 		// when
 		err = resolver.SyncServices(services)
@@ -199,7 +199,7 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookupFQDN("example-five.mesh")
+		_, err = resolver.ForwardLookupFQDN("example-five_kuma-test_svc_80.mesh")
 		// then
 		Expect(err).To(HaveOccurred())
 
@@ -209,7 +209,7 @@ var _ = Describe("DNS server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = resolver.ForwardLookupFQDN("example-five.mesh")
+		_, err = resolver.ForwardLookupFQDN("example-five_kuma-test_svc_80.mesh")
 		// then
 		Expect(err).To(HaveOccurred())
 	})

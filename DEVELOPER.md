@@ -303,5 +303,5 @@ k8s    http://localhost:15681
 kumactl inspect dataplanes
 
 MESH      NAME                        TAGS                                                                          STATUS   LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
-default   demo-app-7cbbd658d5-dj9l6   app=demo-app pod-template-hash=7cbbd658d5 service=demo-app.kuma-demo.svc:80   Online   42m28s               42m28s             8               0
+default   demo-app-7cbbd658d5-dj9l6   app=demo-app pod-template-hash=7cbbd658d5 service=demo-app_kuma-demo_svc_80   Online   42m28s               42m28s             8               0
 ```

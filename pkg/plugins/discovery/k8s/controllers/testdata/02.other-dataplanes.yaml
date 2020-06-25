@@ -12,11 +12,11 @@ spec:
         tags:
           app: test-app
           pod-template-hash: 8646b8bbc8
-          service: test-app.playground.svc:80
+          service: test-app_playground_svc_80
       - port: 443
         tags:
           app: test-app
           pod-template-hash: 8646b8bbc8
-          service: test-app.playground.svc:443
+          service: test-app_playground_svc_443
     transparentProxying:
       redirectPort: 15001

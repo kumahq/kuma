@@ -46,9 +46,6 @@ message PrometheusMetricsBackendConfig {
   map<string, string> tags = 3;
 
   // If true then endpoints for scraping metrics won't require mTLS even if mTLS
-  // is enabled in Mesh. If nil, then it is treated as set to true.
-  //
-  // todo(jakubdyszkiewicz) In next major version of Kuma, change BoolValue to
-  // bool, so the default is false
+  // is enabled in Mesh. If nil, then it is treated as false.
   google.protobuf.BoolValue skipMTLS = 4;
 }

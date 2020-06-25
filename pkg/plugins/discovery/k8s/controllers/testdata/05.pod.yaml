@@ -5,7 +5,7 @@ metadata:
     app: example
     version: "0.1"
   annotations:
-    kuma.io/direct-access-services: "test-app.playground.svc:80,test-app.playground.svc:443"
+    kuma.io/direct-access-services: "test-app_playground_svc_80,test-app_playground_svc_443"
     kuma.io/transparent-proxying: "enabled"
 spec:
   containers:
