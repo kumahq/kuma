@@ -11,8 +11,8 @@ import (
 	"github.com/Kong/kuma/pkg/xds/envoy"
 )
 
-// tag sets represent map from tags (encoded as string) to number of instances
-type tagSets map[string]int
+// tagSets represent map from tags (encoded as string) to number of instances
+type tagSets map[string]uint32
 
 func (s tagSets) addInstanceOfTags(tags envoy.Tags) {
 	strTags := tags.String()
@@ -32,7 +32,7 @@ func (s tagSets) toAvailableServices() []*mesh_proto.Dataplane_Networking_Ingres
 		tags, _ := envoy.TagsFromString(key) // ignore error since we control how string looks like
 		result = append(result, &mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 			Tags:      tags,
-			Instances: uint32(s[key]),
+			Instances: s[key],
 		})
 	}
 	return result
