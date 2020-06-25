@@ -136,7 +136,7 @@ var _ = Describe("Test Remote and Global", func() {
 		// and
 		logs2, err := local.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(logs2).To(ContainSubstring("\"mode\":\"local\""))
+		Expect(logs2).To(ContainSubstring("\"mode\":\"remote\""))
 
 		namespace := func(namespace string) string {
 			return fmt.Sprintf(`
