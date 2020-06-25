@@ -101,7 +101,7 @@ var _ = Describe("KubernetesStore", func() {
 `).(*kube_core.ConfigMap)
 
 			// when
-			err := s.Create(context.Background(), config)
+			err := s.Create(context.Background(), config, store.CreateByKey("kuma-internal-config", ""))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

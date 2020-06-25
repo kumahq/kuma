@@ -46,9 +46,12 @@ func (p *DNSPersistence) Set(viplist VIPList) error {
 	resource := &config_model.ConfigResource{}
 	err := p.manager.Get(context.Background(), resource, store.GetByKey(dnsConfigKey, ""))
 	if err != nil {
-		err = p.manager.Create(context.Background(), resource, store.CreateByKey(dnsConfigKey, ""))
-		if err != nil {
-			return errors.Wrap(err, "could not create config")
+		if store.IsResourceNotFound(err) {
+			if err := p.manager.Create(context.Background(), resource, store.CreateByKey(dnsConfigKey, "")); err != nil {
+				return errors.Wrap(err, "could not create config")
+			}
+		} else {
+			return err
 		}
 	}
 

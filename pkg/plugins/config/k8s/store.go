@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -13,14 +14,15 @@ import (
 	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	config_store "github.com/Kong/kuma/pkg/core/config/store"
 	config_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	common_k8s "github.com/Kong/kuma/pkg/plugins/common/k8s"
 )
 
 var _ config_store.ConfigStore = &KubernetesStore{}
 
 const (
-	configMapName = "kuma-internal-config"
-	configMapKey  = "config"
+	configMapKey = "config"
 )
 
 type KubernetesStore struct {
@@ -37,13 +39,14 @@ func NewStore(client kube_client.Client, namespace string) (config_store.ConfigS
 }
 
 func (s *KubernetesStore) Create(ctx context.Context, r *config_model.ConfigResource, fs ...core_store.CreateOptionsFunc) error {
+	opts := core_store.NewCreateOptions(fs...)
 	cm := &kube_core.ConfigMap{
 		TypeMeta: kube_meta.TypeMeta{
 			Kind:       "ConfigMap",
 			APIVersion: "v1",
 		},
 		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      configMapName,
+			Name:      opts.Name,
 			Namespace: s.namespace,
 		},
 		Immutable: nil,
@@ -51,7 +54,11 @@ func (s *KubernetesStore) Create(ctx context.Context, r *config_model.ConfigReso
 			configMapKey: r.Spec.Config,
 		},
 	}
-	return s.client.Create(context.Background(), cm)
+	if err := s.client.Create(context.Background(), cm); err != nil {
+		return err
+	}
+	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
+	return nil
 }
 func (s *KubernetesStore) Update(ctx context.Context, r *config_model.ConfigResource, fs ...core_store.UpdateOptionsFunc) error {
 	cm := &kube_core.ConfigMap{
@@ -60,7 +67,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r *config_model.ConfigReso
 			APIVersion: "v1",
 		},
 		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      configMapName,
+			Name:      r.GetMeta().GetName(),
 			Namespace: s.namespace,
 		},
 		Immutable: nil,
@@ -68,16 +75,21 @@ func (s *KubernetesStore) Update(ctx context.Context, r *config_model.ConfigReso
 			configMapKey: r.Spec.Config,
 		},
 	}
-	return s.client.Update(context.Background(), cm)
+	if err := s.client.Update(context.Background(), cm); err != nil {
+		return err
+	}
+	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
+	return nil
 }
 func (s *KubernetesStore) Delete(ctx context.Context, r *config_model.ConfigResource, fs ...core_store.DeleteOptionsFunc) error {
+	opts := core_store.NewDeleteOptions(fs...)
 	cm := &kube_core.ConfigMap{
 		TypeMeta: kube_meta.TypeMeta{
 			Kind:       "ConfigMap",
 			APIVersion: "v1",
 		},
 		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      configMapName,
+			Name:      opts.Name,
 			Namespace: s.namespace,
 		},
 		Immutable: nil,
@@ -97,6 +109,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r *config_model.ConfigResourc
 		return errors.Wrap(err, "failed to get k8s Config")
 	}
 	r.Spec.Config = cm.Data[configMapKey]
+	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil
 }
 func (s *KubernetesStore) List(ctx context.Context, rs *config_model.ConfigResourceList, fs ...core_store.ListOptionsFunc) error {
@@ -104,7 +117,6 @@ func (s *KubernetesStore) List(ctx context.Context, rs *config_model.ConfigResou
 
 	fields := kube_client.MatchingFields{
 		"type": "ConfigMap",
-		"name": configMapName,
 	}
 	if err := s.client.List(ctx, cmlist, kube_client.InNamespace(s.namespace), fields); err != nil {
 		return errors.Wrap(err, "failed to list k8s internal config")
@@ -114,7 +126,34 @@ func (s *KubernetesStore) List(ctx context.Context, rs *config_model.ConfigResou
 			Spec: system_proto.Config{
 				Config: cm.Data[configMapKey],
 			},
+			Meta: &KubernetesMetaAdapter{cm.ObjectMeta},
 		})
 	}
 	return nil
+}
+
+var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
+
+type KubernetesMetaAdapter struct {
+	kube_meta.ObjectMeta
+}
+
+func (m *KubernetesMetaAdapter) GetNameExtensions() core_model.ResourceNameExtensions {
+	return common_k8s.ResourceNameExtensions(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
+}
+
+func (m *KubernetesMetaAdapter) GetVersion() string {
+	return m.ObjectMeta.GetResourceVersion()
+}
+
+func (m *KubernetesMetaAdapter) GetMesh() string {
+	return ""
+}
+
+func (m *KubernetesMetaAdapter) GetCreationTime() time.Time {
+	return m.GetObjectMeta().GetCreationTimestamp().Time
+}
+
+func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
+	return m.GetObjectMeta().GetCreationTimestamp().Time
 }
