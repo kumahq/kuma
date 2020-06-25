@@ -1,0 +1,16 @@
+apiVersion: v2
+name: kuma
+version: 0.1.0
+description: A Helm chart for Kubernetes
+keywords:
+  - service mesh
+  - control plane
+home: https://kuma.io
+maintainers:
+  - name: Tharun R
+    email: rajendrantharun@live.com
+    url: https://github.com/tharun208
+engine: gotpl
+icon: https://kuma.io/images/brand/kuma-logo-new.svg
+appVersion: 0.5.0
+type: application
