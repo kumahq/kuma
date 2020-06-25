@@ -67,8 +67,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if err := core.ValidateCpMode(args.KumaCpMode); err != nil {
 				return err
 			}
-			if args.KumaCpMode == core.Local && args.ClusterName == "" {
-				return errors.Errorf("--cluster-name is mandatory with `local` mode")
+			if args.KumaCpMode == core.Remote && args.ClusterName == "" {
+				return errors.Errorf("--cluster-name is mandatory with `remote` mode")
 			}
 			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
 				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
@@ -147,7 +147,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().BoolVar(&args.CNIEnabled, "cni-enabled", args.CNIEnabled, "install Kuma with CNI instead of proxy init container")
 	cmd.Flags().StringVar(&args.CNIImage, "cni-image", args.CNIImage, "image of Kuma CNI component, if CNIEnabled equals true")
 	cmd.Flags().StringVar(&args.CNIVersion, "cni-version", args.CNIVersion, "version of the CNIImage")
-	cmd.Flags().StringVar(&args.KumaCpMode, "mode", args.KumaCpMode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "local", "global"))
+	cmd.Flags().StringVar(&args.KumaCpMode, "mode", args.KumaCpMode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
 	cmd.Flags().StringVar(&args.ClusterName, "cluster-name", args.ClusterName, "set the Kuma cluster name")
 	return cmd
 }

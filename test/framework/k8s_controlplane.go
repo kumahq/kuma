@@ -102,7 +102,7 @@ func (c *K8sControlPlane) AddCluster(name, url string) error {
 	}
 
 	cfg.KumaClusters.Clusters = append(cfg.KumaClusters.Clusters, &clusters.ClusterConfig{
-		Local: clusters.EndpointConfig{
+		Remote: clusters.EndpointConfig{
 			Address: url,
 		},
 		Ingress: clusters.EndpointConfig{
@@ -196,7 +196,7 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
-	if c.mode == core.Local {
+	if c.mode == core.Remote {
 		return nil
 	}
 
@@ -268,7 +268,7 @@ func (c *K8sControlPlane) InjectDNS() error {
 		yaml)
 }
 
-// A naive implementation to find the URL where Local CP exposes its API
+// A naive implementation to find the URL where Remote CP exposes its API
 func (c *K8sControlPlane) GetHostAPI() string {
 	pod := c.GetKumaCPPods()[0]
 

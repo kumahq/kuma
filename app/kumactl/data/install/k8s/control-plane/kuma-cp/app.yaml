@@ -9,7 +9,7 @@ spec:
   ports:
   - port: 5681
     name: http-api-server
-{{- if ne .KumaCpMode "local" }}
+{{- if ne .KumaCpMode "remote" }}
   - port: 5683
     name: gui-server
 {{- end }}
@@ -33,19 +33,19 @@ spec:
 {{- end }}
   selector:
     app: kuma-control-plane
-{{- if eq .KumaCpMode "local" }}
+{{- if eq .KumaCpMode "remote" }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: global-local-sync
+  name: global-remote-sync
   namespace: {{ .Namespace }}
 spec:
   type: NodePort
   ports:
     - port: 5685
       nodePort: 30681
-      name: global-local-sync
+      name: global-remote-sync
   selector:
     app: kuma-control-plane
 {{- end }}
@@ -91,7 +91,7 @@ data:
 {{- if .ClusterName }}
     # General configuration
     general:
-      # Kuma Cluster name used to mark the local dataplane resources
+      # Kuma Cluster name used to mark the remote dataplane resources
       clusterName: {{ .ClusterName }}
 {{- end }}
 ---
@@ -164,7 +164,7 @@ spec:
         - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
         ports:
         - containerPort: 5681
-{{- if ne .KumaCpMode "local" }}
+{{- if ne .KumaCpMode "remote" }}
         - containerPort: 5683
 {{- end }}
 {{- if ne .KumaCpMode "global" }}

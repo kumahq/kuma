@@ -118,7 +118,7 @@ func (o *KumactlOptions) KumactlInstallCP(mode ...string) (string, error) {
 
 	for _, m := range mode {
 		args = append(args, "--mode", m)
-		if m == core.Local {
+		if m == core.Remote {
 			args = append(args, "--cluster-name", o.CPName)
 		}
 	}

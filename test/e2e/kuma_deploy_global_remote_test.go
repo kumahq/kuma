@@ -3,9 +3,11 @@ package e2e_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Kong/kuma/pkg/clusters/poller"
-	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"net/http"
+
+	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
+
+	"github.com/Kong/kuma/pkg/clusters/poller"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -15,7 +17,7 @@ import (
 	. "github.com/Kong/kuma/test/framework"
 )
 
-var _ = Describe("Test Local and Global", func() {
+var _ = Describe("Test Remote and Global", func() {
 	var clusters Clusters
 
 	BeforeEach(func() {
@@ -40,7 +42,7 @@ var _ = Describe("Test Local and Global", func() {
 	})
 
 	// todo (lobkoviya): implement Cluster polling based on KDS
-	XIt("Should deploy Local and Global on 2 clusters", func() {
+	XIt("Should deploy Remote and Global on 2 clusters", func() {
 		// given
 		c1 := clusters.GetCluster(Kuma1)
 		c2 := clusters.GetCluster(Kuma2)
@@ -48,7 +50,7 @@ var _ = Describe("Test Local and Global", func() {
 		global, err := c1.DeployKuma(core.Global)
 		Expect(err).ToNot(HaveOccurred())
 
-		local, err := c2.DeployKuma(core.Local)
+		remote, err := c2.DeployKuma(core.Remote)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -61,7 +63,7 @@ var _ = Describe("Test Local and Global", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.AddCluster(local.GetName(), local.GetHostAPI())
+		err = global.AddCluster(remote.GetName(), remote.GetHostAPI())
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c1.RestartKuma()
@@ -73,9 +75,9 @@ var _ = Describe("Test Local and Global", func() {
 		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))
 
 		// and
-		logs2, err := local.GetKumaCPLogs()
+		logs2, err := remote.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(logs2).To(ContainSubstring("\"mode\":\"local\""))
+		Expect(logs2).To(ContainSubstring("\"mode\":\"remote\""))
 
 		// when
 		status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
@@ -89,7 +91,7 @@ var _ = Describe("Test Local and Global", func() {
 
 		found := false
 		for _, cluster := range clustersStatus {
-			if cluster.URL == local.GetHostAPI() {
+			if cluster.URL == remote.GetHostAPI() {
 				Expect(cluster.Active).To(BeTrue())
 				found = true
 				break
@@ -107,7 +109,7 @@ var _ = Describe("Test Local and Global", func() {
 		global, err := c1.DeployKuma(core.Global)
 		Expect(err).ToNot(HaveOccurred())
 
-		local, err := c2.DeployKuma(core.Local)
+		local, err := c2.DeployKuma(core.Remote)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

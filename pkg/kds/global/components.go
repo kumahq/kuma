@@ -31,9 +31,9 @@ func SetupComponent(rt runtime.Runtime) error {
 	}
 
 	for _, cluster := range rt.Config().KumaClusters.Clusters {
-		log := kdsDataplaneSinkLog.WithValues("clusterIP", cluster.Local.Address)
+		log := kdsDataplaneSinkLog.WithValues("clusterIP", cluster.Remote.Address)
 		dataplaneSink := client.NewKDSSink(log, rt.Config().General.ClusterName, resourceTypes,
-			clientFactory(cluster.Local.Address), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore))
+			clientFactory(cluster.Remote.Address), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore))
 		if err := rt.Add(component.NewResilientComponent(log, dataplaneSink)); err != nil {
 			return err
 		}
