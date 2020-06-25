@@ -1,4 +1,4 @@
-package resolver_test
+package dns_test
 
 import (
 	"testing"

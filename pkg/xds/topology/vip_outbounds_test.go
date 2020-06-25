@@ -1,14 +1,10 @@
 package topology_test
 
 import (
+	"fmt"
 	"strconv"
 
-	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
-	config_store "github.com/Kong/kuma/pkg/core/config/store"
-	resources_memory "github.com/Kong/kuma/pkg/plugins/resources/memory"
-
-	"github.com/Kong/kuma/pkg/dns-server/resolver"
-	"github.com/Kong/kuma/pkg/test"
+	"github.com/Kong/kuma/pkg/dns"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -20,9 +16,6 @@ import (
 )
 
 var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
-
-	store := config_store.NewConfigStore(resources_memory.NewStore())
-	configm := config_manager.NewConfigManager(store)
 
 	It("should update outbounds", func() {
 		dataplane := &core_mesh.DataplaneResource{
@@ -46,21 +39,15 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 		}
 
 		// setup
-		p, err := test.GetFreePort()
-		Expect(err).ToNot(HaveOccurred())
-		port := strconv.Itoa(p)
-
-		resolver, err := resolver.NewSimpleDNSResolver("mesh", "127.0.0.1", port, "240.0.0.0/4", configm)
-		Expect(err).ToNot(HaveOccurred())
-		resolver.SetElectedLeader(true)
+		resolver := dns.NewDNSResolver("mesh")
 
 		// given
 		dataplanes := core_mesh.DataplaneResourceList{}
+		vipList := dns.VIPList{}
 		for i := 1; i <= 5; i++ {
-
 			service := "service-" + strconv.Itoa(i)
-			vip, err := resolver.AddService(service)
-			Expect(err).ToNot(HaveOccurred())
+			vip := fmt.Sprintf("240.0.0.%d", i)
+			vipList[service] = vip
 
 			dataplanes.Items = append(dataplanes.Items, &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
@@ -82,9 +69,10 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 				},
 			})
 		}
+		resolver.SetVIPs(vipList)
 
 		// when
-		err = topology.PatchDataplaneWithVIPOutbounds(dataplane, &dataplanes, resolver)
+		err := topology.PatchDataplaneWithVIPOutbounds(dataplane, &dataplanes, resolver)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and

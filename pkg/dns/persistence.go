@@ -1,8 +1,10 @@
-package resolver
+package dns
 
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/pkg/errors"
 
 	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
 	config_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
@@ -19,44 +21,46 @@ func NewDNSPersistence(manager config_manager.ConfigManager) *DNSPersistence {
 	}
 }
 
-func (p *DNSPersistence) Get() VIPList {
+const dnsConfigKey = "kuma-dns-vips"
+
+func (p *DNSPersistence) Get() (VIPList, error) {
 	viplist := VIPList{}
 	resource := &config_model.ConfigResource{}
-	err := p.manager.Get(context.Background(), resource, store.GetByKey("kuma-internal-config", ""))
+	err := p.manager.Get(context.Background(), resource, store.GetByKey(dnsConfigKey, ""))
 	if err != nil {
-		//simpleDNSLog.Error(err, "unable to get stored VIP list")
-		return nil
+		if store.IsResourceNotFound(err) {
+			return viplist, nil
+		}
+		return nil, err
 	}
 
 	err = json.Unmarshal([]byte(resource.Spec.Config), &viplist)
 	if err != nil {
-		simpleDNSLog.Error(err, "unable to unmarshall stored VIP list")
-		return nil
+		return nil, errors.Wrap(err, "could not unmarshal")
 	}
 
-	return viplist
+	return viplist, nil
 }
 
-func (p *DNSPersistence) Set(viplist VIPList) {
+func (p *DNSPersistence) Set(viplist VIPList) error {
 	resource := &config_model.ConfigResource{}
-	err := p.manager.Get(context.Background(), resource, store.GetByKey("kuma-internal-config", ""))
+	err := p.manager.Get(context.Background(), resource, store.GetByKey(dnsConfigKey, ""))
 	if err != nil {
-		err = p.manager.Create(context.Background(), resource, store.CreateByKey("kuma-internal-config", ""))
+		err = p.manager.Create(context.Background(), resource, store.CreateByKey(dnsConfigKey, ""))
 		if err != nil {
-			simpleDNSLog.Error(err, "unable to create resource for VIP list")
+			return errors.Wrap(err, "could not create config")
 		}
 	}
 
 	jsonBytes, err := json.Marshal(viplist)
 	if err != nil {
-		simpleDNSLog.Error(err, "unable to marshall VIP list")
-		return
+		return errors.Wrap(err, "unable to marshall VIP list")
 	}
 	resource.Spec.Config = string(jsonBytes)
 
 	err = p.manager.Update(context.Background(), resource)
 	if err != nil {
-		simpleDNSLog.Error(err, "unable to update VIP list")
-		return
+		return errors.Wrap(err, "unable to update VIP list")
 	}
+	return nil
 }

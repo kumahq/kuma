@@ -5,7 +5,7 @@ import (
 
 	"github.com/Kong/kuma/pkg/clusters/poller"
 
-	"github.com/Kong/kuma/pkg/dns-server/resolver"
+	"github.com/Kong/kuma/pkg/dns"
 
 	"github.com/pkg/errors"
 
@@ -30,7 +30,7 @@ type BuilderContext interface {
 	SecretManager() secret_manager.SecretManager
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
-	DNSResolver() resolver.DNSResolver
+	DNSResolver() dns.DNSResolver
 	Clusters() poller.ClusterStatusPoller
 	ConfigManager() config_manager.ConfigManager
 }
@@ -49,7 +49,7 @@ type Builder struct {
 	xds      core_xds.XdsContext
 	dsl      datasource.Loader
 	ext      context.Context
-	dns      resolver.DNSResolver
+	dns      dns.DNSResolver
 	clusters poller.ClusterStatusPoller
 	configm  config_manager.ConfigManager
 	*runtimeInfo
@@ -116,7 +116,7 @@ func (b *Builder) WithExtensions(ext context.Context) *Builder {
 	return b
 }
 
-func (b *Builder) WithDNSResolver(dns resolver.DNSResolver) *Builder {
+func (b *Builder) WithDNSResolver(dns dns.DNSResolver) *Builder {
 	b.dns = dns
 	return b
 }
@@ -207,7 +207,7 @@ func (b *Builder) DataSourceLoader() datasource.Loader {
 func (b *Builder) Extensions() context.Context {
 	return b.ext
 }
-func (b *Builder) DNSResolver() resolver.DNSResolver {
+func (b *Builder) DNSResolver() dns.DNSResolver {
 	return b.dns
 }
 func (b *Builder) Clusters() poller.ClusterStatusPoller {

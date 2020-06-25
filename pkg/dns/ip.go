@@ -1,4 +1,4 @@
-package resolver
+package dns
 
 import (
 	"net"
@@ -15,13 +15,13 @@ type SimpleIPAM struct {
 	ipam.IPAM
 }
 
-func NewSimpleIPAM(cidr string) IPAM {
+func NewSimpleIPAM(cidr string) (IPAM, error) {
 	newIPAM, err := ipam.New(cidr)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &SimpleIPAM{*newIPAM}
+	return &SimpleIPAM{*newIPAM}, nil
 }
 
 func (i *SimpleIPAM) AllocateIP() (string, error) {
