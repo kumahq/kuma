@@ -2,6 +2,7 @@ package global
 
 import (
 	"fmt"
+	"github.com/Kong/kuma/pkg/config/core/resources/store"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
@@ -10,7 +11,7 @@ import (
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 	"github.com/Kong/kuma/pkg/kds/client"
-	"github.com/Kong/kuma/pkg/kds/store"
+	sync_store "github.com/Kong/kuma/pkg/kds/store"
 	"github.com/Kong/kuma/pkg/kds/util"
 )
 
@@ -20,7 +21,7 @@ var (
 )
 
 func SetupComponent(rt runtime.Runtime) error {
-	syncStore := store.NewSyncResourceStore(kdsDataplaneSinkLog, rt.ResourceStore())
+	syncStore := sync_store.NewSyncResourceStore(kdsDataplaneSinkLog, rt.ResourceStore())
 
 	clientFactory := func(clusterIP string) client.ClientFactory {
 		return func() (kdsClient client.KDSClient, err error) {
@@ -30,7 +31,8 @@ func SetupComponent(rt runtime.Runtime) error {
 
 	for _, cluster := range rt.Config().KumaClusters.Clusters {
 		log := kdsDataplaneSinkLog.WithValues("clusterIP", cluster.Local.Address)
-		dataplaneSink := client.NewKDSSink(log, rt.Config().General.ClusterName, resourceTypes, clientFactory(cluster.Local.Address), Callbacks(syncStore))
+		dataplaneSink := client.NewKDSSink(log, rt.Config().General.ClusterName, resourceTypes,
+			clientFactory(cluster.Local.Address), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore))
 		if err := rt.Add(component.NewResilientComponent(log, dataplaneSink)); err != nil {
 			return err
 		}
@@ -38,7 +40,7 @@ func SetupComponent(rt runtime.Runtime) error {
 	return nil
 }
 
-func Callbacks(s store.ResourceSyncer) *client.Callbacks {
+func Callbacks(s sync_store.ResourceSyncer, k8sStore bool) *client.Callbacks {
 	clusterTag := func(r model.Resource) string {
 		return r.GetSpec().(*mesh_proto.Dataplane).GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ClusterTag]
 	}
@@ -52,6 +54,15 @@ func Callbacks(s store.ResourceSyncer) *client.Callbacks {
 		}
 	}
 
+	addSuffixToName := func(suffix string) func(r model.Resource) {
+		return func(r model.Resource) {
+			newName := fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)
+			// method Sync takes into account only 'Name' and 'Mesh' that why we can set name like this
+			m := util.ResourceKeyToMeta(newName, r.GetMeta().GetMesh())
+			r.SetMeta(m)
+		}
+	}
+
 	return &client.Callbacks{
 		OnResourcesReceived: func(rs model.ResourceList) error {
 			if len(rs.GetItems()) == 0 {
@@ -59,7 +70,10 @@ func Callbacks(s store.ResourceSyncer) *client.Callbacks {
 			}
 			cluster := clusterTag(rs.GetItems()[0])
 			forEach(rs.GetItems()).apply(addPrefixToName(cluster))
-			return s.Sync(rs, store.PrefilterBy(func(r model.Resource) bool {
+			if k8sStore {
+				forEach(rs.GetItems()).apply(addSuffixToName("default"))
+			}
+			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 				return cluster == clusterTag(r)
 			}))
 		},

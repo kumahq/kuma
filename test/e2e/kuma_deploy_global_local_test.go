@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -70,13 +71,46 @@ var _ = Describe("Test Local and Global", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs2).To(ContainSubstring("\"mode\":\"local\""))
 
-		err = DemoClient()(c2)
+		namespace := func(namespace string) string {
+			return fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+`, namespace)
+		}
+		dp := func(cluster, namespace, name string) string {
+			return fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+mesh: default
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+      - port: 12343
+        tags:
+          service: backend
+          cluster: %s
+    outbound:
+      - port: 1212
+        tags:
+          service: web
+`, name, namespace, cluster)
+		}
+
+		err = Yaml(namespace("custom-ns"))(c2)
+		Expect(err).ToNot(HaveOccurred())
+		err = Yaml(dp("kuma-2-local", "custom-ns", "dp-1", ))(c2)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() string {
-			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("kuma-test"), "get", "dataplanes")
+			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-local.demo-client-"))
+		}, "5s", "500ms").Should(ContainSubstring("kuma-2-local.dp-1.custom-ns"))
 	})
 })
