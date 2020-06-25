@@ -46,7 +46,7 @@ var _ = Describe("SyncResourceStore", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		syncer = sync_store.NewSyncResourceStore(core.Log, resourceStore)
+		syncer = sync_store.NewResourceSyncer(core.Log, resourceStore)
 	})
 
 	It("should create new resources in empty store", func() {

@@ -41,7 +41,7 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		globalStore = memory.NewStore()
-		globalSyncer = sync_store.NewSyncResourceStore(core.Log, globalStore)
+		globalSyncer = sync_store.NewResourceSyncer(core.Log, globalStore)
 		stopCh := make(chan struct{})
 		clientStreams := []*grpc.MockClientStream{}
 		for _, ss := range serverStreams {

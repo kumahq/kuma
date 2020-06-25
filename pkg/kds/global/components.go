@@ -22,7 +22,7 @@ var (
 )
 
 func SetupComponent(rt runtime.Runtime) error {
-	syncStore := sync_store.NewSyncResourceStore(kdsDataplaneSinkLog, rt.ResourceStore())
+	syncStore := sync_store.NewResourceSyncer(kdsDataplaneSinkLog, rt.ResourceStore())
 
 	clientFactory := func(clusterIP string) client.ClientFactory {
 		return func() (kdsClient client.KDSClient, err error) {
@@ -46,33 +46,17 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool) *client.Callbacks {
 		return r.GetSpec().(*mesh_proto.Dataplane).GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ClusterTag]
 	}
 
-	addPrefixToName := func(prefix string) func(r model.Resource) {
-		return func(r model.Resource) {
-			newName := fmt.Sprintf("%s.%s", prefix, r.GetMeta().GetName())
-			// method Sync takes into account only 'Name' and 'Mesh' that why we can set name like this
-			m := util.ResourceKeyToMeta(newName, r.GetMeta().GetMesh())
-			r.SetMeta(m)
-		}
-	}
-
-	addSuffixToName := func(suffix string) func(r model.Resource) {
-		return func(r model.Resource) {
-			newName := fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)
-			// method Sync takes into account only 'Name' and 'Mesh' that why we can set name like this
-			m := util.ResourceKeyToMeta(newName, r.GetMeta().GetMesh())
-			r.SetMeta(m)
-		}
-	}
-
 	return &client.Callbacks{
 		OnResourcesReceived: func(rs model.ResourceList) error {
 			if len(rs.GetItems()) == 0 {
 				return nil
 			}
 			cluster := clusterTag(rs.GetItems()[0])
-			forEach(rs.GetItems()).apply(addPrefixToName(cluster))
+			addPrefixToNames(rs.GetItems(), cluster)
+			// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
+			// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
 			if k8sStore {
-				forEach(rs.GetItems()).apply(addSuffixToName("default"))
+				addSuffixToNames(rs.GetItems(), "default")
 			}
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 				return cluster == clusterTag(r)
@@ -81,10 +65,24 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool) *client.Callbacks {
 	}
 }
 
-type forEach []model.Resource
+func addPrefixToNames(rs []model.Resource, prefix string) {
+	for _, r := range rs {
+		newName := fmt.Sprintf("%s.%s", prefix, r.GetMeta().GetName())
+		// method Sync takes into account only 'Name' and 'Mesh'. Another ResourceMeta's fields like
+		// 'Version', 'CreationTime' and 'ModificationTime' will be taken from downstream store.
+		// That's why we can set 'Name' like this
+		m := util.ResourceKeyToMeta(newName, r.GetMeta().GetMesh())
+		r.SetMeta(m)
+	}
+}
 
-func (f forEach) apply(fn func(model.Resource)) {
-	for _, item := range f {
-		fn(item)
+func addSuffixToNames(rs []model.Resource, suffix string) {
+	for _, r := range rs {
+		newName := fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)
+		// method Sync takes into account only 'Name' and 'Mesh'. Another ResourceMeta's fields like
+		// 'Version', 'CreationTime' and 'ModificationTime' will be taken from downstream store.
+		// That's why we can set 'Name' like this
+		m := util.ResourceKeyToMeta(newName, r.GetMeta().GetMesh())
+		r.SetMeta(m)
 	}
 }

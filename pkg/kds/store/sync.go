@@ -49,7 +49,7 @@ type syncResourceStore struct {
 	resourceStore store.ResourceStore
 }
 
-func NewSyncResourceStore(log logr.Logger, resourceStore store.ResourceStore) ResourceSyncer {
+func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) ResourceSyncer {
 	return &syncResourceStore{
 		log:           log,
 		resourceStore: resourceStore,
@@ -97,7 +97,8 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 			continue
 		}
 		if !reflect.DeepEqual(existing.GetSpec(), r.GetSpec()) {
-			// we have to use meta of the current store during update
+			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
+			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
 			onUpdate = append(onUpdate, r)
 		}
@@ -114,6 +115,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	for _, r := range onCreate {
 		rk := model.MetaToResourceKey(r.GetMeta())
 		s.log.Info("creating a new resource from upstream", "resourceKey", rk)
+		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
 		r.SetMeta(nil)
 		if err := s.resourceStore.Create(ctx, r, store.CreateBy(rk)); err != nil {
 			return err
