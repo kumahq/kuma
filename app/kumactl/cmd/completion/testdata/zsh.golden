@@ -733,6 +733,7 @@ function _kumactl_install_ingress {
     '--image-pull-policy[image pull policy for Ingress]:' \
     '--kuma-cp-address[the address of Kuma CP]:' \
     '--namespace[namespace to install Ingress to]:' \
+    '--use-node-port[use NodePort instead of LoadBalancer]' \
     '--version[version of Ingress component]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
