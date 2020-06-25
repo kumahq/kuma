@@ -65,7 +65,7 @@ func InboundTagsFor(clusterName string, pod *kube_core.Pod, svc *kube_core.Servi
 }
 
 func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
-	return fmt.Sprintf("%s.%s.svc:%d", svc.Name, svc.Namespace, svcPort.Port)
+	return fmt.Sprintf("%s_%s_svc_%d", svc.Name, svc.Namespace, svcPort.Port)
 }
 
 // ProtocolTagFor infers service protocol from a `<port>.service.kuma.io/protocol` annotation.

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -54,13 +55,9 @@ func isHeadlessService(svc *kube_core.Service) bool {
 }
 
 func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32, error) {
-	host, port, err := mesh_proto.ServiceTagValue(serviceTag).HostAndPort()
+	name, ns, port, err := ParseService(serviceTag)
 	if err != nil {
-		return nil, 0, errors.Errorf("failed to parse `service` tag %q", serviceTag)
-	}
-	name, ns, err := ParseServiceFQDN(host)
-	if err != nil {
-		return nil, 0, errors.Errorf("failed to parse `service` host %q as FQDN", host)
+		return nil, 0, errors.Errorf("failed to parse `service` host %q as FQDN", serviceTag)
 	}
 
 	svc := &kube_core.Service{}
@@ -71,12 +68,17 @@ func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32
 	return svc, port, nil
 }
 
-func ParseServiceFQDN(host string) (name string, namespace string, err error) {
-	// split host into <name>.<namespace>.svc
-	segments := strings.Split(host, ".")
-	if len(segments) != 3 {
-		return "", "", errors.Errorf("service tag in unexpected format")
+func ParseService(host string) (name string, namespace string, port uint32, err error) {
+	// split host into <name>_<namespace>_svc_<port>
+	segments := strings.Split(host, "_")
+	if len(segments) != 4 {
+		return "", "", 0, errors.Errorf("service tag in unexpected format")
 	}
+	p, err := strconv.Atoi(segments[3])
+	if err != nil {
+		return "", "", 0, err
+	}
+	port = uint32(p)
 	name, namespace = segments[0], segments[1]
 	return
 }

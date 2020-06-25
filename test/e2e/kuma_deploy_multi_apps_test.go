@@ -68,7 +68,7 @@ metadata:
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		_, stderr, err = c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "echo-server.mesh")
+			"curl", "-v", "echo-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
