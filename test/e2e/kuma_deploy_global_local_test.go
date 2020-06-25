@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -104,7 +105,7 @@ spec:
 
 		err = Yaml(namespace("custom-ns"))(c2)
 		Expect(err).ToNot(HaveOccurred())
-		err = Yaml(dp("kuma-2-local", "custom-ns", "dp-1", ))(c2)
+		err = Yaml(dp("kuma-2-local", "custom-ns", "dp-1"))(c2)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() string {

@@ -2,6 +2,7 @@ package global
 
 import (
 	"fmt"
+
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
