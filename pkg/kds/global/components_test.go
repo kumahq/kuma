@@ -95,7 +95,7 @@ var _ = Describe("Global Sync", func() {
 		closeFunc()
 	})
 
-	It("should sync resources independently for each Local", func() {
+	It("should sync resources independently for each Remote", func() {
 		for i := 0; i < 10; i++ {
 			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
 			err := localStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))

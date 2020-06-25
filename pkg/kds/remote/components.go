@@ -1,4 +1,4 @@
-package local
+package remote
 
 import (
 	"github.com/Kong/kuma/pkg/core"

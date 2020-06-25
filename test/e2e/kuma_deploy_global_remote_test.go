@@ -171,13 +171,13 @@ spec:
 
 		err = Yaml(namespace("custom-ns"))(c2)
 		Expect(err).ToNot(HaveOccurred())
-		err = Yaml(dp("kuma-2-local", "custom-ns", "dp-1"))(c2)
+		err = Yaml(dp("kuma-2-remote", "custom-ns", "dp-1"))(c2)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() string {
 			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-local.dp-1.custom-ns"))
+		}, "5s", "500ms").Should(ContainSubstring("kuma-2-remote.dp-1.custom-ns"))
 	})
 })

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	kds_local "github.com/Kong/kuma/pkg/kds/local"
+	kds_local "github.com/Kong/kuma/pkg/kds/remote"
 
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
