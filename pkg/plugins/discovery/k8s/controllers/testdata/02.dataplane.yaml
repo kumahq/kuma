@@ -9,15 +9,15 @@ spec:
         tags:
           app: example
           protocol: tcp
-          service: example.demo.svc:80
+          service: example_demo_svc_80
           version: "0.1"
           cluster: "cluster-1"
     outbound:
       - address: 10.108.144.24
         port: 443
         tags:
-          service: test-app.playground.svc:443
+          service: test-app_playground_svc_443
       - address: 10.108.144.24
         port: 80
         tags:
-          service: test-app.playground.svc:80
+          service: test-app_playground_svc_80

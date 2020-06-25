@@ -9,18 +9,18 @@ spec:
         tags:
           app: example
           protocol: tcp
-          service: example.demo.svc:80
+          service: example_demo_svc_80
           version: "0.1"
           cluster: "cluster-1"
       - port: 8443
         tags:
           app: example
           protocol: tcp
-          service: example.demo.svc:443
+          service: example_demo_svc_443
           version: "0.1"
           cluster: "cluster-1"
     outbound:
       - address: 10.244.0.25
         port: 80
         tags:
-          service: test-app.playground.svc:80
+          service: test-app_playground_svc_80
