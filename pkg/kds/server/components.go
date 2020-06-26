@@ -59,6 +59,5 @@ type hasher struct {
 }
 
 func (_ hasher) ID(node *envoy_core.Node) string {
-	// in the very first implementation, we don't differentiate clients
-	return ""
+	return node.Id
 }

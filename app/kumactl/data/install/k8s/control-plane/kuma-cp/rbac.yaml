@@ -32,14 +32,6 @@ rules:
 - apiGroups:
   - kuma.io
   resources:
-  - healthchecks
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - kuma.io
-  resources:
   - proxytemplates
   verbs:
   - get
@@ -61,51 +53,19 @@ rules:
   - kuma.io
   resources:
   - trafficpermissions
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - kuma.io
-  resources:
   - trafficlogs
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - kuma.io
-  resources:
   - trafficroutes
+  - traffictraces
+  - faultinjections
+  - circuitbreakers
+  - healthchecks
   verbs:
   - get
   - list
   - watch
-- apiGroups:
-    - kuma.io
-  resources:
-    - traffictraces
-  verbs:
-    - get
-    - list
-    - watch
-- apiGroups:
-    - kuma.io
-  resources:
-    - faultinjections
-  verbs:
-    - get
-    - list
-    - watch
-- apiGroups:
-    - kuma.io
-  resources:
-    - circuitbreakers
-  verbs:
-    - get
-    - list
-    - watch
-    - create
+{{- if eq .KumaCpMode "remote" }}
+  - create
+{{- end }}
 - apiGroups:
     - ""
   resources:
