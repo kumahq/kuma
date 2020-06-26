@@ -49,7 +49,7 @@ func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 	}()
 
 	s.log.Info("starting an KDS stream")
-	stream, err := client.StartStream()
+	stream, err := client.StartStream(s.clusterName)
 	if err != nil {
 		return errors.Wrap(err, "failed to start an KDS stream")
 	}
@@ -62,7 +62,7 @@ func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 
 	for _, typ := range s.resourceTypes {
 		s.log.Info("sending DiscoveryRequest", "type", typ)
-		if err := stream.DiscoveryRequest(s.clusterName, typ); err != nil {
+		if err := stream.DiscoveryRequest(typ); err != nil {
 			return errors.Wrap(err, "discovering failed")
 		}
 	}

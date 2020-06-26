@@ -122,6 +122,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--sds-tls-key", "SdsKey",
 				"--mode", "remote",
 				"--cluster-name", "cluster-1",
+				"--use-node-port",
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
 		}),

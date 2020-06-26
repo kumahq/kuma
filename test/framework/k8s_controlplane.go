@@ -77,7 +77,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) AddCluster(name, url string) error {
+func (c *K8sControlPlane) AddCluster(name, url, lbAddress string) error {
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
 		c.GetKubectlOptions())
 	if err != nil {
@@ -109,6 +109,7 @@ func (c *K8sControlPlane) AddCluster(name, url string) error {
 			Address: url,
 		},
 	})
+	cfg.KumaClusters.LBConfig.Address = lbAddress
 
 	yamlBytes, err := yaml.Marshal(&cfg)
 	if err != nil {
@@ -272,7 +273,7 @@ func (c *K8sControlPlane) InjectDNS() error {
 func (c *K8sControlPlane) GetHostAPI() string {
 	pod := c.GetKumaCPPods()[0]
 
-	return "http://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(localCPSyncNodePort), 10)
+	return "http://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(LocalCPSyncNodePort), 10)
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {

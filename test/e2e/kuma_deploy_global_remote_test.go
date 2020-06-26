@@ -1,9 +1,13 @@
 package e2e_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 
@@ -63,7 +67,7 @@ var _ = Describe("Test Remote and Global", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.AddCluster(remote.GetName(), remote.GetHostAPI())
+		err = global.AddCluster(remote.GetName(), remote.GetHostAPI(), "") // todo (lobkovilya): pass Node IP as lbAddress
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c1.RestartKuma()
@@ -122,7 +126,20 @@ var _ = Describe("Test Remote and Global", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.AddCluster(local.GetName(), local.GetHostAPI())
+		clientset, err := k8s.GetKubernetesClientFromOptionsE(c1.GetTesting(), c1.GetKubectlOptions())
+		Expect(err).ToNot(HaveOccurred())
+
+		nodeList, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nodeList.Items).To(HaveLen(1)) // our strategy of getting IP based on the fact that cluster has single node
+		var nodeIP string
+		for _, addr := range nodeList.Items[0].Status.Addresses {
+			if addr.Type == corev1.NodeInternalIP {
+				nodeIP = addr.Address
+			}
+		}
+		Expect(nodeIP).ToNot(BeEmpty())
+		err = global.AddCluster(local.GetName(), local.GetHostAPI(), fmt.Sprintf("http://%s:%d", nodeIP, LocalCPSyncNodePort))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c1.RestartKuma()

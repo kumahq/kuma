@@ -714,6 +714,7 @@ function _kumactl_install_control-plane {
     '--namespace[namespace to install Kuma Control Plane to]:' \
     '--sds-tls-cert[TLS certificate for the SDS server]:' \
     '--sds-tls-key[TLS key for the SDS server]:' \
+    '--use-node-port[use NodePort instead of LoadBalancer]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
