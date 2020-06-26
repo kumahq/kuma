@@ -105,7 +105,7 @@ var _ = Describe("Test Remote and Global", func() {
 
 	})
 
-	FIt("should deploy Remote and Global on 2 clusters and sync dataplanes", func() {
+	It("should deploy Remote and Global on 2 clusters and sync dataplanes", func() {
 		// given
 		c1 := clusters.GetCluster(Kuma1)
 		c2 := clusters.GetCluster(Kuma2)
