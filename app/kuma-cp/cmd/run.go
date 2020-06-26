@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"time"
 
+	kds_remote "github.com/Kong/kuma/pkg/kds/remote"
+
 	"github.com/go-errors/errors"
-
-	"github.com/Kong/kuma/pkg/clusters"
-	dns "github.com/Kong/kuma/pkg/dns/components"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
-
-	api_server "github.com/Kong/kuma/pkg/api-server"
-
 	"github.com/spf13/cobra"
 
+	api_server "github.com/Kong/kuma/pkg/api-server"
+	"github.com/Kong/kuma/pkg/clusters"
+	dns "github.com/Kong/kuma/pkg/dns/components"
+	kds_global "github.com/Kong/kuma/pkg/kds/global"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
@@ -104,6 +103,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
+				if err := kds_remote.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Remote Server")
+					return err
+				}
 			case config_core.Global:
 				if err := xds_server.SetupDiagnosticsServer(rt); err != nil {
 					runLog.Error(err, "unable to set up xDS server")
@@ -117,8 +120,12 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Clusters server")
 					return err
 				}
-				if err := kds_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS server")
+				if err := kds_global.SetupComponent(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Global Sink")
+					return err
+				}
+				if err := kds_global.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Global Server")
 					return err
 				}
 			}

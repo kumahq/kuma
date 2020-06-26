@@ -240,6 +240,7 @@ Flags:
       --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
       --sds-tls-cert string                 TLS certificate for the SDS server
       --sds-tls-key string                  TLS key for the SDS server
+      --use-node-port                       use NodePort instead of LoadBalancer
 
 Global Flags:
       --config-file string   path to the configuration file to use
