@@ -14,7 +14,7 @@ import (
 )
 
 type KDSStream interface {
-	DiscoveryRequest(clientId string, resourceType model.ResourceType) error
+	DiscoveryRequest(resourceType model.ResourceType) error
 	Receive() (model.ResourceList, error)
 	ACK(typ string) error
 	NACK(typ string, err error) error
@@ -27,22 +27,24 @@ type stream struct {
 	streamClient   mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient
 	latestACKed    map[string]*envoy.DiscoveryResponse
 	latestReceived map[string]*envoy.DiscoveryResponse
+	clientId       string
 }
 
-func NewKDSStream(s mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient) KDSStream {
+func NewKDSStream(s mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient, clientId string) KDSStream {
 	return &stream{
 		streamClient:   s,
 		latestACKed:    make(map[string]*envoy.DiscoveryResponse),
 		latestReceived: make(map[string]*envoy.DiscoveryResponse),
+		clientId:       clientId,
 	}
 }
 
-func (s *stream) DiscoveryRequest(clientId string, resourceType model.ResourceType) error {
+func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 	return s.streamClient.Send(&envoy.DiscoveryRequest{
 		VersionInfo:   "",
 		ResponseNonce: "",
 		Node: &envoy_core.Node{
-			Id: clientId,
+			Id: s.clientId,
 		},
 		ResourceNames: []string{},
 		TypeUrl:       string(resourceType),
@@ -71,7 +73,10 @@ func (s *stream) ACK(typ string) error {
 		VersionInfo:   latestReceived.VersionInfo,
 		ResponseNonce: latestReceived.Nonce,
 		ResourceNames: []string{},
-		TypeUrl:       typ,
+		Node: &envoy_core.Node{
+			Id: s.clientId,
+		},
+		TypeUrl: typ,
 	})
 	if err == nil {
 		s.latestACKed = s.latestReceived
@@ -90,6 +95,9 @@ func (s *stream) NACK(typ string, err error) error {
 		ResponseNonce: latestReceived.Nonce,
 		ResourceNames: []string{},
 		TypeUrl:       typ,
+		Node: &envoy_core.Node{
+			Id: s.clientId,
+		},
 		ErrorDetail: &status.Status{
 			Message: fmt.Sprintf("%s", err),
 		},
