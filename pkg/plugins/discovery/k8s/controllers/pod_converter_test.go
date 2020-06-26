@@ -354,7 +354,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			isGateway: false,
 			podLabels: nil,
 			expected: map[string]string{
-				"service":  "example.demo.svc:80",
+				"service":  "example_demo_svc_80",
 				"protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
 			},
 		}),
@@ -367,7 +367,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":      "example",
 				"version":  "0.1",
-				"service":  "example.demo.svc:80",
+				"service":  "example_demo_svc_80",
 				"protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
 			},
 		}),
@@ -381,7 +381,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":      "example",
 				"version":  "0.1",
-				"service":  "example.demo.svc:80",
+				"service":  "example_demo_svc_80",
 				"protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
 			},
 		}),
@@ -397,7 +397,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":      "example",
 				"version":  "0.1",
-				"service":  "example.demo.svc:80",
+				"service":  "example_demo_svc_80",
 				"protocol": "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
 			},
 		}),
@@ -413,7 +413,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":      "example",
 				"version":  "0.1",
-				"service":  "example.demo.svc:80",
+				"service":  "example_demo_svc_80",
 				"protocol": "http",
 			},
 		}),
@@ -426,7 +426,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":     "example",
 				"version": "0.1",
-				"service": "example.demo.svc:80",
+				"service": "example_demo_svc_80",
 			},
 		}),
 		Entry("`gateway` Pod should not have a `protocol` tag even if `<port>.service.kuma.io/protocol` annotation is present", testCase{
@@ -441,7 +441,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":     "example",
 				"version": "0.1",
-				"service": "example.demo.svc:80",
+				"service": "example_demo_svc_80",
 			},
 		}),
 		Entry("Inject a cluster tag if ClusterName is set", testCase{
@@ -454,7 +454,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":      "example",
 				"version":  "0.1",
-				"service":  "example.demo.svc:80",
+				"service":  "example_demo_svc_80",
 				"cluster":  "cluster-1",
 				"protocol": "tcp",
 			},
@@ -485,7 +485,7 @@ var _ = Describe("ServiceTagFor(..)", func() {
 		}
 
 		// then
-		Expect(ServiceTagFor(svc, &svc.Spec.Ports[0])).To(Equal("example.demo.svc:80"))
+		Expect(ServiceTagFor(svc, &svc.Spec.Ports[0])).To(Equal("example_demo_svc_80"))
 	})
 })
 

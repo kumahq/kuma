@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type ClusterSubset struct {
@@ -39,6 +41,19 @@ func (t Tags) String() string {
 		pairs = append(pairs, fmt.Sprintf("%s=%s", key, t[key]))
 	}
 	return strings.Join(pairs, ",")
+}
+
+func TagsFromString(tagsString string) (Tags, error) {
+	result := Tags{}
+	tagPairs := strings.Split(tagsString, ",")
+	for _, pair := range tagPairs {
+		split := strings.Split(pair, "=")
+		if len(split) != 2 {
+			return nil, errors.New("invalid format of tags, pairs should be separated by , and key should be separated from value by =")
+		}
+		result[split[0]] = split[1]
+	}
+	return result, nil
 }
 
 func DistinctTags(tags []Tags) []Tags {

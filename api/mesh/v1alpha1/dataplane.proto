@@ -21,7 +21,12 @@ message Dataplane {
     message Ingress {
       // AvailableService contains tags that represent unique subset of
       // endpoints
-      message AvailableService { map<string, string> tags = 1; }
+      message AvailableService {
+        // tags of the service
+        map<string, string> tags = 1;
+        // number of instances available for given tags
+        uint32 instances = 2;
+      }
       repeated AvailableService availableServices = 1;
     }
 

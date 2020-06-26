@@ -35,6 +35,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 					Target: dataplane.Spec.Networking.Address,
 					Port:   dataplane.Spec.Networking.Inbound[0].Port,
 					Tags:   ingress.Tags,
+					Weight: ingress.Instances,
 				})
 			}
 			continue
@@ -55,6 +56,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 				Target: iface.DataplaneIP,
 				Port:   iface.DataplanePort,
 				Tags:   inbound.Tags,
+				Weight: 1,
 			})
 		}
 	}
