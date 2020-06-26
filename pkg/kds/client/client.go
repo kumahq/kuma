@@ -14,7 +14,7 @@ import (
 )
 
 type KDSClient interface {
-	StartStream() (KDSStream, error)
+	StartStream(clientId string) (KDSStream, error)
 	Close() error
 }
 
@@ -52,13 +52,13 @@ func New(serverURL string) (KDSClient, error) {
 	}, nil
 }
 
-func (c *client) StartStream() (KDSStream, error) {
+func (c *client) StartStream(clientId string) (KDSStream, error) {
 	ctx := metadata.NewOutgoingContext(context.Background(), metadata.MD{})
 	stream, err := c.client.StreamKumaResources(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return NewKDSStream(stream), nil
+	return NewKDSStream(stream, clientId), nil
 }
 
 func (c *client) Close() error {
