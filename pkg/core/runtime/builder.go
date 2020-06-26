@@ -157,6 +157,7 @@ func (b *Builder) Build() (Runtime, error) {
 			cfg:      b.cfg,
 			rm:       b.rm,
 			rom:      b.rom,
+			rs:       b.rs,
 			sm:       b.sm,
 			cam:      b.cam,
 			xds:      b.xds,

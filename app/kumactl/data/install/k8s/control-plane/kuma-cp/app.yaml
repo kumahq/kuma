@@ -43,7 +43,7 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 5681
+    - port: 5685
       nodePort: 30681
       name: global-remote-sync
   selector:

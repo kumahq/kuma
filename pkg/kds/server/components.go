@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/Kong/kuma/pkg/core/resources/model"
+
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
@@ -16,8 +18,8 @@ import (
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
-func NewSnapshotGenerator(rt core_runtime.Runtime) reconcile.SnapshotGenerator {
-	return reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager())
+func NewSnapshotGenerator(rt core_runtime.Runtime, resourceTypes []model.ResourceType) reconcile.SnapshotGenerator {
+	return reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), resourceTypes)
 }
 
 func NewVersioner() util_xds.SnapshotVersioner {
@@ -29,9 +31,9 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
 	return reconcile.NewReconciler(hasher, cache, generator, versioner)
 }
 
-func NewSyncTracker(reconciler reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {
+func NewSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {
 	return util_xds.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
-		log := kdsServerLog.WithValues("streamID", streamID, "node", node)
+		log := log.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)

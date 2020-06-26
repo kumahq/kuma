@@ -20,7 +20,6 @@ func DefaultKumaDiscoveryServerConfig() *KumaDiscoveryServerConfig {
 type KumaDiscoveryServerConfig struct {
 	// Port of a gRPC server that serves Kuma Discovery Service (KDS).
 	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_discovery_server_grpc_port"`
-
 	// Interval for refreshing state of the world
 	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_discovery_server_refresh_interval"`
 }

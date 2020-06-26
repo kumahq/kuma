@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/Kong/kuma/pkg/kds"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 
@@ -22,7 +24,6 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/kds"
 )
 
 type Server interface {
@@ -143,7 +144,7 @@ func createResponse(resp *envoy_cache.Response, typeURL string) (*envoy.Discover
 			return nil, err
 		}
 		resources[i] = &any.Any{
-			TypeUrl: typeURL,
+			TypeUrl: kds.KumaResource,
 			Value:   b.Bytes(),
 		}
 	}
@@ -181,9 +182,8 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 	}()
 
 	// sends a response by serializing to protobuf Any
-	send := func(resp envoy_cache.Response) (string, error) {
-		out, err := createResponse(&resp, kds.KumaResource)
-
+	send := func(resp envoy_cache.Response, resourceType model.ResourceType) (string, error) {
+		out, err := createResponse(&resp, string(resourceType))
 		if err != nil {
 			return "", err
 		}
@@ -213,7 +213,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "meshes watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.MeshType)
 			if err != nil {
 				return err
 			}
@@ -223,7 +223,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "ingresses watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.DataplaneType)
 			if err != nil {
 				return err
 			}
@@ -233,7 +233,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "circuitBreakers watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.CircuitBreakerType)
 			if err != nil {
 				return err
 			}
@@ -243,7 +243,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "faultInjections watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.FaultInjectionType)
 			if err != nil {
 				return err
 			}
@@ -253,7 +253,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "healthChecks watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.HealthCheckType)
 			if err != nil {
 				return err
 			}
@@ -263,7 +263,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "trafficLogs watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.TrafficLogType)
 			if err != nil {
 				return err
 			}
@@ -273,7 +273,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "trafficPermissions watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.TrafficPermissionType)
 			if err != nil {
 				return err
 			}
@@ -283,7 +283,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "trafficRoutes watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.TrafficRouteType)
 			if err != nil {
 				return err
 			}
@@ -293,7 +293,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "trafficTraces watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.TrafficTraceType)
 			if err != nil {
 				return err
 			}
@@ -303,7 +303,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "proxyTemplates watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, mesh_core.ProxyTemplateType)
 			if err != nil {
 				return err
 			}
@@ -313,7 +313,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			if !more {
 				return status.Errorf(codes.Unavailable, "secrets watch failed")
 			}
-			nonce, err := send(resp)
+			nonce, err := send(resp, system.SecretType)
 			if err != nil {
 				return err
 			}

@@ -2,8 +2,6 @@
 package kds
 
 import (
-	"strings"
-
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"
@@ -29,8 +27,3 @@ var (
 		system.SecretType,
 	}
 )
-
-func ResourceType(typeURL string) string {
-	s := strings.Split(typeURL, ".")
-	return s[len(s)-1]
-}
