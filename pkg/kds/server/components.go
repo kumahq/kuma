@@ -18,8 +18,8 @@ import (
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
-func NewSnapshotGenerator(rt core_runtime.Runtime, resourceTypes []model.ResourceType) reconcile.SnapshotGenerator {
-	return reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), resourceTypes)
+func NewSnapshotGenerator(rt core_runtime.Runtime, resourceTypes []model.ResourceType, filter reconcile.ResourceFilter) reconcile.SnapshotGenerator {
+	return reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), resourceTypes, filter)
 }
 
 func NewVersioner() util_xds.SnapshotVersioner {

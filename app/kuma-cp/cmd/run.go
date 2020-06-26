@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	kds_local "github.com/Kong/kuma/pkg/kds/remote"
+	kds_remote "github.com/Kong/kuma/pkg/kds/remote"
 
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
@@ -103,8 +103,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-				if err := kds_local.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS server")
+				if err := kds_remote.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Remote Server")
 					return err
 				}
 			case config_core.Global:
@@ -121,7 +121,11 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					return err
 				}
 				if err := kds_global.SetupComponent(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Dataplane Sink")
+					runLog.Error(err, "unable to set up KDS Global Sink")
+					return err
+				}
+				if err := kds_global.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Global Server")
 					return err
 				}
 			}

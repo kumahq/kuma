@@ -1,6 +1,8 @@
 package util
 
 import (
+	"fmt"
+
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/golang/protobuf/ptypes"
@@ -42,6 +44,32 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 		})
 	}
 	return rv, nil
+}
+
+func AddPrefixToNames(rs []model.Resource, prefix string) {
+	for _, r := range rs {
+		newName := fmt.Sprintf("%s.%s", prefix, r.GetMeta().GetName())
+		// method Sync takes into account only 'Name' and 'Mesh'. Another ResourceMeta's fields like
+		// 'Version', 'CreationTime' and 'ModificationTime' will be taken from downstream store.
+		// That's why we can set 'Name' like this
+		m := ResourceKeyToMeta(newName, r.GetMeta().GetMesh())
+		r.SetMeta(m)
+	}
+}
+
+func AddSuffixToNames(rs []model.Resource, suffix string) {
+	for _, r := range rs {
+		newName := fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)
+		// method Sync takes into account only 'Name' and 'Mesh'. Another ResourceMeta's fields like
+		// 'Version', 'CreationTime' and 'ModificationTime' will be taken from downstream store.
+		// That's why we can set 'Name' like this
+		m := ResourceKeyToMeta(newName, r.GetMeta().GetMesh())
+		r.SetMeta(m)
+	}
+}
+
+func ClusterTag(r model.Resource) string {
+	return r.GetSpec().(*mesh_proto.Dataplane).GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ClusterTag]
 }
 
 func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource) (model.ResourceList, error) {

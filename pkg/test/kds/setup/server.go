@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Kong/kuma/pkg/kds/reconcile"
+
 	. "github.com/onsi/gomega"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
@@ -43,7 +45,7 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup) *test_grpc.MockS
 	createServer := func(rt runtime.Runtime) kds_server.Server {
 		log := core.Log
 		hasher, cache := kds_server.NewXdsContext(log)
-		generator := kds_server.NewSnapshotGenerator(rt, kds.SupportedTypes)
+		generator := kds_server.NewSnapshotGenerator(rt, kds.SupportedTypes, reconcile.Any)
 		versioner := kds_server.NewVersioner()
 		reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
 		syncTracker := kds_server.NewSyncTracker(core.Log, reconciler, rt.Config().KDSServer.RefreshInterval)

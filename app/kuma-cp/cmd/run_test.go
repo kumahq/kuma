@@ -56,7 +56,7 @@ func RunSmokeTest(factory ConfigFactory) {
 			}
 		})
 
-		It("should be possible to run `kuma-cp run with default mode`", func(done Done) {
+		FIt("should be possible to run `kuma-cp run with default mode`", func(done Done) {
 			// given
 			config := fmt.Sprintf(factory.GenerateConfig(), diagnosticsPort)
 			_, err := configFile.WriteString(config)

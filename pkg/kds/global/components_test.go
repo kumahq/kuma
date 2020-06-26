@@ -3,6 +3,7 @@ package global_test
 import (
 	"context"
 	"fmt"
+	"github.com/Kong/kuma/pkg/config/clusters"
 	"sync"
 
 	. "github.com/onsi/ginkgo"
@@ -47,7 +48,10 @@ var _ = Describe("Global Sync", func() {
 		for _, ss := range serverStreams {
 			clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 		}
-		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false))
+		cfg := &clusters.ClusterConfig{
+			Ingress: clusters.EndpointConfig{Address: "192.168.0.1"},
+		}
+		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, cfg))
 
 		closeFunc = func() {
 			close(stopCh)
