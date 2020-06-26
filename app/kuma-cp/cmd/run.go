@@ -11,7 +11,7 @@ import (
 
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	"github.com/Kong/kuma/pkg/clusters"
-	dns_server "github.com/Kong/kuma/pkg/dns-server"
+	dns "github.com/Kong/kuma/pkg/dns/components"
 	kds_global "github.com/Kong/kuma/pkg/kds/global"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 
@@ -139,7 +139,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 
-			if err := dns_server.SetupServer(rt); err != nil {
+			if err := dns.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up DNS server")
 				return err
 			}

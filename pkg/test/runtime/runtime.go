@@ -1,8 +1,11 @@
 package runtime
 
 import (
-	"strconv"
+	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
+	config_store "github.com/Kong/kuma/pkg/core/config/store"
+	"github.com/Kong/kuma/pkg/dns"
 
+	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core/datasource"
 	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -14,13 +17,9 @@ import (
 	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
-	"github.com/Kong/kuma/pkg/dns-server/resolver"
+	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	"github.com/Kong/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/Kong/kuma/pkg/plugins/leader/memory"
-	"github.com/Kong/kuma/pkg/util/net"
-
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	resources_memory "github.com/Kong/kuma/pkg/plugins/resources/memory"
 )
 
@@ -48,29 +47,23 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 		WithReadOnlyResourceManager(rm)
 
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.SecretManager()))
+	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 
+	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)
 
 	return builder
 }
 
+func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	store := config_store.NewConfigStore(builder.ResourceStore())
+	configm := config_manager.NewConfigManager(store)
+	builder.WithConfigManager(configm)
+	return nil
+}
+
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	actualPort, err := net.PickTCPPort("127.0.0.1", 0, 0)
-	if err != nil {
-		return err
-	}
-
-	dnsResolver, err := resolver.NewSimpleDNSResolver(
-		cfg.DNSServer.Domain,
-		"127.0.0.1",
-		strconv.FormatUint(uint64(actualPort), 10),
-		cfg.DNSServer.CIDR)
-	if err != nil {
-		return err
-	}
-
-	builder.WithDNSResolver(dnsResolver)
-
+	builder.WithDNSResolver(dns.NewDNSResolver("mesh"))
 	return nil
 }
 

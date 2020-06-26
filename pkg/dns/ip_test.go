@@ -1,9 +1,9 @@
-package resolver_test
+package dns_test
 
 import (
 	"math"
 
-	. "github.com/Kong/kuma/pkg/dns-server/resolver"
+	. "github.com/Kong/kuma/pkg/dns"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,7 +13,8 @@ var _ = Describe("DNS ip", func() {
 
 	It("should allocate and free IP", func() {
 		// given
-		ipam := NewSimpleIPAM("192.168.0.1/32")
+		ipam, err := NewSimpleIPAM("192.168.0.1/32")
+		Expect(err).ToNot(HaveOccurred())
 		Expect(ipam).ToNot(BeNil())
 
 		// when
@@ -39,7 +40,8 @@ var _ = Describe("DNS ip", func() {
 
 	It("should allocate 2^16 IP addresses", func() {
 		// given
-		ipam := NewSimpleIPAM("240.0.0.0/4")
+		ipam, err := NewSimpleIPAM("240.0.0.0/4")
+		Expect(err).ToNot(HaveOccurred())
 		Expect(ipam).ToNot(BeNil())
 
 		for i := 0; i < math.MaxInt16; i++ {

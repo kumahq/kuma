@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"strconv"
+	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
 
 	"github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
 
@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/dns-server/resolver"
+	"github.com/Kong/kuma/pkg/dns"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/Kong/kuma/pkg/config/core"
@@ -48,10 +48,13 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
-	if err := initializeDNSResolver(cfg, builder); err != nil {
+	if err := initializeClusters(cfg, builder); err != nil {
 		return nil, err
 	}
-	if err := initializeClusters(cfg, builder); err != nil {
+	if err := initializeConfigManager(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeDNSResolver(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -65,8 +68,15 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 
 	initializeXds(builder)
 
+	leaderInfoComponent := &component.LeaderInfoComponent{}
+	builder.WithLeaderInfo(leaderInfoComponent)
+
 	rt, err := builder.Build()
 	if err != nil {
+		return nil, err
+	}
+
+	if err := rt.Add(&component.LeaderInfoComponent{}); err != nil {
 		return nil, err
 	}
 
@@ -272,17 +282,7 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	dnsResolver, err := resolver.NewSimpleDNSResolver(
-		cfg.DNSServer.Domain,
-		"0.0.0.0",
-		strconv.FormatUint(uint64(cfg.DNSServer.Port), 10),
-		cfg.DNSServer.CIDR)
-	if err != nil {
-		return err
-	}
-
-	builder.WithDNSResolver(dnsResolver)
-
+	builder.WithDNSResolver(dns.NewDNSResolver(cfg.DNSServer.Domain))
 	return nil
 }
 
@@ -294,6 +294,29 @@ func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error
 
 	builder.WithClusters(poller)
 	return nil
+}
+
+func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	var pluginName core_plugins.PluginName
+	var pluginConfig core_plugins.PluginConfig
+	switch cfg.Store.Type {
+	case store.KubernetesStore:
+		pluginName = core_plugins.Kubernetes
+	case store.MemoryStore, store.PostgresStore:
+		pluginName = core_plugins.Universal
+	default:
+		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+	}
+	plugin, err := core_plugins.Plugins().ConfigStore(pluginName)
+	if err != nil {
+		return errors.Wrapf(err, "could not retrieve config store %s plugin", pluginName)
+	}
+	if configStore, err := plugin.NewConfigStore(builder, pluginConfig); err != nil {
+		return err
+	} else {
+		builder.WithConfigManager(config_manager.NewConfigManager(configStore))
+		return nil
+	}
 }
 
 func customizeRuntime(rt core_runtime.Runtime) error {

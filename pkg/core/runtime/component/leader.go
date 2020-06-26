@@ -1,5 +1,7 @@
 package component
 
+import "sync/atomic"
+
 // LeaderCallbacks defines callbacks for events from LeaderElector
 // It is guaranteed that each methods will be executed from the same goroutine, so only one method can be run at once.
 type LeaderCallbacks struct {
@@ -15,4 +17,37 @@ type LeaderElector interface {
 
 	// Start blocks until the channel is closed or an error occurs.
 	Start(stop <-chan struct{})
+}
+
+type LeaderInfo interface {
+	IsLeader() bool
+}
+
+var _ LeaderInfo = &LeaderInfoComponent{}
+var _ Component = &LeaderInfoComponent{}
+
+type LeaderInfoComponent struct {
+	leader int32
+}
+
+func (l *LeaderInfoComponent) Start(stop <-chan struct{}) error {
+	l.setLeader(true)
+	<-stop
+	l.setLeader(false)
+	return nil
+}
+
+func (l *LeaderInfoComponent) NeedLeaderElection() bool {
+	return true
+}
+
+func (p *LeaderInfoComponent) setLeader(leader bool) {
+	var value int32 = 0
+	if leader {
+		value = 1
+	}
+	atomic.StoreInt32(&p.leader, value)
+}
+func (p *LeaderInfoComponent) IsLeader() bool {
+	return atomic.LoadInt32(&(p.leader)) == 1
 }

@@ -9,13 +9,13 @@ import (
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/dns-server/resolver"
+	"github.com/Kong/kuma/pkg/dns"
 )
 
 const VIPListenPort = uint32(80)
 
 func PatchDataplaneWithVIPOutbounds(dataplane *mesh_core.DataplaneResource,
-	dataplanes *mesh_core.DataplaneResourceList, resolver resolver.DNSResolver) (errs error) {
+	dataplanes *mesh_core.DataplaneResourceList, resolver dns.DNSResolver) (errs error) {
 	serviceVIPMap := map[string]string{}
 	services := []string{}
 	for _, dp := range dataplanes.Items {

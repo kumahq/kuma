@@ -1,4 +1,4 @@
-package resolver_test
+package manager_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestDNS(t *testing.T) {
+func TestConfigManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "DNS Suite")
+	RunSpecs(t, "Config Manager Suite")
 }
