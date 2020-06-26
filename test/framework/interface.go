@@ -11,7 +11,8 @@ type Clusters interface {
 }
 
 type Cluster interface {
-	DeployKuma(mode ...string) (ControlPlane, error)
+	DeployKuma(mode ...string) error
+	GetKuma() ControlPlane
 	VerifyKuma() error
 	RestartKuma() error
 	DeleteKuma() error
@@ -22,7 +23,6 @@ type Cluster interface {
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
-	LabelNamespaceForSidecarInjection(namespace string) error
 	DeployApp(namespace, appname string) error
 	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)

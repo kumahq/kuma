@@ -67,14 +67,18 @@ func (cs *K8sClusters) GetCluster(name string) Cluster {
 	return c
 }
 
-func (cs *K8sClusters) DeployKuma(mode ...string) (ControlPlane, error) {
+func (cs *K8sClusters) DeployKuma(mode ...string) error {
 	for name, c := range cs.clusters {
-		if _, err := c.DeployKuma(mode...); err != nil {
-			return nil, errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
+		if err := c.DeployKuma(mode...); err != nil {
+			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
 		}
 	}
 
-	return nil, nil
+	return nil
+}
+
+func (cs *K8sClusters) GetKuma() ControlPlane {
+	panic("Not supported at this level.")
 }
 
 func (cs *K8sClusters) RestartKuma() error {
@@ -140,16 +144,6 @@ func (cs *K8sClusters) DeleteNamespace(namespace string) error {
 
 func (c *K8sClusters) GetKumactlOptions() *KumactlOptions {
 	fmt.Println("Not supported at this level.")
-	return nil
-}
-
-func (cs *K8sClusters) LabelNamespaceForSidecarInjection(namespace string) error {
-	for name, c := range cs.clusters {
-		if err := c.LabelNamespaceForSidecarInjection(namespace); err != nil {
-			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
-		}
-	}
-
 	return nil
 }
 
