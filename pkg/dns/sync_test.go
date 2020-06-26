@@ -103,11 +103,20 @@ var _ = Describe("DNS sync", func() {
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.1",
+						Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+							AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+								{
+									Tags: map[string]string{
+										"service": "backend",
+									},
+								},
+							},
+						},
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Port: 1234,
 								Tags: map[string]string{
-									"service": "backend",
+									"cluster": "cluster-2",
 								},
 							},
 						},
