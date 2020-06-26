@@ -87,6 +87,7 @@ var _ = Describe("kumactl install ingress", func() {
 				"--kuma-cp-address", "http://kuma.local:5681",
 				"--mesh", "non-default-mesh",
 				"--drain-time", "0s",
+				"--use-node-port",
 			},
 			goldenFile: "install-ingress.overrides.golden.yaml",
 		}),

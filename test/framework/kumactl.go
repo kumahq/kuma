@@ -150,6 +150,7 @@ func (o *KumactlOptions) KumactlInstallIngress() (string, error) {
 	args := []string{
 		"install", "ingress",
 		"--image", kumaDPImage,
+		"--use-node-port",
 	}
 	return o.RunKumactlAndGetOutput(args...)
 }
