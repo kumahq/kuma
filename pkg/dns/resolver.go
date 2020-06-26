@@ -24,6 +24,8 @@ type dnsResolver struct {
 	viplist VIPList
 }
 
+var _ DNSResolver = &dnsResolver{}
+
 func NewDNSResolver(domain string) DNSResolver {
 	return &dnsResolver{
 		domain: domain,
@@ -109,5 +111,3 @@ func (s *dnsResolver) serviceFromName(name string) (string, error) {
 
 	return service, nil
 }
-
-var _ DNSResolver = &dnsResolver{}
