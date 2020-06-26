@@ -15,7 +15,7 @@ const (
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
 
-	LocalCPSyncNodePort = 30681
+	LocalCPSyncNodePort = 30685
 )
 
 const (

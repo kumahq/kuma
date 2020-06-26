@@ -33,6 +33,7 @@ spec:
 {{- end }}
   selector:
     app: kuma-control-plane
+{{- if ne .KumaCpMode "standalone" }}
 ---
 apiVersion: v1
 kind: Service
@@ -40,13 +41,14 @@ metadata:
   name: global-remote-sync
   namespace: {{ .Namespace }}
 spec:
-  type: NodePort
+  type: {{ .GlobalRemotePortType }}
   ports:
     - port: 5685
-      nodePort: 30681
+      nodePort: 30685
       name: global-remote-sync
   selector:
     app: kuma-control-plane
+{{- end }}
 ---
 apiVersion: v1
 kind: ServiceAccount
