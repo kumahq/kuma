@@ -68,8 +68,15 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 
 	initializeXds(builder)
 
+	leaderInfoComponent := &component.LeaderInfoComponent{}
+	builder.WithLeaderInfo(leaderInfoComponent)
+
 	rt, err := builder.Build()
 	if err != nil {
+		return nil, err
+	}
+
+	if err := rt.Add(&component.LeaderInfoComponent{}); err != nil {
 		return nil, err
 	}
 

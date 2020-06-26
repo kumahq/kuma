@@ -5,6 +5,7 @@ import (
 
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
 
 var (
@@ -22,6 +23,7 @@ type (
 		rm          manager.ReadOnlyResourceManager
 		resolver    DNSResolver
 		persistence *DNSPersistence
+		leadInfo    component.LeaderInfo
 		newTicker   func() *time.Ticker
 	}
 )
@@ -30,11 +32,12 @@ const (
 	tickInterval = 500 * time.Millisecond
 )
 
-func NewVIPsSynchronizer(rm manager.ReadOnlyResourceManager, resolver DNSResolver, persistence *DNSPersistence) (VIPsSynchronizer, error) {
+func NewVIPsSynchronizer(rm manager.ReadOnlyResourceManager, resolver DNSResolver, persistence *DNSPersistence, leadInfo component.LeaderInfo) (VIPsSynchronizer, error) {
 	return &vipsSynchronizer{
 		rm:          rm,
 		resolver:    resolver,
 		persistence: persistence,
+		leadInfo:    leadInfo,
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
 		},
@@ -64,6 +67,9 @@ func (d *vipsSynchronizer) Start(stop <-chan struct{}) error {
 }
 
 func (d *vipsSynchronizer) synchronize() error {
+	if d.leadInfo.IsLeader() {
+		return nil // when CP is leader we skip this because VIP allocator updates DNSResolver
+	}
 	vipList, err := d.persistence.Get()
 	if err != nil {
 		return err

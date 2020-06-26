@@ -26,15 +26,17 @@ type (
 		rm          manager.ReadOnlyResourceManager
 		ipam        IPAM
 		persistence *DNSPersistence
+		resolver    DNSResolver
 		newTicker   func() *time.Ticker
 	}
 )
 
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, persistence *DNSPersistence, ipam IPAM) (VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, persistence *DNSPersistence, ipam IPAM, resolver DNSResolver) (VIPsAllocator, error) {
 	return &vipsAllocator{
 		rm:          rm,
 		persistence: persistence,
 		ipam:        ipam,
+		resolver:    resolver,
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
 		},
@@ -128,6 +130,7 @@ func (d *vipsAllocator) allocateVIPs(services map[string]bool) (errs error) {
 		if err := d.persistence.Set(viplist); err != nil {
 			return err
 		}
+		d.resolver.SetVIPs(viplist)
 	}
 	return
 }

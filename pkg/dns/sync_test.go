@@ -9,6 +9,7 @@ import (
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	resources_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 	"github.com/Kong/kuma/pkg/dns"
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
 
@@ -20,6 +21,7 @@ var _ = Describe("", func() {
 
 	var resManager resources_manager.ResourceManager
 	var dnsResolver dns.DNSResolver
+	var dnsResolverFollower dns.DNSResolver
 	var stop chan struct{}
 
 	BeforeEach(func() {
@@ -28,17 +30,18 @@ var _ = Describe("", func() {
 		resManager = resources_manager.NewResourceManager(memory)
 		cfgManager := config_manager.NewConfigManager(config_store.NewConfigStore(memory))
 		persistence := dns.NewDNSPersistence(cfgManager)
+		dnsResolver = dns.NewDNSResolver("mesh")
 
 		ipam, err := dns.NewSimpleIPAM("240.0.0.0/24")
 		Expect(err).ToNot(HaveOccurred())
-		vipAllocator, err := dns.NewVIPsAllocator(resManager, persistence, ipam)
+		vipAllocator, err := dns.NewVIPsAllocator(resManager, persistence, ipam, dnsResolver)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			Expect(vipAllocator.Start(stop)).ToNot(HaveOccurred())
 		}()
 
-		dnsResolver = dns.NewDNSResolver("mesh")
-		vipsSynchronizer, err := dns.NewVIPsSynchronizer(resManager, dnsResolver, persistence)
+		dnsResolverFollower = dns.NewDNSResolver("mesh")
+		vipsSynchronizer, err := dns.NewVIPsSynchronizer(resManager, dnsResolverFollower, persistence, neverLeaderInfo{})
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			Expect(vipsSynchronizer.Start(stop)).ToNot(HaveOccurred())
@@ -83,6 +86,14 @@ var _ = Describe("", func() {
 		ip, _ := dnsResolver.ForwardLookup("web")
 		Expect(ip).Should(HavePrefix("240.0.0"))
 
+		// and replicated to a follower
+		Eventually(func() error {
+			_, err := dnsResolverFollower.ForwardLookup("web")
+			return err
+		}, "5s").ShouldNot(HaveOccurred())
+		ip2, _ := dnsResolverFollower.ForwardLookup("web")
+		Expect(ip).To(Equal(ip2))
+
 		// when "backend" service is up
 		backendDp := core_mesh.DataplaneResource{
 			Spec: mesh_proto.Dataplane{
@@ -107,8 +118,16 @@ var _ = Describe("", func() {
 			_, err := dnsResolver.ForwardLookup("backend")
 			return err
 		}, "5s").ShouldNot(HaveOccurred())
-		ip, _ = dnsResolver.ForwardLookup("web")
+		ip, _ = dnsResolver.ForwardLookup("backend")
 		Expect(ip).Should(HavePrefix("240.0.0"))
+
+		// and replicated to a follower
+		Eventually(func() error {
+			_, err := dnsResolverFollower.ForwardLookup("backend")
+			return err
+		}, "5s").ShouldNot(HaveOccurred())
+		ip2, _ = dnsResolverFollower.ForwardLookup("backend")
+		Expect(ip).To(Equal(ip2))
 
 		// when service "web" is deleted
 		err = resManager.Delete(context.Background(), &core_mesh.DataplaneResource{}, core_store.DeleteByKey("dp-1", "default"))
@@ -119,6 +138,21 @@ var _ = Describe("", func() {
 			_, err := dnsResolver.ForwardLookup("web")
 			return err
 		}, "5s").Should(MatchError("service [web] not found in domain [mesh]."))
+
+		// and replicated to a follower
+		Eventually(func() error {
+			_, err := dnsResolverFollower.ForwardLookup("web")
+			return err
+		}, "5s").Should(MatchError("service [web] not found in domain [mesh]."))
 	})
 
 })
+
+type neverLeaderInfo struct {
+}
+
+func (n neverLeaderInfo) IsLeader() bool {
+	return false
+}
+
+var _ component.LeaderInfo = &neverLeaderInfo{}

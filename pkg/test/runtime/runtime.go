@@ -47,6 +47,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 		WithReadOnlyResourceManager(rm)
 
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.SecretManager()))
+	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)

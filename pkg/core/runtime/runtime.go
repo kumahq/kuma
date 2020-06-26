@@ -42,6 +42,7 @@ type RuntimeContext interface {
 	DNSResolver() dns.DNSResolver
 	Clusters() poller.ClusterStatusPoller
 	ConfigManager() config_manager.ConfigManager
+	LeaderInfo() component.LeaderInfo
 }
 
 var _ Runtime = &runtime{}
@@ -76,6 +77,7 @@ type runtimeContext struct {
 	dns      dns.DNSResolver
 	clusters poller.ClusterStatusPoller
 	configm  config_manager.ConfigManager
+	leadInfo component.LeaderInfo
 }
 
 func (rc *runtimeContext) CaManagers() ca.Managers {
@@ -113,4 +115,8 @@ func (rc *runtimeContext) Clusters() poller.ClusterStatusPoller {
 
 func (rc *runtimeContext) ConfigManager() config_manager.ConfigManager {
 	return rc.configm
+}
+
+func (rc *runtimeContext) LeaderInfo() component.LeaderInfo {
+	return rc.leadInfo
 }

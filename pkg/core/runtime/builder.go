@@ -33,6 +33,7 @@ type BuilderContext interface {
 	DNSResolver() dns.DNSResolver
 	Clusters() poller.ClusterStatusPoller
 	ConfigManager() config_manager.ConfigManager
+	LeaderInfo() component.LeaderInfo
 }
 
 var _ BuilderContext = &Builder{}
@@ -52,6 +53,7 @@ type Builder struct {
 	dns      dns.DNSResolver
 	clusters poller.ClusterStatusPoller
 	configm  config_manager.ConfigManager
+	leadInfo component.LeaderInfo
 	*runtimeInfo
 }
 
@@ -131,6 +133,11 @@ func (b *Builder) WithConfigManager(configm config_manager.ConfigManager) *Build
 	return b
 }
 
+func (b *Builder) WithLeaderInfo(leadInfo component.LeaderInfo) *Builder {
+	b.leadInfo = leadInfo
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -159,6 +166,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.dns == nil {
 		return nil, errors.Errorf("DNS has been misconfigured")
 	}
+	if b.leadInfo == nil {
+		return nil, errors.Errorf("LeaderInfo has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -172,6 +182,7 @@ func (b *Builder) Build() (Runtime, error) {
 			dns:      b.dns,
 			clusters: b.clusters,
 			configm:  b.configm,
+			leadInfo: b.leadInfo,
 		},
 		Manager: b.cm,
 	}, nil
@@ -215,4 +226,7 @@ func (b *Builder) Clusters() poller.ClusterStatusPoller {
 }
 func (b *Builder) ConfigManager() config_manager.ConfigManager {
 	return b.configm
+}
+func (b *Builder) LeaderInfo() component.LeaderInfo {
+	return b.leadInfo
 }

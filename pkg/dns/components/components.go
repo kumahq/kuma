@@ -8,7 +8,7 @@ import (
 func SetupServer(rt runtime.Runtime) error {
 	server := dns.NewDNSServer(rt.Config().DNSServer.Port, rt.DNSResolver())
 	persistence := dns.NewDNSPersistence(rt.ConfigManager())
-	vipsSync, err := dns.NewVIPsSynchronizer(rt.ReadOnlyResourceManager(), rt.DNSResolver(), persistence)
+	vipsSync, err := dns.NewVIPsSynchronizer(rt.ReadOnlyResourceManager(), rt.DNSResolver(), persistence, rt.LeaderInfo())
 	if err != nil {
 		return err
 	}
@@ -16,7 +16,7 @@ func SetupServer(rt runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	vipsAllocator, err := dns.NewVIPsAllocator(rt.ReadOnlyResourceManager(), persistence, ipam)
+	vipsAllocator, err := dns.NewVIPsAllocator(rt.ReadOnlyResourceManager(), persistence, ipam, rt.DNSResolver())
 	if err != nil {
 		return err
 	}
