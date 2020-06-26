@@ -3,8 +3,9 @@ package global_test
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/config/clusters"
 	"sync"
+
+	"github.com/Kong/kuma/pkg/config/clusters"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

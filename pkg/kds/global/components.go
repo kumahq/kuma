@@ -1,6 +1,8 @@
 package global
 
 import (
+	"net/url"
+
 	"github.com/Kong/kuma/pkg/config/clusters"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/core"
@@ -13,7 +15,6 @@ import (
 	sync_store "github.com/Kong/kuma/pkg/kds/store"
 	"github.com/Kong/kuma/pkg/kds/util"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
-	"net/url"
 )
 
 var (
