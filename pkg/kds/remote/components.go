@@ -20,7 +20,10 @@ import (
 
 var (
 	kdsRemoteLog  = core.Log.WithName("kds-remote")
-	providedTypes = []model.ResourceType{mesh.DataplaneType}
+	providedTypes = []model.ResourceType{
+		mesh.DataplaneType,
+		mesh.DataplaneInsightType,
+	}
 	consumedTypes = []model.ResourceType{
 		mesh.MeshType,
 		mesh.DataplaneType,
@@ -61,23 +64,23 @@ func SetupServer(rt core_runtime.Runtime) error {
 		syncTracker,
 		NewComponentSpawner(kdsRemoteLog.WithName("policy-sink-spawner"), componentFactory),
 	}
-	srv := kds_server.NewServer(cache, callbacks, kdsRemoteLog)
+	srv := kds_server.NewServer(cache, callbacks, kdsRemoteLog, rt.Config().General.ClusterName)
 	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDSServer))
 }
 
 // makeFilter creates filter that exclude Ingresses from another cluster
-func makeFilter(clusterID string) reconcile.ResourceFilter {
+func makeFilter(clusterName string) reconcile.ResourceFilter {
 	return func(_ string, r model.Resource) bool {
-		if r.GetType() != mesh.DataplaneType {
-			return false
+		if r.GetType() == mesh.DataplaneType {
+			return clusterName == util.ClusterTag(r)
 		}
-		return clusterID == util.ClusterTag(r)
+		return r.GetType() == mesh.DataplaneInsightType
 	}
 }
 
 func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
-		OnResourcesReceived: func(rs model.ResourceList) error {
+		OnResourcesReceived: func(_ string, rs model.ResourceList) error {
 			if k8sStore && rs.GetItemType() != mesh.MeshType {
 				util.AddSuffixToNames(rs.GetItems(), "default")
 			}

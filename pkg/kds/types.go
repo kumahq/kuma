@@ -16,6 +16,7 @@ var (
 	SupportedTypes = []model.ResourceType{
 		mesh.MeshType,
 		mesh.DataplaneType,
+		mesh.DataplaneInsightType,
 		mesh.CircuitBreakerType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,

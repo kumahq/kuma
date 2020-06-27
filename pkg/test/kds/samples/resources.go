@@ -79,6 +79,11 @@ var (
 			},
 		},
 	}
+	DataplaneInsight = mesh_proto.DataplaneInsight{
+		MTLS: &mesh_proto.DataplaneInsight_MTLS{
+			CertificateRegenerations: 3,
+		},
+	}
 	Ingress = mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Ingress: &mesh_proto.Dataplane_Networking_Ingress{

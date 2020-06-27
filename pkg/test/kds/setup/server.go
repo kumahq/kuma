@@ -53,7 +53,7 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup) *test_grpc.MockS
 			util_xds.LoggingCallbacks{Log: log},
 			syncTracker,
 		}
-		return kds_server.NewServer(cache, callbacks, log)
+		return kds_server.NewServer(cache, callbacks, log, "test-client")
 	}
 
 	srv := createServer(&testRuntimeContext{

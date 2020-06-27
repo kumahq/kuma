@@ -15,7 +15,7 @@ import (
 
 type KDSStream interface {
 	DiscoveryRequest(resourceType model.ResourceType) error
-	Receive() (model.ResourceList, error)
+	Receive() (string, model.ResourceList, error)
 	ACK(typ string) error
 	NACK(typ string, err error) error
 	Close() error
@@ -51,17 +51,17 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 	})
 }
 
-func (s *stream) Receive() (model.ResourceList, error) {
+func (s *stream) Receive() (string, model.ResourceList, error) {
 	resp, err := s.streamClient.Recv()
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 	rs, err := util.ToCoreResourceList(resp)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 	s.latestReceived[string(rs.GetItemType())] = resp
-	return rs, nil
+	return resp.GetControlPlane().GetIdentifier(), rs, nil
 }
 
 func (s *stream) ACK(typ string) error {

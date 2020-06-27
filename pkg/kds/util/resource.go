@@ -69,7 +69,11 @@ func AddSuffixToNames(rs []model.Resource, suffix string) {
 }
 
 func ClusterTag(r model.Resource) string {
-	return r.GetSpec().(*mesh_proto.Dataplane).GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ClusterTag]
+	dp := r.GetSpec().(*mesh_proto.Dataplane)
+	if dp.Networking.GetGateway() != nil {
+		return dp.Networking.GetGateway().GetTags()[mesh_proto.ClusterTag]
+	}
+	return dp.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ClusterTag]
 }
 
 func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource) (model.ResourceList, error) {

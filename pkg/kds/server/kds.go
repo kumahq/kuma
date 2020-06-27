@@ -30,8 +30,8 @@ type Server interface {
 	mesh_proto.KumaDiscoveryServiceServer
 }
 
-func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks, log logr.Logger) Server {
-	return &server{cache: config, callbacks: callbacks, log: log}
+func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks, log logr.Logger, clusterID string) Server {
+	return &server{cache: config, callbacks: callbacks, log: log, clusterID: clusterID}
 }
 
 // server is a simplified version of the original XDS server at
@@ -44,6 +44,8 @@ type server struct {
 	streamCount int64
 
 	log logr.Logger
+
+	clusterID string
 }
 
 type stream interface {
@@ -57,6 +59,7 @@ type stream interface {
 type watches struct {
 	meshes             chan envoy_cache.Response
 	ingresses          chan envoy_cache.Response
+	dataplaneInsights  chan envoy_cache.Response
 	circuitBreakers    chan envoy_cache.Response
 	faultInjections    chan envoy_cache.Response
 	healthChecks       chan envoy_cache.Response
@@ -69,6 +72,7 @@ type watches struct {
 
 	meshesCancel             func()
 	ingressesCancel          func()
+	dataplaneInsightsCancel  func()
 	circuitBreakersCancel    func()
 	faultInjectionsCancel    func()
 	healthChecksCancel       func()
@@ -81,6 +85,7 @@ type watches struct {
 
 	meshesNonce             string
 	ingressesNonce          string
+	dataplaneInsightsNonce  string
 	circuitBreakersNonce    string
 	faultInjectionsNonce    string
 	healthChecksNonce       string
@@ -99,6 +104,9 @@ func (values watches) Cancel() {
 	}
 	if values.ingressesCancel != nil {
 		values.ingressesCancel()
+	}
+	if values.dataplaneInsightsCancel != nil {
+		values.dataplaneInsightsCancel()
 	}
 	if values.circuitBreakersCancel != nil {
 		values.circuitBreakersCancel()
@@ -129,7 +137,7 @@ func (values watches) Cancel() {
 	}
 }
 
-func createResponse(resp *envoy_cache.Response, typeURL string) (*envoy.DiscoveryResponse, error) {
+func createResponse(resp *envoy_cache.Response, typeURL string, clusterID string) (*envoy.DiscoveryResponse, error) {
 	if resp == nil {
 		return nil, errors.New("missing response")
 	}
@@ -149,6 +157,9 @@ func createResponse(resp *envoy_cache.Response, typeURL string) (*envoy.Discover
 		}
 	}
 	out := &envoy.DiscoveryResponse{
+		ControlPlane: &envoy_core.ControlPlane{
+			Identifier: clusterID,
+		},
 		VersionInfo: resp.Version,
 		Resources:   resources,
 		TypeUrl:     typeURL,
@@ -183,7 +194,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 
 	// sends a response by serializing to protobuf Any
 	send := func(resp envoy_cache.Response, resourceType model.ResourceType) (string, error) {
-		out, err := createResponse(&resp, string(resourceType))
+		out, err := createResponse(&resp, string(resourceType), s.clusterID)
 		if err != nil {
 			return "", err
 		}
@@ -228,6 +239,16 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 				return err
 			}
 			values.ingressesNonce = nonce
+
+		case resp, more := <-values.dataplaneInsights:
+			if !more {
+				return status.Errorf(codes.Unavailable, "dataplane insights watch failed")
+			}
+			nonce, err := send(resp, mesh_core.DataplaneInsightType)
+			if err != nil {
+				return err
+			}
+			values.dataplaneInsightsNonce = nonce
 
 		case resp, more := <-values.circuitBreakers:
 			if !more {
@@ -362,6 +383,11 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 					values.ingressesCancel()
 				}
 				values.ingresses, values.ingressesCancel = s.cache.CreateWatch(*req)
+			case requestResourceType == mesh_core.DataplaneInsightType && (values.dataplaneInsightsNonce == "" || values.dataplaneInsightsNonce == nonce):
+				if values.dataplaneInsightsCancel != nil {
+					values.dataplaneInsightsCancel()
+				}
+				values.dataplaneInsights, values.dataplaneInsightsCancel = s.cache.CreateWatch(*req)
 			case requestResourceType == mesh_core.CircuitBreakerType && (values.circuitBreakersNonce == "" || values.circuitBreakersNonce == nonce):
 				if values.circuitBreakersCancel != nil {
 					values.circuitBreakersCancel()
@@ -464,7 +490,7 @@ func (s *server) Fetch(ctx context.Context, req *envoy.DiscoveryRequest) (*envoy
 	if err != nil {
 		return nil, err
 	}
-	out, err := createResponse(resp, req.TypeUrl)
+	out, err := createResponse(resp, req.TypeUrl, s.clusterID)
 	if s.callbacks != nil {
 		s.callbacks.OnFetchResponse(req, out)
 	}

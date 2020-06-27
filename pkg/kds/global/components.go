@@ -1,7 +1,9 @@
 package global
 
 import (
+	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/Kong/kuma/pkg/config/clusters"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
@@ -31,7 +33,10 @@ var (
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
 	}
-	consumedTypes = []model.ResourceType{mesh.DataplaneType}
+	consumedTypes = []model.ResourceType{
+		mesh.DataplaneType,
+		mesh.DataplaneInsightType,
+	}
 )
 
 func SetupComponent(rt runtime.Runtime) error {
@@ -64,7 +69,7 @@ func SetupServer(rt runtime.Runtime) error {
 		util_xds.LoggingCallbacks{Log: kdsGlobalLog},
 		syncTracker,
 	}
-	srv := kds_server.NewServer(cache, callbacks, kdsGlobalLog)
+	srv := kds_server.NewServer(cache, callbacks, kdsGlobalLog, "global")
 	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDSServer))
 }
 
@@ -81,12 +86,11 @@ func filter(clusterID string, r model.Resource) bool {
 
 func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *clusters.ClusterConfig) *client.Callbacks {
 	return &client.Callbacks{
-		OnResourcesReceived: func(rs model.ResourceList) error {
+		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
 			if len(rs.GetItems()) == 0 {
 				return nil
 			}
-			cluster := util.ClusterTag(rs.GetItems()[0])
-			util.AddPrefixToNames(rs.GetItems(), cluster)
+			util.AddPrefixToNames(rs.GetItems(), clusterName)
 			// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 			// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
 			if k8sStore {
@@ -94,7 +98,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *clusters.Cluster
 			}
 			adjustIngressNetworking(cfg, rs)
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-				return cluster == util.ClusterTag(r)
+				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
 			}))
 		},
 	}

@@ -14,7 +14,7 @@ import (
 type ClientFactory func() (KDSClient, error)
 
 type Callbacks struct {
-	OnResourcesReceived func(rs model.ResourceList) error
+	OnResourcesReceived func(clusterID string, rs model.ResourceList) error
 }
 
 type kdsSink struct {
@@ -74,11 +74,11 @@ func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 		default:
 		}
 
-		rs, err := stream.Receive()
+		clusterID, rs, err := stream.Receive()
 		if err != nil {
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
-		s.log.Info("DiscoveryResponse received")
+		s.log.Info("DiscoveryResponse received", "type", rs.GetItemType())
 
 		if s.callbacks == nil {
 			s.log.Info("sending ACK", "type", string(rs.GetItemType()))
@@ -90,7 +90,7 @@ func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 			}
 			continue
 		}
-		if err := s.callbacks.OnResourcesReceived(rs); err != nil {
+		if err := s.callbacks.OnResourcesReceived(clusterID, rs); err != nil {
 			s.log.Info("error during callback received, sending NACK", "err", err)
 			if err := stream.NACK(string(rs.GetItemType()), err); err != nil {
 				if err == io.EOF {
