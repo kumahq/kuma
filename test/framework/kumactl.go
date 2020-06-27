@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/Kong/kuma/pkg/config/core"
+	config_mode "github.com/Kong/kuma/pkg/config/mode"
 
 	"github.com/pkg/errors"
 
@@ -118,7 +118,7 @@ func (o *KumactlOptions) KumactlInstallCP(mode ...string) (string, error) {
 
 	for _, m := range mode {
 		args = append(args, "--mode", m)
-		if m == core.Remote {
+		if m == config_mode.Remote {
 			args = append(args, "--cluster-name", o.CPName)
 		}
 	}

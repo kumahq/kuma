@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Kong/kuma/pkg/config/clusters"
+	"github.com/Kong/kuma/pkg/config/mode"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	"github.com/Kong/kuma/pkg/config/core"
 	util_net "github.com/Kong/kuma/pkg/util/net"
 )
 
@@ -31,7 +30,7 @@ type PortFwd struct {
 
 type K8sControlPlane struct {
 	t          testing.TestingT
-	mode       core.CpMode
+	mode       mode.CpMode
 	name       string
 	kubeconfig string
 	kumactl    *KumactlOptions
@@ -40,7 +39,7 @@ type K8sControlPlane struct {
 	verbose    bool
 }
 
-func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, clusterName string,
+func NewK8sControlPlane(t testing.TestingT, mode mode.CpMode, clusterName string,
 	kubeconfig string, cluster *K8sCluster,
 	loPort, hiPort uint32,
 	verbose bool) *K8sControlPlane {
@@ -95,21 +94,17 @@ func (c *K8sControlPlane) AddCluster(name, url, lbAddress string) error {
 		return err
 	}
 
-	if cfg.KumaClusters == nil {
-		cfg.KumaClusters = &clusters.ClustersConfig{
-			Clusters: []*clusters.ClusterConfig{},
+	if cfg.Mode.Global == nil {
+		cfg.Mode.Global = &mode.GlobalConfig{
+			Zones: []*mode.ZoneConfig{},
 		}
 	}
 
-	cfg.KumaClusters.Clusters = append(cfg.KumaClusters.Clusters, &clusters.ClusterConfig{
-		Remote: clusters.EndpointConfig{
-			Address: url,
-		},
-		Ingress: clusters.EndpointConfig{
-			Address: url,
-		},
+	cfg.Mode.Global.Zones = append(cfg.Mode.Global.Zones, &mode.ZoneConfig{
+		Remote:  mode.EndpointConfig{Address: url},
+		Ingress: mode.EndpointConfig{Address: url},
 	})
-	cfg.KumaClusters.LBConfig.Address = lbAddress
+	cfg.Mode.Global.LBAddress = lbAddress
 
 	yamlBytes, err := yaml.Marshal(&cfg)
 	if err != nil {
@@ -197,7 +192,7 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
-	if c.mode == core.Remote {
+	if c.mode == mode.Remote {
 		return nil
 	}
 

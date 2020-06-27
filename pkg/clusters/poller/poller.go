@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Kong/kuma/pkg/config/clusters"
+	"github.com/Kong/kuma/pkg/config/mode"
 
 	"github.com/Kong/kuma/pkg/core"
 )
@@ -45,7 +45,7 @@ const (
 	httpTimeout  = tickInterval / 100
 )
 
-func NewClustersStatusPoller(clusters *clusters.ClustersConfig) (ClusterStatusPoller, error) {
+func NewClustersStatusPoller(globalConfig *mode.GlobalConfig) (ClusterStatusPoller, error) {
 	poller := &ClustersStatusPoller{
 		clusters: []Cluster{},
 		client: http.Client{
@@ -56,11 +56,11 @@ func NewClustersStatusPoller(clusters *clusters.ClustersConfig) (ClusterStatusPo
 		},
 	}
 
-	for _, cluster := range clusters.Clusters {
+	for _, zone := range globalConfig.Zones {
 		// ignore the Ingress for now
 		poller.clusters = append(poller.clusters, Cluster{
-			Name:   cluster.Remote.Address, // init the name of the cluster with its address
-			URL:    cluster.Remote.Address,
+			Name:   zone.Remote.Address, // init the name of the cluster with its address
+			URL:    zone.Remote.Address,
 			Active: false,
 		})
 	}

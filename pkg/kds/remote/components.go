@@ -43,7 +43,7 @@ var (
 
 func SetupServer(rt core_runtime.Runtime) error {
 	hasher, cache := kds_server.NewXdsContext(kdsRemoteLog)
-	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, makeFilter(rt.Config().General.ClusterName))
+	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, makeFilter(rt.Config().Mode.Remote.Zone))
 	versioner := kds_server.NewVersioner()
 	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := kds_server.NewSyncTracker(kdsRemoteLog, reconciler, rt.Config().KDSServer.RefreshInterval)
@@ -57,7 +57,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	componentFactory := func(log logr.Logger, req *envoy_api_v2.DiscoveryRequest) component.Component {
 		globalAddress := req.Node.Id
-		policiesSink := kds_client.NewKDSSink(kdsRemoteLog, rt.Config().General.ClusterName, consumedTypes,
+		policiesSink := kds_client.NewKDSSink(kdsRemoteLog, rt.Config().Mode.Remote.Zone, consumedTypes,
 			clientFactory(globalAddress), Callbacks(resourceSyncer, rt.Config().Store.Type == store.KubernetesStore))
 		return component.NewResilientComponent(kdsRemoteLog, policiesSink)
 	}
@@ -67,7 +67,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 		syncTracker,
 		NewComponentSpawner(kdsRemoteLog.WithName("policy-sink-spawner"), componentFactory),
 	}
-	srv := kds_server.NewServer(cache, callbacks, kdsRemoteLog, rt.Config().General.ClusterName)
+	srv := kds_server.NewServer(cache, callbacks, kdsRemoteLog, rt.Config().Mode.Remote.Zone)
 	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDSServer))
 }
 

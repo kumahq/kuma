@@ -142,7 +142,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 						return err
 					}
 					destinations := ingress.BuildDestinationMap(dataplane)
-					endpoints := xds_topology.BuildEndpointMap(destinations, dataplanes.Items, rt.Config().General.ClusterName)
+					endpoints := xds_topology.BuildEndpointMap(destinations, dataplanes.Items, rt.Config().Mode.Remote.Zone)
 					proxy := xds.Proxy{
 						Id:              proxyID,
 						Dataplane:       dataplane,
@@ -170,7 +170,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, rt.Config().General.ClusterName)
+				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, rt.Config().Mode.Remote.Zone)
 				if err != nil {
 					return err
 				}

@@ -238,8 +238,6 @@ general:
   # Hostname that other components should use in order to connect to the Control Plane.
   # Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
   advertisedHostname: localhost # ENV: KUMA_GENERAL_ADVERTISED_HOSTNAME
-  # Kuma Cluster name used to mark the remote dataplane resources
-  clusterName:
 
 # Web GUI Server configuration
 guiServer:
@@ -249,7 +247,21 @@ guiServer:
   apiServerUrl: # ENV: KUMA_GUI_SERVER_API_SERVER_URL
 
 # ControlPlane mode
-mode: standalone # Configured from args. By default autoconfigured to standalone
+mode:
+  mode: standalone # Configured from args. By default autoconfigured to standalone
+  global: # Global CP configuration
+    lbaddress: "" # The external LB address for Remotes to reach back to Global
+    zones: [] # a sequence of zones attached to this Global CP
+#      - remote:
+#          address: 1.1.1.1:5685 # Remote kDS address
+#        ingress:
+#          address: 1.1.1.1:8080 # Remote Ingress address
+#      - remote:
+#          address: 2.2.2.2:5685
+#        ingress:
+#          address: 2.2.2.2:8080
+  remote: # Remote CP configuration
+    zone: "" # the name of the zone for this Remote CP
 # DNS Server configuration
 dnsServer:
   # The domain that the server will resolve the services for
@@ -258,10 +270,6 @@ dnsServer:
   port: 5653 # ENV: KUMA_DNS_SERVER_PORT
   # The CIDR range used to allocate
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
-
-# Clusters configuration
-kumaClusters:
-  clusters: []
 
 # Kuma Discovery Service configuration
 kdsServer:

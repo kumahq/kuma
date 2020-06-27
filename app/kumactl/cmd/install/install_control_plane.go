@@ -3,6 +3,8 @@ package install
 import (
 	"fmt"
 
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -12,7 +14,6 @@ import (
 	controlplane "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/control-plane"
 	kumacni "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
-	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/tls"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
@@ -57,7 +58,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		SdsTlsKey:               "",
 		CNIImage:                "lobkovilya/install-cni",
 		CNIVersion:              "0.0.1",
-		KumaCpMode:              core.Standalone,
+		KumaCpMode:              mode.Standalone,
 		ClusterName:             "",
 		GlobalRemotePortType:    "LoadBalancer",
 	}
@@ -67,13 +68,13 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Kuma Control Plane on Kubernetes",
 		Long:  `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := core.ValidateCpMode(args.KumaCpMode); err != nil {
+			if err := mode.ValidateCpMode(args.KumaCpMode); err != nil {
 				return err
 			}
-			if args.KumaCpMode == core.Remote && args.ClusterName == "" {
+			if args.KumaCpMode == mode.Remote && args.ClusterName == "" {
 				return errors.Errorf("--cluster-name is mandatory with `remote` mode")
 			}
-			if useNodePort && args.KumaCpMode != core.Standalone {
+			if useNodePort && args.KumaCpMode != mode.Standalone {
 				args.GlobalRemotePortType = "NodePort"
 			}
 			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {

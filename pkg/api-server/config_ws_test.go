@@ -121,8 +121,6 @@ var _ = Describe("Config WS", func() {
           "general": {
             "advertisedHostname": "localhost"
           },
-          "kumaClusters": {
-          },
           "guiServer": {
             "port": 5683,
             "apiServerUrl": ""
@@ -133,7 +131,13 @@ var _ = Describe("Config WS", func() {
               "subscriptionLimit": 10
             }
           },
-          "mode": "standalone",
+          "mode": {
+           "global": {
+             "zones": []
+           },
+           "local": {},
+           "mode": "standalone"
+        },
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
             "grpcPort": 5676

@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 
 	"github.com/Kong/kuma/pkg/config"
@@ -125,7 +127,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.GuiServer.Port).To(Equal(uint32(8888)))
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
-			Expect(cfg.Mode).To(Equal("standalone"))
+			Expect(cfg.Mode.Mode).To(Equal(mode.Standalone))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -204,7 +206,13 @@ general:
 guiServer:
   port: 8888
   apiServerUrl: http://localhost:1234
-mode: standalone
+mode:
+  mode: standalone
+  global:
+    lbaddress: ""
+    zones: []
+  remote:
+    zone: ""
 dnsServer:
   port: 15653
   CIDR: 127.1.0.0/16

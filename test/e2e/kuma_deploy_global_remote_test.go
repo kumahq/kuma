@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -17,7 +19,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config/core"
 	. "github.com/Kong/kuma/test/framework"
 )
 
@@ -50,10 +51,10 @@ var _ = Describe("Test Remote and Global", func() {
 		c1 := clusters.GetCluster(Kuma1)
 		c2 := clusters.GetCluster(Kuma2)
 
-		global, err := c1.DeployKuma(core.Global)
+		global, err := c1.DeployKuma(mode.Global)
 		Expect(err).ToNot(HaveOccurred())
 
-		remote, err := c2.DeployKuma(core.Remote)
+		remote, err := c2.DeployKuma(mode.Remote)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -109,10 +110,10 @@ var _ = Describe("Test Remote and Global", func() {
 		c1 := clusters.GetCluster(Kuma1)
 		c2 := clusters.GetCluster(Kuma2)
 
-		global, err := c1.DeployKuma(core.Global)
+		global, err := c1.DeployKuma(mode.Global)
 		Expect(err).ToNot(HaveOccurred())
 
-		local, err := c2.DeployKuma(core.Remote)
+		local, err := c2.DeployKuma(mode.Remote)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

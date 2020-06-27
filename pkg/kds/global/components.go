@@ -7,7 +7,8 @@ import (
 
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 
-	"github.com/Kong/kuma/pkg/config/clusters"
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -45,16 +46,16 @@ var (
 func SetupComponent(rt runtime.Runtime) error {
 	syncStore := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
 
-	clientFactory := func(clusterIP string) client.ClientFactory {
+	clientFactory := func(zoneIP string) client.ClientFactory {
 		return func() (kdsClient client.KDSClient, err error) {
-			return client.New(clusterIP)
+			return client.New(zoneIP)
 		}
 	}
 
-	for _, cluster := range rt.Config().KumaClusters.Clusters {
-		log := kdsGlobalLog.WithValues("clusterIP", cluster.Remote.Address)
-		dataplaneSink := client.NewKDSSink(log, rt.Config().KumaClusters.LBConfig.Address, consumedTypes,
-			clientFactory(cluster.Remote.Address), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore, cluster))
+	for _, zone := range rt.Config().Mode.Global.Zones {
+		log := kdsGlobalLog.WithValues("zoneIP", zone.Remote)
+		dataplaneSink := client.NewKDSSink(log, rt.Config().Mode.Global.LBAddress, consumedTypes,
+			clientFactory(zone.Remote.Address), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore, zone))
 		if err := rt.Add(component.NewResilientComponent(log, dataplaneSink)); err != nil {
 			return err
 		}
@@ -87,7 +88,7 @@ func filter(clusterID string, r model.Resource) bool {
 	return clusterID != util.ClusterTag(r)
 }
 
-func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *clusters.ClusterConfig) *client.Callbacks {
+func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *mode.ZoneConfig) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
 			if len(rs.GetItems()) == 0 {
@@ -107,7 +108,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *clusters.Cluster
 	}
 }
 
-func adjustIngressNetworking(cfg *clusters.ClusterConfig, rs model.ResourceList) {
+func adjustIngressNetworking(cfg *mode.ZoneConfig, rs model.ResourceList) {
 	if rs.GetItemType() != mesh.DataplaneType {
 		return
 	}
