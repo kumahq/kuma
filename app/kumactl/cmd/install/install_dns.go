@@ -9,18 +9,23 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const appendTemplate = `mesh:53 {
+const (
+	corednsAppendTemplate = `mesh:53 {
         errors
         cache 30
         %s . %s:5653
     }`
+	kubednsAppendTemplate = `{"mesh": %s}\n`
+)
 
-var resourceHeader = []byte("apiVersion: v1\nkind: ConfigMap\n")
+var resourceHeader = []byte("---\napiVersion: v1\nkind: ConfigMap\n")
 
 func newInstallDNS() *cobra.Command {
 	cmd := &cobra.Command{
@@ -52,30 +57,34 @@ This command requires that the KUBECONFIG environment is set`,
 
 			cpaddress := kumaCPSVC.Spec.ClusterIP
 
-			corednsConfigMap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(context.TODO(),
-				"coredns", metav1.GetOptions{})
+			var errs error
+			generated := false
+			corednsConfigMap, err := handleCoreDNS(clientset, cpaddress)
 			if err != nil {
-				return err
+				errs = multierr.Append(errs, err)
+			} else {
+				err = outputYaml(cmd, corednsConfigMap)
+				if err != nil {
+					errs = multierr.Append(errs, err)
+				}
+				generated = true
 			}
 
-			if !strings.Contains(corednsConfigMap.Data["Corefile"], "mesh:53") {
-				forwardVerb := getCoreFileForwardVerb(corednsConfigMap.Data["Corefile"])
-				toappend := fmt.Sprintf(appendTemplate, forwardVerb, cpaddress)
-				corednsConfigMap.Data["Corefile"] += toappend
-			}
-
-			corednsConfigMapYAML, err := yaml.Marshal(corednsConfigMap)
+			kubednsConfigMap, err := handleKubeDNS(clientset, cpaddress)
 			if err != nil {
-				return err
+				errs = multierr.Append(errs, err)
+			} else {
+				err = outputYaml(cmd, kubednsConfigMap)
+				if err != nil {
+					errs = multierr.Append(errs, err)
+				}
+				generated = true
 			}
 
-			if _, err := cmd.OutOrStdout().Write(resourceHeader); err != nil {
-				return errors.Wrap(err, "Failed to output the generated resources")
+			if !generated {
+				return errs
 			}
 
-			if _, err := cmd.OutOrStdout().Write(corednsConfigMapYAML); err != nil {
-				return errors.Wrap(err, "Failed to output the generated resources")
-			}
 			return nil
 		},
 	}
@@ -91,4 +100,49 @@ func getCoreFileForwardVerb(corefile string) string {
 	}
 
 	return "forward"
+}
+
+func handleCoreDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.ConfigMap, error) {
+	corednsConfigMap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(context.TODO(),
+		"coredns", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if !strings.Contains(corednsConfigMap.Data["Corefile"], "mesh:53") {
+		forwardVerb := getCoreFileForwardVerb(corednsConfigMap.Data["Corefile"])
+		toappend := fmt.Sprintf(corednsAppendTemplate, forwardVerb, cpaddress)
+		corednsConfigMap.Data["Corefile"] += toappend
+	}
+	return corednsConfigMap, nil
+}
+
+func handleKubeDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.ConfigMap, error) {
+	corednsConfigMap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(context.TODO(),
+		"kube-dns", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if !strings.Contains(corednsConfigMap.Data["stubDomains"], "\"mesh\"") {
+		toappend := fmt.Sprintf(kubednsAppendTemplate, cpaddress)
+		corednsConfigMap.Data["stubDomains"] += toappend
+	}
+	return corednsConfigMap, nil
+}
+
+func outputYaml(cmd *cobra.Command, configMap *v1.ConfigMap) error {
+	corednsConfigMapYAML, err := yaml.Marshal(configMap)
+	if err != nil {
+		return err
+	}
+
+	if _, err := cmd.OutOrStdout().Write(resourceHeader); err != nil {
+		return errors.Wrap(err, "Failed to output the generated resources")
+	}
+
+	if _, err := cmd.OutOrStdout().Write(corednsConfigMapYAML); err != nil {
+		return errors.Wrap(err, "Failed to output the generated resources")
+	}
+	return nil
 }
