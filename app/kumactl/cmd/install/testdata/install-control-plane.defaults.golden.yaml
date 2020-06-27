@@ -4408,14 +4408,6 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - healthchecks
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - proxytemplates
     verbs:
       - get
@@ -4437,46 +4429,12 @@ rules:
       - kuma.io
     resources:
       - trafficpermissions
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - trafficlogs
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - trafficroutes
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - traffictraces
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - faultinjections
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - circuitbreakers
+      - healthchecks
     verbs:
       - get
       - list
@@ -4492,7 +4450,7 @@ rules:
     resources:
       - meshes/finalizers
     verbs:
-      - "*"
+      - '*'
   - apiGroups:
       - kuma.io
     resources:
@@ -4634,20 +4592,20 @@ spec:
               value: "5677"
             - name: KUMA_XDS_SERVER_GRPC_PORT
               value: "5678"
-            - name: KUMA_API_SERVER_PORT
-              value: "5681"
             - name: KUMA_BOOTSTRAP_SERVER_PORT
               value: "5682"
             - name: KUMA_SDS_SERVER_TLS_CERT_FILE
               value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
             - name: KUMA_SDS_SERVER_TLS_KEY_FILE
               value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
+            - name: KUMA_API_SERVER_PORT
+              value: "5681"
+            - name: KUMA_API_SERVER_READ_ONLY
+              value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
-            - name: KUMA_API_SERVER_READ_ONLY
-              value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
