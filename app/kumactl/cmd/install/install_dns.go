@@ -2,6 +2,7 @@ package install
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -22,7 +24,6 @@ const (
         cache 30
         %s . %s:5653
     }`
-	kubednsAppendTemplate = `{"mesh": %s}\n`
 )
 
 var resourceHeader = []byte("---\napiVersion: v1\nkind: ConfigMap\n")
@@ -44,7 +45,7 @@ This command requires that the KUBECONFIG environment is set`,
 				return err
 			}
 
-			clientset, _ := kubernetes.NewForConfig(config)
+			clientset, err := kubernetes.NewForConfig(config)
 			if err != nil {
 				return err
 			}
@@ -124,10 +125,22 @@ func handleKubeDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.Confi
 		return nil, err
 	}
 
-	if !strings.Contains(corednsConfigMap.Data["stubDomains"], "\"mesh\"") {
-		toappend := fmt.Sprintf(kubednsAppendTemplate, cpaddress)
-		corednsConfigMap.Data["stubDomains"] += toappend
+	stubDomains := map[string][]string{}
+	err = json.Unmarshal([]byte(corednsConfigMap.Data["stubDomains"]), &stubDomains)
+	if err != nil {
+		return nil, err
 	}
+
+	if _, found := stubDomains["mesh"]; !found {
+		stubDomains["mesh"] = []string{cpaddress}
+	}
+
+	json, err := json.Marshal(stubDomains)
+	if err != nil {
+		return nil, err
+	}
+	corednsConfigMap.Data["stubDomains"] = string(json)
+
 	return corednsConfigMap, nil
 }
 
