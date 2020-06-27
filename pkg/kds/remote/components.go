@@ -80,9 +80,14 @@ func makeFilter(clusterName string) reconcile.ResourceFilter {
 
 func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
-		OnResourcesReceived: func(_ string, rs model.ResourceList) error {
+		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
 			if k8sStore && rs.GetItemType() != mesh.MeshType {
 				util.AddSuffixToNames(rs.GetItems(), "default")
+			}
+			if rs.GetItemType() == mesh.DataplaneType {
+				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
+					return r.(*mesh.DataplaneResource).Spec.IsIngress() && util.ClusterTag(r) == clusterID
+				}))
 			}
 			return syncer.Sync(rs)
 		},
