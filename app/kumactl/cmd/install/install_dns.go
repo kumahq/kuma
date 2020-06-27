@@ -125,8 +125,13 @@ func handleKubeDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.Confi
 		return nil, err
 	}
 
+	rawStubDomanins, found := corednsConfigMap.Data["stubDomains"]
+	if !found || rawStubDomanins == "" {
+		rawStubDomanins = "{}"
+	}
+
 	stubDomains := map[string][]string{}
-	err = json.Unmarshal([]byte(corednsConfigMap.Data["stubDomains"]), &stubDomains)
+	err = json.Unmarshal([]byte(rawStubDomanins), &stubDomains)
 	if err != nil {
 		return nil, err
 	}
