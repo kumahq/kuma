@@ -41,7 +41,7 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 	return nil
 }
 
-func StartServer(store store.ResourceStore, wg *sync.WaitGroup) *test_grpc.MockServerStream {
+func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string) *test_grpc.MockServerStream {
 	createServer := func(rt runtime.Runtime) kds_server.Server {
 		log := core.Log
 		hasher, cache := kds_server.NewXdsContext(log)
@@ -53,7 +53,7 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup) *test_grpc.MockS
 			util_xds.LoggingCallbacks{Log: log},
 			syncTracker,
 		}
-		return kds_server.NewServer(cache, callbacks, log)
+		return kds_server.NewServer(cache, callbacks, log, clusterID)
 	}
 
 	srv := createServer(&testRuntimeContext{
