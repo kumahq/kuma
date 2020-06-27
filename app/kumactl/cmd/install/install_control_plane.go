@@ -41,7 +41,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		CNIImage                string
 		CNIVersion              string
 		KumaCpMode              string
-		ClusterName             string
+		Zone                    string
 		GlobalRemotePortType    string
 	}{
 		Namespace:               "kuma-system",
@@ -59,7 +59,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		CNIImage:                "lobkovilya/install-cni",
 		CNIVersion:              "0.0.1",
 		KumaCpMode:              mode.Standalone,
-		ClusterName:             "",
+		Zone:                    "",
 		GlobalRemotePortType:    "LoadBalancer",
 	}
 	useNodePort := false
@@ -71,8 +71,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if err := mode.ValidateCpMode(args.KumaCpMode); err != nil {
 				return err
 			}
-			if args.KumaCpMode == mode.Remote && args.ClusterName == "" {
-				return errors.Errorf("--cluster-name is mandatory with `remote` mode")
+			if args.KumaCpMode == mode.Remote && args.Zone == "" {
+				return errors.Errorf("--zone is mandatory with `remote` mode")
 			}
 			if useNodePort && args.KumaCpMode != mode.Standalone {
 				args.GlobalRemotePortType = "NodePort"
@@ -155,7 +155,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.CNIImage, "cni-image", args.CNIImage, "image of Kuma CNI component, if CNIEnabled equals true")
 	cmd.Flags().StringVar(&args.CNIVersion, "cni-version", args.CNIVersion, "version of the CNIImage")
 	cmd.Flags().StringVar(&args.KumaCpMode, "mode", args.KumaCpMode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
-	cmd.Flags().StringVar(&args.ClusterName, "cluster-name", args.ClusterName, "set the Kuma cluster name")
+	cmd.Flags().StringVar(&args.Zone, "zone", args.Zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	return cmd
 }

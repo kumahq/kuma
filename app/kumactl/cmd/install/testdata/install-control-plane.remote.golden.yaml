@@ -40,7 +40,7 @@ data:
     # ControlPlane mode
     mode:
       remote: # Remote CP configuration
-        zone: cluster-1 # the name of the zone for this Remote CP
+        zone: zone-1 # the name of the zone for this Remote CP
 ---
 apiVersion: v1
 kind: ServiceAccount

@@ -121,7 +121,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--sds-tls-cert", "SdsCert",
 				"--sds-tls-key", "SdsKey",
 				"--mode", "remote",
-				"--cluster-name", "cluster-1",
+				"--zone", "zone-1",
 				"--use-node-port",
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
@@ -141,7 +141,7 @@ var _ = Describe("kumactl install control-plane", func() {
 		Entry("should generate Kubernetes resources for remote", testCase{
 			extraArgs: []string{
 				"--mode", "remote",
-				"--cluster-name", "cluster-1",
+				"--zone", "zone-1",
 			},
 			goldenFile: "install-control-plane.remote.golden.yaml",
 		}),
