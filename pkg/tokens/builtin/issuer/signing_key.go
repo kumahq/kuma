@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
@@ -13,7 +14,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/store"
-	core_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 )
 
 const defaultRsaBits = 2048
@@ -23,7 +23,7 @@ var signingKeyResourceKey = model.ResourceKey{
 	Name: "dataplane-token-signing-key",
 }
 
-func CreateDefaultSigningKey(manager core_manager.SecretManager) error {
+func CreateDefaultSigningKey(manager manager.ResourceManager) error {
 	key, err := createSigningKey()
 	if err != nil {
 		return err
@@ -31,7 +31,7 @@ func CreateDefaultSigningKey(manager core_manager.SecretManager) error {
 	return storeKeyIfNotExist(manager, key)
 }
 
-func storeKeyIfNotExist(manager core_manager.SecretManager, keyResource system.SecretResource) error {
+func storeKeyIfNotExist(manager manager.ResourceManager, keyResource system.SecretResource) error {
 	ctx := context.Background()
 	resource := system.SecretResource{}
 	if err := manager.Get(ctx, &resource, store.GetBy(signingKeyResourceKey)); err != nil {
@@ -60,7 +60,7 @@ func createSigningKey() (system.SecretResource, error) {
 	return res, nil
 }
 
-func GetSigningKey(manager core_manager.SecretManager) ([]byte, error) {
+func GetSigningKey(manager manager.ResourceManager) ([]byte, error) {
 	resource := system.SecretResource{}
 	if err := manager.Get(context.Background(), &resource, store.GetBy(signingKeyResourceKey)); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve signing key from secret manager")

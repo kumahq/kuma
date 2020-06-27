@@ -2,6 +2,7 @@ package datasource
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"io/ioutil"
 
 	"github.com/pkg/errors"
@@ -9,7 +10,6 @@ import (
 	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/secrets/manager"
 )
 
 type Loader interface {
@@ -17,12 +17,12 @@ type Loader interface {
 }
 
 type loader struct {
-	secretManager manager.SecretManager
+	secretManager manager.ResourceManager
 }
 
 var _ Loader = &loader{}
 
-func NewDataSourceLoader(secretManager manager.SecretManager) Loader {
+func NewDataSourceLoader(secretManager manager.ResourceManager) Loader {
 	return &loader{
 		secretManager: secretManager,
 	}

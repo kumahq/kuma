@@ -2,6 +2,8 @@ package manager
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/pkg/errors"
 	"time"
 
 	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
@@ -11,16 +13,7 @@ import (
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
 )
 
-type SecretManager interface {
-	Create(context.Context, *secret_model.SecretResource, ...core_store.CreateOptionsFunc) error
-	Update(context.Context, *secret_model.SecretResource, ...core_store.UpdateOptionsFunc) error
-	Delete(context.Context, *secret_model.SecretResource, ...core_store.DeleteOptionsFunc) error
-	DeleteAll(context.Context, ...core_store.DeleteAllOptionsFunc) error
-	Get(context.Context, *secret_model.SecretResource, ...core_store.GetOptionsFunc) error
-	List(context.Context, *secret_model.SecretResourceList, ...core_store.ListOptionsFunc) error
-}
-
-func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher.Cipher, validator SecretValidator) SecretManager {
+func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher.Cipher, validator SecretValidator) manager.ResourceManager {
 	return &secretManager{
 		secretStore: secretStore,
 		cipher:      cipher,
@@ -28,7 +21,7 @@ func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher
 	}
 }
 
-var _ SecretManager = &secretManager{}
+var _ manager.ResourceManager = &secretManager{}
 
 type secretManager struct {
 	secretStore secret_store.SecretStore
@@ -36,14 +29,22 @@ type secretManager struct {
 	validator   SecretValidator
 }
 
-func (s *secretManager) Get(ctx context.Context, secret *secret_model.SecretResource, fs ...core_store.GetOptionsFunc) error {
+func (s *secretManager) Get(ctx context.Context, resource model.Resource, fs ...core_store.GetOptionsFunc) error {
+	secret, ok := resource.(*secret_model.SecretResource)
+	if !ok {
+		return newInvalidTypeError()
+	}
 	if err := s.secretStore.Get(ctx, secret, fs...); err != nil {
 		return err
 	}
 	return s.decrypt(secret)
 }
 
-func (s *secretManager) List(ctx context.Context, secrets *secret_model.SecretResourceList, fs ...core_store.ListOptionsFunc) error {
+func (s *secretManager) List(ctx context.Context, resources model.ResourceList, fs ...core_store.ListOptionsFunc) error {
+	secrets, ok := resources.(*secret_model.SecretResourceList)
+	if !ok {
+		return newInvalidTypeError()
+	}
 	if err := s.secretStore.List(ctx, secrets, fs...); err != nil {
 		return err
 	}
@@ -55,7 +56,11 @@ func (s *secretManager) List(ctx context.Context, secrets *secret_model.SecretRe
 	return nil
 }
 
-func (s *secretManager) Create(ctx context.Context, secret *secret_model.SecretResource, fs ...core_store.CreateOptionsFunc) error {
+func (s *secretManager) Create(ctx context.Context, resource model.Resource, fs ...core_store.CreateOptionsFunc) error {
+	secret, ok := resource.(*secret_model.SecretResource)
+	if !ok {
+		return newInvalidTypeError()
+	}
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
@@ -65,7 +70,11 @@ func (s *secretManager) Create(ctx context.Context, secret *secret_model.SecretR
 	return s.decrypt(secret)
 }
 
-func (s *secretManager) Update(ctx context.Context, secret *secret_model.SecretResource, fs ...core_store.UpdateOptionsFunc) error {
+func (s *secretManager) Update(ctx context.Context, resource model.Resource, fs ...core_store.UpdateOptionsFunc) error {
+	secret, ok := resource.(*secret_model.SecretResource)
+	if !ok {
+		return newInvalidTypeError()
+	}
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
@@ -75,7 +84,11 @@ func (s *secretManager) Update(ctx context.Context, secret *secret_model.SecretR
 	return s.decrypt(secret)
 }
 
-func (s *secretManager) Delete(ctx context.Context, secret *secret_model.SecretResource, fs ...core_store.DeleteOptionsFunc) error {
+func (s *secretManager) Delete(ctx context.Context, resource model.Resource, fs ...core_store.DeleteOptionsFunc) error {
+	secret, ok := resource.(*secret_model.SecretResource)
+	if !ok {
+		return newInvalidTypeError()
+	}
 	opts := core_store.NewDeleteOptions(fs...)
 	if err := s.validator.ValidateDelete(ctx, opts.Name, opts.Mesh); err != nil {
 		return err
@@ -83,7 +96,7 @@ func (s *secretManager) Delete(ctx context.Context, secret *secret_model.SecretR
 	return s.secretStore.Delete(ctx, secret, fs...)
 }
 
-func (s *secretManager) DeleteAll(ctx context.Context, fs ...core_store.DeleteAllOptionsFunc) error {
+func (s *secretManager) DeleteAll(ctx context.Context, secrets model.ResourceList, fs ...core_store.DeleteAllOptionsFunc) error {
 	list := &secret_model.SecretResourceList{}
 	opts := core_store.NewDeleteAllOptions(fs...)
 	if err := s.secretStore.List(context.Background(), list, core_store.ListByMesh(opts.Mesh)); err != nil {
@@ -95,6 +108,10 @@ func (s *secretManager) DeleteAll(ctx context.Context, fs ...core_store.DeleteAl
 		}
 	}
 	return nil
+}
+
+func newInvalidTypeError() error {
+	return errors.New("resource has a wrong type")
 }
 
 func (s *secretManager) encrypt(secret *secret_model.SecretResource) error {

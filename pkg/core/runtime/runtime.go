@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"github.com/Kong/kuma/pkg/core/secrets/store"
 
 	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
 
@@ -15,7 +16,6 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
-	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
 
@@ -36,7 +36,7 @@ type RuntimeContext interface {
 	ResourceManager() core_manager.ResourceManager
 	ResourceStore() core_store.ResourceStore
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
-	SecretManager() secret_manager.SecretManager
+	SecretStore() store.SecretStore
 	CaManagers() ca.Managers
 	Extensions() context.Context
 	DNSResolver() dns.DNSResolver
@@ -69,8 +69,8 @@ type runtimeContext struct {
 	cfg      kuma_cp.Config
 	rm       core_manager.ResourceManager
 	rs       core_store.ResourceStore
+	ss       store.SecretStore
 	rom      core_manager.ReadOnlyResourceManager
-	sm       secret_manager.SecretManager
 	cam      ca.Managers
 	xds      core_xds.XdsContext
 	ext      context.Context
@@ -95,11 +95,11 @@ func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
 	return rc.rs
 }
+func (rc *runtimeContext) SecretStore() store.SecretStore {
+	return rc.ss
+}
 func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return rc.rom
-}
-func (rc *runtimeContext) SecretManager() secret_manager.SecretManager {
-	return rc.sm
 }
 func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext

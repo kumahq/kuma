@@ -3,6 +3,7 @@ package builtin
 import (
 	"context"
 	"fmt"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
@@ -15,17 +16,16 @@ import (
 	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_validators "github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/plugins/ca/builtin/config"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 type builtinCaManager struct {
-	secretManager secret_manager.SecretManager
+	secretManager manager.ResourceManager
 }
 
-func NewBuiltinCaManager(secretManager secret_manager.SecretManager) core_ca.Manager {
+func NewBuiltinCaManager(secretManager manager.ResourceManager) core_ca.Manager {
 	return &builtinCaManager{
 		secretManager: secretManager,
 	}
