@@ -6,6 +6,8 @@ import (
 	"encoding/pem"
 	"time"
 
+	"github.com/Kong/kuma/pkg/core/resources/manager"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
@@ -27,7 +29,7 @@ import (
 
 var _ = Describe("Builtin CA Manager", func() {
 
-	var secretManager secret_manager.SecretManager
+	var secretManager manager.ResourceManager
 	var caManager core_ca.Manager
 
 	now := time.Now()

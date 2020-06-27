@@ -45,7 +45,7 @@ var _ = Describe("Mesh Manager", func() {
 
 		manager := manager.NewResourceManager(resStore)
 		validator := MeshValidator{CaManagers: caManagers}
-		resManager = NewMeshManager(resStore, manager, secretManager, caManagers, test_resources.Global(), validator)
+		resManager = NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
 	})
 
 	Describe("Create()", func() {

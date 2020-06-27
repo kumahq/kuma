@@ -2,8 +2,9 @@ package datasource
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"io/ioutil"
+
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 
 	"github.com/pkg/errors"
 

@@ -2,8 +2,9 @@ package mesh
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"time"
+
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
 

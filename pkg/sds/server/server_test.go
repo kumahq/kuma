@@ -110,7 +110,7 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup Auth with Dataplane Token
-		err = tokens_issuer.CreateDefaultSigningKey(runtime.SecretManager())
+		err = tokens_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
 		Expect(err).ToNot(HaveOccurred())
 
 		// retrieve example DP token

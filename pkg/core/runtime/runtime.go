@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+
 	"github.com/Kong/kuma/pkg/core/secrets/store"
 
 	config_manager "github.com/Kong/kuma/pkg/core/config/manager"

@@ -2,8 +2,9 @@ package admin_server
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"strings"
+
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 
 	"github.com/emicklei/go-restful"
 

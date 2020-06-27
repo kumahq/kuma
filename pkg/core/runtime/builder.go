@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+
 	"github.com/Kong/kuma/pkg/core/secrets/store"
 
 	"github.com/Kong/kuma/pkg/clusters/poller"
@@ -41,12 +42,12 @@ var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg kuma_cp.Config
-	cm  component.Manager
-	rs  core_store.ResourceStore
-	ss  store.SecretStore
-	rm  core_manager.ResourceManager
-	rom core_manager.ReadOnlyResourceManager
+	cfg      kuma_cp.Config
+	cm       component.Manager
+	rs       core_store.ResourceStore
+	ss       store.SecretStore
+	rm       core_manager.ResourceManager
+	rom      core_manager.ReadOnlyResourceManager
 	cam      core_ca.Managers
 	xds      core_xds.XdsContext
 	dsl      datasource.Loader

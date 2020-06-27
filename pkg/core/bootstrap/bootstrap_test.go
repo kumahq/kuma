@@ -82,7 +82,7 @@ var _ = Describe("Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		key, err := builtin_issuer.GetSigningKey(rt.SecretManager())
+		key, err := builtin_issuer.GetSigningKey(rt.ResourceManager())
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -91,7 +91,7 @@ var _ = Describe("Bootstrap", func() {
 		// when kuma-cp is run again
 		err = onStartup(rt)
 		Expect(err).ToNot(HaveOccurred())
-		key2, err := builtin_issuer.GetSigningKey(rt.SecretManager())
+		key2, err := builtin_issuer.GetSigningKey(rt.ResourceManager())
 
 		// then it should skip creating a new signing key
 		Expect(err).ToNot(HaveOccurred())
