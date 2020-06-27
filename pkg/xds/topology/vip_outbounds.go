@@ -2,10 +2,6 @@ package topology
 
 import (
 	"sort"
-	"strings"
-
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -23,22 +19,27 @@ func PatchDataplaneWithVIPOutbounds(dataplane *mesh_core.DataplaneResource,
 			continue
 		}
 
-		for _, inbound := range dp.Spec.Networking.Inbound {
-			inService := inbound.GetTags()[mesh_proto.ServiceTag]
-
-			if _, found := serviceVIPMap[inService]; !found {
-				vip, err := resolver.ForwardLookup(inService)
-				if err != nil {
-					// TODO: remove this additional lookup once the service tag contains a `flat` service name
-					// try to get the first part of the FQDN service and look it up
-					split := strings.Split(inService, ".")
-					vip, err = resolver.ForwardLookup(split[0])
-					if err != nil {
-						errs = multierr.Append(errs, errors.Wrapf(err, "unable to resolve %s", inService))
+		if dp.Spec.IsIngress() {
+			for _, service := range dp.Spec.Networking.Ingress.AvailableServices {
+				inService := service.Tags[mesh_proto.ServiceTag]
+				if _, found := serviceVIPMap[inService]; !found {
+					vip, err := resolver.ForwardLookup(inService)
+					if err == nil {
+						serviceVIPMap[inService] = vip
+						services = append(services, inService)
 					}
 				}
-				serviceVIPMap[inService] = vip
-				services = append(services, inService)
+			}
+		} else {
+			for _, inbound := range dp.Spec.Networking.Inbound {
+				inService := inbound.GetTags()[mesh_proto.ServiceTag]
+				if _, found := serviceVIPMap[inService]; !found {
+					vip, err := resolver.ForwardLookup(inService)
+					if err == nil {
+						serviceVIPMap[inService] = vip
+						services = append(services, inService)
+					}
+				}
 			}
 		}
 	}

@@ -392,15 +392,15 @@ func (d *Dataplane) HasAvailableServices() bool {
 	return len(d.Networking.Ingress.AvailableServices) != 0
 }
 
-func (d *Dataplane) IsRemoteIngress() bool {
+func (d *Dataplane) IsRemoteIngress(localClusterName string) bool {
 	if !d.IsIngress() {
 		return false
 	}
-	// todo: take into account value itself, not just presence of the 'cluster' tag
-	if _, ok := d.Networking.Inbound[0].Tags["cluster"]; ok {
-		return true
+	cluster, ok := d.Networking.Inbound[0].Tags["cluster"]
+	if !ok {
+		return false
 	}
-	return false
+	return cluster != localClusterName
 }
 
 func (t MultiValueTagSet) String() string {

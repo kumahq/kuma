@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
@@ -83,8 +84,14 @@ func (d *vipsAllocator) synchronize() error {
 
 		// TODO: Do we need to reflect somehow the fact this service belongs to a particular `mesh`
 		for _, dp := range dataplanes.Items {
-			for _, inbound := range dp.Spec.Networking.Inbound {
-				serviceMap[inbound.GetService()] = true
+			if dp.Spec.IsIngress() {
+				for _, service := range dp.Spec.Networking.Ingress.AvailableServices {
+					serviceMap[service.Tags[mesh_proto.ServiceTag]] = true
+				}
+			} else {
+				for _, inbound := range dp.Spec.Networking.Inbound {
+					serviceMap[inbound.GetService()] = true
+				}
 			}
 		}
 	}

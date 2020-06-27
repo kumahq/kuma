@@ -133,7 +133,7 @@ var _ = Describe("TrafficRoute", func() {
 			}
 
 			// when
-			targets, err := GetOutboundTargets(destinations, dataplanes)
+			targets, err := GetOutboundTargets(destinations, dataplanes, "cluster-1")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -168,7 +168,7 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.destinations, given.dataplanes)
+				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, "cluster-1")
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
