@@ -362,7 +362,7 @@ var _ = Describe("RemoteStore", func() {
 		It("should successfully list known resources", func() {
 			// given
 			store := setupStore("list.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/demo/traffic-routes")))
+				Expect(req.URL.Path).To(Equal("/meshes/demo/traffic-routes"))
 			})
 
 			// when
@@ -391,7 +391,7 @@ var _ = Describe("RemoteStore", func() {
 		It("should list known resources using pagination", func() {
 			// given
 			store := setupStore("list-pagination.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/demo/traffic-routes")))
+				Expect(req.URL.Path).To(Equal("/meshes/demo/traffic-routes"))
 				Expect(req.URL.Query().Get("size")).To(Equal("1"))
 				Expect(req.URL.Query().Get("offset")).To(Equal("2"))
 			})
@@ -415,7 +415,7 @@ var _ = Describe("RemoteStore", func() {
 		It("should list meshes", func() {
 			// given
 			store := setupStore("list-meshes.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes")))
+				Expect(req.URL.Path).To(Equal("/meshes"))
 			})
 
 			// when

@@ -41,10 +41,6 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
-	//if rt.Config().Mode == core_config.Remote {
-	//	return nil
-	//}
-
 	mgr, ok := k8s_runtime.FromManagerContext(rt.Extensions())
 	if !ok {
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
@@ -54,8 +50,10 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	if err := addValidators(mgr, rt); err != nil {
-		return err
+	if rt.Config().Mode != core_config.Remote {
+		if err := addValidators(mgr, rt); err != nil {
+			return err
+		}
 	}
 
 	addMutators(mgr, rt)
@@ -83,6 +81,9 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 }
 
 func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	if rt.Config().Mode == core_config.Remote {
+		return nil
+	}
 	reconciler := &k8s_controllers.MeshReconciler{
 		Client:          mgr.GetClient(),
 		Reader:          mgr.GetAPIReader(),

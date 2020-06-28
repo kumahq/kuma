@@ -4,6 +4,8 @@ import (
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/go-logr/logr"
 
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -35,6 +37,7 @@ var (
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
+		system.SecretType,
 	}
 )
 
@@ -81,7 +84,7 @@ func makeFilter(clusterName string) reconcile.ResourceFilter {
 func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
 		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
-			if k8sStore && rs.GetItemType() != mesh.MeshType {
+			if k8sStore && rs.GetItemType() != mesh.MeshType && rs.GetItemType() != system.SecretType {
 				util.AddSuffixToNames(rs.GetItems(), "default")
 			}
 			if rs.GetItemType() == mesh.DataplaneType {
