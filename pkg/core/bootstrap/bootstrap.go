@@ -50,9 +50,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	// we add Secret store to unified ResourceStore so global<->remote synchronizer can use unified interface
-	core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
+	builder.WithResourceStore(core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
 		system.SecretType: builder.SecretStore(),
-	})
+	}))
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
