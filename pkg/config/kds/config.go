@@ -9,15 +9,40 @@ import (
 	"github.com/Kong/kuma/pkg/config"
 )
 
-func DefaultKumaDiscoveryServerConfig() *KumaDiscoveryServerConfig {
-	return &KumaDiscoveryServerConfig{
-		GrpcPort:        5685,
-		RefreshInterval: 1 * time.Second,
+func DefaultKdsConfig() *KdsConfig {
+	return &KdsConfig{
+		Server: &KdsServerConfig{
+			GrpcPort:        5685,
+			RefreshInterval: 1 * time.Second,
+		},
+		Client: &KdsClientConfig{},
 	}
 }
 
-// Kuma Discovery Service (KDS) server configuration.
-type KumaDiscoveryServerConfig struct {
+// Kuma Discovery Service (KDS) configuration.
+type KdsConfig struct {
+	// Server stores configuration for the KDS server part.
+	Server *KdsServerConfig `yaml:"server"`
+	// Client stores configuration for the KDS client part.
+	Client *KdsClientConfig `yaml:"client"`
+}
+
+var _ config.Config = &KdsConfig{}
+
+func (c *KdsConfig) Sanitize() {
+}
+
+func (c *KdsConfig) Validate() (errs error) {
+	if err := c.Server.Validate(); err != nil {
+		return errors.Wrap(err, "Server validation failed")
+	}
+	if err := c.Client.Validate(); err != nil {
+		return errors.Wrap(err, "Client validation failed")
+	}
+	return nil
+}
+
+type KdsServerConfig struct {
 	// Port of a gRPC server that serves Kuma Discovery Service (KDS).
 	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_kds_server_grpc_port"`
 	// Interval for refreshing state of the world
@@ -28,12 +53,12 @@ type KumaDiscoveryServerConfig struct {
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_kds_server_tls_key_file"`
 }
 
-var _ config.Config = &KumaDiscoveryServerConfig{}
+var _ config.Config = &KdsServerConfig{}
 
-func (c *KumaDiscoveryServerConfig) Sanitize() {
+func (c *KdsServerConfig) Sanitize() {
 }
 
-func (c *KumaDiscoveryServerConfig) Validate() (errs error) {
+func (c *KdsServerConfig) Validate() (errs error) {
 	if c.GrpcPort > 65535 {
 		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
 	}
@@ -47,4 +72,17 @@ func (c *KumaDiscoveryServerConfig) Validate() (errs error) {
 		return errors.New("TlsKeyFile cannot be empty if TlsCertFile has been set")
 	}
 	return
+}
+
+type KdsClientConfig struct {
+	RootCAFile string `yaml:"rootCaFile" envconfig:"kuma_kds_client_root_ca_file"`
+}
+
+var _ config.Config = &KdsClientConfig{}
+
+func (k KdsClientConfig) Sanitize() {
+}
+
+func (k KdsClientConfig) Validate() error {
+	return nil
 }

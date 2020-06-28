@@ -48,13 +48,13 @@ func SetupServer(rt runtime.Runtime) error {
 	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter)
 	versioner := kds_server.NewVersioner()
 	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := kds_server.NewSyncTracker(kdsGlobalLog, reconciler, rt.Config().KDSServer.RefreshInterval)
+	syncTracker := kds_server.NewSyncTracker(kdsGlobalLog, reconciler, rt.Config().KDS.Server.RefreshInterval)
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: kdsGlobalLog},
 		syncTracker,
 	}
 	srv := kds_server.NewServer(cache, callbacks, kdsGlobalLog, "global")
-	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDSServer))
+	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDS.Server))
 }
 
 // providedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
@@ -73,7 +73,7 @@ func SetupComponent(rt runtime.Runtime) error {
 
 	clientFactory := func(clusterIP string) client.ClientFactory {
 		return func() (kdsClient client.KDSClient, err error) {
-			return client.New(clusterIP)
+			return client.New(clusterIP, rt.Config().KDS.Client)
 		}
 	}
 

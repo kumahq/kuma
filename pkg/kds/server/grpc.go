@@ -2,9 +2,10 @@ package server
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/credentials"
-	"net"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	kds_config "github.com/Kong/kuma/pkg/config/kds"
@@ -23,14 +24,14 @@ var (
 
 type grpcServer struct {
 	server Server
-	config kds_config.KumaDiscoveryServerConfig
+	config kds_config.KdsServerConfig
 }
 
 var (
 	_ component.Component = &grpcServer{}
 )
 
-func NewKDSServer(srv Server, config kds_config.KumaDiscoveryServerConfig) component.Component {
+func NewKDSServer(srv Server, config kds_config.KdsServerConfig) component.Component {
 	return &grpcServer{server: srv, config: config}
 }
 
