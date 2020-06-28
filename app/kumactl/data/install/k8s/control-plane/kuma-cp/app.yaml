@@ -88,12 +88,6 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
-{{- if .Zone }}
-    # ControlPlane mode
-    mode:
-      remote: # Remote CP configuration
-        zone: {{ .Zone }} # the name of the zone for this Remote CP
-{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -155,9 +149,14 @@ spec:
           value: {{ .DataplaneImage }}:{{ .ControlPlaneVersion }}
         - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
           value: {{ .DataplaneInitImage }}:{{ .ControlPlaneVersion }}
+        - name: KUMA_MODE_MODE
+          value: {{ .KumaCpMode }}
+{{- if .Zone }}
+        - name: KUMA_MODE_REMOTE_ZONE
+          value: {{ .Zone }}
+{{- end }}
         args:
         - run
-        - --mode={{ .KumaCpMode }}
         - --log-level=info
         - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
         ports:

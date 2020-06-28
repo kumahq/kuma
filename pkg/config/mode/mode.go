@@ -44,11 +44,11 @@ func (z *ZoneConfig) Sanitize() {
 func (z *ZoneConfig) Validate() error {
 	_, _, err := net.SplitHostPort(z.Remote.Address)
 	if err != nil {
-		return errors.Wrapf(err, "Invalid remote url for cluster %s", z.Remote)
+		return errors.Wrapf(err, "Invalid remote address for zone %s", z.Remote)
 	}
 	_, _, err = net.SplitHostPort(z.Ingress.Address)
 	if err != nil {
-		return errors.Wrapf(err, "Invalid ingress url for cluster %s", z.Ingress)
+		return errors.Wrapf(err, "Invalid ingress address for zone %s", z.Ingress)
 	}
 
 	return nil
@@ -56,14 +56,20 @@ func (z *ZoneConfig) Validate() error {
 
 // Global configuration
 type GlobalConfig struct {
-	Zones     []*ZoneConfig `yaml:"zones"`
 	LBAddress string        `yaml:"lbaddress,omitempty"`
+	Zones     []*ZoneConfig `yaml:"zones"`
 }
 
 func (g *GlobalConfig) Sanitize() {
 }
 
 func (g *GlobalConfig) Validate() error {
+	if len(g.Zones) > 0 {
+		_, _, err := net.SplitHostPort(g.LBAddress)
+		if err != nil {
+			return errors.Wrapf(err, "Invalid LB address")
+		}
+	}
 	for _, zone := range g.Zones {
 		err := zone.Validate()
 		if err != nil {
@@ -83,7 +89,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 // Remote configuration
 type RemoteConfig struct {
 	// Kuma Zone name used to mark the remote dataplane resources
-	Zone string `yaml:"zone,omitempty"`
+	Zone string `yaml:"zone,omitempty" envconfig:"kuma_mode_remote_zone"`
 }
 
 func (r *RemoteConfig) Sanitize() {

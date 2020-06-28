@@ -18,7 +18,6 @@ import (
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/Kong/kuma/pkg/admin-server"
-	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/core"
@@ -47,18 +46,13 @@ type runCmdOpts struct {
 func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 	args := struct {
 		configPath string
-		kumaCpMode string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Control Plane",
 		Long:  `Launch Control Plane.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := mode.ValidateCpMode(args.kumaCpMode); err != nil {
-				return err
-			}
 			cfg := kuma_cp.DefaultConfig()
-			cfg.Mode.Mode = args.kumaCpMode
 			err := config.Load(args.configPath, &cfg)
 			if err != nil {
 				runLog.Error(err, "could not load the configuration")
@@ -155,6 +149,5 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 	}
 	// flags
 	cmd.PersistentFlags().StringVarP(&args.configPath, "config-file", "c", "", "configuration file")
-	cmd.PersistentFlags().StringVar(&args.kumaCpMode, "mode", mode.Standalone, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
 	return cmd
 }
