@@ -25,6 +25,7 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/resources/registry"
+	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 	runtime_reports "github.com/Kong/kuma/pkg/core/runtime/reports"
@@ -48,6 +49,10 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeSecretStore(cfg, builder); err != nil {
 		return nil, err
 	}
+	// we add Secret store to unified ResourceStore so global<->remote synchronizer can use unified interface
+	core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
+		system.SecretType: builder.SecretStore(),
+	})
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}

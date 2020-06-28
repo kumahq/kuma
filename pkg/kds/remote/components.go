@@ -47,7 +47,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	versioner := kds_server.NewVersioner()
 	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := kds_server.NewSyncTracker(kdsRemoteLog, reconciler, rt.Config().KDSServer.RefreshInterval)
-	resourceSyncer := sync_store.NewResourceSyncer(kdsRemoteLog, rt.ResourceManager())
+	resourceSyncer := sync_store.NewResourceSyncer(kdsRemoteLog, rt.ResourceStore())
 
 	clientFactory := func(clusterAddress string) kds_client.ClientFactory {
 		return func() (kdsClient kds_client.KDSClient, err error) {
