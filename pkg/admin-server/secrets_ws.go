@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/Kong/kuma/pkg/core/resources/manager"
+
 	"github.com/emicklei/go-restful"
 
 	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
@@ -14,14 +16,13 @@ import (
 	core_rest "github.com/Kong/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	rest_errors "github.com/Kong/kuma/pkg/core/rest/errors"
-	secrets_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_validators "github.com/Kong/kuma/pkg/core/validators"
 )
 
 // This is inspired by resourceEndpoints struct for API Server.
 // It's mostly copy paste, but it will be gone once we merge Admin Server with API Server
 type secretsEndpoints struct {
-	secretManager secrets_manager.SecretManager
+	secretManager manager.ResourceManager
 }
 
 func (s *secretsEndpoints) addFindEndpoint(ws *restful.WebService) {

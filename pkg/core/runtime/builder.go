@@ -3,6 +3,8 @@ package runtime
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/core/secrets/store"
+
 	"github.com/Kong/kuma/pkg/clusters/poller"
 
 	"github.com/Kong/kuma/pkg/dns"
@@ -17,7 +19,6 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
-	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
 
@@ -25,9 +26,10 @@ import (
 type BuilderContext interface {
 	ComponentManager() component.Manager
 	ResourceStore() core_store.ResourceStore
+	SecretStore() store.SecretStore
+	ResourceManager() core_manager.ResourceManager
 	XdsContext() core_xds.XdsContext
 	Config() kuma_cp.Config
-	SecretManager() secret_manager.SecretManager
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
 	DNSResolver() dns.DNSResolver
@@ -43,9 +45,9 @@ type Builder struct {
 	cfg      kuma_cp.Config
 	cm       component.Manager
 	rs       core_store.ResourceStore
+	ss       store.SecretStore
 	rm       core_manager.ResourceManager
 	rom      core_manager.ReadOnlyResourceManager
-	sm       secret_manager.SecretManager
 	cam      core_ca.Managers
 	xds      core_xds.XdsContext
 	dsl      datasource.Loader
@@ -78,6 +80,11 @@ func (b *Builder) WithResourceStore(rs core_store.ResourceStore) *Builder {
 	return b
 }
 
+func (b *Builder) WithSecretStore(ss store.SecretStore) *Builder {
+	b.ss = ss
+	return b
+}
+
 func (b *Builder) WithResourceManager(rm core_manager.ResourceManager) *Builder {
 	b.rm = rm
 	return b
@@ -85,11 +92,6 @@ func (b *Builder) WithResourceManager(rm core_manager.ResourceManager) *Builder 
 
 func (b *Builder) WithReadOnlyResourceManager(rom core_manager.ReadOnlyResourceManager) *Builder {
 	b.rom = rom
-	return b
-}
-
-func (b *Builder) WithSecretManager(sm secret_manager.SecretManager) *Builder {
-	b.sm = sm
 	return b
 }
 
@@ -151,9 +153,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.rom == nil {
 		return nil, errors.Errorf("ReadOnlyResourceManager has not been configured")
 	}
-	if b.sm == nil {
-		return nil, errors.Errorf("SecretManager has not been configured")
-	}
 	if b.xds == nil {
 		return nil, errors.Errorf("xDS Context has not been configured")
 	}
@@ -176,7 +175,7 @@ func (b *Builder) Build() (Runtime, error) {
 			rm:       b.rm,
 			rom:      b.rom,
 			rs:       b.rs,
-			sm:       b.sm,
+			ss:       b.ss,
 			cam:      b.cam,
 			xds:      b.xds,
 			ext:      b.ext,
@@ -195,8 +194,8 @@ func (b *Builder) ComponentManager() component.Manager {
 func (b *Builder) ResourceStore() core_store.ResourceStore {
 	return b.rs
 }
-func (b *Builder) SecretManager() secret_manager.SecretManager {
-	return b.sm
+func (b *Builder) SecretStore() store.SecretStore {
+	return b.ss
 }
 func (b *Builder) ResourceManager() core_manager.ResourceManager {
 	return b.rm

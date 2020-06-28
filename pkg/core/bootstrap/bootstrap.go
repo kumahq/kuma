@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 
 	"github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
 
@@ -42,7 +43,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeResourceStore(cfg, builder); err != nil {
 		return nil, err
 	}
-	if err := initializeSecretManager(cfg, builder); err != nil {
+	if err := initializeSecretStore(cfg, builder); err != nil {
 		return nil, err
 	}
 	if err := initializeDiscovery(cfg, builder); err != nil {
@@ -57,10 +58,11 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDNSResolver(cfg, builder); err != nil {
 		return nil, err
 	}
+	if err := initializeResourceManager(cfg, builder); err != nil {
+		return nil, err
+	}
 
-	initializeResourceManager(builder)
-
-	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.SecretManager()))
+	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
 
 	if err := initializeCaManagers(builder); err != nil {
 		return nil, err
@@ -116,7 +118,7 @@ func createDefaultSigningKey(runtime core_runtime.Runtime) error {
 		// we use service account token on K8S, so there is no need for dataplane token server
 		return nil
 	case config_core.UniversalEnvironment:
-		return builtin_issuer.CreateDefaultSigningKey(runtime.SecretManager())
+		return builtin_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}
@@ -190,17 +192,14 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	}
 }
 
-func initializeSecretManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
-	var cipher secret_cipher.Cipher
 	switch cfg.Store.Type {
 	case store.KubernetesStore:
 		pluginName = core_plugins.Kubernetes
-		cipher = secret_cipher.None() // deliberately turn encryption off on Kubernetes
 	case store.MemoryStore, store.PostgresStore:
 		pluginName = core_plugins.Universal
-		cipher = secret_cipher.TODO() // get back to encryption in universal case
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
@@ -208,11 +207,10 @@ func initializeSecretManager(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if err != nil {
 		return errors.Wrapf(err, "could not retrieve secret store %s plugin", pluginName)
 	}
-	if secretStore, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
+	if ss, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		validator := secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
-		builder.WithSecretManager(secret_manager.NewSecretManager(secretStore, cipher, validator))
+		builder.WithSecretStore(ss)
 		return nil
 	}
 }
@@ -255,15 +253,15 @@ func initializeCaManagers(builder *core_runtime.Builder) error {
 	return nil
 }
 
-func initializeResourceManager(builder *core_runtime.Builder) {
+func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
 
-	validator := mesh_managers.MeshValidator{
+	meshValidator := mesh_managers.MeshValidator{
 		CaManagers: builder.CaManagers(),
 	}
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.SecretManager(), builder.CaManagers(), registry.Global(), validator)
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
 	customManagers[mesh.MeshType] = meshManager
 
 	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().General.ClusterName)
@@ -272,6 +270,19 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
 	customManagers[mesh.DataplaneInsightType] = dpInsightManager
 
+	secretValidator := secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
+	var cipher secret_cipher.Cipher
+	switch cfg.Store.Type {
+	case store.KubernetesStore:
+		cipher = secret_cipher.None() // deliberately turn encryption off on Kubernetes
+	case store.MemoryStore, store.PostgresStore:
+		cipher = secret_cipher.TODO() // get back to encryption in universal case
+	default:
+		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+	}
+	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator)
+	customManagers[system.SecretType] = secretManager
+
 	builder.WithResourceManager(customizableManager)
 
 	if builder.Config().Store.Cache.Enabled {
@@ -279,6 +290,7 @@ func initializeResourceManager(builder *core_runtime.Builder) {
 	} else {
 		builder.WithReadOnlyResourceManager(customizableManager)
 	}
+	return nil
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
