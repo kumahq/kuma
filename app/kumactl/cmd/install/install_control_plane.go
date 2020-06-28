@@ -37,6 +37,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		DataplaneInitImage      string
 		SdsTlsCert              string
 		SdsTlsKey               string
+		KdsTlsCert              string
+		KdsTlsKey               string
 		CNIEnabled              bool
 		CNIImage                string
 		CNIVersion              string
@@ -109,6 +111,22 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return errors.Errorf("SDS: both TLS Cert and TLS Key must be provided at the same time")
 			}
 
+			if args.KdsTlsCert == "" && args.KdsTlsKey == "" {
+				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
+				hosts := []string{
+					fqdn,
+					"localhost",
+				}
+				kdsCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
+				if err != nil {
+					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
+				}
+				args.KdsTlsCert = string(kdsCert.CertPEM)
+				args.KdsTlsKey = string(kdsCert.KeyPEM)
+			} else if args.KdsTlsCert == "" || args.KdsTlsKey == "" {
+				return errors.Errorf("KDS: both TLS Cert and TLS Key must be provided at the same time")
+			}
+
 			templateFiles, err := data.ReadFiles(controlplane.Templates)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
@@ -151,6 +169,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.DataplaneInitImage, "dataplane-init-image", args.DataplaneInitImage, "init image of the Kuma Dataplane component")
 	cmd.Flags().StringVar(&args.SdsTlsCert, "sds-tls-cert", args.SdsTlsCert, "TLS certificate for the SDS server")
 	cmd.Flags().StringVar(&args.SdsTlsKey, "sds-tls-key", args.SdsTlsKey, "TLS key for the SDS server")
+	cmd.Flags().StringVar(&args.KdsTlsCert, "kds-tls-cert", args.KdsTlsCert, "TLS certificate for the KDS server")
+	cmd.Flags().StringVar(&args.KdsTlsKey, "kds-tls-key", args.KdsTlsKey, "TLS key for the KDS server")
 	cmd.Flags().BoolVar(&args.CNIEnabled, "cni-enabled", args.CNIEnabled, "install Kuma with CNI instead of proxy init container")
 	cmd.Flags().StringVar(&args.CNIImage, "cni-image", args.CNIImage, "image of Kuma CNI component, if CNIEnabled equals true")
 	cmd.Flags().StringVar(&args.CNIVersion, "cni-version", args.CNIVersion, "version of the CNIImage")

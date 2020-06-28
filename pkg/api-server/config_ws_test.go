@@ -232,7 +232,9 @@ var _ = Describe("Config WS", func() {
           },
           "kdsServer": {
             "grpcPort": 5685,
-            "refreshInterval": "1s"
+            "refreshInterval": "1s",
+            "tlsCertFile": "",
+            "tlsKeyFile": ""
           }
         }
 		`, port)

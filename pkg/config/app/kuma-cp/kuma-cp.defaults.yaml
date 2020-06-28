@@ -277,3 +277,7 @@ kdsServer:
   grpcPort: 5685
   # Interval for regenerating Snapshot
   refreshInterval: 1s
+  # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
+  tlsCertFile: # ENV: KUMA_KDS_SERVER_TLS_CERT_FILE
+  # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
+  tlsKeyFile: # ENV: KUMA_KDS_SERVER_TLS_KEY_FILE
