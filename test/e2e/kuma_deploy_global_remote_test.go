@@ -45,8 +45,7 @@ var _ = Describe("Test Remote and Global", func() {
 		_ = clusters.DeleteKuma()
 	})
 
-	// todo (lobkoviya): implement Cluster polling based on KDS
-	XIt("Should deploy Remote and Global on 2 clusters", func() {
+	It("Should deploy Remote and Global on 2 clusters", func() {
 		// given
 		c1 := clusters.GetCluster(Kuma1)
 		c2 := clusters.GetCluster(Kuma2)
