@@ -35,7 +35,7 @@ func addPodReconciler(clusterName string, mgr kube_ctrl.Manager) error {
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
 		PodConverter: controllers.PodConverter{
 			ServiceGetter: mgr.GetClient(),
-			ClusterName:   clusterName,
+			Zone:          clusterName,
 		},
 	}
 	return reconciler.SetupWithManager(mgr)

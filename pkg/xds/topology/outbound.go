@@ -15,14 +15,14 @@ func GetOutboundTargets(destinations core_xds.DestinationMap, dataplanes *mesh_c
 }
 
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
-func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_core.DataplaneResource, localClusterName string) core_xds.EndpointMap {
+func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_core.DataplaneResource, zone string) core_xds.EndpointMap {
 	if len(destinations) == 0 {
 		return nil
 	}
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
 		if dataplane.Spec.IsIngress() {
-			if dataplane.Spec.IsRemoteIngress(localClusterName) {
+			if dataplane.Spec.IsRemoteIngress(zone) {
 				for _, ingress := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
 					service := ingress.Tags[mesh_proto.ServiceTag]
 					selectors, ok := destinations[service]

@@ -75,7 +75,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 func makeFilter(clusterName string) reconcile.ResourceFilter {
 	return func(_ string, r model.Resource) bool {
 		if r.GetType() == mesh.DataplaneType {
-			return clusterName == util.ClusterTag(r)
+			return clusterName == util.ZoneTag(r)
 		}
 		return r.GetType() == mesh.DataplaneInsightType
 	}
@@ -89,7 +89,7 @@ func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool) *kds_client.Call
 			}
 			if rs.GetItemType() == mesh.DataplaneType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return r.(*mesh.DataplaneResource).Spec.IsIngress() && util.ClusterTag(r) == clusterID
+					return r.(*mesh.DataplaneResource).Spec.IsIngress() && util.ZoneTag(r) == clusterID
 				}))
 			}
 			return syncer.Sync(rs)

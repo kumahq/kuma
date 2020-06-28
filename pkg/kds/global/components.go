@@ -85,7 +85,7 @@ func filter(clusterID string, r model.Resource) bool {
 	if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
 		return false
 	}
-	return clusterID != util.ClusterTag(r)
+	return clusterID != util.ZoneTag(r)
 }
 
 func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *mode.ZoneConfig) *client.Callbacks {

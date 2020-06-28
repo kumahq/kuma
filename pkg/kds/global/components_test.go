@@ -60,14 +60,14 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 		}
 	})
 
-	dataplaneFunc := func(cluster, service string) mesh_proto.Dataplane {
+	dataplaneFunc := func(zone, service string) mesh_proto.Dataplane {
 		return mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 					Port: 1212,
 					Tags: map[string]string{
-						mesh_proto.ClusterTag: cluster,
+						mesh_proto.ZoneTag:    zone,
 						mesh_proto.ServiceTag: service,
 					},
 				}},
