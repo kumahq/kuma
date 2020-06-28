@@ -144,6 +144,9 @@ func handleKubeDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.Confi
 	if err != nil {
 		return nil, err
 	}
+	if corednsConfigMap.Data == nil {
+		corednsConfigMap.Data = map[string]string{}
+	}
 	corednsConfigMap.Data["stubDomains"] = string(json)
 
 	return corednsConfigMap, nil
