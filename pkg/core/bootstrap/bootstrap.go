@@ -1,6 +1,8 @@
 package bootstrap
 
 import (
+	"context"
+
 	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 
@@ -270,7 +272,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
 	customManagers[mesh.DataplaneInsightType] = dpInsightManager
 
-	secretValidator := secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
 	var cipher secret_cipher.Cipher
 	switch cfg.Store.Type {
 	case store.KubernetesStore:
@@ -279,6 +280,13 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		cipher = secret_cipher.TODO() // get back to encryption in universal case
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+	}
+	var secretValidator secret_manager.SecretValidator
+	switch cfg.Mode {
+	case config_core.Remote:
+		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
+	default:
+		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
 	}
 	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator)
 	customManagers[system.SecretType] = secretManager

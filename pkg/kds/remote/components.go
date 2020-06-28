@@ -4,6 +4,8 @@ import (
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/go-logr/logr"
 
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -35,6 +37,7 @@ var (
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
+		system.SecretType,
 	}
 )
 
@@ -44,7 +47,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	versioner := kds_server.NewVersioner()
 	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := kds_server.NewSyncTracker(kdsRemoteLog, reconciler, rt.Config().KDSServer.RefreshInterval)
-	resourceSyncer := sync_store.NewResourceSyncer(kdsRemoteLog, rt.ResourceStore())
+	resourceSyncer := sync_store.NewResourceSyncer(kdsRemoteLog, rt.ResourceManager())
 
 	clientFactory := func(clusterAddress string) kds_client.ClientFactory {
 		return func() (kdsClient kds_client.KDSClient, err error) {
@@ -81,7 +84,7 @@ func makeFilter(clusterName string) reconcile.ResourceFilter {
 func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
 		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
-			if k8sStore && rs.GetItemType() != mesh.MeshType {
+			if k8sStore && rs.GetItemType() != mesh.MeshType && rs.GetItemType() != system.SecretType {
 				util.AddSuffixToNames(rs.GetItems(), "default")
 			}
 			if rs.GetItemType() == mesh.DataplaneType {

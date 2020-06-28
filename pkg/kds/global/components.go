@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+
 	"github.com/Kong/kuma/pkg/config/clusters"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	"github.com/Kong/kuma/pkg/core"
@@ -32,6 +34,7 @@ var (
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
+		system.SecretType,
 	}
 	consumedTypes = []model.ResourceType{
 		mesh.DataplaneType,

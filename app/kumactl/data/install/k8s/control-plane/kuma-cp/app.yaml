@@ -285,6 +285,7 @@ webhooks:
       resources:
         - pods
 ---
+{{- if ne .KumaCpMode "remote" }}
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -358,3 +359,4 @@ webhooks:
           - DELETE
         resources:
           - secrets
+{{- end }}

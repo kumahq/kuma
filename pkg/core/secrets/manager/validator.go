@@ -20,6 +20,12 @@ type SecretValidator interface {
 	ValidateDelete(ctx context.Context, secretName string, secretMesh string) error
 }
 
+type ValidateDelete func(ctx context.Context, secretName string, secretMesh string) error
+
+func (f ValidateDelete) ValidateDelete(ctx context.Context, secretName string, secretMesh string) error {
+	return f(ctx, secretName, secretMesh)
+}
+
 func NewSecretValidator(caManagers ca.Managers, store core_store.ResourceStore) SecretValidator {
 	return &secretValidator{
 		caManagers: caManagers,
