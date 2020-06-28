@@ -37,10 +37,6 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
-    # ControlPlane mode
-    mode:
-      remote: # Remote CP configuration
-        zone: zone-1 # the name of the zone for this Remote CP
 ---
 apiVersion: v1
 kind: ServiceAccount

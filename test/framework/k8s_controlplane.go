@@ -94,10 +94,13 @@ func (c *K8sControlPlane) AddCluster(name, url, lbAddress string) error {
 		return err
 	}
 
+	if cfg.Mode == nil {
+		cfg.Mode = mode.DefaultModeConfig()
+		cfg.Mode.Mode = mode.Global
+	}
+
 	if cfg.Mode.Global == nil {
-		cfg.Mode.Global = &mode.GlobalConfig{
-			Zones: []*mode.ZoneConfig{},
-		}
+		cfg.Mode.Global = mode.DefaultGlobalConfig()
 	}
 
 	cfg.Mode.Global.Zones = append(cfg.Mode.Global.Zones, &mode.ZoneConfig{
@@ -265,10 +268,10 @@ func (c *K8sControlPlane) InjectDNS() error {
 }
 
 // A naive implementation to find the URL where Remote CP exposes its API
-func (c *K8sControlPlane) GetHostAPI() string {
+func (c *K8sControlPlane) GetKDSServerAddress() string {
 	pod := c.GetKumaCPPods()[0]
 
-	return "http://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(LocalCPSyncNodePort), 10)
+	return "http://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {

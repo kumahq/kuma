@@ -250,14 +250,14 @@ guiServer:
 mode:
   mode: standalone # Configured from args. By default autoconfigured to standalone
   global: # Global CP configuration
-    lbaddress: "" # The external LB address for Remotes to reach back to Global
+    lbaddress: "" # http://1.0.0.1:5685 The external LB address for Remotes to reach back to Global
     zones: [] # a sequence of zones attached to this Global CP
 #      - remote:
-#          address: 1.1.1.1:5685 # Remote kDS address
+#          address: http://1.1.1.1:5685 # Remote kDS address
 #        ingress:
 #          address: 1.1.1.1:8080 # Remote Ingress address
 #      - remote:
-#          address: 2.2.2.2:5685
+#          address: http://2.2.2.2:5685
 #        ingress:
 #          address: 2.2.2.2:8080
   remote: # Remote CP configuration

@@ -86,7 +86,7 @@ var _ = XDescribe("Test DNS", func() {
 				out, err = k8s.RunKubectlAndGetOutputE(c.GetTesting(),
 					c.GetKubectlOptions(TestNamespace),
 					"exec", clientPod.GetName(),
-					"-c", "client", "--", "getent", "hosts", "example-app.mesh")
+					"-c", "client", "--", "getent", "hosts", "example-app_kuma-test_svc_80.mesh")
 				return out, err
 			})
 

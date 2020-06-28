@@ -74,6 +74,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
+			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode.Mode))
 			switch cfg.Mode.Mode {
 			case mode.Standalone:
 				if err := ui_server.SetupServer(rt); err != nil {

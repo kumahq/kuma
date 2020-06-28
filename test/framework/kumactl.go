@@ -118,8 +118,12 @@ func (o *KumactlOptions) KumactlInstallCP(mode ...string) (string, error) {
 
 	for _, m := range mode {
 		args = append(args, "--mode", m)
-		if m == config_mode.Remote {
-			args = append(args, "--zone-name", o.CPName)
+		switch m {
+		case config_mode.Remote:
+			args = append(args, "--zone", o.CPName)
+			fallthrough
+		case config_mode.Global:
+			args = append(args, "--use-node-port")
 		}
 	}
 

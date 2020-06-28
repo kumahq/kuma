@@ -1,7 +1,7 @@
 package mode
 
 import (
-	"net"
+	"net/url"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
@@ -42,11 +42,11 @@ func (z *ZoneConfig) Sanitize() {
 }
 
 func (z *ZoneConfig) Validate() error {
-	_, _, err := net.SplitHostPort(z.Remote.Address)
+	_, err := url.ParseRequestURI(z.Remote.Address)
 	if err != nil {
 		return errors.Wrapf(err, "Invalid remote address for zone %s", z.Remote)
 	}
-	_, _, err = net.SplitHostPort(z.Ingress.Address)
+	_, err = url.ParseRequestURI(z.Ingress.Address)
 	if err != nil {
 		return errors.Wrapf(err, "Invalid ingress address for zone %s", z.Ingress)
 	}
@@ -65,7 +65,7 @@ func (g *GlobalConfig) Sanitize() {
 
 func (g *GlobalConfig) Validate() error {
 	if len(g.Zones) > 0 {
-		_, _, err := net.SplitHostPort(g.LBAddress)
+		_, err := url.ParseRequestURI(g.LBAddress)
 		if err != nil {
 			return errors.Wrapf(err, "Invalid LB address")
 		}
@@ -112,7 +112,7 @@ func DefaultRemoteConfig() *RemoteConfig {
 
 // Mode configuration
 type ModeConfig struct {
-	Mode   CpMode        `yaml:"mode"`
+	Mode   CpMode        `yaml:"mode" envconfig:"kuma_mode_mode"`
 	Global *GlobalConfig `yaml:"global,omitempty"`
 	Remote *RemoteConfig `yaml:"local,omitempty"`
 }

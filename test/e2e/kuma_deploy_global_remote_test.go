@@ -1,15 +1,11 @@
 package e2e_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/Kong/kuma/pkg/config/mode"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 
@@ -24,6 +20,8 @@ import (
 
 var _ = Describe("Test Remote and Global", func() {
 	var clusters Clusters
+	var c1, c2 Cluster
+	var global, remote ControlPlane
 
 	BeforeEach(func() {
 		var err error
@@ -37,24 +35,14 @@ var _ = Describe("Test Remote and Global", func() {
 
 		err = clusters.LabelNamespaceForSidecarInjection(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-	})
 
-	AfterEach(func() {
-		err := clusters.DeleteNamespace(TestNamespace)
+		c1 = clusters.GetCluster(Kuma1)
+		c2 = clusters.GetCluster(Kuma2)
+
+		global, err = c1.DeployKuma(mode.Global)
 		Expect(err).ToNot(HaveOccurred())
 
-		_ = clusters.DeleteKuma()
-	})
-
-	It("Should deploy Remote and Global on 2 clusters", func() {
-		// given
-		c1 := clusters.GetCluster(Kuma1)
-		c2 := clusters.GetCluster(Kuma2)
-
-		global, err := c1.DeployKuma(mode.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		remote, err := c2.DeployKuma(mode.Remote)
+		remote, err = c2.DeployKuma(mode.Remote)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -67,7 +55,7 @@ var _ = Describe("Test Remote and Global", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.AddCluster(remote.GetName(), remote.GetHostAPI(), "") // todo (lobkovilya): pass Node IP as lbAddress
+		err = global.AddCluster(remote.GetName(), remote.GetKDSServerAddress(), global.GetKDSServerAddress())
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c1.RestartKuma()
@@ -82,7 +70,16 @@ var _ = Describe("Test Remote and Global", func() {
 		logs2, err := remote.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs2).To(ContainSubstring("\"mode\":\"remote\""))
+	})
 
+	AfterEach(func() {
+		err := clusters.DeleteNamespace(TestNamespace)
+		Expect(err).ToNot(HaveOccurred())
+
+		_ = clusters.DeleteKuma()
+	})
+
+	It("Should deploy Remote and Global on 2 clusters", func() {
 		// when
 		status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
 		// then
@@ -91,11 +88,11 @@ var _ = Describe("Test Remote and Global", func() {
 		// when
 		clustersStatus := poller.Clusters{}
 		_ = json.Unmarshal([]byte(response), &clustersStatus)
-		// then
 
+		// then
 		found := false
 		for _, cluster := range clustersStatus {
-			if cluster.URL == remote.GetHostAPI() {
+			if cluster.URL == remote.GetKDSServerAddress() {
 				Expect(cluster.Active).To(BeTrue())
 				found = true
 				break
@@ -107,54 +104,6 @@ var _ = Describe("Test Remote and Global", func() {
 
 	It("should deploy Remote and Global on 2 clusters and sync dataplanes", func() {
 		// given
-		c1 := clusters.GetCluster(Kuma1)
-		c2 := clusters.GetCluster(Kuma2)
-
-		global, err := c1.DeployKuma(mode.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		local, err := c2.DeployKuma(mode.Remote)
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		err = c1.VerifyKuma()
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		err = c2.VerifyKuma()
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		clientset, err := k8s.GetKubernetesClientFromOptionsE(c1.GetTesting(), c1.GetKubectlOptions())
-		Expect(err).ToNot(HaveOccurred())
-
-		nodeList, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(nodeList.Items).To(HaveLen(1)) // our strategy of getting IP based on the fact that cluster has single node
-		var nodeIP string
-		for _, addr := range nodeList.Items[0].Status.Addresses {
-			if addr.Type == corev1.NodeInternalIP {
-				nodeIP = addr.Address
-			}
-		}
-		Expect(nodeIP).ToNot(BeEmpty())
-		err = global.AddCluster(local.GetName(), local.GetHostAPI(), fmt.Sprintf("http://%s:%d", nodeIP, LocalCPSyncNodePort))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = c1.RestartKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		logs1, err := global.GetKumaCPLogs()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))
-
-		// and
-		logs2, err := local.GetKumaCPLogs()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(logs2).To(ContainSubstring("\"mode\":\"remote\""))
-
 		namespace := func(namespace string) string {
 			return fmt.Sprintf(`
 apiVersion: v1
@@ -186,11 +135,13 @@ spec:
 `, name, namespace, cluster)
 		}
 
-		err = Yaml(namespace("custom-ns"))(c2)
+		// when
+		err := Yaml(namespace("custom-ns"))(c2)
 		Expect(err).ToNot(HaveOccurred())
 		err = Yaml(dp("kuma-2-remote", "custom-ns", "dp-1"))(c2)
 		Expect(err).ToNot(HaveOccurred())
 
+		// then
 		Eventually(func() string {
 			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
