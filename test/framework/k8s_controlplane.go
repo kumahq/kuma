@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/Kong/kuma/pkg/config/clusters"
@@ -77,7 +78,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) AddCluster(name, url, lbAddress string) error {
+func (c *K8sControlPlane) AddCluster(name, rawurl, lbAddress string) error {
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
 		c.GetKubectlOptions())
 	if err != nil {
@@ -100,13 +101,16 @@ func (c *K8sControlPlane) AddCluster(name, url, lbAddress string) error {
 			Clusters: []*clusters.ClusterConfig{},
 		}
 	}
-
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return err
+	}
 	cfg.KumaClusters.Clusters = append(cfg.KumaClusters.Clusters, &clusters.ClusterConfig{
 		Remote: clusters.EndpointConfig{
-			Address: url,
+			Address: rawurl,
 		},
 		Ingress: clusters.EndpointConfig{
-			Address: url,
+			Address: u.Host,
 		},
 	})
 	cfg.KumaClusters.LBConfig.Address = lbAddress
@@ -273,7 +277,7 @@ func (c *K8sControlPlane) InjectDNS() error {
 func (c *K8sControlPlane) GetHostAPI() string {
 	pod := c.GetKumaCPPods()[0]
 
-	return "http://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(LocalCPSyncNodePort), 10)
+	return "grpc://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(LocalCPSyncNodePort), 10)
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {

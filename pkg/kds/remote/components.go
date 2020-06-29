@@ -43,7 +43,7 @@ var (
 
 func SetupServer(rt core_runtime.Runtime) error {
 	hasher, cache := kds_server.NewXdsContext(kdsRemoteLog)
-	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, makeFilter(rt.Config().General.ClusterName))
+	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter(rt.Config().General.ClusterName))
 	versioner := kds_server.NewVersioner()
 	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := kds_server.NewSyncTracker(kdsRemoteLog, reconciler, rt.Config().KDSServer.RefreshInterval)
@@ -71,8 +71,8 @@ func SetupServer(rt core_runtime.Runtime) error {
 	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDSServer))
 }
 
-// makeFilter creates filter that exclude Ingresses from another cluster
-func makeFilter(clusterName string) reconcile.ResourceFilter {
+// providedFilter filter Resources provided by Remote, specifically Ingresses that belongs to another zones
+func providedFilter(clusterName string) reconcile.ResourceFilter {
 	return func(_ string, r model.Resource) bool {
 		if r.GetType() == mesh.DataplaneType {
 			return clusterName == util.ClusterTag(r)
