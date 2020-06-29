@@ -93,12 +93,10 @@ var _ = Describe("HealthCheck", func() {
 						{Match: mesh_proto.TagSelector{"service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-							Interval:           ptypes.DurationProto(5 * time.Second),
-							Timeout:            ptypes.DurationProto(4 * time.Second),
-							UnhealthyThreshold: 3,
-							HealthyThreshold:   2,
-						},
+						Interval:           ptypes.DurationProto(5 * time.Second),
+						Timeout:            ptypes.DurationProto(4 * time.Second),
+						UnhealthyThreshold: 3,
+						HealthyThreshold:   2,
 					},
 				},
 			}
@@ -115,10 +113,10 @@ var _ = Describe("HealthCheck", func() {
 						{Match: mesh_proto.TagSelector{"service": "elastic"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-							UnhealthyThreshold: 1,
-							PenaltyInterval:    ptypes.DurationProto(6 * time.Second),
-						},
+						Interval:           ptypes.DurationProto(5 * time.Second),
+						Timeout:            ptypes.DurationProto(4 * time.Second),
+						UnhealthyThreshold: 3,
+						HealthyThreshold:   2,
 					},
 				},
 			}
@@ -135,10 +133,10 @@ var _ = Describe("HealthCheck", func() {
 						{Match: mesh_proto.TagSelector{"service": "*"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-							UnhealthyThreshold: 20,
-							PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
-						},
+						Interval:           ptypes.DurationProto(5 * time.Second),
+						Timeout:            ptypes.DurationProto(4 * time.Second),
+						UnhealthyThreshold: 3,
+						HealthyThreshold:   2,
 					},
 				},
 			}
@@ -259,12 +257,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "elastic"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-									Interval:           ptypes.DurationProto(5 * time.Second),
-									Timeout:            ptypes.DurationProto(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -280,10 +276,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "redis"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-									UnhealthyThreshold: 20,
-									PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -331,12 +327,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-									Interval:           ptypes.DurationProto(5 * time.Second),
-									Timeout:            ptypes.DurationProto(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -353,10 +347,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-									UnhealthyThreshold: 20,
-									PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -398,12 +392,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-									Interval:           ptypes.DurationProto(5 * time.Second),
-									Timeout:            ptypes.DurationProto(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -419,10 +411,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-									UnhealthyThreshold: 20,
-									PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -464,12 +456,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-									Interval:           ptypes.DurationProto(5 * time.Second),
-									Timeout:            ptypes.DurationProto(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -485,10 +475,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-									UnhealthyThreshold: 20,
-									PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -530,12 +520,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-									Interval:           ptypes.DurationProto(5 * time.Second),
-									Timeout:            ptypes.DurationProto(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -551,10 +539,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "redis"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-									UnhealthyThreshold: 20,
-									PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -597,12 +585,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "redis"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-									Interval:           ptypes.DurationProto(5 * time.Second),
-									Timeout:            ptypes.DurationProto(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},
@@ -619,10 +605,10 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-									UnhealthyThreshold: 20,
-									PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},

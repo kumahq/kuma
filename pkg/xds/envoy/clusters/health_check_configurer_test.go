@@ -60,12 +60,10 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-							Interval:           ptypes.DurationProto(5 * time.Second),
-							Timeout:            ptypes.DurationProto(4 * time.Second),
-							UnhealthyThreshold: 3,
-							HealthyThreshold:   2,
-						},
+						Interval:           ptypes.DurationProto(5 * time.Second),
+						Timeout:            ptypes.DurationProto(4 * time.Second),
+						UnhealthyThreshold: 3,
+						HealthyThreshold:   2,
 					},
 				},
 			},
@@ -81,72 +79,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
               timeout: 4s
               unhealthyThreshold: 3
             name: testCluster
-            type: EDS`,
-		}),
-		Entry("HealthCheck with passive checks", testCase{
-			healthCheck: &mesh_core.HealthCheckResource{
-				Spec: mesh_proto.HealthCheck{
-					Sources: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "backend"}},
-					},
-					Destinations: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "redis"}},
-					},
-					Conf: &mesh_proto.HealthCheck_Conf{
-						PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-							UnhealthyThreshold: 20,
-							PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
-						},
-					},
-				},
-			},
-			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-            outlierDetection:
-              consecutive5xx: 20
-              interval: 30s
-            type: EDS`,
-		}),
-		Entry("HealthCheck with both active and passive checks", testCase{
-			healthCheck: &mesh_core.HealthCheckResource{
-				Spec: mesh_proto.HealthCheck{
-					Sources: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "backend"}},
-					},
-					Destinations: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "redis"}},
-					},
-					Conf: &mesh_proto.HealthCheck_Conf{
-						ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-							Interval:           ptypes.DurationProto(5 * time.Second),
-							Timeout:            ptypes.DurationProto(4 * time.Second),
-							UnhealthyThreshold: 3,
-							HealthyThreshold:   2,
-						},
-						PassiveChecks: &mesh_proto.HealthCheck_Conf_Passive{
-							UnhealthyThreshold: 20,
-							PenaltyInterval:    ptypes.DurationProto(30 * time.Second),
-						},
-					},
-				},
-			},
-			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-            healthChecks:
-            - healthyThreshold: 2
-              interval: 5s
-              tcpHealthCheck: {}
-              timeout: 4s
-              unhealthyThreshold: 3
-            outlierDetection:
-              consecutive5xx: 20
-              interval: 30s
             type: EDS`,
 		}),
 	)
