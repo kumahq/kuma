@@ -709,6 +709,8 @@ function _kumactl_install_control-plane {
     '--dataplane-init-image[init image of the Kuma Dataplane component]:' \
     '--image-pull-policy[image pull policy that applies to all components of the Kuma Control Plane]:' \
     '--injector-failure-policy[failue policy of the mutating web hook implemented by the Kuma Injector component]:' \
+    '--kds-tls-cert[TLS certificate for the KDS server]:' \
+    '--kds-tls-key[TLS key for the KDS server]:' \
     '--mode[kuma cp modes: one of standalone|remote|global]:' \
     '--namespace[namespace to install Kuma Control Plane to]:' \
     '--sds-tls-cert[TLS certificate for the SDS server]:' \

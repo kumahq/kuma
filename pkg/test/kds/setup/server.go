@@ -48,7 +48,7 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string
 		generator := kds_server.NewSnapshotGenerator(rt, kds.SupportedTypes, reconcile.Any)
 		versioner := kds_server.NewVersioner()
 		reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
-		syncTracker := kds_server.NewSyncTracker(core.Log, reconciler, rt.Config().KDSServer.RefreshInterval)
+		syncTracker := kds_server.NewSyncTracker(core.Log, reconciler, rt.Config().KDS.Server.RefreshInterval)
 		callbacks := util_xds.CallbacksChain{
 			util_xds.LoggingCallbacks{Log: log},
 			syncTracker,
@@ -59,8 +59,10 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string
 	srv := createServer(&testRuntimeContext{
 		rom: manager.NewResourceManager(store),
 		cfg: kuma_cp.Config{
-			KDSServer: &kds_config.KumaDiscoveryServerConfig{
-				RefreshInterval: 100 * time.Millisecond,
+			KDS: &kds_config.KdsConfig{
+				Server: &kds_config.KdsServerConfig{
+					RefreshInterval: 100 * time.Millisecond,
+				},
 			},
 		},
 	})
