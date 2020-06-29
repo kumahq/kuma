@@ -123,10 +123,8 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.HealthCheck_Conf{
-			ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-				Interval: &duration.Duration{Seconds: 5},
-				Timeout:  &duration.Duration{Seconds: 7},
-			},
+			Interval: &duration.Duration{Seconds: 5},
+			Timeout:  &duration.Duration{Seconds: 7},
 		},
 	}
 	TrafficLog = mesh_proto.TrafficLog{
