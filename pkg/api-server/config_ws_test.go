@@ -135,7 +135,7 @@ var _ = Describe("Config WS", func() {
            "global": {
              "zones": []
            },
-           "local": {},
+           "remote": {},
            "mode": "standalone"
         },
           "monitoringAssignmentServer": {
