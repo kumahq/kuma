@@ -2,12 +2,13 @@ package global
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/Kong/kuma/pkg/core/resources/registry"
+	kds_server "github.com/Kong/kuma/pkg/kds/server"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
 
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 

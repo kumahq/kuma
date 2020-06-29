@@ -40,7 +40,6 @@ func (g *ClustersConfig) Validate() error {
 		if err != nil {
 			return errors.Wrapf(err, "Invalid remote url for cluster %s", cluster.Remote.Address)
 		}
-		_, err = url.ParseRequestURI(cluster.Ingress.Address)
 		_, port, err := net.SplitHostPort(cluster.Ingress.Address)
 		if err != nil {
 			return errors.Wrapf(err, "Invalid ingress address for cluster %s", cluster.Ingress.Address)
