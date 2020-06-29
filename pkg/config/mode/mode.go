@@ -1,7 +1,9 @@
 package mode
 
 import (
+	"net"
 	"net/url"
+	"strconv"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
@@ -46,9 +48,13 @@ func (z *ZoneConfig) Validate() error {
 	if err != nil {
 		return errors.Wrapf(err, "Invalid remote address for zone %s", z.Remote)
 	}
-	_, err = url.ParseRequestURI(z.Ingress.Address)
+	_, port, err := net.SplitHostPort(z.Ingress.Address)
 	if err != nil {
 		return errors.Wrapf(err, "Invalid ingress address for zone %s", z.Ingress)
+	}
+	_, err = strconv.ParseUint(port, 10, 32)
+	if err != nil {
+		return errors.Wrapf(err, "Invalid ingress port %s", port)
 	}
 
 	return nil

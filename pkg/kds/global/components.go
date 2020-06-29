@@ -2,7 +2,8 @@ package global
 
 import (
 	"fmt"
-	"net/url"
+	"net"
+	"strconv"
 	"strings"
 
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
@@ -112,11 +113,13 @@ func adjustIngressNetworking(cfg *mode.ZoneConfig, rs model.ResourceList) {
 	if rs.GetItemType() != mesh.DataplaneType {
 		return
 	}
-	u, _ := url.Parse(cfg.Ingress.Address)
+	host, portStr, _ := net.SplitHostPort(cfg.Ingress.Address) // err is ignored because we rely on the config validation
+	port, _ := strconv.ParseUint(portStr, 10, 32)
 	for _, r := range rs.GetItems() {
 		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
 			continue
 		}
-		r.(*mesh.DataplaneResource).Spec.Networking.Address = u.Hostname()
+		r.(*mesh.DataplaneResource).Spec.Networking.Address = host
+		r.(*mesh.DataplaneResource).Spec.Networking.Inbound[0].Port = uint32(port)
 	}
 }

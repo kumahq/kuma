@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/Kong/kuma/pkg/config/mode"
@@ -76,7 +77,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) AddCluster(name, url, lbAddress string) error {
+func (c *K8sControlPlane) AddCluster(name, rawurl, lbAddress string) error {
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
 		c.GetKubectlOptions())
 	if err != nil {
@@ -103,9 +104,14 @@ func (c *K8sControlPlane) AddCluster(name, url, lbAddress string) error {
 		cfg.Mode.Global = mode.DefaultGlobalConfig()
 	}
 
+	parsed, err := url.Parse(rawurl)
+	if err != nil {
+		return err
+	}
+
 	cfg.Mode.Global.Zones = append(cfg.Mode.Global.Zones, &mode.ZoneConfig{
-		Remote:  mode.EndpointConfig{Address: url},
-		Ingress: mode.EndpointConfig{Address: url},
+		Remote:  mode.EndpointConfig{Address: rawurl},
+		Ingress: mode.EndpointConfig{Address: parsed.Host},
 	})
 	cfg.Mode.Global.LBAddress = lbAddress
 
@@ -271,7 +277,7 @@ func (c *K8sControlPlane) InjectDNS() error {
 func (c *K8sControlPlane) GetKDSServerAddress() string {
 	pod := c.GetKumaCPPods()[0]
 
-	return "http://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
+	return "grpc://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
