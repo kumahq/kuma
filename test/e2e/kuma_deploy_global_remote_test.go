@@ -127,7 +127,7 @@ spec:
       - port: 12343
         tags:
           service: backend
-          cluster: %s
+          zone: %s
     outbound:
       - port: 1212
         tags:

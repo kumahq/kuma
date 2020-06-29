@@ -144,11 +144,11 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			tags: []envoy.Tags{
 				map[string]string{
 					"service": "backend",
-					"cluster": "1",
+					"zone":    "1",
 				},
 				map[string]string{
 					"service": "backend",
-					"cluster": "2",
+					"zone":    "2",
 				},
 			},
 			expected: `

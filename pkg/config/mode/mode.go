@@ -120,7 +120,7 @@ func DefaultRemoteConfig() *RemoteConfig {
 type ModeConfig struct {
 	Mode   CpMode        `yaml:"mode" envconfig:"kuma_mode_mode"`
 	Global *GlobalConfig `yaml:"global,omitempty"`
-	Remote *RemoteConfig `yaml:"local,omitempty"`
+	Remote *RemoteConfig `yaml:"remote,omitempty"`
 }
 
 func (m *ModeConfig) Sanitize() {
