@@ -43,7 +43,7 @@ var (
 
 func SetupServer(rt core_runtime.Runtime) error {
 	hasher, cache := kds_server.NewXdsContext(kdsRemoteLog)
-	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, makeFilter(rt.Config().Mode.Remote.Zone))
+	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter(rt.Config().Mode.Remote.Zone))
 	versioner := kds_server.NewVersioner()
 	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := kds_server.NewSyncTracker(kdsRemoteLog, reconciler, rt.Config().KDSServer.RefreshInterval)
