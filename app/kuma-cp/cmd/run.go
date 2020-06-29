@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	dns "github.com/Kong/kuma/pkg/dns/components"
+
 	"github.com/Kong/kuma/pkg/config/mode"
 
 	kds_remote "github.com/Kong/kuma/pkg/kds/remote"
@@ -12,7 +14,6 @@ import (
 
 	api_server "github.com/Kong/kuma/pkg/api-server"
 	"github.com/Kong/kuma/pkg/clusters"
-	dns "github.com/Kong/kuma/pkg/dns/components"
 	kds_global "github.com/Kong/kuma/pkg/kds/global"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 
@@ -99,6 +100,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up KDS Remote Server")
 					return err
 				}
+				if err := dns.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up DNS server")
+					return err
+				}
 			case mode.Global:
 				if err := xds_server.SetupDiagnosticsServer(rt); err != nil {
 					runLog.Error(err, "unable to set up xDS server")
@@ -128,11 +133,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := admin_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up Admin server")
-				return err
-			}
-
-			if err := dns.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up DNS server")
 				return err
 			}
 
