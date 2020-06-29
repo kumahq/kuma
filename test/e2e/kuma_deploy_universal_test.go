@@ -36,7 +36,7 @@ var _ = Describe("Test Universal deployment", func() {
 
 	It("Should deploy two apps", func() {
 		_, stderr, err := c1.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "localhost:4000")
+			"curl", "-v", "-m", "3", "localhost:4000")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})

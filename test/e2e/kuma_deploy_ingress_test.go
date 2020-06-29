@@ -147,7 +147,7 @@ spec:
 		Expect(pods).To(HaveLen(1))
 
 		_, stderr, err := c2.ExecWithRetries(TestNamespace, pods[0].GetName(), "demo-client",
-			"curl", "-v", fmt.Sprintf("%s:%d", ingress.IP, ingress.Port))
+			"curl", "-v", "-m", "3", fmt.Sprintf("%s:%d", ingress.IP, ingress.Port))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
