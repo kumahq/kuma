@@ -396,7 +396,7 @@ func (d *Dataplane) IsRemoteIngress(localClusterName string) bool {
 	if !d.IsIngress() {
 		return false
 	}
-	cluster, ok := d.Networking.Inbound[0].Tags["cluster"]
+	cluster, ok := d.Networking.Inbound[0].Tags[ZoneTag]
 	if !ok {
 		return false
 	}

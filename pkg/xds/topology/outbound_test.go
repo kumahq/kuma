@@ -436,7 +436,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "10.20.1.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags: map[string]string{"service": "ingress", "zone": "cl1"},
+										Tags: map[string]string{"service": "ingress", "zone": "zone-2"},
 										Port: 10001,
 									},
 								},
