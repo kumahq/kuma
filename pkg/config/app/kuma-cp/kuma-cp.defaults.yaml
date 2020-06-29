@@ -283,4 +283,5 @@ kds:
     # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
     tlsKeyFile: # ENV: KUMA_KDS_SERVER_TLS_KEY_FILE
   client:
+    # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
     rootCaFile: # ENV: KUMA_KDS_CLIENT_ROOT_CA_FILE
