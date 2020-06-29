@@ -133,7 +133,7 @@ var _ = Describe("TrafficRoute", func() {
 			}
 
 			// when
-			targets, err := GetOutboundTargets(destinations, dataplanes, "cluster-1")
+			targets, err := GetOutboundTargets(destinations, dataplanes, "zone-1")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -168,7 +168,7 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, "cluster-1")
+				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, "zone-1")
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -436,7 +436,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "10.20.1.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags: map[string]string{"service": "ingress", "cluster": "cl1"},
+										Tags: map[string]string{"service": "ingress", "zone": "zone-2"},
 										Port: 10001,
 									},
 								},

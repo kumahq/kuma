@@ -11,7 +11,7 @@ import (
 	util_k8s "github.com/Kong/kuma/pkg/plugins/discovery/k8s/util"
 )
 
-func InboundInterfacesFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Service, isGateway bool) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core.Service, isGateway bool) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svc := range services {
 		for _, svcPort := range svc.Spec.Ports {
@@ -26,7 +26,7 @@ func InboundInterfacesFor(clusterName string, pod *kube_core.Pod, services []*ku
 				continue
 			}
 
-			tags := InboundTagsFor(clusterName, pod, svc, &svcPort, isGateway)
+			tags := InboundTagsFor(zone, pod, svc, &svcPort, isGateway)
 
 			ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 				Port: uint32(containerPort),
@@ -47,14 +47,14 @@ func InboundInterfacesFor(clusterName string, pod *kube_core.Pod, services []*ku
 	return ifaces, nil
 }
 
-func InboundTagsFor(clusterName string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) map[string]string {
+func InboundTagsFor(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	if tags == nil {
 		tags = make(map[string]string)
 	}
 	tags[mesh_proto.ServiceTag] = ServiceTagFor(svc, svcPort)
-	if clusterName != "" {
-		tags[mesh_proto.ClusterTag] = clusterName
+	if zone != "" {
+		tags[mesh_proto.ZoneTag] = zone
 	}
 	// notice that in case of a gateway it might be confusing to see a protocol tag
 	// since gateway proxies multiple services each with its own protocol

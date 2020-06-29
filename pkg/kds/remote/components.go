@@ -43,7 +43,7 @@ var (
 
 func SetupServer(rt core_runtime.Runtime) error {
 	hasher, cache := kds_server.NewXdsContext(kdsRemoteLog)
-	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter(rt.Config().General.ClusterName))
+	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter(rt.Config().Mode.Remote.Zone))
 	versioner := kds_server.NewVersioner()
 	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := kds_server.NewSyncTracker(kdsRemoteLog, reconciler, rt.Config().KDSServer.RefreshInterval)
@@ -57,7 +57,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	componentFactory := func(log logr.Logger, req *envoy_api_v2.DiscoveryRequest) component.Component {
 		globalAddress := req.Node.Id
-		policiesSink := kds_client.NewKDSSink(kdsRemoteLog, rt.Config().General.ClusterName, consumedTypes,
+		policiesSink := kds_client.NewKDSSink(kdsRemoteLog, rt.Config().Mode.Remote.Zone, consumedTypes,
 			clientFactory(globalAddress), Callbacks(resourceSyncer, rt.Config().Store.Type == store.KubernetesStore))
 		return component.NewResilientComponent(kdsRemoteLog, policiesSink)
 	}
@@ -67,7 +67,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 		syncTracker,
 		NewComponentSpawner(kdsRemoteLog.WithName("policy-sink-spawner"), componentFactory),
 	}
-	srv := kds_server.NewServer(cache, callbacks, kdsRemoteLog, rt.Config().General.ClusterName)
+	srv := kds_server.NewServer(cache, callbacks, kdsRemoteLog, rt.Config().Mode.Remote.Zone)
 	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDSServer))
 }
 
@@ -75,7 +75,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 func providedFilter(clusterName string) reconcile.ResourceFilter {
 	return func(_ string, r model.Resource) bool {
 		if r.GetType() == mesh.DataplaneType {
-			return clusterName == util.ClusterTag(r)
+			return clusterName == util.ZoneTag(r)
 		}
 		return r.GetType() == mesh.DataplaneInsightType
 	}
@@ -89,7 +89,7 @@ func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool) *kds_client.Call
 			}
 			if rs.GetItemType() == mesh.DataplaneType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return r.(*mesh.DataplaneResource).Spec.IsIngress() && util.ClusterTag(r) == clusterID
+					return r.(*mesh.DataplaneResource).Spec.IsIngress() && util.ZoneTag(r) == clusterID
 				}))
 			}
 			return syncer.Sync(rs)

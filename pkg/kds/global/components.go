@@ -6,22 +6,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
-
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-
-	"github.com/Kong/kuma/pkg/config/clusters"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
+	"github.com/Kong/kuma/pkg/config/mode"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/Kong/kuma/pkg/core/resources/registry"
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 	"github.com/Kong/kuma/pkg/kds/client"
+	kds_server "github.com/Kong/kuma/pkg/kds/server"
 	sync_store "github.com/Kong/kuma/pkg/kds/store"
 	"github.com/Kong/kuma/pkg/kds/util"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
 var (
@@ -67,7 +65,7 @@ func providedFilter(clusterID string, r model.Resource) bool {
 	if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
 		return false
 	}
-	return clusterID != util.ClusterTag(r)
+	return clusterID != util.ZoneTag(r)
 }
 
 func SetupComponent(rt runtime.Runtime) error {
@@ -79,10 +77,10 @@ func SetupComponent(rt runtime.Runtime) error {
 		}
 	}
 
-	for _, cluster := range rt.Config().KumaClusters.Clusters {
-		log := kdsGlobalLog.WithValues("clusterIP", cluster.Remote.Address)
-		dataplaneSink := client.NewKDSSink(log, rt.Config().KumaClusters.LBConfig.Address, consumedTypes,
-			clientFactory(cluster.Remote.Address), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore, cluster))
+	for _, zone := range rt.Config().Mode.Global.Zones {
+		log := kdsGlobalLog.WithValues("clusterIP", zone.Remote.Address)
+		dataplaneSink := client.NewKDSSink(log, rt.Config().Mode.Global.LBAddress, consumedTypes,
+			clientFactory(zone.Remote.Address), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore, zone))
 		if err := rt.Add(component.NewResilientComponent(log, dataplaneSink)); err != nil {
 			return err
 		}
@@ -90,7 +88,7 @@ func SetupComponent(rt runtime.Runtime) error {
 	return nil
 }
 
-func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *clusters.ClusterConfig) *client.Callbacks {
+func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *mode.ZoneConfig) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
 			if len(rs.GetItems()) == 0 {
@@ -113,7 +111,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *clusters.Cluster
 	}
 }
 
-func adjustIngressNetworking(cfg *clusters.ClusterConfig, rs model.ResourceList) {
+func adjustIngressNetworking(cfg *mode.ZoneConfig, rs model.ResourceList) {
 	host, portStr, _ := net.SplitHostPort(cfg.Ingress.Address) // err is ignored because we rely on the config validation
 	port, _ := strconv.ParseUint(portStr, 10, 32)
 	for _, r := range rs.GetItems() {

@@ -224,7 +224,6 @@ Usage:
 Flags:
       --admission-server-tls-cert string    TLS certificate for the admission web hooks implemented by the Kuma Control Plane
       --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
-      --cluster-name string                 set the Kuma cluster name
       --cni-enabled                         install Kuma with CNI instead of proxy init container
       --cni-image string                    image of Kuma CNI component, if CNIEnabled equals true (default "lobkovilya/install-cni")
       --cni-version string                  version of the CNIImage (default "0.0.1")
@@ -241,6 +240,7 @@ Flags:
       --sds-tls-cert string                 TLS certificate for the SDS server
       --sds-tls-key string                  TLS key for the SDS server
       --use-node-port                       use NodePort instead of LoadBalancer
+      --zone string                         set the Kuma zone name
 
 Global Flags:
       --config-file string   path to the configuration file to use

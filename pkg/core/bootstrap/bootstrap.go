@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 
@@ -271,7 +273,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
 	customManagers[mesh.MeshType] = meshManager
 
-	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().General.ClusterName)
+	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Mode.Remote.Zone)
 	customManagers[mesh.DataplaneType] = dpManager
 
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
@@ -287,8 +289,8 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	var secretValidator secret_manager.SecretValidator
-	switch cfg.Mode {
-	case config_core.Remote:
+	switch cfg.Mode.Mode {
+	case mode.Remote:
 		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
 	default:
 		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
@@ -312,7 +314,7 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 }
 
 func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	poller, err := poller.NewClustersStatusPoller(cfg.KumaClusters)
+	poller, err := poller.NewClustersStatusPoller(cfg.Mode.Global)
 	if err != nil {
 		return err
 	}

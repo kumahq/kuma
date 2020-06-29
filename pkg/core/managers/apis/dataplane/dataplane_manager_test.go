@@ -16,10 +16,10 @@ import (
 
 var _ = Describe("Dataplane Manager", func() {
 
-	It("should create a new dataplane with inbound cluster tag", func() {
+	It("should create a new dataplane with inbound zone tag", func() {
 		// setup
 		s := memory.NewStore()
-		manager := dataplane.NewDataplaneManager(s, "cluster-1")
+		manager := dataplane.NewDataplaneManager(s, "zone-1")
 
 		// given
 		input := mesh_core.DataplaneResource{
@@ -49,13 +49,13 @@ var _ = Describe("Dataplane Manager", func() {
 
 		// then
 		Expect(actual.Spec.Networking.Inbound).To(HaveLen(1))
-		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ClusterTag]).To(Equal("cluster-1"))
+		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 	})
 
-	It("should update a dataplane with inbound cluster tag", func() {
+	It("should update a dataplane with inbound zone tag", func() {
 		// setup
 		s := memory.NewStore()
-		manager := dataplane.NewDataplaneManager(s, "cluster-1")
+		manager := dataplane.NewDataplaneManager(s, "zone-1")
 
 		// given
 		input := mesh_core.DataplaneResource{
@@ -82,7 +82,7 @@ var _ = Describe("Dataplane Manager", func() {
 		err = s.Get(context.Background(), &actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(len(actual.Spec.Networking.Inbound[0].Tags)).To(Equal(1))
-		_, ok := actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ClusterTag]
+		_, ok := actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]
 		Expect(ok).To(BeFalse())
 
 		// when
@@ -95,13 +95,13 @@ var _ = Describe("Dataplane Manager", func() {
 		err = s.Get(context.Background(), &actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Spec.Networking.Inbound).To(HaveLen(1))
-		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ClusterTag]).To(Equal("cluster-1"))
+		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 	})
 
-	It("should create a new gateway with cluster tag", func() {
+	It("should create a new gateway with zone tag", func() {
 		// setup
 		s := memory.NewStore()
-		manager := dataplane.NewDataplaneManager(s, "cluster-1")
+		manager := dataplane.NewDataplaneManager(s, "zone-1")
 
 		// given
 		input := mesh_core.DataplaneResource{
@@ -127,13 +127,13 @@ var _ = Describe("Dataplane Manager", func() {
 
 		// then
 		Expect(len(actual.Spec.Networking.Gateway.Tags)).To(Equal(2))
-		Expect(actual.Spec.Networking.Gateway.Tags[mesh_proto.ClusterTag]).To(Equal("cluster-1"))
+		Expect(actual.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 	})
 
-	It("should update a dataplane with gateway cluster tag", func() {
+	It("should update a dataplane with gateway zone tag", func() {
 		// setup
 		s := memory.NewStore()
-		manager := dataplane.NewDataplaneManager(s, "cluster-1")
+		manager := dataplane.NewDataplaneManager(s, "zone-1")
 
 		// given
 		input := mesh_core.DataplaneResource{
@@ -156,7 +156,7 @@ var _ = Describe("Dataplane Manager", func() {
 		err = s.Get(context.Background(), &actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(len(actual.Spec.Networking.Gateway.Tags)).To(Equal(1))
-		_, ok := actual.Spec.Networking.Gateway.Tags[mesh_proto.ClusterTag]
+		_, ok := actual.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag]
 		Expect(ok).To(BeFalse())
 
 		// when
@@ -170,7 +170,7 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// then
 		Expect(len(actual.Spec.Networking.Gateway.Tags)).To(Equal(2))
-		Expect(actual.Spec.Networking.Gateway.Tags[mesh_proto.ClusterTag]).To(Equal("cluster-1"))
+		Expect(actual.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 	})
 
 })

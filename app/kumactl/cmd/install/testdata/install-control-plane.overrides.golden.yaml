@@ -37,10 +37,6 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
-    # General configuration
-    general:
-      # Kuma Cluster name used to mark the remote dataplane resources
-      clusterName: cluster-1
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -4629,9 +4625,12 @@ spec:
               value: kuma-ci/kuma-dp:greatest
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: kuma-ci/kuma-init:greatest
+            - name: KUMA_MODE_MODE
+              value: remote
+            - name: KUMA_MODE_REMOTE_ZONE
+              value: zone-1
           args:
             - run
-            - --mode=remote
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:

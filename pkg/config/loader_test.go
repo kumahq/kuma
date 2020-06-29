@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
 
 	"github.com/Kong/kuma/pkg/config"
@@ -125,7 +127,8 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.GuiServer.Port).To(Equal(uint32(8888)))
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
-			Expect(cfg.Mode).To(Equal("standalone"))
+			Expect(cfg.Mode.Mode).To(Equal(mode.Remote))
+			Expect(cfg.Mode.Remote.Zone).To(Equal("zone-1"))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -204,7 +207,13 @@ general:
 guiServer:
   port: 8888
   apiServerUrl: http://localhost:1234
-mode: standalone
+mode:
+  mode: remote
+  global:
+    lbaddress: ""
+    zones: []
+  remote:
+    zone: "zone-1"
 dnsServer:
   port: 15653
   CIDR: 127.1.0.0/16
@@ -263,6 +272,8 @@ dnsServer:
 				"KUMA_GUI_SERVER_API_SERVER_URL":                                "http://localhost:1234",
 				"KUMA_DNS_SERVER_PORT":                                          "15653",
 				"KUMA_DNS_CIDR":                                                 "127.1.0.0/16",
+				"KUMA_MODE_MODE":                                                "remote",
+				"KUMA_MODE_REMOTE_ZONE":                                         "zone-1",
 			},
 			yamlFileConfig: "",
 		}),

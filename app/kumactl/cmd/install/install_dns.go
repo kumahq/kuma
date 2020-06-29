@@ -21,7 +21,7 @@ import (
 const (
 	corednsAppendTemplate = `mesh:53 {
         errors
-        cache 30
+        cache 3
         %s . %s:5653
     }`
 )
