@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -103,6 +104,15 @@ func getCoreFileForwardVerb(corefile string) string {
 	return "forward"
 }
 
+func cleanupCoreConfigMap(configMap *v1.ConfigMap) {
+	inConfigMap, found := configMap.Data["Corefile"]
+	if !found {
+		return
+	}
+	regex := regexp.MustCompile(`mesh:53 {[\s\S]*}`)
+	configMap.Data["Corefile"] = string(regex.ReplaceAll([]byte(inConfigMap), []byte("")))
+}
+
 func handleCoreDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.ConfigMap, error) {
 	corednsConfigMap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(context.TODO(),
 		"coredns", metav1.GetOptions{})
@@ -110,11 +120,12 @@ func handleCoreDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.Confi
 		return nil, err
 	}
 
-	if !strings.Contains(corednsConfigMap.Data["Corefile"], "mesh:53") {
-		forwardVerb := getCoreFileForwardVerb(corednsConfigMap.Data["Corefile"])
-		toappend := fmt.Sprintf(corednsAppendTemplate, forwardVerb, cpaddress)
-		corednsConfigMap.Data["Corefile"] += toappend
-	}
+	cleanupCoreConfigMap(corednsConfigMap)
+
+	forwardVerb := getCoreFileForwardVerb(corednsConfigMap.Data["Corefile"])
+	toappend := fmt.Sprintf(corednsAppendTemplate, forwardVerb, cpaddress)
+	corednsConfigMap.Data["Corefile"] += toappend
+
 	return corednsConfigMap, nil
 }
 
