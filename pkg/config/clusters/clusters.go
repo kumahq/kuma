@@ -1,7 +1,9 @@
 package clusters
 
 import (
+	"net"
 	"net/url"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -39,8 +41,13 @@ func (g *ClustersConfig) Validate() error {
 			return errors.Wrapf(err, "Invalid remote url for cluster %s", cluster.Remote.Address)
 		}
 		_, err = url.ParseRequestURI(cluster.Ingress.Address)
+		_, port, err := net.SplitHostPort(cluster.Ingress.Address)
 		if err != nil {
-			return errors.Wrapf(err, "Invalid ingress url for cluster %s", cluster.Ingress.Address)
+			return errors.Wrapf(err, "Invalid ingress address for cluster %s", cluster.Ingress.Address)
+		}
+		_, err = strconv.ParseUint(port, 10, 32)
+		if err != nil {
+			return errors.Wrapf(err, "Invalid ingress's port %s", port)
 		}
 	}
 	return nil

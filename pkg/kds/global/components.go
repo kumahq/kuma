@@ -2,7 +2,11 @@ package global
 
 import (
 	"fmt"
-	"net/url"
+	"github.com/Kong/kuma/pkg/core/resources/registry"
+	kds_server "github.com/Kong/kuma/pkg/kds/server"
+	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	"net"
+	"strconv"
 	"strings"
 
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
@@ -15,10 +19,8 @@ import (
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 	"github.com/Kong/kuma/pkg/kds/client"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
 	sync_store "github.com/Kong/kuma/pkg/kds/store"
 	"github.com/Kong/kuma/pkg/kds/util"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
 )
 
 var (
@@ -42,6 +44,31 @@ var (
 	}
 )
 
+func SetupServer(rt runtime.Runtime) error {
+	hasher, cache := kds_server.NewXdsContext(kdsGlobalLog)
+	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter)
+	versioner := kds_server.NewVersioner()
+	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
+	syncTracker := kds_server.NewSyncTracker(kdsGlobalLog, reconciler, rt.Config().KDSServer.RefreshInterval)
+	callbacks := util_xds.CallbacksChain{
+		util_xds.LoggingCallbacks{Log: kdsGlobalLog},
+		syncTracker,
+	}
+	srv := kds_server.NewServer(cache, callbacks, kdsGlobalLog, "global")
+	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDSServer))
+}
+
+// providedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
+func providedFilter(clusterID string, r model.Resource) bool {
+	if r.GetType() != mesh.DataplaneType {
+		return true
+	}
+	if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
+		return false
+	}
+	return clusterID != util.ClusterTag(r)
+}
+
 func SetupComponent(rt runtime.Runtime) error {
 	syncStore := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
 
@@ -62,31 +89,6 @@ func SetupComponent(rt runtime.Runtime) error {
 	return nil
 }
 
-func SetupServer(rt runtime.Runtime) error {
-	hasher, cache := kds_server.NewXdsContext(kdsGlobalLog)
-	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, filter)
-	versioner := kds_server.NewVersioner()
-	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := kds_server.NewSyncTracker(kdsGlobalLog, reconciler, rt.Config().KDSServer.RefreshInterval)
-	callbacks := util_xds.CallbacksChain{
-		util_xds.LoggingCallbacks{Log: kdsGlobalLog},
-		syncTracker,
-	}
-	srv := kds_server.NewServer(cache, callbacks, kdsGlobalLog, "global")
-	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDSServer))
-}
-
-// filter excludes Dataplanes and Ingresses from 'clusterID' cluster
-func filter(clusterID string, r model.Resource) bool {
-	if r.GetType() != mesh.DataplaneType {
-		return true
-	}
-	if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
-		return false
-	}
-	return clusterID != util.ClusterTag(r)
-}
-
 func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *clusters.ClusterConfig) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
@@ -99,7 +101,10 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *clusters.Cluster
 			if k8sStore {
 				util.AddSuffixToNames(rs.GetItems(), "default")
 			}
-			adjustIngressNetworking(cfg, rs)
+			if rs.GetItemType() == mesh.DataplaneType {
+				rs = dedupIngresses(rs)
+				adjustIngressNetworking(cfg, rs)
+			}
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
 			}))
@@ -108,14 +113,31 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *clusters.Cluster
 }
 
 func adjustIngressNetworking(cfg *clusters.ClusterConfig, rs model.ResourceList) {
-	if rs.GetItemType() != mesh.DataplaneType {
-		return
-	}
-	u, _ := url.Parse(cfg.Ingress.Address)
+	host, portStr, _ := net.SplitHostPort(cfg.Ingress.Address) // err is ignored because we rely on the config validation
+	port, _ := strconv.ParseUint(portStr, 10, 32)
 	for _, r := range rs.GetItems() {
 		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
 			continue
 		}
-		r.(*mesh.DataplaneResource).Spec.Networking.Address = u.Hostname()
+		r.(*mesh.DataplaneResource).Spec.Networking.Address = host
+		r.(*mesh.DataplaneResource).Spec.Networking.Inbound[0].Port = uint32(port)
 	}
+}
+
+// dedupIngresses returns ResourceList that consist of Dataplanes from 'rs' and has single Ingress.
+// We assume to have single Ingress Resource per Zone.
+func dedupIngresses(rs model.ResourceList) model.ResourceList {
+	rv, _ := registry.Global().NewList(rs.GetItemType())
+	ingressPicked := false
+	for _, r := range rs.GetItems() {
+		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
+			_ = rv.AddItem(r)
+			continue
+		}
+		if !ingressPicked {
+			_ = rv.AddItem(r)
+			ingressPicked = true
+		}
+	}
+	return rv
 }

@@ -32,9 +32,9 @@ func New(serverURL string) (KDSClient, error) {
 	}
 	var dialOpts []grpc.DialOption
 	switch u.Scheme {
-	case "http":
+	case "grpc":
 		dialOpts = append(dialOpts, grpc.WithInsecure())
-	case "https":
+	case "grpcs":
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 			InsecureSkipVerify: true, // it's acceptable since we don't pass any secrets to the server
 		})))
