@@ -11,14 +11,14 @@ spec:
           protocol: tcp
           service: example_demo_svc_80
           version: "0.1"
-          cluster: "cluster-1"
+          zone: "zone-1"
       - port: 8443
         tags:
           app: example
           protocol: tcp
           service: example_demo_svc_443
           version: "0.1"
-          cluster: "cluster-1"
+          zone: "zone-1"
     outbound:
       - address: 10.244.0.25
         port: 80

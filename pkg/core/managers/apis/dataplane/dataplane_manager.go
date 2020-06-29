@@ -15,18 +15,18 @@ import (
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 )
 
-func NewDataplaneManager(store core_store.ResourceStore, clusterName string) core_manager.ResourceManager {
+func NewDataplaneManager(store core_store.ResourceStore, zone string) core_manager.ResourceManager {
 	return &dataplaneManager{
 		ResourceManager: core_manager.NewResourceManager(store),
 		store:           store,
-		clusterName:     clusterName,
+		zone:            zone,
 	}
 }
 
 type dataplaneManager struct {
 	core_manager.ResourceManager
-	store       core_store.ResourceStore
-	clusterName string
+	store core_store.ResourceStore
+	zone  string
 }
 
 func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
@@ -65,7 +65,7 @@ func (m *dataplaneManager) dataplane(resource core_model.Resource) (*core_mesh.D
 }
 
 func (m *dataplaneManager) setInboundsClusterTag(dp *core_mesh.DataplaneResource) {
-	if m.clusterName == "" || dp.Spec.Networking == nil {
+	if m.zone == "" || dp.Spec.Networking == nil {
 		return
 	}
 
@@ -73,16 +73,16 @@ func (m *dataplaneManager) setInboundsClusterTag(dp *core_mesh.DataplaneResource
 		if inbound.Tags == nil {
 			inbound.Tags = make(map[string]string)
 		}
-		inbound.Tags[mesh_proto.ClusterTag] = m.clusterName
+		inbound.Tags[mesh_proto.ZoneTag] = m.zone
 	}
 }
 
 func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource) {
-	if m.clusterName == "" || dp.Spec.Networking == nil || dp.Spec.Networking.Gateway == nil {
+	if m.zone == "" || dp.Spec.Networking == nil || dp.Spec.Networking.Gateway == nil {
 		return
 	}
 	if dp.Spec.Networking.Gateway.Tags == nil {
 		dp.Spec.Networking.Gateway.Tags = make(map[string]string)
 	}
-	dp.Spec.Networking.Gateway.Tags[mesh_proto.ClusterTag] = m.clusterName
+	dp.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag] = m.zone
 }

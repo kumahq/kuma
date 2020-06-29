@@ -13,7 +13,7 @@ import (
 
 	"github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config/core"
+	config_mode "github.com/Kong/kuma/pkg/config/mode"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -201,7 +201,7 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 
 func (c *K8sCluster) DeployKuma(mode ...string) error {
 	if len(mode) == 0 {
-		mode = []string{core.Standalone}
+		mode = []string{config_mode.Standalone}
 	}
 	c.controlplane = NewK8sControlPlane(c.t, mode[0], c.name, c.kubeconfig,
 		c, c.loPort, c.hiPort, c.verbose)

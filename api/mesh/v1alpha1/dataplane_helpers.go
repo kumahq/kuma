@@ -16,7 +16,7 @@ const (
 	ServiceTag     = "service"
 	ServiceUnknown = "unknown"
 	// Mandatory tag that has a reserved meaning in Kuma.
-	ClusterTag = "cluster"
+	ZoneTag = "zone"
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "protocol"
@@ -392,15 +392,15 @@ func (d *Dataplane) HasAvailableServices() bool {
 	return len(d.Networking.Ingress.AvailableServices) != 0
 }
 
-func (d *Dataplane) IsRemoteIngress(localClusterName string) bool {
+func (d *Dataplane) IsRemoteIngress(localZone string) bool {
 	if !d.IsIngress() {
 		return false
 	}
-	cluster, ok := d.Networking.Inbound[0].Tags["cluster"]
+	zone, ok := d.Networking.Inbound[0].Tags[ZoneTag]
 	if !ok {
 		return false
 	}
-	return cluster != localClusterName
+	return zone != localZone
 }
 
 func (t MultiValueTagSet) String() string {

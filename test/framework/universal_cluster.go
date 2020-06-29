@@ -10,7 +10,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"go.uber.org/multierr"
 
-	"github.com/Kong/kuma/pkg/config/core"
+	config_mode "github.com/Kong/kuma/pkg/config/mode"
 )
 
 const (
@@ -46,7 +46,7 @@ func (c *UniversalCluster) DismissCluster() (errs error) {
 
 func (c *UniversalCluster) DeployKuma(mode ...string) error {
 	if len(mode) == 0 {
-		mode = []string{core.Standalone}
+		mode = []string{config_mode.Standalone}
 	}
 	c.controlplane = NewUniversalControlPlane(c.t, mode[0], c.name, c, c.verbose)
 

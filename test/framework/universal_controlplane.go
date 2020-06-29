@@ -3,19 +3,19 @@ package framework
 import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	"github.com/Kong/kuma/pkg/config/core"
+	"github.com/Kong/kuma/pkg/config/mode"
 )
 
 type UniversalControlPlane struct {
 	t       testing.TestingT
-	mode    core.CpMode
+	mode    mode.CpMode
 	name    string
 	kumactl *KumactlOptions
 	cluster *UniversalCluster
 	verbose bool
 }
 
-func NewUniversalControlPlane(t testing.TestingT, mode core.CpMode, clusterName string, cluster *UniversalCluster, verbose bool) *UniversalControlPlane {
+func NewUniversalControlPlane(t testing.TestingT, mode mode.CpMode, clusterName string, cluster *UniversalCluster, verbose bool) *UniversalControlPlane {
 	name := clusterName + "-" + mode
 	kumactl, err := NewKumactlOptions(t, name, verbose)
 	if err != nil {
@@ -43,7 +43,7 @@ func (c *UniversalControlPlane) GetKumaCPLogs() (string, error) {
 	return "", nil
 }
 
-func (c *UniversalControlPlane) GetHostAPI() string {
+func (c *UniversalControlPlane) GetKDSServerAddress() string {
 	return ""
 }
 

@@ -4757,9 +4757,10 @@ spec:
               value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
+            - name: KUMA_MODE_MODE
+              value: standalone
           args:
             - run
-            - --mode=standalone
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:

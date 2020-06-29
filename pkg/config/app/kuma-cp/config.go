@@ -1,14 +1,14 @@
 package kuma_cp
 
 import (
-	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/config/mode"
 
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/config"
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	api_server "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/config/clusters"
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	dns_server "github.com/Kong/kuma/pkg/config/dns-server"
@@ -121,11 +121,9 @@ type Config struct {
 	// GUI Server Config
 	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer,omitempty"`
 	// Kuma CP Mode
-	Mode core.CpMode `yaml:"mode,omitempty"`
+	Mode *mode.ModeConfig `yaml:"mode,omitempty"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
-	// KumaClusters config
-	KumaClusters *clusters.ClustersConfig `yaml:"kumaClusters,omitempty"`
 	// KDSServer configuration
 	KDSServer *kds.KumaDiscoveryServerConfig `yaml:"kdsServer,omitempty"`
 }
@@ -145,7 +143,7 @@ func (c *Config) Sanitize() {
 	c.Defaults.Sanitize()
 	c.GuiServer.Sanitize()
 	c.DNSServer.Sanitize()
-	c.KumaClusters.Sanitize()
+	c.Mode.Sanitize()
 	c.KDSServer.Sanitize()
 }
 
@@ -175,30 +173,29 @@ name: default
 		Reports: &Reports{
 			Enabled: true,
 		},
-		General:      DefaultGeneralConfig(),
-		GuiServer:    gui_server.DefaultGuiServerConfig(),
-		Mode:         core.Standalone,
-		DNSServer:    dns_server.DefaultDNSServerConfig(),
-		KumaClusters: clusters.DefaultClustersConfig(),
-		KDSServer:    kds.DefaultKumaDiscoveryServerConfig(),
+		General:   DefaultGeneralConfig(),
+		GuiServer: gui_server.DefaultGuiServerConfig(),
+		DNSServer: dns_server.DefaultDNSServerConfig(),
+		Mode:      mode.DefaultModeConfig(),
+		KDSServer: kds.DefaultKumaDiscoveryServerConfig(),
 	}
 }
 
 func (c *Config) Validate() error {
-	if err := core.ValidateCpMode(c.Mode); err != nil {
-		return err
+	if err := c.Mode.Validate(); err != nil {
+		return errors.Wrap(err, "Mode validation failed")
 	}
-	switch c.Mode {
-	case core.Global:
+	switch c.Mode.Mode {
+	case mode.Global:
 		if err := c.GuiServer.Validate(); err != nil {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
-	case core.Standalone:
+	case mode.Standalone:
 		if err := c.GuiServer.Validate(); err != nil {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
 		fallthrough
-	case core.Remote:
+	case mode.Remote:
 		if err := c.XdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "Xds Server validation failed")
 		}
@@ -239,9 +236,6 @@ func (c *Config) Validate() error {
 	if err := c.DNSServer.Validate(); err != nil {
 		return errors.Wrap(err, "DNSServer validation failed")
 	}
-	if err := c.KumaClusters.Validate(); err != nil {
-		return errors.Wrap(err, "KumaClusters validation failed")
-	}
 	if err := c.KDSServer.Validate(); err != nil {
 		return errors.Wrap(err, "KDSServer validation failed")
 	}
@@ -252,8 +246,6 @@ type GeneralConfig struct {
 	// Hostname that other components should use in order to connect to the Control Plane.
 	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
 	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_general_advertised_hostname"`
-	// Kuma Cluster name used to mark the remote dataplane resources
-	ClusterName string `yaml:"clusterName,omitempty" envconfig:"kuma_general_cluster_name"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -262,15 +254,11 @@ func (g *GeneralConfig) Sanitize() {
 }
 
 func (g *GeneralConfig) Validate() error {
-	if g.ClusterName != "" && !govalidator.IsDNSName(g.ClusterName) {
-		return errors.Errorf("Wrong cluster name [%s]", g.ClusterName)
-	}
 	return nil
 }
 
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
 		AdvertisedHostname: "localhost",
-		ClusterName:        "",
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Kong/kuma/pkg/config/clusters"
+	"github.com/Kong/kuma/pkg/config/mode"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -49,8 +49,8 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 		for _, ss := range serverStreams {
 			clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 		}
-		cfg := &clusters.ClusterConfig{
-			Ingress: clusters.EndpointConfig{Address: "192.168.0.1"},
+		cfg := &mode.ZoneConfig{
+			Ingress: mode.EndpointConfig{Address: "192.168.0.1"},
 		}
 		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, cfg))
 
@@ -60,14 +60,14 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 		}
 	})
 
-	dataplaneFunc := func(cluster, service string) mesh_proto.Dataplane {
+	dataplaneFunc := func(zone, service string) mesh_proto.Dataplane {
 		return mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 					Port: 1212,
 					Tags: map[string]string{
-						mesh_proto.ClusterTag: cluster,
+						mesh_proto.ZoneTag:    zone,
 						mesh_proto.ServiceTag: service,
 					},
 				}},

@@ -65,7 +65,7 @@ var (
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 				Port: 1212,
 				Tags: map[string]string{
-					mesh_proto.ClusterTag: "kuma-1",
+					mesh_proto.ZoneTag:    "kuma-1",
 					mesh_proto.ServiceTag: "backend",
 				},
 			}},

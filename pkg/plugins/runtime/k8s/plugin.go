@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	"github.com/Kong/kuma/pkg/core/secrets/manager"
 
 	"github.com/pkg/errors"
@@ -11,7 +13,6 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	core_config "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
 	managers_mesh "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
 	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
@@ -50,7 +51,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	if rt.Config().Mode != core_config.Remote {
+	if rt.Config().Mode.Mode != mode.Remote {
 		if err := addValidators(mgr, rt); err != nil {
 			return err
 		}
@@ -81,7 +82,7 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 }
 
 func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
-	if rt.Config().Mode == core_config.Remote {
+	if rt.Config().Mode.Mode == mode.Remote {
 		return nil
 	}
 	reconciler := &k8s_controllers.MeshReconciler{
@@ -149,7 +150,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 }
 
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) {
-	if rt.Config().Mode != core_config.Global {
+	if rt.Config().Mode.Mode != mode.Global {
 		kumaInjector := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
 			rt.Config().ApiServer.Catalog.ApiServer.Url,

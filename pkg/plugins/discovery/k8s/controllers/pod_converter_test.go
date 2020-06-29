@@ -143,7 +143,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			converter := PodConverter{
 				ServiceGetter: serviceGetter,
-				ClusterName:   "cluster-1",
+				Zone:          "zone-1",
 			}
 
 			// when
@@ -309,7 +309,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 
 	type testCase struct {
 		isGateway      bool
-		clusterName    string
+		zone           string
 		podLabels      map[string]string
 		svcAnnotations map[string]string
 		expected       map[string]string
@@ -348,7 +348,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			}
 
 			// expect
-			Expect(InboundTagsFor(given.clusterName, pod, svc, &svc.Spec.Ports[0], given.isGateway)).To(Equal(given.expected))
+			Expect(InboundTagsFor(given.zone, pod, svc, &svc.Spec.Ports[0], given.isGateway)).To(Equal(given.expected))
 		},
 		Entry("Pod without labels", testCase{
 			isGateway: false,
@@ -444,9 +444,9 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"service": "example_demo_svc_80",
 			},
 		}),
-		Entry("Inject a cluster tag if ClusterName is set", testCase{
-			isGateway:   false,
-			clusterName: "cluster-1",
+		Entry("Inject a zone tag if Zone is set", testCase{
+			isGateway: false,
+			zone:      "zone-1",
 			podLabels: map[string]string{
 				"app":     "example",
 				"version": "0.1",
@@ -455,7 +455,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"app":      "example",
 				"version":  "0.1",
 				"service":  "example_demo_svc_80",
-				"cluster":  "cluster-1",
+				"zone":     "zone-1",
 				"protocol": "tcp",
 			},
 		}),

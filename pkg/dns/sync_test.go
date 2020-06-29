@@ -116,7 +116,7 @@ var _ = Describe("DNS sync", func() {
 							{
 								Port: 1234,
 								Tags: map[string]string{
-									"cluster": "cluster-2",
+									"zone": "zone-2",
 								},
 							},
 						},
