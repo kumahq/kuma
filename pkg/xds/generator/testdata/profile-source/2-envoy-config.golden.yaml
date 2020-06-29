@@ -243,9 +243,12 @@ resources:
                   socketAddress:
                     address: 192.168.0.3
                     portValue: 5432
+              loadBalancingWeight: 1
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    role: master
+                  envoy.transport_socket_match:
                     role: master
   - name: elastic
     resource:
@@ -258,3 +261,4 @@ resources:
                   socketAddress:
                     address: 192.168.0.4
                     portValue: 9200
+              loadBalancingWeight: 1

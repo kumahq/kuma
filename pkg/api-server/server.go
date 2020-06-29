@@ -31,6 +31,10 @@ type ApiServer struct {
 	server *http.Server
 }
 
+func (a *ApiServer) NeedLeaderElection() bool {
+	return false
+}
+
 func (a *ApiServer) Address() string {
 	return a.server.Addr
 }
@@ -170,7 +174,7 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	if cfg.Mode == config_core.Local {
+	if cfg.Mode == config_core.Remote {
 		for _, definition := range definitions.All {
 			if definition.ResourceFactory().GetType() != mesh.DataplaneType {
 				definition.ReadOnly = true

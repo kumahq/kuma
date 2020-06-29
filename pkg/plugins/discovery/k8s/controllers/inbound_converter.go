@@ -11,7 +11,7 @@ import (
 	util_k8s "github.com/Kong/kuma/pkg/plugins/discovery/k8s/util"
 )
 
-func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isGateway bool) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+func InboundInterfacesFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Service, isGateway bool) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svc := range services {
 		for _, svcPort := range svc.Spec.Ports {
@@ -26,7 +26,7 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 				continue
 			}
 
-			tags := InboundTagsFor(pod, svc, &svcPort, isGateway)
+			tags := InboundTagsFor(clusterName, pod, svc, &svcPort, isGateway)
 
 			ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 				Port: uint32(containerPort),
@@ -47,12 +47,15 @@ func InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service, isG
 	return ifaces, nil
 }
 
-func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) map[string]string {
+func InboundTagsFor(clusterName string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	if tags == nil {
 		tags = make(map[string]string)
 	}
 	tags[mesh_proto.ServiceTag] = ServiceTagFor(svc, svcPort)
+	if clusterName != "" {
+		tags[mesh_proto.ClusterTag] = clusterName
+	}
 	// notice that in case of a gateway it might be confusing to see a protocol tag
 	// since gateway proxies multiple services each with its own protocol
 	if !isGateway {
@@ -62,7 +65,7 @@ func InboundTagsFor(pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_co
 }
 
 func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
-	return fmt.Sprintf("%s.%s.svc:%d", svc.Name, svc.Namespace, svcPort.Port)
+	return fmt.Sprintf("%s_%s_svc_%d", svc.Name, svc.Namespace, svcPort.Port)
 }
 
 // ProtocolTagFor infers service protocol from a `<port>.service.kuma.io/protocol` annotation.

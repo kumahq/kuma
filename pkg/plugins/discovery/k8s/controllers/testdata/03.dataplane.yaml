@@ -7,5 +7,6 @@ spec:
     gateway:
       tags:
         app: example
-        service: example.demo.svc:80
+        service: example_demo_svc_80
         version: "0.1"
+        cluster: "cluster-1"

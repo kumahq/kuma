@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/Kong/kuma/pkg/config/core"
+
 	"github.com/pkg/errors"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
@@ -116,7 +118,9 @@ func (o *KumactlOptions) KumactlInstallCP(mode ...string) (string, error) {
 
 	for _, m := range mode {
 		args = append(args, "--mode", m)
-		break
+		if m == core.Remote {
+			args = append(args, "--cluster-name", o.CPName)
+		}
 	}
 
 	return o.RunKumactlAndGetOutputV(
@@ -146,6 +150,7 @@ func (o *KumactlOptions) KumactlInstallIngress() (string, error) {
 	args := []string{
 		"install", "ingress",
 		"--image", kumaDPImage,
+		"--use-node-port",
 	}
 	return o.RunKumactlAndGetOutput(args...)
 }

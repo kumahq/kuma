@@ -14,14 +14,14 @@ const (
 
 const (
 	Standalone CpMode = "standalone"
-	Local      CpMode = "local"
+	Remote     CpMode = "remote"
 	Global     CpMode = "global"
 )
 
 // ValidateCpMode to check modes of kuma-cp
 func ValidateCpMode(mode CpMode) error {
-	if mode != Standalone && mode != Local && mode != Global {
-		return errors.Errorf("invalid mode. Available modes: %s, %s, %s", Standalone, Local, Global)
+	if mode != Standalone && mode != Remote && mode != Global {
+		return errors.Errorf("invalid mode. Available modes: %s, %s, %s", Standalone, Remote, Global)
 	}
 	return nil
 }

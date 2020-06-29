@@ -37,6 +37,10 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
+    # General configuration
+    general:
+      # Kuma Cluster name used to mark the remote dataplane resources
+      clusterName: cluster-1
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -4409,14 +4413,6 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - healthchecks
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - proxytemplates
     verbs:
       - get
@@ -4438,50 +4434,17 @@ rules:
       - kuma.io
     resources:
       - trafficpermissions
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - trafficlogs
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - trafficroutes
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - traffictraces
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - faultinjections
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kuma.io
-    resources:
       - circuitbreakers
+      - healthchecks
     verbs:
       - get
       - list
       - watch
+      - create
   - apiGroups:
       - ""
     resources:
@@ -4493,14 +4456,13 @@ rules:
     resources:
       - meshes/finalizers
     verbs:
-      - "*"
+      - '*'
   - apiGroups:
       - kuma.io
     resources:
       - dataplanes/finalizers
     verbs:
       - '*'
-  # validate k8s token before issueing mTLS cert
   - apiGroups:
       - authentication.k8s.io
     resources:
@@ -4531,6 +4493,18 @@ rules:
       - ""
     resources:
       - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
     verbs:
       - get
       - list
@@ -4586,14 +4560,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: global-local-sync
+  name: global-remote-sync
   namespace: kuma
 spec:
   type: NodePort
   ports:
-    - port: 5681
-      nodePort: 30681
-      name: global-local-sync
+    - port: 5685
+      nodePort: 30685
+      name: global-remote-sync
   selector:
     app: kuma-control-plane
 ---
@@ -4635,20 +4609,20 @@ spec:
               value: "5677"
             - name: KUMA_XDS_SERVER_GRPC_PORT
               value: "5678"
-            - name: KUMA_API_SERVER_PORT
-              value: "5681"
             - name: KUMA_BOOTSTRAP_SERVER_PORT
               value: "5682"
             - name: KUMA_SDS_SERVER_TLS_CERT_FILE
               value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
             - name: KUMA_SDS_SERVER_TLS_KEY_FILE
               value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
+            - name: KUMA_API_SERVER_PORT
+              value: "5681"
+            - name: KUMA_API_SERVER_READ_ONLY
+              value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
-            - name: KUMA_API_SERVER_READ_ONLY
-              value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
@@ -4657,7 +4631,7 @@ spec:
               value: kuma-ci/kuma-init:greatest
           args:
             - run
-            - --mode=local
+            - --mode=remote
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
@@ -4769,77 +4743,3 @@ webhooks:
           - CREATE
         resources:
           - pods
----
-apiVersion: admissionregistration.k8s.io/v1beta1
-kind: ValidatingWebhookConfiguration
-metadata:
-  name: kuma-validating-webhook-configuration
-webhooks:
-  - name: validator.kuma-admission.kuma.io
-    failurePolicy: Fail
-    clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
-      service:
-        namespace: kuma
-        name: kuma-ctrl-plane
-        path: /validate-kuma-io-v1alpha1
-    rules:
-      - apiGroups:
-          - kuma.io
-        apiVersions:
-          - v1alpha1
-        operations:
-          - CREATE
-          - UPDATE
-          - DELETE
-        resources:
-          - circuitbreakers
-          - faultinjections
-          - trafficlogs
-          - trafficpermissions
-          - trafficroutes
-          - traffictraces
-          - dataplanes
-          - healthchecks
-          - meshes
-          - proxytemplates
-  - name: service.validator.kuma-admission.kuma.io
-    failurePolicy: Fail
-    clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
-      service:
-        namespace: kuma
-        name: kuma-ctrl-plane
-        path: /validate-v1-service
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - services
-  - name: secret.validator.kuma-admission.kuma.io
-    namespaceSelector:
-      matchLabels:
-        kuma.io/system-namespace: "true"
-    failurePolicy: Fail
-    clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
-      service:
-        namespace: kuma
-        name: kuma-ctrl-plane
-        path: /validate-v1-secret
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-          - DELETE
-        resources:
-          - secrets

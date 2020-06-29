@@ -1,12 +1,7 @@
 package clusters
 
 import (
-	"strings"
-
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 // LbSubset is required for MetadataMatch in Weighted Cluster in TCP Proxy to work.
@@ -25,35 +20,29 @@ import (
 //          service: backend
 //          version: v1
 //    Only one cluster "backend" is generated for such dataplane, but with lb subset by version.
-func LbSubset(tags []envoy.Tags) ClusterBuilderOptFunc {
+func LbSubset(keySets [][]string) ClusterBuilderOptFunc {
 	return func(config *ClusterBuilderConfig) {
 		config.Add(&lbSubsetConfigurer{
-			tags: tags,
+			keySets: keySets,
 		})
 	}
 }
 
 type lbSubsetConfigurer struct {
-	tags []envoy.Tags
+	keySets [][]string
 }
 
 func (e *lbSubsetConfigurer) Configure(c *envoy_api.Cluster) error {
 	var selectors []*envoy_api.Cluster_LbSubsetConfig_LbSubsetSelector
-	subsets := map[string]bool{} // we only need unique subsets
-	for _, tags := range e.tags {
-		keys := tags.WithoutTag(mesh_proto.ServiceTag).Keys() // service tag is not included in metadata
+	for _, keys := range e.keySets {
 		if len(keys) == 0 {
 			continue
 		}
-		joinedTags := strings.Join(keys, ",")
-		if !subsets[joinedTags] {
-			selectors = append(selectors, &envoy_api.Cluster_LbSubsetConfig_LbSubsetSelector{
-				Keys: keys,
-				// if there is a split by "version", and there is no endpoint with such version we should not fallback to all endpoints of the service
-				FallbackPolicy: envoy_api.Cluster_LbSubsetConfig_LbSubsetSelector_NO_FALLBACK,
-			})
-			subsets[joinedTags] = true
-		}
+		selectors = append(selectors, &envoy_api.Cluster_LbSubsetConfig_LbSubsetSelector{
+			Keys: keys,
+			// if there is a split by "version", and there is no endpoint with such version we should not fallback to all endpoints of the service
+			FallbackPolicy: envoy_api.Cluster_LbSubsetConfig_LbSubsetSelector_NO_FALLBACK,
+		})
 	}
 	if len(selectors) > 0 {
 		// if lb subset is set, but no label (Kuma's tag) is queried, we should return any endpoint

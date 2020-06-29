@@ -77,7 +77,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) AddCluster(name, url string) error {
+func (c *K8sControlPlane) AddCluster(name, url, lbAddress string) error {
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
 		c.GetKubectlOptions())
 	if err != nil {
@@ -102,13 +102,14 @@ func (c *K8sControlPlane) AddCluster(name, url string) error {
 	}
 
 	cfg.KumaClusters.Clusters = append(cfg.KumaClusters.Clusters, &clusters.ClusterConfig{
-		Local: clusters.EndpointConfig{
+		Remote: clusters.EndpointConfig{
 			Address: url,
 		},
 		Ingress: clusters.EndpointConfig{
 			Address: url,
 		},
 	})
+	cfg.KumaClusters.LBConfig.Address = lbAddress
 
 	yamlBytes, err := yaml.Marshal(&cfg)
 	if err != nil {
@@ -196,7 +197,7 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
-	if c.mode == core.Local {
+	if c.mode == core.Remote {
 		return nil
 	}
 
@@ -268,11 +269,11 @@ func (c *K8sControlPlane) InjectDNS() error {
 		yaml)
 }
 
-// A naive implementation to find the URL where Local CP exposes its API
+// A naive implementation to find the URL where Remote CP exposes its API
 func (c *K8sControlPlane) GetHostAPI() string {
 	pod := c.GetKumaCPPods()[0]
 
-	return "http://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(localCPSyncNodePort), 10)
+	return "http://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(LocalCPSyncNodePort), 10)
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {

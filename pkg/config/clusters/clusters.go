@@ -15,13 +15,18 @@ type EndpointConfig struct {
 }
 
 type ClusterConfig struct {
-	Local   EndpointConfig `yaml:"local,omitempty"`
+	Remote  EndpointConfig `yaml:"remote,omitempty"`
 	Ingress EndpointConfig `yaml:"ingress,omitempty"`
+}
+
+type LBConfig struct {
+	Address string `yaml:"address,omitempty"`
 }
 
 // Clusters configuration
 type ClustersConfig struct {
 	Clusters []*ClusterConfig `yaml:"clusters,omitempty"`
+	LBConfig LBConfig         `yaml:"lbconfig,omitempty"`
 }
 
 func (g *ClustersConfig) Sanitize() {
@@ -29,9 +34,9 @@ func (g *ClustersConfig) Sanitize() {
 
 func (g *ClustersConfig) Validate() error {
 	for _, cluster := range g.Clusters {
-		_, err := url.ParseRequestURI(cluster.Local.Address)
+		_, err := url.ParseRequestURI(cluster.Remote.Address)
 		if err != nil {
-			return errors.Wrapf(err, "Invalid local url for cluster %s", cluster.Local.Address)
+			return errors.Wrapf(err, "Invalid remote url for cluster %s", cluster.Remote.Address)
 		}
 		_, err = url.ParseRequestURI(cluster.Ingress.Address)
 		if err != nil {

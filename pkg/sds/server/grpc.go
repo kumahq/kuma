@@ -27,6 +27,10 @@ type grpcServer struct {
 	config sds_config.SdsServerConfig
 }
 
+func (s *grpcServer) NeedLeaderElection() bool {
+	return false
+}
+
 var (
 	_ component.Component = &grpcServer{}
 )

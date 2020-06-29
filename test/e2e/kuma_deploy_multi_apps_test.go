@@ -45,8 +45,8 @@ metadata:
 	})
 
 	AfterEach(func() {
-		//_ = c1.DeleteKuma()
-		//_ = k8s.KubectlDeleteFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
+		_ = c1.DeleteKuma()
+		_ = k8s.KubectlDeleteFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
 	})
 
 	It("Should deploy two apps", func() {
@@ -68,7 +68,7 @@ metadata:
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		_, stderr, err = c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "echo-server.mesh")
+			"curl", "-v", "echo-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})

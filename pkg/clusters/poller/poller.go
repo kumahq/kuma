@@ -2,7 +2,9 @@ package poller
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -18,6 +20,7 @@ var (
 type (
 	ClusterStatusPoller interface {
 		Start(<-chan struct{}) error
+		NeedLeaderElection() bool
 		Clusters() Clusters
 	}
 
@@ -56,8 +59,8 @@ func NewClustersStatusPoller(clusters *clusters.ClustersConfig) (ClusterStatusPo
 	for _, cluster := range clusters.Clusters {
 		// ignore the Ingress for now
 		poller.clusters = append(poller.clusters, Cluster{
-			Name:   cluster.Local.Address, // init the name of the cluster with its address
-			URL:    cluster.Local.Address,
+			Name:   cluster.Remote.Address, // init the name of the cluster with its address
+			URL:    cluster.Remote.Address,
 			Active: false,
 		})
 	}
@@ -84,27 +87,34 @@ func (p *ClustersStatusPoller) Start(stop <-chan struct{}) error {
 	}
 }
 
+func (p *ClustersStatusPoller) NeedLeaderElection() bool {
+	return false
+}
+
 func (p *ClustersStatusPoller) pollClusters() {
 	p.Lock()
 	defer p.Unlock()
 
 	for i, cluster := range p.clusters {
-		response, err := p.client.Get(cluster.URL)
+		u, err := url.Parse(cluster.URL)
+		if err != nil {
+			clusterStatusLog.Info(fmt.Sprintf("failed to parse URL %s", cluster.URL))
+			continue
+		}
+		conn, err := net.Dial("tcp", u.Host)
 		if err != nil {
 			if cluster.Active {
 				clusterStatusLog.Info(fmt.Sprintf("%s at %s did not respond", cluster.Name, cluster.URL))
 				p.clusters[i].Active = false
 			}
-
 			continue
 		}
+		defer conn.Close()
 
-		p.clusters[i].Active = response.StatusCode == http.StatusOK
-		if !cluster.Active {
-			clusterStatusLog.Info(fmt.Sprintf("%s at %s responded with %s", cluster.Name, cluster.URL, response.Status))
+		if !p.clusters[i].Active {
+			clusterStatusLog.Info(fmt.Sprintf("%s responded", cluster.URL))
+			p.clusters[i].Active = true
 		}
-
-		response.Body.Close()
 	}
 }
 

@@ -89,7 +89,7 @@ spec:
     inbound:
     - port: %d
       tags:
-        service: echo-server.%s.svc:80
+        service: echo-server_%s_svc_80
 `, namespace, ingressIP, port, namespace)
 	}
 

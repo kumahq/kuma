@@ -33,6 +33,10 @@ type Server struct {
 	Config *gui_server.GuiServerConfig
 }
 
+func (g *Server) NeedLeaderElection() bool {
+	return false
+}
+
 var _ component.Component = &Server{}
 
 func (g *Server) Start(stop <-chan struct{}) error {

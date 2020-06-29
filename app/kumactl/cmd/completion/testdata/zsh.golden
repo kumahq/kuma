@@ -699,6 +699,7 @@ function _kumactl_install_control-plane {
   _arguments \
     '--admission-server-tls-cert[TLS certificate for the admission web hooks implemented by the Kuma Control Plane]:' \
     '--admission-server-tls-key[TLS key for the admission web hooks implemented by the Kuma Control Plane]:' \
+    '--cluster-name[set the Kuma cluster name]:' \
     '--cni-enabled[install Kuma with CNI instead of proxy init container]' \
     '--cni-image[image of Kuma CNI component, if CNIEnabled equals true]:' \
     '--cni-version[version of the CNIImage]:' \
@@ -709,10 +710,11 @@ function _kumactl_install_control-plane {
     '--dataplane-init-image[init image of the Kuma Dataplane component]:' \
     '--image-pull-policy[image pull policy that applies to all components of the Kuma Control Plane]:' \
     '--injector-failure-policy[failue policy of the mutating web hook implemented by the Kuma Injector component]:' \
-    '--mode[kuma cp modes: one of standalone|local|global]:' \
+    '--mode[kuma cp modes: one of standalone|remote|global]:' \
     '--namespace[namespace to install Kuma Control Plane to]:' \
     '--sds-tls-cert[TLS certificate for the SDS server]:' \
     '--sds-tls-key[TLS key for the SDS server]:' \
+    '--use-node-port[use NodePort instead of LoadBalancer]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
@@ -732,6 +734,7 @@ function _kumactl_install_ingress {
     '--image-pull-policy[image pull policy for Ingress]:' \
     '--kuma-cp-address[the address of Kuma CP]:' \
     '--namespace[namespace to install Ingress to]:' \
+    '--use-node-port[use NodePort instead of LoadBalancer]' \
     '--version[version of Ingress component]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \

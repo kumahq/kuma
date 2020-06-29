@@ -16,7 +16,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	generator := NewSnapshotGenerator(rt)
 	versioner := NewVersioner()
 	reconciler := NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := NewSyncTracker(rt, reconciler)
+	syncTracker := NewSyncTracker(reconciler, rt.Config().MonitoringAssignmentServer.AssignmentRefreshInterval)
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: madsServerLog},
 		syncTracker,

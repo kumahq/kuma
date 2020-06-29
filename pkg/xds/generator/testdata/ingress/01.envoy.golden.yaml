@@ -110,6 +110,19 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - region
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - version
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - region
+              - version
       name: backend
       type: EDS
   - name: backend
@@ -123,9 +136,13 @@ resources:
                   socketAddress:
                     address: 192.168.0.1
                     portValue: 2521
+              loadBalancingWeight: 1
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    region: eu
+                    version: v1
+                  envoy.transport_socket_match:
                     region: eu
                     version: v1
             - endpoint:
@@ -133,8 +150,12 @@ resources:
                   socketAddress:
                     address: 192.168.0.2
                     portValue: 2521
+              loadBalancingWeight: 1
               metadata:
                 filterMetadata:
                   envoy.lb:
+                    region: us
+                    version: v2
+                  envoy.transport_socket_match:
                     region: us
                     version: v2

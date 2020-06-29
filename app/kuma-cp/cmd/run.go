@@ -2,14 +2,17 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/Kong/kuma/pkg/clusters"
-	dns_server "github.com/Kong/kuma/pkg/dns-server"
+	kds_remote "github.com/Kong/kuma/pkg/kds/remote"
 
-	api_server "github.com/Kong/kuma/pkg/api-server"
-
+	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 
+	api_server "github.com/Kong/kuma/pkg/api-server"
+	"github.com/Kong/kuma/pkg/clusters"
+	dns "github.com/Kong/kuma/pkg/dns/components"
+	kds_global "github.com/Kong/kuma/pkg/kds/global"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
@@ -28,6 +31,8 @@ import (
 var (
 	runLog = controlPlaneLog.WithName("run")
 )
+
+const gracefullyShutdownDuration = 3 * time.Second
 
 func newRunCmd() *cobra.Command {
 	return newRunCmdWithOpts(runCmdOpts{
@@ -59,6 +64,9 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "could not load the configuration")
 				return err
 			}
+			if cfg.Mode == config_core.Remote && cfg.General.ClusterName == "" {
+				return errors.Errorf("setting cluster name in config or environment is mandatory in `remote` mode")
+			}
 			rt, err := bootstrap.Bootstrap(cfg)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")
@@ -82,7 +90,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					return err
 				}
 				fallthrough
-			case config_core.Local:
+			case config_core.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
 					return err
@@ -93,6 +101,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := mads_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
+					return err
+				}
+				if err := kds_remote.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Remote Server")
 					return err
 				}
 			case config_core.Global:
@@ -108,6 +120,14 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Clusters server")
 					return err
 				}
+				if err := kds_global.SetupComponent(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Global Sink")
+					return err
+				}
+				if err := kds_global.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Global Server")
+					return err
+				}
 			}
 
 			if err := api_server.SetupServer(rt); err != nil {
@@ -119,7 +139,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 
-			if err := dns_server.SetupServer(rt); err != nil {
+			if err := dns.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up DNS server")
 				return err
 			}
@@ -130,12 +150,14 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 
-			runLog.Info("stopping Control Plane")
+			runLog.Info("Stop signal received. Waiting 3 seconds for components to stop gracefully...")
+			time.Sleep(gracefullyShutdownDuration)
+			runLog.Info("Stopping Control Plane")
 			return nil
 		},
 	}
 	// flags
 	cmd.PersistentFlags().StringVarP(&args.configPath, "config-file", "c", "", "configuration file")
-	cmd.PersistentFlags().StringVar(&args.kumaCpMode, "mode", config_core.Standalone, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "local", "global"))
+	cmd.PersistentFlags().StringVar(&args.kumaCpMode, "mode", config_core.Standalone, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
 	return cmd
 }
