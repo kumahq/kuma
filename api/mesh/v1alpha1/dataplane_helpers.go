@@ -392,15 +392,15 @@ func (d *Dataplane) HasAvailableServices() bool {
 	return len(d.Networking.Ingress.AvailableServices) != 0
 }
 
-func (d *Dataplane) IsRemoteIngress(localClusterName string) bool {
+func (d *Dataplane) IsRemoteIngress(localZone string) bool {
 	if !d.IsIngress() {
 		return false
 	}
-	cluster, ok := d.Networking.Inbound[0].Tags[ZoneTag]
+	zone, ok := d.Networking.Inbound[0].Tags[ZoneTag]
 	if !ok {
 		return false
 	}
-	return cluster != localClusterName
+	return zone != localZone
 }
 
 func (t MultiValueTagSet) String() string {
