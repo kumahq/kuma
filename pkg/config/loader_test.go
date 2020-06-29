@@ -129,6 +129,12 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
 			Expect(cfg.Mode.Mode).To(Equal(mode.Remote))
 			Expect(cfg.Mode.Remote.Zone).To(Equal("zone-1"))
+
+			Expect(cfg.KDS.Server.GrpcPort).To(Equal(uint32(1234)))
+			Expect(cfg.KDS.Server.RefreshInterval).To(Equal(time.Second * 2))
+			Expect(cfg.KDS.Server.TlsCertFile).To(Equal("/cert"))
+			Expect(cfg.KDS.Server.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.KDS.Client.RootCAFile).To(Equal("/rootCa"))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -217,6 +223,14 @@ mode:
 dnsServer:
   port: 15653
   CIDR: 127.1.0.0/16
+kds:
+  server:
+    grpcPort: 1234
+    refreshInterval: 2s
+    tlsCertFile: /cert
+    tlsKeyFile: /key
+  client:
+    rootCaFile: /rootCa
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -274,6 +288,11 @@ dnsServer:
 				"KUMA_DNS_CIDR":                                                 "127.1.0.0/16",
 				"KUMA_MODE_MODE":                                                "remote",
 				"KUMA_MODE_REMOTE_ZONE":                                         "zone-1",
+				"KUMA_KDS_SERVER_GRPC_PORT":                                     "1234",
+				"KUMA_KDS_SERVER_REFRESH_INTERVAL":                              "2s",
+				"KUMA_KDS_SERVER_TLS_CERT_FILE":                                 "/cert",
+				"KUMA_KDS_SERVER_TLS_KEY_FILE":                                  "/key",
+				"KUMA_KDS_CLIENT_ROOT_CA_FILE":                                  "/rootCa",
 			},
 			yamlFileConfig: "",
 		}),

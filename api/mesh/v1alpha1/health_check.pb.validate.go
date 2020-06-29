@@ -163,23 +163,73 @@ func (m *HealthCheck_Conf) Validate() error {
 		return nil
 	}
 
-	if v, ok := interface{}(m.GetActiveChecks()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return HealthCheck_ConfValidationError{
-				field:  "ActiveChecks",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
+	if m.GetInterval() == nil {
+		return HealthCheck_ConfValidationError{
+			field:  "Interval",
+			reason: "value is required",
 		}
 	}
 
-	if v, ok := interface{}(m.GetPassiveChecks()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
+	if d := m.GetInterval(); d != nil {
+		dur, err := ptypes.Duration(d)
+		if err != nil {
 			return HealthCheck_ConfValidationError{
-				field:  "PassiveChecks",
-				reason: "embedded message failed validation",
+				field:  "Interval",
+				reason: "value is not a valid duration",
 				cause:  err,
 			}
+		}
+
+		gt := time.Duration(0*time.Second + 0*time.Nanosecond)
+
+		if dur <= gt {
+			return HealthCheck_ConfValidationError{
+				field:  "Interval",
+				reason: "value must be greater than 0s",
+			}
+		}
+
+	}
+
+	if m.GetTimeout() == nil {
+		return HealthCheck_ConfValidationError{
+			field:  "Timeout",
+			reason: "value is required",
+		}
+	}
+
+	if d := m.GetTimeout(); d != nil {
+		dur, err := ptypes.Duration(d)
+		if err != nil {
+			return HealthCheck_ConfValidationError{
+				field:  "Timeout",
+				reason: "value is not a valid duration",
+				cause:  err,
+			}
+		}
+
+		gt := time.Duration(0*time.Second + 0*time.Nanosecond)
+
+		if dur <= gt {
+			return HealthCheck_ConfValidationError{
+				field:  "Timeout",
+				reason: "value must be greater than 0s",
+			}
+		}
+
+	}
+
+	if m.GetUnhealthyThreshold() <= 0 {
+		return HealthCheck_ConfValidationError{
+			field:  "UnhealthyThreshold",
+			reason: "value must be greater than 0",
+		}
+	}
+
+	if m.GetHealthyThreshold() <= 0 {
+		return HealthCheck_ConfValidationError{
+			field:  "HealthyThreshold",
+			reason: "value must be greater than 0",
 		}
 	}
 
@@ -239,242 +289,3 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = HealthCheck_ConfValidationError{}
-
-// Validate checks the field values on HealthCheck_Conf_Active with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
-func (m *HealthCheck_Conf_Active) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	if m.GetInterval() == nil {
-		return HealthCheck_Conf_ActiveValidationError{
-			field:  "Interval",
-			reason: "value is required",
-		}
-	}
-
-	if d := m.GetInterval(); d != nil {
-		dur, err := ptypes.Duration(d)
-		if err != nil {
-			return HealthCheck_Conf_ActiveValidationError{
-				field:  "Interval",
-				reason: "value is not a valid duration",
-				cause:  err,
-			}
-		}
-
-		gt := time.Duration(0*time.Second + 0*time.Nanosecond)
-
-		if dur <= gt {
-			return HealthCheck_Conf_ActiveValidationError{
-				field:  "Interval",
-				reason: "value must be greater than 0s",
-			}
-		}
-
-	}
-
-	if m.GetTimeout() == nil {
-		return HealthCheck_Conf_ActiveValidationError{
-			field:  "Timeout",
-			reason: "value is required",
-		}
-	}
-
-	if d := m.GetTimeout(); d != nil {
-		dur, err := ptypes.Duration(d)
-		if err != nil {
-			return HealthCheck_Conf_ActiveValidationError{
-				field:  "Timeout",
-				reason: "value is not a valid duration",
-				cause:  err,
-			}
-		}
-
-		gt := time.Duration(0*time.Second + 0*time.Nanosecond)
-
-		if dur <= gt {
-			return HealthCheck_Conf_ActiveValidationError{
-				field:  "Timeout",
-				reason: "value must be greater than 0s",
-			}
-		}
-
-	}
-
-	if m.GetUnhealthyThreshold() <= 0 {
-		return HealthCheck_Conf_ActiveValidationError{
-			field:  "UnhealthyThreshold",
-			reason: "value must be greater than 0",
-		}
-	}
-
-	if m.GetHealthyThreshold() <= 0 {
-		return HealthCheck_Conf_ActiveValidationError{
-			field:  "HealthyThreshold",
-			reason: "value must be greater than 0",
-		}
-	}
-
-	return nil
-}
-
-// HealthCheck_Conf_ActiveValidationError is the validation error returned by
-// HealthCheck_Conf_Active.Validate if the designated constraints aren't met.
-type HealthCheck_Conf_ActiveValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e HealthCheck_Conf_ActiveValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e HealthCheck_Conf_ActiveValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e HealthCheck_Conf_ActiveValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e HealthCheck_Conf_ActiveValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e HealthCheck_Conf_ActiveValidationError) ErrorName() string {
-	return "HealthCheck_Conf_ActiveValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e HealthCheck_Conf_ActiveValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sHealthCheck_Conf_Active.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = HealthCheck_Conf_ActiveValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = HealthCheck_Conf_ActiveValidationError{}
-
-// Validate checks the field values on HealthCheck_Conf_Passive with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
-func (m *HealthCheck_Conf_Passive) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	if m.GetUnhealthyThreshold() <= 0 {
-		return HealthCheck_Conf_PassiveValidationError{
-			field:  "UnhealthyThreshold",
-			reason: "value must be greater than 0",
-		}
-	}
-
-	if m.GetPenaltyInterval() == nil {
-		return HealthCheck_Conf_PassiveValidationError{
-			field:  "PenaltyInterval",
-			reason: "value is required",
-		}
-	}
-
-	if d := m.GetPenaltyInterval(); d != nil {
-		dur, err := ptypes.Duration(d)
-		if err != nil {
-			return HealthCheck_Conf_PassiveValidationError{
-				field:  "PenaltyInterval",
-				reason: "value is not a valid duration",
-				cause:  err,
-			}
-		}
-
-		gt := time.Duration(0*time.Second + 0*time.Nanosecond)
-
-		if dur <= gt {
-			return HealthCheck_Conf_PassiveValidationError{
-				field:  "PenaltyInterval",
-				reason: "value must be greater than 0s",
-			}
-		}
-
-	}
-
-	return nil
-}
-
-// HealthCheck_Conf_PassiveValidationError is the validation error returned by
-// HealthCheck_Conf_Passive.Validate if the designated constraints aren't met.
-type HealthCheck_Conf_PassiveValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e HealthCheck_Conf_PassiveValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e HealthCheck_Conf_PassiveValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e HealthCheck_Conf_PassiveValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e HealthCheck_Conf_PassiveValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e HealthCheck_Conf_PassiveValidationError) ErrorName() string {
-	return "HealthCheck_Conf_PassiveValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e HealthCheck_Conf_PassiveValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sHealthCheck_Conf_Passive.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = HealthCheck_Conf_PassiveValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = HealthCheck_Conf_PassiveValidationError{}

@@ -124,8 +124,8 @@ type Config struct {
 	Mode *mode.ModeConfig `yaml:"mode,omitempty"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
-	// KDSServer configuration
-	KDSServer *kds.KumaDiscoveryServerConfig `yaml:"kdsServer,omitempty"`
+	// KDS configuration
+	KDS *kds.KdsConfig `yaml:"kds,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -144,7 +144,7 @@ func (c *Config) Sanitize() {
 	c.GuiServer.Sanitize()
 	c.DNSServer.Sanitize()
 	c.Mode.Sanitize()
-	c.KDSServer.Sanitize()
+	c.KDS.Sanitize()
 }
 
 func DefaultConfig() Config {
@@ -177,7 +177,7 @@ name: default
 		GuiServer: gui_server.DefaultGuiServerConfig(),
 		DNSServer: dns_server.DefaultDNSServerConfig(),
 		Mode:      mode.DefaultModeConfig(),
-		KDSServer: kds.DefaultKumaDiscoveryServerConfig(),
+		KDS:       kds.DefaultKdsConfig(),
 	}
 }
 
@@ -236,8 +236,8 @@ func (c *Config) Validate() error {
 	if err := c.DNSServer.Validate(); err != nil {
 		return errors.Wrap(err, "DNSServer validation failed")
 	}
-	if err := c.KDSServer.Validate(); err != nil {
-		return errors.Wrap(err, "KDSServer validation failed")
+	if err := c.KDS.Validate(); err != nil {
+		return errors.Wrap(err, "KDS validation failed")
 	}
 	return nil
 }

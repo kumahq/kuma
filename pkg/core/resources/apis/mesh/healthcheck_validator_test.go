@@ -45,7 +45,7 @@ var _ = Describe("HealthCheck", func() {
                 - field: destinations
                   message: must have at least one element
                 - field: conf
-                  message: must have either active or passive checks configured
+                  message: has to be defined
 `,
 			}),
 			Entry("selectors without tags", testCase{
@@ -54,9 +54,6 @@ var _ = Describe("HealthCheck", func() {
                 - match: {}
                 destinations:
                 - match: {}
-                conf:
-                  activeChecks: {}
-                  passiveChecks: {}
 `,
 				expected: `
                 violations:
@@ -69,7 +66,7 @@ var _ = Describe("HealthCheck", func() {
                 - field: destinations[0].match
                   message: mandatory tag "service" is missing
                 - field: conf
-                  message: must have either active or passive checks configured
+                  message: has to be defined
 `,
 			}),
 			Entry("selectors with empty tags values", testCase{
@@ -98,26 +95,7 @@ var _ = Describe("HealthCheck", func() {
                 - field: destinations[0].match["service"]
                   message: tag value must be non-empty
                 - field: conf
-                  message: must have either active or passive checks configured`,
-			}),
-			Entry("empty conf for active and passive checks", testCase{
-				healthCheck: `
-                sources:
-                - match:
-                    service: web
-                    region: eu
-                destinations:
-                - match:
-                    service: backend
-                conf:
-                  activeChecks: {}
-                  passiveChecks: {}
-`,
-				expected: `
-                violations:
-                - field: conf
-                  message: must have either active or passive checks configured
-`,
+                  message: has to be defined`,
 			}),
 			Entry("invalid active checks conf", testCase{
 				healthCheck: `
@@ -129,44 +107,22 @@ var _ = Describe("HealthCheck", func() {
                 - match:
                     service: backend
                 conf:
-                  activeChecks:
-                    interval: 0s
-                    timeout: 0s
-                    unhealthyThreshold: 0
-                    healthyThreshold: 0
+                  interval: 0s
+                  timeout: 0s
+                  unhealthyThreshold: 0
+                  healthyThreshold: 0
 `,
 				expected: `
                 violations:
-                - field: conf.activeChecks.interval
+                - field: conf.interval
                   message: must have a positive value
-                - field: conf.activeChecks.timeout
+                - field: conf.timeout
                   message: must have a positive value
-                - field: conf.activeChecks.unhealthyThreshold
+                - field: conf.unhealthyThreshold
                   message: must have a positive value
-                - field: conf.activeChecks.healthyThreshold
+                - field: conf.healthyThreshold
                   message: must have a positive value
 `,
-			}),
-			Entry("invalid passive checks conf", testCase{
-				healthCheck: `
-                sources:
-                - match:
-                    service: web
-                    region: eu
-                destinations:
-                - match:
-                    service: backend
-                conf:
-                  passiveChecks:
-                    unhealthyThreshold: 0
-                    penaltyInterval: 0s
-`,
-				expected: `
-                violations:
-                - field: conf.passiveChecks.unhealthyThreshold
-                  message: must have a positive value
-                - field: conf.passiveChecks.penaltyInterval
-                  message: must have a positive value`,
 			}),
 		)
 	})

@@ -35,7 +35,8 @@ func (r *dataplaneOverviewEndpoints) addListEndpoint(ws *restful.WebService, pat
 		Doc("Inspect all dataplanes").
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Param(ws.QueryParameter("tag", "Tag to filter in key:value format").DataType("string")).
-		Param(ws.QueryParameter("gateway", "Param to filter gateway planes").DataType("boolean")).
+		Param(ws.QueryParameter("gateway", "Param to filter gateway dataplanes").DataType("boolean")).
+		Param(ws.QueryParameter("ingress", "Param to filter ingress dataplanes").DataType("boolean")).
 		Returns(200, "OK", nil))
 }
 
@@ -86,7 +87,7 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 
 	// todo(jakubdyszkiewicz) for now pagination + filtering is not supported
 	if (request.QueryParameter("size") != "" || request.QueryParameter("offset") != "") &&
-		(request.QueryParameter("tag") != "" || request.QueryParameter("gateway") != "") {
+		(request.QueryParameter("tag") != "" || request.QueryParameter("gateway") != "" || request.QueryParameter("ingress") != "") {
 		rest_errors.HandleError(response, types.PaginationNotSupported, "Could not retrieve dataplane overviews")
 		return
 	}
@@ -98,11 +99,15 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	}
 
 	tags := parseTags(request.QueryParameters("tag"))
-	gatewayFilterQueryParam := request.QueryParameter("gateway")
-	if gatewayFilterQueryParam == "true" {
+	if request.QueryParameter("gateway") == "true" {
 		overviews.RetainGatewayDataplanes()
 	}
+	if request.QueryParameter("ingress") == "true" {
+		overviews.RetainIngressDataplanes()
+	}
 	overviews.RetainMatchingTags(tags)
+	// pagination is not supported yet so we need to override pagination total items after retaining dataplanes
+	overviews.GetPagination().SetTotal(uint32(len(overviews.Items)))
 	restList := rest.From.ResourceList(&overviews)
 	next, err := nextLink(request, r.publicURL, &overviews)
 	if err != nil {

@@ -120,6 +120,8 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--dataplane-init-image", "kuma-ci/kuma-init",
 				"--sds-tls-cert", "SdsCert",
 				"--sds-tls-key", "SdsKey",
+				"--kds-tls-cert", "KdsCert",
+				"--kds-tls-key", "KdsKey",
 				"--mode", "remote",
 				"--zone", "zone-1",
 				"--use-node-port",

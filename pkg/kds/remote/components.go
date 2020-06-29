@@ -46,12 +46,12 @@ func SetupServer(rt core_runtime.Runtime) error {
 	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter(rt.Config().Mode.Remote.Zone))
 	versioner := kds_server.NewVersioner()
 	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := kds_server.NewSyncTracker(kdsRemoteLog, reconciler, rt.Config().KDSServer.RefreshInterval)
+	syncTracker := kds_server.NewSyncTracker(kdsRemoteLog, reconciler, rt.Config().KDS.Server.RefreshInterval)
 	resourceSyncer := sync_store.NewResourceSyncer(kdsRemoteLog, rt.ResourceStore())
 
 	clientFactory := func(clusterAddress string) kds_client.ClientFactory {
 		return func() (kdsClient kds_client.KDSClient, err error) {
-			return kds_client.New(clusterAddress)
+			return kds_client.New(clusterAddress, rt.Config().KDS.Client)
 		}
 	}
 
@@ -68,7 +68,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 		NewComponentSpawner(kdsRemoteLog.WithName("policy-sink-spawner"), componentFactory),
 	}
 	srv := kds_server.NewServer(cache, callbacks, kdsRemoteLog, rt.Config().Mode.Remote.Zone)
-	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDSServer))
+	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDS.Server))
 }
 
 // providedFilter filter Resources provided by Remote, specifically Ingresses that belongs to another zones

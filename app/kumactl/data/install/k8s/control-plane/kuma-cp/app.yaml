@@ -72,6 +72,16 @@ apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
+  name: kuma-kds-tls-cert
+  namespace: {{ .Namespace }}
+data:
+  tls.crt: {{ .KdsTlsCert | b64enc }}
+  tls.key: {{ .KdsTlsKey | b64enc }}
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
   name: kuma-admission-server-tls-cert
   namespace: {{ .Namespace }}
 data:
@@ -135,6 +145,10 @@ spec:
         - name: KUMA_SDS_SERVER_TLS_KEY_FILE
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
 {{- end }}
+        - name: KUMA_KDS_SERVER_TLS_CERT_FILE
+          value: /var/run/secrets/kuma.io/kuma-kds/tls-cert/tls.crt
+        - name: KUMA_KDS_SERVER_TLS_KEY_FILE
+          value: /var/run/secrets/kuma.io/kuma-kds/tls-cert/tls.key
         - name: KUMA_API_SERVER_PORT
           value: "5681"
         - name: KUMA_API_SERVER_READ_ONLY
@@ -197,6 +211,9 @@ spec:
           mountPath: /var/run/secrets/kuma.io/kuma-sds/tls-cert
           readOnly: true
 {{- end }}
+        - name: kuma-kds-tls-cert
+          mountPath: /var/run/secrets/kuma.io/kuma-kds/tls-cert
+          readOnly: true
         - name: kuma-admission-server-tls-cert
           mountPath: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
           readOnly: true
@@ -209,6 +226,9 @@ spec:
         secret:
           secretName: kuma-sds-tls-cert
 {{- end }}
+      - name: kuma-kds-tls-cert
+        secret:
+          secretName: kuma-kds-tls-cert
       - name: kuma-admission-server-tls-cert
         secret:
           secretName: kuma-admission-server-tls-cert

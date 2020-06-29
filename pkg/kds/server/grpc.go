@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/pkg/errors"
+	"google.golang.org/grpc/credentials"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	kds_config "github.com/Kong/kuma/pkg/config/kds"
 
@@ -21,20 +24,28 @@ var (
 
 type grpcServer struct {
 	server Server
-	config kds_config.KumaDiscoveryServerConfig
+	config kds_config.KdsServerConfig
 }
 
 var (
 	_ component.Component = &grpcServer{}
 )
 
-func NewKDSServer(srv Server, config kds_config.KumaDiscoveryServerConfig) component.Component {
+func NewKDSServer(srv Server, config kds_config.KdsServerConfig) component.Component {
 	return &grpcServer{server: srv, config: config}
 }
 
 func (s *grpcServer) Start(stop <-chan struct{}) error {
 	var grpcOptions []grpc.ServerOption
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
+	useTLS := s.config.TlsCertFile != ""
+	if useTLS {
+		creds, err := credentials.NewServerTLSFromFile(s.config.TlsCertFile, s.config.TlsKeyFile)
+		if err != nil {
+			return errors.Wrap(err, "failed to load TLS certificate")
+		}
+		grpcOptions = append(grpcOptions, grpc.Creds(creds))
+	}
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
