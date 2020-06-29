@@ -36,7 +36,7 @@ func (r *dataplaneOverviewEndpoints) addListEndpoint(ws *restful.WebService, pat
 		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
 		Param(ws.QueryParameter("tag", "Tag to filter in key:value format").DataType("string")).
 		Param(ws.QueryParameter("gateway", "Param to filter gateway dataplanes").DataType("boolean")).
-		Param(ws.QueryParameter("gateway", "Param to filter ingress dataplanes").DataType("boolean")).
+		Param(ws.QueryParameter("ingress", "Param to filter ingress dataplanes").DataType("boolean")).
 		Returns(200, "OK", nil))
 }
 
