@@ -34,10 +34,10 @@ message HealthCheck {
       required : true,
       gt {}
     } ];
-    ealthcheck_validator.go : 11 : 29
-        // Number of consecutive unhealthy checks before considering a host
-        // unhealthy.
-        uint32 unhealthy_threshold = 3 [ (validate.rules).uint32 = {gt : 0} ];
+
+    // Number of consecutive unhealthy checks before considering a host
+    // unhealthy.
+    uint32 unhealthy_threshold = 3 [ (validate.rules).uint32 = {gt : 0} ];
 
     // Number of consecutive healthy checks before considering a host healthy.
     uint32 healthy_threshold = 4 [ (validate.rules).uint32 = {gt : 0} ];
