@@ -35,7 +35,8 @@ metadata:
 	var global, remote ControlPlane
 
 	BeforeEach(func() {
-		clusters, err := NewK8sClusters(
+		var err error
+		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
 			Verbose)
 		Expect(err).ToNot(HaveOccurred())
@@ -92,7 +93,7 @@ metadata:
 	})
 
 	AfterEach(func() {
-		err := clusters.DeleteNamespace(TestNamespace)
+		err := c2.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		_ = clusters.DeleteKuma()
