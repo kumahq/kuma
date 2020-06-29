@@ -45,7 +45,7 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 		select {
 		case <-stop:
 			r.log.Info("done")
-			break
+			return nil
 		case err := <-errCh:
 			if err != nil {
 				r.log.WithValues("generationID", generationID).Error(err, "component terminated with an error")
