@@ -2,12 +2,13 @@ package client
 
 import (
 	"io"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	model "github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/Kong/kuma/pkg/core/resources/model"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
 
@@ -48,17 +49,24 @@ func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 		}
 	}()
 
-	s.log.Info("starting an KDS stream")
-	stream, err := client.StartStream(s.clusterName)
-	if err != nil {
-		return errors.Wrap(err, "failed to start an KDS stream")
-	}
-	defer func() {
-		s.log.Info("closing an KDS stream")
-		if err := stream.Close(); err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, "failed to close an xDS stream"))
+	var stream KDSStream
+	for {
+		s.log.Info("starting an KDS stream")
+		stream, err = client.StartStream(s.clusterName)
+		if err != nil {
+			s.log.Error(err, "failed to start an KDS stream")
+			time.Sleep(time.Second)
+			continue
 		}
-	}()
+
+		defer func() {
+			s.log.Info("closing an KDS stream")
+			if err := stream.Close(); err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to close an xDS stream"))
+			}
+		}()
+		break
+	}
 
 	for _, typ := range s.resourceTypes {
 		s.log.Info("sending DiscoveryRequest", "type", typ)
