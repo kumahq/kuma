@@ -3,7 +3,6 @@ package poller
 import (
 	"fmt"
 	"net"
-	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -35,22 +34,18 @@ type (
 	ClustersStatusPoller struct {
 		sync.RWMutex
 		clusters  Clusters
-		client    http.Client
 		newTicker func() *time.Ticker
 	}
 )
 
 const (
-	tickInterval = 1 * time.Second
-	httpTimeout  = tickInterval / 100
+	tickInterval = 15 * time.Second
+	dialTimeout  = 100 * time.Millisecond
 )
 
 func NewClustersStatusPoller(globalConfig *mode.GlobalConfig) (ClusterStatusPoller, error) {
 	poller := &ClustersStatusPoller{
 		clusters: []Cluster{},
-		client: http.Client{
-			Timeout: httpTimeout,
-		},
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
 		},
@@ -101,7 +96,7 @@ func (p *ClustersStatusPoller) pollClusters() {
 			clusterStatusLog.Info(fmt.Sprintf("failed to parse URL %s", cluster.URL))
 			continue
 		}
-		conn, err := net.Dial("tcp", u.Host)
+		conn, err := net.DialTimeout("tcp", u.Host, dialTimeout)
 		if err != nil {
 			if cluster.Active {
 				clusterStatusLog.Info(fmt.Sprintf("%s at %s did not respond", cluster.Name, cluster.URL))
