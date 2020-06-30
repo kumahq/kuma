@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## [0.6.0]
+> Released on  2020/06/30
+
+Changes:
+*  feat(gui) new GUI build files and binaries generated. [#873](github.com//Kong/kuma/pull/873) 
+*  feat: Kuma Discovery Service (KDS) [#870](github.com//Kong/kuma/pull/870) [#871](github.com//Kong/kuma/pull/871) [#864](github.com//Kong/kuma/pull/864) [#866](github.com//Kong/kuma/pull/866) [#865](github.com//Kong/kuma/pull/865) [#861](github.com//Kong/kuma/pull/861) [#860](github.com//Kong/kuma/pull/860) [#857](github.com//Kong/kuma/pull/857) [#839](github.com//Kong/kuma/pull/839) [#833](github.com//Kong/kuma/pull/833) [#847](github.com//Kong/kuma/pull/847) [#843](github.com//Kong/kuma/pull/843) [#834](github.com//Kong/kuma/pull/834) [#830](github.com//Kong/kuma/pull/830) 
+*  feat: ingress for cross-cluster communication [#818](github.com//Kong/kuma/pull/818) [#825](github.com//Kong/kuma/pull/825) [#840](github.com//Kong/kuma/pull/840) [#842](github.com//Kong/kuma/pull/842) [#856](github.com//Kong/kuma/pull/856) [#851](github.com//Kong/kuma/pull/851)   
+*  feat: kuma-cp DNS service [#821](github.com//Kong/kuma/pull/821) [#798](github.com//Kong/kuma/pull/798) [#850](github.com//Kong/kuma/pull/850) [#862](github.com//Kong/kuma/pull/862)
+*  feat: flatten svc k8s tag [#848](github.com//Kong/kuma/pull/848)
+⚠️ warning: breaking change for service tag format 
+*  feat: multiple outbound tags [#831](github.com//Kong/kuma/pull/831)
+*  chore: remove interface from dataplane model [#832](github.com//Kong/kuma/pull/832)
+⚠️ warning: breaking change for dataplane model
+*  feat: block resources based on kuma-cp mode [#812](github.com//Kong/kuma/pull/812) 
+ 👍contributed by @tharun208
+*  feat: Multicluster config infrastructure [#788](github.com//Kong/kuma/pull/788) 
+ 👍contributed by @tharun208
+*  fix: expose Jaeger only inside of K8S cluster [#824](github.com//Kong/kuma/pull/824) 
+ 👍contributed by @xbauquet
+*  chore: update envoy 1.14.2 and alpine 3.12 [#829](github.com//Kong/kuma/pull/829)
+*  chore: remove passive healthchecks [#869](github.com//Kong/kuma/pull/869) 
+⚠️ warning: breaking change of healthchecks
+*  chore: change default skipMTLS flag [#849](github.com//Kong/kuma/pull/849)
+⚠️ warning: breaking change of metrics
+
+Breaking changes:
+* ⚠️ This release removes [Passive Health Check](https://kuma.io/docs/0.5.1/policies/health-check/) in favor of [Circuit Breaking](https://kuma.io/docs/0.6.0/policies/circuit-breaker/). Please refer to [UPGRADE.md](UPGRADE.md).
+* ⚠️ This release requires Prometheus to be a part of the mesh by default, if MTLs is enabled
+* ⚠️ The previously deprecated Interface field is now removed. 
+
 ## [0.5.1]
 
 > Released on  2020/06/03
@@ -162,7 +192,7 @@ Changes:
   👍contributed by @pradeepmurugesan
 
 Breaking changes:
-* ⚠ Mesh can now have multiple CAs of the same type. Also it can use CA loaded as a plugins. For migration details, please refer to [UPGRADE.md](UPGRADE.md)
+* ⚠️ Mesh can now have multiple CAs of the same type. Also it can use CA loaded as a plugins. For migration details, please refer to [UPGRADE.md](UPGRADE.md)
 
 * ⚠️ before the change TrafficPermission worked in cumulative way, which means that all policies that matched a connection were applied.
   We changed TrafficPermission to work like every other policy so only "the most specific" matching policy is chosen.
