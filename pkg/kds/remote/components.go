@@ -58,7 +58,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	componentFactory := func(log logr.Logger, req *envoy_api_v2.DiscoveryRequest) component.Component {
 		globalAddress := req.Node.Id
 		policiesSink := kds_client.NewKDSSink(kdsRemoteLog, rt.Config().Mode.Remote.Zone, consumedTypes,
-			clientFactory(globalAddress), Callbacks(resourceSyncer, rt.Config().Store.Type == store.KubernetesStore))
+			clientFactory(globalAddress), Callbacks(resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, rt.Config().Mode.Remote.Zone))
 		return component.NewResilientComponent(kdsRemoteLog, policiesSink)
 	}
 
@@ -81,7 +81,7 @@ func providedFilter(clusterName string) reconcile.ResourceFilter {
 	}
 }
 
-func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool) *kds_client.Callbacks {
+func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool, localZone string) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
 		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
 			if k8sStore && rs.GetItemType() != mesh.MeshType && rs.GetItemType() != system.SecretType {
@@ -89,7 +89,7 @@ func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool) *kds_client.Call
 			}
 			if rs.GetItemType() == mesh.DataplaneType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return r.(*mesh.DataplaneResource).Spec.IsIngress() && util.ZoneTag(r) == clusterID
+					return r.(*mesh.DataplaneResource).Spec.IsIngress() && localZone != util.ZoneTag(r)
 				}))
 			}
 			return syncer.Sync(rs)

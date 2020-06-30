@@ -2,11 +2,10 @@ package remote
 
 import (
 	"context"
-	"sync/atomic"
-
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
+	"sync/atomic"
 
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
@@ -30,22 +29,20 @@ type componentSpawner struct {
 
 func (c *componentSpawner) OnStreamRequest(streamID int64, req *envoy_api_v2.DiscoveryRequest) error {
 	if atomic.CompareAndSwapInt32(&c.spawned, 0, 1) {
-		// spawn component
 		c.stop = make(chan struct{})
 		comp := c.factory(c.log.WithValues("streamID", streamID), req)
 		go func() {
 			err := comp.Start(c.stop)
-			c.log.Error(err, "component finished with an error")
-			atomic.CompareAndSwapInt32(&c.spawned, 1, 0)
+			if err != nil {
+				c.log.Error(err, "component finished with an error")
+			}
 		}()
+		return nil
 	}
 	return nil
 }
 
 func (c *componentSpawner) OnStreamClosed(int64) {
-	if atomic.CompareAndSwapInt32(&c.spawned, 1, 0) {
-		close(c.stop)
-	}
 }
 
 func (c *componentSpawner) OnStreamResponse(int64, *envoy_api_v2.DiscoveryRequest, *envoy_api_v2.DiscoveryResponse) {
