@@ -2,10 +2,11 @@ package remote
 
 import (
 	"context"
+	"sync/atomic"
+
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
-	"sync/atomic"
 
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
