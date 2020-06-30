@@ -37,6 +37,7 @@ require (
 	github.com/prometheus/common v0.9.1
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749
+	github.com/shurcooL/vfsgen v0.0.0-20200627165143-92b8a710ab6c // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.10.0
