@@ -176,9 +176,9 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
 	if cfg.Mode.Mode == mode.Remote {
-		for _, definition := range definitions.All {
+		for i, definition := range definitions.All {
 			if definition.ResourceFactory().GetType() != mesh.DataplaneType {
-				definition.ReadOnly = true
+				definitions.All[i].ReadOnly = true
 			}
 		}
 	}
