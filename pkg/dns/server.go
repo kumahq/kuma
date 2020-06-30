@@ -81,6 +81,7 @@ func (d *SimpleDNSServer) Start(stop <-chan struct{}) error {
 
 	errChan := make(chan error)
 	go func() {
+		defer close(errChan)
 		err := server.ListenAndServe()
 		if err != nil {
 			serverLog.Error(err, "failed to start the DNS listener.")
