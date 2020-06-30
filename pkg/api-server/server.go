@@ -175,10 +175,17 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	if cfg.Mode.Mode == mode.Remote {
+	if cfg.Mode.Mode != mode.Standalone {
 		for i, definition := range definitions.All {
-			if definition.ResourceFactory().GetType() != mesh.DataplaneType {
-				definitions.All[i].ReadOnly = true
+			switch cfg.Mode.Mode {
+			case mode.Global:
+				if definition.ResourceFactory().GetType() == mesh.DataplaneType {
+					definitions.All[i].ReadOnly = true
+				}
+			case mode.Remote:
+				if definition.ResourceFactory().GetType() != mesh.DataplaneType {
+					definitions.All[i].ReadOnly = true
+				}
 			}
 		}
 	}
