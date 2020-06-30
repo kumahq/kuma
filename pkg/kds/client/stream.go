@@ -79,7 +79,7 @@ func (s *stream) ACK(typ string) error {
 		TypeUrl: typ,
 	})
 	if err == nil {
-		s.latestACKed = s.latestReceived
+		s.latestACKed[typ] = latestReceived
 	}
 	return err
 }
