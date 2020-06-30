@@ -53,7 +53,7 @@ func NACK(node *envoy_core.Node, resourceType model.ResourceType) Executable {
 			Node:          node,
 			TypeUrl:       string(resourceType),
 			ResponseNonce: tc.LastResponse(string(resourceType)).Nonce,
-			VersionInfo:   tc.LastACKedResponse(string(resourceType)).VersionInfo,
+			VersionInfo:   tc.LastACKedResponse(string(resourceType)).GetVersionInfo(),
 		}
 		return nil
 	}

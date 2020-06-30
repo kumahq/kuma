@@ -79,9 +79,10 @@ func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
 		s.log.Info("DiscoveryResponse received", "type", rs.GetItemType())
+		s.log.V(1).Info("DiscoveryResponse content", "response", rs)
 
 		if s.callbacks == nil {
-			s.log.Info("sending ACK", "type", string(rs.GetItemType()))
+			s.log.Info("no callback set, sending ACK", "type", string(rs.GetItemType()))
 			if err := stream.ACK(string(rs.GetItemType())); err != nil {
 				if err == io.EOF {
 					break
