@@ -50,7 +50,7 @@ func (c *UniversalCluster) DeployKuma(mode ...string) error {
 	}
 	c.controlplane = NewUniversalControlPlane(c.t, mode[0], c.name, c, c.verbose)
 
-	c.apps[AppModeCP] = NewUniversalApp(c.t, AppModeCP, true, "kuma-cp", "run")
+	c.apps[AppModeCP] = NewUniversalApp(c.t, AppModeCP, true, []string{}, []string{"kuma-cp", "run"})
 	err := c.apps[AppModeCP].mainApp.Start()
 	if err != nil {
 		return err
@@ -113,7 +113,7 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 		return errors.Errorf("not supported app type %s", appname)
 	}
 
-	app := NewUniversalApp(c.t, AppMode(appname), c.verbose, args...)
+	app := NewUniversalApp(c.t, AppMode(appname), c.verbose, []string{}, args)
 	err := app.mainApp.Start()
 	if err != nil {
 		return err
@@ -135,10 +135,10 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 	}
 
 	// generate the token on the CP node
-	token, _ := NewSshApp(c.verbose, c.apps[AppModeCP].ip, "curl",
+	token, _ := NewSshApp(c.verbose, c.apps[AppModeCP].ip, []string{}, []string{"curl",
 		"-H", "\"Content-Type: application/json\"",
-		"--data", "'{\"name\": \"dp-"+appname+"\", \"mesh\": \"default\"}'",
-		"http://localhost:5679/tokens").cmd.Output()
+		"--data", "'{\"name\": \"dp-" + appname + "\", \"mesh\": \"default\"}'",
+		"http://localhost:5679/tokens"}).cmd.Output()
 
 	app.CreateDP(string(token), c.apps[AppModeCP].ip, appname)
 	err = app.dpApp.Start()
@@ -160,7 +160,7 @@ func (c *UniversalCluster) DeleteApp(namespace, appname string) error {
 }
 
 func (c *UniversalCluster) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	return "", "", nil
+	panic("not implementedv")
 }
 
 func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, cmd ...string) (string, string, error) {
@@ -176,7 +176,7 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 			if !ok {
 				return "", errors.Errorf("App %s not found for deletion", appname)
 			}
-			sshApp := NewSshApp(false, app.sshPort, cmd...)
+			sshApp := NewSshApp(false, app.sshPort, []string{}, cmd)
 			err := sshApp.Run()
 			stdout = sshApp.Out()
 			stderr = sshApp.Err()

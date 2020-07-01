@@ -77,7 +77,7 @@ type UniversalApp struct {
 	verbose   bool
 }
 
-func NewUniversalApp(t testing.TestingT, mode AppMode, verbose bool, args ...string) *UniversalApp {
+func NewUniversalApp(t testing.TestingT, mode AppMode, verbose bool, env []string, args []string) *UniversalApp {
 	port, err := util_net.PickTCPPort("", 10240, 11204)
 	if err != nil {
 		panic(err)
@@ -114,7 +114,7 @@ func NewUniversalApp(t testing.TestingT, mode AppMode, verbose bool, args ...str
 		args = append([]string{"KUMA_GENERAL_ADVERTISED_HOSTNAME=" + app.ip}, args...)
 	}
 
-	app.CreateMainApp(args...)
+	app.CreateMainApp(env, args)
 
 	return app
 }
@@ -137,28 +137,28 @@ func (s *UniversalApp) ReStart() error {
 	return nil
 }
 
-func (s *UniversalApp) CreateMainApp(args ...string) {
-	s.mainApp = NewSshApp(s.verbose, s.sshPort, args...)
+func (s *UniversalApp) CreateMainApp(env []string, args []string) {
+	s.mainApp = NewSshApp(s.verbose, s.sshPort, env, args)
 }
 
 func (s *UniversalApp) CreateDP(token, cpIP, appname string) {
 	// and echo it to the Application Node
-	err := NewSshApp(s.verbose, s.sshPort, "echo", token, ">", "/kuma/token-"+appname).Run()
+	err := NewSshApp(s.verbose, s.sshPort, []string{}, []string{"echo", token, ">", "/kuma/token-"+appname}).Run()
 	if err != nil {
 		panic(err)
 	}
 
 	// run the DP
-	s.dpApp = NewSshApp(s.verbose, s.sshPort, "kuma-dp", "run",
+	s.dpApp = NewSshApp(s.verbose, s.sshPort, []string{}, []string{"kuma-dp", "run",
 		"--name=dp-"+appname,
 		"--mesh=default",
 		"--cp-address=http://"+cpIP+":5681",
 		"--dataplane-token-file=/kuma/token-"+appname,
-		"--binary-path", "/usr/local/bin/envoy")
+		"--binary-path", "/usr/local/bin/envoy"})
 }
 
 func (s *UniversalApp) getIP() string {
-	cmd := SshCmd(s.sshPort, "getent", "hosts", s.container[:12])
+	cmd := SshCmd(s.sshPort, []string{}, []string{"getent", "hosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
 		panic(string(bytes))
@@ -174,11 +174,11 @@ type sshApp struct {
 	port   string
 }
 
-func NewSshApp(verbose bool, port string, args ...string) *sshApp {
+func NewSshApp(verbose bool, port string, env []string, args []string) *sshApp {
 	app := &sshApp{
 		port: port,
 	}
-	app.cmd = app.SshCmd(args...)
+	app.cmd = app.SshCmd(env, args)
 
 	outWriters := []io.Writer{&app.stdout}
 	errWriters := []io.Writer{&app.stderr}
@@ -223,17 +223,18 @@ func (s *sshApp) Err() string {
 	return s.stderr.String()
 }
 
-func (s *sshApp) SshCmd(args ...string) *exec.Cmd {
-	return SshCmd(s.port, args...)
+func (s *sshApp) SshCmd(env []string, args []string) *exec.Cmd {
+	return SshCmd(s.port, env, args)
 }
 
-func SshCmd(port string, args ...string) *exec.Cmd {
-	args = append([]string{
+func SshCmd(port string, env []string, args []string) *exec.Cmd {
+	sshArgs := append([]string{
 		"-q",
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
-		"root@localhost", "-p", port}, args...)
+		"root@localhost", "-p", port}, env...)
+	sshArgs = append(sshArgs, args...)
 
-	cmd := exec.Command("ssh", args...)
+	cmd := exec.Command("ssh", sshArgs...)
 	return cmd
 }
