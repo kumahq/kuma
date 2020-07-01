@@ -38,8 +38,8 @@ metadata:
 			Install(Kuma()).
 			Install(KumaDNS()).
 			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClient()).
-			Install(EchoServer()).
+			Install(DemoClientK8s()).
+			Install(EchoServerK8s()).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -63,12 +63,12 @@ metadata:
 		clientPod := pods[0]
 
 		_, stderr, err := c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "echo-server")
+			"curl", "-v", "-m", "3", "echo-server")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		_, stderr, err = c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "echo-server_kuma-test_svc_80.mesh")
+			"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})

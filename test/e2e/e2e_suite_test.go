@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/Kong/kuma/test/framework"
 
@@ -29,8 +28,3 @@ var _ = BeforeSuite(func() {
 	core.SetLogger = func(l logr.Logger) {}
 	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
 })
-
-const (
-	defaultRetries = 60
-	defaultTimeout = 3 * time.Second
-)

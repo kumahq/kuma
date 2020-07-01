@@ -19,6 +19,17 @@ import (
 )
 
 var _ = Describe("Test Remote and Global", func() {
+	namespaceWithSidecarInjection := func(namespace string) string {
+		return fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+  labels:
+    kuma.io/sidecar-injection: "enabled"
+`, namespace)
+	}
+
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, remote ControlPlane
@@ -30,20 +41,28 @@ var _ = Describe("Test Remote and Global", func() {
 			Verbose)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.CreateNamespace(TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = clusters.LabelNamespaceForSidecarInjection(TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-
 		c1 = clusters.GetCluster(Kuma1)
 		c2 = clusters.GetCluster(Kuma2)
 
-		global, err = c1.DeployKuma(mode.Global)
+		err = NewClusterSetup().
+			Install(Kuma(mode.Global)).
+			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 
-		remote, err = c2.DeployKuma(mode.Remote)
+		global = c1.GetKuma()
+		Expect(global).ToNot(BeNil())
+
+		err = NewClusterSetup().
+			Install(Kuma(mode.Remote)).
+			Install(KumaDNS()).
+			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
+			Install(DemoClientK8s()).
+			Install(EchoServerK8s()).
+			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
+
+		remote = c2.GetKuma()
+		Expect(remote).ToNot(BeNil())
 
 		// when
 		err = c1.VerifyKuma()
@@ -70,10 +89,11 @@ var _ = Describe("Test Remote and Global", func() {
 		logs2, err := remote.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs2).To(ContainSubstring("\"mode\":\"remote\""))
+
 	})
 
 	AfterEach(func() {
-		err := clusters.DeleteNamespace(TestNamespace)
+		err := c2.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		_ = clusters.DeleteKuma()

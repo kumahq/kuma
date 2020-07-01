@@ -3,6 +3,8 @@ K8SCLUSTERS = kuma-1 kuma-2
 K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/kind/start/cluster/, $(K8SCLUSTERS))
 K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/kind/stop/cluster/, $(K8SCLUSTERS))
 
+KUMA_UNIVERSAL_DOCKER_IMAGE = kuma-universal
+
 define gen-k8sclusters
 .PHONY: test/e2e/kind/start/cluster/$1
 test/e2e/kind/start/cluster/$1:
@@ -25,6 +27,11 @@ endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
 
+.PHONY: docker/build/universal
+docker/build/universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/kumactl/kumactl
+	DOCKER_BUILDKIT=1 \
+	docker build -t $(KUMA_UNIVERSAL_DOCKER_IMAGE) -f test/dockerfiles/Dockerfile.universal .
+
 .PHONY: test/e2e/kind/start
 test/e2e/kind/start: $(K8SCLUSTERS_START_TARGETS)
 
@@ -38,7 +45,7 @@ test/e2e/test:
 		$(GO_TEST) -v -timeout=30m ./test/e2e/...
 
 .PHONY: test/e2e
-test/e2e: build/kumactl images test/e2e/kind/start
+test/e2e: build/kumactl images docker/build/universal test/e2e/kind/start
 	make test/e2e/test || \
 	(ret=$$?; \
 	make test/e2e/kind/stop && \
