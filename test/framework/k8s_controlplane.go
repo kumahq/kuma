@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/Kong/kuma/pkg/config/mode"
@@ -14,11 +13,9 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	util_net "github.com/Kong/kuma/pkg/util/net"
 )
 
@@ -89,38 +86,12 @@ func (c *K8sControlPlane) AddCluster(name, rawurl, lbAddress string) error {
 		return err
 	}
 
-	cfg := kuma_cp.Config{}
-	err = yaml.Unmarshal([]byte(kumaCM.Data["config.yaml"]), &cfg)
+	newYAML, err := addGlobal(kumaCM.Data["config.yaml"], lbAddress, rawurl)
 	if err != nil {
 		return err
 	}
 
-	if cfg.Mode == nil {
-		cfg.Mode = mode.DefaultModeConfig()
-		cfg.Mode.Mode = mode.Global
-	}
-
-	if cfg.Mode.Global == nil {
-		cfg.Mode.Global = mode.DefaultGlobalConfig()
-	}
-
-	parsed, err := url.Parse(rawurl)
-	if err != nil {
-		return err
-	}
-
-	cfg.Mode.Global.Zones = append(cfg.Mode.Global.Zones, &mode.ZoneConfig{
-		Remote:  mode.EndpointConfig{Address: rawurl},
-		Ingress: mode.EndpointConfig{Address: parsed.Host},
-	})
-	cfg.Mode.Global.LBAddress = lbAddress
-
-	yamlBytes, err := yaml.Marshal(&cfg)
-	if err != nil {
-		return err
-	}
-
-	kumaCM.Data["config.yaml"] = string(yamlBytes)
+	kumaCM.Data["config.yaml"] = newYAML
 
 	_, err = clientset.CoreV1().ConfigMaps("kuma-system").Update(context.TODO(), kumaCM, metav1.UpdateOptions{})
 	if err != nil {
