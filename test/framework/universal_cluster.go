@@ -50,13 +50,20 @@ func (c *UniversalCluster) DeployKuma(mode ...string) error {
 	}
 	c.controlplane = NewUniversalControlPlane(c.t, mode[0], c.name, c, c.verbose)
 
-	c.apps[AppModeCP] = NewUniversalApp(c.t, AppModeCP, true, []string{}, []string{"kuma-cp", "run"})
+	env := []string{"KUMA_MODE_MODE=" + mode[0]}
+	switch mode[0] {
+	case config_mode.Remote:
+		env = append(env, "KUMA_MODE_REMOTE_ZONE="+c.name)
+	}
+
+	c.apps[AppModeCP] = NewUniversalApp(c.t, AppModeCP, true,
+		env, []string{"kuma-cp", "run"})
 	err := c.apps[AppModeCP].mainApp.Start()
 	if err != nil {
 		return err
 	}
 
-	kumacpURL := "http://localhost:5681"
+	kumacpURL := "http://localhost:" + c.apps[AppModeCP].ports["5681"]
 	return c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
 }
 
@@ -138,9 +145,10 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 	token, _ := NewSshApp(c.verbose, c.apps[AppModeCP].ip, []string{}, []string{"curl",
 		"-H", "\"Content-Type: application/json\"",
 		"--data", "'{\"name\": \"dp-" + appname + "\", \"mesh\": \"default\"}'",
-		"http://localhost:5679/tokens"}).cmd.Output()
+		"http://localhost:" + c.apps[AppModeCP].ports["5679"] + "/tokens"}).cmd.Output()
 
-	app.CreateDP(string(token), c.apps[AppModeCP].ip, appname)
+	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
+	app.CreateDP(string(token), cpAddress, appname)
 	err = app.dpApp.Start()
 	if err != nil {
 		return err
@@ -176,7 +184,7 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 			if !ok {
 				return "", errors.Errorf("App %s not found for deletion", appname)
 			}
-			sshApp := NewSshApp(false, app.sshPort, []string{}, cmd)
+			sshApp := NewSshApp(false, app.ports[sshPort], []string{}, cmd)
 			err := sshApp.Run()
 			stdout = sshApp.Out()
 			stderr = sshApp.Err()

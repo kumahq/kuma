@@ -18,8 +18,10 @@ import (
 type AppMode string
 
 const (
-	AppModeCP           = "kuma-cp"
-	AppModeEchoServer   = "echo-server"
+	AppModeCP         = "kuma-cp"
+	AppModeEchoServer = "echo-server"
+	sshPort           = "22"
+
 	EchoServerDataplane = `
 type: Dataplane
 mesh: default
@@ -68,55 +70,63 @@ var defaultDockerOptions = docker.RunOptions{
 }
 
 type UniversalApp struct {
-	t         testing.TestingT
-	mainApp   *sshApp
-	dpApp     *sshApp
-	sshPort   string
-	container string
-	ip        string
-	verbose   bool
+	t            testing.TestingT
+	mainApp      *sshApp
+	dpApp        *sshApp
+	ports        map[string]string
+	lastUsedPort uint32
+	container    string
+	ip           string
+	verbose      bool
 }
 
 func NewUniversalApp(t testing.TestingT, mode AppMode, verbose bool, env []string, args []string) *UniversalApp {
-	port, err := util_net.PickTCPPort("", 10240, 11204)
-	if err != nil {
-		panic(err)
+	app := &UniversalApp{
+		t:            t,
+		ports:        map[string]string{},
+		lastUsedPort: 10204,
+		verbose:      verbose,
 	}
-	sshPort := strconv.Itoa(int(port))
 
-	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--publish="+sshPort+":22")
+	app.allocatePublicPortsFor("22")
 
 	if mode == AppModeCP {
-		opts.OtherOptions = append(opts.OtherOptions,
-			"--publish=5678:5678",
-			"--publish=5679:5679",
-			"--publish=5680:5680",
-			"--publish=5681:5681",
-			"--publish=5682:5682",
-			"--publish=5683:5683",
-			"--publish=5684:5684",
-		)
+		app.allocatePublicPortsFor("5678", "5679", "5680", "5681", "5682", "5683", "5684", "5685")
 	}
+
+	opts := defaultDockerOptions
+	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
 	container := docker.RunAndGetID(t, kumaUniversalImage, &opts)
 
-	app := &UniversalApp{
-		t:         t,
-		sshPort:   sshPort,
-		container: container,
-		verbose:   verbose,
-	}
-
+	app.container = container
 	app.ip = app.getIP()
 	fmt.Printf("Node IP %s\n", app.ip)
 
 	if mode == AppModeCP {
-		args = append([]string{"KUMA_GENERAL_ADVERTISED_HOSTNAME=" + app.ip}, args...)
+		env = append([]string{"KUMA_GENERAL_ADVERTISED_HOSTNAME=" + app.ip}, env...)
 	}
 
 	app.CreateMainApp(env, args)
 
 	return app
+}
+
+func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
+	for _, port := range ports {
+		pubPortUInt32, err := util_net.PickTCPPort("", s.lastUsedPort+1, 11204)
+		if err != nil {
+			panic(err)
+		}
+		s.ports[port] = strconv.Itoa(int(pubPortUInt32))
+		s.lastUsedPort = pubPortUInt32
+	}
+}
+
+func (s *UniversalApp) publishPortsForDocker() (args []string) {
+	for port, pubPort := range s.ports {
+		args = append(args, "--publish="+pubPort+":"+port)
+	}
+	return
 }
 
 func (s *UniversalApp) Stop() error {
@@ -138,27 +148,27 @@ func (s *UniversalApp) ReStart() error {
 }
 
 func (s *UniversalApp) CreateMainApp(env []string, args []string) {
-	s.mainApp = NewSshApp(s.verbose, s.sshPort, env, args)
+	s.mainApp = NewSshApp(s.verbose, s.ports[sshPort], env, args)
 }
 
-func (s *UniversalApp) CreateDP(token, cpIP, appname string) {
+func (s *UniversalApp) CreateDP(token, cpAddress, appname string) {
 	// and echo it to the Application Node
-	err := NewSshApp(s.verbose, s.sshPort, []string{}, []string{"echo", token, ">", "/kuma/token-"+appname}).Run()
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"echo", token, ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
 		panic(err)
 	}
 
 	// run the DP
-	s.dpApp = NewSshApp(s.verbose, s.sshPort, []string{}, []string{"kuma-dp", "run",
-		"--name=dp-"+appname,
+	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"kuma-dp", "run",
+		"--name=dp-" + appname,
 		"--mesh=default",
-		"--cp-address=http://"+cpIP+":5681",
-		"--dataplane-token-file=/kuma/token-"+appname,
+		"--cp-address=" + cpAddress,
+		"--dataplane-token-file=/kuma/token-" + appname,
 		"--binary-path", "/usr/local/bin/envoy"})
 }
 
 func (s *UniversalApp) getIP() string {
-	cmd := SshCmd(s.sshPort, []string{}, []string{"getent", "hosts", s.container[:12]})
+	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "hosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
 		panic(string(bytes))
