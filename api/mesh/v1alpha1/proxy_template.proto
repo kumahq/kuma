@@ -24,6 +24,26 @@ message ProxyTemplate {
     // List of raw xDS resources.
     // +optional
     repeated ProxyTemplateRawResource resources = 2;
+
+    // List of config modifications
+    repeated Modifications modifications = 3;
+  }
+
+  message Modifications {
+    oneof type {
+      Cluster cluster = 1;
+    }
+
+    message Cluster {
+      Match match = 1;
+      string operation = 2;
+      string value = 3;
+
+      message Match {
+        string side = 1;
+        string name = 2;
+      }
+    }
   }
 }
 

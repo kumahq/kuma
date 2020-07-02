@@ -27,7 +27,7 @@ import (
 type PrometheusEndpointGenerator struct {
 }
 
-func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) ([]*core_xds.Resource, error) {
+func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusEndpoint(ctx.Mesh.Resource)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get prometheus endpoint")
@@ -104,7 +104,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 		return nil, err
 	}
 	resources := (&core_xds.ResourceSet{}).AddNamed(cluster, listener)
-	return resources.List(), nil
+	return resources, nil
 }
 
 func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *mesh_core.MeshResource) bool {

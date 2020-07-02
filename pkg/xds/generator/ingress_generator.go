@@ -26,7 +26,7 @@ const (
 type IngressGenerator struct {
 }
 
-func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := &model.ResourceSet{}
 
 	listener, err := i.generateLDS(proxy.Dataplane)
@@ -46,7 +46,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 	edsResources := i.generateEDS(proxy, services)
 	resources.Add(edsResources...)
 
-	return resources.List(), nil
+	return resources, nil
 }
 
 // generateLDS generates one Ingress Listener

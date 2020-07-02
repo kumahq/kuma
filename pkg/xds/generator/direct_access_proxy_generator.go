@@ -26,7 +26,7 @@ import (
 type DirectAccessProxyGenerator struct {
 }
 
-func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) ([]*core_xds.Resource, error) {
+func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tproxy := proxy.Dataplane.Spec.Networking.GetTransparentProxying()
 	if tproxy.GetRedirectPort() == 0 || len(tproxy.GetDirectAccessServices()) == 0 {
 		return nil, nil
@@ -40,7 +40,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		return nil, err
 	}
 
-	resources := core_xds.ResourceSet{}
+	resources := &core_xds.ResourceSet{}
 	for _, endpoint := range endpoints {
 		name := fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
 		listener, err := envoy_listeners.NewListenerBuilder().
@@ -64,7 +64,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		return nil, errors.Wrapf(err, "could not generate cluster: direct_access")
 	}
 	resources.AddNamed(directAccessCluster)
-	return resources.List(), nil
+	return resources, nil
 }
 
 func directAccessEndpoints(dataplane *mesh_core.DataplaneResource, other *mesh_core.DataplaneResourceList, mesh *mesh_core.MeshResource) (Endpoints, error) {

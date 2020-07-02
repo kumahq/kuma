@@ -25,7 +25,7 @@ import (
 type OutboundProxyGenerator struct {
 }
 
-func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
 	if len(outbounds) == 0 {
 		return nil, nil
@@ -66,12 +66,12 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	if err != nil {
 		return nil, err
 	}
-	resources.AddSet(cdsResources)
+	resources.AddSet(&cdsResources)
 
 	edsResources := g.generateEDS(proxy, clusters)
-	resources.AddSet(edsResources)
+	resources.AddSet(&edsResources)
 
-	return resources.List(), nil
+	return resources, nil
 }
 
 func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_common.ClusterSubset, outbound *kuma_mesh.Dataplane_Networking_Outbound, protocol mesh_core.Protocol) (*envoy_api_v2.Listener, error) {

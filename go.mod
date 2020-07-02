@@ -40,6 +40,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.10.0
+	go.opencensus.io v0.22.2
 	go.uber.org/multierr v1.1.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71 // indirect

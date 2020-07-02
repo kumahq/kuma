@@ -17,7 +17,7 @@ import (
 type InboundProxyGenerator struct {
 }
 
-func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	endpoints, err := proxy.Dataplane.Spec.Networking.GetInboundInterfaces()
 	if err != nil {
 		return nil, err
@@ -72,5 +72,5 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		}
 		resources.AddNamed(inboundListener)
 	}
-	return resources.List(), nil
+	return resources, nil
 }

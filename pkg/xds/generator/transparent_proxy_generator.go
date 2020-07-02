@@ -14,7 +14,7 @@ import (
 type TransparentProxyGenerator struct {
 }
 
-func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	redirectPort := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort()
 	if redirectPort == 0 {
 		return nil, nil
@@ -37,16 +37,7 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate cluster: pass_through")
 	}
-	return []*model.Resource{
-		&model.Resource{
-			Name:     "catch_all",
-			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: listener,
-		},
-		&model.Resource{
-			Name:     "pass_through",
-			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: cluster,
-		},
-	}, nil
+	resources := &model.ResourceSet{}
+	resources.AddNamed(listener, cluster)
+	return resources, nil
 }

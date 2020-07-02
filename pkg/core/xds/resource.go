@@ -1,11 +1,11 @@
 package xds
 
 import (
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -19,7 +19,7 @@ type NamedResourcePayload interface {
 // Resource represents a generic xDS resource with name and version.
 type Resource struct {
 	Name     string
-	Version  string
+	Version  string // todo remove version, it's useless
 	Resource ResourcePayload
 }
 
@@ -53,12 +53,33 @@ func (rs ResourceList) ToIndex() map[string]ResourcePayload {
 	return index
 }
 
+func (rs ResourceList) Payloads() []ResourcePayload {
+	var payloads []ResourcePayload
+	for _, res := range rs {
+		payloads = append(payloads, res.Resource)
+	}
+	return payloads
+}
+
 // ResourceSet represents a set of generic xDS resources.
 type ResourceSet struct {
-	// we want to keep resources in the order they were added
-	resources []*Resource
 	// we want to prevent duplicates
-	typeToNamesIndex map[string]map[string]bool
+	typeToNamesIndex map[string]map[string]*Resource
+}
+
+func NewResourceSet() *ResourceSet {
+	set := &ResourceSet{}
+	set.typeToNamesIndex = map[string]map[string]*Resource{}
+	return set
+}
+
+func (s *ResourceSet) ListOf(typ string) ResourceList {
+	list := ResourceList{}
+	for _, resource := range s.typeToNamesIndex[typ] {
+		list = append(list, resource)
+	}
+	// todo sort by name
+	return list
 }
 
 func (s *ResourceSet) Contains(name string, resource ResourcePayload) bool {
@@ -70,19 +91,44 @@ func (s *ResourceSet) Contains(name string, resource ResourcePayload) bool {
 	return ok
 }
 
+func (s *ResourceSet) Empty() bool {
+	for _, resourceMap := range s.typeToNamesIndex {
+		if len(resourceMap) != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
 	for _, resource := range resources {
-		if s.Contains(resource.Name, resource.Resource) {
-			continue
+		if s.typeToNamesIndex[s.typeName(resource.Resource)] == nil {
+			s.typeToNamesIndex[s.typeName(resource.Resource)] = map[string]*Resource{}
 		}
-		s.resources = append(s.resources, resource)
-		s.index(resource)
+		s.typeToNamesIndex[s.typeName(resource.Resource)][resource.Name] = resource
 	}
 	return s
 }
 
-func (s *ResourceSet) AddSet(set ResourceSet) *ResourceSet {
-	s.Add(set.List()...)
+func (s *ResourceSet) Remove(typ string, name string) {
+	if s.typeToNamesIndex[typ] != nil {
+		delete(s.typeToNamesIndex[typ], name)
+	}
+}
+
+func (s *ResourceSet) Resources(typ string) map[string]*Resource {
+	return s.typeToNamesIndex[typ]
+}
+
+func (s *ResourceSet) AddSet(set *ResourceSet) *ResourceSet {
+	for typ, resources := range set.typeToNamesIndex {
+		if s.typeToNamesIndex[typ] == nil {
+			s.typeToNamesIndex[typ] = map[string]*Resource{}
+		}
+		for name, resource := range resources {
+			s.typeToNamesIndex[typ][name] = resource
+		}
+	}
 	return s
 }
 
@@ -97,20 +143,15 @@ func (s *ResourceSet) AddNamed(namedPayloads ...NamedResourcePayload) *ResourceS
 }
 
 func (s *ResourceSet) typeName(resource ResourcePayload) string {
-	return proto.MessageName(resource)
+	return "type.googleapis.com/" + proto.MessageName(resource)
 }
 
-func (s *ResourceSet) index(resource *Resource) {
-	if s.typeToNamesIndex == nil {
-		s.typeToNamesIndex = map[string]map[string]bool{}
-	}
-	typeName := s.typeName(resource.Resource)
-	if s.typeToNamesIndex[typeName] == nil {
-		s.typeToNamesIndex[typeName] = map[string]bool{}
-	}
-	s.typeToNamesIndex[typeName][resource.Name] = true
-}
-
-func (s *ResourceSet) List() []*Resource {
-	return s.resources
+func (s *ResourceSet) List() ResourceList {
+	list := ResourceList{}
+	list = append(list, s.ListOf(envoy_resource.EndpointType)...)
+	list = append(list, s.ListOf(envoy_resource.ClusterType)...)
+	list = append(list, s.ListOf(envoy_resource.RouteType)...)
+	list = append(list, s.ListOf(envoy_resource.ListenerType)...)
+	list = append(list, s.ListOf(envoy_resource.SecretType)...)
+	return list
 }
