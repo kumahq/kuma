@@ -22,6 +22,18 @@ const (
 	AppModeEchoServer = "echo-server"
 	sshPort           = "22"
 
+	IngressDataplane = `
+type: Dataplane
+mesh: default
+name: ingress-01
+networking:
+  address: %s
+  ingress: {}
+  inbound:
+  - port: %d	
+    tags:
+      service: ingress
+`
 	EchoServerDataplane = `
 type: Dataplane
 mesh: default
@@ -72,6 +84,8 @@ var defaultDockerOptions = docker.RunOptions{
 type UniversalApp struct {
 	t            testing.TestingT
 	mainApp      *sshApp
+	mainAppEnv   []string
+	mainAppArgs  []string
 	dpApp        *sshApp
 	ports        map[string]string
 	lastUsedPort uint32
@@ -141,14 +155,19 @@ func (s *UniversalApp) ReStart() error {
 	if _, err := s.mainApp.cmd.Process.Wait(); err != nil {
 		return err
 	}
-	if err := s.mainApp.cmd.Start(); err != nil {
+
+	s.CreateMainApp(s.mainAppEnv, s.mainAppArgs)
+
+	if err := s.mainApp.Start(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *UniversalApp) CreateMainApp(env []string, args []string) {
-	s.mainApp = NewSshApp(s.verbose, s.ports[sshPort], env, args)
+	s.mainAppEnv = env
+	s.mainAppArgs = args
+	s.mainApp = NewSshApp(true, s.ports[sshPort], env, args)
 }
 
 func (s *UniversalApp) CreateDP(token, cpAddress, appname string) {
@@ -239,7 +258,7 @@ func (s *sshApp) SshCmd(env []string, args []string) *exec.Cmd {
 
 func SshCmd(port string, env []string, args []string) *exec.Cmd {
 	sshArgs := append([]string{
-		"-q",
+		"-q", "-tt",
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"root@localhost", "-p", port}, env...)

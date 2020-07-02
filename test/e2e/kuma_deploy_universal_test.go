@@ -9,7 +9,7 @@ import (
 	. "github.com/Kong/kuma/test/framework"
 )
 
-var _ = FDescribe("Test Universal deployment", func() {
+var _ = Describe("Test Universal deployment", func() {
 
 	var global, remote_1, remote_2 Cluster
 
@@ -19,15 +19,7 @@ var _ = FDescribe("Test Universal deployment", func() {
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
-		global = clusters.GetCluster(Kuma1)
-
-		err = NewClusterSetup().
-			Install(Kuma(mode.Global)).
-			Setup(global)
-		Expect(err).ToNot(HaveOccurred())
-		err = global.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-
+		// Cluster 1
 		remote_1 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
@@ -39,6 +31,7 @@ var _ = FDescribe("Test Universal deployment", func() {
 		err = remote_1.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
+		// Cluster 2
 		remote_2 = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
@@ -48,6 +41,29 @@ var _ = FDescribe("Test Universal deployment", func() {
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()
+		Expect(err).ToNot(HaveOccurred())
+
+		// Global
+		global = clusters.GetCluster(Kuma1)
+
+		err = NewClusterSetup().
+			Install(Kuma(mode.Global)).
+			Setup(global)
+		Expect(err).ToNot(HaveOccurred())
+		err = global.VerifyKuma()
+		Expect(err).ToNot(HaveOccurred())
+
+		globalCP := global.GetKuma()
+		remote_1CP := remote_1.GetKuma()
+		remote_2CP := remote_2.GetKuma()
+		err = globalCP.AddCluster(remote_1CP.GetName(),
+			globalCP.GetKDSServerAddress(), remote_1CP.GetKDSServerAddress(), remote_1CP.GetIngressAddress())
+		Expect(err).ToNot(HaveOccurred())
+		err = globalCP.AddCluster(remote_2CP.GetName(),
+			globalCP.GetKDSServerAddress(), remote_2CP.GetKDSServerAddress(), remote_2CP.GetIngressAddress())
+		Expect(err).ToNot(HaveOccurred())
+
+		err = global.RestartKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -61,15 +77,14 @@ var _ = FDescribe("Test Universal deployment", func() {
 	})
 
 	It("Should deploy two apps", func() {
-		//Expect(true).To(BeTrue())
-		_, stderr, err := remote_1.ExecWithRetries("", "", "demo-client",
+		stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "localhost:4000")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		_, stderr, err = remote_2.ExecWithRetries("", "", "demo-client",
+		stdout, _, err = remote_2.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "localhost:4000")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 })

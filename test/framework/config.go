@@ -1,19 +1,17 @@
 package framework
 
 import (
-	"net/url"
-
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
 	"github.com/Kong/kuma/pkg/config/mode"
 )
 
-func addGlobal(rawYAML, lbAdress, rawURL string) (resultYaml string, err error) {
+func addGlobal(rawYAML, lbAdress, kdsAddress, ingressAddress string) (string, error) {
 	cfg := kuma_cp.Config{}
-	err = yaml.Unmarshal([]byte(rawYAML), &cfg)
+	err := yaml.Unmarshal([]byte(rawYAML), &cfg)
 	if err != nil {
-		return
+		return "", err
 	}
 
 	if cfg.Mode == nil {
@@ -29,21 +27,15 @@ func addGlobal(rawYAML, lbAdress, rawURL string) (resultYaml string, err error) 
 		cfg.Mode.Global.LBAddress = lbAdress
 	}
 
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return
-	}
-
 	cfg.Mode.Global.Zones = append(cfg.Mode.Global.Zones, &mode.ZoneConfig{
-		Remote:  mode.EndpointConfig{Address: rawURL},
-		Ingress: mode.EndpointConfig{Address: parsed.Host},
+		Remote:  mode.EndpointConfig{Address: kdsAddress},
+		Ingress: mode.EndpointConfig{Address: ingressAddress},
 	})
 
 	yamlBytes, err := yaml.Marshal(&cfg)
 	if err != nil {
-		return
+		return "", err
 	}
 
-	resultYaml = string(yamlBytes)
-	return
+	return string(yamlBytes), nil
 }

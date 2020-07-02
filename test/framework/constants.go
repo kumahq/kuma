@@ -34,6 +34,8 @@ const (
 	kumaDPImage   = "kuma/kuma-dp"
 	kumaInitImage = "kuma/kuma-init"
 
+	confPath = "/kuma/kuma-cp.conf"
+
 	kumaCPAPIPort        = 5681
 	kumaCPGUIPort        = 5683
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort

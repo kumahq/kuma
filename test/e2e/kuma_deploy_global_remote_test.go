@@ -74,7 +74,8 @@ metadata:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.AddCluster(remote.GetName(), remote.GetKDSServerAddress(), global.GetKDSServerAddress())
+		err = global.AddCluster(remote.GetName(),
+			global.GetKDSServerAddress(), remote.GetKDSServerAddress(), remote.GetIngressAddress())
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c1.RestartKuma()
