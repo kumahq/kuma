@@ -16,15 +16,15 @@ func applyClusterModification(resources *model.ResourceSet, modification *mesh_p
 		return err
 	}
 	switch modification.Operation {
-	case "add":
+	case mesh_proto.OpAdd:
 		resources.AddNamed(clusterMod)
-	case "remove":
+	case mesh_proto.OpRemove:
 		for name, resource := range resources.Resources(envoy_resource.ClusterType) {
 			if clusterMatches(resource, modification.Match) {
 				resources.Remove(envoy_resource.ClusterType, name)
 			}
 		}
-	case "patch":
+	case mesh_proto.OpPatch:
 		for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
 			if clusterMatches(cluster, modification.Match) {
 				proto.Merge(cluster.Resource, clusterMod)

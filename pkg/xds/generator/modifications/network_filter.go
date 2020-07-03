@@ -20,11 +20,25 @@ func applyNetworkFilterModification(resources *model.ResourceSet, modification *
 			listener := resource.Resource.(*envoy_api.Listener)
 			for _, chain := range listener.FilterChains {
 				switch modification.Operation {
-				case "addFirst":
+				case mesh_proto.OpAddFirst:
 					chain.Filters = append([]*envoy_api_v2_listener.Filter{filterMod}, chain.Filters...)
-				case "addLast":
+				case mesh_proto.OpAddLast:
 					chain.Filters = append(chain.Filters, filterMod)
-				case "remove":
+				case mesh_proto.OpAddAfter:
+					idx := indexOfMatchedFilter(chain, modification.Match)
+					if idx != -1 {
+						chain.Filters = append(chain.Filters, nil)
+						copy(chain.Filters[idx+2:], chain.Filters[idx+1:])
+						chain.Filters[idx+1] = filterMod
+					}
+				case mesh_proto.OpAddBefore:
+					idx := indexOfMatchedFilter(chain, modification.Match)
+					if idx != -1 {
+						chain.Filters = append(chain.Filters, nil)
+						copy(chain.Filters[idx+1:], chain.Filters[idx:])
+						chain.Filters[idx] = filterMod
+					}
+				case mesh_proto.OpRemove:
 					var filters []*envoy_api_v2_listener.Filter
 					for _, filter := range chain.Filters {
 						if !filterMatches(filter, modification.Match) {
@@ -32,25 +46,11 @@ func applyNetworkFilterModification(resources *model.ResourceSet, modification *
 						}
 					}
 					chain.Filters = filters
-				case "patch":
+				case mesh_proto.OpPatch:
 					for _, filter := range chain.Filters {
 						if filterMatches(filter, modification.Match) {
 							proto.Merge(filter, filterMod)
 						}
-					}
-				case "addAfter":
-					idx := indexOfMatchedFilter(chain, modification.Match)
-					if idx != -1 {
-						chain.Filters = append(chain.Filters, nil)
-						copy(chain.Filters[idx+2:], chain.Filters[idx+1:])
-						chain.Filters[idx+1] = filterMod
-					}
-				case "addBefore":
-					idx := indexOfMatchedFilter(chain, modification.Match)
-					if idx != -1 {
-						chain.Filters = append(chain.Filters, nil)
-						copy(chain.Filters[idx+1:], chain.Filters[idx:])
-						chain.Filters[idx] = filterMod
 					}
 				}
 			}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/util/envoy"
 )
@@ -29,10 +29,77 @@ func (t *ProxyTemplateResource) Validate() error {
 	return verr.OrNil()
 }
 
-func validateConfig(conf *v1alpha1.ProxyTemplate_Conf) validators.ValidationError {
+func validateConfig(conf *mesh_proto.ProxyTemplate_Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	verr.Add(validateImports(conf.GetImports()))
 	verr.Add(validateResources(conf.GetResources()))
+	for _, modification := range conf.GetModifications() {
+		verr.Add(validateModification(modification))
+	}
+	return verr
+}
+
+func validateModification(modification *mesh_proto.ProxyTemplate_Modifications) validators.ValidationError {
+	verr := validators.ValidationError{}
+	switch modification.Type.(type) {
+	case *mesh_proto.ProxyTemplate_Modifications_Cluster_:
+		verr.Add(validateClusterModification(modification.GetCluster()))
+	case *mesh_proto.ProxyTemplate_Modifications_NetworkFilter_:
+		verr.Add(validateNetworkFilterModification(modification.GetNetworkFilter()))
+	}
+	return verr
+}
+
+func validateClusterModification(clusterMod *mesh_proto.ProxyTemplate_Modifications_Cluster) validators.ValidationError {
+	verr := validators.ValidationError{}
+	switch clusterMod.Operation {
+	case mesh_proto.OpAdd:
+		fallthrough
+	case mesh_proto.OpPatch:
+		if _, err := envoy.ResourceFromYaml(clusterMod.Value); err != nil {
+			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+		}
+	case mesh_proto.OpRemove:
+	default:
+		verr.AddViolation("operation", fmt.Sprintf("invalid operation. Available operations: %q, %q, %q", mesh_proto.OpAdd, mesh_proto.OpPatch, mesh_proto.OpRemove))
+	}
+	return verr
+}
+
+func validateNetworkFilterModification(networkFilterMod *mesh_proto.ProxyTemplate_Modifications_NetworkFilter) validators.ValidationError {
+	verr := validators.ValidationError{}
+	validateResource := func() {
+		if _, err := envoy.ResourceFromYaml(networkFilterMod.Value); err != nil {
+			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+		}
+	}
+	switch networkFilterMod.Operation {
+	case mesh_proto.OpAddFirst:
+		validateResource()
+	case mesh_proto.OpAddLast:
+		validateResource()
+	case mesh_proto.OpAddBefore:
+		if networkFilterMod.GetMatch().GetName() == "" {
+			verr.AddViolation("match.name", "cannot be empty. You need to pick a filter before which this one will be added")
+		}
+		validateResource()
+	case mesh_proto.OpAddAfter:
+		if networkFilterMod.GetMatch().GetName() == "" {
+			verr.AddViolation("match.name", "cannot be empty. You need to pick a filter after which this one will be added")
+		}
+		validateResource()
+	case mesh_proto.OpPatch:
+		if networkFilterMod.GetMatch().GetName() == "" {
+			verr.AddViolation("match.name", "cannot be empty")
+		}
+		if _, err := envoy.ResourceFromYaml(networkFilterMod.Value); err != nil {
+			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+		}
+		validateResource()
+	case mesh_proto.OpRemove:
+	default:
+		verr.AddViolation("operation", fmt.Sprintf("invalid operation. Available operations: %q, %q, %q, %q, %q", mesh_proto.OpAddFirst, mesh_proto.OpAddLast, mesh_proto.OpAddBefore, mesh_proto.OpAddAfter, mesh_proto.OpPatch))
+	}
 	return verr
 }
 
@@ -50,7 +117,7 @@ func validateImports(imports []string) validators.ValidationError {
 	return verr
 }
 
-func validateResources(resources []*v1alpha1.ProxyTemplateRawResource) validators.ValidationError {
+func validateResources(resources []*mesh_proto.ProxyTemplateRawResource) validators.ValidationError {
 	var verr validators.ValidationError
 	for i, resource := range resources {
 		if resource.Name == "" {
@@ -68,7 +135,7 @@ func validateResources(resources []*v1alpha1.ProxyTemplateRawResource) validator
 	return verr
 }
 
-func validateSelectors(selectors []*v1alpha1.Selector) validators.ValidationError {
+func validateSelectors(selectors []*mesh_proto.Selector) validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("selectors"), selectors, ValidateSelectorsOpts{
 		ValidateSelectorOpts: ValidateSelectorOpts{
 			RequireService:       true,
