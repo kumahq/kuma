@@ -151,6 +151,23 @@ var _ = Describe("Cluster modifications", func() {
                 name: test:cluster2
                 type: ORIGINAL_DST`,
 		}),
+		Entry("should remove all inbound clusters", testCase{
+			clusters: []string{
+				`
+                connectTimeout: 5s
+                lbPolicy: CLUSTER_PROVIDED
+                name: test:cluster
+                type: ORIGINAL_DST`,
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: remove
+                   match:
+                     direction: inbound`,
+			},
+			expected:      `{}`,
+		}),
 		Entry("should patch cluster matching name", testCase{
 			clusters: []string{
 				`

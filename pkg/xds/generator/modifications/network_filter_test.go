@@ -128,7 +128,7 @@ var _ = Describe("Network Filter modifications", func() {
                         inlineString: xyz
                 name: inbound:192.168.0.1:8080`,
 		}),
-		Entry("should remove all filters from all listeners when there is no match", testCase{
+		Entry("should remove all filters from all listeners when there is no match section", testCase{
 			listeners: []string{
 				`
                 name: inbound:192.168.0.1:8080
@@ -155,6 +155,52 @@ var _ = Describe("Network Filter modifications", func() {
 			modifications: []string{`
                 networkFilter:
                    operation: remove
+`,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.api.v2.Listener
+                filterChains:
+                - {}
+                name: inbound:192.168.0.1:8080
+            - name: inbound:192.168.0.1:8081
+              resource:
+                '@type': type.googleapis.com/envoy.api.v2.Listener
+                filterChains:
+                - {}
+                name: inbound:192.168.0.1:8081`,
+		}),
+		Entry("should remove all filters from all listeners when there is inbound match section", testCase{
+			listeners: []string{
+				`
+                name: inbound:192.168.0.1:8080
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.direct_response
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
+                      response:
+                        inlineString: "xyz"
+                  - name: envoy.tcp_proxy
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                      cluster: backend`,
+				`
+                name: inbound:192.168.0.1:8081
+                filterChains:
+                - filters:
+                  - name: envoy.tcp_proxy
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                      cluster: backend`,
+			},
+			modifications: []string{`
+                networkFilter:
+                   operation: remove
+                   match:
+                     direction: inbound
 `,
 			},
 			expected: `

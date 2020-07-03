@@ -6,6 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/direct_response/v2"
+	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/echo/v2"
+	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
@@ -55,6 +59,99 @@ var _ = Describe("ProxyTemplate", func() {
                 selectors:
                 - match:
                     service: backend`,
+			),
+			Entry("cluster modifications", `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  modifications:
+                  - cluster:
+                      operation: add
+                      value: |
+                        name: xyz
+                        connectTimeout: 5s
+                        type: STATIC
+                  - cluster:
+                      operation: patch
+                      value: |
+                        connectTimeout: 5s
+                  - cluster:
+                      operation: patch
+                      match:
+                        name: inbound:127.0.0.1:8080
+                      value: |
+                        connectTimeout: 5s
+                  - cluster:
+                      operation: patch
+                      match:
+                        direction: inbound
+                      value: |
+                        connectTimeout: 5s
+                  - cluster:
+                      operation: remove
+                  - cluster:
+                      operation: remove
+                      match:
+                        name: inbound:127.0.0.1:8080
+                  - cluster:
+                      operation: remove
+                      match:
+                        direction: inbound
+                  `,
+			),
+			Entry("network filter modifications", `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  modifications:
+                  - networkFilter:
+                      operation: addFirst
+                      value: |
+                        name: envoy.tcp_proxy
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                          cluster: backend
+                  - networkFilter:
+                      operation: addLast
+                      value: |
+                        name: envoy.tcp_proxy
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                          cluster: backend
+                  - networkFilter:
+                      operation: addBefore
+                      match:
+                        name: envoy.filters.network.direct_response
+                      value: |
+                        name: envoy.tcp_proxy
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                          cluster: backend
+                  - networkFilter:
+                      operation: addAfter
+                      match:
+                        name: envoy.filters.network.direct_response
+                        listenerName: inbound:127.0.0.0:8080
+                      value: |
+                        name: envoy.tcp_proxy
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                          cluster: backend
+                  - networkFilter:
+                      operation: patch
+                      match:
+                        name: envoy.tcp_proxy
+                        listenerName: inbound:127.0.0.0:8080
+                      value: |
+                        name: envoy.tcp_proxy
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                          cluster: backend
+                  - networkFilter:
+                      operation: remove
+                  `,
 			),
 		)
 
@@ -199,6 +296,67 @@ var _ = Describe("ProxyTemplate", func() {
                 violations:
                 - field: conf.resources[0].resource
                   message: 'native Envoy resource is not valid: json: cannot unmarshal string into Go value of type map[string]*json.RawMessage'`,
+			}),
+			Entry("invalid cluster modifications", testCase{
+				proxyTemplate: `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  modifications:
+                  - cluster:
+                      operation: addFirst
+                  - cluster:
+                      operation: add
+                      value: '{'
+                  - cluster:
+                      operation: patch
+                      value: '{'`,
+				expected: `
+                violations:
+                - field: conf.modifications[0].cluster.operation
+                  message: 'invalid operation. Available operations: "add", "patch", "remove"'
+                - field: conf.modifications[1].cluster.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[2].cluster.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'`,
+			}),
+			Entry("invalid network filter operation", testCase{
+				proxyTemplate: `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  modifications:
+                  - networkFilter:
+                      operation: addFirst
+                      value: '{'
+                  - networkFilter:
+                      operation: addBefore
+                      value: '{'
+                  - networkFilter:
+                      operation: addAfter
+                      value: '{'
+                  - networkFilter:
+                      operation: patch
+                      value: '{'
+`,
+				expected: `
+                violations:
+                - field: conf.modifications[0].networkFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[1].networkFilter.match.name
+                  message: cannot be empty. You need to pick a filter before which this one will be added
+                - field: conf.modifications[1].networkFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[2].networkFilter.match.name
+                  message: cannot be empty. You need to pick a filter after which this one will be added
+                - field: conf.modifications[2].networkFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[3].networkFilter.match.name
+                  message: cannot be empty
+                - field: conf.modifications[3].networkFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'`,
 			}),
 		)
 	})

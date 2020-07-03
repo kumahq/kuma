@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/core/validators"
 	"github.com/Kong/kuma/pkg/util/envoy"
@@ -33,8 +36,8 @@ func validateConfig(conf *mesh_proto.ProxyTemplate_Conf) validators.ValidationEr
 	var verr validators.ValidationError
 	verr.Add(validateImports(conf.GetImports()))
 	verr.Add(validateResources(conf.GetResources()))
-	for _, modification := range conf.GetModifications() {
-		verr.Add(validateModification(modification))
+	for i, modification := range conf.GetModifications() {
+		verr.AddErrorAt(validators.RootedAt("modifications").Index(i), validateModification(modification))
 	}
 	return verr
 }
@@ -43,9 +46,9 @@ func validateModification(modification *mesh_proto.ProxyTemplate_Modifications) 
 	verr := validators.ValidationError{}
 	switch modification.Type.(type) {
 	case *mesh_proto.ProxyTemplate_Modifications_Cluster_:
-		verr.Add(validateClusterModification(modification.GetCluster()))
+		verr.AddError("cluster", validateClusterModification(modification.GetCluster()))
 	case *mesh_proto.ProxyTemplate_Modifications_NetworkFilter_:
-		verr.Add(validateNetworkFilterModification(modification.GetNetworkFilter()))
+		verr.AddError("networkFilter", validateNetworkFilterModification(modification.GetNetworkFilter()))
 	}
 	return verr
 }
@@ -54,9 +57,11 @@ func validateClusterModification(clusterMod *mesh_proto.ProxyTemplate_Modificati
 	verr := validators.ValidationError{}
 	switch clusterMod.Operation {
 	case mesh_proto.OpAdd:
-		fallthrough
+		if err := ValidateResourceYAML(&envoy_api.Cluster{}, clusterMod.Value); err != nil {
+			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+		}
 	case mesh_proto.OpPatch:
-		if _, err := envoy.ResourceFromYaml(clusterMod.Value); err != nil {
+		if err := ValidateResourceYAMLPatch(&envoy_api.Cluster{}, clusterMod.Value); err != nil {
 			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	case mesh_proto.OpRemove:
@@ -69,7 +74,7 @@ func validateClusterModification(clusterMod *mesh_proto.ProxyTemplate_Modificati
 func validateNetworkFilterModification(networkFilterMod *mesh_proto.ProxyTemplate_Modifications_NetworkFilter) validators.ValidationError {
 	verr := validators.ValidationError{}
 	validateResource := func() {
-		if _, err := envoy.ResourceFromYaml(networkFilterMod.Value); err != nil {
+		if err := ValidateResourceYAML(&envoy_api_listener.Filter{}, networkFilterMod.Value); err != nil {
 			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	}
@@ -92,10 +97,9 @@ func validateNetworkFilterModification(networkFilterMod *mesh_proto.ProxyTemplat
 		if networkFilterMod.GetMatch().GetName() == "" {
 			verr.AddViolation("match.name", "cannot be empty")
 		}
-		if _, err := envoy.ResourceFromYaml(networkFilterMod.Value); err != nil {
+		if err := ValidateResourceYAMLPatch(&envoy_api_listener.Filter{}, networkFilterMod.Value); err != nil {
 			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
-		validateResource()
 	case mesh_proto.OpRemove:
 	default:
 		verr.AddViolation("operation", fmt.Sprintf("invalid operation. Available operations: %q, %q, %q, %q, %q", mesh_proto.OpAddFirst, mesh_proto.OpAddLast, mesh_proto.OpAddBefore, mesh_proto.OpAddAfter, mesh_proto.OpPatch))
