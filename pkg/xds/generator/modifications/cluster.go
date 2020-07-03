@@ -11,35 +11,29 @@ import (
 )
 
 func applyClusterModification(resources *model.ResourceSet, modification *mesh_proto.ProxyTemplate_Modifications_Cluster) error {
+	clusterMod := &envoy_api.Cluster{}
+	if err := util_proto.FromYAML([]byte(modification.Value), clusterMod); err != nil {
+		return err
+	}
 	switch modification.Operation {
 	case "add":
-		cluster := &envoy_api.Cluster{}
-		if err := util_proto.FromYAML([]byte(modification.Value), cluster); err != nil {
-			return err
-		}
-		resources.AddNamed(cluster)
-		return nil
+		resources.AddNamed(clusterMod)
 	case "remove":
 		for name, resource := range resources.Resources(envoy_resource.ClusterType) {
 			if clusterMatches(resource, modification.Match) {
 				resources.Remove(envoy_resource.ClusterType, name)
 			}
 		}
-		return nil
 	case "patch":
 		for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
 			if clusterMatches(cluster, modification.Match) {
-				modCluster := &envoy_api.Cluster{}
-				if err := util_proto.FromYAML([]byte(modification.Value), modCluster); err != nil {
-					return err
-				}
-				proto.Merge(cluster.Resource, modCluster)
+				proto.Merge(cluster.Resource, clusterMod)
 			}
 		}
-		return nil
 	default:
 		return errors.New("invalid operation")
 	}
+	return nil
 }
 
 func clusterMatches(cluster *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_Cluster_Match) bool {

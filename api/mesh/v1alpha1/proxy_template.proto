@@ -32,6 +32,7 @@ message ProxyTemplate {
   message Modifications {
     oneof type {
       Cluster cluster = 1;
+      NetworkFilter networkFilter = 2;
     }
 
     message Cluster {
@@ -42,6 +43,18 @@ message ProxyTemplate {
       message Match {
         string side = 1;
         string name = 2;
+      }
+    }
+
+    message NetworkFilter {
+      Match match = 1;
+      string operation = 2;
+      string value = 3;
+
+      message Match {
+        string side = 1;
+        string name = 2;
+        string listenerName = 3;
       }
     }
   }

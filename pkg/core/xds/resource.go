@@ -6,6 +6,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"sort"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -61,6 +62,12 @@ func (rs ResourceList) Payloads() []ResourcePayload {
 	return payloads
 }
 
+func (rs ResourceList) Len() int      { return len(rs) }
+func (rs ResourceList) Swap(i, j int) { rs[i], rs[j] = rs[j], rs[i] }
+func (rs ResourceList) Less(i, j int) bool {
+	return rs[i].Name < rs[j].Name
+}
+
 // ResourceSet represents a set of generic xDS resources.
 type ResourceSet struct {
 	// we want to prevent duplicates
@@ -78,7 +85,7 @@ func (s *ResourceSet) ListOf(typ string) ResourceList {
 	for _, resource := range s.typeToNamesIndex[typ] {
 		list = append(list, resource)
 	}
-	// todo sort by name
+	sort.Stable(list)
 	return list
 }
 
