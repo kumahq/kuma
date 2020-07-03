@@ -14,6 +14,10 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      mesh: mesh1
                 statPrefix: backend
       name: outbound:127.0.0.1:18080
       trafficDirection: OUTBOUND
@@ -37,12 +41,14 @@ resources:
                     - metadataMatch:
                         filterMetadata:
                           envoy.lb:
+                            mesh: mesh1
                             role: master
                       name: db
                       weight: 10
                     - metadataMatch:
                         filterMetadata:
                           envoy.lb:
+                            mesh: mesh1
                             role: replica
                       name: db
                       weight: 90
@@ -97,6 +103,10 @@ resources:
                 prefix: /
               route:
                 cluster: api-http
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      mesh: mesh1
   - name: outbound:127.0.0.1:40002
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -123,6 +133,10 @@ resources:
                           logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
 
                 cluster: api-tcp
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      mesh: mesh1
                 statPrefix: api-tcp
       name: outbound:127.0.0.1:40002
       trafficDirection: OUTBOUND
@@ -133,6 +147,12 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - mesh
       name: api-http
       outlierDetection:
         enforcingConsecutive5xx: 100
@@ -175,7 +195,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-          sni: api-http
+          sni: api-http{mesh=mesh1}
       type: EDS
   - name: api-tcp
     resource:
@@ -184,6 +204,12 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - mesh
       name: api-tcp
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -220,7 +246,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-          sni: api-tcp
+          sni: api-tcp{mesh=mesh1}
       type: EDS
   - name: backend
     resource:
@@ -229,6 +255,12 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - mesh
       name: backend
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -265,7 +297,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-          sni: backend
+          sni: backend{mesh=mesh1}
       type: EDS
   - name: db
     resource:
@@ -279,12 +311,14 @@ resources:
         subsetSelectors:
           - fallbackPolicy: NO_FALLBACK
             keys:
+              - mesh
               - role
       name: db
       transportSocketMatches:
         - match:
+            mesh: mesh1
             role: master
-          name: db{role=master}
+          name: db{mesh=mesh1,role=master}
           transportSocket:
             name: envoy.transport_sockets.tls
             typedConfig:
@@ -320,10 +354,11 @@ resources:
                                     inlineBytes: MTIzNDU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
-              sni: db{role=master}
+              sni: db{mesh=mesh1,role=master}
         - match:
+            mesh: mesh1
             role: replica
-          name: db{role=replica}
+          name: db{mesh=mesh1,role=replica}
           transportSocket:
             name: envoy.transport_sockets.tls
             typedConfig:
@@ -359,7 +394,7 @@ resources:
                                     inlineBytes: MTIzNDU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
-              sni: db{role=replica}
+              sni: db{mesh=mesh1,role=replica}
       type: EDS
   - name: api-http
     resource:

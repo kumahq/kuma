@@ -2,6 +2,9 @@ package ingress_test
 
 import (
 	"context"
+	"fmt"
+
+	model2 "github.com/Kong/kuma/pkg/test/resources/model"
 
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
@@ -38,10 +41,11 @@ var _ = Describe("Ingress Dataplane", func() {
 		func(given testCase) {
 			dataplanes := []*core_mesh.DataplaneResource{}
 
-			for _, dp := range given.dataplanes {
+			for i, dp := range given.dataplanes {
 				dpRes := &core_mesh.DataplaneResource{}
 				err := util_proto.FromYAML([]byte(dp), &dpRes.Spec)
 				Expect(err).ToNot(HaveOccurred())
+				dpRes.SetMeta(&model2.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: "default"})
 				dataplanes = append(dataplanes, dpRes)
 			}
 
@@ -53,9 +57,6 @@ var _ = Describe("Ingress Dataplane", func() {
 		Entry("base", testCase{
 			dataplanes: []string{
 				`
-            type: Dataplane
-            name: dp-1
-            mesh: default
             networking:
               inbound:
                 - address: 127.0.0.1
@@ -67,9 +68,6 @@ var _ = Describe("Ingress Dataplane", func() {
                     region: eu
 `,
 				`
-            type: Dataplane
-            name: dp-2
-            mesh: default
             networking:
               inbound:
                 - address: 127.0.0.1
@@ -81,9 +79,6 @@ var _ = Describe("Ingress Dataplane", func() {
                     region: us
 `,
 				`
-            type: Dataplane
-            name: dp-3
-            mesh: default
             networking:
               inbound:
                 - address: 127.0.0.1
@@ -98,11 +93,13 @@ var _ = Describe("Ingress Dataplane", func() {
 			expected: `
             - instances: 1
               tags:
+                mesh: default
                 service: backend
                 region: eu
                 version: "1"
             - instances: 2
               tags:
+                mesh: default
                 service: backend
                 region: us
                 version: "2"
@@ -124,6 +121,7 @@ var _ = Describe("Ingress Dataplane", func() {
 									"service": "backend",
 									"version": "v1",
 									"region":  "eu",
+									"mesh":    "mesh1",
 								},
 							},
 							{
@@ -132,6 +130,7 @@ var _ = Describe("Ingress Dataplane", func() {
 									"service": "web",
 									"version": "v2",
 									"region":  "us",
+									"mesh":    "mesh1",
 								},
 							},
 						},
@@ -142,6 +141,7 @@ var _ = Describe("Ingress Dataplane", func() {
 
 		others := []*core_mesh.DataplaneResource{
 			{
+				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -157,6 +157,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
+				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -172,6 +173,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
+				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
 				Spec: mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

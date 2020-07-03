@@ -12,6 +12,10 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend.kuma-system
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      mesh: ""
                 statPrefix: backend_kuma-system
       name: outbound:127.0.0.1:18080
       trafficDirection: OUTBOUND
@@ -31,6 +35,7 @@ resources:
                 metadataMatch:
                   filterMetadata:
                     envoy.lb:
+                      mesh: ""
                       version: 3.2.0
                 statPrefix: db_kuma-system
       name: outbound:127.0.0.1:54321
@@ -43,6 +48,12 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - mesh
       name: backend.kuma-system
       type: EDS
   - name: db
@@ -57,6 +68,7 @@ resources:
         subsetSelectors:
           - fallbackPolicy: NO_FALLBACK
             keys:
+              - mesh
               - version
       name: db
       type: EDS

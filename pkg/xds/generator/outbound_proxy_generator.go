@@ -188,10 +188,13 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 			// 0 assumes no traffic is passed there. Envoy doesn't support 0 weight, so instead of passing it to Envoy we just skip such cluster.
 			continue
 		}
+		// we need Mesh to be set as a tag and at the end be compiled into SNI. When Dataplane is talking with Ingress
+		// it has to provide own mesh in order to have an access only to the Dataplanes of the same mesh (in another zone)
+		withMesh := envoy_common.Tags(destination.Destination).WithTags("mesh", proxy.Dataplane.GetMeta().GetMesh())
 		subsets = append(subsets, envoy_common.ClusterSubset{
 			ClusterName: service,
 			Weight:      destination.Weight,
-			Tags:        destination.Destination,
+			Tags:        withMesh,
 		})
 	}
 	return

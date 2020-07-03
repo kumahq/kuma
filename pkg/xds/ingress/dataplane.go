@@ -57,7 +57,8 @@ func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_
 			continue
 		}
 		for _, dpInbound := range dp.Spec.GetNetworking().GetInbound() {
-			tagSets.addInstanceOfTags(dpInbound.Tags)
+			tags := envoy.Tags(dpInbound.Tags).WithTags("mesh", dp.GetMeta().GetMesh())
+			tagSets.addInstanceOfTags(tags)
 		}
 	}
 	return tagSets.toAvailableServices()

@@ -120,12 +120,35 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
+				if dataplane.Spec.IsIngress() {
+					// update Ingress
+					allMeshDataplanes := &mesh_core.DataplaneResourceList{}
+					if err := rt.ReadOnlyResourceManager().List(ctx, allMeshDataplanes); err != nil {
+						return err
+					}
+					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, allMeshDataplanes.Items); err != nil {
+						return err
+					}
+					destinations := ingress.BuildDestinationMap(dataplane)
+					endpoints := xds_topology.BuildEndpointMap(destinations, allMeshDataplanes.Items, rt.Config().Mode.Remote.Zone)
+					proxy := xds.Proxy{
+						Id:              proxyID,
+						Dataplane:       dataplane,
+						OutboundTargets: endpoints,
+						Metadata:        metadataTracker.Metadata(streamId),
+					}
+					envoyCtx := xds_context.Context{
+						ControlPlane: envoyCpCtx,
+					}
+					return ingressReconciler.Reconcile(envoyCtx, &proxy)
+				}
+
 				mesh := &mesh_core.MeshResource{}
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
-				dataplanes := &mesh_core.DataplaneResourceList{}
-				if err := rt.ReadOnlyResourceManager().List(ctx, dataplanes, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
+				dataplanes, err := xds_topology.GetDataplanes(ctx, rt.ReadOnlyResourceManager(), dataplane.Meta.GetMesh())
+				if err != nil {
 					return err
 				}
 				envoyCtx := xds_context.Context{
@@ -136,22 +159,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					},
 				}
 
-				if dataplane.Spec.IsIngress() {
-					// update Ingress
-					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, dataplanes.Items); err != nil {
-						return err
-					}
-					destinations := ingress.BuildDestinationMap(dataplane)
-					endpoints := xds_topology.BuildEndpointMap(destinations, dataplanes.Items, rt.Config().Mode.Remote.Zone)
-					proxy := xds.Proxy{
-						Id:              proxyID,
-						Dataplane:       dataplane,
-						OutboundTargets: endpoints,
-						Metadata:        metadataTracker.Metadata(streamId),
-					}
-					return ingressReconciler.Reconcile(envoyCtx, &proxy)
-				}
-
 				// Generate VIP outbounds only when not Ingress and Transparent Proxying is enabled
 				if !dataplane.Spec.IsIngress() && dataplane.Spec.Networking.GetTransparentProxying() != nil {
 					err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, rt.DNSResolver())
@@ -159,6 +166,10 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 						return err
 					}
 				}
+
+				// Ingresses contains Services from all meshes, split them into several ingresses each of them in charge of only one mesh
+				dataplanes = ingress.SplitIngressesByMeshAndFlatten(dataplanes)
+				dataplanes = xds_topology.FilterDataplanesByMesh(dataplanes, dataplane.Meta.GetMesh())
 
 				// pick a single the most specific route for each outbound interface
 				routes, err := xds_topology.GetRoutes(ctx, dataplane, rt.ReadOnlyResourceManager())
