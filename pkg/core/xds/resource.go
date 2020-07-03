@@ -20,7 +20,6 @@ type NamedResourcePayload interface {
 // Resource represents a generic xDS resource with name and version.
 type Resource struct {
 	Name     string
-	Version  string // todo remove version, it's useless
 	Resource ResourcePayload
 }
 
@@ -36,7 +35,6 @@ func (rs ResourceList) ToDeltaDiscoveryResponse() (*envoy.DeltaDiscoveryResponse
 		}
 		resp.Resources = append(resp.Resources, &envoy.Resource{
 			Name:     r.Name,
-			Version:  r.Version,
 			Resource: pbany,
 		})
 	}

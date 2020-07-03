@@ -52,7 +52,6 @@ func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Pr
 
 		resources.Add(&model.Resource{
 			Name:     r.Name,
-			Version:  r.Version,
 			Resource: res,
 		})
 	}
