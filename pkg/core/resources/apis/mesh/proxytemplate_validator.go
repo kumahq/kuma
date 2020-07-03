@@ -57,12 +57,15 @@ func validateClusterModification(clusterMod *mesh_proto.ProxyTemplate_Modificati
 	verr := validators.ValidationError{}
 	switch clusterMod.Operation {
 	case mesh_proto.OpAdd:
+		if clusterMod.Match != nil {
+			verr.AddViolation("match", "cannot be defined")
+		}
 		if err := ValidateResourceYAML(&envoy_api.Cluster{}, clusterMod.Value); err != nil {
-			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	case mesh_proto.OpPatch:
 		if err := ValidateResourceYAMLPatch(&envoy_api.Cluster{}, clusterMod.Value); err != nil {
-			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	case mesh_proto.OpRemove:
 	default:
@@ -75,7 +78,7 @@ func validateNetworkFilterModification(networkFilterMod *mesh_proto.ProxyTemplat
 	verr := validators.ValidationError{}
 	validateResource := func() {
 		if err := ValidateResourceYAML(&envoy_api_listener.Filter{}, networkFilterMod.Value); err != nil {
-			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	}
 	switch networkFilterMod.Operation {
@@ -98,7 +101,7 @@ func validateNetworkFilterModification(networkFilterMod *mesh_proto.ProxyTemplat
 			verr.AddViolation("match.name", "cannot be empty")
 		}
 		if err := ValidateResourceYAMLPatch(&envoy_api_listener.Filter{}, networkFilterMod.Value); err != nil {
-			verr.AddViolationAt(validators.RootedAt("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	case mesh_proto.OpRemove:
 	default:

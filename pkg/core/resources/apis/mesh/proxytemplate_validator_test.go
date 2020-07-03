@@ -311,7 +311,13 @@ var _ = Describe("ProxyTemplate", func() {
                       value: '{'
                   - cluster:
                       operation: patch
-                      value: '{'`,
+                      value: '{'
+                  - cluster:
+                      operation: add
+                      match:
+                        name: inbound:127.0.0.1:80
+                      value: |
+                        name: xyz`,
 				expected: `
                 violations:
                 - field: conf.modifications[0].cluster.operation
@@ -319,7 +325,9 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: conf.modifications[1].cluster.value
                   message: 'native Envoy resource is not valid: unexpected EOF'
                 - field: conf.modifications[2].cluster.value
-                  message: 'native Envoy resource is not valid: unexpected EOF'`,
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[3].cluster.match
+                  message: cannot be defined`,
 			}),
 			Entry("invalid network filter operation", testCase{
 				proxyTemplate: `
