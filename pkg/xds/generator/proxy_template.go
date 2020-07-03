@@ -38,6 +38,9 @@ func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.
 	return resources, nil
 }
 
+// GeneratedByProxyTemplateRaw is a marker to indicate by which ProxyGenerator resources were generated.
+const GeneratedByProxyTemplateRaw = "proxy-template-raw"
+
 type ProxyTemplateRawSource struct {
 	Resources []*kuma_mesh.ProxyTemplateRawResource
 }
@@ -51,8 +54,9 @@ func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Pr
 		}
 
 		resources.Add(&model.Resource{
-			Name:     r.Name,
-			Resource: res,
+			Name:        r.Name,
+			GeneratedBy: GeneratedByProxyTemplateRaw,
+			Resource:    res,
 		})
 	}
 	return resources, nil

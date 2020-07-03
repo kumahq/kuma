@@ -4,6 +4,7 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/Kong/kuma/pkg/xds/generator"
 	"github.com/Kong/kuma/pkg/xds/generator/modifications"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -32,7 +33,11 @@ var _ = Describe("Network Filter modifications", func() {
 				listener := &envoy_api.Listener{}
 				err := util_proto.FromYAML([]byte(listenerYAML), listener)
 				Expect(err).ToNot(HaveOccurred())
-				set.AddNamed(listener)
+				set.Add(&core_xds.Resource{
+					Name:        listener.Name,
+					GeneratedBy: generator.GeneratedByInbound,
+					Resource:    listener,
+				})
 			}
 
 			var mods []*mesh_proto.ProxyTemplate_Modifications

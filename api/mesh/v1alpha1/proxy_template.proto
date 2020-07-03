@@ -41,7 +41,7 @@ message ProxyTemplate {
       string value = 3;
 
       message Match {
-        string side = 1;
+        string direction = 1;
         string name = 2;
       }
     }
@@ -52,7 +52,7 @@ message ProxyTemplate {
       string value = 3;
 
       message Match {
-        string side = 1;
+        string direction = 1;
         string name = 2;
         string listenerName = 3;
       }

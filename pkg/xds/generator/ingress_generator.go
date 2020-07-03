@@ -21,6 +21,9 @@ import (
 
 const (
 	IngressProxy = "ingress-proxy"
+
+	// GeneratedByIngress is a marker to indicate by which ProxyGenerator resources were generated.
+	GeneratedByIngress = "ingress"
 )
 
 type IngressGenerator struct {
@@ -33,7 +36,11 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 	if err != nil {
 		return nil, err
 	}
-	resources.AddNamed(listener)
+	resources.Add(&model.Resource{
+		Name:        listener.Name,
+		GeneratedBy: GeneratedByIngress,
+		Resource:    listener,
+	})
 
 	services := i.services(proxy)
 
@@ -106,8 +113,9 @@ func (i IngressGenerator) generateCDS(services []string, proxy *model.Proxy) (re
 			return nil, err
 		}
 		resources = append(resources, &model.Resource{
-			Name:     service,
-			Resource: edsCluster,
+			Name:        service,
+			GeneratedBy: GeneratedByIngress,
+			Resource:    edsCluster,
 		})
 	}
 	return
@@ -139,8 +147,9 @@ func (_ IngressGenerator) generateEDS(proxy *model.Proxy, services []string) (re
 	for _, service := range services {
 		endpoints := proxy.OutboundTargets[service]
 		resources = append(resources, &model.Resource{
-			Name:     service,
-			Resource: envoy_endpoints.CreateClusterLoadAssignment(service, endpoints),
+			Name:        service,
+			GeneratedBy: GeneratedByIngress,
+			Resource:    envoy_endpoints.CreateClusterLoadAssignment(service, endpoints),
 		})
 	}
 	return

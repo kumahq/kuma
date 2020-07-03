@@ -22,6 +22,9 @@ import (
 	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
 )
 
+// GeneratedByOutbound is a marker to indicate by which ProxyGenerator resources were generated.
+const GeneratedByOutbound = "outbound"
+
 type OutboundProxyGenerator struct {
 }
 
@@ -49,7 +52,11 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		if err != nil {
 			return nil, err
 		}
-		resources.AddNamed(listener)
+		resources.Add(&model.Resource{
+			Name:        listener.Name,
+			GeneratedBy: GeneratedByOutbound,
+			Resource:    listener,
+		})
 
 		// Generate route, routes are only applicable to the HTTP
 		if protocol == mesh_core.ProtocolHTTP {
@@ -57,7 +64,11 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			if err != nil {
 				return nil, err
 			}
-			resources.AddNamed(route)
+			resources.Add(&model.Resource{
+				Name:        route.Name,
+				GeneratedBy: GeneratedByOutbound,
+				Resource:    route,
+			})
 		}
 	}
 
@@ -128,7 +139,11 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		if err != nil {
 			return model.ResourceSet{}, err
 		}
-		resources.AddNamed(edsCluster)
+		resources.Add(&model.Resource{
+			Name:        clusterName,
+			GeneratedBy: GeneratedByOutbound,
+			Resource:    edsCluster,
+		})
 	}
 	return resources, nil
 }

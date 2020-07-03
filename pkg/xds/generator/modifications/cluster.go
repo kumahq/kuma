@@ -17,7 +17,11 @@ func applyClusterModification(resources *model.ResourceSet, modification *mesh_p
 	}
 	switch modification.Operation {
 	case mesh_proto.OpAdd:
-		resources.AddNamed(clusterMod)
+		resources.Add(&model.Resource{
+			Name:        clusterMod.Name,
+			GeneratedBy: GeneratedByProxyTemplateModifications,
+			Resource:    clusterMod,
+		})
 	case mesh_proto.OpRemove:
 		for name, resource := range resources.Resources(envoy_resource.ClusterType) {
 			if clusterMatches(resource, modification.Match) {
@@ -43,6 +47,8 @@ func clusterMatches(cluster *model.Resource, match *mesh_proto.ProxyTemplate_Mod
 	if match.Name == cluster.Name {
 		return true
 	}
-	// todo support side cluster.Side == "inbound"
+	if match.Direction == cluster.GeneratedBy {
+		return true
+	}
 	return false
 }

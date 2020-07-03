@@ -73,13 +73,15 @@ func listenerMatches(resource *model.Resource, match *mesh_proto.ProxyTemplate_M
 	if match == nil {
 		return true
 	}
-	if match.ListenerName == "" { // && cluster.Side == ""
+	if match.ListenerName == "" && match.Direction == "" {
 		return true
 	}
 	if match.ListenerName == resource.Name {
 		return true
 	}
-	// todo support side cluster.Side == "inbound"
+	if match.Direction == resource.GeneratedBy {
+		return true
+	}
 	return false
 }
 
