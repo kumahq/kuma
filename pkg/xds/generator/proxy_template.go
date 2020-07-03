@@ -2,8 +2,10 @@ package generator
 
 import (
 	"fmt"
-	"github.com/Kong/kuma/pkg/xds/generator/modifications"
+
 	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/xds/generator/modifications"
 
 	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -17,7 +19,7 @@ type ProxyTemplateGenerator struct {
 }
 
 func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	resources := &model.ResourceSet{}
+	resources := model.NewResourceSet()
 	for i, name := range g.ProxyTemplate.GetConf().GetImports() {
 		generator := &ProxyTemplateProfileSource{ProfileName: name}
 		if rs, err := generator.Generate(ctx, proxy); err != nil {
@@ -46,7 +48,7 @@ type ProxyTemplateRawSource struct {
 }
 
 func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	resources := &model.ResourceSet{}
+	resources := model.NewResourceSet()
 	for i, r := range s.Resources {
 		res, err := util_envoy.ResourceFromYaml(r.Resource)
 		if err != nil {

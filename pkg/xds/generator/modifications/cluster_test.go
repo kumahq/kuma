@@ -1,12 +1,13 @@
 package modifications_test
 
 import (
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	"github.com/Kong/kuma/pkg/xds/generator"
 	"github.com/Kong/kuma/pkg/xds/generator/modifications"
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -52,6 +53,7 @@ var _ = Describe("Cluster modifications", func() {
 			resp, err := set.List().ToDeltaDiscoveryResponse()
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("should add cluster", testCase{
@@ -95,7 +97,7 @@ var _ = Describe("Cluster modifications", func() {
                      name: test:cluster
                      type: EDS`,
 			},
-			expected:      `
+			expected: `
             resources:
             - name: test:cluster
               resource:
@@ -141,7 +143,7 @@ var _ = Describe("Cluster modifications", func() {
                    match:
                      name: test:cluster`,
 			},
-			expected:      `
+			expected: `
             resources:
             - name: test:cluster2
               resource:
@@ -166,7 +168,7 @@ var _ = Describe("Cluster modifications", func() {
                    match:
                      direction: inbound`,
 			},
-			expected:      `{}`,
+			expected: `{}`,
 		}),
 		Entry("should patch cluster matching name", testCase{
 			clusters: []string{

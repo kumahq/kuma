@@ -28,7 +28,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	if len(endpoints) == 0 {
 		return nil, nil
 	}
-	resources := &model.ResourceSet{}
+	resources := model.NewResourceSet()
 	for i, endpoint := range endpoints {
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)

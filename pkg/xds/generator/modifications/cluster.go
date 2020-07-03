@@ -1,13 +1,14 @@
 package modifications
 
 import (
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	model "github.com/Kong/kuma/pkg/core/xds"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 func applyClusterModification(resources *model.ResourceSet, modification *mesh_proto.ProxyTemplate_Modifications_Cluster) error {

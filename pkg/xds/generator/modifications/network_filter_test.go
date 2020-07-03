@@ -20,7 +20,7 @@ import (
 var _ = Describe("Network Filter modifications", func() {
 
 	type testCase struct {
-		listeners      []string
+		listeners     []string
 		modifications []string
 		expected      string
 	}
@@ -56,6 +56,7 @@ var _ = Describe("Network Filter modifications", func() {
 			resp, err := set.List().ToDeltaDiscoveryResponse()
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("should not add filter when there is no filter match", testCase{

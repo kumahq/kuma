@@ -1,13 +1,14 @@
 package modifications
 
 import (
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/gogo/protobuf/proto"
+
+	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	model "github.com/Kong/kuma/pkg/core/xds"
+	util_proto "github.com/Kong/kuma/pkg/util/proto"
 )
 
 func applyNetworkFilterModification(resources *model.ResourceSet, modification *mesh_proto.ProxyTemplate_Modifications_NetworkFilter) error {

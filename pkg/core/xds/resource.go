@@ -1,12 +1,13 @@
 package xds
 
 import (
+	"sort"
+
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"sort"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -122,6 +123,9 @@ func (s *ResourceSet) Resources(typ string) map[string]*Resource {
 }
 
 func (s *ResourceSet) AddSet(set *ResourceSet) *ResourceSet {
+	if set == nil {
+		return s
+	}
 	for typ, resources := range set.typeToNamesIndex {
 		if s.typeToNamesIndex[typ] == nil {
 			s.typeToNamesIndex[typ] = map[string]*Resource{}

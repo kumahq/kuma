@@ -30,7 +30,7 @@ type IngressGenerator struct {
 }
 
 func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	resources := &model.ResourceSet{}
+	resources := model.NewResourceSet()
 
 	listener, err := i.generateLDS(proxy.Dataplane)
 	if err != nil {

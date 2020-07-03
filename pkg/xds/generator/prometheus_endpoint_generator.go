@@ -106,7 +106,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	if err != nil {
 		return nil, err
 	}
-	resources := &core_xds.ResourceSet{}
+	resources := core_xds.NewResourceSet()
 	resources.Add(&core_xds.Resource{
 		Name:        cluster.Name,
 		GeneratedBy: GeneratedByPrometheus,

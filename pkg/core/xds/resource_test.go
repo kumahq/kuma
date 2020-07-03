@@ -22,8 +22,7 @@ var _ = Describe("ResourceSet", func() {
 	It("set of 1 element should return a list of 1 element", func() {
 		// given
 		resource := &Resource{
-			Name:    "backend",
-			Version: "v1",
+			Name: "backend",
 			Resource: &envoy.Cluster{
 				Name: "backend",
 			},
@@ -40,15 +39,13 @@ var _ = Describe("ResourceSet", func() {
 	It("set of 2 elements should return a list of 2 elements", func() {
 		// given
 		resource1 := &Resource{
-			Name:    "backend",
-			Version: "v1",
+			Name: "backend",
 			Resource: &envoy.Cluster{
 				Name: "backend",
 			},
 		}
 		resource2 := &Resource{
-			Name:    "outbound:127.0.0.1:8080",
-			Version: "v2",
+			Name: "outbound:127.0.0.1:8080",
 			Resource: &envoy.Listener{
 				Name: "outbound:127.0.0.1:8080",
 			},
@@ -68,15 +65,13 @@ var _ = Describe("ResourceSet", func() {
 	It("should not be possible to add 2 resources with same name and type", func() {
 		// given
 		resource1 := &Resource{
-			Name:    "backend",
-			Version: "v1",
+			Name: "backend",
 			Resource: &envoy.Cluster{
 				Name: "backend",
 			},
 		}
 		resource2 := &Resource{
-			Name:    "backend",
-			Version: "v2",
+			Name: "backend",
 			Resource: &envoy.Cluster{
 				Name: "backend",
 			},
@@ -96,15 +91,13 @@ var _ = Describe("ResourceSet", func() {
 	It("should be possible to add 2 resources with same name but different types", func() {
 		// given
 		resource1 := &Resource{
-			Name:    "backend",
-			Version: "v1",
+			Name: "backend",
 			Resource: &envoy.Cluster{
 				Name: "backend",
 			},
 		}
 		resource2 := &Resource{
-			Name:    "backend",
-			Version: "v2",
+			Name: "backend",
 			Resource: &envoy.Listener{
 				Name: "backend",
 			},

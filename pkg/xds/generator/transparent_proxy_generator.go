@@ -40,7 +40,7 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate cluster: pass_through")
 	}
-	resources := &model.ResourceSet{}
+	resources := model.NewResourceSet()
 	resources.Add(&model.Resource{
 		Name:        listener.Name,
 		GeneratedBy: GeneratedByTransparent,

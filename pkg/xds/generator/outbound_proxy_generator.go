@@ -33,7 +33,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	if len(outbounds) == 0 {
 		return nil, nil
 	}
-	resources := &model.ResourceSet{}
+	resources := model.NewResourceSet()
 	clusters := envoy_common.Clusters{}
 
 	for _, outbound := range outbounds {
@@ -77,10 +77,10 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	if err != nil {
 		return nil, err
 	}
-	resources.AddSet(&cdsResources)
+	resources.AddSet(cdsResources)
 
 	edsResources := g.generateEDS(proxy, clusters)
-	resources.AddSet(&edsResources)
+	resources.AddSet(edsResources)
 
 	return resources, nil
 }
@@ -122,8 +122,8 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 	return listener, nil
 }
 
-func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (model.ResourceSet, error) {
-	var resources model.ResourceSet
+func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (*model.ResourceSet, error) {
+	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
 		tags := clusters.Tags(clusterName)
@@ -137,7 +137,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 			Configure(envoy_clusters.HealthCheck(healthCheck)).
 			Build()
 		if err != nil {
-			return model.ResourceSet{}, err
+			return nil, err
 		}
 		resources.Add(&model.Resource{
 			Name:        clusterName,
@@ -162,8 +162,8 @@ func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]strin
 	return result
 }
 
-func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) model.ResourceSet {
-	var resources model.ResourceSet
+func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) *model.ResourceSet {
+	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
 		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])

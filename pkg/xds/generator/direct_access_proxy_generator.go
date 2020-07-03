@@ -43,7 +43,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		return nil, err
 	}
 
-	resources := &core_xds.ResourceSet{}
+	resources := core_xds.NewResourceSet()
 	for _, endpoint := range endpoints {
 		name := fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
 		listener, err := envoy_listeners.NewListenerBuilder().

@@ -12,7 +12,7 @@ type ResourceGenerator interface {
 type CompositeResourceGenerator []ResourceGenerator
 
 func (c CompositeResourceGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	resources := &model.ResourceSet{}
+	resources := model.NewResourceSet()
 	for _, gen := range c {
 		rs, err := gen.Generate(ctx, proxy)
 		if err != nil {
