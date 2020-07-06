@@ -14,6 +14,8 @@ const (
 
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
+
+	kdsPort = 30685
 )
 
 const (
@@ -32,7 +34,6 @@ const (
 	kumaDPImage   = "kuma/kuma-dp"
 	kumaInitImage = "kuma/kuma-init"
 
-	localCPSyncNodePort  = 30681
 	kumaCPAPIPort        = 5681
 	kumaCPGUIPort        = 5683
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort

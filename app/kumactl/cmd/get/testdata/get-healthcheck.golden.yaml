@@ -1,12 +1,8 @@
 conf:
-  activeChecks:
-    interval: 10s
-    timeout: 2s
-    unhealthyThreshold: 3
-    healthyThreshold: 1
-  passiveChecks:
-    unhealthyThreshold: 3
-    penaltyInterval: 5s
+  interval: 10s
+  timeout: 2s
+  unhealthyThreshold: 3
+  healthyThreshold: 1
 creationTime: 0001-01-01T00:00:00Z
 destinations:
   - match:

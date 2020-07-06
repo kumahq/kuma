@@ -19,6 +19,7 @@ func newInstallIngressCmd() *cobra.Command {
 		Mesh            string
 		DrainTime       string
 		KumaCpAddress   string
+		IngressPortType string
 	}{
 		Namespace:       "kuma-system",
 		Image:           "kong-docker-kuma-docker.bintray.io/kuma-dp",
@@ -27,12 +28,17 @@ func newInstallIngressCmd() *cobra.Command {
 		Mesh:            "default",
 		DrainTime:       "30s",
 		KumaCpAddress:   "http://kuma-control-plane.kuma-system:5681",
+		IngressPortType: "LoadBalancer",
 	}
+	useNodePort := false
 	cmd := &cobra.Command{
 		Use:   "ingress",
 		Short: "Install Ingress on Kubernetes",
 		Long:  `Install Ingress on Kubernetes in a 'kuma-system' namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if useNodePort {
+				args.IngressPortType = "NodePort"
+			}
 			templateFiles, err := data.ReadFiles(ingress.Templates)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
@@ -61,5 +67,6 @@ func newInstallIngressCmd() *cobra.Command {
 	cmd.Flags().StringVar(&args.Mesh, "mesh", args.Mesh, "mesh for Ingress")
 	cmd.Flags().StringVar(&args.DrainTime, "drain-time", args.DrainTime, "drain time for Envoy proxy")
 	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
+	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	return cmd
 }

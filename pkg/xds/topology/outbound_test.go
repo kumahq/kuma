@@ -133,7 +133,7 @@ var _ = Describe("TrafficRoute", func() {
 			}
 
 			// when
-			targets, err := GetOutboundTargets(destinations, dataplanes)
+			targets, err := GetOutboundTargets(destinations, dataplanes, "zone-1")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -141,10 +141,20 @@ var _ = Describe("TrafficRoute", func() {
 			Expect(targets).To(HaveLen(2))
 			// and
 			Expect(targets).To(HaveKeyWithValue("redis", []core_xds.Endpoint{
-				{Target: "192.168.0.2", Port: 6379, Tags: map[string]string{"service": "redis", "version": "v1"}},
+				{
+					Target: "192.168.0.2",
+					Port:   6379,
+					Tags:   map[string]string{"service": "redis", "version": "v1"},
+					Weight: 1,
+				},
 			}))
 			Expect(targets).To(HaveKeyWithValue("elastic", []core_xds.Endpoint{
-				{Target: "192.168.0.6", Port: 9200, Tags: map[string]string{"service": "elastic", "region": "us"}},
+				{
+					Target: "192.168.0.6",
+					Port:   9200,
+					Tags:   map[string]string{"service": "elastic", "region": "us"},
+					Weight: 1,
+				},
 			}))
 		})
 	})
@@ -158,7 +168,7 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.destinations, given.dataplanes)
+				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, "zone-1")
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -243,7 +253,12 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
-						{Target: "192.168.0.1", Port: 6379, Tags: map[string]string{"service": "redis", "region": "us"}},
+						{
+							Target: "192.168.0.1",
+							Port:   6379,
+							Tags:   map[string]string{"service": "redis", "region": "us"},
+							Weight: 1,
+						},
 					},
 				},
 			}),
@@ -272,7 +287,12 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
-						{Target: "192.168.0.1", Port: 6379, Tags: map[string]string{"service": "redis", "region": "us"}},
+						{
+							Target: "192.168.0.1",
+							Port:   6379,
+							Tags:   map[string]string{"service": "redis", "region": "us"},
+							Weight: 1,
+						},
 					},
 				},
 			}),
@@ -319,10 +339,20 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
-						{Target: "192.168.0.1", Port: 6379, Tags: map[string]string{"service": "redis", "version": "v1"}},
+						{
+							Target: "192.168.0.1",
+							Port:   6379,
+							Tags:   map[string]string{"service": "redis", "version": "v1"},
+							Weight: 1,
+						},
 					},
 					"elastic": []core_xds.Endpoint{
-						{Target: "192.168.0.2", Port: 9200, Tags: map[string]string{"service": "elastic", "region": "us"}},
+						{
+							Target: "192.168.0.2",
+							Port:   9200,
+							Tags:   map[string]string{"service": "elastic", "region": "us"},
+							Weight: 1,
+						},
 					},
 				},
 			}),
@@ -361,10 +391,20 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
-						{Target: "192.168.0.1", Port: 6379, Tags: map[string]string{"service": "redis", "version": "v1"}},
+						{
+							Target: "192.168.0.1",
+							Port:   6379,
+							Tags:   map[string]string{"service": "redis", "version": "v1"},
+							Weight: 1,
+						},
 					},
 					"elastic": []core_xds.Endpoint{
-						{Target: "192.168.0.2", Port: 9200, Tags: map[string]string{"service": "elastic", "region": "us"}},
+						{
+							Target: "192.168.0.2",
+							Port:   9200,
+							Tags:   map[string]string{"service": "elastic", "region": "us"},
+							Weight: 1,
+						},
 					},
 				},
 			}),
@@ -396,17 +436,19 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "10.20.1.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags: map[string]string{"service": "ingress", "cluster": "cl1"},
+										Tags: map[string]string{"service": "ingress", "zone": "zone-2"},
 										Port: 10001,
 									},
 								},
 								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
 									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 										{
-											Tags: map[string]string{"service": "redis", "version": "v2", "region": "eu"},
+											Instances: 2,
+											Tags:      map[string]string{"service": "redis", "version": "v2", "region": "eu"},
 										},
 										{
-											Tags: map[string]string{"service": "redis", "version": "v3"},
+											Instances: 3,
+											Tags:      map[string]string{"service": "redis", "version": "v3"},
 										},
 									},
 								},
@@ -416,9 +458,24 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
-						{Target: "192.168.0.1", Port: 6379, Tags: map[string]string{"service": "redis", "version": "v1"}},
-						{Target: "10.20.1.2", Port: 10001, Tags: map[string]string{"service": "redis", "version": "v2", "region": "eu"}},
-						{Target: "10.20.1.2", Port: 10001, Tags: map[string]string{"service": "redis", "version": "v3"}},
+						{
+							Target: "192.168.0.1",
+							Port:   6379,
+							Tags:   map[string]string{"service": "redis", "version": "v1"},
+							Weight: 1,
+						},
+						{
+							Target: "10.20.1.2",
+							Port:   10001,
+							Tags:   map[string]string{"service": "redis", "version": "v2", "region": "eu"},
+							Weight: 2,
+						},
+						{
+							Target: "10.20.1.2",
+							Port:   10001,
+							Tags:   map[string]string{"service": "redis", "version": "v3"},
+							Weight: 3,
+						},
 					},
 				},
 			}),

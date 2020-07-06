@@ -73,14 +73,10 @@ var _ = Describe("HealthCheck Endpoints", func() {
         - match:
             service: backend
         conf:
-          activeChecks:
-            interval: 10s
-            timeout: 2s
-            unhealthyThreshold: 3
-            healthyThreshold: 1
-          passiveChecks:
-            unhealthyThreshold: 3
-            penaltyInterval: 5s
+          interval: 10s
+          timeout: 2s
+          unhealthyThreshold: 3
+          healthyThreshold: 1
 `
 		It("GET should return data saved by PUT", func() {
 			// given

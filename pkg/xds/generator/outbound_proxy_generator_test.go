@@ -150,19 +150,53 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				OutboundTargets: model.EndpointMap{
 					"api-http": []model.Endpoint{ // notice that all endpoints have tag `protocol: http`
-						{Target: "192.168.0.4", Port: 8084, Tags: map[string]string{"service": "api-http", "protocol": "http", "region": "us"}},
-						{Target: "192.168.0.5", Port: 8085, Tags: map[string]string{"service": "api-http", "protocol": "http", "region": "eu"}},
+						{
+							Target: "192.168.0.4",
+							Port:   8084,
+							Tags:   map[string]string{"service": "api-http", "protocol": "http", "region": "us"},
+							Weight: 1,
+						},
+						{
+							Target: "192.168.0.5",
+							Port:   8085,
+							Tags:   map[string]string{"service": "api-http", "protocol": "http", "region": "eu"},
+							Weight: 1,
+						},
 					},
 					"api-tcp": []model.Endpoint{ // notice that not every endpoint has a `protocol: http` tag
-						{Target: "192.168.0.6", Port: 8086, Tags: map[string]string{"service": "api-tcp", "protocol": "http", "region": "us"}},
-						{Target: "192.168.0.7", Port: 8087, Tags: map[string]string{"service": "api-tcp", "region": "eu"}},
+						{
+							Target: "192.168.0.6",
+							Port:   8086,
+							Tags:   map[string]string{"service": "api-tcp", "protocol": "http", "region": "us"},
+							Weight: 1,
+						},
+						{
+							Target: "192.168.0.7",
+							Port:   8087,
+							Tags:   map[string]string{"service": "api-tcp", "region": "eu"},
+							Weight: 1,
+						},
 					},
 					"backend": []model.Endpoint{ // notice that not every endpoint has a tag `protocol: http`
-						{Target: "192.168.0.1", Port: 8081, Tags: map[string]string{"service": "backend", "region": "us"}},
-						{Target: "192.168.0.2", Port: 8082},
+						{
+							Target: "192.168.0.1",
+							Port:   8081,
+							Tags:   map[string]string{"service": "backend", "region": "us"},
+							Weight: 1,
+						},
+						{
+							Target: "192.168.0.2",
+							Port:   8082,
+							Weight: 1,
+						},
 					},
 					"db": []model.Endpoint{
-						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
+						{
+							Target: "192.168.0.3",
+							Port:   5432,
+							Tags:   map[string]string{"service": "db", "role": "master"},
+							Weight: 1,
+						},
 					},
 				},
 				Logs: model.LogMap{
@@ -329,10 +363,19 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			},
 			OutboundTargets: model.EndpointMap{
 				"backend.kuma-system": []model.Endpoint{
-					{Target: "192.168.0.1", Port: 8082},
+					{
+						Target: "192.168.0.1",
+						Port:   8082,
+						Weight: 1,
+					},
 				},
 				"db.kuma-system": []model.Endpoint{
-					{Target: "192.168.0.2", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
+					{
+						Target: "192.168.0.2",
+						Port:   5432,
+						Tags:   map[string]string{"service": "db", "role": "master"},
+						Weight: 1,
+					},
 				},
 			},
 			Metadata: &model.DataplaneMetadata{},

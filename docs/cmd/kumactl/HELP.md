@@ -236,10 +236,14 @@ Flags:
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
-      --mode string                         kuma cp modes: one of standalone|local|global (default "standalone")
+      --kds-tls-cert string                 TLS certificate for the KDS server
+      --kds-tls-key string                  TLS key for the KDS server
+      --mode string                         kuma cp modes: one of standalone|remote|global (default "standalone")
       --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
       --sds-tls-cert string                 TLS certificate for the SDS server
       --sds-tls-key string                  TLS key for the SDS server
+      --use-node-port                       use NodePort instead of LoadBalancer
+      --zone string                         set the Kuma zone name
 
 Global Flags:
       --config-file string   path to the configuration file to use

@@ -14,5 +14,5 @@ func init() {
 }
 
 func (p plugin) NewCaManager(context core_plugins.PluginContext, config core_plugins.PluginConfig) (ca.Manager, error) {
-	return NewBuiltinCaManager(context.SecretManager()), nil
+	return NewBuiltinCaManager(context.ResourceManager()), nil
 }

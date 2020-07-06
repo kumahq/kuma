@@ -27,12 +27,12 @@ resources:
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                statPrefix: db_kuma-system
                 cluster: db
                 metadataMatch:
                   filterMetadata:
                     envoy.lb:
                       version: 3.2.0
+                statPrefix: db_kuma-system
       name: outbound:127.0.0.1:54321
       trafficDirection: OUTBOUND
   - name: backend.kuma-system
@@ -71,6 +71,7 @@ resources:
                   socketAddress:
                     address: 192.168.0.1
                     portValue: 8082
+              loadBalancingWeight: 1
   - name: db
     resource:
       '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment

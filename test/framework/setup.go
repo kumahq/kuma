@@ -34,9 +34,9 @@ func YamlPath(path string) InstallFunc {
 	}
 }
 
-func Kuma() InstallFunc {
+func Kuma(mode ...string) InstallFunc {
 	return func(cluster Cluster) error {
-		_, err := cluster.DeployKuma()
+		err := cluster.DeployKuma(mode...)
 		return err
 	}
 }
@@ -82,7 +82,7 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 	}
 }
 
-func EchoServer() InstallFunc {
+func EchoServerK8s() InstallFunc {
 	const name = "echo-server"
 	return Combine(
 		YamlPath(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
@@ -90,6 +90,12 @@ func EchoServer() InstallFunc {
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)
+}
+
+func EchoServerUniversal() InstallFunc {
+	return func(cluster Cluster) error {
+		return cluster.DeployApp("", AppModeEchoServer)
+	}
 }
 
 type IngressDesc struct {
@@ -137,7 +143,7 @@ func Ingress(ingress *IngressDesc) InstallFunc {
 	}
 }
 
-func DemoClient() InstallFunc {
+func DemoClientK8s() InstallFunc {
 	const name = "demo-client"
 	return Combine(
 		YamlPath(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
@@ -145,6 +151,12 @@ func DemoClient() InstallFunc {
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)
+}
+
+func DemoClientUniversal() InstallFunc {
+	return func(cluster Cluster) error {
+		return cluster.DeployApp("", AppModeDemoClient)
+	}
 }
 
 func Combine(fs ...InstallFunc) InstallFunc {

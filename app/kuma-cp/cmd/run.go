@@ -2,22 +2,25 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/Kong/kuma/pkg/clusters"
-	dns_server "github.com/Kong/kuma/pkg/dns-server"
+	dns "github.com/Kong/kuma/pkg/dns/components"
 
-	api_server "github.com/Kong/kuma/pkg/api-server"
+	"github.com/Kong/kuma/pkg/config/mode"
+
+	kds_remote "github.com/Kong/kuma/pkg/kds/remote"
 
 	"github.com/spf13/cobra"
 
+	api_server "github.com/Kong/kuma/pkg/api-server"
+	"github.com/Kong/kuma/pkg/clusters"
+	kds_global "github.com/Kong/kuma/pkg/kds/global"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/Kong/kuma/pkg/admin-server"
-	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
 	"github.com/Kong/kuma/pkg/config"
 	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/bootstrap"
 	mads_server "github.com/Kong/kuma/pkg/mads/server"
@@ -28,6 +31,8 @@ import (
 var (
 	runLog = controlPlaneLog.WithName("run")
 )
+
+const gracefullyShutdownDuration = 3 * time.Second
 
 func newRunCmd() *cobra.Command {
 	return newRunCmdWithOpts(runCmdOpts{
@@ -42,18 +47,13 @@ type runCmdOpts struct {
 func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 	args := struct {
 		configPath string
-		kumaCpMode string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Control Plane",
 		Long:  `Launch Control Plane.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := config_core.ValidateCpMode(args.kumaCpMode); err != nil {
-				return err
-			}
 			cfg := kuma_cp.DefaultConfig()
-			cfg.Mode = args.kumaCpMode
 			err := config.Load(args.configPath, &cfg)
 			if err != nil {
 				runLog.Error(err, "could not load the configuration")
@@ -75,14 +75,15 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
-			switch cfg.Mode {
-			case config_core.Standalone:
+			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode.Mode))
+			switch cfg.Mode.Mode {
+			case mode.Standalone:
 				if err := ui_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up GUI server")
 					return err
 				}
 				fallthrough
-			case config_core.Local:
+			case mode.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
 					return err
@@ -95,7 +96,15 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-			case config_core.Global:
+				if err := kds_remote.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Remote Server")
+					return err
+				}
+				if err := dns.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up DNS server")
+					return err
+				}
+			case mode.Global:
 				if err := xds_server.SetupDiagnosticsServer(rt); err != nil {
 					runLog.Error(err, "unable to set up xDS server")
 					return err
@@ -106,6 +115,14 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := clusters.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Clusters server")
+					return err
+				}
+				if err := kds_global.SetupComponent(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Global Sink")
+					return err
+				}
+				if err := kds_global.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Global Server")
 					return err
 				}
 			}
@@ -119,23 +136,19 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 
-			if err := dns_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up DNS server")
-				return err
-			}
-
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
 			if err := rt.Start(opts.SetupSignalHandler()); err != nil {
 				runLog.Error(err, "problem running Control Plane")
 				return err
 			}
 
-			runLog.Info("stopping Control Plane")
+			runLog.Info("Stop signal received. Waiting 3 seconds for components to stop gracefully...")
+			time.Sleep(gracefullyShutdownDuration)
+			runLog.Info("Stopping Control Plane")
 			return nil
 		},
 	}
 	// flags
 	cmd.PersistentFlags().StringVarP(&args.configPath, "config-file", "c", "", "configuration file")
-	cmd.PersistentFlags().StringVar(&args.kumaCpMode, "mode", config_core.Standalone, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "local", "global"))
 	return cmd
 }

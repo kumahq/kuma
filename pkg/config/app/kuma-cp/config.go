@@ -1,15 +1,19 @@
 package kuma_cp
 
 import (
+	"github.com/pkg/errors"
+
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	"github.com/Kong/kuma/api/mesh/v1alpha1"
 	"github.com/Kong/kuma/pkg/config"
 	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
 	api_server "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/config/clusters"
 	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
 	dns_server "github.com/Kong/kuma/pkg/config/dns-server"
 	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
+	"github.com/Kong/kuma/pkg/config/kds"
 	"github.com/Kong/kuma/pkg/config/mads"
 	"github.com/Kong/kuma/pkg/config/plugins/runtime"
 	"github.com/Kong/kuma/pkg/config/sds"
@@ -18,8 +22,6 @@ import (
 	"github.com/Kong/kuma/pkg/config/xds/bootstrap"
 	util_error "github.com/Kong/kuma/pkg/util/error"
 	"github.com/Kong/kuma/pkg/util/proto"
-
-	"github.com/pkg/errors"
 )
 
 var _ config.Config = &Config{}
@@ -119,11 +121,11 @@ type Config struct {
 	// GUI Server Config
 	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer,omitempty"`
 	// Kuma CP Mode
-	Mode core.CpMode `yaml:"mode,omitempty"`
+	Mode *mode.ModeConfig `yaml:"mode,omitempty"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
-	// KumaClusters config
-	KumaClusters *clusters.ClustersConfig `yaml:"kumaClusters,omitempty"`
+	// KDS configuration
+	KDS *kds.KdsConfig `yaml:"kds,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -141,7 +143,8 @@ func (c *Config) Sanitize() {
 	c.Defaults.Sanitize()
 	c.GuiServer.Sanitize()
 	c.DNSServer.Sanitize()
-	c.KumaClusters.Sanitize()
+	c.Mode.Sanitize()
+	c.KDS.Sanitize()
 }
 
 func DefaultConfig() Config {
@@ -170,29 +173,29 @@ name: default
 		Reports: &Reports{
 			Enabled: true,
 		},
-		General:      DefaultGeneralConfig(),
-		GuiServer:    gui_server.DefaultGuiServerConfig(),
-		Mode:         core.Standalone,
-		DNSServer:    dns_server.DefaultDNSServerConfig(),
-		KumaClusters: clusters.DefaultClustersConfig(),
+		General:   DefaultGeneralConfig(),
+		GuiServer: gui_server.DefaultGuiServerConfig(),
+		DNSServer: dns_server.DefaultDNSServerConfig(),
+		Mode:      mode.DefaultModeConfig(),
+		KDS:       kds.DefaultKdsConfig(),
 	}
 }
 
 func (c *Config) Validate() error {
-	if err := core.ValidateCpMode(c.Mode); err != nil {
-		return err
+	if err := c.Mode.Validate(); err != nil {
+		return errors.Wrap(err, "Mode validation failed")
 	}
-	switch c.Mode {
-	case core.Global:
+	switch c.Mode.Mode {
+	case mode.Global:
 		if err := c.GuiServer.Validate(); err != nil {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
-	case core.Standalone:
+	case mode.Standalone:
 		if err := c.GuiServer.Validate(); err != nil {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
 		fallthrough
-	case core.Local:
+	case mode.Remote:
 		if err := c.XdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "Xds Server validation failed")
 		}
@@ -233,8 +236,8 @@ func (c *Config) Validate() error {
 	if err := c.DNSServer.Validate(); err != nil {
 		return errors.Wrap(err, "DNSServer validation failed")
 	}
-	if err := c.KumaClusters.Validate(); err != nil {
-		return errors.Wrap(err, "KumaClusters validation failed")
+	if err := c.KDS.Validate(); err != nil {
+		return errors.Wrap(err, "KDS validation failed")
 	}
 	return nil
 }

@@ -255,10 +255,10 @@ var _ = Describe("PodReconciler", func() {
             - port: 8080
               tags:
                 protocol: http
-                service: example.demo.svc:80
+                service: example_demo_svc_80
             - port: 6060
               tags:
-                service: example.demo.svc:6061
+                service: example_demo_svc_6061
                 protocol: tcp
 `))
 	})
@@ -325,10 +325,10 @@ var _ = Describe("PodReconciler", func() {
             - port: 8080
               tags:
                 protocol: http
-                service: example.demo.svc:80
+                service: example_demo_svc_80
             - port: 6060
               tags:
-                service: example.demo.svc:6061
+                service: example_demo_svc_6061
                 protocol: tcp
 `))
 	})

@@ -15,33 +15,12 @@ const (
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "service"
 	ServiceUnknown = "unknown"
+	// Mandatory tag that has a reserved meaning in Kuma.
+	ZoneTag = "zone"
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "protocol"
 )
-
-// ServiceTagValue represents the value of "service" tag.
-//
-// E.g., "web", "backend", "database" are typical values in universal case,
-// "web.default.svc:80" in k8s case.
-type ServiceTagValue string
-
-func (v ServiceTagValue) HasPort() bool {
-	_, _, err := net.SplitHostPort(string(v))
-	return err == nil
-}
-
-func (v ServiceTagValue) HostAndPort() (string, uint32, error) {
-	host, port, err := net.SplitHostPort(string(v))
-	if err != nil {
-		return "", 0, err
-	}
-	num, err := strconv.ParseUint(port, 10, 32)
-	if err != nil {
-		return "", 0, err
-	}
-	return host, uint32(num), nil
-}
 
 type InboundInterface struct {
 	DataplaneIP   string
@@ -413,15 +392,15 @@ func (d *Dataplane) HasAvailableServices() bool {
 	return len(d.Networking.Ingress.AvailableServices) != 0
 }
 
-func (d *Dataplane) IsRemoteIngress() bool {
+func (d *Dataplane) IsRemoteIngress(localZone string) bool {
 	if !d.IsIngress() {
 		return false
 	}
-	// todo: take into account value itself, not just presence of the 'cluster' tag
-	if _, ok := d.Networking.Inbound[0].Tags["cluster"]; ok {
-		return true
+	zone, ok := d.Networking.Inbound[0].Tags[ZoneTag]
+	if !ok {
+		return false
 	}
-	return false
+	return zone != localZone
 }
 
 func (t MultiValueTagSet) String() string {

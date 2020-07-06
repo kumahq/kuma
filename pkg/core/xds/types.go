@@ -44,6 +44,7 @@ type Endpoint struct {
 	Target string
 	Port   uint32
 	Tags   map[string]string
+	Weight uint32
 }
 
 // EndpointList is a list of Endpoints with convenience methods.

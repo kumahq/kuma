@@ -90,10 +90,20 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				},
 				OutboundTargets: model.EndpointMap{
 					"db": []model.Endpoint{
-						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
+						{
+							Target: "192.168.0.3",
+							Port:   5432,
+							Tags:   map[string]string{"service": "db", "role": "master"},
+							Weight: 1,
+						},
 					},
 					"elastic": []model.Endpoint{
-						{Target: "192.168.0.4", Port: 9200, Tags: map[string]string{"service": "elastic"}},
+						{
+							Target: "192.168.0.4",
+							Port:   9200,
+							Tags:   map[string]string{"service": "elastic"},
+							Weight: 1,
+						},
 					},
 				},
 				HealthChecks: model.HealthCheckMap{
@@ -106,12 +116,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 								{Match: mesh_proto.TagSelector{"service": "elastic"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								ActiveChecks: &mesh_proto.HealthCheck_Conf_Active{
-									Interval:           ptypes.DurationProto(5 * time.Second),
-									Timeout:            ptypes.DurationProto(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
+								Interval:           ptypes.DurationProto(5 * time.Second),
+								Timeout:            ptypes.DurationProto(4 * time.Second),
+								UnhealthyThreshold: 3,
+								HealthyThreshold:   2,
 							},
 						},
 					},

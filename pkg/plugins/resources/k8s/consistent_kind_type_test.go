@@ -15,7 +15,7 @@ var _ = Describe("Consistent Kind Types", func() {
 		k8sTypes := k8s_registry.Global()
 
 		for _, typ := range types.ObjectTypes() {
-			if typ == system.SecretType {
+			if typ == system.SecretType || typ == system.ConfigType {
 				continue // ignore Secret since we cannot map it directly to Secret K8S resource
 			}
 
@@ -33,7 +33,7 @@ var _ = Describe("Consistent Kind Types", func() {
 		k8sTypes := k8s_registry.Global()
 
 		for _, typ := range types.ListTypes() {
-			if typ == system.SecretType {
+			if typ == system.SecretType || typ == system.ConfigType {
 				continue // ignore Secret since we cannot map it directly to Secret K8S resource
 			}
 

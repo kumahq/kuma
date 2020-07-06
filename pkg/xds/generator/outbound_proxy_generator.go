@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"strings"
+
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
 	"github.com/Kong/kuma/pkg/core/validators"
@@ -109,16 +111,17 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 	return listener, nil
 }
 
-func (_ OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (model.ResourceSet, error) {
+func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (model.ResourceSet, error) {
 	var resources model.ResourceSet
 	for _, clusterName := range clusters.ClusterNames() {
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
+		tags := clusters.Tags(clusterName)
 		healthCheck := proxy.HealthChecks[serviceName]
 		circuitBreaker := proxy.CircuitBreakers[serviceName]
 		edsCluster, err := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.EdsCluster(clusterName)).
-			Configure(envoy_clusters.LbSubset(clusters.Tags(clusterName))).
-			Configure(envoy_clusters.ClientSideMTLSWithSNI(ctx, proxy.Metadata, serviceName, clusterName)).
+			Configure(envoy_clusters.LbSubset(o.lbSubsets(tags))).
+			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 			Configure(envoy_clusters.HealthCheck(healthCheck)).
 			Build()
@@ -128,6 +131,20 @@ func (_ OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		resources.AddNamed(edsCluster)
 	}
 	return resources, nil
+}
+
+func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]string {
+	var result [][]string
+	uniqueKeys := map[string]bool{}
+	for _, tags := range tagSets {
+		keys := tags.WithoutTag(kuma_mesh.ServiceTag).Keys()
+		joined := strings.Join(keys, ",")
+		if !uniqueKeys[joined] {
+			uniqueKeys[joined] = true
+			result = append(result, keys)
+		}
+	}
+	return result
 }
 
 func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) model.ResourceSet {

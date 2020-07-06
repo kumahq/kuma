@@ -3,9 +3,13 @@ package runtime
 import (
 	"context"
 
+	"github.com/Kong/kuma/pkg/core/secrets/store"
+
+	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
+
 	"github.com/Kong/kuma/pkg/clusters/poller"
 
-	"github.com/Kong/kuma/pkg/dns-server/resolver"
+	"github.com/Kong/kuma/pkg/dns"
 
 	"github.com/Kong/kuma/pkg/core/ca"
 
@@ -13,7 +17,6 @@ import (
 	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
-	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
 )
 
@@ -34,11 +37,13 @@ type RuntimeContext interface {
 	ResourceManager() core_manager.ResourceManager
 	ResourceStore() core_store.ResourceStore
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
-	SecretManager() secret_manager.SecretManager
+	SecretStore() store.SecretStore
 	CaManagers() ca.Managers
 	Extensions() context.Context
-	DNSResolver() resolver.DNSResolver
+	DNSResolver() dns.DNSResolver
 	Clusters() poller.ClusterStatusPoller
+	ConfigManager() config_manager.ConfigManager
+	LeaderInfo() component.LeaderInfo
 }
 
 var _ Runtime = &runtime{}
@@ -65,13 +70,15 @@ type runtimeContext struct {
 	cfg      kuma_cp.Config
 	rm       core_manager.ResourceManager
 	rs       core_store.ResourceStore
+	ss       store.SecretStore
 	rom      core_manager.ReadOnlyResourceManager
-	sm       secret_manager.SecretManager
 	cam      ca.Managers
 	xds      core_xds.XdsContext
 	ext      context.Context
-	dns      resolver.DNSResolver
+	dns      dns.DNSResolver
 	clusters poller.ClusterStatusPoller
+	configm  config_manager.ConfigManager
+	leadInfo component.LeaderInfo
 }
 
 func (rc *runtimeContext) CaManagers() ca.Managers {
@@ -89,20 +96,28 @@ func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
 	return rc.rs
 }
+func (rc *runtimeContext) SecretStore() store.SecretStore {
+	return rc.ss
+}
 func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return rc.rom
-}
-func (rc *runtimeContext) SecretManager() secret_manager.SecretManager {
-	return rc.sm
 }
 func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext
 }
 
-func (rc *runtimeContext) DNSResolver() resolver.DNSResolver {
+func (rc *runtimeContext) DNSResolver() dns.DNSResolver {
 	return rc.dns
 }
 
 func (rc *runtimeContext) Clusters() poller.ClusterStatusPoller {
 	return rc.clusters
+}
+
+func (rc *runtimeContext) ConfigManager() config_manager.ConfigManager {
+	return rc.configm
+}
+
+func (rc *runtimeContext) LeaderInfo() component.LeaderInfo {
+	return rc.leadInfo
 }

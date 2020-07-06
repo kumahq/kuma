@@ -4,6 +4,9 @@ import (
 	"context"
 	"os"
 
+	"github.com/Kong/kuma/pkg/core/resources/manager"
+	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
+
 	"io/ioutil"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -13,7 +16,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/secrets/cipher"
-	"github.com/Kong/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
 	"github.com/Kong/kuma/pkg/plugins/resources/memory"
 
@@ -23,11 +25,11 @@ import (
 
 var _ = Describe("DataSource Loader", func() {
 
-	var secretManager manager.SecretManager
+	var secretManager manager.ResourceManager
 	var dataSourceLoader datasource.Loader
 
 	BeforeEach(func() {
-		secretManager = manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil)
+		secretManager = secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil)
 		dataSourceLoader = datasource.NewDataSourceLoader(secretManager)
 	})
 

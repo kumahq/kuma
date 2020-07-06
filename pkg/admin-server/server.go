@@ -31,6 +31,10 @@ type AdminServer struct {
 	container *restful.Container
 }
 
+func (a *AdminServer) NeedLeaderElection() bool {
+	return false
+}
+
 func NewAdminServer(cfg admin_server.AdminServerConfig, services ...*restful.WebService) *AdminServer {
 	container := restful.NewContainer()
 	for _, service := range services {
@@ -158,7 +162,7 @@ func SetupServer(rt runtime.Runtime) error {
 	ws := new(restful.WebService).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
-	endpoints := secretsEndpoints{rt.SecretManager()}
+	endpoints := secretsEndpoints{rt.ResourceManager()}
 	endpoints.addFindEndpoint(ws)
 	endpoints.addListEndpoint(ws)
 	if !rt.Config().ApiServer.ReadOnly {

@@ -44,17 +44,18 @@ type RouteConfigurer struct {
 
 func (c RouteConfigurer) routeAction() *envoy_route.RouteAction {
 	routeAction := envoy_route.RouteAction{}
-	if len(c.subsets) == 1 && envoy_common.Metadata(c.subsets[0].Tags) == nil {
+	if len(c.subsets) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
 			Cluster: c.subsets[0].ClusterName,
 		}
+		routeAction.MetadataMatch = envoy_common.LbMetadata(c.subsets[0].Tags)
 	} else {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
 		for _, subset := range c.subsets {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
 				Name:          subset.ClusterName,
 				Weight:        &wrappers.UInt32Value{Value: subset.Weight},
-				MetadataMatch: envoy_common.Metadata(subset.Tags),
+				MetadataMatch: envoy_common.LbMetadata(subset.Tags),
 			})
 		}
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_WeightedClusters{

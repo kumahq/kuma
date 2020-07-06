@@ -13,7 +13,7 @@ import (
 
 	"github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config/core"
+	config_mode "github.com/Kong/kuma/pkg/config/mode"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -199,22 +199,22 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	return str, nil
 }
 
-func (c *K8sCluster) DeployKuma(mode ...string) (ControlPlane, error) {
+func (c *K8sCluster) DeployKuma(mode ...string) error {
 	if len(mode) == 0 {
-		mode = []string{core.Standalone}
+		mode = []string{config_mode.Standalone}
 	}
 	c.controlplane = NewK8sControlPlane(c.t, mode[0], c.name, c.kubeconfig,
 		c, c.loPort, c.hiPort, c.verbose)
 	yaml, err := c.controlplane.InstallCP()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = k8s.KubectlApplyFromStringE(c.t,
 		c.GetKubectlOptions(),
 		yaml)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	k8s.WaitUntilNumPodsCreated(c.t,
@@ -228,7 +228,7 @@ func (c *K8sCluster) DeployKuma(mode ...string) (ControlPlane, error) {
 
 	kumacpPods := c.controlplane.GetKumaCPPods()
 	if len(kumacpPods) != 1 {
-		return nil, errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
+		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
 	}
 
 	k8s.WaitUntilPodAvailable(c.t,
@@ -239,10 +239,14 @@ func (c *K8sCluster) DeployKuma(mode ...string) (ControlPlane, error) {
 
 	err = c.controlplane.FinalizeAdd()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return c.controlplane, nil
+	return nil
+}
+
+func (c *K8sCluster) GetKuma() ControlPlane {
+	return c.controlplane
 }
 
 func (c *K8sCluster) RestartKuma() error {
@@ -383,29 +387,6 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *K8sCluster) LabelNamespaceForSidecarInjection(namespace string) error {
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
-	if err != nil {
-		return err
-	}
-
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: namespace,
-			Labels: map[string]string{
-				"kuma.io/sidecar-injection": "enabled",
-			},
-		},
-	}
-	_, err = clientset.CoreV1().Namespaces().Update(context.Background(), ns, metav1.UpdateOptions{})
-
-	if err != nil {
-		return err
-	}
-
-	return err
-}
-
 func (c *K8sCluster) DeployApp(namespace, appname string) error {
 	retry.DoWithRetry(c.GetTesting(), "apply "+appname+" svc", DefaultRetries, DefaultTimeout,
 		func() (string, error) {
@@ -461,4 +442,8 @@ func (c *K8sCluster) InjectDNS() error {
 
 func (c *K8sCluster) GetTesting() testing.TestingT {
 	return c.t
+}
+
+func (c *K8sCluster) DismissCluster() error {
+	return nil
 }

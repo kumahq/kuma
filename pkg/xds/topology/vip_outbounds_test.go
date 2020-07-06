@@ -1,10 +1,10 @@
 package topology_test
 
 import (
+	"fmt"
 	"strconv"
 
-	"github.com/Kong/kuma/pkg/dns-server/resolver"
-	"github.com/Kong/kuma/pkg/test"
+	"github.com/Kong/kuma/pkg/dns"
 
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
@@ -39,20 +39,15 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 		}
 
 		// setup
-		p, err := test.GetFreePort()
-		Expect(err).ToNot(HaveOccurred())
-		port := strconv.Itoa(p)
-
-		resolver, err := resolver.NewSimpleDNSResolver("mesh", "127.0.0.1", port, "240.0.0.0/4")
-		Expect(err).ToNot(HaveOccurred())
+		resolver := dns.NewDNSResolver("mesh")
 
 		// given
 		dataplanes := core_mesh.DataplaneResourceList{}
+		vipList := dns.VIPList{}
 		for i := 1; i <= 5; i++ {
-
 			service := "service-" + strconv.Itoa(i)
-			vip, err := resolver.AddService(service)
-			Expect(err).ToNot(HaveOccurred())
+			vip := fmt.Sprintf("240.0.0.%d", i)
+			vipList[service] = vip
 
 			dataplanes.Items = append(dataplanes.Items, &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
@@ -74,9 +69,10 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 				},
 			})
 		}
+		resolver.SetVIPs(vipList)
 
 		// when
-		err = topology.PatchDataplaneWithVIPOutbounds(dataplane, &dataplanes, resolver)
+		err := topology.PatchDataplaneWithVIPOutbounds(dataplane, &dataplanes, resolver)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and

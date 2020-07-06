@@ -6,7 +6,7 @@ import (
 )
 
 func NewDataplaneTokenIssuer(rt runtime.Runtime) (issuer.DataplaneTokenIssuer, error) {
-	key, err := issuer.GetSigningKey(rt.SecretManager())
+	key, err := issuer.GetSigningKey(rt.ResourceManager())
 	if err != nil {
 		return nil, err
 	}

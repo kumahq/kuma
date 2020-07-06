@@ -2,11 +2,12 @@ package poller
 
 import (
 	"fmt"
-	"net/http"
+	"net"
+	"net/url"
 	"sync"
 	"time"
 
-	"github.com/Kong/kuma/pkg/config/clusters"
+	"github.com/Kong/kuma/pkg/config/mode"
 
 	"github.com/Kong/kuma/pkg/core"
 )
@@ -18,6 +19,7 @@ var (
 type (
 	ClusterStatusPoller interface {
 		Start(<-chan struct{}) error
+		NeedLeaderElection() bool
 		Clusters() Clusters
 	}
 
@@ -32,32 +34,28 @@ type (
 	ClustersStatusPoller struct {
 		sync.RWMutex
 		clusters  Clusters
-		client    http.Client
 		newTicker func() *time.Ticker
 	}
 )
 
 const (
-	tickInterval = 1 * time.Second
-	httpTimeout  = tickInterval / 100
+	tickInterval = 15 * time.Second
+	dialTimeout  = 100 * time.Millisecond
 )
 
-func NewClustersStatusPoller(clusters *clusters.ClustersConfig) (ClusterStatusPoller, error) {
+func NewClustersStatusPoller(globalConfig *mode.GlobalConfig) (ClusterStatusPoller, error) {
 	poller := &ClustersStatusPoller{
 		clusters: []Cluster{},
-		client: http.Client{
-			Timeout: httpTimeout,
-		},
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
 		},
 	}
 
-	for _, cluster := range clusters.Clusters {
+	for _, zone := range globalConfig.Zones {
 		// ignore the Ingress for now
 		poller.clusters = append(poller.clusters, Cluster{
-			Name:   cluster.Local.Address, // init the name of the cluster with its address
-			URL:    cluster.Local.Address,
+			Name:   zone.Remote.Address, // init the name of the cluster with its address
+			URL:    zone.Remote.Address,
 			Active: false,
 		})
 	}
@@ -84,27 +82,34 @@ func (p *ClustersStatusPoller) Start(stop <-chan struct{}) error {
 	}
 }
 
+func (p *ClustersStatusPoller) NeedLeaderElection() bool {
+	return false
+}
+
 func (p *ClustersStatusPoller) pollClusters() {
 	p.Lock()
 	defer p.Unlock()
 
 	for i, cluster := range p.clusters {
-		response, err := p.client.Get(cluster.URL)
+		u, err := url.Parse(cluster.URL)
+		if err != nil {
+			clusterStatusLog.Info(fmt.Sprintf("failed to parse URL %s", cluster.URL))
+			continue
+		}
+		conn, err := net.DialTimeout("tcp", u.Host, dialTimeout)
 		if err != nil {
 			if cluster.Active {
 				clusterStatusLog.Info(fmt.Sprintf("%s at %s did not respond", cluster.Name, cluster.URL))
 				p.clusters[i].Active = false
 			}
-
 			continue
 		}
+		defer conn.Close()
 
-		p.clusters[i].Active = response.StatusCode == http.StatusOK
-		if !cluster.Active {
-			clusterStatusLog.Info(fmt.Sprintf("%s at %s responded with %s", cluster.Name, cluster.URL, response.Status))
+		if !p.clusters[i].Active {
+			clusterStatusLog.Info(fmt.Sprintf("%s responded", cluster.URL))
+			p.clusters[i].Active = true
 		}
-
-		response.Body.Close()
 	}
 }
 

@@ -26,6 +26,7 @@ const (
 
 type PodConverter struct {
 	ServiceGetter kube_client.Reader
+	Zone          string
 }
 
 func (p *PodConverter) PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane) error {
@@ -71,13 +72,13 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 
 	dataplane.Networking.Address = pod.Status.PodIP
 	if injector_metadata.HasGatewayEnabled(pod) {
-		gateway, err := GatewayFor(pod, services)
+		gateway, err := GatewayFor(p.Zone, pod, services)
 		if err != nil {
 			return nil, err
 		}
 		dataplane.Networking.Gateway = gateway
 	} else {
-		ifaces, err := InboundInterfacesFor(pod, services, false)
+		ifaces, err := InboundInterfacesFor(p.Zone, pod, services, false)
 		if err != nil {
 			return nil, err
 		}
@@ -100,6 +101,14 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 }
 
 func (p *PodConverter) IngressFor(pod *kube_core.Pod) *mesh_proto.Dataplane {
+	var ingressTags map[string]string
+
+	if p.Zone != "" {
+		ingressTags = map[string]string{
+			mesh_proto.ZoneTag: p.Zone,
+		}
+	}
+
 	return &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
@@ -107,14 +116,15 @@ func (p *PodConverter) IngressFor(pod *kube_core.Pod) *mesh_proto.Dataplane {
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 				{
 					Port: ingressPort,
+					Tags: ingressTags,
 				},
 			},
 		},
 	}
 }
 
-func GatewayFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	interfaces, err := InboundInterfacesFor(pod, services, true)
+func GatewayFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
+	interfaces, err := InboundInterfacesFor(clusterName, pod, services, true)
 	if err != nil {
 		return nil, err
 	}

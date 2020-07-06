@@ -713,10 +713,14 @@ function _kumactl_install_control-plane {
     '--dataplane-init-image[init image of the Kuma Dataplane component]:' \
     '--image-pull-policy[image pull policy that applies to all components of the Kuma Control Plane]:' \
     '--injector-failure-policy[failue policy of the mutating web hook implemented by the Kuma Injector component]:' \
-    '--mode[kuma cp modes: one of standalone|local|global]:' \
+    '--kds-tls-cert[TLS certificate for the KDS server]:' \
+    '--kds-tls-key[TLS key for the KDS server]:' \
+    '--mode[kuma cp modes: one of standalone|remote|global]:' \
     '--namespace[namespace to install Kuma Control Plane to]:' \
     '--sds-tls-cert[TLS certificate for the SDS server]:' \
     '--sds-tls-key[TLS key for the SDS server]:' \
+    '--use-node-port[use NodePort instead of LoadBalancer]' \
+    '--zone[set the Kuma zone name]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
@@ -736,6 +740,7 @@ function _kumactl_install_ingress {
     '--image-pull-policy[image pull policy for Ingress]:' \
     '--kuma-cp-address[the address of Kuma CP]:' \
     '--namespace[namespace to install Ingress to]:' \
+    '--use-node-port[use NodePort instead of LoadBalancer]' \
     '--version[version of Ingress component]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \

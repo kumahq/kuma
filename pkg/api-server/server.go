@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	"github.com/Kong/kuma/pkg/clusters/poller"
 
 	"github.com/emicklei/go-restful"
@@ -16,7 +18,6 @@ import (
 	"github.com/Kong/kuma/pkg/api-server/definitions"
 	"github.com/Kong/kuma/pkg/config"
 	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
-	config_core "github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/manager"
@@ -29,6 +30,10 @@ var (
 
 type ApiServer struct {
 	server *http.Server
+}
+
+func (a *ApiServer) NeedLeaderElection() bool {
+	return false
 }
 
 func (a *ApiServer) Address() string {
@@ -170,10 +175,17 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	if cfg.Mode == config_core.Local {
-		for _, definition := range definitions.All {
-			if definition.ResourceFactory().GetType() != mesh.DataplaneType {
-				definition.ReadOnly = true
+	if cfg.Mode.Mode != mode.Standalone {
+		for i, definition := range definitions.All {
+			switch cfg.Mode.Mode {
+			case mode.Global:
+				if definition.ResourceFactory().GetType() == mesh.DataplaneType {
+					definitions.All[i].ReadOnly = true
+				}
+			case mode.Remote:
+				if definition.ResourceFactory().GetType() != mesh.DataplaneType {
+					definitions.All[i].ReadOnly = true
+				}
 			}
 		}
 	}

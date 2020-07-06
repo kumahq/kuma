@@ -28,6 +28,9 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 	autoconfigureCatalog(cfg)
 	autoconfigureGui(cfg)
 	autoconfigBootstrapXdsParams(cfg)
+	if err := autoconfigureKds(cfg); err != nil {
+		return err
+	}
 	return autoconfigureSds(cfg)
 }
 
@@ -101,6 +104,28 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 			cfg.SdsServer.TlsKeyFile = keyFile
 
 			autoconfigureLog.Info("auto-generated TLS certificate for SDS server", "crtFile", crtFile, "keyFile", keyFile)
+		}
+	}
+	return nil
+}
+
+func autoconfigureKds(cfg *kuma_cp.Config) error {
+	// to improve UX, we want to auto-generate TLS cert for KDS if possible
+	if cfg.Environment == config_core.UniversalEnvironment {
+		if cfg.KDS.Server.TlsCertFile == "" {
+			hosts := []string{}
+			kdsCert, err := tls.NewSelfSignedCert("kuma-kds", tls.ServerCertType, hosts...)
+			if err != nil {
+				return errors.Wrap(err, "failed to auto-generate TLS certificate for KDS server")
+			}
+			crtFile, keyFile, err := saveKeyPair(kdsCert)
+			if err != nil {
+				return errors.Wrap(err, "failed to save auto-generated TLS certificate for KDS server")
+			}
+			cfg.KDS.Server.TlsCertFile = crtFile
+			cfg.KDS.Server.TlsKeyFile = keyFile
+
+			autoconfigureLog.Info("auto-generated TLS certificate for KDS server", "crtFile", crtFile, "keyFile", keyFile)
 		}
 	}
 	return nil

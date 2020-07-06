@@ -11,7 +11,7 @@ metadata:
   name: kuma-ingress
   namespace: kuma-system
 spec:
-  type: NodePort
+  type: LoadBalancer
   ports:
     - port: 10001
       protocol: TCP

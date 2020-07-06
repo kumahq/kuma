@@ -3,6 +3,8 @@ package install
 import (
 	"fmt"
 
+	"github.com/Kong/kuma/pkg/config/mode"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -12,7 +14,6 @@ import (
 	controlplane "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/control-plane"
 	kumacni "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
 	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
-	"github.com/Kong/kuma/pkg/config/core"
 	"github.com/Kong/kuma/pkg/tls"
 	kuma_version "github.com/Kong/kuma/pkg/version"
 )
@@ -36,10 +37,14 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		DataplaneInitImage      string
 		SdsTlsCert              string
 		SdsTlsKey               string
+		KdsTlsCert              string
+		KdsTlsKey               string
 		CNIEnabled              bool
 		CNIImage                string
 		CNIVersion              string
 		KumaCpMode              string
+		Zone                    string
+		GlobalRemotePortType    string
 	}{
 		Namespace:               "kuma-system",
 		ImagePullPolicy:         "IfNotPresent",
@@ -55,15 +60,24 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		SdsTlsKey:               "",
 		CNIImage:                "lobkovilya/install-cni",
 		CNIVersion:              "0.0.1",
-		KumaCpMode:              core.Standalone,
+		KumaCpMode:              mode.Standalone,
+		Zone:                    "",
+		GlobalRemotePortType:    "LoadBalancer",
 	}
+	useNodePort := false
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
 		Long:  `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := core.ValidateCpMode(args.KumaCpMode); err != nil {
+			if err := mode.ValidateCpMode(args.KumaCpMode); err != nil {
 				return err
+			}
+			if args.KumaCpMode == mode.Remote && args.Zone == "" {
+				return errors.Errorf("--zone is mandatory with `remote` mode")
+			}
+			if useNodePort && args.KumaCpMode != mode.Standalone {
+				args.GlobalRemotePortType = "NodePort"
 			}
 			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
 				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
@@ -95,6 +109,22 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				args.SdsTlsKey = string(sdsCert.KeyPEM)
 			} else if args.SdsTlsCert == "" || args.SdsTlsKey == "" {
 				return errors.Errorf("SDS: both TLS Cert and TLS Key must be provided at the same time")
+			}
+
+			if args.KdsTlsCert == "" && args.KdsTlsKey == "" {
+				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
+				hosts := []string{
+					fqdn,
+					"localhost",
+				}
+				kdsCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
+				if err != nil {
+					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
+				}
+				args.KdsTlsCert = string(kdsCert.CertPEM)
+				args.KdsTlsKey = string(kdsCert.KeyPEM)
+			} else if args.KdsTlsCert == "" || args.KdsTlsKey == "" {
+				return errors.Errorf("KDS: both TLS Cert and TLS Key must be provided at the same time")
 			}
 
 			templateFiles, err := data.ReadFiles(controlplane.Templates)
@@ -139,9 +169,13 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.DataplaneInitImage, "dataplane-init-image", args.DataplaneInitImage, "init image of the Kuma Dataplane component")
 	cmd.Flags().StringVar(&args.SdsTlsCert, "sds-tls-cert", args.SdsTlsCert, "TLS certificate for the SDS server")
 	cmd.Flags().StringVar(&args.SdsTlsKey, "sds-tls-key", args.SdsTlsKey, "TLS key for the SDS server")
+	cmd.Flags().StringVar(&args.KdsTlsCert, "kds-tls-cert", args.KdsTlsCert, "TLS certificate for the KDS server")
+	cmd.Flags().StringVar(&args.KdsTlsKey, "kds-tls-key", args.KdsTlsKey, "TLS key for the KDS server")
 	cmd.Flags().BoolVar(&args.CNIEnabled, "cni-enabled", args.CNIEnabled, "install Kuma with CNI instead of proxy init container")
 	cmd.Flags().StringVar(&args.CNIImage, "cni-image", args.CNIImage, "image of Kuma CNI component, if CNIEnabled equals true")
 	cmd.Flags().StringVar(&args.CNIVersion, "cni-version", args.CNIVersion, "version of the CNIImage")
-	cmd.Flags().StringVar(&args.KumaCpMode, "mode", args.KumaCpMode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "local", "global"))
+	cmd.Flags().StringVar(&args.KumaCpMode, "mode", args.KumaCpMode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
+	cmd.Flags().StringVar(&args.Zone, "zone", args.Zone, "set the Kuma zone name")
+	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	return cmd
 }
