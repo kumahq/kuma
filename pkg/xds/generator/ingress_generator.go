@@ -152,6 +152,7 @@ func TagPermutations(service string, tags map[string]string, keysAndValues ...st
 	for k, v := range tags {
 		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
 	}
+	sort.Strings(pairs)
 	rv := []string{}
 	additionalPairs := []string{}
 	for i := 0; i < len(keysAndValues); {

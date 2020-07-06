@@ -115,10 +115,6 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: db
-                metadataMatch:
-                  filterMetadata:
-                    envoy.lb:
-                      mesh: demo
                 statPrefix: db
       name: outbound:127.0.0.1:54321
       trafficDirection: OUTBOUND
@@ -137,10 +133,6 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: elastic
-                metadataMatch:
-                  filterMetadata:
-                    envoy.lb:
-                      mesh: demo
                 statPrefix: elastic
       name: outbound:127.0.0.1:59200
       trafficDirection: OUTBOUND
@@ -151,12 +143,6 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
-      lbSubsetConfig:
-        fallbackPolicy: ANY_ENDPOINT
-        subsetSelectors:
-          - fallbackPolicy: NO_FALLBACK
-            keys:
-              - mesh
       name: db
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -208,12 +194,6 @@ resources:
           tcpHealthCheck: {}
           timeout: 4s
           unhealthyThreshold: 3
-      lbSubsetConfig:
-        fallbackPolicy: ANY_ENDPOINT
-        subsetSelectors:
-          - fallbackPolicy: NO_FALLBACK
-            keys:
-              - mesh
       name: elastic
       transportSocket:
         name: envoy.transport_sockets.tls

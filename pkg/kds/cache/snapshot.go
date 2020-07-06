@@ -106,7 +106,7 @@ func (s *Snapshot) WithVersion(typ string, version string) util_xds.Snapshot {
 }
 
 // IndexResourcesByName creates a map from the resource name to the resource. Name should be unique
-// across meshes that's why Name is "name.mesh"
+// across meshes that's why Name is <name>.<mesh>
 func IndexResourcesByName(items []envoy_types.Resource) map[string]envoy_types.Resource {
 	indexed := make(map[string]envoy_types.Resource, len(items))
 	for _, item := range items {

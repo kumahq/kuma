@@ -21,13 +21,3 @@ func GetDataplanes(ctx context.Context, rm manager.ReadOnlyResourceManager, mesh
 	}
 	return rv, nil
 }
-
-func FilterDataplanesByMesh(dataplanes *core_mesh.DataplaneResourceList, mesh string) *core_mesh.DataplaneResourceList {
-	rv := &core_mesh.DataplaneResourceList{}
-	for _, d := range dataplanes.Items {
-		if d.GetMeta().GetMesh() == mesh {
-			_ = rv.AddItem(d)
-		}
-	}
-	return rv
-}

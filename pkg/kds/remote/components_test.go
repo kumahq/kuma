@@ -26,7 +26,7 @@ import (
 
 var _ = Describe("Remote Sync", func() {
 
-	remoteZone := "cluster-1"
+	remoteZone := "zone-1"
 
 	consumedTypes := []model.ResourceType{mesh.DataplaneType, mesh.MeshType, mesh.TrafficPermissionType}
 	newPolicySink := func(zone string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream) component.Component {
@@ -36,8 +36,7 @@ var _ = Describe("Remote Sync", func() {
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {
-			err := comp.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
+			_ = comp.Start(stop)
 		}()
 	}
 	ingressFunc := func(zone string) mesh_proto.Dataplane {
@@ -71,6 +70,7 @@ var _ = Describe("Remote Sync", func() {
 	BeforeEach(func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
+		wg.Add(1)
 		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, global.ProvidedFilter)
 
 		stop := make(chan struct{})
@@ -124,9 +124,6 @@ var _ = Describe("Remote Sync", func() {
 		actual := mesh.DataplaneResourceList{}
 		err = remoteStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
-		for _, item := range actual.Items {
-			fmt.Println(item)
-		}
 		closeFunc()
 	})
 })
