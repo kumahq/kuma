@@ -7,15 +7,15 @@ import (
 )
 
 // GetOutboundTargets resolves all endpoints reachable from a given dataplane.
-func GetOutboundTargets(destinations core_xds.DestinationMap, dataplanes *mesh_core.DataplaneResourceList, localClusterName string) (core_xds.EndpointMap, error) {
+func GetOutboundTargets(destinations core_xds.DestinationMap, dataplanes *mesh_core.DataplaneResourceList, localClusterName, mesh string) (core_xds.EndpointMap, error) {
 	if len(destinations) == 0 {
 		return nil, nil
 	}
-	return BuildEndpointMap(destinations, dataplanes.Items, localClusterName), nil
+	return BuildEndpointMap(destinations, dataplanes.Items, localClusterName, mesh), nil
 }
 
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
-func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_core.DataplaneResource, zone string) core_xds.EndpointMap {
+func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_core.DataplaneResource, zone, mesh string) core_xds.EndpointMap {
 	if len(destinations) == 0 {
 		return nil
 	}
@@ -24,7 +24,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 		if dataplane.Spec.IsIngress() {
 			if dataplane.Spec.IsRemoteIngress(zone) {
 				for _, ingress := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
-					if ingress.Mesh != dataplane.GetMeta().GetMesh() {
+					if ingress.Mesh != mesh {
 						continue
 					}
 					service := ingress.Tags[mesh_proto.ServiceTag]
