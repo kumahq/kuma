@@ -211,7 +211,8 @@ type Dataplane_Networking_Ingress_AvailableService struct {
 	// tags of the service
 	Tags map[string]string `protobuf:"bytes,1,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// number of instances available for given tags
-	Instances            uint32   `protobuf:"varint,2,opt,name=instances,proto3" json:"instances,omitempty"`
+	Instances uint32 `protobuf:"varint,2,opt,name=instances,proto3" json:"instances,omitempty"`
+	// mesh of the instances available for given tags
 	Mesh                 string   `protobuf:"bytes,3,opt,name=mesh,proto3" json:"mesh,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

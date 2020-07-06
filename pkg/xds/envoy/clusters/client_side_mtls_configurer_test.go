@@ -160,7 +160,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
             transportSocketMatches:
             - match:
                 cluster: "1"
-              name: backend{cluster=1}
+              name: backend{cluster=1,mesh=default}
               transportSocket:
                 name: envoy.transport_sockets.tls
                 typedConfig:
@@ -196,10 +196,10 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-control-plane:5677
-                  sni: backend{cluster=1}
+                  sni: backend{cluster=1,mesh=default}
             - match:
                 cluster: "2"
-              name: backend{cluster=2}
+              name: backend{cluster=2,mesh=default}
               transportSocket:
                 name: envoy.transport_sockets.tls
                 typedConfig:
@@ -235,7 +235,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-control-plane:5677
-                  sni: backend{cluster=2}
+                  sni: backend{cluster=2,mesh=default}
             type: EDS`,
 		}),
 		Entry("cluster with mTLS and credentials", testCase{
@@ -332,7 +332,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
-                sni: backend{version=v1}
+                sni: backend{mesh=default,version=v1}
             type: EDS`,
 		}),
 	)
