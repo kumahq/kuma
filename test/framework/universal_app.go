@@ -25,7 +25,7 @@ const (
 	IngressDataplane = `
 type: Dataplane
 mesh: default
-name: ingress-01
+name: dp-ingress
 networking:
   address: %s
   ingress: {}
@@ -94,7 +94,7 @@ type UniversalApp struct {
 	verbose      bool
 }
 
-func NewUniversalApp(t testing.TestingT, mode AppMode, verbose bool, env []string, args []string) *UniversalApp {
+func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, env []string, args []string) *UniversalApp {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
@@ -109,6 +109,7 @@ func NewUniversalApp(t testing.TestingT, mode AppMode, verbose bool, env []strin
 	}
 
 	opts := defaultDockerOptions
+	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
 	container := docker.RunAndGetID(t, kumaUniversalImage, &opts)
 
@@ -167,7 +168,7 @@ func (s *UniversalApp) ReStart() error {
 func (s *UniversalApp) CreateMainApp(env []string, args []string) {
 	s.mainAppEnv = env
 	s.mainAppArgs = args
-	s.mainApp = NewSshApp(true, s.ports[sshPort], env, args)
+	s.mainApp = NewSshApp(s.verbose, s.ports[sshPort], env, args)
 }
 
 func (s *UniversalApp) CreateDP(token, cpAddress, appname string) {

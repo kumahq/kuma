@@ -2,15 +2,13 @@ package framework
 
 import (
 	"fmt"
-	"strings"
-
+	config_mode "github.com/Kong/kuma/pkg/config/mode"
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"go.uber.org/multierr"
-
-	config_mode "github.com/Kong/kuma/pkg/config/mode"
+	"strings"
 )
 
 const (
@@ -59,15 +57,21 @@ func (c *UniversalCluster) DeployKuma(mode ...string) error {
 		args = append(args, "--config-file", confPath)
 	}
 
-	c.apps[AppModeCP] = NewUniversalApp(c.t, AppModeCP, true,
+	c.apps[AppModeCP] = NewUniversalApp(c.t, c.name, AppModeCP, true,
 		env, args)
 	err := c.apps[AppModeCP].mainApp.Start()
 	if err != nil {
 		return err
 	}
 
+	kumacpURL := "http://localhost:" + c.apps[AppModeCP].ports["5681"]
+	err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
+	if err != nil {
+		return err
+	}
+
 	switch mode[0] {
-	case config_mode.Global:
+	case config_mode.Remote:
 		dpyaml := fmt.Sprintf(IngressDataplane, c.apps[AppModeCP].ip, kdsPort)
 		err = c.CreateDP(c.apps[AppModeCP], "ingress", dpyaml)
 		if err != nil {
@@ -75,8 +79,7 @@ func (c *UniversalCluster) DeployKuma(mode ...string) error {
 		}
 	}
 
-	kumacpURL := "http://localhost:" + c.apps[AppModeCP].ports["5681"]
-	return c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
+	return nil
 }
 
 func (c *UniversalCluster) GetKuma() ControlPlane {
@@ -121,19 +124,24 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml string) error {
 	// apply the dataplane
-	err := c.controlplane.kumactl.KumactlApplyFromString(fmt.Sprint(dpyaml))
+	err := c.controlplane.kumactl.KumactlApplyFromString(dpyaml)
 	if err != nil {
 		return err
 	}
 
 	// generate the token on the CP node
-	token, _ := NewSshApp(c.verbose, c.apps[AppModeCP].ip, []string{}, []string{"curl",
+	sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
 		"-H", "\"Content-Type: application/json\"",
 		"--data", "'{\"name\": \"dp-" + appname + "\", \"mesh\": \"default\"}'",
-		"http://localhost:" + c.apps[AppModeCP].ports["5679"] + "/tokens"}).cmd.Output()
+		"http://localhost:5679/tokens"})
+	if err := sshApp.Run(); err != nil {
+		return err
+	}
+
+	token := sshApp.Out()
 
 	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
-	app.CreateDP(string(token), cpAddress, appname)
+	app.CreateDP(token, cpAddress, appname)
 
 	return app.dpApp.Start()
 }
@@ -149,7 +157,7 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 		return errors.Errorf("not supported app type %s", appname)
 	}
 
-	app := NewUniversalApp(c.t, AppMode(appname), c.verbose, []string{}, args)
+	app := NewUniversalApp(c.t, c.name, AppMode(appname), c.verbose, []string{}, args)
 	err := app.mainApp.Start()
 	if err != nil {
 		return err
