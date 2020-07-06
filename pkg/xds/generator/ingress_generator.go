@@ -68,7 +68,8 @@ func (_ IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource) (*en
 	permUsed := map[string]bool{}
 	for _, inbound := range ingress.Spec.GetNetworking().GetIngress().GetAvailableServices() {
 		service := inbound.Tags[mesh_proto.ServiceTag]
-		permutations := TagPermutations(service, mesh_proto.SingleValueTagSet(inbound.GetTags()).Exclude(mesh_proto.ServiceTag))
+		withoutService := mesh_proto.SingleValueTagSet(inbound.GetTags()).Exclude(mesh_proto.ServiceTag)
+		permutations := TagPermutations(service, withoutService, "mesh", inbound.GetMesh())
 		for _, perm := range permutations {
 			if permUsed[perm] {
 				continue
@@ -79,7 +80,7 @@ func (_ IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource) (*en
 					Configure(envoy_listeners.FilterChainMatch(perm)).
 					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
 						ClusterName: service,
-						Tags:        envoy_tls.TagsFromSNI(perm),
+						Tags:        envoy_common.Tags(envoy_tls.TagsFromSNI(perm)).WithTags("mesh", inbound.GetMesh()),
 					}))))
 		}
 	}
@@ -146,15 +147,26 @@ func (_ IngressGenerator) generateEDS(proxy *model.Proxy, services []string) (re
 	return
 }
 
-func TagPermutations(service string, tags map[string]string) []string {
+func TagPermutations(service string, tags map[string]string, keysAndValues ...string) []string {
 	pairs := []string{}
 	for k, v := range tags {
 		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
 	}
-	sort.Strings(pairs)
 	rv := []string{}
-	for _, tagSet := range Permutation(pairs) {
-		rv = append(rv, fmt.Sprintf("%s{%s}", service, strings.Join(tagSet, ",")))
+	additionalPairs := []string{}
+	for i := 0; i < len(keysAndValues); {
+		key, value := keysAndValues[i], keysAndValues[i+1]
+		additionalPairs = append(additionalPairs, fmt.Sprintf("%s=%s", key, value))
+		i += 2
 	}
-	return append(rv, service)
+	for _, tagSet := range Permutation(pairs) {
+		tags := append(additionalPairs, tagSet...)
+		sort.Strings(tags)
+		if len(tags) != 0 {
+			rv = append(rv, fmt.Sprintf("%s{%s}", service, strings.Join(tags, ",")))
+		} else {
+			rv = append(rv, service)
+		}
+	}
+	return rv
 }

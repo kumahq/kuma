@@ -92,19 +92,20 @@ var _ = Describe("Ingress Dataplane", func() {
 			},
 			expected: `
             - instances: 1
+              mesh: default
               tags:
-                mesh: default
                 service: backend
                 region: eu
                 version: "1"
             - instances: 2
+              mesh: default
               tags:
-                mesh: default
                 service: backend
                 region: us
                 version: "2"
 `,
-		}))
+		}),
+	)
 
 	It("should not update store if ingress haven't changed", func() {
 		ctx := context.Background()
@@ -121,8 +122,8 @@ var _ = Describe("Ingress Dataplane", func() {
 									"service": "backend",
 									"version": "v1",
 									"region":  "eu",
-									"mesh":    "mesh1",
 								},
+								Mesh: "mesh1",
 							},
 							{
 								Instances: 2,
@@ -130,8 +131,8 @@ var _ = Describe("Ingress Dataplane", func() {
 									"service": "web",
 									"version": "v2",
 									"region":  "us",
-									"mesh":    "mesh1",
 								},
+								Mesh: "mesh1",
 							},
 						},
 					},
@@ -192,5 +193,150 @@ var _ = Describe("Ingress Dataplane", func() {
 		err := ingress.UpdateAvailableServices(ctx, mgr, ing, others)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mgr.updCounter).To(Equal(0))
+	})
+
+	It("should generate available services for multiple meshes", func() {
+		dataplanes := []*core_mesh.DataplaneResource{
+			{
+				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags: map[string]string{
+									"service": "backend",
+									"version": "v1",
+									"region":  "eu",
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Meta: &model2.ResourceMeta{Mesh: "mesh2"},
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags: map[string]string{
+									"service": "web",
+									"version": "v2",
+									"region":  "us",
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Meta: &model2.ResourceMeta{Mesh: "mesh2"},
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags: map[string]string{
+									"service": "web",
+									"version": "v1",
+									"region":  "eu",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		expectedAvailableServices := []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+			{
+				Instances: 1,
+				Tags: map[string]string{
+					"service": "backend",
+					"version": "v1",
+					"region":  "eu",
+				},
+				Mesh: "mesh1",
+			},
+			{
+				Instances: 1,
+				Tags: map[string]string{
+					"service": "web",
+					"version": "v1",
+					"region":  "eu",
+				},
+				Mesh: "mesh2",
+			},
+			{
+				Instances: 1,
+				Tags: map[string]string{
+					"service": "web",
+					"version": "v2",
+					"region":  "us",
+				},
+				Mesh: "mesh2",
+			},
+		}
+
+		actual := ingress.GetIngressAvailableServices(dataplanes)
+		Expect(actual).To(Equal(expectedAvailableServices))
+	})
+
+	It("should generate available services for multiple meshes with the same tags", func() {
+		dataplanes := []*core_mesh.DataplaneResource{
+			{
+				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags: map[string]string{
+									"service": "backend",
+									"version": "v1",
+									"region":  "eu",
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Meta: &model2.ResourceMeta{Mesh: "mesh2"},
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags: map[string]string{
+									"service": "backend",
+									"version": "v1",
+									"region":  "eu",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		expectedAvailableServices := []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+			{
+				Instances: 1,
+				Tags: map[string]string{
+					"service": "backend",
+					"version": "v1",
+					"region":  "eu",
+				},
+				Mesh: "mesh1",
+			},
+			{
+				Instances: 1,
+				Tags: map[string]string{
+					"service": "backend",
+					"version": "v1",
+					"region":  "eu",
+				},
+				Mesh: "mesh2",
+			},
+		}
+
+		actual := ingress.GetIngressAvailableServices(dataplanes)
+		Expect(actual).To(Equal(expectedAvailableServices))
 	})
 })

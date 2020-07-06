@@ -4,7 +4,6 @@ import (
 	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/xds/envoy"
 )
 
 // GetOutboundTargets resolves all endpoints reachable from a given dataplane.
@@ -25,6 +24,9 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 		if dataplane.Spec.IsIngress() {
 			if dataplane.Spec.IsRemoteIngress(zone) {
 				for _, ingress := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
+					if ingress.Mesh != dataplane.GetMeta().GetMesh() {
+						continue
+					}
 					service := ingress.Tags[mesh_proto.ServiceTag]
 					selectors, ok := destinations[service]
 					if !ok {
@@ -48,8 +50,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 				if !ok {
 					continue
 				}
-				withMesh := envoy.Tags(inbound.Tags).WithTags("mesh", dataplane.GetMeta().GetMesh())
-				if !selectors.Matches(withMesh) {
+				if !selectors.Matches(inbound.Tags) {
 					continue
 				}
 				iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
@@ -58,7 +59,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 				outbound[service] = append(outbound[service], core_xds.Endpoint{
 					Target: iface.DataplaneIP,
 					Port:   iface.DataplanePort,
-					Tags:   withMesh,
+					Tags:   inbound.Tags,
 					Weight: 1,
 				})
 			}

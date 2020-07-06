@@ -130,7 +130,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 						return err
 					}
 					destinations := ingress.BuildDestinationMap(dataplane)
-					endpoints := xds_topology.BuildEndpointMap(destinations, allMeshDataplanes.Items, rt.Config().Mode.Remote.Zone)
+					endpoints := ingress.BuildEndpointMap(destinations, allMeshDataplanes.Items)
 					proxy := xds.Proxy{
 						Id:              proxyID,
 						Dataplane:       dataplane,
@@ -166,10 +166,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 						return err
 					}
 				}
-
-				// Ingresses contains Services from all meshes, split them into several ingresses each of them in charge of only one mesh
-				dataplanes = ingress.SplitIngressesByMeshAndFlatten(dataplanes)
-				dataplanes = xds_topology.FilterDataplanesByMesh(dataplanes, dataplane.Meta.GetMesh())
 
 				// pick a single the most specific route for each outbound interface
 				routes, err := xds_topology.GetRoutes(ctx, dataplane, rt.ReadOnlyResourceManager())
