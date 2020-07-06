@@ -4913,7 +4913,7 @@ spec:
         runAsUser: 472
       containers:
         - name: grafana
-          image: "grafana/grafana:7.0.3"
+          image: "grafana/grafana:7.0.5"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
