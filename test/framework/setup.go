@@ -24,6 +24,17 @@ func Yaml(yaml string) InstallFunc {
 	}
 }
 
+func YamlUniversal(yaml string) InstallFunc {
+	return func(cluster Cluster) error {
+		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
+			func() (s string, err error) {
+				kumactl := cluster.GetKumactlOptions()
+				return "", kumactl.KumactlApplyFromString(yaml)
+			})
+		return err
+	}
+}
+
 func YamlPath(path string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource by path", DefaultRetries, DefaultTimeout,

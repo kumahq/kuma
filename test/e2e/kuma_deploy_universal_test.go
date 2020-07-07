@@ -11,6 +11,26 @@ import (
 
 var _ = Describe("Test Universal deployment", func() {
 
+	meshDefaulMtlsOn := `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+`
+	trafficPermissionAll := `
+type: TrafficPermission
+name: traffic-permission-all
+mesh: default
+sources:
+- match:
+   service: "*"
+destinations:
+- match:
+   service: "*"
+`
 	var global, remote_1, remote_2 Cluster
 
 	BeforeEach(func() {
@@ -36,7 +56,6 @@ var _ = Describe("Test Universal deployment", func() {
 
 		err = NewClusterSetup().
 			Install(Kuma(mode.Remote)).
-			Install(EchoServerUniversal()).
 			Install(DemoClientUniversal()).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
@@ -64,6 +83,13 @@ var _ = Describe("Test Universal deployment", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.RestartKuma()
+		Expect(err).ToNot(HaveOccurred())
+
+		// remove these once Zones are added dynamically
+		err = YamlUniversal(meshDefaulMtlsOn)(global)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = YamlUniversal(trafficPermissionAll)(global)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
