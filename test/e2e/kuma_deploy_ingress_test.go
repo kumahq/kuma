@@ -135,7 +135,7 @@ spec:
 		_ = k8s.KubectlDeleteFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
 	})
 
-	FIt("should deploy ingress", func() {
+	It("should deploy ingress", func() {
 		pods, err := k8s.ListPodsE(
 			c2.GetTesting(),
 			c2.GetKubectlOptions(TestNamespace),
