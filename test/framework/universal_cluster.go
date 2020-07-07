@@ -2,13 +2,15 @@ package framework
 
 import (
 	"fmt"
-	config_mode "github.com/Kong/kuma/pkg/config/mode"
+	"strings"
+
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"go.uber.org/multierr"
-	"strings"
+
+	config_mode "github.com/Kong/kuma/pkg/config/mode"
 )
 
 const (

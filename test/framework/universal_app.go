@@ -173,7 +173,7 @@ func (s *UniversalApp) CreateMainApp(env []string, args []string) {
 
 func (s *UniversalApp) CreateDP(token, cpAddress, appname string) {
 	// and echo it to the Application Node
-	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"echo", token, ">", "/kuma/token-" + appname}).Run()
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
 		panic(err)
 	}
