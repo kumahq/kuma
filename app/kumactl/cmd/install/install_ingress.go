@@ -25,7 +25,7 @@ func newInstallIngressCmd() *cobra.Command {
 		Image:           "kong-docker-kuma-docker.bintray.io/kuma-dp",
 		Version:         kuma_version.Build.Version,
 		ImagePullPolicy: "IfNotPresent",
-		Mesh:            "kuma-system",
+		Mesh:            "default",
 		DrainTime:       "30s",
 		KumaCpAddress:   "http://kuma-control-plane.kuma-system:5681",
 		IngressPortType: "LoadBalancer",
