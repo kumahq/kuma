@@ -108,9 +108,9 @@ spec:
 
 		err = NewClusterSetup().
 			Install(Kuma()).
-			Install(Yaml(meshWithProvidedCA)).
-			Install(Yaml(trafficPermission)).
-			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
+			Install(YamlK8s(meshWithProvidedCA)).
+			Install(YamlK8s(trafficPermission)).
+			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(EchoServerK8s()).
 			Install(Ingress(&ingress)).
 			Setup(c1)
@@ -118,12 +118,12 @@ spec:
 
 		err = NewClusterSetup().
 			Install(Kuma()).
-			Install(Yaml(meshWithProvidedCA)).
-			Install(Yaml(trafficPermission)).
-			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
+			Install(YamlK8s(meshWithProvidedCA)).
+			Install(YamlK8s(trafficPermission)).
+			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
-			Install(Yaml(headlessService(TestNamespace, ingress.Port))).
-			Install(Yaml(fakeDpForOutbound(TestNamespace, ingress.IP, ingress.Port))).
+			Install(YamlK8s(headlessService(TestNamespace, ingress.Port))).
+			Install(YamlK8s(fakeDpForOutbound(TestNamespace, ingress.IP, ingress.Port))).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 	})

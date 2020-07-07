@@ -37,7 +37,7 @@ metadata:
 		err = NewClusterSetup().
 			Install(Kuma()).
 			Install(KumaDNS()).
-			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
+			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Install(EchoServerK8s()).
 			Setup(c1)

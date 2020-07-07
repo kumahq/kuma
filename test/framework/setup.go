@@ -14,7 +14,7 @@ import (
 
 type InstallFunc func(cluster Cluster) error
 
-func Yaml(yaml string) InstallFunc {
+func YamlK8s(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
 			func() (s string, err error) {
@@ -35,7 +35,7 @@ func YamlUniversal(yaml string) InstallFunc {
 	}
 }
 
-func YamlPath(path string) InstallFunc {
+func YamlPathK8s(path string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource by path", DefaultRetries, DefaultTimeout,
 			func() (s string, err error) {
@@ -96,7 +96,7 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 func EchoServerK8s() InstallFunc {
 	const name = "echo-server"
 	return Combine(
-		YamlPath(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
+		YamlPathK8s(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
 		WaitService(TestNamespace, name),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
@@ -122,7 +122,7 @@ func Ingress(ingress *IngressDesc) InstallFunc {
 			return err
 		}
 		return Combine(
-			Yaml(yaml),
+			YamlK8s(yaml),
 			WaitService(kumaNamespace, name),
 			WaitNumPods(1, name),
 			WaitPodsAvailable(kumaNamespace, name),
@@ -157,7 +157,7 @@ func Ingress(ingress *IngressDesc) InstallFunc {
 func DemoClientK8s() InstallFunc {
 	const name = "demo-client"
 	return Combine(
-		YamlPath(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
+		YamlPathK8s(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
 		WaitService(TestNamespace, name),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
