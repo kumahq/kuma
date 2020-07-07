@@ -45,7 +45,7 @@ var (
 
 func SetupServer(rt runtime.Runtime) error {
 	hasher, cache := kds_server.NewXdsContext(kdsGlobalLog)
-	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter)
+	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, ProvidedFilter)
 	versioner := kds_server.NewVersioner()
 	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := kds_server.NewSyncTracker(kdsGlobalLog, reconciler, rt.Config().KDS.Server.RefreshInterval)
@@ -57,8 +57,8 @@ func SetupServer(rt runtime.Runtime) error {
 	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDS.Server))
 }
 
-// providedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
-func providedFilter(clusterID string, r model.Resource) bool {
+// ProvidedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
+func ProvidedFilter(clusterID string, r model.Resource) bool {
 	if r.GetType() != mesh.DataplaneType {
 		return true
 	}

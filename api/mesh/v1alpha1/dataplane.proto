@@ -26,6 +26,8 @@ message Dataplane {
         map<string, string> tags = 1;
         // number of instances available for given tags
         uint32 instances = 2;
+        // mesh of the instances available for given tags
+        string mesh = 3;
       }
       repeated AvailableService availableServices = 1;
     }

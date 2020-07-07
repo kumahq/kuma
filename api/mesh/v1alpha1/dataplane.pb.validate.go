@@ -687,6 +687,8 @@ func (m *Dataplane_Networking_Ingress_AvailableService) Validate() error {
 
 	// no validation rules for Instances
 
+	// no validation rules for Mesh
+
 	return nil
 }
 

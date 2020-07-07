@@ -68,7 +68,7 @@ var _ = Describe("Snapshot", func() {
 				Build("v1")
 			// then
 			expected := map[string]envoy_types.Resource{
-				"mesh1": resources,
+				"mesh1.mesh1": resources,
 			}
 			Expect(snapshot.GetResources(string(mesh_core.MeshType))).To(Equal(expected))
 		})

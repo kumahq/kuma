@@ -66,11 +66,13 @@ var _ = Describe("IngressGenerator", func() {
               address: 10.0.0.1
               ingress:
                 availableServices:
-                  - tags:
+                  - mesh: mesh1
+                    tags:
                       service: backend
                       version: v1
                       region: eu
-                  - tags:
+                  - mesh: mesh1
+                    tags:
                       service: backend
                       version: v2
                       region: us
