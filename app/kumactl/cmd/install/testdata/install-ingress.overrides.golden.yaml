@@ -38,7 +38,7 @@ spec:
     metadata:
       annotations:
         kuma.io/ingress: enabled
-        kuma.io/mesh: kuma-system
+        kuma.io/mesh: default
       labels:
         app: kuma-ingress
     spec:
@@ -59,7 +59,7 @@ spec:
             - name: KUMA_CONTROL_PLANE_API_SERVER_URL
               value: http://kuma.local:5681
             - name: KUMA_DATAPLANE_MESH
-              value: kuma-system
+              value: default
             - name: KUMA_DATAPLANE_NAME
               value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_ADMIN_PORT
