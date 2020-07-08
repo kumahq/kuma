@@ -44,7 +44,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      service: echo-server
+      service: echo-server_kuma-test_svc_%s
       protocol: http
 `
 	AppModeDemoClient   = "demo-client"
@@ -61,7 +61,9 @@ networking:
       service: demo-client
   outbound:
   - port: 4000
-    service: echo-server
+    service: echo-server_kuma-test_svc_%s
+  - port: 4001
+    service: echo-server_kuma-test_svc_%s
 `
 )
 

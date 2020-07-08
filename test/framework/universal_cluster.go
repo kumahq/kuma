@@ -169,9 +169,9 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 	dpyaml := ""
 	switch appname {
 	case AppModeEchoServer:
-		dpyaml = fmt.Sprintf(EchoServerDataplane, "dp-"+appname, ip, "8080", "80")
+		dpyaml = fmt.Sprintf(EchoServerDataplane, "dp-"+appname, ip, "8080", "80", "8080")
 	case AppModeDemoClient:
-		dpyaml = fmt.Sprintf(DemoClientDataplane, "dp-"+appname, ip, "13000", "3000")
+		dpyaml = fmt.Sprintf(DemoClientDataplane, "dp-"+appname, ip, "13000", "3000", "80", "8080")
 	}
 
 	err = c.CreateDP(app, appname, dpyaml)
