@@ -46,8 +46,6 @@ func (c *UniversalControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressA
 		return err
 	}
 
-	//time.Sleep(time.Second)
-
 	resultYAML, err := addGlobal(cat.Out(), lbAddress, kdsAddress, ingressAddress)
 	if err != nil {
 		return err
