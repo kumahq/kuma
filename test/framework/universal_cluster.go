@@ -59,23 +59,28 @@ func (c *UniversalCluster) DeployKuma(mode ...string) error {
 		args = append(args, "--config-file", confPath)
 	}
 
-	c.apps[AppModeCP] = NewUniversalApp(c.t, c.name, AppModeCP, true,
-		env, args)
-	err := c.apps[AppModeCP].mainApp.Start()
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, true, env, args)
 	if err != nil {
 		return err
 	}
 
-	kumacpURL := "http://localhost:" + c.apps[AppModeCP].ports["5681"]
+	err = app.mainApp.Start()
+	if err != nil {
+		return err
+	}
+
+	kumacpURL := "http://localhost:" + app.ports["5681"]
 	err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
 	if err != nil {
 		return err
 	}
 
+	c.apps[AppModeCP] = app
+
 	switch mode[0] {
 	case config_mode.Remote:
-		dpyaml := fmt.Sprintf(IngressDataplane, c.apps[AppModeCP].ip, kdsPort)
-		err = c.CreateDP(c.apps[AppModeCP], "ingress", dpyaml)
+		dpyaml := fmt.Sprintf(IngressDataplane, app.ip, kdsPort)
+		err = c.CreateDP(app, "ingress", dpyaml)
 		if err != nil {
 			return err
 		}
@@ -159,8 +164,12 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 		return errors.Errorf("not supported app type %s", appname)
 	}
 
-	app := NewUniversalApp(c.t, c.name, AppMode(appname), c.verbose, []string{}, args)
-	err := app.mainApp.Start()
+	app, err := NewUniversalApp(c.t, c.name, AppMode(appname), c.verbose, []string{}, args)
+	if err != nil {
+		return err
+	}
+
+	err = app.mainApp.Start()
 	if err != nil {
 		return err
 	}

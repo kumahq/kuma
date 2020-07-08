@@ -153,7 +153,9 @@ metadata:
 
 	AfterEach(func() {
 		_ = remote_1.DeleteKuma()
+		_ = k8s.KubectlDeleteFromStringE(remote_1.GetTesting(), remote_1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
 		_ = remote_2.DeleteKuma()
+		_ = k8s.KubectlDeleteFromStringE(remote_2.GetTesting(), remote_2.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
 		_ = remote_3.DeleteKuma()
 		_ = remote_4.DeleteKuma()
 		_ = global.DeleteKuma()

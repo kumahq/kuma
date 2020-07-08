@@ -55,6 +55,7 @@ metadata:
 		err = NewClusterSetup().
 			Install(Kuma(mode.Remote)).
 			Install(KumaDNS()).
+			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Install(EchoServerK8s()).

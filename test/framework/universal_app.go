@@ -96,7 +96,7 @@ type UniversalApp struct {
 	verbose      bool
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, env []string, args []string) *UniversalApp {
+func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, env []string, args []string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
@@ -114,7 +114,10 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
 	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
-	container := docker.RunAndGetID(t, kumaUniversalImage, &opts)
+	container, err := docker.RunAndGetIDE(t, kumaUniversalImage, &opts)
+	if err != nil {
+		return nil, err
+	}
 
 	app.container = container
 	app.ip = app.getIP()
@@ -126,7 +129,7 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 
 	app.CreateMainApp(env, args)
 
-	return app
+	return app, nil
 }
 
 func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
