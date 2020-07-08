@@ -66,8 +66,9 @@ resources:
                   - name: envoy.file_access_log
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-                      format: |
+                      format: |+
                         [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
+
                       path: /var/log
                 httpFilters:
                   - name: envoy.router
@@ -118,8 +119,9 @@ resources:
                         grpcService:
                           envoyGrpc:
                             clusterName: access_log_sink
-                        logName: |
+                        logName: |+
                           logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+
                 cluster: api-tcp
                 statPrefix: api-tcp
       name: outbound:127.0.0.1:40002
@@ -173,7 +175,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-          sni: api-http
+          sni: api-http{mesh=mesh1}
       type: EDS
   - name: api-tcp
     resource:
@@ -218,7 +220,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-          sni: api-tcp
+          sni: api-tcp{mesh=mesh1}
       type: EDS
   - name: backend
     resource:
@@ -263,7 +265,7 @@ resources:
                                 inlineBytes: MTIzNDU=
                           statPrefix: sds_identity_cert
                           targetUri: kuma-system:5677
-          sni: backend
+          sni: backend{mesh=mesh1}
       type: EDS
   - name: db
     resource:
@@ -282,7 +284,7 @@ resources:
       transportSocketMatches:
         - match:
             role: master
-          name: db{role=master}
+          name: db{mesh=mesh1,role=master}
           transportSocket:
             name: envoy.transport_sockets.tls
             typedConfig:
@@ -318,10 +320,10 @@ resources:
                                     inlineBytes: MTIzNDU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
-              sni: db{role=master}
+              sni: db{mesh=mesh1,role=master}
         - match:
             role: replica
-          name: db{role=replica}
+          name: db{mesh=mesh1,role=replica}
           transportSocket:
             name: envoy.transport_sockets.tls
             typedConfig:
@@ -357,7 +359,7 @@ resources:
                                     inlineBytes: MTIzNDU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
-              sni: db{role=replica}
+              sni: db{mesh=mesh1,role=replica}
       type: EDS
   - name: api-http
     resource:

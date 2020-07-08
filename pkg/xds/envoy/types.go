@@ -26,6 +26,19 @@ func (t Tags) WithoutTag(tag string) Tags {
 	return result
 }
 
+func (t Tags) WithTags(keysAndValues ...string) Tags {
+	result := Tags{}
+	for tagName, tagValue := range t {
+		result[tagName] = tagValue
+	}
+	for i := 0; i < len(keysAndValues); {
+		key, value := keysAndValues[i], keysAndValues[i+1]
+		result[key] = value
+		i += 2
+	}
+	return result
+}
+
 func (t Tags) Keys() []string {
 	var keys []string
 	for key := range t {

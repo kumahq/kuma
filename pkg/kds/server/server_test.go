@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Kong/kuma/pkg/kds/reconcile"
+
 	"github.com/Kong/kuma/pkg/core/resources/model"
 	kds_samples "github.com/Kong/kuma/pkg/test/kds/samples"
 	kds_setup "github.com/Kong/kuma/pkg/test/kds/setup"
@@ -44,7 +46,7 @@ var _ = Describe("KDS Server", func() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		stream := kds_setup.StartServer(s, wg, "test-cluster")
+		stream := kds_setup.StartServer(s, wg, "test-cluster", kds.SupportedTypes, reconcile.Any)
 
 		tc = &kds_verifier.TestContextImpl{
 			ResourceStore:      s,

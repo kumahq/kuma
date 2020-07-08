@@ -1,7 +1,9 @@
 package generator
 
 func Permutation(input []string) [][]string {
-	rv := [][]string{}
+	rv := [][]string{
+		{}, // empty permutation is also permutation
+	}
 	prev := [][]string{}
 	for i := 1; i <= len(input); i++ {
 		prev = permutationN(i, input, prev)

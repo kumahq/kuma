@@ -85,7 +85,6 @@ var _ = Describe("kumactl install ingress", func() {
 				"--version", "greatest",
 				"--image-pull-policy", "Never",
 				"--kuma-cp-address", "http://kuma.local:5681",
-				"--mesh", "non-default-mesh",
 				"--drain-time", "0s",
 				"--use-node-port",
 			},
