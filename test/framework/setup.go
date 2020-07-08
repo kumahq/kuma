@@ -116,6 +116,9 @@ type IngressDesc struct {
 
 func Ingress(ingress *IngressDesc) InstallFunc {
 	const name = "kuma-ingress"
+	if ingress == nil {
+		ingress = &IngressDesc{}
+	}
 	return func(c Cluster) error {
 		yaml, err := c.GetKumactlOptions().KumactlInstallIngress()
 		if err != nil {
