@@ -110,6 +110,7 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 
 	opts := defaultDockerOptions
 	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
+	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
 	container := docker.RunAndGetID(t, kumaUniversalImage, &opts)
 
