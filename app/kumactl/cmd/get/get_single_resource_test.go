@@ -19,17 +19,31 @@ import (
 
 	"github.com/Kong/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	"github.com/Kong/kuma/app/kumactl/pkg/resources"
+	"github.com/Kong/kuma/pkg/api-server/types"
 	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_store "github.com/Kong/kuma/pkg/core/resources/store"
 	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
+	kuma_version "github.com/Kong/kuma/pkg/version"
 )
+
+type testApiServerClient struct {
+}
+
+func (c *testApiServerClient) GetVersion() (*types.IndexResponse, error) {
+	return &types.IndexResponse{
+		Version: kuma_version.Build.Version,
+	}, nil
+}
 
 var _ = Describe("kumactl get [resource] NAME", func() {
 	var rootCtx *kumactl_cmd.RootContext
 	var rootCmd *cobra.Command
 	var outbuf, errbuf *bytes.Buffer
 	var store core_store.ResourceStore
+	var testClient *testApiServerClient
 	rootTime, _ := time.Parse(time.RFC3339, "2008-04-01T16:05:36.995Z")
+	var _ resources.ApiServerClient = &testApiServerClient{}
 	BeforeEach(func() {
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
@@ -50,6 +64,9 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 							},
 						},
 					}, nil
+				},
+				NewAPIServerClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ApiServerClient, error) {
+					return testClient, nil
 				},
 			},
 		}
