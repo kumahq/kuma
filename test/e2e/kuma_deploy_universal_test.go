@@ -104,12 +104,12 @@ destinations:
 
 	It("Should deploy two apps", func() {
 		stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4000")
+			"curl", "-v", "-m", "3", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		stdout, _, err = remote_2.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4000")
+			"curl", "-v", "-m", "3", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
