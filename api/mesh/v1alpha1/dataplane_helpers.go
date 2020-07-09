@@ -25,6 +25,7 @@ const (
 type InboundInterface struct {
 	DataplaneIP   string
 	DataplanePort uint32
+	WorkloadIP    string
 	WorkloadPort  uint32
 }
 
@@ -178,6 +179,11 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.DataplaneIP = inbound.Address
 	} else {
 		iface.DataplaneIP = n.Address
+	}
+	if inbound.ServiceAddress != "" {
+		iface.WorkloadIP = inbound.ServiceAddress
+	} else {
+		iface.WorkloadIP = "127.0.0.1"
 	}
 	if inbound.ServicePort != 0 {
 		iface.WorkloadPort = inbound.ServicePort

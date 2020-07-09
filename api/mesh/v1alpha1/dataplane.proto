@@ -48,6 +48,9 @@ message Dataplane {
       // Port of the service that requests will be forwarded to.
       uint32 servicePort = 4;
 
+      // Address of the service that requests will be forwarded to.
+      string serviceAddress = 6;
+
       // Address on which inbound listener will be exposed. Defaults to
       // networking.address.
       string address = 5;
