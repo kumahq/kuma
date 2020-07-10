@@ -40,6 +40,23 @@ type K8sControlPlane struct {
 	verbose    bool
 }
 
+const (
+	zoneTemplate = `
+apiVersion: kuma.io/v1alpha1
+kind: Zone
+mesh: default
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  remoteControlPlane:
+    publicAddress: %s
+  ingress:
+    publicAddress: %s
+  mesh: default
+`
+)
+
 func NewK8sControlPlane(t testing.TestingT, mode mode.CpMode, clusterName string,
 	kubeconfig string, cluster *K8sCluster,
 	loPort, hiPort uint32,
@@ -104,15 +121,6 @@ func (c *K8sControlPlane) AddCluster(name, rawurl, lbAddress string) error {
 		cfg.Mode.Global = mode.DefaultGlobalConfig()
 	}
 
-	parsed, err := url.Parse(rawurl)
-	if err != nil {
-		return err
-	}
-
-	cfg.Mode.Global.Zones = append(cfg.Mode.Global.Zones, &mode.ZoneConfig{
-		Remote:  mode.EndpointConfig{Address: rawurl},
-		Ingress: mode.EndpointConfig{Address: parsed.Host},
-	})
 	cfg.Mode.Global.LBAddress = lbAddress
 
 	yamlBytes, err := yaml.Marshal(&cfg)
@@ -123,6 +131,15 @@ func (c *K8sControlPlane) AddCluster(name, rawurl, lbAddress string) error {
 	kumaCM.Data["config.yaml"] = string(yamlBytes)
 
 	_, err = clientset.CoreV1().ConfigMaps("kuma-system").Update(context.TODO(), kumaCM, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+
+	parsed, err := url.Parse(rawurl)
+	if err != nil {
+		return err
+	}
+	err = c.kumactl.KumactlApplyFromString(fmt.Sprintf(zoneTemplate, name, "kuma-system", rawurl, parsed.Host))
 	if err != nil {
 		return err
 	}
