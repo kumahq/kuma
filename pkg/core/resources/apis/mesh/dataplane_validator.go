@@ -39,7 +39,8 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		err.AddErrorAt(path.Field("gateway"), result)
 	}
 	for i, inbound := range networking.GetInbound() {
-		result := validateInbound(inbound, networking.Address)
+		isTransparentProxy := networking.GetTransparentProxying() != nil
+		result := validateInbound(inbound, networking.Address, isTransparentProxy)
 		err.AddErrorAt(path.Field("inbound").Index(i), result)
 	}
 	for i, outbound := range networking.GetOutbound() {
@@ -87,7 +88,7 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 	return err
 }
 
-func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress string) validators.ValidationError {
+func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress string, isTransparenProxy bool) validators.ValidationError {
 	var result validators.ValidationError
 	if inbound.Port < 1 || inbound.Port > 65535 {
 		result.AddViolationAt(validators.RootedAt("port"), `port has to be in range of [1, 65535]`)
@@ -95,11 +96,28 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 	if inbound.ServicePort > 65535 {
 		result.AddViolationAt(validators.RootedAt("servicePort"), `servicePort has to be in range of [0, 65535]`)
 	}
-	if inbound.ServiceAddress != "" && net.ParseIP(inbound.ServiceAddress) == nil {
-		result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress has to be valid IP address`)
+	if inbound.ServiceAddress != "" {
+		if isTransparenProxy {
+			result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress can not be set in Transparent Proxy mode`)
+		}
+		if net.ParseIP(inbound.ServiceAddress) == nil {
+			result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress has to be valid IP address`)
+		}
+		if inbound.ServiceAddress == dpAddress {
+			if inbound.ServicePort == 0 || inbound.ServicePort == inbound.Port {
+				result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress and servicePort has to differ from inboundIP and Port`)
+			}
+		}
 	}
-	if inbound.Address != "" && net.ParseIP(inbound.Address) == nil {
-		result.AddViolationAt(validators.RootedAt("address"), `address has to be valid IP address`)
+	if inbound.Address != "" {
+		if net.ParseIP(inbound.Address) == nil {
+			result.AddViolationAt(validators.RootedAt("address"), `address has to be valid IP address`)
+		}
+		if inbound.Address == inbound.ServiceAddress {
+			if inbound.ServicePort == 0 || inbound.ServicePort == inbound.Port {
+				result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress and servicePort has to differ from inboundIP and Port`)
+			}
+		}
 	}
 	if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
 		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
