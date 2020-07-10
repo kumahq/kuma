@@ -35,7 +35,6 @@ func (s *accessLogServer) NeedLeaderElection() bool {
 func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
 	// Log an explicit error when access log address is too long
 	// see: https://man7.org/linux/man-pages/man7/unix.7.html
-	// see: issue #853
 	var address = fmt.Sprintf("/tmp/kal-%s-%s.sock", dataplane.Name, dataplane.Mesh)
 	if len(address) > 108 {
 		logger.Error(nil, fmt.Sprintf(`The name of your dataplane is too long: %s. 
