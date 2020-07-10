@@ -10,7 +10,7 @@ import (
 
 	"github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
 
-	"github.com/Kong/kuma/pkg/clusters/poller"
+	"github.com/Kong/kuma/pkg/zones/poller"
 
 	"github.com/pkg/errors"
 
@@ -314,12 +314,13 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 }
 
 func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	poller, err := poller.NewClustersStatusPoller(cfg.Mode.Global)
+
+	poller, err := poller.NewZonesStatusPoller(builder.ReadOnlyResourceManager())
 	if err != nil {
 		return err
 	}
 
-	builder.WithClusters(poller)
+	builder.WithZones(poller)
 	return nil
 }
 

@@ -7,7 +7,7 @@ import (
 
 	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
 
-	"github.com/Kong/kuma/pkg/clusters/poller"
+	"github.com/Kong/kuma/pkg/zones/poller"
 
 	"github.com/Kong/kuma/pkg/dns"
 
@@ -41,7 +41,7 @@ type RuntimeContext interface {
 	CaManagers() ca.Managers
 	Extensions() context.Context
 	DNSResolver() dns.DNSResolver
-	Clusters() poller.ClusterStatusPoller
+	Zones() poller.ZoneStatusPoller
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 }
@@ -76,7 +76,7 @@ type runtimeContext struct {
 	xds      core_xds.XdsContext
 	ext      context.Context
 	dns      dns.DNSResolver
-	clusters poller.ClusterStatusPoller
+	zones    poller.ZoneStatusPoller
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 }
@@ -110,8 +110,8 @@ func (rc *runtimeContext) DNSResolver() dns.DNSResolver {
 	return rc.dns
 }
 
-func (rc *runtimeContext) Clusters() poller.ClusterStatusPoller {
-	return rc.clusters
+func (rc *runtimeContext) Zones() poller.ZoneStatusPoller {
+	return rc.zones
 }
 
 func (rc *runtimeContext) ConfigManager() config_manager.ConfigManager {

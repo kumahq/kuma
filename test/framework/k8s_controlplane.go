@@ -281,5 +281,5 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
-	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/clusters"
+	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
 }

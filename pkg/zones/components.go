@@ -1,9 +1,9 @@
-package clusters
+package zones
 
 import (
 	"github.com/Kong/kuma/pkg/core/runtime"
 )
 
 func SetupServer(rt runtime.Runtime) error {
-	return rt.Add(rt.Clusters())
+	return rt.Add(rt.Zones())
 }

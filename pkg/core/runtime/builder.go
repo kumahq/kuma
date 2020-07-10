@@ -5,7 +5,7 @@ import (
 
 	"github.com/Kong/kuma/pkg/core/secrets/store"
 
-	"github.com/Kong/kuma/pkg/clusters/poller"
+	"github.com/Kong/kuma/pkg/zones/poller"
 
 	"github.com/Kong/kuma/pkg/dns"
 
@@ -33,7 +33,7 @@ type BuilderContext interface {
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
 	DNSResolver() dns.DNSResolver
-	Clusters() poller.ClusterStatusPoller
+	Zones() poller.ZoneStatusPoller
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 }
@@ -53,7 +53,7 @@ type Builder struct {
 	dsl      datasource.Loader
 	ext      context.Context
 	dns      dns.DNSResolver
-	clusters poller.ClusterStatusPoller
+	zones    poller.ZoneStatusPoller
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	*runtimeInfo
@@ -125,8 +125,8 @@ func (b *Builder) WithDNSResolver(dns dns.DNSResolver) *Builder {
 	return b
 }
 
-func (b *Builder) WithClusters(clusters poller.ClusterStatusPoller) *Builder {
-	b.clusters = clusters
+func (b *Builder) WithZones(clusters poller.ZoneStatusPoller) *Builder {
+	b.zones = clusters
 	return b
 }
 
@@ -180,7 +180,7 @@ func (b *Builder) Build() (Runtime, error) {
 			xds:      b.xds,
 			ext:      b.ext,
 			dns:      b.dns,
-			clusters: b.clusters,
+			zones:    b.zones,
 			configm:  b.configm,
 			leadInfo: b.leadInfo,
 		},
@@ -221,8 +221,8 @@ func (b *Builder) Extensions() context.Context {
 func (b *Builder) DNSResolver() dns.DNSResolver {
 	return b.dns
 }
-func (b *Builder) Clusters() poller.ClusterStatusPoller {
-	return b.clusters
+func (b *Builder) Zones() poller.ZoneStatusPoller {
+	return b.zones
 }
 func (b *Builder) ConfigManager() config_manager.ConfigManager {
 	return b.configm

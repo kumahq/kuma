@@ -250,18 +250,10 @@ guiServer:
 mode:
   mode: standalone # ENV: KUMA_MODE_MODE Configured from args. By default autoconfigured to standalone
   global: # Global CP configuration
-    lbaddress: "" # http://1.0.0.1:5685 The external LB address for Remotes to reach back to Global
-    zones: [] # a sequence of zones attached to this Global CP
-#      - remote:
-#          address: grpc://1.1.1.1:5685 # Remote kDS address
-#        ingress:
-#          address: 1.1.1.1:8080 # Remote Ingress address
-#      - remote:
-#          address: grpc://2.2.2.2:5685
-#        ingress:
-#          address: 2.2.2.2:8080
+    lbaddress: "" # ENV: KUMA_MODE_GLOBAL_LBADDRESS http://1.0.0.1:5685 The external LB address for Remotes to reach back to Global
   remote: # Remote CP configuration
     zone: "" # ENV: KUMA_MODE_REMOTE_ZONE the name of the zone for this Remote CP
+
 # DNS Server configuration
 dnsServer:
   # The domain that the server will resolve the services for

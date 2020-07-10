@@ -9,7 +9,7 @@ import (
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 
-	"github.com/Kong/kuma/pkg/clusters/poller"
+	"github.com/Kong/kuma/pkg/zones/poller"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -106,7 +106,7 @@ metadata:
 		Expect(status).To(Equal(http.StatusOK))
 
 		// when
-		clustersStatus := poller.Clusters{}
+		clustersStatus := poller.Zones{}
 		_ = json.Unmarshal([]byte(response), &clustersStatus)
 
 		// then
