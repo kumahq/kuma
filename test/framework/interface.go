@@ -37,8 +37,9 @@ type Cluster interface {
 
 type ControlPlane interface {
 	GetName() string
-	AddCluster(name, url, lbAddress string) error
+	AddCluster(name, lbAddress, kdsAddress, ingressAddress string) error
 	GetKumaCPLogs() (string, error)
 	GetKDSServerAddress() string
+	GetIngressAddress() string
 	GetGlobaStatusAPI() string
 }
