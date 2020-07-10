@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/pkg/errors"
+
 	"github.com/gruntwork-io/terratest/modules/docker"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
@@ -151,7 +154,20 @@ func (s *UniversalApp) publishPortsForDocker() (args []string) {
 }
 
 func (s *UniversalApp) Stop() error {
-	docker.Stop(s.t, []string{s.container}, &docker.StopOptions{})
+	out, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
+	if err != nil {
+		return errors.Wrapf(err, "Returned %s", out)
+	}
+
+	retry.DoWithRetry(s.t, "stop "+s.container, DefaultRetries, DefaultTimeout,
+		func() (string, error) {
+			_, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
+			if err == nil {
+				return "Container still running", errors.Errorf("Container still running")
+			}
+			return "Container stopped", nil
+		})
+
 	return nil
 }
 
