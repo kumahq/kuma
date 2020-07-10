@@ -1,0 +1,30 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "type": "Zone",
+      "name": "zone-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "remoteControlPlane": {
+        "publicAddress": "grpcs://192.168.0.1:5681"
+      },
+      "ingress": {
+        "publicAddress": "192.168.0.2:10000"
+      }
+    },
+    {
+      "type": "Zone",
+      "name": "zone-2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "remoteControlPlane": {
+        "publicAddress": "grpcs://192.168.1.1:5681"
+      },
+      "ingress": {
+        "publicAddress": "192.168.1.2:10000"
+      }
+    }
+  ],
+  "next": null
+}

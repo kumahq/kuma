@@ -2,9 +2,10 @@ package get
 
 import (
 	"context"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 	"io"
 	"time"
+
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
 
 	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
 
@@ -61,7 +62,7 @@ func printZones(rootTime time.Time, zones *system.ZoneResourceList, out io.Write
 				zone := zones.Items[i]
 
 				return []string{
-					zone.GetMeta().GetName(),                                        // NAME
+					zone.GetMeta().GetName(), // NAME
 					table.TimeSince(zone.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}
