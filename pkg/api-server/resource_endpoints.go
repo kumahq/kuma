@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+
 	"github.com/emicklei/go-restful"
 
 	"github.com/Kong/kuma/pkg/api-server/definitions"
@@ -211,7 +213,9 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if string(r.ResourceFactory().GetType()) != resource.Meta.Type {
 		err.AddViolation("type", "type from the URL has to be the same as in body")
 	}
-	if meshName != resource.Meta.Mesh && r.ResourceFactory().GetType() != mesh.MeshType {
+	if meshName != resource.Meta.Mesh &&
+		r.ResourceFactory().GetType() != mesh.MeshType &&
+		r.ResourceFactory().GetType() != system.ZoneType {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
 	err.AddError("", mesh.ValidateMeta(name, meshName))
