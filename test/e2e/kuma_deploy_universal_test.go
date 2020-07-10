@@ -1,6 +1,10 @@
 package e2e_test
 
 import (
+	"strings"
+
+	"github.com/go-errors/errors"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -94,12 +98,13 @@ destinations:
 	})
 
 	AfterEach(func() {
-		_ = global.DeleteKuma()
 		_ = remote_1.DeleteKuma()
 		_ = remote_2.DeleteKuma()
-		_ = global.DismissCluster()
+		_ = global.DeleteKuma()
+
 		_ = remote_1.DismissCluster()
 		_ = remote_2.DismissCluster()
+		_ = global.DismissCluster()
 	})
 
 	It("Should deploy two apps", func() {
@@ -108,9 +113,18 @@ destinations:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		stdout, _, err = remote_2.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4001")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		retry.DoWithRetry(remote_2.GetTesting(), "curl remote service",
+			DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				stdout, _, err = remote_2.ExecWithRetries("", "", "demo-client",
+					"curl", "-v", "-m", "3", "localhost:4001")
+				if err != nil {
+					return "should retry", err
+				}
+				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
+					return "Accessing service successful", nil
+				}
+				return "should retry", errors.Errorf("should retry")
+			})
 	})
 })
