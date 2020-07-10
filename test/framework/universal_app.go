@@ -123,7 +123,11 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 	}
 
 	app.container = container
-	app.ip = app.getIP()
+	app.ip, err = app.getIP()
+	if err != nil {
+		return nil, err
+	}
+
 	fmt.Printf("Node IP %s\n", app.ip)
 
 	if mode == AppModeCP {
@@ -209,14 +213,14 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname string) {
 		"--binary-path", "/usr/local/bin/envoy"})
 }
 
-func (s *UniversalApp) getIP() string {
+func (s *UniversalApp) getIP() (string, error) {
 	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "hosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
-		panic(string(bytes))
+		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
 	}
 	split := strings.Split(string(bytes), " ")
-	return split[0]
+	return split[0], nil
 }
 
 type sshApp struct {
