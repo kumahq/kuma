@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/cobra"
 
 	api_server "github.com/Kong/kuma/pkg/api-server"
-	"github.com/Kong/kuma/pkg/zones"
 	kds_global "github.com/Kong/kuma/pkg/kds/global"
 	kuma_version "github.com/Kong/kuma/pkg/version"
+	"github.com/Kong/kuma/pkg/zones"
 
 	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/Kong/kuma/pkg/admin-server"

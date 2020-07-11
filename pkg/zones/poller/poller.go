@@ -3,12 +3,13 @@ package poller
 import (
 	"context"
 	"fmt"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
 	"net"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/Kong/kuma/pkg/core/resources/manager"
 
 	"github.com/Kong/kuma/pkg/core"
 )
@@ -83,12 +84,16 @@ func (p *ZonesStatusPoller) NeedLeaderElection() bool {
 
 func (p *ZonesStatusPoller) syncZones() {
 	p.Lock()
-	p.Unlock()
+	defer p.Unlock()
 
 	p.zones = Zones{}
 
 	zones := &system.ZoneResourceList{}
-	p.roResourceManager.List(context.Background(), zones)
+	err := p.roResourceManager.List(context.Background(), zones)
+	if err != nil {
+		zonesStatusLog.Error(err, "Unable to list Zone resources")
+	}
+
 	for _, zone := range zones.Items {
 		// ignore the Ingress for now
 		p.zones = append(p.zones, Zone{

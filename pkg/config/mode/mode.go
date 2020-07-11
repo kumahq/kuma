@@ -1,9 +1,10 @@
 package mode
 
 import (
+	"net/url"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
-	"net/url"
 
 	"github.com/Kong/kuma/pkg/config"
 )

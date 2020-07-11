@@ -58,7 +58,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
-	if err := initializeClusters(cfg, builder); err != nil {
+	if err := initializeZones(cfg, builder); err != nil {
 		return nil, err
 	}
 	if err := initializeConfigManager(cfg, builder); err != nil {
@@ -313,8 +313,7 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	return nil
 }
 
-func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-
+func initializeZones(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	poller, err := poller.NewZonesStatusPoller(builder.ReadOnlyResourceManager())
 	if err != nil {
 		return err
