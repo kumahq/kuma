@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/Kong/kuma/pkg/kds"
+	"github.com/Kong/kuma/pkg/kds/reconcile"
+
 	"github.com/Kong/kuma/pkg/config/mode"
 
 	. "github.com/onsi/ginkgo"
@@ -23,7 +26,7 @@ import (
 	kds_setup "github.com/Kong/kuma/pkg/test/kds/setup"
 )
 
-var _ = Describe("Global Sync", func() { // todo fix the test
+var _ = Describe("Global Sync", func() {
 
 	var localStores []store.ResourceStore
 	var globalStore store.ResourceStore
@@ -37,7 +40,7 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 		for i := 0; i < 2; i++ {
 			wg.Add(1)
 			localStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(localStore, wg, fmt.Sprintf("cluster-%d", i))
+			serverStream := kds_setup.StartServer(localStore, wg, fmt.Sprintf("cluster-%d", i), kds.SupportedTypes, reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
 			localStores = append(localStores, localStore)
 		}

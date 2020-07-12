@@ -4393,6 +4393,13 @@ rules:
   - list
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - kuma.io
   resources:
   - dataplanes

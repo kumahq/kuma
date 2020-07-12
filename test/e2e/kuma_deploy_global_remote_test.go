@@ -55,7 +55,8 @@ metadata:
 		err = NewClusterSetup().
 			Install(Kuma(mode.Remote)).
 			Install(KumaDNS()).
-			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
+			Install(Ingress(nil)).
+			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Install(EchoServerK8s()).
 			Setup(c2)
@@ -74,7 +75,8 @@ metadata:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.AddCluster(remote.GetName(), remote.GetKDSServerAddress(), global.GetKDSServerAddress())
+		err = global.AddCluster(remote.GetName(),
+			global.GetKDSServerAddress(), remote.GetKDSServerAddress(), remote.GetIngressAddress())
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c1.RestartKuma()
@@ -156,9 +158,9 @@ spec:
 		}
 
 		// when
-		err := Yaml(namespace("custom-ns"))(c2)
+		err := YamlK8s(namespace("custom-ns"))(c2)
 		Expect(err).ToNot(HaveOccurred())
-		err = Yaml(dp("kuma-2-remote", "custom-ns", "dp-1"))(c2)
+		err = YamlK8s(dp("kuma-2-remote", "custom-ns", "dp-1"))(c2)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

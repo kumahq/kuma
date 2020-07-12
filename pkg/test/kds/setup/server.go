@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Kong/kuma/pkg/core/resources/model"
+
 	"github.com/Kong/kuma/pkg/kds/reconcile"
 
 	. "github.com/onsi/gomega"
@@ -15,7 +17,6 @@ import (
 	"github.com/Kong/kuma/pkg/core/resources/store"
 	"github.com/Kong/kuma/pkg/core/runtime"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
-	"github.com/Kong/kuma/pkg/kds"
 	kds_server "github.com/Kong/kuma/pkg/kds/server"
 	test_grpc "github.com/Kong/kuma/pkg/test/grpc"
 	util_xds "github.com/Kong/kuma/pkg/util/xds"
@@ -41,11 +42,11 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 	return nil
 }
 
-func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string) *test_grpc.MockServerStream {
+func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter) *test_grpc.MockServerStream {
 	createServer := func(rt runtime.Runtime) kds_server.Server {
 		log := core.Log
 		hasher, cache := kds_server.NewXdsContext(log)
-		generator := kds_server.NewSnapshotGenerator(rt, kds.SupportedTypes, reconcile.Any)
+		generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter)
 		versioner := kds_server.NewVersioner()
 		reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
 		syncTracker := kds_server.NewSyncTracker(core.Log, reconciler, rt.Config().KDS.Server.RefreshInterval)

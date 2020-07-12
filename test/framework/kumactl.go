@@ -47,8 +47,11 @@ func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*Kumact
 }
 
 func (o *KumactlOptions) RunKumactl(args ...string) error {
-	_, err := o.RunKumactlAndGetOutput(args...)
-	return err
+	out, err := o.RunKumactlAndGetOutput(args...)
+	if err != nil {
+		return errors.Wrapf(err, out)
+	}
+	return nil
 }
 
 func (o *KumactlOptions) RunKumactlAndGetOutput(args ...string) (string, error) {
