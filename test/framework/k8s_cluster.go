@@ -237,6 +237,18 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 		DefaultRetries,
 		DefaultTimeout)
 
+	// wait for the mesh
+	_, err = retry.DoWithRetryE(c.t,
+		"get default mesh",
+		DefaultRetries,
+		DefaultTimeout,
+		func() (s string, err error) {
+			return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+		})
+	if err != nil {
+		return err
+	}
+
 	err = c.controlplane.FinalizeAdd()
 	if err != nil {
 		return err

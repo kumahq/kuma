@@ -33,6 +33,7 @@ type RootRuntime struct {
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string, *kumactl_config.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error)
 	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
+	NewAPIServerClient         func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
 }
 
 type RootContext struct {
@@ -49,6 +50,7 @@ func DefaultRootContext() *RootContext {
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 			NewCatalogClient:           catalog_client.NewCatalogClient,
+			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 		},
 	}
 }
@@ -243,4 +245,12 @@ func (rc *RootContext) IsFirstTimeUsage() bool {
 		return !util_files.FileExists(rc.Args.ConfigFile)
 	}
 	return !util_files.FileExists(config.DefaultConfigFile)
+}
+
+func (rc *RootContext) CurrentApiClient() (kumactl_resources.ApiServerClient, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewAPIServerClient(controlPlane.Coordinates.ApiServer)
 }

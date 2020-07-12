@@ -19,11 +19,17 @@ func (m *mockKDSClient) Close() error {
 	return nil
 }
 
+func NewMockKDSClient(kdsStream kds_client.KDSStream) kds_client.KDSClient {
+	return &mockKDSClient{
+		kdsStream: kdsStream,
+	}
+}
+
 func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client.Callbacks) {
 	for i := 0; i < len(clientStreams); i++ {
 		item := clientStreams[i]
 		comp := kds_client.NewKDSSink(core.Log.Logger, "global", resourceTypes, func() (kds_client.KDSClient, error) {
-			return &mockKDSClient{kdsStream: kds_client.NewKDSStream(item, "client-1")}, nil
+			return NewMockKDSClient(kds_client.NewKDSStream(item, "client-1")), nil
 		}, cb)
 		go func() {
 			_ = comp.Start(stopCh)

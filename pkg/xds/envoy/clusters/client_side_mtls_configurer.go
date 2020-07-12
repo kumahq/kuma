@@ -47,6 +47,7 @@ func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	if !c.ctx.Mesh.Resource.MTLSEnabled() {
 		return nil
 	}
+	mesh := c.ctx.Mesh.Resource.GetMeta().GetName()
 	// there might be a situation when there are multiple sam tags passed here for example two outbound listeners with the same tags, therefore we need to distinguish between them.
 	distinctTags := envoy.DistinctTags(c.tags)
 	switch {
@@ -57,14 +58,14 @@ func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 		}
 		cluster.TransportSocket = transportSocket
 	case len(distinctTags) == 1:
-		transportSocket, err := c.createTransportSocket(tls.SNIFromTags(c.tags[0]))
+		transportSocket, err := c.createTransportSocket(tls.SNIFromTags(c.tags[0].WithTags("mesh", mesh)))
 		if err != nil {
 			return err
 		}
 		cluster.TransportSocket = transportSocket
 	default:
 		for _, tags := range distinctTags {
-			sni := tls.SNIFromTags(tags)
+			sni := tls.SNIFromTags(tags.WithTags("mesh", mesh))
 			transportSocket, err := c.createTransportSocket(sni)
 			if err != nil {
 				return err

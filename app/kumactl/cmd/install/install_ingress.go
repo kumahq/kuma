@@ -64,7 +64,6 @@ func newInstallIngressCmd() *cobra.Command {
 	cmd.Flags().StringVar(&args.ImagePullPolicy, "image-pull-policy", args.ImagePullPolicy, "image pull policy for Ingress")
 	cmd.Flags().StringVar(&args.Version, "version", args.Version, "version of Ingress component")
 	cmd.Flags().StringVar(&args.Image, "image", args.Image, "image of the Ingress component")
-	cmd.Flags().StringVar(&args.Mesh, "mesh", args.Mesh, "mesh for Ingress")
 	cmd.Flags().StringVar(&args.DrainTime, "drain-time", args.DrainTime, "drain time for Envoy proxy")
 	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
