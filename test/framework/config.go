@@ -3,8 +3,8 @@ package framework
 import (
 	"gopkg.in/yaml.v2"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	"github.com/Kong/kuma/pkg/config/mode"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/config/mode"
 )
 
 func addGlobal(rawYAML, lbAdress, kdsAddress, ingressAddress string) (string, error) {

@@ -7,10 +7,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/api-server/types"
-	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	error_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
-	kuma_http "github.com/Kong/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/pkg/api-server/types"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
+	kuma_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 type ApiServerClient interface {

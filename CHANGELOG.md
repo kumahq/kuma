@@ -4,25 +4,25 @@
 > Released on  2020/06/30
 
 Changes:
-*  feat(gui) new GUI build files and binaries generated. [#873](github.com//Kong/kuma/pull/873) 
-*  feat: Kuma Discovery Service (KDS) [#870](github.com//Kong/kuma/pull/870) [#871](github.com//Kong/kuma/pull/871) [#864](github.com//Kong/kuma/pull/864) [#866](github.com//Kong/kuma/pull/866) [#865](github.com//Kong/kuma/pull/865) [#861](github.com//Kong/kuma/pull/861) [#860](github.com//Kong/kuma/pull/860) [#857](github.com//Kong/kuma/pull/857) [#839](github.com//Kong/kuma/pull/839) [#833](github.com//Kong/kuma/pull/833) [#847](github.com//Kong/kuma/pull/847) [#843](github.com//Kong/kuma/pull/843) [#834](github.com//Kong/kuma/pull/834) [#830](github.com//Kong/kuma/pull/830) 
-*  feat: ingress for cross-cluster communication [#818](github.com//Kong/kuma/pull/818) [#825](github.com//Kong/kuma/pull/825) [#840](github.com//Kong/kuma/pull/840) [#842](github.com//Kong/kuma/pull/842) [#856](github.com//Kong/kuma/pull/856) [#851](github.com//Kong/kuma/pull/851)   
-*  feat: kuma-cp DNS service [#821](github.com//Kong/kuma/pull/821) [#798](github.com//Kong/kuma/pull/798) [#850](github.com//Kong/kuma/pull/850) [#862](github.com//Kong/kuma/pull/862)
-*  feat: flatten svc k8s tag [#848](github.com//Kong/kuma/pull/848)
+*  feat(gui) new GUI build files and binaries generated. [#873](github.com/kumahq/kuma/pull/873) 
+*  feat: Kuma Discovery Service (KDS) [#870](github.com/kumahq/kuma/pull/870) [#871](github.com/kumahq/kuma/pull/871) [#864](github.com/kumahq/kuma/pull/864) [#866](github.com/kumahq/kuma/pull/866) [#865](github.com/kumahq/kuma/pull/865) [#861](github.com/kumahq/kuma/pull/861) [#860](github.com/kumahq/kuma/pull/860) [#857](github.com/kumahq/kuma/pull/857) [#839](github.com/kumahq/kuma/pull/839) [#833](github.com/kumahq/kuma/pull/833) [#847](github.com/kumahq/kuma/pull/847) [#843](github.com/kumahq/kuma/pull/843) [#834](github.com/kumahq/kuma/pull/834) [#830](github.com/kumahq/kuma/pull/830) 
+*  feat: ingress for cross-cluster communication [#818](github.com/kumahq/kuma/pull/818) [#825](github.com/kumahq/kuma/pull/825) [#840](github.com/kumahq/kuma/pull/840) [#842](github.com/kumahq/kuma/pull/842) [#856](github.com/kumahq/kuma/pull/856) [#851](github.com/kumahq/kuma/pull/851)   
+*  feat: kuma-cp DNS service [#821](github.com/kumahq/kuma/pull/821) [#798](github.com/kumahq/kuma/pull/798) [#850](github.com/kumahq/kuma/pull/850) [#862](github.com/kumahq/kuma/pull/862)
+*  feat: flatten svc k8s tag [#848](github.com/kumahq/kuma/pull/848)
 ⚠️ warning: breaking change for service tag format 
-*  feat: multiple outbound tags [#831](github.com//Kong/kuma/pull/831)
-*  chore: remove interface from dataplane model [#832](github.com//Kong/kuma/pull/832)
+*  feat: multiple outbound tags [#831](github.com/kumahq/kuma/pull/831)
+*  chore: remove interface from dataplane model [#832](github.com/kumahq/kuma/pull/832)
 ⚠️ warning: breaking change for dataplane model
-*  feat: block resources based on kuma-cp mode [#812](github.com//Kong/kuma/pull/812) 
+*  feat: block resources based on kuma-cp mode [#812](github.com/kumahq/kuma/pull/812) 
  👍contributed by @tharun208
-*  feat: Multicluster config infrastructure [#788](github.com//Kong/kuma/pull/788) 
+*  feat: Multicluster config infrastructure [#788](github.com/kumahq/kuma/pull/788) 
  👍contributed by @tharun208
-*  fix: expose Jaeger only inside of K8S cluster [#824](github.com//Kong/kuma/pull/824) 
+*  fix: expose Jaeger only inside of K8S cluster [#824](github.com/kumahq/kuma/pull/824) 
  👍contributed by @xbauquet
-*  chore: update envoy 1.14.2 and alpine 3.12 [#829](github.com//Kong/kuma/pull/829)
-*  chore: remove passive healthchecks [#869](github.com//Kong/kuma/pull/869) 
+*  chore: update envoy 1.14.2 and alpine 3.12 [#829](github.com/kumahq/kuma/pull/829)
+*  chore: remove passive healthchecks [#869](github.com/kumahq/kuma/pull/869) 
 ⚠️ warning: breaking change of healthchecks
-*  chore: change default skipMTLS flag [#849](github.com//Kong/kuma/pull/849)
+*  chore: change default skipMTLS flag [#849](github.com/kumahq/kuma/pull/849)
 ⚠️ warning: breaking change of metrics
 
 Breaking changes:
@@ -36,26 +36,26 @@ Breaking changes:
 
 Changes:
 
-*  chore: Prometheus overrides on Kubernetes [#808](github.com//Kong/kuma/pull/808) 
-*  feat: Prometheus metrics over mTLS [#793](github.com//Kong/kuma/pull/793) 
-*  feat: GUI build for 0.5.1 [#785](github.com//Kong/kuma/pull/785)
-*  feat: circuit breaker [#751](github.com//Kong/kuma/pull/751)[#781](github.com//Kong/kuma/pull/781)
-*  feat: CA rotation time supports months and year [#750](github.com//Kong/kuma/pull/750)
-[#794](github.com//Kong/kuma/pull/794) 
+*  chore: Prometheus overrides on Kubernetes [#808](github.com/kumahq/kuma/pull/808) 
+*  feat: Prometheus metrics over mTLS [#793](github.com/kumahq/kuma/pull/793) 
+*  feat: GUI build for 0.5.1 [#785](github.com/kumahq/kuma/pull/785)
+*  feat: circuit breaker [#751](github.com/kumahq/kuma/pull/751)[#781](github.com/kumahq/kuma/pull/781)
+*  feat: CA rotation time supports months and year [#750](github.com/kumahq/kuma/pull/750)
+[#794](github.com/kumahq/kuma/pull/794) 
  👍contributed by @tharun208
-*  feat: send start signal [#783](github.com//Kong/kuma/pull/783) 
-*  fix: mesh delete validation [#770](github.com//Kong/kuma/pull/770) 
-*  feat: Improve certificate verification [#779](github.com//Kong/kuma/pull/779) 
-*  feat: generate cert with multiple SAN URIs [#774](github.com//Kong/kuma/pull/774) 
-*  fix: reject conflicting bootstrap when AdminPort is set [#758](github.com//Kong/kuma/pull/758) 
-*  feat: limit number subscription [#747](github.com//Kong/kuma/pull/747) 
-*  fix: OpenShift owner role [#780](github.com//Kong/kuma/pull/780) 
-*  chore: refactor cluster generation [#752](github.com//Kong/kuma/pull/752)
-*  feat: secrets delete validation [#746](github.com//Kong/kuma/pull/746)
-*  fix: allow slash validation so standard K8S tags are supported [#762](github.com//Kong/kuma/pull/762)
-*  feat: direct access to services and support for Headless Service [#749](github.com//Kong/kuma/pull/749) [#790](github.com//Kong/kuma/pull/790) 
-*  feat: owners for Dataplane on k8s [#742](github.com//Kong/kuma/pull/742) 
-*  chore: updating Alpine to 3.11 [#672](github.com//Kong/kuma/pull/672)
+*  feat: send start signal [#783](github.com/kumahq/kuma/pull/783) 
+*  fix: mesh delete validation [#770](github.com/kumahq/kuma/pull/770) 
+*  feat: Improve certificate verification [#779](github.com/kumahq/kuma/pull/779) 
+*  feat: generate cert with multiple SAN URIs [#774](github.com/kumahq/kuma/pull/774) 
+*  fix: reject conflicting bootstrap when AdminPort is set [#758](github.com/kumahq/kuma/pull/758) 
+*  feat: limit number subscription [#747](github.com/kumahq/kuma/pull/747) 
+*  fix: OpenShift owner role [#780](github.com/kumahq/kuma/pull/780) 
+*  chore: refactor cluster generation [#752](github.com/kumahq/kuma/pull/752)
+*  feat: secrets delete validation [#746](github.com/kumahq/kuma/pull/746)
+*  fix: allow slash validation so standard K8S tags are supported [#762](github.com/kumahq/kuma/pull/762)
+*  feat: direct access to services and support for Headless Service [#749](github.com/kumahq/kuma/pull/749) [#790](github.com/kumahq/kuma/pull/790) 
+*  feat: owners for Dataplane on k8s [#742](github.com/kumahq/kuma/pull/742) 
+*  chore: updating Alpine to 3.11 [#672](github.com/kumahq/kuma/pull/672)
 
 NOTE:
 
