@@ -5,7 +5,7 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 func OutlierDetection(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterBuilderOpt {

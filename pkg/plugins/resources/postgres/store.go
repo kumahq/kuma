@@ -8,15 +8,15 @@ import (
 	"strings"
 	"time"
 
-	common_postgres "github.com/Kong/kuma/pkg/plugins/common/postgres"
+	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 
-	config "github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/util/proto"
+	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const duplicateKeyErrorMsg = "duplicate key value violates unique constraint"

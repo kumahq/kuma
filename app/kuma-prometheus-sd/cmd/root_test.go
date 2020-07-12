@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/app/kuma-prometheus-sd/cmd"
+	. "github.com/kumahq/kuma/app/kuma-prometheus-sd/cmd"
 )
 
 var _ = Describe("root", func() {

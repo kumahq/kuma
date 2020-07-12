@@ -1,7 +1,7 @@
 package catalog
 
 import (
-	"github.com/Kong/kuma/pkg/config/api-server/catalog"
+	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
 )
 
 type Catalog struct {

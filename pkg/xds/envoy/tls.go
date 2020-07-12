@@ -9,11 +9,11 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/sds/server"
-	"github.com/Kong/kuma/pkg/util/proto"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/sds/server"
+	"github.com/kumahq/kuma/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 // CreateDownstreamTlsContext creates DownstreamTlsContext for incoming connections

@@ -3,7 +3,7 @@ package plugins
 import (
 	"os"
 
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 var global = NewRegistry()

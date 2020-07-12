@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 var _ core_model.ResourceMeta = &ResourceMeta{}

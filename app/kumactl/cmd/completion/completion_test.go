@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
 )
 
 var _ = Describe("kumactl completion", func() {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 func (m *MeshResource) HasPrometheusMetricsEnabled() bool {

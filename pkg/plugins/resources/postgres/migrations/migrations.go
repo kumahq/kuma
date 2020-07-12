@@ -1,6 +1,6 @@
 package migrations
 
-//go:generate go run github.com/shurcooL/vfsgen/cmd/vfsgendev -source="github.com/Kong/kuma/pkg/plugins/resources/postgres/migrations".Migrations
+//go:generate go run github.com/shurcooL/vfsgen/cmd/vfsgendev -source="github.com/kumahq/kuma/pkg/plugins/resources/postgres/migrations".Migrations
 
 import (
 	"path/filepath"

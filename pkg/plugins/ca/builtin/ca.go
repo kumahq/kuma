@@ -13,9 +13,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spiffe/go-spiffe/spiffe"
 
-	"github.com/Kong/kuma/pkg/core"
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	util_tls "github.com/Kong/kuma/pkg/tls"
+	"github.com/kumahq/kuma/pkg/core"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
 const (

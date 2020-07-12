@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/util/watchdog"
+	. "github.com/kumahq/kuma/pkg/util/watchdog"
 )
 
 var _ = Describe("SimpleWatchdog", func() {

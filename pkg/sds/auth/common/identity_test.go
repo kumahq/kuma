@@ -1,11 +1,11 @@
 package common_test
 
 import (
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	auth_common "github.com/Kong/kuma/pkg/sds/auth/common"
-	"github.com/Kong/kuma/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
+	auth_common "github.com/kumahq/kuma/pkg/sds/auth/common"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Store", func() {

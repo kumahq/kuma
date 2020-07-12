@@ -1,6 +1,6 @@
 package registry
 
-import "github.com/Kong/kuma/pkg/core/resources/model"
+import "github.com/kumahq/kuma/pkg/core/resources/model"
 
 var global = NewTypeRegistry()
 

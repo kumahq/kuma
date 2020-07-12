@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type CreateOptions struct {

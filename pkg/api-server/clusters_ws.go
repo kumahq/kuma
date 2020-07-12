@@ -3,7 +3,7 @@ package api_server
 import (
 	"github.com/emicklei/go-restful"
 
-	"github.com/Kong/kuma/pkg/clusters/poller"
+	"github.com/kumahq/kuma/pkg/clusters/poller"
 )
 
 func clustersWs(clusters poller.ClusterStatusPoller) *restful.WebService {

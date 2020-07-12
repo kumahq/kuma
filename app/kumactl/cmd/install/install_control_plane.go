@@ -3,19 +3,19 @@ package install
 import (
 	"fmt"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/mode"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s"
-	controlplane "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/control-plane"
-	kumacni "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
-	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
-	"github.com/Kong/kuma/pkg/tls"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
+	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
+	kumacni "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/tls"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var (

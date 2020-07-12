@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var _ = Describe("Metric sanitizer", func() {

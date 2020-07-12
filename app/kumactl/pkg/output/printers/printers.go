@@ -1,10 +1,10 @@
 package printers
 
 import (
-	"github.com/Kong/kuma/app/kumactl/pkg/output"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/json"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/yaml"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/json"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 
 	"github.com/pkg/errors"
 )

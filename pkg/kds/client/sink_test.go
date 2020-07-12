@@ -7,13 +7,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	test_grpc "github.com/Kong/kuma/pkg/test/grpc"
-	"github.com/Kong/kuma/pkg/test/kds/samples"
-	kds_setup "github.com/Kong/kuma/pkg/test/kds/setup"
-	kds_verifier "github.com/Kong/kuma/pkg/test/kds/verifier"
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	test_grpc "github.com/kumahq/kuma/pkg/test/grpc"
+	"github.com/kumahq/kuma/pkg/test/kds/samples"
+	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
+	kds_verifier "github.com/kumahq/kuma/pkg/test/kds/verifier"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 const (

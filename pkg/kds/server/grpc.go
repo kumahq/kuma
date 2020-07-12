@@ -7,13 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/credentials"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	kds_config "github.com/Kong/kuma/pkg/config/kds"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	kds_config "github.com/kumahq/kuma/pkg/config/kds"
 
 	"google.golang.org/grpc"
 
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 const grpcMaxConcurrentStreams = 1000000

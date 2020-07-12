@@ -1,6 +1,6 @@
 package main
 
-import "github.com/Kong/kuma/app/kumactl/cmd"
+import "github.com/kumahq/kuma/app/kumactl/cmd"
 
 func main() {
 	cmd.Execute()

@@ -7,7 +7,7 @@ import (
 	"go.uber.org/multierr"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/Kong/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config"
 )
 
 func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {

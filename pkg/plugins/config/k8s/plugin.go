@@ -3,9 +3,9 @@ package k8s
 import (
 	"github.com/pkg/errors"
 
-	config_store "github.com/Kong/kuma/pkg/core/config/store"
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
-	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
+	config_store "github.com/kumahq/kuma/pkg/core/config/store"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
 
 	kube_core "k8s.io/api/core/v1"
 )

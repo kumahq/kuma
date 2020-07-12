@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/plugins/common/k8s"
+	. "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 var _ = Describe("ResourceNameExtensions()", func() {

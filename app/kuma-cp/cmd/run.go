@@ -4,28 +4,28 @@ import (
 	"fmt"
 	"time"
 
-	dns "github.com/Kong/kuma/pkg/dns/components"
+	dns "github.com/kumahq/kuma/pkg/dns/components"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/mode"
 
-	kds_remote "github.com/Kong/kuma/pkg/kds/remote"
+	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 
 	"github.com/spf13/cobra"
 
-	api_server "github.com/Kong/kuma/pkg/api-server"
-	"github.com/Kong/kuma/pkg/clusters"
-	kds_global "github.com/Kong/kuma/pkg/kds/global"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+	"github.com/kumahq/kuma/pkg/clusters"
+	kds_global "github.com/kumahq/kuma/pkg/kds/global"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 
-	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
-	admin_server "github.com/Kong/kuma/pkg/admin-server"
-	"github.com/Kong/kuma/pkg/config"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/bootstrap"
-	mads_server "github.com/Kong/kuma/pkg/mads/server"
-	sds_server "github.com/Kong/kuma/pkg/sds/server"
-	xds_server "github.com/Kong/kuma/pkg/xds/server"
+	ui_server "github.com/kumahq/kuma/app/kuma-ui/pkg/server"
+	admin_server "github.com/kumahq/kuma/pkg/admin-server"
+	"github.com/kumahq/kuma/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/bootstrap"
+	mads_server "github.com/kumahq/kuma/pkg/mads/server"
+	sds_server "github.com/kumahq/kuma/pkg/sds/server"
+	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
 var (

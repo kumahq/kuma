@@ -13,7 +13,7 @@ import (
 
 	"github.com/onsi/gomega"
 
-	config_mode "github.com/Kong/kuma/pkg/config/mode"
+	config_mode "github.com/kumahq/kuma/pkg/config/mode"
 
 	"k8s.io/client-go/kubernetes"
 

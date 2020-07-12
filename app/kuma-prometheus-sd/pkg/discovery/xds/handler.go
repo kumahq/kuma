@@ -3,7 +3,7 @@ package xds
 import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 
-	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
+	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 )
 
 type sourceList = map[string]bool

@@ -9,13 +9,13 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
 
-	"github.com/Kong/kuma/pkg/core"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
-	xds_sync "github.com/Kong/kuma/pkg/xds/sync"
+	"github.com/kumahq/kuma/pkg/core"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 )
 
 var (

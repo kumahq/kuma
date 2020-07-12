@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 
 	"github.com/ghodss/yaml"
 

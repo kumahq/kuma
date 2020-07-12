@@ -4,8 +4,8 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 )
 
 var (

@@ -14,12 +14,12 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
-	config_core "github.com/Kong/kuma/pkg/config/core"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/tokens/builtin"
-	tokens_server "github.com/Kong/kuma/pkg/tokens/builtin/server"
+	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
+	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 )
 
 var (

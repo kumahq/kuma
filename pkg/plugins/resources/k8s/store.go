@@ -13,13 +13,13 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	common_k8s "github.com/Kong/kuma/pkg/plugins/common/k8s"
-	k8s_model "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ store.ResourceStore = &KubernetesStore{}

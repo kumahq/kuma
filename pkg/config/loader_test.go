@@ -5,14 +5,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/mode"
 
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 
-	"github.com/Kong/kuma/pkg/config"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/Kong/kuma/pkg/config/core"
-	"github.com/Kong/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
