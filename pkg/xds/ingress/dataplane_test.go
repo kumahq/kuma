@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	model2 "github.com/Kong/kuma/pkg/test/resources/model"
+	model2 "github.com/kumahq/kuma/pkg/test/resources/model"
 
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"

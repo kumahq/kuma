@@ -39,7 +39,7 @@ Maintainers can be removed by a 2/3 majority vote by maintainers.
 
 ## GitHub Project Administration
 
-Maintainers will be added to the GitHub @Kong/kuma-maintainers team, and made a GitHub maintainer of that team.
+Maintainers will be added to the GitHub @kumahq/kuma-maintainers team, and made a GitHub maintainer of that team.
 They will be given write permission to the Kuma GitHub repository https://github.com/kumahq/kuma.
 
 ## Changes in Governance
