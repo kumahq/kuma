@@ -1,4 +1,43 @@
 resources:
+  - name: localhost:8080
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      altStatName: localhost_8080
+      connectTimeout: 5s
+      loadAssignment:
+        clusterName: localhost:8080
+        endpoints:
+          - lbEndpoints:
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: 127.0.0.1
+                      portValue: 8080
+      name: localhost:8080
+      type: STATIC
+  - name: pass_through
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      connectTimeout: 5s
+      lbPolicy: CLUSTER_PROVIDED
+      name: pass_through
+      type: ORIGINAL_DST
+  - name: raw-name
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      altStatName: localhost_8443
+      connectTimeout: 5s
+      loadAssignment:
+        clusterName: localhost:8443
+        endpoints:
+          - lbEndpoints:
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: 127.0.0.1
+                      portValue: 8443
+      name: localhost:8443
+      type: STATIC
   - name: catch_all
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -16,31 +55,6 @@ resources:
       name: catch_all
       trafficDirection: OUTBOUND
       useOriginalDst: true
-    version: "1"
-  - name: pass_through
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      lbPolicy: CLUSTER_PROVIDED
-      name: pass_through
-      type: ORIGINAL_DST
-    version: "1"
-  - name: localhost:8080
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      altStatName: localhost_8080
-      connectTimeout: 5s
-      loadAssignment:
-        clusterName: localhost:8080
-        endpoints:
-          - lbEndpoints:
-              - endpoint:
-                  address:
-                    socketAddress:
-                      address: 127.0.0.1
-                      portValue: 8080
-      name: localhost:8080
-      type: STATIC
   - name: inbound:192.168.0.1:80
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -100,20 +114,3 @@ resources:
               requireClientCertificate: true
       name: inbound:192.168.0.1:80
       trafficDirection: INBOUND
-  - name: raw-name
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      altStatName: localhost_8443
-      connectTimeout: 5s
-      loadAssignment:
-        clusterName: localhost:8443
-        endpoints:
-          - lbEndpoints:
-              - endpoint:
-                  address:
-                    socketAddress:
-                      address: 127.0.0.1
-                      portValue: 8443
-      name: localhost:8443
-      type: STATIC
-    version: raw-version

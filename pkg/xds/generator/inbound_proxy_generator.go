@@ -25,9 +25,6 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	if err != nil {
 		return nil, err
 	}
-	if len(endpoints) == 0 {
-		return nil, nil
-	}
 	resources := model.NewResourceSet()
 	for i, endpoint := range endpoints {
 		// generate CDS resource

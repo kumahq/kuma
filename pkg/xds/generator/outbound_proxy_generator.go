@@ -30,10 +30,10 @@ type OutboundProxyGenerator struct {
 
 func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
-	if len(outbounds) == 0 {
-		return nil, nil
-	}
 	resources := model.NewResourceSet()
+	if len(outbounds) == 0 {
+		return resources, nil
+	}
 	clusters := envoy_common.Clusters{}
 
 	for _, outbound := range outbounds {

@@ -31,8 +31,9 @@ type DirectAccessProxyGenerator struct {
 
 func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tproxy := proxy.Dataplane.Spec.Networking.GetTransparentProxying()
+	resources := core_xds.NewResourceSet()
 	if tproxy.GetRedirectPort() == 0 || len(tproxy.GetDirectAccessServices()) == 0 {
-		return nil, nil
+		return resources, nil
 	}
 
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
@@ -43,7 +44,6 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		return nil, err
 	}
 
-	resources := core_xds.NewResourceSet()
 	for _, endpoint := range endpoints {
 		name := fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
 		listener, err := envoy_listeners.NewListenerBuilder().

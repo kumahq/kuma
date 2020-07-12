@@ -320,7 +320,6 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                       statPrefix: pass_through
                 name: catch_all
                 useOriginalDst: true
-              version: raw-version
 `,
 			}),
 			Entry("should support Cluster resource as YAML", testCase{
@@ -379,7 +378,6 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                             portValue: 8080
                 name: localhost:8080
                 type: STATIC
-              version: raw-version
 `,
 			}),
 			Entry("should support Cluster resource as JSON", testCase{
@@ -450,7 +448,6 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                             portValue: 8080
                 name: localhost:8080
                 type: STATIC
-              version: raw-version
 `,
 			}),
 		)

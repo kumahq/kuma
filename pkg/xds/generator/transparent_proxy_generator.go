@@ -19,8 +19,9 @@ type TransparentProxyGenerator struct {
 
 func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	redirectPort := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort()
+	resources := model.NewResourceSet()
 	if redirectPort == 0 {
-		return nil, nil
+		return resources, nil
 	}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
@@ -40,7 +41,6 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate cluster: pass_through")
 	}
-	resources := model.NewResourceSet()
 	resources.Add(&model.Resource{
 		Name:        listener.Name,
 		GeneratedBy: GeneratedByTransparent,

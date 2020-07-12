@@ -93,10 +93,16 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			},
 			expected: `
         resources:
+        - name: pass_through
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            connectTimeout: 5s
+            lbPolicy: CLUSTER_PROVIDED
+            name: pass_through
+            type: ORIGINAL_DST
         - name: catch_all
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
-            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 0.0.0.0
@@ -109,16 +115,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
                   cluster: pass_through
                   statPrefix: pass_through
             name: catch_all
+            trafficDirection: OUTBOUND
             useOriginalDst: true
-          version: v1
-        - name: pass_through
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Cluster
-            connectTimeout: 5s
-            lbPolicy: CLUSTER_PROVIDED
-            name: pass_through
-            type: ORIGINAL_DST
-          version: v1
 `,
 		}),
 		Entry("transparent_proxying=true with logs", testCase{
@@ -148,10 +146,16 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			},
 			expected: `
         resources:
+        - name: pass_through
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            connectTimeout: 5s
+            lbPolicy: CLUSTER_PROVIDED
+            name: pass_through
+            type: ORIGINAL_DST
         - name: catch_all
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
-            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 0.0.0.0
@@ -171,16 +175,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
                   cluster: pass_through
                   statPrefix: pass_through
             name: catch_all
+            trafficDirection: OUTBOUND
             useOriginalDst: true
-          version: v1
-        - name: pass_through
-          resource:
-            '@type': type.googleapis.com/envoy.api.v2.Cluster
-            connectTimeout: 5s
-            lbPolicy: CLUSTER_PROVIDED
-            name: pass_through
-            type: ORIGINAL_DST
-          version: v1
 `,
 		}),
 	)

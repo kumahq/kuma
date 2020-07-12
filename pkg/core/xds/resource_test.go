@@ -14,9 +14,9 @@ var _ = Describe("ResourceSet", func() {
 
 	It("empty set should return empty list", func() {
 		// when
-		resources := &ResourceSet{}
+		resources := NewResourceSet()
 		// then
-		Expect(resources.List()).To(BeNil())
+		Expect(len(resources.List())).To(Equal(0))
 	})
 
 	It("set of 1 element should return a list of 1 element", func() {
@@ -28,7 +28,7 @@ var _ = Describe("ResourceSet", func() {
 			},
 		}
 		// when
-		resources := &ResourceSet{}
+		resources := NewResourceSet()
 		// and
 		resources.Add(resource)
 
@@ -52,7 +52,7 @@ var _ = Describe("ResourceSet", func() {
 		}
 
 		// when
-		resources := &ResourceSet{}
+		resources := NewResourceSet()
 		// and
 		resources.Add(resource1)
 		// and
@@ -78,7 +78,7 @@ var _ = Describe("ResourceSet", func() {
 		}
 
 		// when
-		resources := &ResourceSet{}
+		resources := NewResourceSet()
 		// and
 		resources.Add(resource1)
 		// and
@@ -104,7 +104,7 @@ var _ = Describe("ResourceSet", func() {
 		}
 
 		// when
-		resources := &ResourceSet{}
+		resources := NewResourceSet()
 		// and
 		resources.Add(resource1)
 		// and
