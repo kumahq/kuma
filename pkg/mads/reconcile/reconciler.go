@@ -6,7 +6,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,

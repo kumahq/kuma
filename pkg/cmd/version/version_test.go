@@ -8,11 +8,11 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/cmd/version"
+	. "github.com/kumahq/kuma/pkg/cmd/version"
 
 	"github.com/spf13/cobra"
 
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var _ = Describe("version", func() {

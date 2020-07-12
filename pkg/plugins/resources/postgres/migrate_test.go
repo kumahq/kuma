@@ -3,10 +3,10 @@
 package postgres
 
 import (
-	"github.com/Kong/kuma/pkg/config"
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/Kong/kuma/pkg/core/plugins"
-	common_postgres "github.com/Kong/kuma/pkg/plugins/common/postgres"
+	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/core/plugins"
+	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

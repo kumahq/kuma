@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/config"
-	"github.com/Kong/kuma/pkg/config/plugins/resources/k8s"
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/k8s"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 )
 
 var _ config.Config = &StoreConfig{}

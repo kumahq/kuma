@@ -6,13 +6,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s/tracing"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/tracing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/test/vfsgen"
+	"github.com/kumahq/kuma/pkg/test/vfsgen"
 )
 
 var _ = Describe("Templates", func() {

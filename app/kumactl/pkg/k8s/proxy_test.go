@@ -11,7 +11,7 @@ import (
 
 	kube_rest "k8s.io/client-go/rest"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/k8s"
+	"github.com/kumahq/kuma/app/kumactl/pkg/k8s"
 )
 
 var _ = Describe("Proxy", func() {

@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/Kong/kuma/test/framework"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 var _ = Describe("Test App deployment", func() {

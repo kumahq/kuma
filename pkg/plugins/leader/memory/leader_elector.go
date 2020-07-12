@@ -1,6 +1,6 @@
 package memory
 
-import "github.com/Kong/kuma/pkg/core/runtime/component"
+import "github.com/kumahq/kuma/pkg/core/runtime/component"
 
 type noopLeaderElector struct {
 	alwaysLeader bool

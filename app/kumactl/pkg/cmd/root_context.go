@@ -8,16 +8,16 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/config"
-	kumactl_resources "github.com/Kong/kuma/app/kumactl/pkg/resources"
-	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
-	"github.com/Kong/kuma/pkg/catalog"
-	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
-	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	util_files "github.com/Kong/kuma/pkg/util/files"
+	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
+	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
+	"github.com/kumahq/kuma/pkg/catalog"
+	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	util_files "github.com/kumahq/kuma/pkg/util/files"
 )
 
 type RootArgs struct {

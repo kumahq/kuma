@@ -3,7 +3,7 @@ package clusters
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 )
 
 func StaticCluster(name string, address string, port uint32) ClusterBuilderOpt {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 func CreateRandomDb(cfg postgres.PostgresStoreConfig) (string, error) {

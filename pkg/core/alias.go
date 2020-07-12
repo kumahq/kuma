@@ -7,7 +7,7 @@ import (
 	kube_log "sigs.k8s.io/controller-runtime/pkg/log"
 	kube_signals "sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	kuma_log "github.com/Kong/kuma/pkg/log"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 var (

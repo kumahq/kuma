@@ -10,7 +10,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"go.uber.org/multierr"
 
-	config_mode "github.com/Kong/kuma/pkg/config/mode"
+	config_mode "github.com/kumahq/kuma/pkg/config/mode"
 )
 
 const (

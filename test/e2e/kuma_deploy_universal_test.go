@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/test/framework"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 var _ = Describe("Test Universal deployment", func() {

@@ -5,12 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
+	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
 )
 
 func New(resourceManager core_manager.ResourceManager, caManagers core_ca.Managers) sds_provider.SecretProvider {

@@ -45,7 +45,7 @@ more than willing to assist you on Slack!
 
 ## Where to report bugs?
 
-Feel free to [submit an issue](https://github.com/Kong/kuma/issues/new) on
+Feel free to [submit an issue](https://github.com/kumahq/kuma/issues/new) on
 the GitHub repository, we would be grateful to hear about it! Please make sure
 to respect the GitHub issue template, and include:
 
@@ -62,7 +62,7 @@ on how to best do so.
 
 ## Where to submit feature requests?
 
-You can [submit an issue](https://github.com/Kong/kuma/issues/new) for feature
+You can [submit an issue](https://github.com/kumahq/kuma/issues/new) for feature
 requests. Please add as much detail as you can when doing so.
 
 You are also welcome to propose patches adding new features. See the section
@@ -97,7 +97,7 @@ with [Netlify](https://www.netlify.com/). You are welcome to propose changes to 
 (correct typos, add examples or clarifications...)!
 
 The repository is also hosted on GitHub at:
-https://github.com/Kong/kuma-website
+https://github.com/kumahq/kuma-website
 
 [Back to TOC](#table-of-contents)
 
@@ -288,7 +288,7 @@ suite.
 
 ### Contributor T-shirt
 
-If your Pull Request to [Kong/kuma](https://github.com/Kong/kuma) was
+If your Pull Request to [Kong/kuma](https://github.com/kumahq/kuma) was
 accepted, and it fixes a bug, adds functionality, or makes it significantly
 easier to use or understand Kuma, congratulations! You are eligible to
 receive the very special Contributor T-shirt! Go ahead and fill out the

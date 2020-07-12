@@ -13,8 +13,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
-	config_types "github.com/Kong/kuma/pkg/config/types"
+	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ = Describe("Remote Bootstrap", func() {

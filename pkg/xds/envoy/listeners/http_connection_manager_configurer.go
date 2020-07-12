@@ -5,8 +5,8 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 func HttpConnectionManager(statsName string) FilterChainBuilderOpt {

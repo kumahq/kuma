@@ -3,8 +3,8 @@ package ca
 import (
 	"context"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/tls"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/tls"
 )
 
 type Cert = []byte

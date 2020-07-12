@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
-	config_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	"github.com/Kong/kuma/pkg/core/resources/store"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type DNSPersistence struct {

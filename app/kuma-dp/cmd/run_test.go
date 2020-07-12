@@ -19,14 +19,14 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/Kong/kuma/pkg/catalog"
-	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
-	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/test"
-	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/pkg/catalog"
+	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
+	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/test"
+	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("run", func() {

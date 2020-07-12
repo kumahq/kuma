@@ -3,10 +3,10 @@ package sample
 import (
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	"github.com/Kong/kuma/pkg/core/validators"
-	proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
 const (

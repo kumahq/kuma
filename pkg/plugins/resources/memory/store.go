@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type resourceKey struct {

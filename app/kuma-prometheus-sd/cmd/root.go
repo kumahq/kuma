@@ -5,10 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
-	"github.com/Kong/kuma/pkg/cmd/version"
-	"github.com/Kong/kuma/pkg/core"
-	kuma_log "github.com/Kong/kuma/pkg/log"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/cmd/version"
+	"github.com/kumahq/kuma/pkg/core"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 var (

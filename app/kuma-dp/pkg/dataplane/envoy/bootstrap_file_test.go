@@ -11,7 +11,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 
-	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
+	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 )
 
 var _ = Describe("Bootstrap File", func() {

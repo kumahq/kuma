@@ -7,8 +7,8 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
 
 type Defaulter interface {

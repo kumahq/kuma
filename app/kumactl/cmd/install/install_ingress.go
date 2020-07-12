@@ -4,10 +4,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s/ingress"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/ingress"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 func newInstallIngressCmd() *cobra.Command {

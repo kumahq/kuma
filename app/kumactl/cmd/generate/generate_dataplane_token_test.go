@@ -9,13 +9,13 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
-	"github.com/Kong/kuma/pkg/catalog"
-	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
-	config_kumactl "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
+	"github.com/kumahq/kuma/pkg/catalog"
+	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
+	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
 )
 
 type staticDataplaneTokenGenerator struct {

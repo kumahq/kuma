@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/mode"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -18,8 +18,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	util_net "github.com/Kong/kuma/pkg/util/net"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type PortFwd struct {

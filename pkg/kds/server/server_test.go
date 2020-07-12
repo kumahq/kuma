@@ -5,24 +5,24 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	kds_samples "github.com/Kong/kuma/pkg/test/kds/samples"
-	kds_setup "github.com/Kong/kuma/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
+	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	"github.com/Kong/kuma/pkg/kds"
-	kds_verifier "github.com/Kong/kuma/pkg/test/kds/verifier"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/kds"
+	kds_verifier "github.com/kumahq/kuma/pkg/test/kds/verifier"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var (

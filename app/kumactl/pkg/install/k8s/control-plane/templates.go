@@ -1,6 +1,6 @@
 package controlplane
 
-//go:generate go run github.com/shurcooL/vfsgen/cmd/vfsgendev -source="github.com/Kong/kuma/app/kumactl/pkg/install/k8s/control-plane".Templates
+//go:generate go run github.com/shurcooL/vfsgen/cmd/vfsgendev -source="github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane".Templates
 
 import (
 	"path/filepath"

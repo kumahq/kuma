@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/Kong/kuma/test/framework"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 var _ = Describe("Ingress", func() {

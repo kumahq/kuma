@@ -5,7 +5,7 @@ import (
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func DefaultRoute(subsets ...envoy_common.ClusterSubset) VirtualHostBuilderOpt {

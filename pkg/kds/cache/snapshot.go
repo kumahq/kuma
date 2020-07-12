@@ -5,9 +5,9 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/kds"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/kds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 type ResourceBuilder interface {

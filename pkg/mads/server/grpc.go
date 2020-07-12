@@ -6,11 +6,11 @@ import (
 
 	"google.golang.org/grpc"
 
-	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
+	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 
-	mads_config "github.com/Kong/kuma/pkg/config/mads"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	mads_config "github.com/kumahq/kuma/pkg/config/mads"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 const grpcMaxConcurrentStreams = 1000000

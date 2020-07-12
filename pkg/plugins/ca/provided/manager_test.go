@@ -14,14 +14,14 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	"github.com/Kong/kuma/pkg/core"
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	"github.com/Kong/kuma/pkg/core/datasource"
-	"github.com/Kong/kuma/pkg/plugins/ca/provided"
-	provided_config "github.com/Kong/kuma/pkg/plugins/ca/provided/config"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
+	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Provided CA", func() {

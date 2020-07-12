@@ -14,10 +14,10 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
-	. "github.com/Kong/kuma/pkg/plugins/discovery/k8s/controllers"
+	. "github.com/kumahq/kuma/pkg/plugins/discovery/k8s/controllers"
 
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_yaml "github.com/Kong/kuma/pkg/util/yaml"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"

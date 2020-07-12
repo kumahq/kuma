@@ -7,9 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	util_files "github.com/Kong/kuma/pkg/util/files"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	util_files "github.com/kumahq/kuma/pkg/util/files"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var DefaultConfigFile = filepath.Join(os.Getenv("HOME"), ".kumactl", "config")

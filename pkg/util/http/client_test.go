@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	util_http "github.com/Kong/kuma/pkg/util/http"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 var _ = Describe("Http Util", func() {

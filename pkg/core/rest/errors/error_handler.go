@@ -5,12 +5,12 @@ import (
 
 	"github.com/emicklei/go-restful"
 
-	api_server_types "github.com/Kong/kuma/pkg/api-server/types"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/rest/errors/types"
-	"github.com/Kong/kuma/pkg/core/validators"
+	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 func HandleError(response *restful.Response, err error, title string) {

@@ -1,8 +1,8 @@
 package definitions
 
 import (
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_rest "github.com/Kong/kuma/pkg/core/resources/model/rest"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 func AllApis() core_rest.Api {

@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
-	"github.com/Kong/kuma/pkg/core/rest/errors/types"
+	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"
+	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 )
 
 var _ = Describe("Formatter test", func() {

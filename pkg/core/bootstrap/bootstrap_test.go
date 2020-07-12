@@ -3,12 +3,12 @@ package bootstrap
 import (
 	"context"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

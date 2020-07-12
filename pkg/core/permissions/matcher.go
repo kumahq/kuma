@@ -5,12 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	manager_dataplane "github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
-	"github.com/Kong/kuma/pkg/core/policy"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
+	"github.com/kumahq/kuma/pkg/core/policy"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 type TrafficPermissionsMatcher struct {
