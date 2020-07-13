@@ -10,9 +10,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
-	util_http "github.com/Kong/kuma/pkg/util/http"
+	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 const (

@@ -10,10 +10,10 @@ import (
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/envoy/routes"
-	"github.com/Kong/kuma/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func FaultInjection(faultInjection *mesh_proto.FaultInjection) FilterChainBuilderOpt {

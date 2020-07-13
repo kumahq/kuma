@@ -5,13 +5,13 @@ Below you can find the checklist of all the work that has to be performed when c
 To release a new version of Kuma follow these steps:
 
 - [ ] Update the `CHANGELOG.md`.
-- [ ] Double-check that all the new changes have been documented on the [kuma.io website](https://github.com/Kong/kuma-website) by opening up a documentation PR with the new content for the new version of Kuma.
+- [ ] Double-check that all the new changes have been documented on the [kuma.io website](https://github.com/kumahq/kuma-website) by opening up a documentation PR with the new content for the new version of Kuma.
 - [ ] Create a new Git tag for the release.
 - [ ] Push the Git tag. This will trigger the release job on CI.
 - [ ] Make sure that new binaries are available in [Bintray](https://bintray.com/kong/kuma).
 - [ ] Download the new Kuma version and double-check that it works with the demo app. Check that is works both in `universal` and `kubernetes` modes.
 - [ ] Merge PR to website repository.
-- [ ] Create a new [Github release](https://github.com/Kong/kuma/releases) and create a link to both the changelog and to the assets download.
+- [ ] Create a new [Github release](https://github.com/kumahq/kuma/releases) and create a link to both the changelog and to the assets download.
 - [ ] Create a blog post that describes the most important features of the release, linking to the `CHANGELOG.md`, and including the download links.
 - [ ] Review and approve the blog post.
 - [ ] Post the content on the Kong blog.

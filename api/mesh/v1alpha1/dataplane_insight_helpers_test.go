@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/Kong/kuma/api/internal/util/proto"
-	. "github.com/Kong/kuma/api/mesh/v1alpha1"
+	util_proto "github.com/kumahq/kuma/api/internal/util/proto"
+	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 )

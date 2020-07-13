@@ -8,7 +8,7 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
 
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 type ComponentFactory func(logr.Logger, *envoy_api_v2.DiscoveryRequest) component.Component

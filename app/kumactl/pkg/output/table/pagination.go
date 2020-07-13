@@ -3,7 +3,7 @@ package table
 import (
 	"fmt"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 func PaginationFooter(list model.ResourceList) string {

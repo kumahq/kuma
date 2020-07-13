@@ -5,13 +5,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/xds/generator/modifications"
+	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
 
-	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	util_envoy "github.com/Kong/kuma/pkg/util/envoy"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	kuma_mesh "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	util_envoy "github.com/kumahq/kuma/pkg/util/envoy"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 type ProxyTemplateGenerator struct {

@@ -15,7 +15,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/docker"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	util_net "github.com/Kong/kuma/pkg/util/net"
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type AppMode string

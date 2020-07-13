@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net"
 
-	"github.com/Kong/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config"
 )
 
 // DNS Server configuration

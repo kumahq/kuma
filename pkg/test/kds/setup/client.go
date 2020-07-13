@@ -1,10 +1,10 @@
 package setup
 
 import (
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	kds_client "github.com/Kong/kuma/pkg/kds/client"
-	"github.com/Kong/kuma/pkg/test/grpc"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	kds_client "github.com/kumahq/kuma/pkg/kds/client"
+	"github.com/kumahq/kuma/pkg/test/grpc"
 )
 
 type mockKDSClient struct {

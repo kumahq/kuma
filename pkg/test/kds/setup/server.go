@@ -4,22 +4,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
-	"github.com/Kong/kuma/pkg/kds/reconcile"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
 
 	. "github.com/onsi/gomega"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	kds_config "github.com/Kong/kuma/pkg/config/kds"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
-	test_grpc "github.com/Kong/kuma/pkg/test/grpc"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	kds_config "github.com/kumahq/kuma/pkg/config/kds"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+	test_grpc "github.com/kumahq/kuma/pkg/test/grpc"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 type testRuntimeContext struct {

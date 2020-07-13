@@ -4,22 +4,22 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
-	mesh_helper "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_validators "github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/plugins/ca/builtin/config"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
+	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_validators "github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type builtinCaManager struct {

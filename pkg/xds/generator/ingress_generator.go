@@ -7,16 +7,16 @@ import (
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
-	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
-	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
-	envoy_tls "github.com/Kong/kuma/pkg/xds/envoy/tls"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
+	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 const (

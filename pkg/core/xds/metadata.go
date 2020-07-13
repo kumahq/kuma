@@ -3,7 +3,7 @@ package xds
 import (
 	"strconv"
 
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )

@@ -3,8 +3,8 @@ package api_server
 import (
 	"github.com/emicklei/go-restful"
 
-	"github.com/Kong/kuma/pkg/catalog"
-	config_catalog "github.com/Kong/kuma/pkg/config/api-server/catalog"
+	"github.com/kumahq/kuma/pkg/catalog"
+	config_catalog "github.com/kumahq/kuma/pkg/config/api-server/catalog"
 )
 
 func catalogWs(cfg config_catalog.CatalogConfig) *restful.WebService {

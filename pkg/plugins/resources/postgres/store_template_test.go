@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config"
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	common_postgres "github.com/Kong/kuma/pkg/plugins/common/postgres"
-	test_store "github.com/Kong/kuma/pkg/test/store"
+	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
+	test_store "github.com/kumahq/kuma/pkg/test/store"
 )
 
 var _ = Describe("PostgresStore template", func() {

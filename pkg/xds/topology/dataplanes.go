@@ -3,8 +3,8 @@ package topology
 import (
 	"context"
 
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 )
 
 // GetDataplanes returs list of Dataplane in provided Mesh and Ingresses (which are cluster-scoped, not mesh-scoped)

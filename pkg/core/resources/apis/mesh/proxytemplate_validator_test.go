@@ -10,8 +10,8 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/echo/v2"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("ProxyTemplate", func() {

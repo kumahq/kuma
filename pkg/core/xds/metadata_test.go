@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds"
 )
 
 type testCase struct {

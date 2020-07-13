@@ -1,7 +1,7 @@
 package tls_test
 
 import (
-	"github.com/Kong/kuma/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

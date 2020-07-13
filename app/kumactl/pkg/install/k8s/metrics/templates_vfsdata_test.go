@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s/metrics"
-	"github.com/Kong/kuma/pkg/test/vfsgen"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/metrics"
+	"github.com/kumahq/kuma/pkg/test/vfsgen"
 )
 
 var _ = Describe("Templates", func() {

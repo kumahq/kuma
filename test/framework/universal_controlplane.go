@@ -5,7 +5,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/mode"
 )
 
 type UniversalControlPlane struct {

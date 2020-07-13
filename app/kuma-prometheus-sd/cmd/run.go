@@ -9,14 +9,14 @@ import (
 
 	"github.com/prometheus/prometheus/documentation/examples/custom-sd/adapter"
 
-	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
-	"github.com/Kong/kuma/pkg/config"
-	kuma_promsd "github.com/Kong/kuma/pkg/config/app/kuma-prometheus-sd"
-	"github.com/Kong/kuma/pkg/core"
+	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
+	"github.com/kumahq/kuma/pkg/config"
+	kuma_promsd "github.com/kumahq/kuma/pkg/config/app/kuma-prometheus-sd"
+	"github.com/kumahq/kuma/pkg/core"
 
-	"github.com/Kong/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
-	util_log "github.com/Kong/kuma/app/kuma-prometheus-sd/pkg/util/go-kit/log"
-	util_os "github.com/Kong/kuma/pkg/util/os"
+	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
+	util_log "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/util/go-kit/log"
+	util_os "github.com/kumahq/kuma/pkg/util/os"
 )
 
 var (

@@ -3,8 +3,8 @@ package store
 import (
 	"context"
 
-	config_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type ConfigStore interface {

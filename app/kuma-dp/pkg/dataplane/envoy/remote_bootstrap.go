@@ -11,9 +11,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
+	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 type remoteBootstrap struct {

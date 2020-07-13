@@ -6,8 +6,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	config_store "github.com/Kong/kuma/pkg/core/config/store"
-	"github.com/Kong/kuma/pkg/core/resources/store"
+	config_store "github.com/kumahq/kuma/pkg/core/config/store"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,9 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	system_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	"github.com/Kong/kuma/pkg/plugins/config/k8s"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	system_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/plugins/config/k8s"
 )
 
 var _ = Describe("KubernetesStore", func() {

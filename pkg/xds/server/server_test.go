@@ -31,7 +31,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/test/resource/v2"
 
-	"github.com/Kong/kuma/pkg/xds/server"
+	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
 type hasher struct {

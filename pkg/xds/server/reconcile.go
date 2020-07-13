@@ -3,10 +3,10 @@ package server
 import (
 	"github.com/golang/protobuf/proto"
 
-	"github.com/Kong/kuma/pkg/core"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/core"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"

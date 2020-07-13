@@ -4,7 +4,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core"
 
 	// we use gopkg.in/yaml.v2 because it supports time.Duration
 	"io/ioutil"

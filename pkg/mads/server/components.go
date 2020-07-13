@@ -6,12 +6,12 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/Kong/kuma/pkg/core"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	mads_generator "github.com/Kong/kuma/pkg/mads/generator"
-	mads_reconcile "github.com/Kong/kuma/pkg/mads/reconcile"
-	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/core"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	mads_generator "github.com/kumahq/kuma/pkg/mads/generator"
+	mads_reconcile "github.com/kumahq/kuma/pkg/mads/reconcile"
+	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
