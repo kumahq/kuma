@@ -7,8 +7,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 func (f *FaultInjectionResource) Validate() error {

@@ -4,10 +4,10 @@ import (
 	"github.com/pkg/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/Kong/kuma/pkg/core"
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
-	"github.com/Kong/kuma/pkg/plugins/discovery/k8s/controllers"
-	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/core"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/plugins/discovery/k8s/controllers"
+	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
 )
 
 var _ core_plugins.DiscoveryPlugin = &plugin{}

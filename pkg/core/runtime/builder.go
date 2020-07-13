@@ -3,23 +3,23 @@ package runtime
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/core/secrets/store"
 
-	"github.com/Kong/kuma/pkg/zones/poller"
+	"github.com/kumahq/kuma/pkg/zones/poller"
 
-	"github.com/Kong/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns"
 
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	"github.com/Kong/kuma/pkg/core"
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
-	"github.com/Kong/kuma/pkg/core/datasource"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // BuilderContext provides access to Builder's interim state.

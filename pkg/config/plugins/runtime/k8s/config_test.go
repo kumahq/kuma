@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"time"
 
-	runtime_k8s "github.com/Kong/kuma/pkg/config/plugins/runtime/k8s"
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config"
 )
 
 var _ = Describe("Config", func() {

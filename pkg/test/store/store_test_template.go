@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	resources_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s"
-	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
-	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 func ExecuteStoreTests(

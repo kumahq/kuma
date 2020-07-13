@@ -5,21 +5,18 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/mode"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	util_net "github.com/Kong/kuma/pkg/util/net"
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type PortFwd struct {
@@ -94,7 +91,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) AddCluster(name, rawurl, lbAddress string) error {
+func (c *K8sControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressAddress string) error {
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
 		c.GetKubectlOptions())
 	if err != nil {
@@ -106,8 +103,7 @@ func (c *K8sControlPlane) AddCluster(name, rawurl, lbAddress string) error {
 		return err
 	}
 
-	cfg := kuma_cp.Config{}
-	err = yaml.Unmarshal([]byte(kumaCM.Data["config.yaml"]), &cfg)
+	newYAML, err := addGlobal(kumaCM.Data["config.yaml"], lbAddress, kdsAddress, ingressAddress)
 	if err != nil {
 		return err
 	}
@@ -295,6 +291,32 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 	pod := c.GetKumaCPPods()[0]
 
 	return "grpcs://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
+}
+
+func (c *K8sControlPlane) GetIngressAddress() string {
+	ctx := context.Background()
+	cs, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	if err != nil {
+		return "invalid"
+	}
+	ingressSvc, err := cs.CoreV1().Services(kumaNamespace).Get(ctx, "kuma-ingress", metav1.GetOptions{})
+	if err != nil {
+		return "invalid"
+	}
+	port := ingressSvc.Spec.Ports[0].NodePort
+
+	nodes, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return "invalid"
+	}
+	// assume that we have single node cluster
+	for _, addr := range nodes.Items[0].Status.Addresses {
+		if addr.Type == v1.NodeInternalIP {
+			return addr.Address + ":" + strconv.Itoa(int(port))
+		}
+	}
+
+	return "invalid"
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {

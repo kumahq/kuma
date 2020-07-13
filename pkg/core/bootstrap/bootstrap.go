@@ -3,38 +3,38 @@ package bootstrap
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/mode"
 
-	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
-	"github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 
-	"github.com/Kong/kuma/pkg/zones/poller"
+	"github.com/kumahq/kuma/pkg/zones/poller"
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/Kong/kuma/pkg/config/core"
-	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/datasource"
-	"github.com/Kong/kuma/pkg/core/managers/apis/dataplaneinsight"
-	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	runtime_reports "github.com/Kong/kuma/pkg/core/runtime/reports"
-	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
-	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
+	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
+	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {

@@ -3,21 +3,21 @@ package runtime
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/core/secrets/store"
 
-	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 
-	"github.com/Kong/kuma/pkg/zones/poller"
+	"github.com/kumahq/kuma/pkg/zones/poller"
 
-	"github.com/Kong/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns"
 
-	"github.com/Kong/kuma/pkg/core/ca"
+	"github.com/kumahq/kuma/pkg/core/ca"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // Runtime represents initialized application state.

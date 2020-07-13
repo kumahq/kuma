@@ -1,11 +1,11 @@
-module github.com/Kong/kuma
+module github.com/kumahq/kuma
 
 go 1.14
 
 require (
 	cirello.io/pglock v1.8.0
-	github.com/Kong/kuma/api v0.0.0-00010101000000-000000000000
-	github.com/Kong/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
+	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
+	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/Masterminds/goutils v1.1.0 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
@@ -60,8 +60,8 @@ require (
 )
 
 replace (
-	github.com/Kong/kuma/api => ./api
-	github.com/Kong/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
+	github.com/kumahq/kuma/api => ./api
+	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
 
 	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 	github.com/spiffe/spire/proto/spire => github.com/spiffe/spire/proto/spire v0.10.0

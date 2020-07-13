@@ -5,16 +5,16 @@ import (
 	"io"
 	"time"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/output"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 func newGetTrafficTracesCmd(pctx *listContext) *cobra.Command {

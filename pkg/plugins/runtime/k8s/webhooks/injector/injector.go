@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	runtime_k8s "github.com/Kong/kuma/pkg/config/plugins/runtime/k8s"
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 
 	"github.com/pkg/errors"
 
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"

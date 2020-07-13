@@ -24,7 +24,7 @@ build_info_fields := \
 	gitTag=$(BUILD_INFO_GIT_TAG) \
 	gitCommit=$(BUILD_INFO_GIT_COMMIT) \
 	buildDate=$(BUILD_INFO_BUILD_DATE)
-build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/Kong/kuma/pkg/version.$(entry))
+build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
 
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags)"
 GOOS := $(shell go env GOOS)
@@ -146,7 +146,7 @@ PROTOC_GO := protoc \
 	--proto_path=./api \
 	--proto_path=. \
 	$(protoc_search_go_paths) \
-	--go_out=plugins=grpc,Msystem/v1alpha1/datasource.proto=github.com/Kong/kuma/api/system/v1alpha1:. \
+	--go_out=plugins=grpc,Msystem/v1alpha1/datasource.proto=github.com/kumahq/kuma/api/system/v1alpha1:. \
 	--validate_out=lang=go:.
 
 PROTOC_OS=unknown
@@ -247,7 +247,7 @@ golangci-lint: ## Dev: Runs golangci-lint linter
 	$(GOLANGCI_LINT_DIR)/golangci-lint run --timeout=10m -v
 
 imports: ## Dev: Runs goimports in order to organize imports
-	goimports -w -local github.com/Kong/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
+	goimports -w -local github.com/kumahq/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
 
 check: generate fmt vet docs golangci-lint imports tidy ## Dev: Run code checks (go fmt, go vet, ...)
 	make generate manifests -C pkg/plugins/resources/k8s/native
@@ -261,7 +261,7 @@ ${COVERAGE_PROFILE}:
 coverage: ${COVERAGE_PROFILE}
 	GOFLAGS='${GOFLAGS}' go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
 
-test/kuma: # Dev: Run tests for the module github.com/Kong/kuma
+test/kuma: # Dev: Run tests for the module github.com/kumahq/kuma
 	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 
 test/api: \

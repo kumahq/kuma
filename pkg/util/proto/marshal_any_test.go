@@ -3,8 +3,8 @@ package proto_test
 import (
 	"github.com/golang/protobuf/proto"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/envoy"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

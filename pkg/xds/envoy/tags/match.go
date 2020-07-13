@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 func MatchingRegex(tags mesh_proto.SingleValueTagSet) (re string) {

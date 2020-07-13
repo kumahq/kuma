@@ -6,14 +6,14 @@ import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	manager_dataplane "github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 // PrometheusEndpointGenerator generates an inbound Envoy listener

@@ -16,9 +16,9 @@ import (
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
-	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
+	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 
-	"github.com/Kong/kuma/pkg/mads"
+	"github.com/kumahq/kuma/pkg/mads"
 )
 
 type Client struct {

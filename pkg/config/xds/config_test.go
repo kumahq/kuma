@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config"
-	kuma_xds "github.com/Kong/kuma/pkg/config/xds"
+	"github.com/kumahq/kuma/pkg/config"
+	kuma_xds "github.com/kumahq/kuma/pkg/config/xds"
 )
 
 var _ = Describe("XdsServerConfig", func() {

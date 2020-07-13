@@ -7,14 +7,14 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
-	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	sample_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
-	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
-	sample_core "github.com/Kong/kuma/pkg/test/resources/apis/sample"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
+	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -8,22 +8,22 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/mode"
 
-	"github.com/Kong/kuma/pkg/zones/poller"
+	"github.com/kumahq/kuma/pkg/zones/poller"
 
 	"github.com/emicklei/go-restful"
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/api-server/definitions"
-	"github.com/Kong/kuma/pkg/config"
-	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	"github.com/kumahq/kuma/pkg/config"
+	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/runtime"
 )
 
 var (

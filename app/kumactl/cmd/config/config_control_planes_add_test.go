@@ -14,10 +14,10 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/config"
-	"github.com/Kong/kuma/pkg/api-server/types"
+	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	"github.com/kumahq/kuma/pkg/api-server/types"
 
-	"github.com/Kong/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

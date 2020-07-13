@@ -5,7 +5,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 func HealthCheck(healthCheck *mesh_core.HealthCheckResource) ClusterBuilderOpt {

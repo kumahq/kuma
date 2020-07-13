@@ -1,8 +1,8 @@
 package provided
 
 import (
-	"github.com/Kong/kuma/pkg/core/ca"
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/ca"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 )
 
 var _ core_plugins.CaPlugin = &plugin{}

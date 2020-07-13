@@ -9,9 +9,9 @@ import (
 
 	"cirello.io/pglock"
 
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	util_channels "github.com/Kong/kuma/pkg/util/channels"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	util_channels "github.com/kumahq/kuma/pkg/util/channels"
 )
 
 var log = core.Log.WithName("postgres-leader")

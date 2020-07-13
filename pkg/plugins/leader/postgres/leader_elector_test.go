@@ -10,11 +10,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config"
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	common_postgres "github.com/Kong/kuma/pkg/plugins/common/postgres"
-	leader_postgres "github.com/Kong/kuma/pkg/plugins/leader/postgres"
+	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
+	leader_postgres "github.com/kumahq/kuma/pkg/plugins/leader/postgres"
 )
 
 var _ = Describe("postgresLeaderElector", func() {

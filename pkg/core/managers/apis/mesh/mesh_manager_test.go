@@ -3,28 +3,28 @@ package mesh
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/datasource"
-	"github.com/Kong/kuma/pkg/plugins/ca/provided"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/secrets/cipher"
-	secrets_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	secrets_store "github.com/Kong/kuma/pkg/core/secrets/store"
-	"github.com/Kong/kuma/pkg/core/validators"
-	ca_builtin "github.com/Kong/kuma/pkg/plugins/ca/builtin"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	test_resources "github.com/Kong/kuma/pkg/test/resources"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	secrets_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	ca_builtin "github.com/kumahq/kuma/pkg/plugins/ca/builtin"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_resources "github.com/kumahq/kuma/pkg/test/resources"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Mesh Manager", func() {

@@ -5,14 +5,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/ca"
-	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
-	"github.com/Kong/kuma/pkg/core/datasource"
-	mesh_helper "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/plugins/ca/provided/config"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/ca"
+	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type providedCaManager struct {

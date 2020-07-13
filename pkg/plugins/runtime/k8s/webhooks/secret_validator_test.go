@@ -6,9 +6,9 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	secrets_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	core_validators "github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
+	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	core_validators "github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_core "k8s.io/api/core/v1"

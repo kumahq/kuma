@@ -4,7 +4,7 @@ This document defines governance policies for the Kuma project.
 
 ## Maintainers
 
-Kuma Maintainers have write access to the Kuma GitHub repository https://github.com/Kong/kuma.
+Kuma Maintainers have write access to the Kuma GitHub repository https://github.com/kumahq/kuma.
 They can merge their own patches or patches from others. The current maintainers can be found in [CODEOWNERS](./CODEOWNERS).
 
 This privilege is granted with some expectation of responsibility: maintainers are people who care about the Kuma project and want to help it grow and improve. A maintainer is not just someone who can make changes, but someone who has demonstrated his or her ability to collaborate with the team, get the most knowledgeable people to review code, contribute high-quality code, and follow through to fix issues (in code or tests).
@@ -24,7 +24,7 @@ To become a maintainer you need to demonstrate the following:
   * understanding of how the team works (policies, processes for testing and code review, etc), 
   * understanding of the project's code base and coding style.
 
-A new maintainer must be proposed by an existing maintainer by opening an issue (with title `Maintainer Nomination`) to the Kuma Github repository (https://github.com/Kong/kuma) containing the following information:
+A new maintainer must be proposed by an existing maintainer by opening an issue (with title `Maintainer Nomination`) to the Kuma Github repository (https://github.com/kumahq/kuma) containing the following information:
 
   * nominee's first and last name,
   * nominee's email address and GitHub user name,
@@ -39,8 +39,8 @@ Maintainers can be removed by a 2/3 majority vote by maintainers.
 
 ## GitHub Project Administration
 
-Maintainers will be added to the GitHub @Kong/kuma-maintainers team, and made a GitHub maintainer of that team.
-They will be given write permission to the Kuma GitHub repository https://github.com/Kong/kuma.
+Maintainers will be added to the GitHub @kumahq/kuma-maintainers team, and made a GitHub maintainer of that team.
+They will be given write permission to the Kuma GitHub repository https://github.com/kumahq/kuma.
 
 ## Changes in Governance
 

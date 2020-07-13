@@ -10,7 +10,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"go.uber.org/multierr"
 
-	config_mode "github.com/Kong/kuma/pkg/config/mode"
+	config_mode "github.com/kumahq/kuma/pkg/config/mode"
 )
 
 const (
@@ -50,14 +50,43 @@ func (c *UniversalCluster) DeployKuma(mode ...string) error {
 	}
 	c.controlplane = NewUniversalControlPlane(c.t, mode[0], c.name, c, c.verbose)
 
-	c.apps[AppModeCP] = NewUniversalApp(c.t, AppModeCP, true, "kuma-cp", "run")
-	err := c.apps[AppModeCP].mainApp.Start()
+	args := []string{"kuma-cp", "run"}
+	env := []string{"KUMA_MODE_MODE=" + mode[0]}
+	switch mode[0] {
+	case config_mode.Remote:
+		env = append(env, "KUMA_MODE_REMOTE_ZONE="+c.name)
+	case config_mode.Global:
+		args = append(args, "--config-file", confPath)
+	}
+
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, true, env, args)
 	if err != nil {
 		return err
 	}
 
-	kumacpURL := "http://localhost:5681"
-	return c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
+	err = app.mainApp.Start()
+	if err != nil {
+		return err
+	}
+
+	kumacpURL := "http://localhost:" + app.ports["5681"]
+	err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
+	if err != nil {
+		return err
+	}
+
+	c.apps[AppModeCP] = app
+
+	switch mode[0] {
+	case config_mode.Remote:
+		dpyaml := fmt.Sprintf(IngressDataplane, app.ip, kdsPort)
+		err = c.CreateDP(app, "ingress", dpyaml)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (c *UniversalCluster) GetKuma() ControlPlane {
@@ -69,9 +98,7 @@ func (c *UniversalCluster) VerifyKuma() error {
 }
 
 func (c *UniversalCluster) RestartKuma() error {
-	mode := c.controlplane.mode
-	_ = c.DeleteKuma()
-	return c.DeployKuma(mode)
+	return c.apps[AppModeCP].ReStart()
 }
 
 func (c *UniversalCluster) DeleteKuma() error {
@@ -102,6 +129,30 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
+func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml string) error {
+	// apply the dataplane
+	err := c.controlplane.kumactl.KumactlApplyFromString(dpyaml)
+	if err != nil {
+		return err
+	}
+
+	// generate the token on the CP node
+	sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
+		"-H", "\"Content-Type: application/json\"",
+		"--data", "'{\"name\": \"dp-" + appname + "\", \"mesh\": \"default\"}'",
+		"http://localhost:5679/tokens"})
+	if err := sshApp.Run(); err != nil {
+		return err
+	}
+
+	token := sshApp.Out()
+
+	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
+	app.CreateDP(token, cpAddress, appname)
+
+	return app.dpApp.Start()
+}
+
 func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 	var args []string
 	switch appname {
@@ -113,8 +164,12 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 		return errors.Errorf("not supported app type %s", appname)
 	}
 
-	app := NewUniversalApp(c.t, AppMode(appname), c.verbose, args...)
-	err := app.mainApp.Start()
+	app, err := NewUniversalApp(c.t, c.name, AppMode(appname), c.verbose, []string{}, args)
+	if err != nil {
+		return err
+	}
+
+	err = app.mainApp.Start()
 	if err != nil {
 		return err
 	}
@@ -123,25 +178,12 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 	dpyaml := ""
 	switch appname {
 	case AppModeEchoServer:
-		dpyaml = fmt.Sprintf(EchoServerDataplane, "dp-"+appname, ip, "8080", "80")
+		dpyaml = fmt.Sprintf(EchoServerDataplane, "dp-"+appname, ip, "8080", "80", "8080")
 	case AppModeDemoClient:
-		dpyaml = fmt.Sprintf(DemoClientDataplane, "dp-"+appname, ip, "13000", "3000")
+		dpyaml = fmt.Sprintf(DemoClientDataplane, "dp-"+appname, ip, "13000", "3000", "80", "8080")
 	}
 
-	// apply the dataplane
-	err = c.controlplane.kumactl.KumactlApplyFromString(fmt.Sprint(dpyaml))
-	if err != nil {
-		return err
-	}
-
-	// generate the token on the CP node
-	token, _ := NewSshApp(c.verbose, c.apps[AppModeCP].ip, "curl",
-		"-H", "\"Content-Type: application/json\"",
-		"--data", "'{\"name\": \"dp-"+appname+"\", \"mesh\": \"default\"}'",
-		"http://localhost:5679/tokens").cmd.Output()
-
-	app.CreateDP(string(token), c.apps[AppModeCP].ip, appname)
-	err = app.dpApp.Start()
+	err = c.CreateDP(app, appname, dpyaml)
 	if err != nil {
 		return err
 	}
@@ -160,7 +202,7 @@ func (c *UniversalCluster) DeleteApp(namespace, appname string) error {
 }
 
 func (c *UniversalCluster) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	return "", "", nil
+	panic("not implementedv")
 }
 
 func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, cmd ...string) (string, string, error) {
@@ -174,9 +216,9 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 		func() (string, error) {
 			app, ok := c.apps[appname]
 			if !ok {
-				return "", errors.Errorf("App %s not found for deletion", appname)
+				return "", errors.Errorf("App %s not found", appname)
 			}
-			sshApp := NewSshApp(false, app.sshPort, cmd...)
+			sshApp := NewSshApp(false, app.ports[sshPort], []string{}, cmd)
 			err := sshApp.Run()
 			stdout = sshApp.Out()
 			stderr = sshApp.Err()

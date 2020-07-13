@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config"
-	kuma_promsd "github.com/Kong/kuma/pkg/config/app/kuma-prometheus-sd"
+	"github.com/kumahq/kuma/pkg/config"
+	kuma_promsd "github.com/kumahq/kuma/pkg/config/app/kuma-prometheus-sd"
 )
 
 var _ = Describe("Config", func() {

@@ -3,17 +3,17 @@ package reconcile
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
-	"github.com/Kong/kuma/pkg/kds/util"
+	"github.com/kumahq/kuma/pkg/kds/util"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	"github.com/Kong/kuma/pkg/kds/cache"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/kds/cache"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 type ResourceFilter func(clusterID string, r model.Resource) bool

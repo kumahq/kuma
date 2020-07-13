@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	util_test "github.com/Kong/kuma/pkg/util/test"
+	util_test "github.com/kumahq/kuma/pkg/util/test"
 )
 
 func TestGenerator(t *testing.T) {

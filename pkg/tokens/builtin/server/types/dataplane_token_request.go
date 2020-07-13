@@ -1,6 +1,6 @@
 package types
 
-import "github.com/Kong/kuma/pkg/core/xds"
+import "github.com/kumahq/kuma/pkg/core/xds"
 
 type DataplaneTokenRequest struct {
 	Name string `json:"name"`
