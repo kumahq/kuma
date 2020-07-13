@@ -3,11 +3,11 @@ package modifications_test
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/generator"
-	"github.com/Kong/kuma/pkg/xds/generator/modifications"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

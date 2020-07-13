@@ -1,8 +1,8 @@
 package modifications
 
 import (
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	model "github.com/Kong/kuma/pkg/core/xds"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	model "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // GeneratedByProxyTemplateModifications is a marker to indicate by which ProxyGenerator resources were generated.

@@ -6,9 +6,9 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/gogo/protobuf/proto"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func applyNetworkFilterModification(resources *model.ResourceSet, modification *mesh_proto.ProxyTemplate_Modifications_NetworkFilter) error {
