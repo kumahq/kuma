@@ -1,8 +1,8 @@
 package definitions
 
 import (
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 var ZoneWsDefinition = ResourceWsDefinition{
