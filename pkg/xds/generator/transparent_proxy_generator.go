@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"github.com/Kong/kuma/pkg/xds/envoy/names"
 	"github.com/pkg/errors"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -37,16 +38,47 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate cluster: pass_through")
 	}
+
+	inboundPassThroughClusterName := "inbound:pass_through"
+	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder().
+		Configure(envoy_clusters.PassThroughCluster(inboundPassThroughClusterName)).
+		Configure(envoy_clusters.UpstreamBindConfig("127.0.0.6", 0)).
+		Build()
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not generate cluster: %s", inboundPassThroughClusterName)
+	}
+
+	inboundListenerName := names.GetInboundListenerName("0.0.0.0", 15006)
+	inboundListener, err := envoy_listeners.NewListenerBuilder().
+		Configure(envoy_listeners.OutboundListener(inboundListenerName, "0.0.0.0", 15006)).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+			Configure(envoy_listeners.TcpProxy(inboundPassThroughClusterName, envoy_common.ClusterSubset{ClusterName: inboundPassThroughClusterName})))).
+		Configure(envoy_listeners.OriginalDstForwarder()).
+		Build()
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not generate listener: %s", inboundListenerName)
+	}
+
 	return []*model.Resource{
-		&model.Resource{
+		{
 			Name:     "catch_all",
 			Version:  proxy.Dataplane.Meta.GetVersion(),
 			Resource: listener,
 		},
-		&model.Resource{
+		{
 			Name:     "pass_through",
 			Version:  proxy.Dataplane.Meta.GetVersion(),
 			Resource: cluster,
+		},
+		{
+			Name:     inboundListenerName,
+			Version:  proxy.Dataplane.Meta.GetVersion(),
+			Resource: inboundListener,
+		},
+		{
+			Name:     inboundPassThroughClusterName,
+			Version:  proxy.Dataplane.Meta.GetVersion(),
+			Resource: inboundPassThroughCluster,
 		},
 	}, nil
 }

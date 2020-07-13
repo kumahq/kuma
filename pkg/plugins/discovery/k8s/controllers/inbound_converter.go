@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
@@ -60,6 +59,9 @@ func InboundTagsFor(zone string, pod *kube_core.Pod, svc *kube_core.Service, svc
 	// since gateway proxies multiple services each with its own protocol
 	if !isGateway {
 		tags[mesh_proto.ProtocolTag] = ProtocolTagFor(svc, svcPort)
+	}
+	if isHeadlessService(svc) {
+		tags[mesh_proto.IdentifierTag] = pod.Name
 	}
 	return tags
 }
