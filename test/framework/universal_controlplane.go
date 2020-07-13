@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -46,7 +47,7 @@ func (c *UniversalControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressA
 		return err
 	}
 
-	resultYAML, err := addGlobal(cat.Out(), lbAddress, kdsAddress, ingressAddress)
+	resultYAML, err := addGlobal(cat.Out(), lbAddress)
 	if err != nil {
 		return err
 	}
@@ -54,6 +55,11 @@ func (c *UniversalControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressA
 	err = NewSshApp(false, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{
 		"echo", "\"" + resultYAML + "\"", ">", confPath,
 	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = c.kumactl.KumactlApplyFromString(fmt.Sprintf(zoneTemplate, name, "kuma-system", kdsAddress, ingressAddress))
 
 	return err
 }

@@ -103,39 +103,19 @@ func (c *K8sControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressAddress
 		return err
 	}
 
-	newYAML, err := addGlobal(kumaCM.Data["config.yaml"], lbAddress, kdsAddress, ingressAddress)
+	newYAML, err := addGlobal(kumaCM.Data["config.yaml"], lbAddress)
 	if err != nil {
 		return err
 	}
 
-	if cfg.Mode == nil {
-		cfg.Mode = mode.DefaultModeConfig()
-		cfg.Mode.Mode = mode.Global
-	}
-
-	if cfg.Mode.Global == nil {
-		cfg.Mode.Global = mode.DefaultGlobalConfig()
-	}
-
-	cfg.Mode.Global.LBAddress = lbAddress
-
-	yamlBytes, err := yaml.Marshal(&cfg)
-	if err != nil {
-		return err
-	}
-
-	kumaCM.Data["config.yaml"] = string(yamlBytes)
+	kumaCM.Data["config.yaml"] = newYAML
 
 	_, err = clientset.CoreV1().ConfigMaps("kuma-system").Update(context.TODO(), kumaCM, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
 
-	parsed, err := url.Parse(rawurl)
-	if err != nil {
-		return err
-	}
-	err = c.kumactl.KumactlApplyFromString(fmt.Sprintf(zoneTemplate, name, "kuma-system", rawurl, parsed.Host))
+	err = c.kumactl.KumactlApplyFromString(fmt.Sprintf(zoneTemplate, name, "kuma-system", kdsAddress, ingressAddress))
 	if err != nil {
 		return err
 	}
