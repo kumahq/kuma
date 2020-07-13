@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/Kong/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/pkg/errors"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
