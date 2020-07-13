@@ -1,13 +1,13 @@
 package global
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	"github.com/Kong/kuma/pkg/config/mode"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
 	"github.com/Kong/kuma/pkg/core/resources/apis/system"
@@ -70,6 +70,7 @@ func ProvidedFilter(clusterID string, r model.Resource) bool {
 
 func SetupComponent(rt runtime.Runtime) error {
 	syncStore := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
+	readOnlyResourceManager := rt.ReadOnlyResourceManager()
 
 	clientFactory := func(clusterIP string) client.ClientFactory {
 		return func() (kdsClient client.KDSClient, err error) {
@@ -77,10 +78,18 @@ func SetupComponent(rt runtime.Runtime) error {
 		}
 	}
 
-	for _, zone := range rt.Config().Mode.Global.Zones {
-		log := kdsGlobalLog.WithValues("clusterIP", zone.Remote.Address)
+	zones := &system.ZoneResourceList{}
+	err := readOnlyResourceManager.List(context.Background(), zones)
+	if err != nil {
+		kdsGlobalLog.Error(err, "unable to list Zone resources")
+		return err
+	}
+
+	for _, zone := range zones.Items {
+		zoneIP := zone.Spec.GetRemoteControlPlane().GetPublicAddress()
+		log := kdsGlobalLog.WithValues("zoneIP", zoneIP)
 		dataplaneSink := client.NewKDSSink(log, rt.Config().Mode.Global.LBAddress, consumedTypes,
-			clientFactory(zone.Remote.Address), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore, zone))
+			clientFactory(zoneIP), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore, zone))
 		if err := rt.Add(component.NewResilientComponent(log, dataplaneSink)); err != nil {
 			return err
 		}
@@ -88,7 +97,7 @@ func SetupComponent(rt runtime.Runtime) error {
 	return nil
 }
 
-func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *mode.ZoneConfig) *client.Callbacks {
+func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, zone *system.ZoneResource) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
 			if len(rs.GetItems()) == 0 {
@@ -102,7 +111,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *mode.ZoneConfig)
 			}
 			if rs.GetItemType() == mesh.DataplaneType {
 				rs = dedupIngresses(rs)
-				adjustIngressNetworking(cfg, rs)
+				adjustIngressNetworking(zone, rs)
 			}
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
@@ -111,8 +120,12 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *mode.ZoneConfig)
 	}
 }
 
-func adjustIngressNetworking(cfg *mode.ZoneConfig, rs model.ResourceList) {
-	host, portStr, _ := net.SplitHostPort(cfg.Ingress.Address) // err is ignored because we rely on the config validation
+func adjustIngressNetworking(zone *system.ZoneResource, rs model.ResourceList) {
+	host, portStr, err := net.SplitHostPort(zone.Spec.GetIngress().GetPublicAddress())
+	if err != nil {
+		kdsGlobalLog.Error(err, "failed parsing ingress", "host", host, "port", portStr)
+		return
+	}
 	port, _ := strconv.ParseUint(portStr, 10, 32)
 	for _, r := range rs.GetItems() {
 		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
