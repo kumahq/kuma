@@ -1,8 +1,8 @@
 package universal
 
 import (
-	config_store "github.com/Kong/kuma/pkg/core/config/store"
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
+	config_store "github.com/kumahq/kuma/pkg/core/config/store"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 )
 
 var _ core_plugins.ConfigStorePlugin = &plugin{}

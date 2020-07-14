@@ -15,9 +15,9 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
-	. "github.com/Kong/kuma/pkg/plugins/ca/provided"
+	. "github.com/kumahq/kuma/pkg/plugins/ca/provided"
 
-	util_tls "github.com/Kong/kuma/pkg/tls"
+	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
 var _ = Describe("ValidateCaCert()", func() {

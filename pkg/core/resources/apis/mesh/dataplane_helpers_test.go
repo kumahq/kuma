@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {

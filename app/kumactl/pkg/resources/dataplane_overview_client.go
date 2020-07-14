@@ -10,11 +10,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/rest/errors/types"
-	"github.com/Kong/kuma/pkg/plugins/resources/remote"
-	kuma_http "github.com/Kong/kuma/pkg/util/http"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
+	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
+	kuma_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 type DataplaneOverviewClient interface {

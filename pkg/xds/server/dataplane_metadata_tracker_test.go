@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/xds/server"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
 var _ = Describe("Dataplane Metadata Tracker", func() {

@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/catalog"
-	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
-	config_catalog "github.com/Kong/kuma/pkg/config/api-server/catalog"
+	"github.com/kumahq/kuma/pkg/catalog"
+	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
+	config_catalog "github.com/kumahq/kuma/pkg/config/api-server/catalog"
 )
 
 var _ = Describe("Catalog client", func() {

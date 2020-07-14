@@ -8,17 +8,17 @@ import (
 	"reflect"
 	"strings"
 
-	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
-	"github.com/Kong/kuma/pkg/config/api-server/catalog"
-	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
-	token_server "github.com/Kong/kuma/pkg/config/token-server"
+	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
+	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
+	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
+	token_server "github.com/kumahq/kuma/pkg/config/token-server"
 
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/Kong/kuma/pkg/config/core"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/tls"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/tls"
 )
 
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")

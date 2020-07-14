@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/mode"
 
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 var (

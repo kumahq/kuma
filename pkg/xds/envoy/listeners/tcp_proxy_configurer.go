@@ -5,9 +5,9 @@ import (
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	"github.com/Kong/kuma/pkg/util/proto"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func TcpProxy(statsName string, clusters ...envoy_common.ClusterSubset) FilterChainBuilderOpt {

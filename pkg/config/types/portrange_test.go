@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/config/types"
+	. "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ = Describe("ParsePortRange()", func() {

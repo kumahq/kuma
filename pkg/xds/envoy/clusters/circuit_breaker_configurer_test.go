@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/envoy/clusters"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
 
 var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {

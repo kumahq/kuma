@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/dns"
-	"github.com/Kong/kuma/pkg/test"
+	. "github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("DNS server", func() {

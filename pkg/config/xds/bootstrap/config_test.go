@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config"
-	. "github.com/Kong/kuma/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/pkg/config"
+	. "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 )
 
 var _ = Describe("BootstrappServerConfig", func() {

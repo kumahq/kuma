@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
+	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 )
 
 var _ = Describe("Envoy", func() {

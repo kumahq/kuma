@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	util_http "github.com/Kong/kuma/pkg/util/http"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 const (

@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/util/xds"
+	. "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var _ = Describe("SnapshotAutoVersioner", func() {

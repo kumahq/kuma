@@ -10,13 +10,13 @@ import (
 
 	status "google.golang.org/genproto/googleapis/rpc/status"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
-	test_runtime "github.com/Kong/kuma/pkg/test/runtime"
+	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 )
 
 var _ = Describe("DataplaneStatusTracker", func() {

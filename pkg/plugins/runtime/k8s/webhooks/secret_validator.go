@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	"github.com/Kong/kuma/pkg/core/validators"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_core "k8s.io/api/core/v1"

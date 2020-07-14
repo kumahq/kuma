@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type ResourceStore interface {

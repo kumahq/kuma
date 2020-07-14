@@ -9,17 +9,34 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/pkg/errors"
+
 	"github.com/gruntwork-io/terratest/modules/docker"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	util_net "github.com/Kong/kuma/pkg/util/net"
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type AppMode string
 
 const (
-	AppModeCP           = "kuma-cp"
-	AppModeEchoServer   = "echo-server"
+	AppModeCP         = "kuma-cp"
+	AppModeEchoServer = "echo-server"
+	sshPort           = "22"
+
+	IngressDataplane = `
+type: Dataplane
+mesh: default
+name: dp-ingress
+networking:
+  address: %s
+  ingress: {}
+  inbound:
+  - port: %d	
+    tags:
+      service: ingress
+`
 	EchoServerDataplane = `
 type: Dataplane
 mesh: default
@@ -30,7 +47,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      service: echo-server
+      service: echo-server_kuma-test_svc_%s
       protocol: http
 `
 	AppModeDemoClient   = "demo-client"
@@ -47,7 +64,9 @@ networking:
       service: demo-client
   outbound:
   - port: 4000
-    service: echo-server
+    service: echo-server_kuma-test_svc_%s
+  - port: 4001
+    service: echo-server_kuma-test_svc_%s
 `
 )
 
@@ -68,59 +87,91 @@ var defaultDockerOptions = docker.RunOptions{
 }
 
 type UniversalApp struct {
-	t         testing.TestingT
-	mainApp   *sshApp
-	dpApp     *sshApp
-	sshPort   string
-	container string
-	ip        string
-	verbose   bool
+	t            testing.TestingT
+	mainApp      *sshApp
+	mainAppEnv   []string
+	mainAppArgs  []string
+	dpApp        *sshApp
+	ports        map[string]string
+	lastUsedPort uint32
+	container    string
+	ip           string
+	verbose      bool
 }
 
-func NewUniversalApp(t testing.TestingT, mode AppMode, verbose bool, args ...string) *UniversalApp {
-	port, err := util_net.PickTCPPort("", 10240, 11204)
-	if err != nil {
-		panic(err)
+func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, env []string, args []string) (*UniversalApp, error) {
+	app := &UniversalApp{
+		t:            t,
+		ports:        map[string]string{},
+		lastUsedPort: 10204,
+		verbose:      verbose,
 	}
-	sshPort := strconv.Itoa(int(port))
 
-	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--publish="+sshPort+":22")
+	app.allocatePublicPortsFor("22")
 
 	if mode == AppModeCP {
-		opts.OtherOptions = append(opts.OtherOptions,
-			"--publish=5678:5678",
-			"--publish=5679:5679",
-			"--publish=5680:5680",
-			"--publish=5681:5681",
-			"--publish=5682:5682",
-			"--publish=5683:5683",
-			"--publish=5684:5684",
-		)
-	}
-	container := docker.RunAndGetID(t, kumaUniversalImage, &opts)
-
-	app := &UniversalApp{
-		t:         t,
-		sshPort:   sshPort,
-		container: container,
-		verbose:   verbose,
+		app.allocatePublicPortsFor("5678", "5679", "5680", "5681", "5682", "5683", "5684", "5685")
 	}
 
-	app.ip = app.getIP()
+	opts := defaultDockerOptions
+	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
+	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
+	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
+	container, err := docker.RunAndGetIDE(t, kumaUniversalImage, &opts)
+	if err != nil {
+		return nil, err
+	}
+
+	app.container = container
+	app.ip, err = app.getIP()
+	if err != nil {
+		return nil, err
+	}
+
 	fmt.Printf("Node IP %s\n", app.ip)
 
 	if mode == AppModeCP {
-		args = append([]string{"KUMA_GENERAL_ADVERTISED_HOSTNAME=" + app.ip}, args...)
+		env = append([]string{"KUMA_GENERAL_ADVERTISED_HOSTNAME=" + app.ip}, env...)
 	}
 
-	app.CreateMainApp(args...)
+	app.CreateMainApp(env, args)
 
-	return app
+	return app, nil
+}
+
+func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
+	for _, port := range ports {
+		pubPortUInt32, err := util_net.PickTCPPort("", s.lastUsedPort+1, 11204)
+		if err != nil {
+			panic(err)
+		}
+		s.ports[port] = strconv.Itoa(int(pubPortUInt32))
+		s.lastUsedPort = pubPortUInt32
+	}
+}
+
+func (s *UniversalApp) publishPortsForDocker() (args []string) {
+	for port, pubPort := range s.ports {
+		args = append(args, "--publish="+pubPort+":"+port)
+	}
+	return
 }
 
 func (s *UniversalApp) Stop() error {
-	docker.Stop(s.t, []string{s.container}, &docker.StopOptions{})
+	out, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
+	if err != nil {
+		return errors.Wrapf(err, "Returned %s", out)
+	}
+
+	retry.DoWithRetry(s.t, "stop "+s.container, DefaultRetries, DefaultTimeout,
+		func() (string, error) {
+			_, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
+			if err == nil {
+				return "Container still running", errors.Errorf("Container still running")
+			}
+			return "Container stopped", nil
+		})
+
 	return nil
 }
 
@@ -131,40 +182,45 @@ func (s *UniversalApp) ReStart() error {
 	if _, err := s.mainApp.cmd.Process.Wait(); err != nil {
 		return err
 	}
-	if err := s.mainApp.cmd.Start(); err != nil {
+
+	s.CreateMainApp(s.mainAppEnv, s.mainAppArgs)
+
+	if err := s.mainApp.Start(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *UniversalApp) CreateMainApp(args ...string) {
-	s.mainApp = NewSshApp(s.verbose, s.sshPort, args...)
+func (s *UniversalApp) CreateMainApp(env []string, args []string) {
+	s.mainAppEnv = env
+	s.mainAppArgs = args
+	s.mainApp = NewSshApp(s.verbose, s.ports[sshPort], env, args)
 }
 
-func (s *UniversalApp) CreateDP(token, cpIP, appname string) {
+func (s *UniversalApp) CreateDP(token, cpAddress, appname string) {
 	// and echo it to the Application Node
-	err := NewSshApp(s.verbose, s.sshPort, "echo", token, ">", "/kuma/token-"+appname).Run()
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
 		panic(err)
 	}
 
 	// run the DP
-	s.dpApp = NewSshApp(s.verbose, s.sshPort, "kuma-dp", "run",
-		"--name=dp-"+appname,
+	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"kuma-dp", "run",
+		"--name=dp-" + appname,
 		"--mesh=default",
-		"--cp-address=http://"+cpIP+":5681",
-		"--dataplane-token-file=/kuma/token-"+appname,
-		"--binary-path", "/usr/local/bin/envoy")
+		"--cp-address=" + cpAddress,
+		"--dataplane-token-file=/kuma/token-" + appname,
+		"--binary-path", "/usr/local/bin/envoy"})
 }
 
-func (s *UniversalApp) getIP() string {
-	cmd := SshCmd(s.sshPort, "getent", "hosts", s.container[:12])
+func (s *UniversalApp) getIP() (string, error) {
+	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "hosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
-		panic(string(bytes))
+		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
 	}
 	split := strings.Split(string(bytes), " ")
-	return split[0]
+	return split[0], nil
 }
 
 type sshApp struct {
@@ -174,11 +230,11 @@ type sshApp struct {
 	port   string
 }
 
-func NewSshApp(verbose bool, port string, args ...string) *sshApp {
+func NewSshApp(verbose bool, port string, env []string, args []string) *sshApp {
 	app := &sshApp{
 		port: port,
 	}
-	app.cmd = app.SshCmd(args...)
+	app.cmd = app.SshCmd(env, args)
 
 	outWriters := []io.Writer{&app.stdout}
 	errWriters := []io.Writer{&app.stderr}
@@ -223,17 +279,18 @@ func (s *sshApp) Err() string {
 	return s.stderr.String()
 }
 
-func (s *sshApp) SshCmd(args ...string) *exec.Cmd {
-	return SshCmd(s.port, args...)
+func (s *sshApp) SshCmd(env []string, args []string) *exec.Cmd {
+	return SshCmd(s.port, env, args)
 }
 
-func SshCmd(port string, args ...string) *exec.Cmd {
-	args = append([]string{
-		"-q",
+func SshCmd(port string, env []string, args []string) *exec.Cmd {
+	sshArgs := append([]string{
+		"-q", "-tt",
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
-		"root@localhost", "-p", port}, args...)
+		"root@localhost", "-p", port}, env...)
+	sshArgs = append(sshArgs, args...)
 
-	cmd := exec.Command("ssh", args...)
+	cmd := exec.Command("ssh", sshArgs...)
 	return cmd
 }

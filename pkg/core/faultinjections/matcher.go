@@ -3,16 +3,16 @@ package faultinjections
 import (
 	"context"
 
-	manager_dataplane "github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
+	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 
 	"github.com/pkg/errors"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 
-	"github.com/Kong/kuma/pkg/core/policy"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/policy"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type FaultInjectionMatcher struct {

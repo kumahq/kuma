@@ -1,10 +1,10 @@
 package universal
 
 import (
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	plugin_leader "github.com/Kong/kuma/pkg/plugins/leader"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	plugin_leader "github.com/kumahq/kuma/pkg/plugins/leader"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}

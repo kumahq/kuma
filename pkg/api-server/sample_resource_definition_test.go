@@ -1,9 +1,9 @@
 package api_server_test
 
 import (
-	"github.com/Kong/kuma/pkg/api-server/definitions"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
+	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var SampleTrafficRouteWsDefinition = definitions.ResourceWsDefinition{

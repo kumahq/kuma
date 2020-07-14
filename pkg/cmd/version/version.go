@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 func NewVersionCmd() *cobra.Command {

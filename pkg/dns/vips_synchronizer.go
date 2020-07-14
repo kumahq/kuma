@@ -3,9 +3,9 @@ package dns
 import (
 	"time"
 
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 var (

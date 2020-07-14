@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	common_auth "github.com/Kong/kuma/pkg/sds/auth/common"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
+	common_auth "github.com/kumahq/kuma/pkg/sds/auth/common"
 )
 
 func NewNoopAuthenticator(dataplaneResolver common_auth.DataplaneResolver) sds_auth.Authenticator {

@@ -47,8 +47,8 @@ For a quick start, use the official `golang` Docker image. It includes all the c
 
 ```bash
 docker run --name kuma-build -ti \
-  --volume `pwd`:/go/src/github.com/Kong/kuma \
-  --workdir /go/src/github.com/Kong/kuma \
+  --volume `pwd`:/go/src/github.com/kumahq/kuma \
+  --workdir /go/src/github.com/kumahq/kuma \
   --env GO111MODULE=on \
   golang:1.12.12 \
   bash -c 'apt update && apt install -y unzip && export PATH=$HOME/bin:$PATH && bash'

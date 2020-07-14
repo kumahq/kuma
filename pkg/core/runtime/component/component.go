@@ -3,8 +3,8 @@ package component
 import (
 	"sync"
 
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/util/channels"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/util/channels"
 )
 
 var log = core.Log.WithName("bootstrap")

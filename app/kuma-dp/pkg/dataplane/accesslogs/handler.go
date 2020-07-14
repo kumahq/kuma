@@ -5,7 +5,7 @@ import (
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 
-	"github.com/Kong/kuma/pkg/envoy/accesslog"
+	"github.com/kumahq/kuma/pkg/envoy/accesslog"
 )
 
 type handler struct {

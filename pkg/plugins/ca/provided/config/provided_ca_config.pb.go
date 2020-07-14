@@ -5,8 +5,8 @@ package config
 
 import (
 	fmt "fmt"
-	v1alpha1 "github.com/Kong/kuma/api/system/v1alpha1"
 	proto "github.com/golang/protobuf/proto"
+	v1alpha1 "github.com/kumahq/kuma/api/system/v1alpha1"
 	math "math"
 )
 

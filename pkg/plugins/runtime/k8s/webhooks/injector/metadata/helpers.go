@@ -3,7 +3,7 @@ package metadata
 import (
 	"strconv"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	kube_core "k8s.io/api/core/v1"
 )
