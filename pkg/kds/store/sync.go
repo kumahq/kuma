@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 
@@ -119,7 +120,8 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 		s.log.Info("creating a new resource from upstream", "resourceKey", rk)
 		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
 		r.SetMeta(nil)
-		if err := s.resourceStore.Create(ctx, r, store.CreateBy(rk)); err != nil {
+		now := time.Now()
+		if err := s.resourceStore.Create(ctx, r, store.CreateBy(rk), store.CreatedAt(now)); err != nil {
 			return err
 		}
 	}
