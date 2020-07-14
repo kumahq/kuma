@@ -58,9 +58,6 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
-	if err := initializeZones(cfg, builder); err != nil {
-		return nil, err
-	}
 	if err := initializeConfigManager(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -68,6 +65,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeResourceManager(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeZones(cfg, builder); err != nil {
 		return nil, err
 	}
 

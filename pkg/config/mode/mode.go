@@ -38,11 +38,12 @@ func (g *GlobalConfig) Sanitize() {
 }
 
 func (g *GlobalConfig) Validate() error {
-	_, err := url.ParseRequestURI(g.LBAddress)
-	if err != nil {
-		return errors.Wrapf(err, "Invalid LB address")
+	if g.LBAddress != "" {
+		_, err := url.ParseRequestURI(g.LBAddress)
+		if err != nil {
+			return errors.Wrapf(err, "Invalid LB address")
+		}
 	}
-
 	return nil
 }
 
