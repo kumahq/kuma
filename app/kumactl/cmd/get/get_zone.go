@@ -27,13 +27,12 @@ func newGetZoneCmd(pctx *getContext) *cobra.Command {
 				return err
 			}
 			name := args[0]
-			currentMesh := pctx.CurrentMesh()
 			zone := &system.ZoneResource{}
-			if err := rs.Get(context.Background(), zone, store.GetByKey(name, currentMesh)); err != nil {
+			if err := rs.Get(context.Background(), zone, store.GetByKey(name, "default")); err != nil {
 				if store.IsResourceNotFound(err) {
-					return errors.Errorf("No resources found in %s mesh", currentMesh)
+					return errors.Errorf("No zone resources found")
 				}
-				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
+				return errors.Wrapf(err, "failed to get zone %s", name)
 			}
 			zones := &system.ZoneResourceList{
 				Items: []*system.ZoneResource{zone},

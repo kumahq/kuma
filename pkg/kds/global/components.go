@@ -86,7 +86,7 @@ func SetupComponent(rt runtime.Runtime) error {
 	}
 
 	for _, zone := range zones.Items {
-		zoneIP := zone.Spec.GetRemoteControlPlane().GetPublicAddress()
+		zoneIP := zone.Spec.GetRemoteControlPlane().GetAddress()
 		log := kdsGlobalLog.WithValues("zoneIP", zoneIP)
 		dataplaneSink := client.NewKDSSink(log, rt.Config().Mode.Global.LBAddress, consumedTypes,
 			clientFactory(zoneIP), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore, zone))
@@ -121,7 +121,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, zone *system.ZoneReso
 }
 
 func adjustIngressNetworking(zone *system.ZoneResource, rs model.ResourceList) {
-	host, portStr, err := net.SplitHostPort(zone.Spec.GetIngress().GetPublicAddress())
+	host, portStr, err := net.SplitHostPort(zone.Spec.GetIngress().GetAddress())
 	if err != nil {
 		kdsGlobalLog.Error(err, "failed parsing ingress", "host", host, "port", portStr)
 		return

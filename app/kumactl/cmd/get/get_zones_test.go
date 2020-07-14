@@ -32,10 +32,10 @@ var _ = Describe("kumactl get zones", func() {
 		{
 			Spec: v1alpha1.Zone{
 				RemoteControlPlane: &v1alpha1.Zone_RemoteControlPlane{
-					PublicAddress: "grpcs://192.168.0.1:5681",
+					Address: "grpcs://192.168.0.1:5681",
 				},
 				Ingress: &v1alpha1.Zone_Ingress{
-					PublicAddress: "192.168.0.2:10000",
+					Address: "192.168.0.2:10000",
 				},
 			},
 			Meta: &test_model.ResourceMeta{
@@ -45,10 +45,10 @@ var _ = Describe("kumactl get zones", func() {
 		{
 			Spec: v1alpha1.Zone{
 				RemoteControlPlane: &v1alpha1.Zone_RemoteControlPlane{
-					PublicAddress: "grpcs://192.168.1.1:5681",
+					Address: "grpcs://192.168.1.1:5681",
 				},
 				Ingress: &v1alpha1.Zone_Ingress{
-					PublicAddress: "192.168.1.2:10000",
+					Address: "192.168.1.2:10000",
 				},
 			},
 			Meta: &test_model.ResourceMeta{

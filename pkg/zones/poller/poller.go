@@ -94,7 +94,7 @@ func (p *ZonesStatusPoller) syncZones() {
 	}
 
 	for _, zone := range zones.Items {
-		ingressAddress := zone.Spec.GetIngress().GetPublicAddress()
+		ingressAddress := zone.Spec.GetIngress().GetAddress()
 		_, _, err := net.SplitHostPort(ingressAddress)
 		if err != nil {
 			zonesStatusLog.Info(fmt.Sprintf("failed to parse the ingress address %s", ingressAddress))

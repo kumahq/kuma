@@ -27,9 +27,9 @@ metadata:
   namespace: %s
 spec:
   remoteControlPlane:
-    publicAddress: %s
+    address: %s
   ingress:
-    publicAddress: %s
+    address: %s
   mesh: default
 `
 	ZoneTemplateUniversal = `
@@ -37,9 +37,9 @@ type: zone
 mesh: default
 name: %s
 remoteControlPlane:
-  publicAddress: %s
+  address: %s
 ingress:
-  publicAddress: %s
+  address: %s
 `
 )
 

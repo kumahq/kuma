@@ -56,10 +56,10 @@ var _ = Describe("Global Sync", func() {
 		zone := &system.ZoneResource{
 			Spec: system_proto.Zone{
 				RemoteControlPlane: &system_proto.Zone_RemoteControlPlane{
-					PublicAddress: "grpc://192.168.0.1",
+					Address: "grpc://192.168.0.1:5681",
 				},
 				Ingress: &system_proto.Zone_Ingress{
-					PublicAddress: "192.168.0.2",
+					Address: "192.168.0.2:10001",
 				},
 			},
 		}

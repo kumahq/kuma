@@ -128,7 +128,7 @@ func (m *Zone_RemoteControlPlane) Validate() error {
 		return nil
 	}
 
-	// no validation rules for PublicAddress
+	// no validation rules for Address
 
 	return nil
 }
@@ -197,7 +197,7 @@ func (m *Zone_Ingress) Validate() error {
 		return nil
 	}
 
-	// no validation rules for PublicAddress
+	// no validation rules for Address
 
 	return nil
 }

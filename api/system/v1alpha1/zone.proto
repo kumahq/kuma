@@ -10,7 +10,7 @@ message Zone {
   // Configure the Remote Control Plane
   message RemoteControlPlane {
     // The public load balancer address of the Remote Control Plane KDS
-    string publicAddress = 1;
+    string address = 1;
   }
 
   RemoteControlPlane remoteControlPlane = 1;
@@ -18,7 +18,7 @@ message Zone {
   // Configure the Zone's Ingress
   message Ingress {
     // The public load balancer address of the Zone Ingress
-    string publicAddress = 1;
+    string address = 1;
   }
 
   Ingress ingress = 2;
