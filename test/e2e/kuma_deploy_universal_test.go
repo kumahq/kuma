@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/go-errors/errors"
@@ -13,7 +14,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = Describe("Test Universal deployment", func() {
+var _ = XDescribe("Test Universal deployment", func() {
 
 	meshDefaulMtlsOn := `
 type: Mesh
@@ -76,20 +77,32 @@ destinations:
 		err = global.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		globalCP := global.GetKuma()
 		remote_1CP := remote_1.GetKuma()
 		remote_2CP := remote_2.GetKuma()
-		err = globalCP.AddCluster(remote_1CP.GetName(),
-			globalCP.GetKDSServerAddress(), remote_1CP.GetKDSServerAddress(), remote_1CP.GetIngressAddress())
+
+		err = global.GetKumactlOptions().KumactlApplyFromString(
+			fmt.Sprintf(ZoneTemplateK8s,
+				remote_1CP.GetName(), "kuma-system",
+				remote_1CP.GetKDSServerAddress(),
+				remote_1CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
-		err = globalCP.AddCluster(remote_2CP.GetName(),
-			globalCP.GetKDSServerAddress(), remote_2CP.GetKDSServerAddress(), remote_2CP.GetIngressAddress())
+
+		err = global.GetKumactlOptions().KumactlApplyFromString(
+			fmt.Sprintf(ZoneTemplateK8s,
+				remote_2CP.GetName(), "kuma-system",
+				remote_2CP.GetKDSServerAddress(),
+				remote_2CP.GetIngressAddress()))
+		Expect(err).ToNot(HaveOccurred())
+
+		// remove these once Zones are added dynamically
+		globalCP := global.GetKuma()
+
+		err = globalCP.SetLbAddress(remote_1CP.GetName(), globalCP.GetKDSServerAddress())
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.RestartKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		// remove these once Zones are added dynamically
 		err = YamlUniversal(meshDefaulMtlsOn)(global)
 		Expect(err).ToNot(HaveOccurred())
 

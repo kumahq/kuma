@@ -18,6 +18,29 @@ const (
 	DefaultTimeout = 3 * time.Second
 
 	kdsPort = 30685
+
+	ZoneTemplateK8s = `
+apiVersion: kuma.io/v1alpha1
+kind: Zone
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  remoteControlPlane:
+    publicAddress: %s
+  ingress:
+    publicAddress: %s
+  mesh: default
+`
+	ZoneTemplateUniversal = `
+type: zone
+mesh: default
+name: %s
+remoteControlPlane:
+  publicAddress: %s
+ingress:
+  publicAddress: %s
+`
 )
 
 const (

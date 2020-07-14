@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/config/mode"
 
@@ -75,8 +76,15 @@ metadata:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.AddCluster(remote.GetName(),
-			global.GetKDSServerAddress(), remote.GetKDSServerAddress(), remote.GetIngressAddress())
+		err = global.SetLbAddress(remote.GetName(),
+			global.GetKDSServerAddress())
+		Expect(err).ToNot(HaveOccurred())
+
+		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(),
+			fmt.Sprintf(ZoneTemplateK8s,
+				remote.GetName(), "kuma-system",
+				remote.GetKDSServerAddress(),
+				remote.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = c1.RestartKuma()
@@ -102,6 +110,9 @@ metadata:
 	})
 
 	It("Should deploy Remote and Global on 2 clusters", func() {
+		// To be removed once the Zones are done dynamically.
+		// Give it some time to start the poller
+		time.Sleep(3 * time.Second)
 		// when
 		status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
 		// then
@@ -109,19 +120,20 @@ metadata:
 
 		// when
 		clustersStatus := poller.Zones{}
-		_ = json.Unmarshal([]byte(response), &clustersStatus)
+		err := json.Unmarshal([]byte(response), &clustersStatus)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(len(clustersStatus)).To(Equal(1))
 
 		// then
 		found := false
 		for _, cluster := range clustersStatus {
-			if cluster.URL == remote.GetKDSServerAddress() {
+			if cluster.Address == remote.GetIngressAddress() {
 				Expect(cluster.Active).To(BeTrue())
 				found = true
 				break
 			}
 		}
 		Expect(found).To(BeTrue())
-
 	})
 
 	It("should deploy Remote and Global on 2 clusters and sync dataplanes", func() {
