@@ -19,9 +19,9 @@ func applyClusterModification(resources *model.ResourceSet, modification *mesh_p
 	switch modification.Operation {
 	case mesh_proto.OpAdd:
 		resources.Add(&model.Resource{
-			Name:        clusterMod.Name,
-			GeneratedBy: GeneratedByProxyTemplateModifications,
-			Resource:    clusterMod,
+			Name:     clusterMod.Name,
+			Origin:   OriginProxyTemplateModifications,
+			Resource: clusterMod,
 		})
 	case mesh_proto.OpRemove:
 		for name, resource := range resources.Resources(envoy_resource.ClusterType) {
@@ -48,7 +48,7 @@ func clusterMatches(cluster *model.Resource, match *mesh_proto.ProxyTemplate_Mod
 	if match.Name == cluster.Name {
 		return true
 	}
-	if match.Direction == cluster.GeneratedBy {
+	if match.Origin == cluster.Origin {
 		return true
 	}
 	return false

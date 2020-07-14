@@ -22,8 +22,8 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
-// GeneratedByOutbound is a marker to indicate by which ProxyGenerator resources were generated.
-const GeneratedByOutbound = "outbound"
+// OriginOutbound is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginOutbound = "outbound"
 
 type OutboundProxyGenerator struct {
 }
@@ -53,9 +53,9 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			return nil, err
 		}
 		resources.Add(&model.Resource{
-			Name:        listener.Name,
-			GeneratedBy: GeneratedByOutbound,
-			Resource:    listener,
+			Name:     listener.Name,
+			Origin:   OriginOutbound,
+			Resource: listener,
 		})
 
 		// Generate route, routes are only applicable to the HTTP
@@ -65,9 +65,9 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 				return nil, err
 			}
 			resources.Add(&model.Resource{
-				Name:        route.Name,
-				GeneratedBy: GeneratedByOutbound,
-				Resource:    route,
+				Name:     route.Name,
+				Origin:   OriginOutbound,
+				Resource: route,
 			})
 		}
 	}
@@ -140,9 +140,9 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 			return nil, err
 		}
 		resources.Add(&model.Resource{
-			Name:        clusterName,
-			GeneratedBy: GeneratedByOutbound,
-			Resource:    edsCluster,
+			Name:     clusterName,
+			Origin:   OriginOutbound,
+			Resource: edsCluster,
 		})
 	}
 	return resources, nil

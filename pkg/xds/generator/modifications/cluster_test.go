@@ -31,9 +31,9 @@ var _ = Describe("Cluster modifications", func() {
 				err := util_proto.FromYAML([]byte(clusterYAML), cluster)
 				Expect(err).ToNot(HaveOccurred())
 				set.Add(&core_xds.Resource{
-					Name:        cluster.Name,
-					GeneratedBy: generator.GeneratedByInbound,
-					Resource:    cluster,
+					Name:     cluster.Name,
+					Origin:   generator.OriginInbound,
+					Resource: cluster,
 				})
 			}
 
@@ -166,7 +166,7 @@ var _ = Describe("Cluster modifications", func() {
                 cluster:
                    operation: remove
                    match:
-                     direction: inbound`,
+                     origin: inbound`,
 			},
 			expected: `{}`,
 		}),

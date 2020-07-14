@@ -15,9 +15,9 @@ type ResourcePayload = envoy_types.Resource
 
 // Resource represents a generic xDS resource with name and version.
 type Resource struct {
-	Name        string
-	GeneratedBy string
-	Resource    ResourcePayload
+	Name     string
+	Origin   string
+	Resource ResourcePayload
 }
 
 // ResourceList represents a list of generic xDS resources.

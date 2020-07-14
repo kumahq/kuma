@@ -11,8 +11,8 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
-// GeneratedByTransparent is a marker to indicate by which ProxyGenerator resources were generated.
-const GeneratedByTransparent = "transparent"
+// OriginTransparent is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginTransparent = "transparent"
 
 type TransparentProxyGenerator struct {
 }
@@ -42,14 +42,14 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 		return nil, errors.Wrapf(err, "could not generate cluster: pass_through")
 	}
 	resources.Add(&model.Resource{
-		Name:        listener.Name,
-		GeneratedBy: GeneratedByTransparent,
-		Resource:    listener,
+		Name:     listener.Name,
+		Origin:   OriginTransparent,
+		Resource: listener,
 	})
 	resources.Add(&model.Resource{
-		Name:        cluster.Name,
-		GeneratedBy: GeneratedByTransparent,
-		Resource:    cluster,
+		Name:     cluster.Name,
+		Origin:   OriginTransparent,
+		Resource: cluster,
 	})
 	return resources, nil
 }

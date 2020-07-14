@@ -53,7 +53,8 @@ message ProxyTemplate {
 
       // Match defines match for cluster
       message Match {
-        string direction = 1;
+        // Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+        string origin = 1;
         // Name of the cluster to match
         string name = 2;
       }
@@ -70,7 +71,8 @@ message ProxyTemplate {
 
       // Match defines match for listener
       message Match {
-        string direction = 1;
+        // Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+        string origin = 1;
         // Name of the listener to match
         string name = 2;
       }
@@ -87,7 +89,8 @@ message ProxyTemplate {
 
       // Match defines match for network filter
       message Match {
-        string direction = 1;
+        // Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+        string origin = 1;
         // Name of the network filter
         string name = 2;
         // Name of the listener that network filter modifications will be applied to
@@ -106,7 +109,8 @@ message ProxyTemplate {
 
       // Match defines match for http filter
       message Match {
-        string direction = 1;
+        // Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+        string origin = 1;
         // Name of the network filter
         string name = 2;
         // Name of the listener that http filter modifications will be applied to

@@ -5,8 +5,8 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-// GeneratedByProxyTemplateModifications is a marker to indicate by which ProxyGenerator resources were generated.
-const GeneratedByProxyTemplateModifications = "proxy-template-modifications"
+// OriginProxyTemplateModifications is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginProxyTemplateModifications = "proxy-template-modifications"
 
 func Apply(resources *model.ResourceSet, modifications []*mesh_proto.ProxyTemplate_Modifications) error {
 	for _, modification := range modifications {

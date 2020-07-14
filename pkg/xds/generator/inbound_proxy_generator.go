@@ -14,8 +14,8 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-// GeneratedByInbound is a marker to indicate by which ProxyGenerator resources were generated.
-const GeneratedByInbound = "inbound"
+// OriginInbound is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginInbound = "inbound"
 
 type InboundProxyGenerator struct {
 }
@@ -36,9 +36,9 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
 		}
 		resources.Add(&model.Resource{
-			Name:        localClusterName,
-			Resource:    cluster,
-			GeneratedBy: GeneratedByInbound,
+			Name:     localClusterName,
+			Resource: cluster,
+			Origin:   OriginInbound,
 		})
 
 		// generate LDS resource
@@ -75,9 +75,9 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
 		}
 		resources.Add(&model.Resource{
-			Name:        inboundListenerName,
-			Resource:    inboundListener,
-			GeneratedBy: GeneratedByInbound,
+			Name:     inboundListenerName,
+			Resource: inboundListener,
+			Origin:   OriginInbound,
 		})
 	}
 	return resources, nil

@@ -19,9 +19,9 @@ func applyListenerModification(resources *model.ResourceSet, modification *mesh_
 	switch modification.Operation {
 	case mesh_proto.OpAdd:
 		resources.Add(&model.Resource{
-			Name:        listenerMod.Name,
-			GeneratedBy: GeneratedByProxyTemplateModifications,
-			Resource:    listenerMod,
+			Name:     listenerMod.Name,
+			Origin:   OriginProxyTemplateModifications,
+			Resource: listenerMod,
 		})
 	case mesh_proto.OpRemove:
 		for name, resource := range resources.Resources(envoy_resource.ListenerType) {
@@ -48,7 +48,7 @@ func listenerMatches(listener *model.Resource, match *mesh_proto.ProxyTemplate_M
 	if match.Name == listener.Name {
 		return true
 	}
-	if match.Direction == listener.GeneratedBy {
+	if match.Origin == listener.Origin {
 		return true
 	}
 	return false

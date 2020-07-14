@@ -74,13 +74,13 @@ func networkFilterListenerMatches(resource *model.Resource, match *mesh_proto.Pr
 	if match == nil {
 		return true
 	}
-	if match.ListenerName == "" && match.Direction == "" {
+	if match.ListenerName == "" && match.Origin == "" {
 		return true
 	}
 	if match.ListenerName == resource.Name {
 		return true
 	}
-	if match.Direction == resource.GeneratedBy {
+	if match.Origin == resource.Origin {
 		return true
 	}
 	return false

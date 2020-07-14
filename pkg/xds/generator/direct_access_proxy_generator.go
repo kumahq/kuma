@@ -16,8 +16,8 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
-// GeneratedByDirectAccess is a marker to indicate by which ProxyGenerator resources were generated.
-const GeneratedByDirectAccess = "direct-access"
+// OriginDirectAccess is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginDirectAccess = "direct-access"
 
 // Transparent Proxy is based on having 1 IP for cluster (ex. ClusterIP of Service on K8S), so consuming apps by their IP
 // is unknown destination from Envoy perspective. Therefore such request will go trough pass_trough cluster and won't be encrypted by mTLS.
@@ -57,9 +57,9 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 			return nil, err
 		}
 		resources.Add(&core_xds.Resource{
-			Name:        listener.Name,
-			GeneratedBy: GeneratedByDirectAccess,
-			Resource:    listener,
+			Name:     listener.Name,
+			Origin:   OriginDirectAccess,
+			Resource: listener,
 		})
 	}
 
@@ -71,9 +71,9 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		return nil, errors.Wrapf(err, "could not generate cluster: direct_access")
 	}
 	resources.Add(&core_xds.Resource{
-		Name:        directAccessCluster.Name,
-		GeneratedBy: GeneratedByDirectAccess,
-		Resource:    directAccessCluster,
+		Name:     directAccessCluster.Name,
+		Origin:   OriginDirectAccess,
+		Resource: directAccessCluster,
 	})
 	return resources, nil
 }

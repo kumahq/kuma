@@ -16,8 +16,8 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-// GeneratedByPrometheus is a marker to indicate by which ProxyGenerator resources were generated.
-const GeneratedByPrometheus = "prometheus"
+// OriginPrometheus is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginPrometheus = "prometheus"
 
 // PrometheusEndpointGenerator generates an inbound Envoy listener
 // that forwards HTTP requests into the `/stats/prometheus`
@@ -108,14 +108,14 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	}
 	resources := core_xds.NewResourceSet()
 	resources.Add(&core_xds.Resource{
-		Name:        cluster.Name,
-		GeneratedBy: GeneratedByPrometheus,
-		Resource:    cluster,
+		Name:     cluster.Name,
+		Origin:   OriginPrometheus,
+		Resource: cluster,
 	})
 	resources.Add(&core_xds.Resource{
-		Name:        listener.Name,
-		GeneratedBy: GeneratedByPrometheus,
-		Resource:    listener,
+		Name:     listener.Name,
+		Origin:   OriginPrometheus,
+		Resource: listener,
 	})
 	return resources, nil
 }

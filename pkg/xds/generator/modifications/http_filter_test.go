@@ -35,9 +35,9 @@ var _ = Describe("HTTP Filter modifications", func() {
 				err := util_proto.FromYAML([]byte(listenerYAML), listener)
 				Expect(err).ToNot(HaveOccurred())
 				set.Add(&core_xds.Resource{
-					Name:        listener.Name,
-					GeneratedBy: generator.GeneratedByInbound,
-					Resource:    listener,
+					Name:     listener.Name,
+					Origin:   generator.OriginInbound,
+					Resource: listener,
 				})
 			}
 
@@ -171,7 +171,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                 httpFilter:
                    operation: remove
                    match:
-                     direction: inbound
+                     origin: inbound
 `,
 			},
 			expected: `
