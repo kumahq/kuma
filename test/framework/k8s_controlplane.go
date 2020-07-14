@@ -37,23 +37,6 @@ type K8sControlPlane struct {
 	verbose    bool
 }
 
-const (
-	zoneTemplate = `
-apiVersion: kuma.io/v1alpha1
-kind: Zone
-mesh: default
-metadata:
-  name: %s
-  namespace: %s
-spec:
-  remoteControlPlane:
-    publicAddress: %s
-  ingress:
-    publicAddress: %s
-  mesh: default
-`
-)
-
 func NewK8sControlPlane(t testing.TestingT, mode mode.CpMode, clusterName string,
 	kubeconfig string, cluster *K8sCluster,
 	loPort, hiPort uint32,
@@ -91,7 +74,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressAddress string) error {
+func (c *K8sControlPlane) SetLbAddress(name, lbAddress string) error {
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
 		c.GetKubectlOptions())
 	if err != nil {
@@ -111,11 +94,6 @@ func (c *K8sControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressAddress
 	kumaCM.Data["config.yaml"] = newYAML
 
 	_, err = clientset.CoreV1().ConfigMaps("kuma-system").Update(context.TODO(), kumaCM, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-
-	err = c.kumactl.KumactlApplyFromString(fmt.Sprintf(zoneTemplate, name, "kuma-system", kdsAddress, ingressAddress))
 	if err != nil {
 		return err
 	}
