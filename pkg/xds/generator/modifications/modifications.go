@@ -15,8 +15,16 @@ func Apply(resources *model.ResourceSet, modifications []*mesh_proto.ProxyTempla
 			if err := applyClusterModification(resources, modification.GetCluster()); err != nil {
 				return err
 			}
+		case *mesh_proto.ProxyTemplate_Modifications_Listener_:
+			if err := applyListenerModification(resources, modification.GetListener()); err != nil {
+				return err
+			}
 		case *mesh_proto.ProxyTemplate_Modifications_NetworkFilter_:
 			if err := applyNetworkFilterModification(resources, modification.GetNetworkFilter()); err != nil {
+				return err
+			}
+		case *mesh_proto.ProxyTemplate_Modifications_HttpFilter_:
+			if err := applyHTTPFilterModification(resources, modification.GetHttpFilter()); err != nil {
 				return err
 			}
 		}

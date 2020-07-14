@@ -17,7 +17,7 @@ func applyNetworkFilterModification(resources *model.ResourceSet, modification *
 		return err
 	}
 	for _, resource := range resources.Resources(envoy_resource.ListenerType) {
-		if listenerMatches(resource, modification.Match) {
+		if networkFilterListenerMatches(resource, modification.Match) {
 			listener := resource.Resource.(*envoy_api.Listener)
 			for _, chain := range listener.FilterChains {
 				switch modification.Operation {
@@ -70,7 +70,7 @@ func filterMatches(filter *envoy_api_v2_listener.Filter, match *mesh_proto.Proxy
 	return filter.Name == match.Name
 }
 
-func listenerMatches(resource *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_NetworkFilter_Match) bool {
+func networkFilterListenerMatches(resource *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_NetworkFilter_Match) bool {
 	if match == nil {
 		return true
 	}
