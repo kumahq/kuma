@@ -39,8 +39,7 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		err.AddErrorAt(path.Field("gateway"), result)
 	}
 	for i, inbound := range networking.GetInbound() {
-		isTransparentProxy := networking.GetTransparentProxying() != nil
-		result := validateInbound(inbound, networking.Address, isTransparentProxy)
+		result := validateInbound(inbound, networking.Address)
 		err.AddErrorAt(path.Field("inbound").Index(i), result)
 	}
 	for i, outbound := range networking.GetOutbound() {
@@ -88,7 +87,7 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 	return err
 }
 
-func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress string, isTransparenProxy bool) validators.ValidationError {
+func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress string) validators.ValidationError {
 	var result validators.ValidationError
 	if inbound.Port < 1 || inbound.Port > 65535 {
 		result.AddViolationAt(validators.RootedAt("port"), `port has to be in range of [1, 65535]`)
@@ -97,15 +96,12 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 		result.AddViolationAt(validators.RootedAt("servicePort"), `servicePort has to be in range of [0, 65535]`)
 	}
 	if inbound.ServiceAddress != "" {
-		if isTransparenProxy {
-			result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress can not be set in Transparent Proxy mode`)
-		}
 		if net.ParseIP(inbound.ServiceAddress) == nil {
 			result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress has to be valid IP address`)
 		}
 		if inbound.ServiceAddress == dpAddress {
 			if inbound.ServicePort == 0 || inbound.ServicePort == inbound.Port {
-				result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress and servicePort has to differ from inboundIP and Port`)
+				result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress and servicePort has to differ from address and port`)
 			}
 		}
 	}
@@ -115,7 +111,7 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 		}
 		if inbound.Address == inbound.ServiceAddress {
 			if inbound.ServicePort == 0 || inbound.ServicePort == inbound.Port {
-				result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress and servicePort has to differ from inboundIP and Port`)
+				result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress and servicePort has to differ from address and port`)
 			}
 		}
 	}

@@ -49,6 +49,8 @@ message Dataplane {
       uint32 servicePort = 4;
 
       // Address of the service that requests will be forwarded to.
+      // Empty value defaults to '127.0.0.1', since Kuma DP should be deployed
+      // next to service.
       string serviceAddress = 6;
 
       // Address on which inbound listener will be exposed. Defaults to
