@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/url"
 	"sync"
 	"time"
 
@@ -26,9 +25,9 @@ type (
 	}
 
 	Zone struct {
-		Name   string `json:"name"`
-		URL    string `json:"url"`
-		Active bool   `json:"active"`
+		Name    string `json:"name"`
+		Address string `json:"url"`
+		Active  bool   `json:"active"`
 	}
 
 	Zones []Zone
@@ -95,11 +94,16 @@ func (p *ZonesStatusPoller) syncZones() {
 	}
 
 	for _, zone := range zones.Items {
-		// ignore the Ingress for now
+		ingressAddress := zone.Spec.GetIngress().GetPublicAddress()
+		_, _, err := net.SplitHostPort(ingressAddress)
+		if err != nil {
+			zonesStatusLog.Info(fmt.Sprintf("failed to parse the ingress address %s", ingressAddress))
+			continue
+		}
 		p.zones = append(p.zones, Zone{
-			Name:   zone.Meta.GetName(),
-			URL:    zone.Spec.GetIngress().GetPublicAddress(),
-			Active: false,
+			Name:    zone.Meta.GetName(),
+			Address: ingressAddress,
+			Active:  false,
 		})
 	}
 }
@@ -109,15 +113,10 @@ func (p *ZonesStatusPoller) pollZones() {
 	defer p.Unlock()
 
 	for i, zone := range p.zones {
-		u, err := url.Parse(zone.URL)
-		if err != nil {
-			zonesStatusLog.Info(fmt.Sprintf("failed to parse URL %s", zone.URL))
-			continue
-		}
-		conn, err := net.DialTimeout("tcp", u.Host, dialTimeout)
+		conn, err := net.DialTimeout("tcp", zone.Address, dialTimeout)
 		if err != nil {
 			if zone.Active {
-				zonesStatusLog.Info(fmt.Sprintf("%s at %s did not respond", zone.Name, zone.URL))
+				zonesStatusLog.Info(fmt.Sprintf("%s at %s did not respond", zone.Name, zone.Address))
 				p.zones[i].Active = false
 			}
 			continue
@@ -125,7 +124,7 @@ func (p *ZonesStatusPoller) pollZones() {
 		defer conn.Close()
 
 		if !p.zones[i].Active {
-			zonesStatusLog.Info(fmt.Sprintf("%s responded", zone.URL))
+			zonesStatusLog.Info(fmt.Sprintf("%s responded", zone.Address))
 			p.zones[i].Active = true
 		}
 	}

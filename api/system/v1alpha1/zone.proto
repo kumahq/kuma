@@ -23,11 +23,3 @@ message Zone {
 
   Ingress ingress = 2;
 }
-
-// type: Zone
-// name: zone-1
-// remoteControlPlane:
-//  publicAddress: grpcs://1.1.1.1:5685
-// ingress:
-//  publicAddress: 1.1.1.1:10000
-// mesh: default
