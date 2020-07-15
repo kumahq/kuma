@@ -326,6 +326,42 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: conf.modifications[3].cluster.match
                   message: cannot be defined`,
 			}),
+			Entry("invalid listener modifications", testCase{
+				proxyTemplate: `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  modifications:
+                  - listener:
+                      operation: addFirst
+                  - listener:
+                      operation: add
+                      value: '{'
+                  - listener:
+                      operation: patch
+                      value: '{'
+                  - listener:
+                      operation: add
+                      match:
+                        name: inbound:127.0.0.1:80
+                      value: |
+                        name: xyz
+                        address:
+                          socketAddress:
+                            address: 192.168.0.1
+                            portValue: 8080`,
+				expected: `
+                violations:
+                - field: conf.modifications[0].listener.operation
+                  message: 'invalid operation. Available operations: "add", "patch", "remove"'
+                - field: conf.modifications[1].listener.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[2].listener.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[3].listener.match
+                  message: cannot be defined`,
+			}),
 			Entry("invalid network filter operation", testCase{
 				proxyTemplate: `
                 selectors:
@@ -361,6 +397,43 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: conf.modifications[3].networkFilter.match.name
                   message: cannot be empty
                 - field: conf.modifications[3].networkFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'`,
+			}),
+			Entry("invalid http filter operation", testCase{
+				proxyTemplate: `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  modifications:
+                  - httpFilter:
+                      operation: addFirst
+                      value: '{'
+                  - httpFilter:
+                      operation: addBefore
+                      value: '{'
+                  - httpFilter:
+                      operation: addAfter
+                      value: '{'
+                  - httpFilter:
+                      operation: patch
+                      value: '{'
+`,
+				expected: `
+                violations:
+                - field: conf.modifications[0].httpFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[1].httpFilter.match.name
+                  message: cannot be empty. You need to pick a filter before which this one will be added
+                - field: conf.modifications[1].httpFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[2].httpFilter.match.name
+                  message: cannot be empty. You need to pick a filter after which this one will be added
+                - field: conf.modifications[2].httpFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[3].httpFilter.match.name
+                  message: cannot be empty
+                - field: conf.modifications[3].httpFilter.value
                   message: 'native Envoy resource is not valid: unexpected EOF'`,
 			}),
 		)
