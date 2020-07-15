@@ -3,9 +3,9 @@ package definitions
 import (
 	"github.com/pkg/errors"
 
-	system "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	core_rest "github.com/Kong/kuma/pkg/core/resources/model/rest"
+	system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 func AllApis() core_rest.Api {

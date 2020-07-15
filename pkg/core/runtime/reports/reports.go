@@ -12,11 +12,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 const (
@@ -138,6 +138,7 @@ func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
 	b.immutable["version"] = kuma_version.Build.Version
 	b.immutable["unique_id"] = rt.GetInstanceId()
 	b.immutable["backend"] = rt.Config().Store.Type
+	b.immutable["mode"] = rt.Config().Mode.Mode
 
 	hostname, err := os.Hostname()
 	if err == nil {

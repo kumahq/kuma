@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/app/kuma-dp/pkg/config"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/config"
 )
 
 var _ = Describe("ValidateTokenPath", func() {

@@ -3,7 +3,7 @@ package mesh
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"github.com/Kong/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 func (c *CircuitBreakerResource) HasDetectors() bool {

@@ -12,15 +12,15 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
-	"github.com/Kong/kuma/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type BootstrapGenerator interface {

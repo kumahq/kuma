@@ -4,18 +4,18 @@ import (
 	"context"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
 
-	"github.com/Kong/kuma/pkg/core"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/kds/reconcile"
-	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/core"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 func NewSnapshotGenerator(rt core_runtime.Runtime, resourceTypes []model.ResourceType, filter reconcile.ResourceFilter) reconcile.SnapshotGenerator {

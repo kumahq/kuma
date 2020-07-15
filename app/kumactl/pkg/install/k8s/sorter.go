@@ -4,7 +4,7 @@ import (
 	helm_manifest "k8s.io/helm/pkg/manifest"
 	helm_releaseutil "k8s.io/helm/pkg/releaseutil"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
 
 func SortResourcesByKind(files []data.File) []data.File {

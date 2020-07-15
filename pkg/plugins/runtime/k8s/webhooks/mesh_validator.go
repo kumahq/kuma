@@ -8,14 +8,14 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	managers_mesh "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/plugins/resources/k8s"
-	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s.Converter, resourceManager manager.ResourceManager) AdmissionValidator {

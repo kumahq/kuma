@@ -6,11 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/api-server/types"
+	"github.com/kumahq/kuma/pkg/api-server/types"
 
 	"github.com/emicklei/go-restful"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 const maxPageSize = 1000

@@ -11,9 +11,9 @@ import (
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
-	sds_config "github.com/Kong/kuma/pkg/config/sds"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	sds_config "github.com/kumahq/kuma/pkg/config/sds"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 const grpcMaxConcurrentStreams = 1000000

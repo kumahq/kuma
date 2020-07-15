@@ -11,12 +11,12 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	config_store "github.com/Kong/kuma/pkg/core/config/store"
-	config_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	common_k8s "github.com/Kong/kuma/pkg/plugins/common/k8s"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_store "github.com/kumahq/kuma/pkg/core/config/store"
+	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 )
 
 var _ config_store.ConfigStore = &KubernetesStore{}

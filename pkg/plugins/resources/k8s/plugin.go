@@ -3,10 +3,10 @@ package k8s
 import (
 	"github.com/pkg/errors"
 
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
 )
 
 var _ core_plugins.ResourceStorePlugin = &plugin{}

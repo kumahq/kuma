@@ -3,7 +3,7 @@ package token_server
 import (
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config"
 )
 
 func DefaultDataplaneTokenServerConfig() *DataplaneTokenServerConfig {

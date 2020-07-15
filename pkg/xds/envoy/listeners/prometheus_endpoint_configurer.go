@@ -7,8 +7,8 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	"github.com/Kong/kuma/pkg/util/proto"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 func PrometheusEndpoint(statsName string, path string, clusterName string) FilterChainBuilderOpt {

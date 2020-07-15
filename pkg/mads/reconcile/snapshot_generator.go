@@ -5,14 +5,14 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	mads_cache "github.com/Kong/kuma/pkg/mads/cache"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	mads_cache "github.com/kumahq/kuma/pkg/mads/cache"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 
-	"github.com/Kong/kuma/pkg/mads/generator"
+	"github.com/kumahq/kuma/pkg/mads/generator"
 )
 
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator) SnapshotGenerator {

@@ -6,10 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	common_auth "github.com/Kong/kuma/pkg/sds/auth/common"
-	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
+	common_auth "github.com/kumahq/kuma/pkg/sds/auth/common"
+	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"

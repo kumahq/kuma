@@ -15,11 +15,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/sds/auth"
-	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
-	"github.com/Kong/kuma/pkg/tokens/builtin/server"
-	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/sds/auth"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/server"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 )
 
 type staticTokenIssuer struct {

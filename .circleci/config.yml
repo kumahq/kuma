@@ -29,7 +29,7 @@ executors:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-    working_directory: /go/src/github.com/Kong/kuma
+    working_directory: /go/src/github.com/kumahq/kuma
 
   remote-docker:
     docker:

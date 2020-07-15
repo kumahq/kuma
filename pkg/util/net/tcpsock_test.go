@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/util/net"
+	. "github.com/kumahq/kuma/pkg/util/net"
 
-	"github.com/Kong/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("ReserveTCPAddr()", func() {

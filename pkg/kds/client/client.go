@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	kds_config "github.com/Kong/kuma/pkg/config/kds"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	kds_config "github.com/kumahq/kuma/pkg/config/kds"
 )
 
 type KDSClient interface {

@@ -4,7 +4,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 func EndpointMetadata(tags Tags) *envoy_core.Metadata {

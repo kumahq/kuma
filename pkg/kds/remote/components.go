@@ -4,20 +4,20 @@ import (
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/go-logr/logr"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
-	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	kds_client "github.com/Kong/kuma/pkg/kds/client"
-	"github.com/Kong/kuma/pkg/kds/reconcile"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
-	sync_store "github.com/Kong/kuma/pkg/kds/store"
-	"github.com/Kong/kuma/pkg/kds/util"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	kds_client "github.com/kumahq/kuma/pkg/kds/client"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+	sync_store "github.com/kumahq/kuma/pkg/kds/store"
+	"github.com/kumahq/kuma/pkg/kds/util"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var (

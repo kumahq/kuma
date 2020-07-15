@@ -9,13 +9,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/app/kumactl/pkg/output"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type inspectDataplanesContext struct {

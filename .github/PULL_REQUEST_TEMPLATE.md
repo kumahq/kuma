@@ -13,4 +13,4 @@ Fix #XXX
 
 ### Documentation
 
-- [ ] Link to the website [documentation PR](https://github.com/Kong/kuma-website/pull/XXX)
+- [ ] Link to the website [documentation PR](https://github.com/kumahq/kuma-website/pull/XXX)

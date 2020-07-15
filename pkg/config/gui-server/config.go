@@ -3,7 +3,7 @@ package gui_server
 import (
 	"errors"
 
-	"github.com/Kong/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config"
 )
 
 // Web GUI Server configuration

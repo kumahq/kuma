@@ -4,20 +4,20 @@ import (
 	"context"
 	"os"
 
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 
 	"io/ioutil"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/datasource"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/secrets/cipher"
-	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

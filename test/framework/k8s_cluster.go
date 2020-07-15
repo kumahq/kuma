@@ -13,7 +13,7 @@ import (
 
 	"github.com/onsi/gomega"
 
-	config_mode "github.com/Kong/kuma/pkg/config/mode"
+	config_mode "github.com/kumahq/kuma/pkg/config/mode"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -236,6 +236,18 @@ func (c *K8sCluster) DeployKuma(mode ...string) error {
 		kumacpPods[0].Name,
 		DefaultRetries,
 		DefaultTimeout)
+
+	// wait for the mesh
+	_, err = retry.DoWithRetryE(c.t,
+		"get default mesh",
+		DefaultRetries,
+		DefaultTimeout,
+		func() (s string, err error) {
+			return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+		})
+	if err != nil {
+		return err
+	}
 
 	err = c.controlplane.FinalizeAdd()
 	if err != nil {

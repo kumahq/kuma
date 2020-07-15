@@ -5,8 +5,8 @@ import (
 
 	"github.com/emicklei/go-restful"
 
-	"github.com/Kong/kuma/pkg/api-server/types"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	"github.com/kumahq/kuma/pkg/api-server/types"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 func addIndexWsEndpoints(ws *restful.WebService) error {

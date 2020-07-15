@@ -5,8 +5,8 @@ import (
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	test_grpc "github.com/Kong/kuma/pkg/test/grpc"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	test_grpc "github.com/kumahq/kuma/pkg/test/grpc"
 )
 
 type TestContext interface {

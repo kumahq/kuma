@@ -13,6 +13,8 @@ RUN mkdir /kuma
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
+RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
+    && chmod a+rw /kuma/kuma-cp.conf
 
 RUN apk add --no-cache openssh curl \
   && ssh-keygen -A \

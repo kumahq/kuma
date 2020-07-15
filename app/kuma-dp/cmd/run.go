@@ -7,23 +7,23 @@ import (
 	"os"
 	"time"
 
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 
-	"github.com/Kong/kuma/pkg/catalog/client"
+	"github.com/kumahq/kuma/pkg/catalog/client"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumadp_config "github.com/Kong/kuma/app/kuma-dp/pkg/config"
-	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
-	"github.com/Kong/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/Kong/kuma/pkg/config"
-	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
-	config_types "github.com/Kong/kuma/pkg/config/types"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	leader_memory "github.com/Kong/kuma/pkg/plugins/leader/memory"
-	util_net "github.com/Kong/kuma/pkg/util/net"
+	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/pkg/config"
+	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type CatalogClientFactory func(string) (client.CatalogClient, error)
