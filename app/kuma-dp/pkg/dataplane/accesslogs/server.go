@@ -10,9 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/Kong/kuma/pkg/core"
+	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
 
 var logger = core.Log.WithName("accesslogs-server")
@@ -32,11 +31,13 @@ func (s *accessLogServer) NeedLeaderElection() bool {
 	return false
 }
 
-func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
+func NewAccessLogServer() *accessLogServer {
+	id := core.NewUUID()
+	var address = fmt.Sprintf("/tmp/%s.sock", id)
 	return &accessLogServer{
 		server:     grpc.NewServer(),
 		newHandler: defaultHandler,
-		address:    fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", dataplane.Name, dataplane.Mesh),
+		address:    address,
 	}
 }
 
