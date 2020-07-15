@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	kumadp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
 	"github.com/Kong/kuma/pkg/core"
 	"github.com/Kong/kuma/pkg/core/runtime/component"
 )
@@ -32,18 +31,9 @@ func (s *accessLogServer) NeedLeaderElection() bool {
 	return false
 }
 
-func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
-	// Log an explicit error when access log address is too long
-	// see: https://man7.org/linux/man-pages/man7/unix.7.html
-	var address = fmt.Sprintf("/tmp/kal-%s-%s.sock", dataplane.Name, dataplane.Mesh)
-	if len(address) > 108 {
-		logger.Error(nil, fmt.Sprintf(`The name of your dataplane is too long: %s. 
-										It is important that the address to store your access logs doesn't have more than 108 characters. 
-										The actuall address is: %s.
-										Please reduce the size of your dataplane name.`,
-			dataplane.Name,
-			address))
-	}
+func NewAccessLogServer() *accessLogServer {
+	id := core.NewUUID()
+	var address = fmt.Sprintf("/tmp/%s.sock", id)
 	return &accessLogServer{
 		server:     grpc.NewServer(),
 		newHandler: defaultHandler,
