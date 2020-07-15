@@ -2,10 +2,9 @@ package store
 
 import (
 	"context"
+	"github.com/go-logr/logr"
 	"reflect"
 	"time"
-
-	"github.com/go-logr/logr"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -118,17 +117,21 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	for _, r := range onCreate {
 		rk := model.MetaToResourceKey(r.GetMeta())
 		s.log.Info("creating a new resource from upstream", "resourceKey", rk)
+		creationTime := r.GetMeta().GetCreationTime()
 		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
 		r.SetMeta(nil)
-		now := time.Now()
-		if err := s.resourceStore.Create(ctx, r, store.CreateBy(rk), store.CreatedAt(now)); err != nil {
+		if err := s.resourceStore.Create(ctx, r, store.CreateBy(rk), store.CreatedAt(creationTime)); err != nil {
 			return err
 		}
 	}
 
 	for _, r := range onUpdate {
 		s.log.Info("updating a resource", "resourceKey", model.MetaToResourceKey(r.GetMeta()))
-		if err := s.resourceStore.Update(ctx, r); err != nil {
+		now := time.Now()
+		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
+		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
+		// from upstream store, because we update downstream only when resource have changed in upstream
+		if err := s.resourceStore.Update(ctx, r, store.ModifiedAt(now)); err != nil {
 			return err
 		}
 	}
