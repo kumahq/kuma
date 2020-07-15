@@ -6,12 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/direct_response/v2"
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/echo/v2"
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	_ "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("ProxyTemplate", func() {

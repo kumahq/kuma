@@ -8,10 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/router/v2"
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/direct_response/v2"
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/echo/v2"
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
