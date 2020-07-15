@@ -19,7 +19,7 @@ func applyNetworkFilterModification(resources *model.ResourceSet, modification *
 	for _, resource := range resources.Resources(envoy_resource.ListenerType) {
 		if networkFilterListenerMatches(resource, modification.Match) {
 			listener := resource.Resource.(*envoy_api.Listener)
-			for _, chain := range listener.FilterChains {
+			for _, chain := range listener.FilterChains { // apply on all filter chains. We could introduce filter chain matcher as an improvement.
 				switch modification.Operation {
 				case mesh_proto.OpAddFirst:
 					chain.Filters = append([]*envoy_api_v2_listener.Filter{filterMod}, chain.Filters...)

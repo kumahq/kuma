@@ -18,7 +18,7 @@ func applyHTTPFilterModification(resources *model.ResourceSet, modification *mes
 	for _, resource := range resources.Resources(envoy_resource.ListenerType) {
 		if httpFilterListenerMatches(resource, modification.Match) {
 			listener := resource.Resource.(*envoy_api.Listener)
-			for _, chain := range listener.FilterChains {
+			for _, chain := range listener.FilterChains { // apply on all filter chains. We could introduce filter chain matcher as an improvement.
 				for _, networkFilter := range chain.Filters {
 					if networkFilter.Name == envoy_wellknown.HTTPConnectionManager {
 						hcm := &envoy_hcm.HttpConnectionManager{}
@@ -86,29 +86,11 @@ func applyHCMModification(hcm *envoy_hcm.HttpConnectionManager, modification *me
 }
 
 func httpFilterMatches(filter *envoy_hcm.HttpFilter, match *mesh_proto.ProxyTemplate_Modifications_HttpFilter_Match) bool {
-	if match == nil {
-		return true
-	}
-	if match.Name == "" {
-		return true
-	}
-	return filter.Name == match.Name
+	return match == nil || match.Name == "" || filter.Name == match.Name
 }
 
 func httpFilterListenerMatches(resource *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_HttpFilter_Match) bool {
-	if match == nil {
-		return true
-	}
-	if match.ListenerName == "" && match.Origin == "" {
-		return true
-	}
-	if match.ListenerName == resource.Name {
-		return true
-	}
-	if match.Origin == resource.Origin {
-		return true
-	}
-	return false
+	return match == nil || (match.ListenerName == "" && match.Origin == "") || match.ListenerName == resource.Name || match.Origin == resource.Origin
 }
 
 func indexOfHttpMatchedFilter(hcm *envoy_hcm.HttpConnectionManager, match *mesh_proto.ProxyTemplate_Modifications_HttpFilter_Match) int {

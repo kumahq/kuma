@@ -42,14 +42,5 @@ func applyClusterModification(resources *model.ResourceSet, modification *mesh_p
 }
 
 func clusterMatches(cluster *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_Cluster_Match) bool {
-	if match == nil {
-		return true
-	}
-	if match.Name == cluster.Name {
-		return true
-	}
-	if match.Origin == cluster.Origin {
-		return true
-	}
-	return false
+	return match == nil || match.Name == cluster.Name || match.Origin == cluster.Origin
 }

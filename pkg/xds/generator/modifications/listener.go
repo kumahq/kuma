@@ -42,14 +42,5 @@ func applyListenerModification(resources *model.ResourceSet, modification *mesh_
 }
 
 func listenerMatches(listener *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_Listener_Match) bool {
-	if match == nil {
-		return true
-	}
-	if match.Name == listener.Name {
-		return true
-	}
-	if match.Origin == listener.Origin {
-		return true
-	}
-	return false
+	return match == nil || match.Name == listener.Name || match.Origin == listener.Origin
 }
