@@ -7,7 +7,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_api_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -62,7 +62,7 @@ func validateModification(modification *mesh_proto.ProxyTemplate_Modifications) 
 func validateHTTPFilterModification(filterMod *mesh_proto.ProxyTemplate_Modifications_HttpFilter) validators.ValidationError {
 	verr := validators.ValidationError{}
 	validateResource := func() {
-		if err := ValidateResourceYAML(&envoy_api_listener.Filter{}, filterMod.Value); err != nil {
+		if err := ValidateResourceYAML(&envoy_hcm.HttpFilter{}, filterMod.Value); err != nil {
 			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	}
@@ -106,7 +106,7 @@ func validateListenerModification(listenerMod *mesh_proto.ProxyTemplate_Modifica
 			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	case mesh_proto.OpPatch:
-		if err := ValidateResourceYAMLPatch(&envoy_api.Cluster{}, listenerMod.Value); err != nil {
+		if err := ValidateResourceYAMLPatch(&envoy_api.Listener{}, listenerMod.Value); err != nil {
 			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	case mesh_proto.OpRemove:
@@ -140,7 +140,7 @@ func validateClusterModification(clusterMod *mesh_proto.ProxyTemplate_Modificati
 func validateNetworkFilterModification(networkFilterMod *mesh_proto.ProxyTemplate_Modifications_NetworkFilter) validators.ValidationError {
 	verr := validators.ValidationError{}
 	validateResource := func() {
-		if err := ValidateResourceYAML(&envoy_api_listener.Filter{}, networkFilterMod.Value); err != nil {
+		if err := ValidateResourceYAML(&envoy_listener.Filter{}, networkFilterMod.Value); err != nil {
 			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	}
@@ -163,7 +163,7 @@ func validateNetworkFilterModification(networkFilterMod *mesh_proto.ProxyTemplat
 		if networkFilterMod.GetMatch().GetName() == "" {
 			verr.AddViolation("match.name", "cannot be empty")
 		}
-		if err := ValidateResourceYAMLPatch(&envoy_api_listener.Filter{}, networkFilterMod.Value); err != nil {
+		if err := ValidateResourceYAMLPatch(&envoy_listener.Filter{}, networkFilterMod.Value); err != nil {
 			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	case mesh_proto.OpRemove:

@@ -97,6 +97,54 @@ var _ = Describe("ProxyTemplate", func() {
                         direction: inbound
                   `,
 			),
+			Entry("listener modifications", `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  modifications:
+                  - listener:
+                      operation: add
+                      value: |
+                        name: xyz
+                        address:
+                          socketAddress:
+                            address: 192.168.0.1
+                            portValue: 8080
+                  - listener:
+                      operation: patch
+                      value: |
+                        address:
+                          socketAddress:
+                            portValue: 8080
+                  - listener:
+                      operation: patch
+                      match:
+                        name: inbound:127.0.0.1:8080
+                      value: |
+                        address:
+                          socketAddress:
+                            portValue: 8080
+                  - listener:
+                      operation: patch
+                      match:
+                        direction: inbound
+                      value: |
+                        address:
+                          socketAddress:
+                            portValue: 8080
+                  - listener:
+                      operation: remove
+                  - listener:
+                      operation: remove
+                      match:
+                        name: inbound:127.0.0.1:8080
+                  - listener:
+                      operation: remove
+                      match:
+                        direction: inbound
+                  `,
+			),
 			Entry("network filter modifications", `
                 selectors:
                 - match:
@@ -147,6 +195,53 @@ var _ = Describe("ProxyTemplate", func() {
                           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                           cluster: backend
                   - networkFilter:
+                      operation: remove
+                  `,
+			),
+			Entry("http filter modifications", `
+                selectors:
+                - match:
+                    service: backend
+                conf:
+                  modifications:
+                  - httpFilter:
+                      operation: addFirst
+                      value: |
+                        name: envoy.router
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                          dynamicStats: false
+                  - httpFilter:
+                      operation: addLast
+                      value: |
+                        name: envoy.router
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                          dynamicStats: false
+                  - httpFilter:
+                      operation: addAfter
+                      match:
+                        name: envoy.router
+                      value: |
+                        name: envoy.filters.http.gzip
+                  - httpFilter:
+                      operation: addAfter
+                      match:
+                        name: envoy.router
+                        listenerName: inbound:127.0.0.0:8080
+                      value: |
+                        name: envoy.filters.http.gzip
+                  - httpFilter:
+                      operation: patch
+                      match:
+                        name: envoy.tcp_proxy
+                        listenerName: inbound:127.0.0.0:8080
+                      value: |
+                        name: envoy.router
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                          dynamicStats: false
+                  - httpFilter:
                       operation: remove
                   `,
 			),
