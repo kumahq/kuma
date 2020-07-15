@@ -4680,6 +4680,7 @@ webhooks:
     - UPDATE
     resources:
     - meshes
+  sideEffects: None
 - name: owner-reference.kuma-admission.kuma.io
   failurePolicy: Fail
   clientConfig:
@@ -4704,6 +4705,7 @@ webhooks:
         - traffictraces
         - healthchecks
         - proxytemplates
+  sideEffects: None
 - name: kuma-injector.kuma.io
   namespaceSelector:
     matchLabels:
@@ -4724,6 +4726,7 @@ webhooks:
         - CREATE
       resources:
         - pods
+  sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
@@ -4776,6 +4779,7 @@ webhooks:
           - UPDATE
         resources:
           - services
+    sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     namespaceSelector:
       matchLabels:
@@ -4798,3 +4802,4 @@ webhooks:
           - DELETE
         resources:
           - secrets
+    sideEffects: None
