@@ -51,16 +51,19 @@ func (c RouteConfigurer) routeAction() *envoy_route.RouteAction {
 		routeAction.MetadataMatch = envoy_common.LbMetadata(c.subsets[0].Tags)
 	} else {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
+		var totalWeight uint32
 		for _, subset := range c.subsets {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
 				Name:          subset.ClusterName,
 				Weight:        &wrappers.UInt32Value{Value: subset.Weight},
 				MetadataMatch: envoy_common.LbMetadata(subset.Tags),
 			})
+			totalWeight += subset.Weight
 		}
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_WeightedClusters{
 			WeightedClusters: &envoy_route.WeightedCluster{
-				Clusters: weightedClusters,
+				Clusters:    weightedClusters,
+				TotalWeight: &wrappers.UInt32Value{Value: totalWeight},
 			},
 		}
 	}

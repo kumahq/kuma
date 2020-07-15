@@ -70,6 +70,34 @@ var _ = Describe("DefaultRouteConfigurer", func() {
                           version: v2
                     name: backend
                     weight: 70
+                  totalWeight: 100
+`,
+		}),
+		Entry("basic VirtualHost with weighted destination clusters with totalWeight less than 100", testCase{
+			clusters: []envoy_common.ClusterSubset{
+				{ClusterName: "backend", Weight: 30, Tags: map[string]string{"version": "v1"}},
+				{ClusterName: "backend", Weight: 60, Tags: map[string]string{"version": "v2"}},
+			},
+			expected: `
+            routes:
+            - match:
+                prefix: /
+              route:
+                weightedClusters:
+                  clusters:
+                  - metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          version: v1
+                    name: backend
+                    weight: 30
+                  - metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          version: v2
+                    name: backend
+                    weight: 60
+                  totalWeight: 90
 `,
 		}),
 	)
