@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 var logger = core.Log.WithName("accesslogs-server")
