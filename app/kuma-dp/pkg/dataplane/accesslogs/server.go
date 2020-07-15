@@ -47,7 +47,7 @@ func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
 	return &accessLogServer{
 		server:     grpc.NewServer(),
 		newHandler: defaultHandler,
-		address: address,
+		address:    address,
 	}
 }
 
