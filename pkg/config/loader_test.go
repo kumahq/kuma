@@ -135,6 +135,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.KDS.Server.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.KDS.Server.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.KDS.Client.RootCAFile).To(Equal("/rootCa"))
+
+			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -231,6 +233,8 @@ kds:
     tlsKeyFile: /key
   client:
     rootCaFile: /rootCa
+defaults:
+  skipMeshCreation: true
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -293,6 +297,7 @@ kds:
 				"KUMA_KDS_SERVER_TLS_CERT_FILE":                                 "/cert",
 				"KUMA_KDS_SERVER_TLS_KEY_FILE":                                  "/key",
 				"KUMA_KDS_CLIENT_ROOT_CA_FILE":                                  "/rootCa",
+				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                              "true",
 			},
 			yamlFileConfig: "",
 		}),

@@ -110,7 +110,7 @@ var _ = Describe("Config WS", func() {
             }
           },
           "defaults": {
-            "mesh": "type: Mesh\nname: default\n"
+            "skipMeshCreation": false
           },
           "dnsServer": {
             "domain": "mesh",
