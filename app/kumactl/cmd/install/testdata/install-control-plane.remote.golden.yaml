@@ -4725,6 +4725,7 @@ webhooks:
     - UPDATE
     resources:
     - meshes
+  sideEffects: None
 - name: owner-reference.kuma-admission.kuma.io
   failurePolicy: Fail
   clientConfig:
@@ -4749,6 +4750,7 @@ webhooks:
         - traffictraces
         - healthchecks
         - proxytemplates
+  sideEffects: None
 - name: kuma-injector.kuma.io
   namespaceSelector:
     matchLabels:
@@ -4769,3 +4771,4 @@ webhooks:
         - CREATE
       resources:
         - pods
+  sideEffects: None
