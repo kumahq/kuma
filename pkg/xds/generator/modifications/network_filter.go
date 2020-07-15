@@ -2,57 +2,42 @@ package modifications
 
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/gogo/protobuf/proto"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	model "github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func applyNetworkFilterModification(resources *model.ResourceSet, modification *mesh_proto.ProxyTemplate_Modifications_NetworkFilter) error {
-	filterMod := &envoy_api_v2_listener.Filter{}
-	if err := util_proto.FromYAML([]byte(modification.Value), filterMod); err != nil {
+type networkFilterModificator mesh_proto.ProxyTemplate_Modifications_NetworkFilter
+
+func (n *networkFilterModificator) apply(resources *core_xds.ResourceSet) error {
+	filter := &envoy_listener.Filter{}
+	if err := util_proto.FromYAML([]byte(n.Value), filter); err != nil {
 		return err
 	}
 	for _, resource := range resources.Resources(envoy_resource.ListenerType) {
-		if networkFilterListenerMatches(resource, modification.Match) {
+		if n.listenerMatches(resource) {
 			listener := resource.Resource.(*envoy_api.Listener)
 			for _, chain := range listener.FilterChains { // apply on all filter chains. We could introduce filter chain matcher as an improvement.
-				switch modification.Operation {
+				switch n.Operation {
 				case mesh_proto.OpAddFirst:
-					chain.Filters = append([]*envoy_api_v2_listener.Filter{filterMod}, chain.Filters...)
+					n.addFirst(chain, filter)
 				case mesh_proto.OpAddLast:
-					chain.Filters = append(chain.Filters, filterMod)
+					n.addLast(chain, filter)
 				case mesh_proto.OpAddAfter:
-					idx := indexOfMatchedFilter(chain, modification.Match)
-					if idx != -1 {
-						chain.Filters = append(chain.Filters, nil)
-						copy(chain.Filters[idx+2:], chain.Filters[idx+1:])
-						chain.Filters[idx+1] = filterMod
-					}
+					n.addAfter(chain, filter)
 				case mesh_proto.OpAddBefore:
-					idx := indexOfMatchedFilter(chain, modification.Match)
-					if idx != -1 {
-						chain.Filters = append(chain.Filters, nil)
-						copy(chain.Filters[idx+1:], chain.Filters[idx:])
-						chain.Filters[idx] = filterMod
-					}
+					n.addBefore(chain, filter)
 				case mesh_proto.OpRemove:
-					var filters []*envoy_api_v2_listener.Filter
-					for _, filter := range chain.Filters {
-						if !filterMatches(filter, modification.Match) {
-							filters = append(filters, filter)
-						}
-					}
-					chain.Filters = filters
+					n.remove(chain)
 				case mesh_proto.OpPatch:
-					for _, filter := range chain.Filters {
-						if filterMatches(filter, modification.Match) {
-							proto.Merge(filter, filterMod)
-						}
-					}
+					n.patch(chain, filter)
+				default:
+					return errors.Errorf("invalid operation: %s", n.Operation)
 				}
 			}
 		}
@@ -60,35 +45,61 @@ func applyNetworkFilterModification(resources *model.ResourceSet, modification *
 	return nil
 }
 
-func filterMatches(filter *envoy_api_v2_listener.Filter, match *mesh_proto.ProxyTemplate_Modifications_NetworkFilter_Match) bool {
-	if match == nil {
-		return true
-	}
-	if match.Name == "" {
-		return true
-	}
-	return filter.Name == match.Name
+func (n *networkFilterModificator) addFirst(chain *envoy_listener.FilterChain, filter *envoy_listener.Filter) {
+	chain.Filters = append([]*envoy_listener.Filter{filter}, chain.Filters...)
 }
 
-func networkFilterListenerMatches(resource *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_NetworkFilter_Match) bool {
-	if match == nil {
-		return true
-	}
-	if match.ListenerName == "" && match.Origin == "" {
-		return true
-	}
-	if match.ListenerName == resource.Name {
-		return true
-	}
-	if match.Origin == resource.Origin {
-		return true
-	}
-	return false
+func (n *networkFilterModificator) addLast(chain *envoy_listener.FilterChain, filter *envoy_listener.Filter) {
+	chain.Filters = append(chain.Filters, filter)
 }
 
-func indexOfMatchedFilter(chain *envoy_api_v2_listener.FilterChain, match *mesh_proto.ProxyTemplate_Modifications_NetworkFilter_Match) int {
+func (n *networkFilterModificator) addAfter(chain *envoy_listener.FilterChain, filter *envoy_listener.Filter) {
+	idx := n.indexOfMatchedFilter(chain)
+	if idx != -1 {
+		chain.Filters = append(chain.Filters, nil)
+		copy(chain.Filters[idx+2:], chain.Filters[idx+1:])
+		chain.Filters[idx+1] = filter
+	}
+}
+
+func (n *networkFilterModificator) addBefore(chain *envoy_listener.FilterChain, filter *envoy_listener.Filter) {
+	idx := n.indexOfMatchedFilter(chain)
+	if idx != -1 {
+		chain.Filters = append(chain.Filters, nil)
+		copy(chain.Filters[idx+1:], chain.Filters[idx:])
+		chain.Filters[idx] = filter
+	}
+}
+
+func (n *networkFilterModificator) remove(chain *envoy_listener.FilterChain) {
+	var filters []*envoy_listener.Filter
+	for _, filter := range chain.Filters {
+		if !n.filterMatches(filter) {
+			filters = append(filters, filter)
+		}
+	}
+	chain.Filters = filters
+}
+
+func (n *networkFilterModificator) patch(chain *envoy_listener.FilterChain, filterPatch *envoy_listener.Filter) {
+	for _, filter := range chain.Filters {
+		if n.filterMatches(filter) {
+			proto.Merge(filter, filterPatch)
+		}
+	}
+}
+
+func (n *networkFilterModificator) filterMatches(filter *envoy_listener.Filter) bool {
+	return n.Match == nil || n.Match.Name == "" || filter.Name == n.Match.Name
+}
+
+func (n *networkFilterModificator) listenerMatches(resource *core_xds.Resource) bool {
+	return n.Match == nil || (n.Match.ListenerName == "" && n.Match.Origin == "") || n.Match.ListenerName == resource.Name || n.Match.Origin == resource.Origin
+}
+
+func (n *networkFilterModificator) indexOfMatchedFilter(chain *envoy_listener.FilterChain) int {
 	for i, filter := range chain.Filters {
-		if filter.Name == match.Name {
+		if filter.Name == n.Match.Name {
 			return i
 		}
 	}

@@ -303,7 +303,8 @@ func (m *ProxyTemplate_Modifications_Cluster) GetValue() string {
 
 // Match defines match for cluster
 type ProxyTemplate_Modifications_Cluster_Match struct {
-	// Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+	// Origin of the resource generation. (inbound, outbound, prometheus,
+	// transparent, ingress)
 	Origin string `protobuf:"bytes,1,opt,name=origin,proto3" json:"origin,omitempty"`
 	// Name of the cluster to match
 	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -416,7 +417,8 @@ func (m *ProxyTemplate_Modifications_Listener) GetValue() string {
 
 // Match defines match for listener
 type ProxyTemplate_Modifications_Listener_Match struct {
-	// Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+	// Origin of the resource generation. (inbound, outbound, prometheus,
+	// transparent, ingress)
 	Origin string `protobuf:"bytes,1,opt,name=origin,proto3" json:"origin,omitempty"`
 	// Name of the listener to match
 	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -472,7 +474,8 @@ func (m *ProxyTemplate_Modifications_Listener_Match) GetName() string {
 type ProxyTemplate_Modifications_NetworkFilter struct {
 	// Only network filters that match will be modified
 	Match *ProxyTemplate_Modifications_NetworkFilter_Match `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
-	// Operation to apply on network filter (addFirst, addLast, addBefore, addAfter, remove, patch)
+	// Operation to apply on network filter (addFirst, addLast, addBefore,
+	// addAfter, remove, patch)
 	Operation string `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
 	// xDS network filter
 	Value                string   `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
@@ -533,11 +536,13 @@ func (m *ProxyTemplate_Modifications_NetworkFilter) GetValue() string {
 
 // Match defines match for network filter
 type ProxyTemplate_Modifications_NetworkFilter_Match struct {
-	// Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+	// Origin of the resource generation. (inbound, outbound, prometheus,
+	// transparent, ingress)
 	Origin string `protobuf:"bytes,1,opt,name=origin,proto3" json:"origin,omitempty"`
 	// Name of the network filter
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	// Name of the listener that network filter modifications will be applied to
+	// Name of the listener that network filter modifications will be
+	// applied to
 	ListenerName         string   `protobuf:"bytes,3,opt,name=listenerName,proto3" json:"listenerName,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -598,7 +603,8 @@ func (m *ProxyTemplate_Modifications_NetworkFilter_Match) GetListenerName() stri
 type ProxyTemplate_Modifications_HttpFilter struct {
 	// Only HTTP filters that match will be modified
 	Match *ProxyTemplate_Modifications_HttpFilter_Match `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
-	// Operation to apply on network filter (addFirst, addLast, addBefore, addAfter, remove, patch)
+	// Operation to apply on network filter (addFirst, addLast, addBefore,
+	// addAfter, remove, patch)
 	Operation string `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
 	// xDS HTTP filter
 	Value                string   `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
@@ -657,11 +663,13 @@ func (m *ProxyTemplate_Modifications_HttpFilter) GetValue() string {
 
 // Match defines match for http filter
 type ProxyTemplate_Modifications_HttpFilter_Match struct {
-	// Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+	// Origin of the resource generation. (inbound, outbound, prometheus,
+	// transparent, ingress)
 	Origin string `protobuf:"bytes,1,opt,name=origin,proto3" json:"origin,omitempty"`
 	// Name of the network filter
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	// Name of the listener that http filter modifications will be applied to
+	// Name of the listener that http filter modifications will be applied
+	// to
 	ListenerName         string   `protobuf:"bytes,3,opt,name=listenerName,proto3" json:"listenerName,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

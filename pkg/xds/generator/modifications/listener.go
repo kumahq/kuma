@@ -7,40 +7,54 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	model "github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func applyListenerModification(resources *model.ResourceSet, modification *mesh_proto.ProxyTemplate_Modifications_Listener) error {
-	listenerMod := &envoy_api.Listener{}
-	if err := util_proto.FromYAML([]byte(modification.Value), listenerMod); err != nil {
+type listenerModificator mesh_proto.ProxyTemplate_Modifications_Listener
+
+func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
+	listener := &envoy_api.Listener{}
+	if err := util_proto.FromYAML([]byte(l.Value), listener); err != nil {
 		return err
 	}
-	switch modification.Operation {
+	switch l.Operation {
 	case mesh_proto.OpAdd:
-		resources.Add(&model.Resource{
-			Name:     listenerMod.Name,
-			Origin:   OriginProxyTemplateModifications,
-			Resource: listenerMod,
-		})
+		l.app(resources, listener)
 	case mesh_proto.OpRemove:
-		for name, resource := range resources.Resources(envoy_resource.ListenerType) {
-			if listenerMatches(resource, modification.Match) {
-				resources.Remove(envoy_resource.ListenerType, name)
-			}
-		}
+		l.remove(resources)
 	case mesh_proto.OpPatch:
-		for _, listener := range resources.Resources(envoy_resource.ListenerType) {
-			if listenerMatches(listener, modification.Match) {
-				proto.Merge(listener.Resource, listenerMod)
-			}
-		}
+		l.patch(resources, listener)
 	default:
-		return errors.New("invalid operation")
+		return errors.Errorf("invalid operation: %s", l.Operation)
 	}
 	return nil
 }
 
-func listenerMatches(listener *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_Listener_Match) bool {
-	return match == nil || match.Name == listener.Name || match.Origin == listener.Origin
+func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPatch *envoy_api.Listener) {
+	for _, listener := range resources.Resources(envoy_resource.ListenerType) {
+		if l.listenerMatches(listener) {
+			proto.Merge(listener.Resource, listenerPatch)
+		}
+	}
+}
+
+func (l *listenerModificator) remove(resources *core_xds.ResourceSet) {
+	for name, resource := range resources.Resources(envoy_resource.ListenerType) {
+		if l.listenerMatches(resource) {
+			resources.Remove(envoy_resource.ListenerType, name)
+		}
+	}
+}
+
+func (l *listenerModificator) app(resources *core_xds.ResourceSet, listener *envoy_api.Listener) *core_xds.ResourceSet {
+	return resources.Add(&core_xds.Resource{
+		Name:     listener.Name,
+		Origin:   OriginProxyTemplateModifications,
+		Resource: listener,
+	})
+}
+
+func (l *listenerModificator) listenerMatches(listener *core_xds.Resource) bool {
+	return l.Match == nil || l.Match.Name == listener.Name || l.Match.Origin == listener.Origin
 }

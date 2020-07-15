@@ -53,7 +53,8 @@ message ProxyTemplate {
 
       // Match defines match for cluster
       message Match {
-        // Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+        // Origin of the resource generation. (inbound, outbound, prometheus,
+        // transparent, ingress)
         string origin = 1;
         // Name of the cluster to match
         string name = 2;
@@ -71,7 +72,8 @@ message ProxyTemplate {
 
       // Match defines match for listener
       message Match {
-        // Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+        // Origin of the resource generation. (inbound, outbound, prometheus,
+        // transparent, ingress)
         string origin = 1;
         // Name of the listener to match
         string name = 2;
@@ -82,18 +84,21 @@ message ProxyTemplate {
     message NetworkFilter {
       // Only network filters that match will be modified
       Match match = 1;
-      // Operation to apply on network filter (addFirst, addLast, addBefore, addAfter, remove, patch)
+      // Operation to apply on network filter (addFirst, addLast, addBefore,
+      // addAfter, remove, patch)
       string operation = 2;
       // xDS network filter
       string value = 3;
 
       // Match defines match for network filter
       message Match {
-        // Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+        // Origin of the resource generation. (inbound, outbound, prometheus,
+        // transparent, ingress)
         string origin = 1;
         // Name of the network filter
         string name = 2;
-        // Name of the listener that network filter modifications will be applied to
+        // Name of the listener that network filter modifications will be
+        // applied to
         string listenerName = 3;
       }
     }
@@ -102,18 +107,21 @@ message ProxyTemplate {
     message HttpFilter {
       // Only HTTP filters that match will be modified
       Match match = 1;
-      // Operation to apply on network filter (addFirst, addLast, addBefore, addAfter, remove, patch)
+      // Operation to apply on network filter (addFirst, addLast, addBefore,
+      // addAfter, remove, patch)
       string operation = 2;
       // xDS HTTP filter
       string value = 3;
 
       // Match defines match for http filter
       message Match {
-        // Origin of the resource generation. (inbound, outbound, prometheus, transparent, ingress)
+        // Origin of the resource generation. (inbound, outbound, prometheus,
+        // transparent, ingress)
         string origin = 1;
         // Name of the network filter
         string name = 2;
-        // Name of the listener that http filter modifications will be applied to
+        // Name of the listener that http filter modifications will be applied
+        // to
         string listenerName = 3;
       }
     }

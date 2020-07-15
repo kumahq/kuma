@@ -7,40 +7,54 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	model "github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func applyClusterModification(resources *model.ResourceSet, modification *mesh_proto.ProxyTemplate_Modifications_Cluster) error {
+type clusterModificator mesh_proto.ProxyTemplate_Modifications_Cluster
+
+func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
 	clusterMod := &envoy_api.Cluster{}
-	if err := util_proto.FromYAML([]byte(modification.Value), clusterMod); err != nil {
+	if err := util_proto.FromYAML([]byte(c.Value), clusterMod); err != nil {
 		return err
 	}
-	switch modification.Operation {
+	switch c.Operation {
 	case mesh_proto.OpAdd:
-		resources.Add(&model.Resource{
-			Name:     clusterMod.Name,
-			Origin:   OriginProxyTemplateModifications,
-			Resource: clusterMod,
-		})
+		c.add(resources, clusterMod)
 	case mesh_proto.OpRemove:
-		for name, resource := range resources.Resources(envoy_resource.ClusterType) {
-			if clusterMatches(resource, modification.Match) {
-				resources.Remove(envoy_resource.ClusterType, name)
-			}
-		}
+		c.remove(resources)
 	case mesh_proto.OpPatch:
-		for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
-			if clusterMatches(cluster, modification.Match) {
-				proto.Merge(cluster.Resource, clusterMod)
-			}
-		}
+		c.patch(resources, clusterMod)
 	default:
-		return errors.New("invalid operation")
+		return errors.Errorf("invalid operation: %s", c.Operation)
 	}
 	return nil
 }
 
-func clusterMatches(cluster *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_Cluster_Match) bool {
-	return match == nil || match.Name == cluster.Name || match.Origin == cluster.Origin
+func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *envoy_api.Cluster) {
+	for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
+		if c.clusterMatches(cluster) {
+			proto.Merge(cluster.Resource, clusterMod)
+		}
+	}
+}
+
+func (c *clusterModificator) remove(resources *core_xds.ResourceSet) {
+	for name, resource := range resources.Resources(envoy_resource.ClusterType) {
+		if c.clusterMatches(resource) {
+			resources.Remove(envoy_resource.ClusterType, name)
+		}
+	}
+}
+
+func (c *clusterModificator) add(resources *core_xds.ResourceSet, clusterMod *envoy_api.Cluster) *core_xds.ResourceSet {
+	return resources.Add(&core_xds.Resource{
+		Name:     clusterMod.Name,
+		Origin:   OriginProxyTemplateModifications,
+		Resource: clusterMod,
+	})
+}
+
+func (c *clusterModificator) clusterMatches(cluster *core_xds.Resource) bool {
+	return c.Match == nil || c.Match.Name == cluster.Name || c.Match.Origin == cluster.Origin
 }

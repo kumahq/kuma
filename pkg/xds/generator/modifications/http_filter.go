@@ -8,15 +8,18 @@ import (
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	model "github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func applyHTTPFilterModification(resources *model.ResourceSet, modification *mesh_proto.ProxyTemplate_Modifications_HttpFilter) error {
+type httpFilterModificator mesh_proto.ProxyTemplate_Modifications_HttpFilter
+
+func (h *httpFilterModificator) apply(resources *core_xds.ResourceSet) error {
 	for _, resource := range resources.Resources(envoy_resource.ListenerType) {
-		if httpFilterListenerMatches(resource, modification.Match) {
+		if h.listenerMatches(resource) {
 			listener := resource.Resource.(*envoy_api.Listener)
 			for _, chain := range listener.FilterChains { // apply on all filter chains. We could introduce filter chain matcher as an improvement.
 				for _, networkFilter := range chain.Filters {
@@ -26,7 +29,7 @@ func applyHTTPFilterModification(resources *model.ResourceSet, modification *mes
 						if err != nil {
 							return err
 						}
-						if err := applyHCMModification(hcm, modification); err != nil {
+						if err := h.applyHCMModification(hcm); err != nil {
 							return err
 						}
 						any, err := util_proto.MarshalAnyDeterministic(hcm)
@@ -36,66 +39,91 @@ func applyHTTPFilterModification(resources *model.ResourceSet, modification *mes
 						networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig = any
 					}
 				}
-
 			}
 		}
 	}
 	return nil
 }
 
-func applyHCMModification(hcm *envoy_hcm.HttpConnectionManager, modification *mesh_proto.ProxyTemplate_Modifications_HttpFilter) error {
-	filterMod := &envoy_hcm.HttpFilter{}
-	if err := util_proto.FromYAML([]byte(modification.Value), filterMod); err != nil {
+func (h *httpFilterModificator) applyHCMModification(hcm *envoy_hcm.HttpConnectionManager) error {
+	filter := &envoy_hcm.HttpFilter{}
+	if err := util_proto.FromYAML([]byte(h.Value), filter); err != nil {
 		return err
 	}
-	switch modification.Operation {
+	switch h.Operation {
 	case mesh_proto.OpAddFirst:
-		hcm.HttpFilters = append([]*envoy_hcm.HttpFilter{filterMod}, hcm.HttpFilters...)
+		h.addFirst(hcm, filter)
 	case mesh_proto.OpAddLast:
-		hcm.HttpFilters = append(hcm.HttpFilters, filterMod)
+		h.addLast(hcm, filter)
 	case mesh_proto.OpAddAfter:
-		idx := indexOfHttpMatchedFilter(hcm, modification.Match)
-		if idx != -1 {
-			hcm.HttpFilters = append(hcm.HttpFilters, nil)
-			copy(hcm.HttpFilters[idx+2:], hcm.HttpFilters[idx+1:])
-			hcm.HttpFilters[idx+1] = filterMod
-		}
+		h.addAfter(hcm, filter)
 	case mesh_proto.OpAddBefore:
-		idx := indexOfHttpMatchedFilter(hcm, modification.Match)
-		if idx != -1 {
-			hcm.HttpFilters = append(hcm.HttpFilters, nil)
-			copy(hcm.HttpFilters[idx+1:], hcm.HttpFilters[idx:])
-			hcm.HttpFilters[idx] = filterMod
-		}
+		h.addBefore(hcm, filter)
 	case mesh_proto.OpRemove:
-		var filters []*envoy_hcm.HttpFilter
-		for _, filter := range hcm.HttpFilters {
-			if !httpFilterMatches(filter, modification.Match) {
-				filters = append(filters, filter)
-			}
-		}
-		hcm.HttpFilters = filters
+		h.remove(hcm)
 	case mesh_proto.OpPatch:
-		for _, filter := range hcm.HttpFilters {
-			if httpFilterMatches(filter, modification.Match) {
-				proto.Merge(filter, filterMod)
-			}
-		}
+		h.patch(hcm, filter)
+	default:
+		return errors.Errorf("invalid operation: %s", h.Operation)
 	}
 	return nil
 }
 
-func httpFilterMatches(filter *envoy_hcm.HttpFilter, match *mesh_proto.ProxyTemplate_Modifications_HttpFilter_Match) bool {
-	return match == nil || match.Name == "" || filter.Name == match.Name
+func (h *httpFilterModificator) patch(hcm *envoy_hcm.HttpConnectionManager, filterPatch *envoy_hcm.HttpFilter) {
+	for _, filter := range hcm.HttpFilters {
+		if h.filterMatches(filter) {
+			proto.Merge(filter, filterPatch)
+		}
+	}
 }
 
-func httpFilterListenerMatches(resource *model.Resource, match *mesh_proto.ProxyTemplate_Modifications_HttpFilter_Match) bool {
-	return match == nil || (match.ListenerName == "" && match.Origin == "") || match.ListenerName == resource.Name || match.Origin == resource.Origin
+func (h *httpFilterModificator) remove(hcm *envoy_hcm.HttpConnectionManager) {
+	var filters []*envoy_hcm.HttpFilter
+	for _, filter := range hcm.HttpFilters {
+		if !h.filterMatches(filter) {
+			filters = append(filters, filter)
+		}
+	}
+	hcm.HttpFilters = filters
 }
 
-func indexOfHttpMatchedFilter(hcm *envoy_hcm.HttpConnectionManager, match *mesh_proto.ProxyTemplate_Modifications_HttpFilter_Match) int {
+func (h *httpFilterModificator) addBefore(hcm *envoy_hcm.HttpConnectionManager, filterMod *envoy_hcm.HttpFilter) {
+	idx := h.indexOfMatchedFilter(hcm)
+	if idx != -1 {
+		hcm.HttpFilters = append(hcm.HttpFilters, nil)
+		copy(hcm.HttpFilters[idx+1:], hcm.HttpFilters[idx:])
+		hcm.HttpFilters[idx] = filterMod
+	}
+}
+
+func (h *httpFilterModificator) addAfter(hcm *envoy_hcm.HttpConnectionManager, filterMod *envoy_hcm.HttpFilter) {
+	idx := h.indexOfMatchedFilter(hcm)
+	if idx != -1 {
+		hcm.HttpFilters = append(hcm.HttpFilters, nil)
+		copy(hcm.HttpFilters[idx+2:], hcm.HttpFilters[idx+1:])
+		hcm.HttpFilters[idx+1] = filterMod
+	}
+}
+
+func (h *httpFilterModificator) addLast(hcm *envoy_hcm.HttpConnectionManager, filterMod *envoy_hcm.HttpFilter) {
+	hcm.HttpFilters = append(hcm.HttpFilters, filterMod)
+}
+
+func (h *httpFilterModificator) addFirst(hcm *envoy_hcm.HttpConnectionManager, filterMod *envoy_hcm.HttpFilter) {
+	hcm.HttpFilters = append([]*envoy_hcm.HttpFilter{filterMod}, hcm.HttpFilters...)
+}
+
+func (h *httpFilterModificator) filterMatches(filter *envoy_hcm.HttpFilter) bool {
+	return h.Match == nil || h.Match.Name == "" || filter.Name == h.Match.Name
+}
+
+func (h *httpFilterModificator) listenerMatches(resource *core_xds.Resource) bool {
+	return h.Match == nil || (h.Match.ListenerName == "" && h.Match.Origin == "") || h.Match.ListenerName == resource.Name || h.Match.Origin == resource.Origin
+}
+
+func (h *httpFilterModificator) indexOfMatchedFilter(hcm *envoy_hcm.HttpConnectionManager) int {
 	for i, filter := range hcm.HttpFilters {
-		if filter.Name == match.Name {
+		if filter.Name == h.Match.Name {
 			return i
 		}
 	}

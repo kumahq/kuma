@@ -1,33 +1,40 @@
 package modifications
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/pkg/errors"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // OriginProxyTemplateModifications is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginProxyTemplateModifications = "proxy-template-modifications"
 
-func Apply(resources *model.ResourceSet, modifications []*mesh_proto.ProxyTemplate_Modifications) error {
-	for _, modification := range modifications {
+type modificator interface {
+	apply(*core_xds.ResourceSet) error
+}
+
+func Apply(resources *core_xds.ResourceSet, modifications []*mesh_proto.ProxyTemplate_Modifications) error {
+	for i, modification := range modifications {
+		var modificator modificator
 		switch modification.Type.(type) {
 		case *mesh_proto.ProxyTemplate_Modifications_Cluster_:
-			if err := applyClusterModification(resources, modification.GetCluster()); err != nil {
-				return errors.Wrap(err, "could not apply cluster modification")
-			}
+			mod := clusterModificator(*modification.GetCluster())
+			modificator = &mod
 		case *mesh_proto.ProxyTemplate_Modifications_Listener_:
-			if err := applyListenerModification(resources, modification.GetListener()); err != nil {
-				return errors.Wrap(err, "could not apply listener modification")
-			}
+			mod := listenerModificator(*modification.GetListener())
+			modificator = &mod
 		case *mesh_proto.ProxyTemplate_Modifications_NetworkFilter_:
-			if err := applyNetworkFilterModification(resources, modification.GetNetworkFilter()); err != nil {
-				return errors.Wrap(err, "could not apply network filter modification")
-			}
+			mod := networkFilterModificator(*modification.GetNetworkFilter())
+			modificator = &mod
 		case *mesh_proto.ProxyTemplate_Modifications_HttpFilter_:
-			if err := applyHTTPFilterModification(resources, modification.GetHttpFilter()); err != nil {
-				return errors.Wrap(err, "could not apply HTTP filter modification")
-			}
+			mod := httpFilterModificator(*modification.GetHttpFilter())
+			modificator = &mod
+		default:
+			return errors.Errorf("invalid modification type %q", modification.Type)
+		}
+		if err := modificator.apply(resources); err != nil {
+			return errors.Wrapf(err, "could not apply %d modification", i)
 		}
 	}
 	return nil
