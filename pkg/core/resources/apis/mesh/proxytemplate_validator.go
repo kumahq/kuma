@@ -2,8 +2,9 @@ package mesh
 
 import (
 	"fmt"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"strings"
+
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
