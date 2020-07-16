@@ -6,7 +6,6 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
@@ -62,19 +61,29 @@ func (h *httpFilterModificator) applyHCMModification(hcm *envoy_hcm.HttpConnecti
 	case mesh_proto.OpRemove:
 		h.remove(hcm)
 	case mesh_proto.OpPatch:
-		h.patch(hcm, filter)
+		if err := h.patch(hcm, filter); err != nil {
+			return errors.Wrap(err, "could not patch the resource")
+		}
 	default:
 		return errors.Errorf("invalid operation: %s", h.Operation)
 	}
 	return nil
 }
 
-func (h *httpFilterModificator) patch(hcm *envoy_hcm.HttpConnectionManager, filterPatch *envoy_hcm.HttpFilter) {
+func (h *httpFilterModificator) patch(hcm *envoy_hcm.HttpConnectionManager, filterPatch *envoy_hcm.HttpFilter) error {
 	for _, filter := range hcm.HttpFilters {
 		if h.filterMatches(filter) {
-			proto.Merge(filter, filterPatch)
+			any, err := util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
+			if err != nil {
+				return err
+			}
+
+			filter.ConfigType = &envoy_hcm.HttpFilter_TypedConfig{
+				TypedConfig: any,
+			}
 		}
 	}
+	return nil
 }
 
 func (h *httpFilterModificator) remove(hcm *envoy_hcm.HttpConnectionManager) {

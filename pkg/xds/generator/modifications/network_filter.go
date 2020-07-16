@@ -4,7 +4,6 @@ import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
-	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -35,7 +34,9 @@ func (n *networkFilterModificator) apply(resources *core_xds.ResourceSet) error 
 				case mesh_proto.OpRemove:
 					n.remove(chain)
 				case mesh_proto.OpPatch:
-					n.patch(chain, filter)
+					if err := n.patch(chain, filter); err != nil {
+						return errors.Wrap(err, "could not patch the resource")
+					}
 				default:
 					return errors.Errorf("invalid operation: %s", n.Operation)
 				}
@@ -81,12 +82,20 @@ func (n *networkFilterModificator) remove(chain *envoy_listener.FilterChain) {
 	chain.Filters = filters
 }
 
-func (n *networkFilterModificator) patch(chain *envoy_listener.FilterChain, filterPatch *envoy_listener.Filter) {
+func (n *networkFilterModificator) patch(chain *envoy_listener.FilterChain, filterPatch *envoy_listener.Filter) error {
 	for _, filter := range chain.Filters {
 		if n.filterMatches(filter) {
-			proto.Merge(filter, filterPatch)
+			any, err := util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
+			if err != nil {
+				return err
+			}
+
+			filter.ConfigType = &envoy_listener.Filter_TypedConfig{
+				TypedConfig: any,
+			}
 		}
 	}
+	return nil
 }
 
 func (n *networkFilterModificator) filterMatches(filter *envoy_listener.Filter) bool {

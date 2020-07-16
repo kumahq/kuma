@@ -506,6 +506,9 @@ var _ = Describe("HTTP Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
                       - name: envoy.router
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                          startChildSpan: true
                       - name: envoy.filters.http.gzip
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
@@ -540,6 +543,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                       - name: envoy.router
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                          startChildSpan: true
                           dynamicStats: false
                       - name: envoy.filters.http.gzip
                       statPrefix: localhost_8080

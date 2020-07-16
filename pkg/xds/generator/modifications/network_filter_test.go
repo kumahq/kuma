@@ -533,24 +533,30 @@ var _ = Describe("Network Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 filterChains:
                 - filters:
-                  - name: envoy.filters.network.direct_response
+                  - name: envoy.http_connection_manager
                     typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
-                      response:
-                        inlineString: "xyz"
+                      '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                      stat_prefix: backend
+                      rds:
+                        configSource:
+                          ads: {}
+                        routeConfigName: outbound:backend
+                      httpFilters:
+                      - name: router
 `,
 			},
 			modifications: []string{`
-                networkFilter:
-                   operation: patch
-                   match:
-                     name: envoy.filters.network.direct_response
-                   value: |
-                     typedConfig:
-                       '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
-                       response:
-                          inlineString: "abc"
-`,
+               networkFilter:
+                 operation: patch
+                 match:
+                   name: envoy.http_connection_manager
+                 value: |
+                   name: envoy.http_connection_manager
+                   typedConfig:
+                     '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                     streamIdleTimeout: 5s
+                     requestTimeout: 2s
+                     drainTimeout: 10s`,
 			},
 			expected: `
             resources:
@@ -559,11 +565,52 @@ var _ = Describe("Network Filter modifications", func() {
                 '@type': type.googleapis.com/envoy.api.v2.Listener
                 filterChains:
                 - filters:
-                  - name: envoy.filters.network.direct_response
+                  - name: envoy.http_connection_manager
                     typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
-                      response:
-                        inlineString: abc
+                      '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                      drainTimeout: 10s
+                      httpFilters:
+                      - name: router
+                      rds:
+                        configSource:
+                          ads: {}
+                        routeConfigName: outbound:backend
+                      requestTimeout: 2s
+                      statPrefix: backend
+                      streamIdleTimeout: 5s
+                name: inbound:192.168.0.1:8080`,
+		}),
+		Entry("should patch resource providing config", testCase{
+			listeners: []string{
+				`
+                name: inbound:192.168.0.1:8080
+                filterChains:
+                - filters:
+                  - name: envoy.http_connection_manager
+`,
+			},
+			modifications: []string{`
+               networkFilter:
+                 operation: patch
+                 match:
+                   name: envoy.http_connection_manager
+                 value: |
+                   name: envoy.http_connection_manager
+                   typedConfig:
+                     '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                     statPrefix: backend`,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.api.v2.Listener
+                filterChains:
+                - filters:
+                  - name: envoy.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                      statPrefix: backend
                 name: inbound:192.168.0.1:8080`,
 		}),
 	)
