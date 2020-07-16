@@ -373,6 +373,8 @@ Available Commands:
   traffic-routes      Show TrafficRoutes
   traffic-trace       Show a single TrafficTrace resource
   traffic-traces      Show TrafficTraces
+  zone                Show a single Zone resource
+  zones               Show Zones
 
 Flags:
   -h, --help            help for get

@@ -7,7 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mode"
 )
 
-func addGlobal(rawYAML, lbAdress, kdsAddress, ingressAddress string) (string, error) {
+func addGlobal(rawYAML, lbAdress string) (string, error) {
 	cfg := kuma_cp.Config{}
 	err := yaml.Unmarshal([]byte(rawYAML), &cfg)
 	if err != nil {
@@ -26,11 +26,6 @@ func addGlobal(rawYAML, lbAdress, kdsAddress, ingressAddress string) (string, er
 	if lbAdress != "" {
 		cfg.Mode.Global.LBAddress = lbAdress
 	}
-
-	cfg.Mode.Global.Zones = append(cfg.Mode.Global.Zones, &mode.ZoneConfig{
-		Remote:  mode.EndpointConfig{Address: kdsAddress},
-		Ingress: mode.EndpointConfig{Address: ingressAddress},
-	})
 
 	yamlBytes, err := yaml.Marshal(&cfg)
 	if err != nil {

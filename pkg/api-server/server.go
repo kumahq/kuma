@@ -8,9 +8,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
 	"github.com/kumahq/kuma/pkg/config/mode"
 
-	"github.com/kumahq/kuma/pkg/clusters/poller"
+	"github.com/kumahq/kuma/pkg/zones/poller"
 
 	"github.com/emicklei/go-restful"
 	"github.com/pkg/errors"
@@ -58,7 +60,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, clusters poller.ClusterStatusPoller, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatusPoller, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
@@ -112,7 +114,42 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	endpoints.addListEndpoint(ws, "") // listing all resources in all meshes
 
 	for _, definition := range defs {
-		if definition.ResourceFactory().GetType() != mesh.MeshType {
+		switch definition.ResourceFactory().GetType() {
+		case mesh.MeshType:
+			endpoints := resourceEndpoints{
+				publicURL:            config.Catalog.ApiServer.Url,
+				resManager:           resManager,
+				ResourceWsDefinition: definition,
+				meshFromRequest:      meshFromPathParam("name"),
+			}
+			if config.ReadOnly || definition.ReadOnly {
+				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
+				endpoints.addDeleteEndpointReadOnly(ws, "/meshes")
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
+				endpoints.addDeleteEndpoint(ws, "/meshes")
+			}
+			endpoints.addFindEndpoint(ws, "/meshes")
+			endpoints.addListEndpoint(ws, "/meshes")
+		case system.ZoneType:
+			endpoints := resourceEndpoints{
+				publicURL:            config.Catalog.ApiServer.Url,
+				resManager:           resManager,
+				ResourceWsDefinition: definition,
+				meshFromRequest: func(request *restful.Request) string {
+					return "default"
+				},
+			}
+			if config.ReadOnly || definition.ReadOnly {
+				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/zones")
+				endpoints.addDeleteEndpointReadOnly(ws, "/zones")
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/zones")
+				endpoints.addDeleteEndpoint(ws, "/zones")
+			}
+			endpoints.addFindEndpoint(ws, "/zones")
+			endpoints.addListEndpoint(ws, "/zones")
+		default:
 			endpoints := resourceEndpoints{
 				publicURL:            config.Catalog.ApiServer.Url,
 				resManager:           resManager,
@@ -129,22 +166,6 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
-		} else {
-			endpoints := resourceEndpoints{
-				publicURL:            config.Catalog.ApiServer.Url,
-				resManager:           resManager,
-				ResourceWsDefinition: definition,
-				meshFromRequest:      meshFromPathParam("name"),
-			}
-			if config.ReadOnly || definition.ReadOnly {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
-				endpoints.addDeleteEndpointReadOnly(ws, "/meshes")
-			} else {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
-				endpoints.addDeleteEndpoint(ws, "/meshes")
-			}
-			endpoints.addFindEndpoint(ws, "/meshes")
-			endpoints.addListEndpoint(ws, "/meshes")
 		}
 	}
 }
@@ -189,7 +210,7 @@ func SetupServer(rt runtime.Runtime) error {
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.Clusters(), definitions.All, rt.Config().ApiServer, &cfg)
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.Zones(), definitions.All, rt.Config().ApiServer, &cfg)
 	if err != nil {
 		return err
 	}

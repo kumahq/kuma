@@ -132,9 +132,7 @@ var _ = Describe("Config WS", func() {
             }
           },
           "mode": {
-           "global": {
-             "zones": []
-           },
+           "global": {},
            "remote": {},
            "mode": "standalone"
         },

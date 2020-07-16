@@ -1,9 +1,7 @@
 package mode
 
 import (
-	"net"
 	"net/url"
-	"strconv"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
@@ -31,55 +29,19 @@ func ValidateCpMode(mode CpMode) error {
 	return nil
 }
 
-type EndpointConfig struct {
-	Address string `yaml:"address"`
-}
-
-type ZoneConfig struct {
-	Remote  EndpointConfig `yaml:"remote,omitempty"`
-	Ingress EndpointConfig `yaml:"ingress,omitempty"`
-}
-
-func (z *ZoneConfig) Sanitize() {
-}
-
-func (z *ZoneConfig) Validate() error {
-	_, err := url.ParseRequestURI(z.Remote.Address)
-	if err != nil {
-		return errors.Wrapf(err, "Invalid remote address for zone %s", z.Remote)
-	}
-	_, port, err := net.SplitHostPort(z.Ingress.Address)
-	if err != nil {
-		return errors.Wrapf(err, "Invalid ingress address for zone %s", z.Ingress)
-	}
-	_, err = strconv.ParseUint(port, 10, 32)
-	if err != nil {
-		return errors.Wrapf(err, "Invalid ingress port %s", port)
-	}
-
-	return nil
-}
-
 // Global configuration
 type GlobalConfig struct {
-	LBAddress string        `yaml:"lbaddress,omitempty"`
-	Zones     []*ZoneConfig `yaml:"zones"`
+	LBAddress string `yaml:"lbaddress,omitempty" envconfig:"kuma_mode_global_lbaddress"`
 }
 
 func (g *GlobalConfig) Sanitize() {
 }
 
 func (g *GlobalConfig) Validate() error {
-	if len(g.Zones) > 0 {
+	if g.LBAddress != "" {
 		_, err := url.ParseRequestURI(g.LBAddress)
 		if err != nil {
 			return errors.Wrapf(err, "Invalid LB address")
-		}
-	}
-	for _, zone := range g.Zones {
-		err := zone.Validate()
-		if err != nil {
-			return err
 		}
 	}
 	return nil
@@ -87,7 +49,6 @@ func (g *GlobalConfig) Validate() error {
 
 func DefaultGlobalConfig() *GlobalConfig {
 	return &GlobalConfig{
-		Zones:     []*ZoneConfig{},
 		LBAddress: "",
 	}
 }
