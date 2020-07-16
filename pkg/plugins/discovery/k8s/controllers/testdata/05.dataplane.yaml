@@ -11,7 +11,7 @@ spec:
           protocol: tcp
           service: example_demo_svc_80
           version: "0.1"
-          zone: "zone-1"
+          kuma.io/zone: "zone-1"
     outbound:
       - address: 10.108.144.25
         port: 80

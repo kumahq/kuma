@@ -14,7 +14,7 @@ const (
 	ServiceTag     = "service"
 	ServiceUnknown = "unknown"
 	// Mandatory tag that has a reserved meaning in Kuma.
-	ZoneTag = "zone"
+	ZoneTag = "kuma.io/zone"
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "protocol"

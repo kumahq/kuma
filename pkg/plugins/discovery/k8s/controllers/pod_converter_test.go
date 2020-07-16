@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -452,11 +454,11 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"version": "0.1",
 			},
 			expected: map[string]string{
-				"app":      "example",
-				"version":  "0.1",
-				"service":  "example_demo_svc_80",
-				"zone":     "zone-1",
-				"protocol": "tcp",
+				"app":                  "example",
+				"version":              "0.1",
+				mesh_proto.ServiceTag:  "example_demo_svc_80",
+				mesh_proto.ZoneTag:     "zone-1",
+				mesh_proto.ProtocolTag: "tcp",
 			},
 		}),
 	)

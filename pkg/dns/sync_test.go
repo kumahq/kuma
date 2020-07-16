@@ -116,7 +116,7 @@ var _ = Describe("DNS sync", func() {
 							{
 								Port: 1234,
 								Tags: map[string]string{
-									"zone": "zone-2",
+									mesh_proto.ZoneTag: "zone-2",
 								},
 							},
 						},

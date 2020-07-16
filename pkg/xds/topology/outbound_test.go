@@ -439,7 +439,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "10.20.1.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags: map[string]string{"service": "ingress", "zone": "zone-2"},
+										Tags: map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
 										Port: 10001,
 									},
 								},
@@ -448,12 +448,12 @@ var _ = Describe("TrafficRoute", func() {
 										{
 											Instances: 2,
 											Mesh:      defaultMesh,
-											Tags:      map[string]string{"service": "redis", "version": "v2", "region": "eu"},
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", "region": "eu"},
 										},
 										{
 											Instances: 3,
 											Mesh:      defaultMesh,
-											Tags:      map[string]string{"service": "redis", "version": "v3"},
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
 										},
 									},
 								},
@@ -513,7 +513,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "10.20.1.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags: map[string]string{"service": "ingress", "zone": "zone-2"},
+										Tags: map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
 										Port: 10001,
 									},
 								},
