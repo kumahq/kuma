@@ -5,7 +5,7 @@ networking:
       servicePort: 8080
       tags:
         service: backend1
-        protocol: http
+        kuma.io/protocol: http
     - port: 443
       servicePort: 8443
       tags:
@@ -15,7 +15,7 @@ networking:
       servicePort: 8080
       tags:
         service: backend3
-        protocol: http
+        kuma.io/protocol: http
     - address: 192.168.0.2
       port: 443
       servicePort: 8443

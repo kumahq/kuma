@@ -8,28 +8,28 @@ spec:
       - port: 8080
         tags:
           app: example
-          protocol: http
+          kuma.io/protocol: http
           service: example_demo_svc_80
           version: "0.1"
           kuma.io/zone: "zone-1"
       - port: 8443
         tags:
           app: example
-          protocol: tcp
+          kuma.io/protocol: tcp
           service: example_demo_svc_443
           version: "0.1"
           kuma.io/zone: "zone-1"
       - port: 7070
         tags:
           app: example
-          protocol: MONGO
+          kuma.io/protocol: MONGO
           service: sample_playground_svc_7071
           version: "0.1"
           kuma.io/zone: "zone-1"
       - port: 6060
         tags:
           app: example
-          protocol: tcp
+          kuma.io/protocol: tcp
           service: sample_playground_svc_6061
           version: "0.1"
           kuma.io/zone: "zone-1"

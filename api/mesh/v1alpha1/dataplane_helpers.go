@@ -17,7 +17,7 @@ const (
 	ZoneTag = "kuma.io/zone"
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
-	ProtocolTag = "protocol"
+	ProtocolTag = "kuma.io/protocol"
 )
 
 type InboundInterface struct {

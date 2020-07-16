@@ -330,15 +330,15 @@ var _ = Describe("Dataplane", func() {
                     - port: 1234
                       tags:
                         service: backend
-                        protocol:
+                        kuma.io/protocol:
                   outbound:
                     - port: 3333
                       service: redis`,
 			expected: `
                 violations:
-                - field: 'networking.inbound[0].tags["protocol"]'
-                  message: 'tag "protocol" has an invalid value "". Allowed values: http, tcp'
-                - field: 'networking.inbound[0].tags["protocol"]'
+                - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
+                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: http, tcp'
+                - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
                   message: tag value cannot be empty`,
 		}),
 		Entry("networking.inbound: `protocol` tag with unsupported value", testCase{
@@ -352,14 +352,14 @@ var _ = Describe("Dataplane", func() {
                     - port: 1234
                       tags:
                         service: backend
-                        protocol: not-yet-supported-protocol
+                        kuma.io/protocol: not-yet-supported-protocol
                   outbound:
                     - port: 3333
                       service: redis`,
 			expected: `
                 violations:
-                - field: 'networking.inbound[0].tags["protocol"]'
-                  message: 'tag "protocol" has an invalid value "not-yet-supported-protocol". Allowed values: http, tcp'`,
+                - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
+                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: http, tcp'`,
 		}),
 		Entry("networking.gateway: empty service tag", testCase{
 			dataplane: `

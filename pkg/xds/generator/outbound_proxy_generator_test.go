@@ -149,25 +149,25 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 				OutboundTargets: model.EndpointMap{
-					"api-http": []model.Endpoint{ // notice that all endpoints have tag `protocol: http`
+					"api-http": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: http`
 						{
 							Target: "192.168.0.4",
 							Port:   8084,
-							Tags:   map[string]string{"service": "api-http", "protocol": "http", "region": "us"},
+							Tags:   map[string]string{"service": "api-http", "kuma.io/protocol": "http", "region": "us"},
 							Weight: 1,
 						},
 						{
 							Target: "192.168.0.5",
 							Port:   8085,
-							Tags:   map[string]string{"service": "api-http", "protocol": "http", "region": "eu"},
+							Tags:   map[string]string{"service": "api-http", "kuma.io/protocol": "http", "region": "eu"},
 							Weight: 1,
 						},
 					},
-					"api-tcp": []model.Endpoint{ // notice that not every endpoint has a `protocol: http` tag
+					"api-tcp": []model.Endpoint{ // notice that not every endpoint has a `kuma.io/protocol: http` tag
 						{
 							Target: "192.168.0.6",
 							Port:   8086,
-							Tags:   map[string]string{"service": "api-tcp", "protocol": "http", "region": "us"},
+							Tags:   map[string]string{"service": "api-tcp", "kuma.io/protocol": "http", "region": "us"},
 							Weight: 1,
 						},
 						{
@@ -177,7 +177,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							Weight: 1,
 						},
 					},
-					"backend": []model.Endpoint{ // notice that not every endpoint has a tag `protocol: http`
+					"backend": []model.Endpoint{ // notice that not every endpoint has a tag `kuma.io/protocol: http`
 						{
 							Target: "192.168.0.1",
 							Port:   8081,

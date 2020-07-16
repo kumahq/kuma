@@ -95,7 +95,7 @@ networking:
     servicePort: {{ LOCAL_PORT }}
     tags:
       service: kuma-example-app
-      protocol: http
+      kuma.io/protocol: http
 "
 
 #

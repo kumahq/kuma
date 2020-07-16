@@ -225,7 +225,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                   servicePort: 8080
                   tags:
                     service: backend
-                    protocol: http
+                    kuma.io/protocol: http
               outbound:
               - port: 54321
                 service: db
@@ -260,7 +260,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                   servicePort: 8080
                   tags:
                     service: backend
-                    protocol: http
+                    kuma.io/protocol: http
               outbound:
               - port: 54321
                 service: db

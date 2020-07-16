@@ -68,7 +68,7 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
         sources:
         - match:
             service: web
-            protocol: http
+            kuma.io/protocol: http
         destinations:
         - match:
             service: backend

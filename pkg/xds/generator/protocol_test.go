@@ -29,27 +29,27 @@ var _ = Describe("InferServiceProtocol()", func() {
 			endpoints: nil,
 			expected:  mesh_core.ProtocolUnknown,
 		}),
-		Entry("one-item list: no `protocol` tag", testCase{
+		Entry("one-item list: no `kuma.io/protocol` tag", testCase{
 			endpoints: []core_xds.Endpoint{
 				{Tags: map[string]string{"service": "backend"}},
 			},
 			expected: mesh_core.ProtocolUnknown,
 		}),
-		Entry("one-item list: `protocol: http`", testCase{
+		Entry("one-item list: `kuma.io/protocol: http`", testCase{
 			endpoints: []core_xds.Endpoint{
-				{Tags: map[string]string{"service": "backend", "protocol": "http"}},
+				{Tags: map[string]string{"service": "backend", "kuma.io/protocol": "http"}},
 			},
 			expected: mesh_core.ProtocolHTTP,
 		}),
-		Entry("one-item list: `protocol: tcp`", testCase{
+		Entry("one-item list: `kuma.io/protocol: tcp`", testCase{
 			endpoints: []core_xds.Endpoint{
-				{Tags: map[string]string{"service": "backend", "protocol": "tcp"}},
+				{Tags: map[string]string{"service": "backend", "kuma.io/protocol": "tcp"}},
 			},
 			expected: mesh_core.ProtocolTCP,
 		}),
-		Entry("one-item list: `protocol: not-yet-supported-protocol`", testCase{
+		Entry("one-item list: `kuma.io/protocol: not-yet-supported-protocol`", testCase{
 			endpoints: []core_xds.Endpoint{
-				{Tags: map[string]string{"service": "backend", "protocol": "not-yet-supported-protocol"}},
+				{Tags: map[string]string{"service": "backend", "kuma.io/protocol": "not-yet-supported-protocol"}},
 			},
 			expected: mesh_core.ProtocolUnknown,
 		}),
@@ -62,29 +62,29 @@ var _ = Describe("InferServiceProtocol()", func() {
 		}),
 		Entry("multi-item list: no `protocol` tag on some endpoints", testCase{
 			endpoints: []core_xds.Endpoint{
-				{Tags: map[string]string{"service": "backend", "region": "us", "protocol": "http"}},
+				{Tags: map[string]string{"service": "backend", "region": "us", "kuma.io/protocol": "http"}},
 				{Tags: map[string]string{"service": "backend", "region": "eu"}},
 			},
 			expected: mesh_core.ProtocolUnknown,
 		}),
-		Entry("multi-item list: `protocol: http` on every endpoint", testCase{
+		Entry("multi-item list: `kuma.io/protocol: http` on every endpoint", testCase{
 			endpoints: []core_xds.Endpoint{
-				{Tags: map[string]string{"service": "backend", "region": "us", "protocol": "http"}},
-				{Tags: map[string]string{"service": "backend", "region": "eu", "protocol": "http"}},
+				{Tags: map[string]string{"service": "backend", "region": "us", "kuma.io/protocol": "http"}},
+				{Tags: map[string]string{"service": "backend", "region": "eu", "kuma.io/protocol": "http"}},
 			},
 			expected: mesh_core.ProtocolHTTP,
 		}),
-		Entry("multi-item list: `protocol: tcp` on every endpoint", testCase{
+		Entry("multi-item list: `kuma.io/protocol: tcp` on every endpoint", testCase{
 			endpoints: []core_xds.Endpoint{
-				{Tags: map[string]string{"service": "backend", "region": "us", "protocol": "tcp"}},
-				{Tags: map[string]string{"service": "backend", "region": "eu", "protocol": "tcp"}},
+				{Tags: map[string]string{"service": "backend", "region": "us", "kuma.io/protocol": "tcp"}},
+				{Tags: map[string]string{"service": "backend", "region": "eu", "kuma.io/protocol": "tcp"}},
 			},
 			expected: mesh_core.ProtocolTCP,
 		}),
-		Entry("multi-item list: `protocol: tcp` and `protocol: http`", testCase{
+		Entry("multi-item list: `kuma.io/protocol: tcp` and `kuma.io/protocol: http`", testCase{
 			endpoints: []core_xds.Endpoint{
-				{Tags: map[string]string{"service": "backend", "region": "us", "protocol": "tcp"}},
-				{Tags: map[string]string{"service": "backend", "region": "eu", "protocol": "http"}},
+				{Tags: map[string]string{"service": "backend", "region": "us", "kuma.io/protocol": "tcp"}},
+				{Tags: map[string]string{"service": "backend", "region": "eu", "kuma.io/protocol": "http"}},
 			},
 			expected: mesh_core.ProtocolTCP,
 		}),

@@ -254,12 +254,12 @@ var _ = Describe("PodReconciler", func() {
             inbound:
             - port: 8080
               tags:
-                protocol: http
+                kuma.io/protocol: http
                 service: example_demo_svc_80
             - port: 6060
               tags:
                 service: example_demo_svc_6061
-                protocol: tcp
+                kuma.io/protocol: tcp
 `))
 	})
 
@@ -324,12 +324,12 @@ var _ = Describe("PodReconciler", func() {
             inbound:
             - port: 8080
               tags:
-                protocol: http
+                kuma.io/protocol: http
                 service: example_demo_svc_80
             - port: 6060
               tags:
                 service: example_demo_svc_6061
-                protocol: tcp
+                kuma.io/protocol: tcp
 `))
 	})
 })

@@ -13,7 +13,7 @@ spec:
       - port: 7070
         tags:
           app: example
-          protocol: tcp
+          kuma.io/protocol: tcp
           service: sample_playground_svc_7071
           version: "0.1"
           kuma.io/zone: "zone-1"
