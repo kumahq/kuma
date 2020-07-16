@@ -364,7 +364,7 @@ webhooks:
     namespaceSelector:
       matchLabels:
         kuma.io/system-namespace: "true"
-    failurePolicy: Fail
+    failurePolicy: Ignore
     clientConfig:
       caBundle: {{ .AdmissionServerTlsCert | b64enc }}
       service:

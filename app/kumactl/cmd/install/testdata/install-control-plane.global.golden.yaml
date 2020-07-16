@@ -5178,7 +5178,7 @@ webhooks:
     namespaceSelector:
       matchLabels:
         kuma.io/system-namespace: "true"
-    failurePolicy: Fail
+    failurePolicy: Ignore
     clientConfig:
       caBundle: Q0VSVA==
       service:
