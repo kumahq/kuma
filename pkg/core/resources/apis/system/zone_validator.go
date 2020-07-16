@@ -34,7 +34,8 @@ func (c *ZoneResource) validateIngress() validators.ValidationError {
 	} else {
 		if host == "" {
 			verr.AddViolation("address", "host has to be explicitly specified")
-		} else if port == "" {
+		}
+		if port == "" {
 			verr.AddViolation("address", "port has to be explicitly specified")
 		}
 	}
