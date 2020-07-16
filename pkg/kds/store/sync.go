@@ -2,9 +2,10 @@ package store
 
 import (
 	"context"
-	"github.com/go-logr/logr"
 	"reflect"
 	"time"
+
+	"github.com/go-logr/logr"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
