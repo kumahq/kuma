@@ -74,7 +74,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressAddress string) error {
+func (c *K8sControlPlane) SetLbAddress(name, lbAddress string) error {
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
 		c.GetKubectlOptions())
 	if err != nil {
@@ -86,7 +86,7 @@ func (c *K8sControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressAddress
 		return err
 	}
 
-	newYAML, err := addGlobal(kumaCM.Data["config.yaml"], lbAddress, kdsAddress, ingressAddress)
+	newYAML, err := addGlobal(kumaCM.Data["config.yaml"], lbAddress)
 	if err != nil {
 		return err
 	}
@@ -278,5 +278,5 @@ func (c *K8sControlPlane) GetIngressAddress() string {
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
-	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/clusters"
+	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
 }
