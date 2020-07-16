@@ -119,6 +119,38 @@ var _ = Describe("TransparentProxyGenerator", func() {
             name: pass_through
             type: ORIGINAL_DST
           version: v1
+        - name: inbound:0.0.0.0:15006
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 0.0.0.0
+                portValue: 15006
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: inbound:pass_through
+                  statPrefix: inbound_pass_through
+            name: inbound:0.0.0.0:15006
+            trafficDirection: INBOUND
+            useOriginalDst: true
+          version: v1
+        - name: inbound:pass_through
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            altStatName: inbound_pass_through
+            connectTimeout: 5s
+            lbPolicy: CLUSTER_PROVIDED
+            name: inbound:pass_through
+            type: ORIGINAL_DST
+            upstreamBindConfig:
+              sourceAddress:
+                address: 127.0.0.6
+                portValue: 0
+          version: v1
+
 `,
 		}),
 		Entry("transparent_proxying=true with logs", testCase{
@@ -181,6 +213,37 @@ var _ = Describe("TransparentProxyGenerator", func() {
             lbPolicy: CLUSTER_PROVIDED
             name: pass_through
             type: ORIGINAL_DST
+          version: v1
+        - name: inbound:0.0.0.0:15006
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 0.0.0.0
+                portValue: 15006
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: inbound:pass_through
+                  statPrefix: inbound_pass_through
+            name: inbound:0.0.0.0:15006
+            trafficDirection: INBOUND
+            useOriginalDst: true
+          version: v1
+        - name: inbound:pass_through
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            altStatName: inbound_pass_through
+            connectTimeout: 5s
+            lbPolicy: CLUSTER_PROVIDED
+            name: inbound:pass_through
+            type: ORIGINAL_DST
+            upstreamBindConfig:
+              sourceAddress:
+                address: 127.0.0.6
+                portValue: 0
           version: v1
 `,
 		}),

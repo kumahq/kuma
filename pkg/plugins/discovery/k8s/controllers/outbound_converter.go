@@ -32,8 +32,8 @@ func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_
 					Address: endpoint.Address,
 					Port:    endpoint.Port,
 					Tags: map[string]string{
-						mesh_proto.ServiceTag:    serviceTag,
-						mesh_proto.IdentifierTag: endpoint.Identifier,
+						mesh_proto.ServiceTag:  serviceTag,
+						mesh_proto.InstanceTag: endpoint.Identifier,
 					},
 				})
 			}

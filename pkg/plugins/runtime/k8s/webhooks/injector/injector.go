@@ -246,6 +246,8 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 		Args: []string{
 			"-p",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
+			"-z",
+			"15006",
 			"-u",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
 			"-g",

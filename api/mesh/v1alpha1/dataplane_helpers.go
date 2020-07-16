@@ -20,8 +20,8 @@ const (
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "protocol"
-	// IdentifierTag is set only for Dataplanes that implements headless services
-	IdentifierTag = "identifier"
+	// InstanceTag is set only for Dataplanes that implements headless services
+	InstanceTag = "instance"
 )
 
 type InboundInterface struct {

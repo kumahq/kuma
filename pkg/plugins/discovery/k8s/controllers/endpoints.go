@@ -43,7 +43,7 @@ func endpointsByService(dataplanes []*mesh_k8s.Dataplane) EndpointsByService {
 			}
 			endpoint := Endpoint{
 				Port:       inbound.Port,
-				Identifier: inbound.GetTags()[mesh_proto.IdentifierTag],
+				Identifier: inbound.GetTags()[mesh_proto.InstanceTag],
 			}
 			if inbound.Address != "" {
 				endpoint.Address = inbound.Address
