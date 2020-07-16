@@ -118,6 +118,7 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8080,
 				}: &policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
@@ -161,6 +162,7 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8081,
 				}: &policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{

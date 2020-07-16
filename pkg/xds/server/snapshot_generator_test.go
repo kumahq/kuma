@@ -75,6 +75,7 @@ var _ = Describe("Reconcile", func() {
 					mesh_proto.InboundInterface{
 						DataplaneIP:   "192.168.0.1",
 						DataplanePort: 80,
+						WorkloadIP:    "127.0.0.1",
 						WorkloadPort:  8080,
 					}: &mesh_core.TrafficPermissionResource{
 						Meta: &test_model.ResourceMeta{

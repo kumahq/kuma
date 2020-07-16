@@ -69,6 +69,9 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 		if inbound.ServicePort != 0 {
 			err.AddViolationAt(p.Field("servicePort"), `cannot be defined in the ingress mode`)
 		}
+		if inbound.ServiceAddress != "" {
+			err.AddViolationAt(p.Field("serviceAddress"), `cannot be defined in the ingress mode`)
+		}
 		if inbound.Address != "" {
 			err.AddViolationAt(p.Field("address"), `cannot be defined in the ingress mode`)
 		}
@@ -92,8 +95,25 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 	if inbound.ServicePort > 65535 {
 		result.AddViolationAt(validators.RootedAt("servicePort"), `servicePort has to be in range of [0, 65535]`)
 	}
-	if inbound.Address != "" && net.ParseIP(inbound.Address) == nil {
-		result.AddViolationAt(validators.RootedAt("address"), `address has to be valid IP address`)
+	if inbound.ServiceAddress != "" {
+		if net.ParseIP(inbound.ServiceAddress) == nil {
+			result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress has to be valid IP address`)
+		}
+		if inbound.ServiceAddress == dpAddress {
+			if inbound.ServicePort == 0 || inbound.ServicePort == inbound.Port {
+				result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress and servicePort has to differ from address and port`)
+			}
+		}
+	}
+	if inbound.Address != "" {
+		if net.ParseIP(inbound.Address) == nil {
+			result.AddViolationAt(validators.RootedAt("address"), `address has to be valid IP address`)
+		}
+		if inbound.Address == inbound.ServiceAddress {
+			if inbound.ServicePort == 0 || inbound.ServicePort == inbound.Port {
+				result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress and servicePort has to differ from address and port`)
+			}
+		}
 	}
 	if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
 		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
