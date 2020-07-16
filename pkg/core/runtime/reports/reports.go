@@ -138,6 +138,7 @@ func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
 	b.immutable["version"] = kuma_version.Build.Version
 	b.immutable["unique_id"] = rt.GetInstanceId()
 	b.immutable["backend"] = rt.Config().Store.Type
+	b.immutable["mode"] = rt.Config().Mode.Mode
 
 	hostname, err := os.Hostname()
 	if err == nil {

@@ -140,7 +140,7 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.global.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources for remote", testCase{
+		Entry("should generate Kubernetes resources for Remote", testCase{
 			extraArgs: []string{
 				"--mode", "remote",
 				"--zone", "zone-1",
