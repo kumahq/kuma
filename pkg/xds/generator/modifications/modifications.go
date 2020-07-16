@@ -30,8 +30,11 @@ func Apply(resources *core_xds.ResourceSet, modifications []*mesh_proto.ProxyTem
 		case *mesh_proto.ProxyTemplate_Modifications_HttpFilter_:
 			mod := httpFilterModificator(*modification.GetHttpFilter())
 			modificator = &mod
+		case *mesh_proto.ProxyTemplate_Modifications_VirtualHost_:
+			mod := virtualHostModificator(*modification.GetVirtualHost())
+			modificator = &mod
 		default:
-			return errors.Errorf("invalid modification type %q", modification.Type)
+			return errors.Errorf("invalid modification type %T", modification.Type)
 		}
 		if err := modificator.apply(resources); err != nil {
 			return errors.Wrapf(err, "could not apply %d modification", i)

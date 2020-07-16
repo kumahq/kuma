@@ -40,6 +40,8 @@ message ProxyTemplate {
       NetworkFilter networkFilter = 3;
       // HTTP Filter modification
       HttpFilter httpFilter = 4;
+      // Virtual Host modifications
+      VirtualHost virtualHost = 5;
     }
 
     // Cluster defines modifications to generated clusters
@@ -123,6 +125,27 @@ message ProxyTemplate {
         // Name of the listener that http filter modifications will be applied
         // to
         string listenerName = 3;
+      }
+    }
+
+    // VirtualHost defines modification to generated virtual hosts
+    message VirtualHost {
+      // Only virtual hosts that match will be modified
+      Match match = 1;
+      // Operation to apply on a virtual hosts (add, remove, patch)
+      string operation = 2;
+      // xDS virtual host
+      string value = 3;
+
+      // Match defines match for virtual host
+      message Match {
+        // Origin of the resource generation. (inbound, outbound, prometheus,
+        // transparent, ingress)
+        string origin = 1;
+        // Name of the virtual host to match
+        string name = 2;
+        // Name of the route configuration
+        string routeConfigurationName = 3;
       }
     }
   }
