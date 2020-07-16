@@ -123,11 +123,20 @@ func (h *httpFilterModificator) addFirst(hcm *envoy_hcm.HttpConnectionManager, f
 }
 
 func (h *httpFilterModificator) filterMatches(filter *envoy_hcm.HttpFilter) bool {
-	return h.Match == nil || h.Match.Name == "" || filter.Name == h.Match.Name
+	if h.Match.GetName() != "" && h.Match.GetName() != filter.Name {
+		return false
+	}
+	return true
 }
 
 func (h *httpFilterModificator) listenerMatches(resource *core_xds.Resource) bool {
-	return h.Match == nil || (h.Match.ListenerName == "" && h.Match.Origin == "") || h.Match.ListenerName == resource.Name || h.Match.Origin == resource.Origin
+	if h.Match.GetListenerName() != "" && h.Match.GetListenerName() != resource.Name {
+		return false
+	}
+	if h.Match.GetOrigin() != "" && h.Match.GetOrigin() != resource.Origin {
+		return false
+	}
+	return true
 }
 
 func (h *httpFilterModificator) indexOfMatchedFilter(hcm *envoy_hcm.HttpConnectionManager) int {

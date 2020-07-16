@@ -99,11 +99,20 @@ func (n *networkFilterModificator) patch(chain *envoy_listener.FilterChain, filt
 }
 
 func (n *networkFilterModificator) filterMatches(filter *envoy_listener.Filter) bool {
-	return n.Match == nil || n.Match.Name == "" || filter.Name == n.Match.Name
+	if n.Match.GetName() != "" && n.Match.GetName() != filter.Name {
+		return false
+	}
+	return true
 }
 
 func (n *networkFilterModificator) listenerMatches(resource *core_xds.Resource) bool {
-	return n.Match == nil || (n.Match.ListenerName == "" && n.Match.Origin == "") || n.Match.ListenerName == resource.Name || n.Match.Origin == resource.Origin
+	if n.Match.GetListenerName() != "" && n.Match.GetListenerName() != resource.Name {
+		return false
+	}
+	if n.Match.GetOrigin() != "" && n.Match.GetOrigin() != resource.Origin {
+		return false
+	}
+	return true
 }
 
 func (n *networkFilterModificator) indexOfMatchedFilter(chain *envoy_listener.FilterChain) int {

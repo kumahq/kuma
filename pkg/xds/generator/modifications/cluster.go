@@ -56,5 +56,11 @@ func (c *clusterModificator) add(resources *core_xds.ResourceSet, clusterMod *en
 }
 
 func (c *clusterModificator) clusterMatches(cluster *core_xds.Resource) bool {
-	return c.Match == nil || c.Match.Name == cluster.Name || c.Match.Origin == cluster.Origin
+	if c.Match.GetName() != "" && c.Match.GetName() != cluster.Name {
+		return false
+	}
+	if c.Match.GetOrigin() != "" && c.Match.GetOrigin() != cluster.Origin {
+		return false
+	}
+	return true
 }

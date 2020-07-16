@@ -56,5 +56,11 @@ func (l *listenerModificator) app(resources *core_xds.ResourceSet, listener *env
 }
 
 func (l *listenerModificator) listenerMatches(listener *core_xds.Resource) bool {
-	return l.Match == nil || l.Match.Name == listener.Name || l.Match.Origin == listener.Origin
+	if l.Match.GetName() != "" && l.Match.GetName() != listener.Name {
+		return false
+	}
+	if l.Match.GetOrigin() != "" && l.Match.GetOrigin() != listener.Origin {
+		return false
+	}
+	return true
 }
