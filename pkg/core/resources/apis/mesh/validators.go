@@ -1,10 +1,15 @@
 package mesh
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/ghodss/yaml"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -161,4 +166,29 @@ func ProtocolValidator(protocols ...string) SelectorValidatorFunc {
 			strings.Join(protocols, ", ")))
 		return
 	}
+}
+
+func ValidateResourceYAML(msg proto.Message, resYAML string) error {
+	json, err := yaml.YAMLToJSON([]byte(resYAML))
+	if err != nil {
+		json = []byte(resYAML)
+	}
+
+	if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), msg); err != nil {
+		return err
+	}
+	if v, ok := msg.(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ValidateResourceYAMLPatch(msg proto.Message, resYAML string) error {
+	json, err := yaml.YAMLToJSON([]byte(resYAML))
+	if err != nil {
+		json = []byte(resYAML)
+	}
+	return (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), msg)
 }

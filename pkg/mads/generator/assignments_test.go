@@ -151,8 +151,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/gateway-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/gateway-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/gateway-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -236,8 +235,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -311,8 +309,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -385,8 +382,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -507,8 +503,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/default/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/default/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/default/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -531,8 +526,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						},
 					},
 					{
-						Name:    "/meshes/demo/dataplanes/web-02",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/web-02",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/web-02",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -606,8 +600,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{

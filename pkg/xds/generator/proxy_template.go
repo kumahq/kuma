@@ -3,6 +3,10 @@ package generator
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
+
 	kuma_mesh "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -14,40 +18,46 @@ type ProxyTemplateGenerator struct {
 	ProxyTemplate *kuma_mesh.ProxyTemplate
 }
 
-func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
-	resources := make([]*model.Resource, 0, len(g.ProxyTemplate.GetConf().GetImports())+1)
+func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	resources := model.NewResourceSet()
 	for i, name := range g.ProxyTemplate.GetConf().GetImports() {
 		generator := &ProxyTemplateProfileSource{ProfileName: name}
 		if rs, err := generator.Generate(ctx, proxy); err != nil {
 			return nil, fmt.Errorf("imports[%d]{name=%q}: %s", i, name, err)
 		} else {
-			resources = append(resources, rs...)
+			resources.AddSet(rs)
 		}
 	}
 	generator := &ProxyTemplateRawSource{Resources: g.ProxyTemplate.GetConf().GetResources()}
 	if rs, err := generator.Generate(ctx, proxy); err != nil {
 		return nil, fmt.Errorf("resources: %s", err)
 	} else {
-		resources = append(resources, rs...)
+		resources.AddSet(rs)
+	}
+	if err := modifications.Apply(resources, g.ProxyTemplate.GetConf().GetModifications()); err != nil {
+		return nil, errors.Wrap(err, "could not apply modifications")
 	}
 	return resources, nil
 }
+
+// OriginProxyTemplateRaw is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginProxyTemplateRaw = "proxy-template-raw"
 
 type ProxyTemplateRawSource struct {
 	Resources []*kuma_mesh.ProxyTemplateRawResource
 }
 
-func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
-	resources := make([]*model.Resource, 0, len(s.Resources))
+func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	resources := model.NewResourceSet()
 	for i, r := range s.Resources {
 		res, err := util_envoy.ResourceFromYaml(r.Resource)
 		if err != nil {
 			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
 		}
 
-		resources = append(resources, &model.Resource{
+		resources.Add(&model.Resource{
 			Name:     r.Name,
-			Version:  r.Version,
+			Origin:   OriginProxyTemplateRaw,
 			Resource: res,
 		})
 	}
@@ -69,7 +79,7 @@ type ProxyTemplateProfileSource struct {
 	ProfileName string
 }
 
-func (s *ProxyTemplateProfileSource) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (s *ProxyTemplateProfileSource) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	g, ok := predefinedProfiles[s.ProfileName]
 	if !ok {
 		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.ProfileName)

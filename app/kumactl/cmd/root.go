@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
+	_ "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshalling Envoy protobuf works
 )
 
 var (

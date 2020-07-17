@@ -16,6 +16,9 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
+// OriginDirectAccess is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginDirectAccess = "direct-access"
+
 // Transparent Proxy is based on having 1 IP for cluster (ex. ClusterIP of Service on K8S), so consuming apps by their IP
 // is unknown destination from Envoy perspective. Therefore such request will go trough pass_trough cluster and won't be encrypted by mTLS.
 // This generates listener for every IP and redirect traffic trough "direct_access" cluster which is configured to encrypt connections.
@@ -26,10 +29,11 @@ import (
 type DirectAccessProxyGenerator struct {
 }
 
-func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) ([]*core_xds.Resource, error) {
+func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tproxy := proxy.Dataplane.Spec.Networking.GetTransparentProxying()
+	resources := core_xds.NewResourceSet()
 	if tproxy.GetRedirectPort() == 0 || len(tproxy.GetDirectAccessServices()) == 0 {
-		return nil, nil
+		return resources, nil
 	}
 
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
@@ -40,7 +44,6 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		return nil, err
 	}
 
-	resources := core_xds.ResourceSet{}
 	for _, endpoint := range endpoints {
 		name := fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
 		listener, err := envoy_listeners.NewListenerBuilder().
@@ -53,7 +56,11 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		if err != nil {
 			return nil, err
 		}
-		resources.AddNamed(listener)
+		resources.Add(&core_xds.Resource{
+			Name:     listener.Name,
+			Origin:   OriginDirectAccess,
+			Resource: listener,
+		})
 	}
 
 	directAccessCluster, err := envoy_clusters.NewClusterBuilder().
@@ -63,8 +70,12 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate cluster: direct_access")
 	}
-	resources.AddNamed(directAccessCluster)
-	return resources.List(), nil
+	resources.Add(&core_xds.Resource{
+		Name:     directAccessCluster.Name,
+		Origin:   OriginDirectAccess,
+		Resource: directAccessCluster,
+	})
+	return resources, nil
 }
 
 func directAccessEndpoints(dataplane *mesh_core.DataplaneResource, other *mesh_core.DataplaneResourceList, mesh *mesh_core.MeshResource) (Endpoints, error) {

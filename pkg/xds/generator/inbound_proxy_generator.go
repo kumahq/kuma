@@ -14,18 +14,18 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
+// OriginInbound is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginInbound = "inbound"
+
 type InboundProxyGenerator struct {
 }
 
-func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	endpoints, err := proxy.Dataplane.Spec.Networking.GetInboundInterfaces()
 	if err != nil {
 		return nil, err
 	}
-	if len(endpoints) == 0 {
-		return nil, nil
-	}
-	resources := &model.ResourceSet{}
+	resources := model.NewResourceSet()
 	for i, endpoint := range endpoints {
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
@@ -35,7 +35,11 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
 		}
-		resources.AddNamed(cluster)
+		resources.Add(&model.Resource{
+			Name:     localClusterName,
+			Resource: cluster,
+			Origin:   OriginInbound,
+		})
 
 		// generate LDS resource
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
@@ -70,7 +74,11 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
 		}
-		resources.AddNamed(inboundListener)
+		resources.Add(&model.Resource{
+			Name:     inboundListenerName,
+			Resource: inboundListener,
+			Origin:   OriginInbound,
+		})
 	}
-	return resources.List(), nil
+	return resources, nil
 }
