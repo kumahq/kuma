@@ -89,7 +89,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := xds.ResourceList(resources).ToDeltaDiscoveryResponse()
+			resp, err := resources.List().ToDeltaDiscoveryResponse()
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())

@@ -48,7 +48,7 @@ var _ = Describe("IngressGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := core_xds.ResourceList(rs).ToDeltaDiscoveryResponse()
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when

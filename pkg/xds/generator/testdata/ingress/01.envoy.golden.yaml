@@ -1,4 +1,60 @@
 resources:
+  - name: backend
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+      clusterName: backend
+      endpoints:
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 2521
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    region: eu
+                    version: v1
+                  envoy.transport_socket_match:
+                    region: eu
+                    version: v1
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.0.2
+                    portValue: 2521
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    region: us
+                    version: v2
+                  envoy.transport_socket_match:
+                    region: us
+                    version: v2
+  - name: backend
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - region
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - version
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - region
+              - version
+      name: backend
+      type: EDS
   - name: inbound:10.0.0.1:10001
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -113,59 +169,3 @@ resources:
             value: {}
       name: inbound:10.0.0.1:10001
       trafficDirection: INBOUND
-  - name: backend
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-      lbSubsetConfig:
-        fallbackPolicy: ANY_ENDPOINT
-        subsetSelectors:
-          - fallbackPolicy: NO_FALLBACK
-            keys:
-              - region
-          - fallbackPolicy: NO_FALLBACK
-            keys:
-              - version
-          - fallbackPolicy: NO_FALLBACK
-            keys:
-              - region
-              - version
-      name: backend
-      type: EDS
-  - name: backend
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: backend
-      endpoints:
-        - lbEndpoints:
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.1
-                    portValue: 2521
-              loadBalancingWeight: 1
-              metadata:
-                filterMetadata:
-                  envoy.lb:
-                    region: eu
-                    version: v1
-                  envoy.transport_socket_match:
-                    region: eu
-                    version: v1
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.2
-                    portValue: 2521
-              loadBalancingWeight: 1
-              metadata:
-                filterMetadata:
-                  envoy.lb:
-                    region: us
-                    version: v2
-                  envoy.transport_socket_match:
-                    region: us
-                    version: v2

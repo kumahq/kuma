@@ -11,13 +11,17 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
+// OriginTransparent is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginTransparent = "transparent"
+
 type TransparentProxyGenerator struct {
 }
 
-func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	redirectPort := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPort()
+	resources := model.NewResourceSet()
 	if redirectPort == 0 {
-		return nil, nil
+		return resources, nil
 	}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
@@ -37,16 +41,15 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate cluster: pass_through")
 	}
-	return []*model.Resource{
-		&model.Resource{
-			Name:     "catch_all",
-			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: listener,
-		},
-		&model.Resource{
-			Name:     "pass_through",
-			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: cluster,
-		},
-	}, nil
+	resources.Add(&model.Resource{
+		Name:     listener.Name,
+		Origin:   OriginTransparent,
+		Resource: listener,
+	})
+	resources.Add(&model.Resource{
+		Name:     cluster.Name,
+		Origin:   OriginTransparent,
+		Resource: cluster,
+	})
+	return resources, nil
 }
