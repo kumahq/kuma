@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/kumahq/kuma/pkg/config/mode"
@@ -15,8 +17,8 @@ import (
 	"github.com/kumahq/kuma/pkg/zones/poller"
 
 	"github.com/emicklei/go-restful"
-	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
 	"github.com/kumahq/kuma/pkg/config"
 	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
@@ -99,6 +101,11 @@ func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatus
 	container.Add(clustersWs)
 
 	container.Filter(cors.Filter)
+
+	// Handle the GUI
+	container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
+	container.Handle("/api/", http.RedirectHandler("/", http.StatusPermanentRedirect))
+
 	return &ApiServer{
 		server: srv,
 	}, nil
