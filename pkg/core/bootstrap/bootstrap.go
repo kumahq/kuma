@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"context"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	"github.com/kumahq/kuma/pkg/config/mode"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -10,7 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 
-	"github.com/kumahq/kuma/pkg/clusters/poller"
+	"github.com/kumahq/kuma/pkg/zones/poller"
 
 	"github.com/pkg/errors"
 
@@ -58,9 +60,6 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
-	if err := initializeClusters(cfg, builder); err != nil {
-		return nil, err
-	}
 	if err := initializeConfigManager(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -68,6 +67,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeResourceManager(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeZones(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -136,10 +138,13 @@ func createDefaultSigningKey(runtime core_runtime.Runtime) error {
 func createDefaultMesh(runtime core_runtime.Runtime) error {
 	switch env := runtime.Config().Environment; env {
 	case config_core.KubernetesEnvironment:
-		// default Mesh on Kubernetes is managed by a Controller
+		// default Mesh on Kubernetes is managed by the Namespace Controller
 		return nil
 	case config_core.UniversalEnvironment:
-		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto())
+		if runtime.Config().Defaults.SkipMeshCreation {
+			return nil
+		}
+		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), v1alpha1.Mesh{})
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}
@@ -313,13 +318,13 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	return nil
 }
 
-func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	poller, err := poller.NewClustersStatusPoller(cfg.Mode.Global)
+func initializeZones(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	poller, err := poller.NewZonesStatusPoller(builder.ReadOnlyResourceManager())
 	if err != nil {
 		return err
 	}
 
-	builder.WithClusters(poller)
+	builder.WithZones(poller)
 	return nil
 }
 

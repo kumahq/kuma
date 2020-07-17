@@ -33,219 +33,6 @@ var _ = Describe("MultiValueTagSet", func() {
 	})
 })
 
-var _ = Describe("InboundInterface", func() {
-
-	Describe("String()", func() {
-		type testCase struct {
-			iface    InboundInterface
-			expected string
-		}
-
-		DescribeTable("should format properly",
-			func(given testCase) {
-				Expect(given.iface.String()).To(Equal(given.expected))
-			},
-			Entry("all fields set", testCase{
-				iface: InboundInterface{
-					DataplaneIP:   "1.2.3.4",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-				expected: "1.2.3.4:80:8080",
-			}),
-		)
-	})
-})
-
-var _ = Describe("ParseInboundInterface(..)", func() {
-
-	Context("valid input values", func() {
-		type testCase struct {
-			input    string
-			expected InboundInterface
-		}
-
-		DescribeTable("should parse valid input values",
-			func(given testCase) {
-				// when
-				iface, err := ParseInboundInterface(given.input)
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(iface).To(Equal(given.expected))
-			},
-			Entry("all fields set", testCase{
-				input: "1.2.3.4:80:8080",
-				expected: InboundInterface{
-					DataplaneIP:   "1.2.3.4",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-			}),
-			Entry("IPv6 full", testCase{
-				input: "[2001:db8:85a3:8d3:1319:8a2e:370:7348]:80:8080",
-				expected: InboundInterface{
-					DataplaneIP:   "2001:db8:85a3:8d3:1319:8a2e:370:7348",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-			}),
-			Entry("IPv6 shortend", testCase{
-				input: "[2001:db8::1:0:0:1]:80:8080",
-				expected: InboundInterface{
-					DataplaneIP:   "2001:db8::1:0:0:1",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-			}),
-			Entry("IPv4", testCase{
-				input: "[1.2.3.4]:80:8080", // unexpected side-effect of Golang SDK
-				expected: InboundInterface{
-					DataplaneIP:   "1.2.3.4",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-			}),
-		)
-	})
-
-	Context("invalid input values", func() {
-		type testCase struct {
-			input       string
-			expectedErr string
-		}
-
-		DescribeTable("should fail on invalid input values",
-			func(given testCase) {
-				// when
-				iface, err := ParseInboundInterface(given.input)
-				// then
-				Expect(err).To(HaveOccurred())
-				// then
-				Expect(err.Error()).To(Equal(given.expectedErr))
-				// and
-				Expect(iface).To(BeZero())
-			},
-			Entry("dataplane IP address is missing", testCase{
-				input:       ":80:8080",
-				expectedErr: `invalid DATAPLANE_IP in ":80:8080": "" is not a valid IP address`,
-			}),
-			Entry("dataplane IP address is not valid", testCase{
-				input:       "localhost:80:65536",
-				expectedErr: `invalid DATAPLANE_IP in "localhost:80:65536": "localhost" is not a valid IP address`,
-			}),
-			Entry("service port is missing", testCase{
-				input:       "1.2.3.4::8080",
-				expectedErr: `invalid DATAPLANE_PORT in "1.2.3.4::8080": "" is not a valid port number: strconv.ParseUint: parsing "": invalid syntax`,
-			}),
-			Entry("service port is out of range", testCase{
-				input:       "1.2.3.4:0:8080",
-				expectedErr: `invalid DATAPLANE_PORT in "1.2.3.4:0:8080": port number must be in the range [1, 65535] but got 0`,
-			}),
-			Entry("application port is missing", testCase{
-				input:       "1.2.3.4:80:",
-				expectedErr: `invalid WORKLOAD_PORT in "1.2.3.4:80:": "" is not a valid port number: strconv.ParseUint: parsing "": invalid syntax`,
-			}),
-			Entry("application port is out of range", testCase{
-				input:       "1.2.3.4:80:65536",
-				expectedErr: `invalid WORKLOAD_PORT in "1.2.3.4:80:65536": port number must be in the range [1, 65535] but got 65536`,
-			}),
-		)
-	})
-})
-
-var _ = Describe("ParseOutboundInterface(..)", func() {
-
-	Context("valid input values", func() {
-		type testCase struct {
-			input    string
-			expected OutboundInterface
-		}
-
-		DescribeTable("should parse valid input values",
-			func(given testCase) {
-				// when
-				oface, err := ParseOutboundInterface(given.input)
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(oface).To(Equal(given.expected))
-			},
-			Entry("all fields set", testCase{
-				input: "127.0.0.2:18080",
-				expected: OutboundInterface{
-					DataplaneIP:   "127.0.0.2",
-					DataplanePort: 18080,
-				},
-			}),
-			Entry("dataplane IP address is missing", testCase{
-				input: ":18080",
-				expected: OutboundInterface{
-					DataplaneIP:   "127.0.0.1",
-					DataplanePort: 18080,
-				},
-			}),
-			Entry("IPv6 full", testCase{
-				input: "[2001:db8:85a3:8d3:1319:8a2e:370:7348]:18080",
-				expected: OutboundInterface{
-					DataplaneIP:   "2001:db8:85a3:8d3:1319:8a2e:370:7348",
-					DataplanePort: 18080,
-				},
-			}),
-			Entry("IPv6 shortend", testCase{
-				input: "[2001:db8::1:0:0:1]:18080",
-				expected: OutboundInterface{
-					DataplaneIP:   "2001:db8::1:0:0:1",
-					DataplanePort: 18080,
-				},
-			}),
-			Entry("IPv4", testCase{
-				input: "[127.0.0.2]:18080", // unexpected side-effect of Golang SDK
-				expected: OutboundInterface{
-					DataplaneIP:   "127.0.0.2",
-					DataplanePort: 18080,
-				},
-			}),
-		)
-	})
-
-	Context("invalid input values", func() {
-		type testCase struct {
-			input       string
-			expectedErr string
-		}
-
-		DescribeTable("should fail on invalid input values",
-			func(given testCase) {
-				// when
-				iface, err := ParseOutboundInterface(given.input)
-				// then
-				Expect(err).To(HaveOccurred())
-				// and
-				Expect(err.Error()).To(Equal(given.expectedErr))
-				// and
-				Expect(iface).To(BeZero())
-			},
-			Entry("dataplane IP address is not valid", testCase{
-				input:       "localhost:65536",
-				expectedErr: `invalid DATAPLANE_IP in "localhost:65536": "localhost" is not a valid IP address`,
-			}),
-			Entry("dataplane IPv6 address is not valid", testCase{
-				input:       "[:65536",
-				expectedErr: `invalid format: expected "[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT", got "[:65536"`,
-			}),
-			Entry("port without colon", testCase{
-				input:       "18080",
-				expectedErr: `invalid format: expected "[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT", got "18080"`,
-			}),
-			Entry("colon without port", testCase{
-				input:       ":",
-				expectedErr: `invalid DATAPLANE_PORT in ":": "" is not a valid port number: strconv.ParseUint: parsing "": invalid syntax`,
-			}),
-		)
-	})
-})
-
 var _ = Describe("Dataplane_Networking", func() {
 
 	Describe("GetOutboundInterfaces()", func() {
@@ -326,15 +113,16 @@ var _ = Describe("Dataplane_Networking", func() {
 								Port: 80,
 							},
 							{
-								Address:     "192.168.0.2",
-								Port:        443,
-								ServicePort: 8443,
+								Address:        "192.168.0.2",
+								Port:           443,
+								ServiceAddress: "192.168.0.3",
+								ServicePort:    8443,
 							},
 						},
 					},
 					expected: []InboundInterface{
-						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadPort: 80},
-						{DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadPort: 8443},
+						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "127.0.0.1", WorkloadPort: 80},
+						{DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
 					},
 				}),
 			)
@@ -669,7 +457,7 @@ var _ = Describe("Tags", func() {
 	It("should print tags", func() {
 		// given
 		tags := map[string]map[string]bool{
-			"service": map[string]bool{
+			"service": {
 				"backend-api":   true,
 				"backend-admin": true,
 			},

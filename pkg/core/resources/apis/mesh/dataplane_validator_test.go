@@ -649,6 +649,117 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.inbound[0].address
                   message: cannot be defined in the ingress mode`,
 		}),
+		Entry("inbound service address", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      serviceAddress: 192.168.0.2
+                      servicePort: 5050
+                      address: 1.1.1.1
+                      tags:
+                        service: backend`,
+		}),
+		Entry("inbound service address invalid", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      serviceAddress: INVALID
+                      tags:
+                        service: backend`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].serviceAddress
+                  message: serviceAddress has to be valid IP address`,
+		}),
+		Entry("inbound service address overlap address", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      serviceAddress: 192.168.0.1
+                      tags:
+                        service: backend`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].serviceAddress
+                  message: serviceAddress and servicePort has to differ from address and port`,
+		}),
+		Entry("inbound service address overlap inbound address", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      address: 192.168.0.2
+                      serviceAddress: 192.168.0.2
+                      tags:
+                        service: backend`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].serviceAddress
+                  message: serviceAddress and servicePort has to differ from address and port`,
+		}),
+		Entry("inbound service address different inbound address and port", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      address: 192.168.0.2
+                      serviceAddress: 192.168.0.2
+                      servicePort: 10002
+                      tags:
+                        service: backend`,
+		}),
+		Entry("inbound service address and ingress", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags: 
+                          service: backend
+                          version: "1"
+                          region: us
+                  inbound:
+                    - port: 10001
+                      serviceAddress: 192.168.0.2
+                      servicePort: 5050
+                      address: 1.1.1.1
+                      tags:
+                        name: ingress-dp`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].servicePort
+                  message: cannot be defined in the ingress mode
+                - field: networking.inbound[0].serviceAddress
+                  message: cannot be defined in the ingress mode
+                - field: networking.inbound[0].address
+                  message: cannot be defined in the ingress mode`,
+		}),
 	)
 
 })

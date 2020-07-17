@@ -74,6 +74,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 					mesh_proto.InboundInterface{
 						DataplaneIP:   "192.168.0.1",
 						DataplanePort: 80,
+						WorkloadIP:    "127.0.0.1",
 						WorkloadPort:  8080,
 					}: &mesh_core.TrafficPermissionResource{
 						Meta: &test_model.ResourceMeta{
@@ -104,6 +105,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 					mesh_proto.InboundInterface{
 						DataplaneIP:   "192.168.0.1",
 						DataplanePort: 80,
+						WorkloadIP:    "127.0.0.1",
 						WorkloadPort:  8080,
 					}: &mesh_proto.FaultInjection{
 						Sources: []*mesh_proto.Selector{
@@ -138,7 +140,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when

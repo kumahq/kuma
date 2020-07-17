@@ -336,6 +336,8 @@ function _kumactl_get {
       "traffic-routes:Show TrafficRoutes"
       "traffic-trace:Show a single TrafficTrace resource"
       "traffic-traces:Show TrafficTraces"
+      "zone:Show a single Zone resource"
+      "zones:Show Zones"
     )
     _describe "command" commands
     ;;
@@ -407,6 +409,12 @@ function _kumactl_get {
     ;;
   traffic-traces)
     _kumactl_get_traffic-traces
+    ;;
+  zone)
+    _kumactl_get_zone
+    ;;
+  zones)
+    _kumactl_get_zones
     ;;
   esac
 }
@@ -598,6 +606,24 @@ function _kumactl_get_traffic-trace {
 }
 
 function _kumactl_get_traffic-traces {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_zone {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_zones {
   _arguments \
     '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
     '--size[maximum number of elements to return]:' \

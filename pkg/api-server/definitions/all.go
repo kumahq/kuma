@@ -12,4 +12,5 @@ var All = []ResourceWsDefinition{
 	TrafficTraceWsDefinition,
 	FaultInjectionWsDefinition,
 	CircuitBreakerWsDefinition,
+	ZoneWsDefinition,
 }

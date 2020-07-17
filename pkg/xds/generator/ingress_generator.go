@@ -21,19 +21,26 @@ import (
 
 const (
 	IngressProxy = "ingress-proxy"
+
+	// OriginIngress is a marker to indicate by which ProxyGenerator resources were generated.
+	OriginIngress = "ingress"
 )
 
 type IngressGenerator struct {
 }
 
-func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
-	resources := &model.ResourceSet{}
+func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	resources := model.NewResourceSet()
 
 	listener, err := i.generateLDS(proxy.Dataplane)
 	if err != nil {
 		return nil, err
 	}
-	resources.AddNamed(listener)
+	resources.Add(&model.Resource{
+		Name:     listener.Name,
+		Origin:   OriginIngress,
+		Resource: listener,
+	})
 
 	services := i.services(proxy)
 
@@ -46,7 +53,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 	edsResources := i.generateEDS(proxy, services)
 	resources.Add(edsResources...)
 
-	return resources.List(), nil
+	return resources, nil
 }
 
 // generateLDS generates one Ingress Listener
@@ -108,6 +115,7 @@ func (i IngressGenerator) generateCDS(services []string, proxy *model.Proxy) (re
 		}
 		resources = append(resources, &model.Resource{
 			Name:     service,
+			Origin:   OriginIngress,
 			Resource: edsCluster,
 		})
 	}
@@ -141,6 +149,7 @@ func (_ IngressGenerator) generateEDS(proxy *model.Proxy, services []string) (re
 		endpoints := proxy.OutboundTargets[service]
 		resources = append(resources, &model.Resource{
 			Name:     service,
+			Origin:   OriginIngress,
 			Resource: envoy_endpoints.CreateClusterLoadAssignment(service, endpoints),
 		})
 	}

@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/cobra"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
-	"github.com/kumahq/kuma/pkg/clusters"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/pkg/zones"
 
 	ui_server "github.com/kumahq/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
@@ -113,7 +113,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up GUI server")
 					return err
 				}
-				if err := clusters.SetupServer(rt); err != nil {
+				if err := zones.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Clusters server")
 					return err
 				}

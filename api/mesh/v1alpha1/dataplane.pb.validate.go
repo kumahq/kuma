@@ -344,6 +344,8 @@ func (m *Dataplane_Networking_Inbound) Validate() error {
 
 	// no validation rules for ServicePort
 
+	// no validation rules for ServiceAddress
+
 	// no validation rules for Address
 
 	if len(m.GetTags()) < 1 {

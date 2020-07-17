@@ -188,7 +188,9 @@ func parseResource(bytes []byte) (model.Resource, error) {
 	if resMeta.Name == "" {
 		return nil, errors.New("Name field cannot be empty")
 	}
-	if resMeta.Mesh == "" && resMeta.Type != string(mesh.MeshType) {
+	if resMeta.Mesh == "" &&
+		resMeta.Type != string(mesh.MeshType) &&
+		resMeta.Type != string(system.ZoneType) {
 		return nil, errors.New("Mesh field cannot be empty")
 	}
 	resource, err := registry.Global().NewObject(model.ResourceType(resMeta.Type))

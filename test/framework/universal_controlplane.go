@@ -37,7 +37,7 @@ func (c *UniversalControlPlane) GetName() string {
 	return c.name
 }
 
-func (c *UniversalControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressAddress string) error {
+func (c *UniversalControlPlane) SetLbAddress(name, lbAddress string) error {
 	cat := NewSshApp(false, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{
 		"cat", confPath,
 	})
@@ -46,7 +46,7 @@ func (c *UniversalControlPlane) AddCluster(name, lbAddress, kdsAddress, ingressA
 		return err
 	}
 
-	resultYAML, err := addGlobal(cat.Out(), lbAddress, kdsAddress, ingressAddress)
+	resultYAML, err := addGlobal(cat.Out(), lbAddress)
 	if err != nil {
 		return err
 	}

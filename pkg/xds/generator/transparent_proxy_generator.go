@@ -13,13 +13,17 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
+// OriginTransparent is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginTransparent = "transparent"
+
 type TransparentProxyGenerator struct {
 }
 
-func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	redirectPortOutbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortOutbound()
+	resources := model.NewResourceSet()
 	if redirectPortOutbound == 0 {
-		return nil, nil
+		return resources, nil
 	}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
@@ -61,26 +65,25 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 		return nil, errors.Wrapf(err, "could not generate listener: %s", inboundListenerName)
 	}
 
-	return []*model.Resource{
-		{
-			Name:     "catch_all",
-			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: listener,
-		},
-		{
-			Name:     "pass_through",
-			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: cluster,
-		},
-		{
-			Name:     inboundListenerName,
-			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: inboundListener,
-		},
-		{
-			Name:     inboundPassThroughClusterName,
-			Version:  proxy.Dataplane.Meta.GetVersion(),
-			Resource: inboundPassThroughCluster,
-		},
-	}, nil
+	resources.Add(&model.Resource{
+		Name:     listener.Name,
+		Origin:   OriginTransparent,
+		Resource: listener,
+	})
+	resources.Add(&model.Resource{
+		Name:     cluster.Name,
+		Origin:   OriginTransparent,
+		Resource: cluster,
+	})
+	resources.Add(&model.Resource{
+		Name:     inboundListener.Name,
+		Origin:   OriginTransparent,
+		Resource: inboundListener,
+	})
+	resources.Add(&model.Resource{
+		Name:     inboundPassThroughCluster.Name,
+		Origin:   OriginTransparent,
+		Resource: inboundPassThroughCluster,
+	})
+	return resources, nil
 }

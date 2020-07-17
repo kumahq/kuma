@@ -70,7 +70,7 @@ func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bo
 			return true
 		}
 		// compare against port and IP address of the application
-		if port == iface.WorkloadPort && overlap(address, IPv4Loopback) {
+		if port == iface.WorkloadPort && overlap(address, net.ParseIP(iface.WorkloadIP)) {
 			return true
 		}
 	}
