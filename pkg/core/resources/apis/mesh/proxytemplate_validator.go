@@ -90,7 +90,7 @@ func validateHTTPFilterModification(filterMod *mesh_proto.ProxyTemplate_Modifica
 		}
 	case mesh_proto.OpRemove:
 	default:
-		verr.AddViolation("operation", fmt.Sprintf("invalid operation. Available operations: %q, %q, %q, %q, %q", mesh_proto.OpAddFirst, mesh_proto.OpAddLast, mesh_proto.OpAddBefore, mesh_proto.OpAddAfter, mesh_proto.OpPatch))
+		verr.AddViolation("operation", fmt.Sprintf("invalid operation. Available operations: %q, %q, %q, %q, %q, %q", mesh_proto.OpAddFirst, mesh_proto.OpAddLast, mesh_proto.OpAddBefore, mesh_proto.OpAddAfter, mesh_proto.OpPatch, mesh_proto.OpRemove))
 	}
 	return verr
 }
@@ -168,7 +168,7 @@ func validateNetworkFilterModification(networkFilterMod *mesh_proto.ProxyTemplat
 		}
 	case mesh_proto.OpRemove:
 	default:
-		verr.AddViolation("operation", fmt.Sprintf("invalid operation. Available operations: %q, %q, %q, %q, %q", mesh_proto.OpAddFirst, mesh_proto.OpAddLast, mesh_proto.OpAddBefore, mesh_proto.OpAddAfter, mesh_proto.OpPatch))
+		verr.AddViolation("operation", fmt.Sprintf("invalid operation. Available operations: %q, %q, %q, %q, %q, %q", mesh_proto.OpAddFirst, mesh_proto.OpAddLast, mesh_proto.OpAddBefore, mesh_proto.OpAddAfter, mesh_proto.OpPatch, mesh_proto.OpRemove))
 	}
 	return verr
 }
