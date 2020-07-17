@@ -5,7 +5,8 @@ metadata:
     kuma.io/mesh: demo
     kuma.io/sidecar-injected: "true"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-port: "15001"
+    kuma.io/transparent-proxying-outbound-port: "15001"
+    kuma.io/transparent-proxying-inbound-port: "15006"
   creationTimestamp: null
   labels:
     run: busybox

@@ -1,6 +1,7 @@
 networking:
   transparentProxying:
-    redirectPort: 15001
+    redirectPortOutbound: 15001
+    redirectPortInbound: 15006
   address: 192.168.0.1
   inbound:
     - port: 80

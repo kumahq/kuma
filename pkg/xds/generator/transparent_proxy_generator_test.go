@@ -76,7 +76,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								RedirectPort: 15001,
+								RedirectPortOutbound: 15001,
+								RedirectPortInbound:  15006,
 							},
 						},
 					},
@@ -163,7 +164,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								RedirectPort: 15001,
+								RedirectPortOutbound: 15001,
+								RedirectPortInbound:  15006,
 							},
 						},
 					},

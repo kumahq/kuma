@@ -5,7 +5,8 @@ admissionServer:
 injector:
   sidecarContainer:
     image:
-    redirectPort: 423456
+    redirectPortOutbound: 423456
+    redirectPortInbound: 423457
     uid: -1
     gid: -2
     adminPort: 523456
