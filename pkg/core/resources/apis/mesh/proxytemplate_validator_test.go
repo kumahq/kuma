@@ -60,7 +60,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("cluster modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - cluster:
@@ -100,7 +100,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("listener modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - listener:
@@ -148,7 +148,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("network filter modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - networkFilter:
@@ -201,7 +201,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("http filter modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - httpFilter:
@@ -393,7 +393,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - cluster:
@@ -425,7 +425,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - listener:
@@ -461,7 +461,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - networkFilter:
@@ -498,7 +498,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - httpFilter:
