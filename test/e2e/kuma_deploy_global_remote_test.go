@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-errors/errors"
+
 	"github.com/kumahq/kuma/pkg/config/mode"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
@@ -110,19 +112,18 @@ metadata:
 	})
 
 	It("Should deploy Remote and Global on 2 clusters", func() {
-		// To be removed once the Zones are done dynamically.
-		// Give it some time to start the poller
-		time.Sleep(3 * time.Second)
-		// when
-		status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
-		// then
-		Expect(status).To(Equal(http.StatusOK))
-
-		// when
 		clustersStatus := poller.Zones{}
-		err := json.Unmarshal([]byte(response), &clustersStatus)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(len(clustersStatus)).To(Equal(1))
+		Eventually(func() (int, error) {
+			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
+			if status != http.StatusOK {
+				return 0, errors.Errorf("unable to contact server %s with status %d", global.GetGlobaStatusAPI(), status)
+			}
+			err := json.Unmarshal([]byte(response), &clustersStatus)
+			if err != nil {
+				return 0, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
+			}
+			return len(clustersStatus), nil
+		}, DefaultTimeout, time.Minute).Should(Equal(1))
 
 		// then
 		found := false
