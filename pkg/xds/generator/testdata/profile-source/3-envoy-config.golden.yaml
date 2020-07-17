@@ -142,14 +142,13 @@ resources:
                 httpFilters:
                   - name: envoy.router
                 routeConfig:
-                  name: inbound:backend
+                  name: 'inbound:'
                   requestHeadersToRemove:
                     - x-kuma-tags
                   validateClusters: true
                   virtualHosts:
                     - domains:
                         - '*'
-                      name: backend
                       routes:
                         - match:
                             prefix: /

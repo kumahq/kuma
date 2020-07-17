@@ -11,7 +11,7 @@ import (
 
 const (
 	// Mandatory tag that has a reserved meaning in Kuma.
-	ServiceTag     = "service"
+	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ZoneTag = "kuma.io/zone"
@@ -163,8 +163,8 @@ func (d *Dataplane_Networking_Outbound) MatchTags(selector TagSelector) bool {
 	return selector.Matches(d.GetTagsIncludingLegacy())
 }
 
-// GetTagsIncludingLegacy returns tags but taking on account old legacy format of "service" field in outbound
-// Remove it and migrate to GetTags() once "service" field is removed.
+// GetTagsIncludingLegacy returns tags but taking on account old legacy format of "kuma.io/service" field in outbound
+// Remove it and migrate to GetTags() once "kuma.io/service" field is removed.
 func (d *Dataplane_Networking_Outbound) GetTagsIncludingLegacy() map[string]string {
 	if d.Tags == nil {
 		return map[string]string{

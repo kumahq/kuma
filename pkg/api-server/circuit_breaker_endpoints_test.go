@@ -67,11 +67,11 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
         modificationTime: "2018-07-17T16:05:36.995Z"
         sources:
         - match:
-            service: web
+            kuma.io/service: web
             kuma.io/protocol: http
         destinations:
         - match:
-            service: backend
+            kuma.io/service: backend
         conf:
           baseEjectionTime: 5s
           detectors:

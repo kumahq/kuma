@@ -7,7 +7,7 @@ networking:
   inbound:
     - port: 1234
       tags:
-        service: web
+        kuma.io/service: web
   outbound:
     - address: 192.168.0.4
       port: 1234
@@ -24,10 +24,10 @@ networking:
   inbound:
     - port: 1234
       tags:
-        service: backend
+        kuma.io/service: backend
     - port: 1235
       tags:
-        service: backend-api
+        kuma.io/service: backend-api
 ---
 type: Dataplane
 name: backend-2
@@ -37,7 +37,7 @@ networking:
   inbound:
     - port: 1234
       tags:
-        service: backend
+        kuma.io/service: backend
 ---
 type: Dataplane
 name: redis-1
@@ -47,4 +47,4 @@ networking:
   inbound:
     - port: 1234
       tags:
-        service: redis
+        kuma.io/service: redis

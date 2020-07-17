@@ -41,7 +41,7 @@ var _ = Describe("bootstrapGenerator", func() {
 							Port:        443,
 							ServicePort: 8443,
 							Tags: map[string]string{
-								"service": "backend",
+								"kuma.io/service": "backend",
 							},
 						},
 					},
@@ -176,7 +176,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Selectors: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "backend",
+							"kuma.io/service": "backend",
 						},
 					},
 				},
@@ -231,7 +231,7 @@ var _ = Describe("bootstrapGenerator", func() {
 							Port:        9901,
 							ServicePort: 8443,
 							Tags: map[string]string{
-								"service": "backend",
+								"kuma.io/service": "backend",
 							},
 						},
 					},
@@ -302,7 +302,7 @@ var _ = Describe("bootstrapGenerator", func() {
 							Port:        443,
 							ServicePort: 8443,
 							Tags: map[string]string{
-								"service": "backend",
+								"kuma.io/service": "backend",
 							},
 						},
 					},

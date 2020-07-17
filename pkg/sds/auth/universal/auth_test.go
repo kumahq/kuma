@@ -49,7 +49,7 @@ var _ = Describe("Authentication flow", func() {
 							Port:        8080,
 							ServicePort: 8081,
 							Tags: map[string]string{
-								"service": "web",
+								"kuma.io/service": "web",
 							},
 						},
 					},

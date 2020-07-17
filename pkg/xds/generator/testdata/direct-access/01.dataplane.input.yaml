@@ -6,4 +6,4 @@ networking:
   inbound:
     - port: 1234
       tags:
-        service: web
+        kuma.io/service: web

@@ -68,7 +68,7 @@ var _ = Describe("DNS sync", func() {
 							{
 								Port: 1234,
 								Tags: map[string]string{
-									"service": "web",
+									"kuma.io/service": "web",
 								},
 							},
 						},
@@ -107,7 +107,7 @@ var _ = Describe("DNS sync", func() {
 							AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 								{
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								},
 							},

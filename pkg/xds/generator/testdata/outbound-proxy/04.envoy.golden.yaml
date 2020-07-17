@@ -86,7 +86,7 @@ resources:
       requestHeadersToAdd:
         - header:
             key: x-kuma-tags
-            value: '&service=web&'
+            value: '&kuma.io/service=web&'
       validateClusters: true
       virtualHosts:
         - domains:

@@ -93,7 +93,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						{
 							Target: "192.168.0.3",
 							Port:   5432,
-							Tags:   map[string]string{"service": "db", "role": "master"},
+							Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
 							Weight: 1,
 						},
 					},
@@ -101,7 +101,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						{
 							Target: "192.168.0.4",
 							Port:   9200,
-							Tags:   map[string]string{"service": "elastic"},
+							Tags:   map[string]string{"kuma.io/service": "elastic"},
 							Weight: 1,
 						},
 					},
@@ -110,10 +110,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					"elastic": &mesh_core.HealthCheckResource{
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "elastic"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),

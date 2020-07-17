@@ -71,11 +71,11 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			clusters: []envoy_common.ClusterSubset{{
 				ClusterName: "db",
 				Weight:      10,
-				Tags:        map[string]string{"service": "db", "version": "v1"},
+				Tags:        map[string]string{"kuma.io/service": "db", "version": "v1"},
 			}, {
 				ClusterName: "db",
 				Weight:      90,
-				Tags:        map[string]string{"service": "db", "version": "v2"},
+				Tags:        map[string]string{"kuma.io/service": "db", "version": "v2"},
 			}},
 			expected: `
             address:

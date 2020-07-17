@@ -96,7 +96,7 @@ var _ = Describe("snapshotGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -148,7 +148,7 @@ var _ = Describe("snapshotGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -200,8 +200,8 @@ var _ = Describe("snapshotGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
-										"env":     "prod",
+										"kuma.io/service": "backend",
+										"env":             "prod",
 									},
 								}},
 							},
@@ -219,8 +219,8 @@ var _ = Describe("snapshotGenerator", func() {
 									Port:        443,
 									ServicePort: 8443,
 									Tags: map[string]string{
-										"service": "backend",
-										"env":     "intg",
+										"kuma.io/service": "backend",
+										"env":             "intg",
 									},
 								}},
 							},
@@ -236,8 +236,8 @@ var _ = Describe("snapshotGenerator", func() {
 								Address: "192.168.0.3",
 								Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 									Tags: map[string]string{
-										"service": "web",
-										"env":     "test",
+										"kuma.io/service": "web",
+										"env":             "test",
 									},
 								},
 							},
@@ -269,8 +269,8 @@ var _ = Describe("snapshotGenerator", func() {
 							"dataplane":        "backend-02",
 							"env":              "intg",
 							"envs":             ",intg,",
-							"service":          "backend",
-							"services":         ",backend,",
+							"kuma_io_service":  "backend",
+							"kuma_io_services": ",backend,",
 						},
 					},
 					"/meshes/demo/dataplanes/web-01": &observability_proto.MonitoringAssignment{
@@ -289,8 +289,8 @@ var _ = Describe("snapshotGenerator", func() {
 							"dataplane":        "web-01",
 							"env":              "test",
 							"envs":             ",test,",
-							"service":          "web",
-							"services":         ",web,",
+							"kuma_io_service":  "web",
+							"kuma_io_services": ",web,",
 						},
 					},
 				}),

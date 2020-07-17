@@ -68,10 +68,10 @@ var _ = Describe("HealthCheck Endpoints", func() {
         modificationTime: "2018-07-17T16:05:36.995Z"
         sources:
         - match:
-            service: web
+            kuma.io/service: web
         destinations:
         - match:
-            service: backend
+            kuma.io/service: backend
         conf:
           interval: 10s
           timeout: 2s

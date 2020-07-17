@@ -59,7 +59,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -90,7 +90,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -141,8 +141,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Networking: &mesh_proto.Dataplane_Networking{
 								Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 									Tags: map[string]string{
-										"service": "gateway",
-										"region":  "eu",
+										"kuma.io/service": "gateway",
+										"region":          "eu",
 									},
 								},
 							},
@@ -169,8 +169,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"dataplane":        "gateway-01",
 								"region":           "eu",
 								"regions":          ",eu,",
-								"service":          "gateway",
-								"services":         ",gateway,",
+								"kuma_io_service":  "gateway",
+								"kuma_io_services": ",gateway,",
 							},
 						},
 					},
@@ -214,9 +214,9 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 										Port:        80,
 										ServicePort: 8080,
 										Tags: map[string]string{
-											"service": "backend",
-											"env":     "prod",
-											"version": "v1",
+											"kuma.io/service": "backend",
+											"env":             "prod",
+											"version":         "v1",
 										},
 									},
 									{
@@ -224,9 +224,9 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 										Port:        443,
 										ServicePort: 8443,
 										Tags: map[string]string{
-											"service": "backend-https",
-											"env":     "prod",
-											"version": "v2",
+											"kuma.io/service": "backend-https",
+											"env":             "prod",
+											"version":         "v2",
 										},
 									},
 								},
@@ -254,8 +254,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"dataplane":        "backend-01",
 								"env":              "prod",
 								"envs":             ",prod,",
-								"service":          "backend",
-								"services":         ",backend,backend-https,", // must have multiple values
+								"kuma_io_service":  "backend",
+								"kuma_io_services": ",backend,backend-https,", // must have multiple values
 								"version":          "v1",
 								"versions":         ",v1,v2,", // must have multiple values
 							},
@@ -300,9 +300,9 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service":  "backend",
-										"version":  "v1",
-										"versions": "v1+v1.0.1",
+										"kuma.io/service": "backend",
+										"version":         "v1",
+										"versions":        "v1+v1.0.1",
 									},
 								}},
 							},
@@ -327,8 +327,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"instance":         "backend-01",
 								"mesh":             "demo",
 								"dataplane":        "backend-01",
-								"service":          "backend",
-								"services":         ",backend,",
+								"kuma_io_service":  "backend",
+								"kuma_io_services": ",backend,",
 								"version":          "v1",
 								"versions":         "v1+v1.0.1", // must have user-defined value
 								"versionss":        ",v1+v1.0.1,",
@@ -374,7 +374,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service":         "backend",
+										"kuma.io/service": "backend",
 										"app:description": "?!,.:;",
 										"com.company/tag": "&*()-+",
 									},
@@ -401,8 +401,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"instance":         "backend-01",
 								"mesh":             "demo",
 								"dataplane":        "backend-01",
-								"service":          "backend",
-								"services":         ",backend,",
+								"kuma_io_service":  "backend",
+								"kuma_io_services": ",backend,",
 								"app_description":  "?!,.:;",   // tag name must be escaped
 								"app_descriptions": ",?!,.:;,", // tag name must be escaped
 								"com_company_tag":  "&*()-+",   // tag name must be escaped
@@ -470,8 +470,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
-										"env":     "prod",
+										"kuma.io/service": "backend",
+										"env":             "prod",
 									},
 								}},
 							},
@@ -489,8 +489,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        443,
 									ServicePort: 8443,
 									Tags: map[string]string{
-										"service": "web",
-										"env":     "intg",
+										"kuma.io/service": "web",
+										"env":             "intg",
 									},
 								}},
 							},
@@ -525,8 +525,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"dataplane":        "backend-01",
 								"env":              "prod",
 								"envs":             ",prod,",
-								"service":          "backend",
-								"services":         ",backend,",
+								"kuma_io_service":  "backend",
+								"kuma_io_services": ",backend,",
 							},
 						},
 					},
@@ -549,8 +549,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"dataplane":        "web-02",
 								"env":              "intg",
 								"envs":             ",intg,",
-								"service":          "web",
-								"services":         ",web,",
+								"kuma_io_service":  "web",
+								"kuma_io_services": ",web,",
 							},
 						},
 					},
@@ -597,7 +597,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -624,8 +624,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"k8s_kuma_io_namespace": "my-namespace",
 								"mesh":                  "demo",
 								"dataplane":             "backend-5c89f4d995-85znn.my-namespace",
-								"service":               "backend",
-								"services":              ",backend,",
+								"kuma_io_service":       "backend",
+								"kuma_io_services":      ",backend,",
 							},
 						},
 					},

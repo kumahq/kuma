@@ -31,12 +31,12 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{"service": "backend", "region": "eu"},
+								Tags:        map[string]string{"kuma.io/service": "backend", "region": "eu"},
 								Port:        8080,
 								ServicePort: 18080,
 							},
 							{
-								Tags:        map[string]string{"service": "frontend", "region": "eu"},
+								Tags:        map[string]string{"kuma.io/service": "frontend", "region": "eu"},
 								Port:        7070,
 								ServicePort: 17070,
 							},
@@ -58,7 +58,7 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.2",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{"service": "redis", "version": "v1"},
+								Tags:        map[string]string{"kuma.io/service": "redis", "version": "v1"},
 								Port:        6379,
 								ServicePort: 16379,
 							},
@@ -76,7 +76,7 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.4",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{"service": "redis", "version": "v3"},
+								Tags:        map[string]string{"kuma.io/service": "redis", "version": "v3"},
 								Port:        6379,
 								ServicePort: 36379,
 							},
@@ -94,7 +94,7 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.5",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{"service": "elastic", "region": "eu"},
+								Tags:        map[string]string{"kuma.io/service": "elastic", "region": "eu"},
 								Port:        9200,
 								ServicePort: 49200,
 							},
@@ -112,7 +112,7 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.6",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{"service": "elastic", "region": "us"},
+								Tags:        map[string]string{"kuma.io/service": "elastic", "region": "us"},
 								Port:        9200,
 								ServicePort: 59200,
 							},
@@ -122,12 +122,12 @@ var _ = Describe("TrafficRoute", func() {
 			}
 			destinations := core_xds.DestinationMap{
 				"redis": []mesh_proto.TagSelector{
-					{"service": "redis", "version": "v1"},
-					{"service": "redis", "version": "v2"},
+					{"kuma.io/service": "redis", "version": "v1"},
+					{"kuma.io/service": "redis", "version": "v2"},
 				},
 				"elastic": []mesh_proto.TagSelector{
-					{"service": "elastic", "region": "us"},
-					{"service": "elastic", "region": "au"},
+					{"kuma.io/service": "elastic", "region": "us"},
+					{"kuma.io/service": "elastic", "region": "au"},
 				},
 			}
 			dataplanes := &mesh_core.DataplaneResourceList{
@@ -146,7 +146,7 @@ var _ = Describe("TrafficRoute", func() {
 				{
 					Target: "192.168.0.2",
 					Port:   6379,
-					Tags:   map[string]string{"service": "redis", "version": "v1"},
+					Tags:   map[string]string{"kuma.io/service": "redis", "version": "v1"},
 					Weight: 1,
 				},
 			}))
@@ -154,7 +154,7 @@ var _ = Describe("TrafficRoute", func() {
 				{
 					Target: "192.168.0.6",
 					Port:   9200,
-					Tags:   map[string]string{"service": "elastic", "region": "us"},
+					Tags:   map[string]string{"kuma.io/service": "elastic", "region": "us"},
 					Weight: 1,
 				},
 			}))
@@ -181,14 +181,14 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("no dataplanes", testCase{
 				destinations: core_xds.DestinationMap{
-					"redis": []mesh_proto.TagSelector{{"service": "redis"}},
+					"redis": []mesh_proto.TagSelector{{"kuma.io/service": "redis"}},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{},
 				expected:   core_xds.EndpointMap{},
 			}),
 			Entry("no dataplanes for that service", testCase{
 				destinations: core_xds.DestinationMap{
-					"redis": []mesh_proto.TagSelector{{"service": "redis"}},
+					"redis": []mesh_proto.TagSelector{{"kuma.io/service": "redis"}},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
 					{
@@ -197,7 +197,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{"service": "elastic"},
+										Tags:        map[string]string{"kuma.io/service": "elastic"},
 										Port:        9200,
 										ServicePort: 19200,
 									},
@@ -210,7 +210,7 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("no dataplanes with matching tags", testCase{
 				destinations: core_xds.DestinationMap{
-					"redis": []mesh_proto.TagSelector{{"service": "redis", "version": "v1"}},
+					"redis": []mesh_proto.TagSelector{{"kuma.io/service": "redis", "version": "v1"}},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
 					{
@@ -219,7 +219,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{"service": "redis", "version": "v2"},
+										Tags:        map[string]string{"kuma.io/service": "redis", "version": "v2"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -233,8 +233,8 @@ var _ = Describe("TrafficRoute", func() {
 			Entry("destination with multiple selectors", testCase{
 				destinations: core_xds.DestinationMap{
 					"redis": []mesh_proto.TagSelector{
-						{"service": "redis", "region": "eu"},
-						{"service": "redis", "region": "us"},
+						{"kuma.io/service": "redis", "region": "eu"},
+						{"kuma.io/service": "redis", "region": "us"},
 					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
@@ -244,7 +244,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{"service": "redis", "region": "us"},
+										Tags:        map[string]string{"kuma.io/service": "redis", "region": "us"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -258,7 +258,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
-							Tags:   map[string]string{"service": "redis", "region": "us"},
+							Tags:   map[string]string{"kuma.io/service": "redis", "region": "us"},
 							Weight: 1,
 						},
 					},
@@ -267,8 +267,8 @@ var _ = Describe("TrafficRoute", func() {
 			Entry("destination with multiple matching selectors", testCase{
 				destinations: core_xds.DestinationMap{
 					"redis": []mesh_proto.TagSelector{
-						{"service": "redis"},
-						{"service": "redis", "region": "us"},
+						{"kuma.io/service": "redis"},
+						{"kuma.io/service": "redis", "region": "us"},
 					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
@@ -278,7 +278,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{"service": "redis", "region": "us"},
+										Tags:        map[string]string{"kuma.io/service": "redis", "region": "us"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -292,7 +292,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
-							Tags:   map[string]string{"service": "redis", "region": "us"},
+							Tags:   map[string]string{"kuma.io/service": "redis", "region": "us"},
 							Weight: 1,
 						},
 					},
@@ -301,12 +301,12 @@ var _ = Describe("TrafficRoute", func() {
 			Entry("multiple destinations", testCase{
 				destinations: core_xds.DestinationMap{
 					"redis": []mesh_proto.TagSelector{
-						{"service": "redis"},
-						{"service": "redis", "version": "v1"},
+						{"kuma.io/service": "redis"},
+						{"kuma.io/service": "redis", "version": "v1"},
 					},
 					"elastic": []mesh_proto.TagSelector{
-						{"service": "elastic"},
-						{"service": "elastic", "region": "eu"},
+						{"kuma.io/service": "elastic"},
+						{"kuma.io/service": "elastic", "region": "eu"},
 					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
@@ -316,7 +316,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{"service": "redis", "version": "v1"},
+										Tags:        map[string]string{"kuma.io/service": "redis", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -330,7 +330,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{"service": "elastic", "region": "us"},
+										Tags:        map[string]string{"kuma.io/service": "elastic", "region": "us"},
 										Port:        9200,
 										ServicePort: 19200,
 									},
@@ -344,7 +344,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
-							Tags:   map[string]string{"service": "redis", "version": "v1"},
+							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v1"},
 							Weight: 1,
 						},
 					},
@@ -352,7 +352,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.2",
 							Port:   9200,
-							Tags:   map[string]string{"service": "elastic", "region": "us"},
+							Tags:   map[string]string{"kuma.io/service": "elastic", "region": "us"},
 							Weight: 1,
 						},
 					},
@@ -361,12 +361,12 @@ var _ = Describe("TrafficRoute", func() {
 			Entry("multiple destinations implemented by a single dataplane", testCase{
 				destinations: core_xds.DestinationMap{
 					"redis": []mesh_proto.TagSelector{
-						{"service": "redis"},
-						{"service": "redis", "version": "v1"},
+						{"kuma.io/service": "redis"},
+						{"kuma.io/service": "redis", "version": "v1"},
 					},
 					"elastic": []mesh_proto.TagSelector{
-						{"service": "elastic"},
-						{"service": "elastic", "region": "eu"},
+						{"kuma.io/service": "elastic"},
+						{"kuma.io/service": "elastic", "region": "eu"},
 					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
@@ -376,12 +376,12 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{"service": "redis", "version": "v1"},
+										Tags:        map[string]string{"kuma.io/service": "redis", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
 									{
-										Tags:        map[string]string{"service": "elastic", "region": "us"},
+										Tags:        map[string]string{"kuma.io/service": "elastic", "region": "us"},
 										Address:     "192.168.0.2",
 										Port:        9200,
 										ServicePort: 19200,
@@ -396,7 +396,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
-							Tags:   map[string]string{"service": "redis", "version": "v1"},
+							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v1"},
 							Weight: 1,
 						},
 					},
@@ -404,7 +404,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.2",
 							Port:   9200,
-							Tags:   map[string]string{"service": "elastic", "region": "us"},
+							Tags:   map[string]string{"kuma.io/service": "elastic", "region": "us"},
 							Weight: 1,
 						},
 					},
@@ -413,8 +413,8 @@ var _ = Describe("TrafficRoute", func() {
 			Entry("ingress in the list of dataplanes", testCase{
 				destinations: core_xds.DestinationMap{
 					"redis": []mesh_proto.TagSelector{
-						{"service": "redis"},
-						{"service": "redis", "version": "v2"},
+						{"kuma.io/service": "redis"},
+						{"kuma.io/service": "redis", "version": "v2"},
 					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
@@ -425,7 +425,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{"service": "redis", "version": "v1"},
+										Tags:        map[string]string{"kuma.io/service": "redis", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -466,19 +466,19 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
-							Tags:   map[string]string{"service": "redis", "version": "v1"},
+							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v1"},
 							Weight: 1,
 						},
 						{
 							Target: "10.20.1.2",
 							Port:   10001,
-							Tags:   map[string]string{"service": "redis", "version": "v2", "region": "eu"},
+							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v2", "region": "eu"},
 							Weight: 2,
 						},
 						{
 							Target: "10.20.1.2",
 							Port:   10001,
-							Tags:   map[string]string{"service": "redis", "version": "v3"},
+							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v3"},
 							Weight: 3,
 						},
 					},
@@ -487,8 +487,8 @@ var _ = Describe("TrafficRoute", func() {
 			Entry("ingresses in the list of dataplanes from different meshes", testCase{
 				destinations: core_xds.DestinationMap{
 					"redis": []mesh_proto.TagSelector{
-						{"service": "redis"},
-						{"service": "redis", "version": "v2"},
+						{"kuma.io/service": "redis"},
+						{"kuma.io/service": "redis", "version": "v2"},
 					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
@@ -499,7 +499,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{"service": "redis", "version": "v1"},
+										Tags:        map[string]string{"kuma.io/service": "redis", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -522,12 +522,12 @@ var _ = Describe("TrafficRoute", func() {
 										{
 											Instances: 2,
 											Mesh:      defaultMesh,
-											Tags:      map[string]string{"service": "redis", "version": "v2", "region": "eu"},
+											Tags:      map[string]string{"kuma.io/service": "redis", "version": "v2", "region": "eu"},
 										},
 										{
 											Instances: 3,
 											Mesh:      nonDefaultMesh,
-											Tags:      map[string]string{"service": "redis", "version": "v3"},
+											Tags:      map[string]string{"kuma.io/service": "redis", "version": "v3"},
 										},
 									},
 								},
@@ -540,13 +540,13 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
-							Tags:   map[string]string{"service": "redis", "version": "v1"},
+							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v1"},
 							Weight: 1,
 						},
 						{
 							Target: "10.20.1.2",
 							Port:   10001,
-							Tags:   map[string]string{"service": "redis", "version": "v2", "region": "eu"},
+							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v2", "region": "eu"},
 							Weight: 2,
 						},
 					},

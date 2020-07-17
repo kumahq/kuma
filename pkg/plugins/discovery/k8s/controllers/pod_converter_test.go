@@ -356,7 +356,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			isGateway: false,
 			podLabels: nil,
 			expected: map[string]string{
-				"service":          "example_demo_svc_80",
+				"kuma.io/service":  "example_demo_svc_80",
 				"kuma.io/protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
 			},
 		}),
@@ -369,21 +369,21 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":              "example",
 				"version":          "0.1",
-				"service":          "example_demo_svc_80",
+				"kuma.io/service":  "example_demo_svc_80",
 				"kuma.io/protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
 			},
 		}),
 		Entry("Pod with `service` label", testCase{
 			isGateway: false,
 			podLabels: map[string]string{
-				"service": "something",
-				"app":     "example",
-				"version": "0.1",
+				"kuma.io/service": "something",
+				"app":             "example",
+				"version":         "0.1",
 			},
 			expected: map[string]string{
 				"app":              "example",
 				"version":          "0.1",
-				"service":          "example_demo_svc_80",
+				"kuma.io/service":  "example_demo_svc_80",
 				"kuma.io/protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
 			},
 		}),
@@ -399,7 +399,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":              "example",
 				"version":          "0.1",
-				"service":          "example_demo_svc_80",
+				"kuma.io/service":  "example_demo_svc_80",
 				"kuma.io/protocol": "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
 			},
 		}),
@@ -415,7 +415,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			expected: map[string]string{
 				"app":              "example",
 				"version":          "0.1",
-				"service":          "example_demo_svc_80",
+				"kuma.io/service":  "example_demo_svc_80",
 				"kuma.io/protocol": "http",
 			},
 		}),
@@ -426,9 +426,9 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"version": "0.1",
 			},
 			expected: map[string]string{
-				"app":     "example",
-				"version": "0.1",
-				"service": "example_demo_svc_80",
+				"app":             "example",
+				"version":         "0.1",
+				"kuma.io/service": "example_demo_svc_80",
 			},
 		}),
 		Entry("`gateway` Pod should not have a `protocol` tag even if `<port>.service.kuma.io/protocol` annotation is present", testCase{
@@ -441,9 +441,9 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"80.service.kuma.io/protocol": "http",
 			},
 			expected: map[string]string{
-				"app":     "example",
-				"version": "0.1",
-				"service": "example_demo_svc_80",
+				"app":             "example",
+				"version":         "0.1",
+				"kuma.io/service": "example_demo_svc_80",
 			},
 		}),
 		Entry("Inject a zone tag if Zone is set", testCase{

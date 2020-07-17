@@ -143,12 +143,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			},
 			tags: []envoy.Tags{
 				map[string]string{
-					"service": "backend",
-					"cluster": "1",
+					"kuma.io/service": "backend",
+					"cluster":         "1",
 				},
 				map[string]string{
-					"service": "backend",
-					"cluster": "2",
+					"kuma.io/service": "backend",
+					"cluster":         "2",
 				},
 			},
 			expected: `
@@ -271,8 +271,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			},
 			tags: []envoy.Tags{
 				{
-					"service": "backend",
-					"version": "v1",
+					"kuma.io/service": "backend",
+					"version":         "v1",
 				},
 			},
 			expected: `

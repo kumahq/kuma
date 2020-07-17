@@ -255,10 +255,10 @@ var _ = Describe("PodReconciler", func() {
             - port: 8080
               tags:
                 kuma.io/protocol: http
-                service: example_demo_svc_80
+                kuma.io/service: example_demo_svc_80
             - port: 6060
               tags:
-                service: example_demo_svc_6061
+                kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
 `))
 	})
@@ -325,10 +325,10 @@ var _ = Describe("PodReconciler", func() {
             - port: 8080
               tags:
                 kuma.io/protocol: http
-                service: example_demo_svc_80
+                kuma.io/service: example_demo_svc_80
             - port: 6060
               tags:
-                service: example_demo_svc_6061
+                kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
 `))
 	})
