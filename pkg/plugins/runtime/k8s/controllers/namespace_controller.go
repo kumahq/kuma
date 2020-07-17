@@ -31,10 +31,11 @@ type NamespaceReconciler struct {
 	kube_client.Client
 	Log logr.Logger
 
-	SystemNamespace     string
-	CNIEnabled          bool
-	ResourceManager     core_manager.ResourceManager
-	DefaultMeshTemplate mesh_proto.Mesh
+	SystemNamespace         string
+	CNIEnabled              bool
+	SkipDefaultMeshCreation bool
+	ResourceManager         core_manager.ResourceManager
+	DefaultMeshTemplate     mesh_proto.Mesh
 }
 
 // Reconcile is in charge for two things:
@@ -57,7 +58,7 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		return kube_ctrl.Result{}, err
 	}
 
-	if req.Name == r.SystemNamespace {
+	if req.Name == r.SystemNamespace && !r.SkipDefaultMeshCreation {
 		// Fetch default Mesh instance
 		mesh := &mesh_k8s.Mesh{}
 		name := kube_types.NamespacedName{Name: core_model.DefaultMesh}

@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"context"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -58,7 +60,7 @@ var _ = Describe("Bootstrap", func() {
 		runtime, err := buildRuntime(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		template := runtime.Config().Defaults.MeshProto()
+		template := v1alpha1.Mesh{}
 
 		// when
 		Expect(mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), template)).To(Succeed())
