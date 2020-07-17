@@ -5,7 +5,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/mode"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
@@ -20,8 +19,6 @@ import (
 	token_server "github.com/kumahq/kuma/pkg/config/token-server"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
-	util_error "github.com/kumahq/kuma/pkg/util/error"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ config.Config = &Config{}
@@ -29,30 +26,14 @@ var _ config.Config = &Config{}
 var _ config.Config = &Defaults{}
 
 type Defaults struct {
-	// Default Mesh configuration in YAML that will be applied on first usage of Kuma CP
-	Mesh string `yaml:"mesh"`
+	SkipMeshCreation bool `yaml:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
 }
 
 func (d *Defaults) Sanitize() {
 }
 
-func (d *Defaults) MeshProto() v1alpha1.Mesh {
-	mesh, err := d.parseMesh()
-	util_error.MustNot(err)
-	return mesh
-}
-
-func (d *Defaults) parseMesh() (v1alpha1.Mesh, error) {
-	mesh := v1alpha1.Mesh{}
-	if err := proto.FromYAML([]byte(d.Mesh), &mesh); err != nil {
-		return mesh, errors.Wrap(err, "Mesh is not valid")
-	}
-	return mesh, nil
-}
-
 func (d *Defaults) Validate() error {
-	_, err := d.parseMesh()
-	return err
+	return nil
 }
 
 type Metrics struct {
@@ -160,9 +141,7 @@ func DefaultConfig() Config {
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
-			Mesh: `type: Mesh
-name: default
-`,
+			SkipMeshCreation: false,
 		},
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{

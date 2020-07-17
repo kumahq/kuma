@@ -14,21 +14,37 @@ import (
 	"github.com/pkg/errors"
 )
 
+// FetchDefaultMeshIfExists will try to get the default mesh, if present, and return a boolean
+// for whether or not it exists
+func FetchDefaultMeshIfExists(resManager core_manager.ResourceManager, mesh *mesh_core.MeshResource) (bool, error) {
+	key := core_model.ResourceKey{Mesh: core_model.DefaultMesh, Name: core_model.DefaultMesh}
+
+	if err := resManager.Get(context.Background(), mesh, core_store.GetBy(key)); err != nil {
+		if core_store.IsResourceNotFound(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+
+	return true, nil
+}
+
 func CreateDefaultMesh(resManager core_manager.ResourceManager, template mesh_proto.Mesh) error {
 	defaultMesh := mesh_core.MeshResource{}
 
 	key := core_model.ResourceKey{Mesh: core_model.DefaultMesh, Name: core_model.DefaultMesh}
+	exists, err := FetchDefaultMeshIfExists(resManager, &defaultMesh)
+	if err != nil {
+		return err
+	}
 
-	if err := resManager.Get(context.Background(), &defaultMesh, core_store.GetBy(key)); err != nil {
-		if core_store.IsResourceNotFound(err) {
-			defaultMesh.Spec = template
-			core.Log.WithName("bootstrap").Info("Creating default mesh from the settings", "mesh", defaultMesh.Spec)
+	if !exists {
+		defaultMesh.Spec = template
+		core.Log.WithName("bootstrap").Info("Creating default mesh from the settings", "mesh", defaultMesh.Spec)
 
-			if err := resManager.Create(context.Background(), &defaultMesh, core_store.CreateBy(key)); err != nil {
-				return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")
-			}
-		} else {
-			return err
+		if err := resManager.Create(context.Background(), &defaultMesh, core_store.CreateBy(key)); err != nil {
+			return errors.Wrapf(err, "Failed to create `default` Mesh resource in a given resource store")
 		}
 	}
 

@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"context"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	"github.com/kumahq/kuma/pkg/config/mode"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -136,10 +138,13 @@ func createDefaultSigningKey(runtime core_runtime.Runtime) error {
 func createDefaultMesh(runtime core_runtime.Runtime) error {
 	switch env := runtime.Config().Environment; env {
 	case config_core.KubernetesEnvironment:
-		// default Mesh on Kubernetes is managed by a Controller
+		// default Mesh on Kubernetes is managed by the Namespace Controller
 		return nil
 	case config_core.UniversalEnvironment:
-		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto())
+		if runtime.Config().Defaults.SkipMeshCreation {
+			return nil
+		}
+		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), v1alpha1.Mesh{})
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}

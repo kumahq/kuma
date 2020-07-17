@@ -215,10 +215,7 @@ runtime:
 
 # Default Kuma entities configuration
 defaults:
-  # Default Mesh configuration in YAML that will be applied on first usage of Kuma CP
-  mesh: | # ENV: KUMA_DEFAULTS_MESH
-    type: Mesh
-    name: default
+  skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
 
 # Metrics configuration
 metrics:
