@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"io/ioutil"
 	"net/url"
 
@@ -45,7 +44,6 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	case "grpcs":
 		tlsConfig, err := tlsConfig(c.config.RootCAFile)
-		fmt.Println("", "InsecureSkipVerify", tlsConfig.InsecureSkipVerify)
 		if err != nil {
 			return errors.Wrap(err, "could not ")
 		}
