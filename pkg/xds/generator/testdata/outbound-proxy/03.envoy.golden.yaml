@@ -114,6 +114,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       name: api-http
       outlierDetection:
         enforcingConsecutive5xx: 100
@@ -129,6 +130,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       name: api-tcp
       type: EDS
   - name: backend
@@ -138,6 +140,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       name: backend
       type: EDS
   - name: db
@@ -147,6 +150,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       lbSubsetConfig:
         fallbackPolicy: ANY_ENDPOINT
         subsetSelectors:

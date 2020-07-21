@@ -27,11 +27,17 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	}
 	resources := model.NewResourceSet()
 	for i, endpoint := range endpoints {
+		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
+		protocol := mesh_core.ParseProtocol(iface.GetProtocol())
+
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
-		cluster, err := envoy_clusters.NewClusterBuilder().
-			Configure(envoy_clusters.StaticCluster(localClusterName, endpoint.WorkloadIP, endpoint.WorkloadPort)).
-			Build()
+		clusterBuilder := envoy_clusters.NewClusterBuilder().
+			Configure(envoy_clusters.StaticCluster(localClusterName, endpoint.WorkloadIP, endpoint.WorkloadPort))
+		if protocol == mesh_core.ProtocolHTTP2 {
+			clusterBuilder.Configure(envoy_clusters.Http2())
+		}
+		cluster, err := clusterBuilder.Build()
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
 		}
@@ -42,9 +48,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		})
 
 		// generate LDS resource
-		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
 		service := iface.GetService()
-		protocol := mesh_core.ParseProtocol(iface.GetProtocol())
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder()

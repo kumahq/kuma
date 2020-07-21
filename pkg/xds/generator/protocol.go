@@ -12,18 +12,20 @@ var (
 	// GRPC has a protocol stack [GRPC, HTTP2, TCP],
 	// TCP  has a protocol stack [TCP].
 	protocolStacks = map[mesh_core.Protocol]mesh_core.ProtocolList{
-		mesh_core.ProtocolHTTP: mesh_core.ProtocolList{mesh_core.ProtocolHTTP, mesh_core.ProtocolTCP},
-		mesh_core.ProtocolTCP:  mesh_core.ProtocolList{mesh_core.ProtocolTCP},
+		mesh_core.ProtocolHTTP2: {mesh_core.ProtocolHTTP2, mesh_core.ProtocolHTTP, mesh_core.ProtocolTCP},
+		mesh_core.ProtocolHTTP:  {mesh_core.ProtocolHTTP, mesh_core.ProtocolTCP},
+		mesh_core.ProtocolTCP:   {mesh_core.ProtocolTCP},
 	}
 )
 
 // getCommonProtocol returns a common protocol between given two.
 //
 // E.g.,
+// a common protocol between HTTP and HTTP2 is HTTP2,
 // a common protocol between HTTP and HTTP  is HTTP,
 // a common protocol between HTTP and TCP   is TCP,
 // a common protocol between GRPC and HTTP2 is HTTP2,
-// a common protocol between HTTP and HTTP2 is TCP.
+// a common protocol between HTTP and HTTP2 is HTTP.
 func getCommonProtocol(one, another mesh_core.Protocol) mesh_core.Protocol {
 	if one == another {
 		return one

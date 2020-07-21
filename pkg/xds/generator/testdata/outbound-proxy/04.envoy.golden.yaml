@@ -114,6 +114,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       name: api-http
       outlierDetection:
         enforcingConsecutive5xx: 100
@@ -165,6 +166,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       name: api-tcp
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -210,6 +212,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       name: backend
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -255,6 +258,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       lbSubsetConfig:
         fallbackPolicy: ANY_ENDPOINT
         subsetSelectors:

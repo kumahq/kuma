@@ -462,7 +462,7 @@ var _ = Describe("ParseProtocol()", func() {
 		}),
 		Entry("http2", testCase{
 			tag:      "http2",
-			expected: ProtocolUnknown,
+			expected: ProtocolHTTP2,
 		}),
 		Entry("grpc", testCase{
 			tag:      "grpc",
