@@ -168,16 +168,15 @@ var _ = Describe("ServiceValidator", func() {
               details:
                 causes:
                 - field: metadata.annotations["8081.service.kuma.io/protocol"]
-                  message: 'value "" is not valid. Allowed values: http, tcp'
+                  message: 'value "" is not valid. Allowed values: http, http2, tcp'
                   reason: FieldValueInvalid
                 - field: metadata.annotations["8082.service.kuma.io/protocol"]
-                  message: 'value "not-yet-supported-protocol" is not valid. Allowed values: http,
-                    tcp'
+                  message: 'value "not-yet-supported-protocol" is not valid. Allowed values: http, http2, tcp'
                   reason: FieldValueInvalid
                 kind: Service
               message: 'metadata.annotations["8081.service.kuma.io/protocol"]: value "" is
-                not valid. Allowed values: http, tcp; metadata.annotations["8082.service.kuma.io/protocol"]:
-                value "not-yet-supported-protocol" is not valid. Allowed values: http, tcp'
+                not valid. Allowed values: http, http2, tcp; metadata.annotations["8082.service.kuma.io/protocol"]:
+                value "not-yet-supported-protocol" is not valid. Allowed values: http, http2, tcp'
               metadata: {}
               reason: Invalid
               status: Failure
