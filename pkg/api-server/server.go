@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kumahq/kuma/app/kuma-ui/pkg/server/types"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 	"io"
 	"net/http"
 
@@ -20,7 +23,6 @@ import (
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
-	"github.com/kumahq/kuma/pkg/config"
 	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -34,6 +36,7 @@ var (
 
 type ApiServer struct {
 	server *http.Server
+	GuiServerConfig *gui_server.GuiServerConfig
 }
 
 func (a *ApiServer) NeedLeaderElection() bool {
@@ -62,7 +65,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatusPoller, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatusPoller, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg *kuma_cp.Config) (*ApiServer, error) {
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
@@ -102,13 +105,17 @@ func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatus
 
 	container.Filter(cors.Filter)
 
+	newApiServer := &ApiServer{
+		server: srv,
+		GuiServerConfig: cfg.GuiServer,
+	}
+
 	// Handle the GUI
 	container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
 	container.Handle("/api/", http.RedirectHandler("/", http.StatusPermanentRedirect))
+	container.ServeMux.HandleFunc("/config", newApiServer.configHandler)
 
-	return &ApiServer{
-		server: srv,
-	}, nil
+	return newApiServer, nil
 }
 
 func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
@@ -198,6 +205,26 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 		return a.server.Shutdown(context.Background())
 	case err := <-errChan:
 		return err
+	}
+}
+
+func (a *ApiServer) configHandler(writer http.ResponseWriter, request *http.Request) {
+	bytes, err := json.Marshal(fromServerConfig(*a.GuiServerConfig.GuiConfig))
+	if err != nil {
+		log.Error(err, "could not marshall config")
+		writer.WriteHeader(500)
+		return
+	}
+	writer.Header().Add("content-type", "application/json")
+	if _, err := writer.Write(bytes); err != nil {
+		log.Error(err, "could not write the response")
+	}
+}
+
+func fromServerConfig(config gui_server.GuiConfig) types.GuiConfig {
+	return types.GuiConfig{
+		ApiUrl:      config.ApiUrl,
+		Environment: config.Environment,
 	}
 }
 
