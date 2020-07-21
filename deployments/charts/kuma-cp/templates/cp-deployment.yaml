@@ -1,0 +1,149 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kuma-cp.name" . }}-control-plane
+  labels:
+    {{- include "kuma-cp.labels" . | nindent 4 }}
+    app: kuma-control-plane
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "kuma-cp.selectorLabels" . | nindent 6 }}
+      app: kuma-control-plane
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cp-configmap.yaml") . | sha256sum }}
+        checksum/tls-secrets: {{ include (print $.Template.BasePath "/cp-webhooks-and-secrets.yaml") . | sha256sum }}
+      labels:
+        {{- include "kuma-cp.selectorLabels" . | nindent 8 }}
+        app: kuma-control-plane
+    spec:
+      serviceAccountName: {{ include "kuma-cp.name" . }}-control-plane
+      containers:
+        - name: control-plane
+          image: {{ include "kuma-cp.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
+          imagePullPolicy: {{ .Values.controlPlane.imagePullPolicy }}
+          env:
+            - name: KUMA_ENVIRONMENT
+              value: "kubernetes"
+            - name: KUMA_STORE_TYPE
+              value: "kubernetes"
+            - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
+              value: {{ include "kuma-cp.name" . }}-control-plane.{{.Release.Namespace}}
+            {{- if ne .Values.controlPlane.mode "global" }}
+            - name: KUMA_SDS_SERVER_GRPC_PORT
+              value: "5677"
+            - name: KUMA_XDS_SERVER_GRPC_PORT
+              value: "5678"
+            - name: KUMA_BOOTSTRAP_SERVER_PORT
+              value: "5682"
+            - name: KUMA_SDS_SERVER_TLS_CERT_FILE
+              value: /var/run/secrets/kuma-cp.io/kuma-sds/tls-cert/tls.crt
+            - name: KUMA_SDS_SERVER_TLS_KEY_FILE
+              value: /var/run/secrets/kuma-cp.io/kuma-sds/tls-cert/tls.key
+            {{- end }}
+            {{- if eq .Values.controlPlane.mode "remote" }}
+            - name: KUMA_KDS_CLIENT_GLOBAL_ADDRESS
+              value: {{ .Values.controlPlane.kdsGlobalAddress }}
+            {{- end }}
+            - name: KUMA_KDS_SERVER_TLS_CERT_FILE
+              value: /var/run/secrets/kuma-cp.io/kuma-kds/tls-cert/tls.crt
+            - name: KUMA_KDS_SERVER_TLS_KEY_FILE
+              value: /var/run/secrets/kuma-cp.io/kuma-kds/tls-cert/tls.key
+            - name: KUMA_API_SERVER_PORT
+              value: "5681"
+            - name: KUMA_API_SERVER_READ_ONLY
+              value: "true"
+            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
+              value: "5443"
+            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
+              value: /var/run/secrets/kuma-cp.io/kuma-admission-server/tls-cert
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
+              value: {{ .Values.cni.enabled | quote }}
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
+              value: {{ include "kuma-cp.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
+            - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+              value: {{ include "kuma-cp.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
+            - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
+              value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
+            - name: KUMA_MODE_MODE
+              value: {{ .Values.controlPlane.mode | quote }}
+            {{- if .Values.controlPlane.zone }}
+            - name: KUMA_MODE_REMOTE_ZONE
+              value: {{ .Values.controlPlane.zone | quote }}
+            {{- end }}
+          args:
+            - run
+            - --log-level={{ .Values.controlPlane.logLevel }}
+            - --config-file=/etc/kuma-cp.io/kuma-control-plane/config.yaml
+          ports:
+            - containerPort: 5681
+            {{- if ne .Values.controlPlane.mode "remote" }}
+            - containerPort: 5683
+            {{- end }}
+            {{- if ne .Values.controlPlane.mode "global" }}
+            - containerPort: 5443
+            - containerPort: 5677
+            - containerPort: 5678
+            - containerPort: 5679
+            - containerPort: 5682
+            - containerPort: 5653
+              protocol: UDP
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: 5680
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 5680
+          resources:
+          {{- if .Values.controlPlane.resources }}
+          {{ .Values.controlPlane.resources | toYaml | nindent 12 }}
+          {{- else if eq .Values.controlPlane.mode "global" }}
+            requests:
+              cpu: 500m
+              memory: 256Mi
+          {{- else }}
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          {{- end }}
+          volumeMounts:
+            {{- if ne .Values.controlPlane.mode "global" }}
+            - name: {{ include "kuma-cp.name" . }}-sds-tls-cert
+              mountPath: /var/run/secrets/kuma-cp.io/kuma-sds/tls-cert
+              readOnly: true
+            {{- end }}
+            - name: {{ include "kuma-cp.name" . }}-kds-tls-cert
+              mountPath: /var/run/secrets/kuma-cp.io/kuma-kds/tls-cert
+              readOnly: true
+            - name: {{ include "kuma-cp.name" . }}-admission-server-tls-cert
+              mountPath: /var/run/secrets/kuma-cp.io/kuma-admission-server/tls-cert
+              readOnly: true
+            - name: {{ include "kuma-cp.name" . }}-control-plane-config
+              mountPath: /etc/kuma-cp.io/kuma-control-plane
+              readOnly: true
+      volumes:
+        {{- if ne .Values.controlPlane.mode "global" }}
+        - name: {{ include "kuma-cp.name" . }}-sds-tls-cert
+          secret:
+            secretName: {{ include "kuma-cp.name" . }}-sds-tls-cert
+        {{- end }}
+        - name: {{ include "kuma-cp.name" . }}-kds-tls-cert
+          secret:
+            secretName: {{ include "kuma-cp.name" . }}-kds-tls-cert
+        - name: {{ include "kuma-cp.name" . }}-admission-server-tls-cert
+          secret:
+            secretName: {{ include "kuma-cp.name" . }}-admission-server-tls-cert
+        - name: {{ include "kuma-cp.name" . }}-control-plane-config
+          configMap:
+            name: {{ include "kuma-cp.name" . }}-control-plane-config

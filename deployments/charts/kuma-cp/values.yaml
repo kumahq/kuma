@@ -1,0 +1,63 @@
+# The default registry and tag to use for all Kuma images
+global:
+  image:
+    registry: "kong-docker-kuma-docker.bintray.io"
+    # Defaults to .Chart.AppVersion
+    # tag: ""
+
+controlPlane:
+  logLevel: "info"
+  mode: "standalone"
+  # zone: ""
+
+  kdsGlobalAddress: ""
+
+  useNodePort: false
+
+  injectorFailurePolicy: Ignore
+
+  service:
+    # name: ""
+    type: ClusterIP
+
+  defaults:
+    skipMeshCreation: true
+
+  #  resources:
+  #     requests:
+  #       cpu: 100m
+  #       memory: 256Mi
+
+  # TLS for various servers
+  #  tls:
+  #    admission:
+  #      cert: ""
+  #      key: ""
+  #    sds:
+  #      cert: ""
+  #      key: ""
+  #    kds:
+  #      cert: ""
+  #      key: ""
+
+  imagePullPolicy: IfNotPresent
+  image:
+    repository: "kuma-cp"
+
+cni:
+  enabled: false
+  logLevel: info
+
+  image:
+    registry: "docker.io"
+    repository: "lobkovilya/install-cni"
+    tag: "0.0.1"
+
+# Configuration for the kuma dataplane sidecar
+dataPlane:
+  image:
+    repository: "kuma-dp"
+
+  # Configuration for the kuma init phase in the sidecar
+  initImage:
+    repository: "kuma-init"
