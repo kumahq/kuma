@@ -115,7 +115,7 @@ networking:
       kuma.io/service: kuma-example-client
   outbound:
   - port: 4000
-    kuma.io/service: kuma-example-app"
+    service: kuma-example-app"
 
 #
 # Create Dataplane for `kuma-example-web` service

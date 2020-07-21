@@ -3,7 +3,7 @@ name: web-to-backend
 mesh: default
 sources:
 - match:
-    service: kuma-example-web
+    kuma.io/service: kuma-example-web
     env: prod
 destinations:
 - match:
