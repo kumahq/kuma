@@ -122,7 +122,6 @@ var _ = Describe("Config WS", func() {
             "advertisedHostname": "localhost"
           },
           "guiServer": {
-            "port": 5683,
             "apiServerUrl": ""
           },
           "metrics": {

@@ -9,10 +9,6 @@ spec:
   ports:
   - port: 5681
     name: http-api-server
-{{- if ne .KumaCpMode "remote" }}
-  - port: 5683
-    name: gui-server
-{{- end }}
   - port: 443
     name: https-admission-server
     targetPort: 5443
@@ -175,9 +171,6 @@ spec:
         - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
         ports:
         - containerPort: 5681
-{{- if ne .KumaCpMode "remote" }}
-        - containerPort: 5683
-{{- end }}
 {{- if ne .KumaCpMode "global" }}
         - containerPort: 5443
         - containerPort: 5677
