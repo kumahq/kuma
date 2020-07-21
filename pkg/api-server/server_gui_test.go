@@ -1,23 +1,22 @@
-package server_test
+package api_server_test
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"path/filepath"
-	"strconv"
 	"strings"
+
+	types "github.com/kumahq/kuma/pkg/api-server/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kuma-ui/pkg/server"
-	"github.com/kumahq/kuma/app/kuma-ui/pkg/server/types"
+	config "github.com/kumahq/kuma/pkg/config/api-server"
 	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
-	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("GUI Server", func() {
@@ -26,52 +25,39 @@ var _ = Describe("GUI Server", func() {
 	var baseUrl string
 
 	guiConfig := types.GuiConfig{
-		ApiUrl:      "http://kuma.internal:5681",
+		ApiUrl:      "http://localhost:5681",
 		Environment: "kubernetes",
 	}
 
 	BeforeEach(func() {
-		// setup api server
-		mux := http.NewServeMux()
-		mux.HandleFunc("/some-endpoint", func(writer http.ResponseWriter, request *http.Request) {
-			defer GinkgoRecover()
-			writer.WriteHeader(200)
-			_, err := writer.Write([]byte(fmt.Sprintf("response from api server: %s", request.URL.Path)))
-			Expect(err).ToNot(HaveOccurred())
-		})
-		apiSrv := httptest.NewServer(mux)
-		apiSrvPort, err := strconv.Atoi(strings.Split(apiSrv.Listener.Addr().String(), ":")[1])
-		Expect(err).ToNot(HaveOccurred())
+		// given
+		cfg := config.DefaultApiServerConfig()
 
-		// setup gui server
-		port, err := test.GetFreePort()
-		Expect(err).ToNot(HaveOccurred())
-		baseUrl = "http://localhost:" + strconv.Itoa(port)
+		// setup
+		resourceStore := memory.NewStore()
+		apiServer := createTestApiServer(resourceStore, cfg)
 
-		srv := server.Server{
-			Config: &gui_server.GuiServerConfig{
-				Port: uint32(port),
-				GuiConfig: &gui_server.GuiConfig{
-					ApiUrl:      "http://kuma.internal:5681",
-					Environment: "kubernetes",
-				},
-				ApiServerUrl: fmt.Sprintf("http://localhost:%d", apiSrvPort),
-			},
-		}
 		stop = make(chan struct{})
 		go func() {
 			defer GinkgoRecover()
-			err := srv.Start(stop)
+			err := apiServer.Start(stop)
 			Expect(err).ToNot(HaveOccurred())
 		}()
-		Eventually(func() bool {
-			resp, err := http.Get(baseUrl)
-			if err != nil {
-				return false
-			}
-			Expect(resp.Body.Close()).To(Succeed())
-			return true
-		}).Should(BeTrue())
+		port := strings.Split(apiServer.Address(), ":")[1]
+
+		// wait for the server
+		Eventually(func() error {
+			_, err := http.Get(fmt.Sprintf("http://localhost:%s/config", port))
+			return err
+		}, "3s").ShouldNot(HaveOccurred())
+
+		baseUrl = "http://localhost:" + port
+		apiServer.GuiServerConfig = &gui_server.GuiServerConfig{
+			GuiConfig: &gui_server.GuiConfig{
+				ApiUrl:      "http://localhost:5681",
+				Environment: "kubernetes",
+			},
+		}
 	})
 
 	AfterEach(func() {
@@ -98,25 +84,25 @@ var _ = Describe("GUI Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "data", "resources", given.expectedFile))
+			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "app", "kuma-ui", "data", "resources", given.expectedFile))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(fileContent).To(Equal(received))
 		},
 		Entry("should serve index.html without path", testCase{
-			urlPath:      "",
+			urlPath:      "/gui",
 			expectedFile: "index.html",
 		}),
 		Entry("should serve index.html with / path", testCase{
-			urlPath:      "/",
+			urlPath:      "/gui/",
 			expectedFile: "index.html",
 		}),
 	)
 
 	It("should serve the gui config", func() {
 		// when
-		resp, err := http.Get(fmt.Sprintf("%s/config", baseUrl))
+		resp, err := http.Get(fmt.Sprintf("%s/gui/config", baseUrl))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -141,7 +127,7 @@ var _ = Describe("GUI Server", func() {
 
 	It("should proxy requests to api server", func() {
 		// when
-		resp, err := http.Get(fmt.Sprintf("%s/api/some-endpoint", baseUrl))
+		resp, err := http.Get(fmt.Sprintf("%s/api/meshes", baseUrl))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -154,7 +140,15 @@ var _ = Describe("GUI Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(string(received)).To(Equal("response from api server: /some-endpoint"))
+		Expect(resp.Header.Get("content-type")).To(Equal("application/json"))
+
+		// and
+		Expect(string(received)).To(Equal(`{
+ "total": 0,
+ "items": [],
+ "next": null
+}
+`))
 	})
 
 })

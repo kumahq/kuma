@@ -5,11 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kumahq/kuma/app/kuma-ui/pkg/server/types"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 	"io"
 	"net/http"
+
+	types "github.com/kumahq/kuma/pkg/api-server/types"
+
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 
 	"github.com/pkg/errors"
 
@@ -35,7 +37,7 @@ var (
 )
 
 type ApiServer struct {
-	server *http.Server
+	server          *http.Server
 	GuiServerConfig *gui_server.GuiServerConfig
 }
 
@@ -106,14 +108,14 @@ func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatus
 	container.Filter(cors.Filter)
 
 	newApiServer := &ApiServer{
-		server: srv,
+		server:          srv,
 		GuiServerConfig: cfg.GuiServer,
 	}
 
 	// Handle the GUI
 	container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
-	container.Handle("/api/", http.RedirectHandler("/", http.StatusPermanentRedirect))
-	container.ServeMux.HandleFunc("/config", newApiServer.configHandler)
+	container.Handle("/api/", http.StripPrefix("/api/", container))
+	container.ServeMux.HandleFunc("/gui/config/", newApiServer.configHandler)
 
 	return newApiServer, nil
 }
