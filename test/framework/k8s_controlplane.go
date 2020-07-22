@@ -74,33 +74,6 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) SetLbAddress(name, lbAddress string) error {
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
-		c.GetKubectlOptions())
-	if err != nil {
-		return err
-	}
-
-	kumaCM, err := clientset.CoreV1().ConfigMaps("kuma-system").Get(context.TODO(), "kuma-control-plane-config", metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	newYAML, err := addGlobal(kumaCM.Data["config.yaml"], lbAddress)
-	if err != nil {
-		return err
-	}
-
-	kumaCM.Data["config.yaml"] = newYAML
-
-	_, err = clientset.CoreV1().ConfigMaps("kuma-system").Update(context.TODO(), kumaCM, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (c *K8sControlPlane) PortForwardKumaCP() error {
 	var apiPort, guiPort uint32
 	var err error

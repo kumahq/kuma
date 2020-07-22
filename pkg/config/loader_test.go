@@ -218,7 +218,6 @@ guiServer:
 mode:
   mode: remote
   global:
-    lbaddress: ""
     zones: []
   remote:
     zone: "zone-1"

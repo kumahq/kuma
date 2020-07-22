@@ -247,8 +247,6 @@ guiServer:
 # ControlPlane mode
 mode:
   mode: standalone # ENV: KUMA_MODE_MODE Configured from args. By default autoconfigured to standalone
-  global: # Global CP configuration
-    lbaddress: "" # ENV: KUMA_MODE_GLOBAL_LBADDRESS http://1.0.0.1:5685 The external LB address for Remotes to reach back to Global
   remote: # Remote CP configuration
     zone: "" # ENV: KUMA_MODE_REMOTE_ZONE the name of the zone for this Remote CP
 

@@ -37,27 +37,6 @@ func (c *UniversalControlPlane) GetName() string {
 	return c.name
 }
 
-func (c *UniversalControlPlane) SetLbAddress(name, lbAddress string) error {
-	cat := NewSshApp(false, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{
-		"cat", confPath,
-	})
-	err := cat.Run()
-	if err != nil {
-		return err
-	}
-
-	resultYAML, err := addGlobal(cat.Out(), lbAddress)
-	if err != nil {
-		return err
-	}
-
-	err = NewSshApp(false, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{
-		"echo", "\"" + resultYAML + "\"", ">", confPath,
-	}).Run()
-
-	return err
-}
-
 func (c *UniversalControlPlane) GetKumaCPLogs() (string, error) {
 	panic("not implemented")
 }

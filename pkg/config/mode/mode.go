@@ -1,8 +1,6 @@
 package mode
 
 import (
-	"net/url"
-
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
@@ -27,30 +25,6 @@ func ValidateCpMode(mode CpMode) error {
 		return errors.Errorf("invalid mode. Available modes: %s, %s, %s", Standalone, Remote, Global)
 	}
 	return nil
-}
-
-// Global configuration
-type GlobalConfig struct {
-	LBAddress string `yaml:"lbaddress,omitempty" envconfig:"kuma_mode_global_lbaddress"`
-}
-
-func (g *GlobalConfig) Sanitize() {
-}
-
-func (g *GlobalConfig) Validate() error {
-	if g.LBAddress != "" {
-		_, err := url.ParseRequestURI(g.LBAddress)
-		if err != nil {
-			return errors.Wrapf(err, "Invalid LB address")
-		}
-	}
-	return nil
-}
-
-func DefaultGlobalConfig() *GlobalConfig {
-	return &GlobalConfig{
-		LBAddress: "",
-	}
 }
 
 // Remote configuration
@@ -80,7 +54,6 @@ func DefaultRemoteConfig() *RemoteConfig {
 // Mode configuration
 type ModeConfig struct {
 	Mode   CpMode        `yaml:"mode" envconfig:"kuma_mode_mode"`
-	Global *GlobalConfig `yaml:"global,omitempty"`
 	Remote *RemoteConfig `yaml:"remote,omitempty"`
 }
 
@@ -91,7 +64,6 @@ func (m *ModeConfig) Validate() error {
 	switch m.Mode {
 	case Standalone:
 	case Global:
-		return m.Global.Validate()
 	case Remote:
 		return m.Remote.Validate()
 	default:
@@ -103,7 +75,6 @@ func (m *ModeConfig) Validate() error {
 func DefaultModeConfig() *ModeConfig {
 	return &ModeConfig{
 		Mode:   Standalone,
-		Global: DefaultGlobalConfig(),
 		Remote: DefaultRemoteConfig(),
 	}
 }
