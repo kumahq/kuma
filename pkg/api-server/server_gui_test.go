@@ -1,14 +1,11 @@
 package api_server_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strings"
-
-	"github.com/kumahq/kuma/pkg/api-server/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -23,11 +20,6 @@ var _ = Describe("GUI Server", func() {
 
 	var stop chan struct{}
 	var baseUrl string
-
-	guiConfig := types.GuiConfig{
-		ApiUrl:      "http://localhost:5681",
-		Environment: "kubernetes",
-	}
 
 	beforeEach := func(enabelGUI bool) {
 		// given
@@ -104,57 +96,6 @@ var _ = Describe("GUI Server", func() {
 					expectedFile: "index.html",
 				}),
 			)
-
-			It("should serve the gui config", func() {
-				// when
-				resp, err := http.Get(fmt.Sprintf("%s/gui/config", baseUrl))
-
-				// then
-				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				received, err := ioutil.ReadAll(resp.Body)
-
-				// then
-				Expect(resp.Body.Close()).To(Succeed())
-				Expect(err).ToNot(HaveOccurred())
-
-				// and
-				Expect(resp.Header.Get("content-type")).To(Equal("application/json"))
-
-				// when
-				cfg := types.GuiConfig{}
-				Expect(json.Unmarshal(received, &cfg)).To(Succeed())
-
-				// then
-				Expect(cfg).To(Equal(guiConfig))
-			})
-
-			It("should proxy requests to api server", func() {
-				// when
-				resp, err := http.Get(fmt.Sprintf("%s/api/meshes", baseUrl))
-
-				// then
-				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				received, err := ioutil.ReadAll(resp.Body)
-
-				// then
-				Expect(resp.Body.Close()).To(Succeed())
-				Expect(err).ToNot(HaveOccurred())
-
-				// and
-				Expect(resp.Header.Get("content-type")).To(Equal("application/json"))
-
-				// and
-				Expect(string(received)).To(Equal(`{
- "total": 0,
- "items": [],
- "next": null
-}
-`))
-			})
 		})
 
 	Describe("disabled",

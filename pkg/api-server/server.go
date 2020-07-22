@@ -116,8 +116,6 @@ func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatus
 	if enableGUI {
 		newApiServer.GuiServerConfig = cfg.GuiServer
 		container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
-		container.Handle("/api/", http.StripPrefix("/api/", container))
-		container.ServeMux.HandleFunc("/gui/config/", newApiServer.configHandler)
 	} else {
 		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
 	}
@@ -211,19 +209,6 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 		return a.server.Shutdown(context.Background())
 	case err := <-errChan:
 		return err
-	}
-}
-
-func (a *ApiServer) configHandler(writer http.ResponseWriter, request *http.Request) {
-	bytes, err := json.Marshal(fromServerConfig(*a.GuiServerConfig.GuiConfig))
-	if err != nil {
-		log.Error(err, "could not marshall config")
-		writer.WriteHeader(500)
-		return
-	}
-	writer.Header().Add("content-type", "application/json")
-	if _, err := writer.Write(bytes); err != nil {
-		log.Error(err, "could not write the response")
 	}
 }
 
