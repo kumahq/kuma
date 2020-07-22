@@ -49,10 +49,8 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 func AddPrefixToNames(rs []model.Resource, prefix string) {
 	for _, r := range rs {
 		newName := fmt.Sprintf("%s.%s", prefix, r.GetMeta().GetName())
-		// method Sync takes into account only 'Name' and 'Mesh'. Another ResourceMeta's fields like
-		// 'Version', 'CreationTime' and 'ModificationTime' will be taken from downstream store.
-		// That's why we can set 'Name' like this
-		m := ResourceKeyToMeta(newName, r.GetMeta().GetMesh())
+		m := NewResourceMeta(newName, r.GetMeta().GetMesh(), r.GetMeta().GetVersion(),
+			r.GetMeta().GetCreationTime(), r.GetMeta().GetModificationTime())
 		r.SetMeta(m)
 	}
 }
@@ -60,10 +58,8 @@ func AddPrefixToNames(rs []model.Resource, prefix string) {
 func AddSuffixToNames(rs []model.Resource, suffix string) {
 	for _, r := range rs {
 		newName := fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)
-		// method Sync takes into account only 'Name' and 'Mesh'. Another ResourceMeta's fields like
-		// 'Version', 'CreationTime' and 'ModificationTime' will be taken from downstream store.
-		// That's why we can set 'Name' like this
-		m := ResourceKeyToMeta(newName, r.GetMeta().GetMesh())
+		m := NewResourceMeta(newName, r.GetMeta().GetMesh(), r.GetMeta().GetVersion(),
+			r.GetMeta().GetCreationTime(), r.GetMeta().GetModificationTime())
 		r.SetMeta(m)
 	}
 }
