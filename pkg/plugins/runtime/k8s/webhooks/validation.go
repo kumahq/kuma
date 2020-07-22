@@ -23,25 +23,6 @@ import (
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-var multiclusterSyncValidationResp = v1beta1.AdmissionResponse{
-	Allowed: false,
-	Result: &metav1.Status{
-		Status:  "Failure",
-		Message: "You are trying to apply policy on Remote CP. In multicluster setup, policies should be only applied on Global CP and synced to Remote CPs.",
-		Reason:  "Forbidden",
-		Code:    403,
-		Details: &metav1.StatusDetails{
-			Causes: []metav1.StatusCause{
-				{
-					Type:    "FieldValueInvalid",
-					Message: "cannot be empty",
-					Field:   "metadata.annotations[kuma.io/synced]",
-				},
-			},
-		},
-	},
-}
-
 func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode mode.CpMode) AdmissionValidator {
 	return &validatingHandler{
 		coreRegistry: coreRegistry,
@@ -103,25 +84,54 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 }
 
 func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8s_model.KubernetesObject) admission.Response {
-	if resType == core_mesh.MeshType && len(obj.GetSpec()) == 0 { // skip validation for the default mesh
+	if isDefaultMesh(resType, obj) { // skip validation for the default mesh
 		return admission.Allowed("")
 	}
 	switch h.mode {
 	case mode.Remote:
 		// Although Remote CP consumes Dataplane (Ingress) we also apply Dataplane on Remote
 		if resType != core_mesh.DataplaneType && kds_remote.ConsumesType(resType) && obj.GetAnnotations()[common_k8s.K8sSynced] != "true" {
-			resp := multiclusterSyncValidationResp.DeepCopy()
-			resp.Result.Message = fmt.Sprintf("You are trying to apply a %s on Remote CP. In multicluster setup, it should be only applied on Global CP and synced to Remote CPs.", resType)
-			return admission.Response{AdmissionResponse: *resp}
+			return syncErrorResponse(resType, mode.Remote)
 		}
 	case mode.Global:
 		if kds_global.ConsumesType(resType) && obj.GetAnnotations()[common_k8s.K8sSynced] != "true" {
-			resp := multiclusterSyncValidationResp.DeepCopy()
-			resp.Result.Message = fmt.Sprintf("You are trying to apply a %s on Global CP. In multicluster setup, it should be only applied on Remote CPs and synced to Global CP.", resType)
-			return admission.Response{AdmissionResponse: *resp}
+			return syncErrorResponse(resType, mode.Global)
 		}
 	}
 	return admission.Allowed("")
+}
+
+func syncErrorResponse(resType core_model.ResourceType, cpMode mode.CpMode) admission.Response {
+	otherCpMode := ""
+	if cpMode == mode.Remote {
+		otherCpMode = mode.Global
+	} else if cpMode == mode.Global {
+		otherCpMode = mode.Remote
+	}
+	return admission.Response{
+		AdmissionResponse: v1beta1.AdmissionResponse{
+			Allowed: false,
+			Result: &metav1.Status{
+				Status:  "Failure",
+				Message: fmt.Sprintf("You are trying to apply a %s on %s CP. In multicluster setup, it should be only applied on %s CP and synced to %s CP.", resType, cpMode, otherCpMode, cpMode),
+				Reason:  "Forbidden",
+				Code:    403,
+				Details: &metav1.StatusDetails{
+					Causes: []metav1.StatusCause{
+						{
+							Type:    "FieldValueInvalid",
+							Message: "cannot be empty",
+							Field:   "metadata.annotations[kuma.io/synced]",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func isDefaultMesh(resType core_model.ResourceType, obj k8s_model.KubernetesObject) bool {
+	return resType == core_mesh.MeshType && obj.GetName() == core_model.DefaultMesh && len(obj.GetSpec()) == 0
 }
 
 func (h *validatingHandler) Supports(admission.Request) bool {

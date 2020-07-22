@@ -126,10 +126,9 @@ var _ = Describe("Validation", func() {
             {
               "apiVersion":"kuma.io/v1alpha1",
               "kind":"Mesh",
-              "mesh":"demo",
+              "mesh":"default",
               "metadata":{
-                "namespace":"example",
-                "name":"empty",
+                "name":"default",
                 "creationTimestamp":null
               },
               "spec":{}
@@ -344,7 +343,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a TrafficRoute on Remote CP. In multicluster setup, it should be only applied on Global CP and synced to Remote CPs.",
+						Message: "You are trying to apply a TrafficRoute on remote CP. In multicluster setup, it should be only applied on global CP and synced to remote CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -381,7 +380,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a Dataplane on Global CP. In multicluster setup, it should be only applied on Remote CPs and synced to Global CP.",
+						Message: "You are trying to apply a Dataplane on global CP. In multicluster setup, it should be only applied on remote CP and synced to global CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
