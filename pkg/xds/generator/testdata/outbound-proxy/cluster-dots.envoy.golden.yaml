@@ -25,6 +25,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       name: backend.kuma-system
       type: EDS
   - name: db
@@ -34,6 +35,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       lbSubsetConfig:
         fallbackPolicy: ANY_ENDPOINT
         subsetSelectors:

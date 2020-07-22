@@ -16,10 +16,13 @@ type resourceMeta struct {
 	modificationTime *time.Time
 }
 
-func ResourceKeyToMeta(name, mesh string) model.ResourceMeta {
+func NewResourceMeta(name, mesh, version string, creationTime, modificationTime time.Time) model.ResourceMeta {
 	return &resourceMeta{
-		name: name,
-		mesh: mesh,
+		name:             name,
+		mesh:             mesh,
+		version:          version,
+		creationTime:     &creationTime,
+		modificationTime: &modificationTime,
 	}
 }
 

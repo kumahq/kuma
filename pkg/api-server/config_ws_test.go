@@ -173,7 +173,8 @@ var _ = Describe("Config WS", func() {
                     "successThreshold": 1,
                     "timeoutSeconds": 3
                   },
-                  "redirectPort": 15001,
+                  "redirectPortInbound": 15006,
+                  "redirectPortOutbound": 15001,
                   "resources": {
                     "limits": {
                       "cpu": "1000m",

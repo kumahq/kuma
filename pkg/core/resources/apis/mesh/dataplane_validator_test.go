@@ -337,7 +337,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["protocol"]'
-                  message: 'tag "protocol" has an invalid value "". Allowed values: http, tcp'
+                  message: 'tag "protocol" has an invalid value "". Allowed values: http, http2, tcp'
                 - field: 'networking.inbound[0].tags["protocol"]'
                   message: tag value cannot be empty`,
 		}),
@@ -359,7 +359,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["protocol"]'
-                  message: 'tag "protocol" has an invalid value "not-yet-supported-protocol". Allowed values: http, tcp'`,
+                  message: 'tag "protocol" has an invalid value "not-yet-supported-protocol". Allowed values: http, http2, tcp'`,
 		}),
 		Entry("networking.gateway: empty service tag", testCase{
 			dataplane: `
