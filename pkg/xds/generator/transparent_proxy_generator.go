@@ -3,8 +3,6 @@ package generator
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -27,42 +25,42 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
+	const outboundName = "outbound:passthrough"
 	listener, err := envoy_listeners.NewListenerBuilder().
-		Configure(envoy_listeners.OutboundListener("catch_all", "0.0.0.0", redirectPortOutbound)).
+		Configure(envoy_listeners.OutboundListener(outboundName, "0.0.0.0", redirectPortOutbound)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
-			Configure(envoy_listeners.TcpProxy("pass_through", envoy_common.ClusterSubset{ClusterName: "pass_through"})).
+			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.ClusterSubset{ClusterName: outboundName})).
 			Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionUnspecified, sourceService, "external", proxy.Logs[mesh_core.PassThroughService], proxy)))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate listener: catch_all")
+		return nil, errors.Wrapf(err, "could not generate listener: %s", outboundName)
 	}
 	cluster, err := envoy_clusters.NewClusterBuilder().
-		Configure(envoy_clusters.PassThroughCluster("pass_through")).
+		Configure(envoy_clusters.PassThroughCluster(outboundName)).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate cluster: pass_through")
+		return nil, errors.Wrapf(err, "could not generate cluster: %s", outboundName)
 	}
 
 	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
-	inboundPassThroughClusterName := "inbound:pass_through"
+	const inboundName = "inbound:passthrough"
 	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder().
-		Configure(envoy_clusters.PassThroughCluster(inboundPassThroughClusterName)).
+		Configure(envoy_clusters.PassThroughCluster(inboundName)).
 		Configure(envoy_clusters.UpstreamBindConfig("127.0.0.6", 0)).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate cluster: %s", inboundPassThroughClusterName)
+		return nil, errors.Wrapf(err, "could not generate cluster: %s", inboundName)
 	}
 
-	inboundListenerName := names.GetInboundListenerName("0.0.0.0", redirectPortInbound)
 	inboundListener, err := envoy_listeners.NewListenerBuilder().
-		Configure(envoy_listeners.InboundListener(inboundListenerName, "0.0.0.0", redirectPortInbound)).
+		Configure(envoy_listeners.InboundListener(inboundName, "0.0.0.0", redirectPortInbound)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
-			Configure(envoy_listeners.TcpProxy(inboundPassThroughClusterName, envoy_common.ClusterSubset{ClusterName: inboundPassThroughClusterName})))).
+			Configure(envoy_listeners.TcpProxy(inboundName, envoy_common.ClusterSubset{ClusterName: inboundName})))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate listener: %s", inboundListenerName)
+		return nil, errors.Wrapf(err, "could not generate listener: %s", inboundName)
 	}
 
 	resources.Add(&model.Resource{
