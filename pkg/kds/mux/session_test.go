@@ -2,11 +2,13 @@ package mux_test
 
 import (
 	"context"
+
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/kds/mux"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/kds/mux"
 )
 
 type testMultiplexStream struct {
