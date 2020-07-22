@@ -8,6 +8,7 @@ spec:
       - port: 8080
         tags:
           app: example
+          instance: example
           kuma.io/protocol: tcp
           kuma.io/service: example_demo_svc_80
           version: "0.1"
@@ -15,6 +16,7 @@ spec:
       - port: 8443
         tags:
           app: example
+          instance: example
           kuma.io/protocol: tcp
           kuma.io/service: example_demo_svc_443
           version: "0.1"
@@ -23,4 +25,5 @@ spec:
       - address: 10.244.0.25
         port: 80
         tags:
+          instance: test-app-0
           kuma.io/service: test-app_playground_svc_80

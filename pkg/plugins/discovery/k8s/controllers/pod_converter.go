@@ -65,7 +65,8 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 	if injector_metadata.HasTransparentProxyingEnabled(pod) {
 		services := pod.GetAnnotations()[injector_metadata.KumaDirectAccess]
 		dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
-			RedirectPort:         injector_metadata.GetTransparentProxyingPort(pod),
+			RedirectPortInbound:  injector_metadata.GetTransparentProxyingInboundPort(pod),
+			RedirectPortOutbound: injector_metadata.GetTransparentProxyingOutboundPort(pod),
 			DirectAccessServices: strings.Split(services, ","),
 		}
 	}

@@ -27,8 +27,16 @@ func HasGatewayEnabled(pod *kube_core.Pod) bool {
 	return pod.Annotations[KumaGatewayAnnotation] == KumaGatewayEnabled
 }
 
-func GetTransparentProxyingPort(pod *kube_core.Pod) uint32 {
-	port, err := strconv.ParseUint(pod.Annotations[KumaTransparentProxyingPortAnnotation], 10, 32)
+func GetTransparentProxyingInboundPort(pod *kube_core.Pod) uint32 {
+	port, err := strconv.ParseUint(pod.Annotations[KumaTransparentProxyingInboundPortAnnotation], 10, 32)
+	if err != nil {
+		return 0
+	}
+	return uint32(port)
+}
+
+func GetTransparentProxyingOutboundPort(pod *kube_core.Pod) uint32 {
+	port, err := strconv.ParseUint(pod.Annotations[KumaTransparentProxyingOutboundPortAnnotation], 10, 32)
 	if err != nil {
 		return 0
 	}

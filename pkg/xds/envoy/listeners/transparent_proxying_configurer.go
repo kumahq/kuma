@@ -9,7 +9,7 @@ import (
 )
 
 func TransparentProxying(transparentProxying *mesh_proto.Dataplane_Networking_TransparentProxying) ListenerBuilderOpt {
-	virtual := transparentProxying.GetRedirectPort() != 0
+	virtual := transparentProxying.GetRedirectPortOutbound() != 0 && transparentProxying.GetRedirectPortInbound() != 0
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		if virtual {
 			config.Add(&TransparentProxyingConfigurer{})

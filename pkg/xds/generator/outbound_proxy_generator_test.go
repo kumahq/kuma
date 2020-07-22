@@ -301,7 +301,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
               - port: 40002
                 service: api-tcp
               transparentProxying:
-                redirectPort: 15001
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
 `,
 			expected: "04.envoy.golden.yaml",
 		}),
