@@ -245,7 +245,9 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Args: []string{
 			"-p",
-			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
+			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
+			"-z",
+			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
 			"-u",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
 			"-g",
@@ -281,10 +283,11 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
 	annotations := map[string]string{
-		metadata.KumaMeshAnnotation:                    mesh.GetMeta().GetName(), // either user-defined value or default
-		metadata.KumaSidecarInjectedAnnotation:         metadata.KumaSidecarInjected,
-		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
-		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
+		metadata.KumaMeshAnnotation:                            mesh.GetMeta().GetName(), // either user-defined value or default
+		metadata.KumaSidecarInjectedAnnotation:                 metadata.KumaSidecarInjected,
+		metadata.KumaTransparentProxyingAnnotation:             metadata.KumaTransparentProxyingEnabled,
+		metadata.KumaTransparentProxyingInboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
+		metadata.KumaTransparentProxyingOutboundPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
 	}
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI

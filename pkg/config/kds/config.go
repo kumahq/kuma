@@ -77,6 +77,8 @@ func (c *KdsServerConfig) Validate() (errs error) {
 type KdsClientConfig struct {
 	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
 	RootCAFile string `yaml:"rootCaFile" envconfig:"kuma_kds_client_root_ca_file"`
+	// GlobalAddress URL of Global Kuma CP
+	GlobalAddress string `yaml:"globalAddress" envconfig:"kuma_kds_client_global_address"`
 }
 
 var _ config.Config = &KdsClientConfig{}

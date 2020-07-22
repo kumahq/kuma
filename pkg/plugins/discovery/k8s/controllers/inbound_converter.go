@@ -61,6 +61,9 @@ func InboundTagsFor(zone string, pod *kube_core.Pod, svc *kube_core.Service, svc
 	if !isGateway {
 		tags[mesh_proto.ProtocolTag] = ProtocolTagFor(svc, svcPort)
 	}
+	if isHeadlessService(svc) {
+		tags[mesh_proto.InstanceTag] = pod.Name
+	}
 	return tags
 }
 

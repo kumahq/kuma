@@ -1242,7 +1242,7 @@ spec:
   names:
     kind: Zone
     plural: zones
-  scope: ""
+  scope: "Cluster"
   validation:
     openAPIV3Schema:
       description: Zone is the Schema for the zone API

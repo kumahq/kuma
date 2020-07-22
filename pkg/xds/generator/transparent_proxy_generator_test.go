@@ -76,7 +76,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								RedirectPort: 15001,
+								RedirectPortOutbound: 15001,
+								RedirectPortInbound:  15006,
 							},
 						},
 					},
@@ -93,14 +94,44 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			},
 			expected: `
         resources:
-        - name: pass_through
+        - name: inbound:passthrough
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
+            altStatName: inbound_passthrough
             connectTimeout: 5s
             lbPolicy: CLUSTER_PROVIDED
-            name: pass_through
+            name: inbound:passthrough
             type: ORIGINAL_DST
-        - name: catch_all
+            upstreamBindConfig:
+              sourceAddress:
+                address: 127.0.0.6
+                portValue: 0
+        - name: outbound:passthrough
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            altStatName: outbound_passthrough
+            connectTimeout: 5s
+            lbPolicy: CLUSTER_PROVIDED
+            name: outbound:passthrough
+            type: ORIGINAL_DST
+        - name: inbound:passthrough
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 0.0.0.0
+                portValue: 15006
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: inbound:passthrough
+                  statPrefix: inbound_passthrough
+            name: inbound:passthrough
+            trafficDirection: INBOUND
+            useOriginalDst: true
+        - name: outbound:passthrough
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
@@ -112,9 +143,9 @@ var _ = Describe("TransparentProxyGenerator", func() {
               - name: envoy.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                  cluster: pass_through
-                  statPrefix: pass_through
-            name: catch_all
+                  cluster: outbound:passthrough
+                  statPrefix: outbound_passthrough
+            name: outbound:passthrough
             trafficDirection: OUTBOUND
             useOriginalDst: true
 `,
@@ -129,7 +160,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								RedirectPort: 15001,
+								RedirectPortOutbound: 15001,
+								RedirectPortInbound:  15006,
 							},
 						},
 					},
@@ -146,14 +178,44 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			},
 			expected: `
         resources:
-        - name: pass_through
+        - name: inbound:passthrough
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Cluster
+            altStatName: inbound_passthrough
             connectTimeout: 5s
             lbPolicy: CLUSTER_PROVIDED
-            name: pass_through
+            name: inbound:passthrough
             type: ORIGINAL_DST
-        - name: catch_all
+            upstreamBindConfig:
+              sourceAddress:
+                address: 127.0.0.6
+                portValue: 0
+        - name: outbound:passthrough
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Cluster
+            altStatName: outbound_passthrough
+            connectTimeout: 5s
+            lbPolicy: CLUSTER_PROVIDED
+            name: outbound:passthrough
+            type: ORIGINAL_DST
+        - name: inbound:passthrough
+          resource:
+            '@type': type.googleapis.com/envoy.api.v2.Listener
+            address:
+              socketAddress:
+                address: 0.0.0.0
+                portValue: 15006
+            filterChains:
+            - filters:
+              - name: envoy.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                  cluster: inbound:passthrough
+                  statPrefix: inbound_passthrough
+            name: inbound:passthrough
+            trafficDirection: INBOUND
+            useOriginalDst: true
+        - name: outbound:passthrough
           resource:
             '@type': type.googleapis.com/envoy.api.v2.Listener
             address:
@@ -173,9 +235,9 @@ var _ = Describe("TransparentProxyGenerator", func() {
                         [%START_TIME%] %RESPONSE_FLAGS% default (unknown)->%UPSTREAM_HOST%(external) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                         
                       path: /var/log
-                  cluster: pass_through
-                  statPrefix: pass_through
-            name: catch_all
+                  cluster: outbound:passthrough
+                  statPrefix: outbound_passthrough
+            name: outbound:passthrough
             trafficDirection: OUTBOUND
             useOriginalDst: true
 `,

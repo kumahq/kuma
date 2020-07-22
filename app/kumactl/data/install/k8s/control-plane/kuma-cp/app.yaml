@@ -141,6 +141,10 @@ spec:
         - name: KUMA_SDS_SERVER_TLS_KEY_FILE
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
 {{- end }}
+{{- if eq .KumaCpMode "remote" }}
+        - name: KUMA_KDS_CLIENT_GLOBAL_ADDRESS
+          value: {{ .KdsGlobalAddress }}
+{{- end }}
         - name: KUMA_KDS_SERVER_TLS_CERT_FILE
           value: /var/run/secrets/kuma.io/kuma-kds/tls-cert/tls.crt
         - name: KUMA_KDS_SERVER_TLS_KEY_FILE

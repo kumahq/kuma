@@ -6,7 +6,8 @@ injector:
   cniEnabled: true
   sidecarContainer:
     image: kuma-sidecar:latest
-    redirectPort: 1234
+    redirectPortOutbound: 1234
+    redirectPortInbound: 1236
     uid: 2345
     gid: 3456
     adminPort: 45678

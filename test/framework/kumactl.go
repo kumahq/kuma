@@ -111,28 +111,28 @@ func storeConfigToTempFile(name string, configData string) (string, error) {
 	return tmpfile.Name(), err
 }
 
-func (o *KumactlOptions) KumactlInstallCP(mode ...string) (string, error) {
-	args := []string{
+func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, error) {
+	cmd := []string{
 		"install", "control-plane",
 		"--control-plane-image", kumaCPImage,
 		"--dataplane-image", kumaDPImage,
 		"--dataplane-init-image", kumaInitImage,
 	}
 
-	for _, m := range mode {
-		args = append(args, "--mode", m)
-		switch m {
-		case config_mode.Remote:
-			args = append(args, "--zone", o.CPName)
-			fallthrough
-		case config_mode.Global:
-			args = append(args, "--use-node-port")
-		}
+	cmd = append(cmd, "--mode", mode)
+	switch mode {
+	case config_mode.Remote:
+		cmd = append(cmd, "--zone", o.CPName)
+		fallthrough
+	case config_mode.Global:
+		cmd = append(cmd, "--use-node-port")
 	}
+
+	cmd = append(cmd, args...)
 
 	return o.RunKumactlAndGetOutputV(
 		false, // silence the log output of Install
-		args...)
+		cmd...)
 }
 
 func (o *KumactlOptions) KumactlInstallDNS() (string, error) {
@@ -172,7 +172,7 @@ func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) err
 				"--address", address)
 
 			if err != nil {
-				return "Unable to register Kuma CP. Try again.", fmt.Errorf("Unable to register Kuma CP. Try again.")
+				return "Unable to register Kuma CP. Try again.", err
 			}
 
 			return "", nil

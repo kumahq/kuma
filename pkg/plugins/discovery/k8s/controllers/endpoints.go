@@ -9,8 +9,9 @@ import (
 )
 
 type Endpoint struct {
-	Address string
-	Port    uint32
+	Address  string
+	Port     uint32
+	Instance string
 }
 
 type EndpointsByService map[string][]Endpoint
@@ -41,7 +42,8 @@ func endpointsByService(dataplanes []*mesh_k8s.Dataplane) EndpointsByService {
 				continue
 			}
 			endpoint := Endpoint{
-				Port: inbound.Port,
+				Port:     inbound.Port,
+				Instance: inbound.GetTags()[mesh_proto.InstanceTag],
 			}
 			if inbound.Address != "" {
 				endpoint.Address = inbound.Address
