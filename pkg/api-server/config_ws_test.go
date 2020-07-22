@@ -132,7 +132,6 @@ var _ = Describe("Config WS", func() {
             }
           },
           "mode": {
-           "global": {},
            "remote": {},
            "mode": "standalone"
         },
