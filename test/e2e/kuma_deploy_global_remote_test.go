@@ -81,7 +81,6 @@ metadata:
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(),
 			fmt.Sprintf(ZoneTemplateK8s,
 				remote.GetName(),
-				remote.GetKDSServerAddress(),
 				remote.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 

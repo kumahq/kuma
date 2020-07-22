@@ -83,11 +83,11 @@ destinations:
 		remote_2CP := remote_2.GetKuma()
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal, Kuma2, "grpcs://1.1.1.1:1010", remote_1CP.GetIngressAddress()))
+			fmt.Sprintf(ZoneTemplateUniversal, Kuma2, remote_1CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal, Kuma3, "grpcs://1.1.1.1:1010", remote_2CP.GetIngressAddress()))
+			fmt.Sprintf(ZoneTemplateUniversal, Kuma3, remote_2CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(meshDefaulMtlsOn)(global)

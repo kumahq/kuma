@@ -31,9 +31,6 @@ var _ = Describe("kumactl get zones", func() {
 	zoneResources := []*system.ZoneResource{
 		{
 			Spec: v1alpha1.Zone{
-				RemoteControlPlane: &v1alpha1.Zone_RemoteControlPlane{
-					Address: "grpcs://192.168.0.1:5681",
-				},
 				Ingress: &v1alpha1.Zone_Ingress{
 					Address: "192.168.0.2:10000",
 				},
@@ -44,9 +41,6 @@ var _ = Describe("kumactl get zones", func() {
 		},
 		{
 			Spec: v1alpha1.Zone{
-				RemoteControlPlane: &v1alpha1.Zone_RemoteControlPlane{
-					Address: "grpcs://192.168.1.1:5681",
-				},
 				Ingress: &v1alpha1.Zone_Ingress{
 					Address: "192.168.1.2:10000",
 				},

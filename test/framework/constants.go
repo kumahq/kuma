@@ -26,8 +26,6 @@ mesh: default
 metadata:
   name: %s
 spec:
-  remoteControlPlane:
-    address: %s
   ingress:
     address: %s
 `
@@ -35,8 +33,6 @@ spec:
 type: Zone
 mesh: default
 name: %s
-remoteControlPlane:
-  address: %s
 ingress:
   address: %s
 `

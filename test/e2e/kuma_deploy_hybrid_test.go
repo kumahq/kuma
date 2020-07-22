@@ -132,28 +132,24 @@ metadata:
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				remote_1CP.GetName(),
-				"grpcs://1.1.1.1:1010",
 				remote_1CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				remote_2CP.GetName(),
-				"grpcs://1.1.1.1:1010",
 				remote_2CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				Kuma3,
-				"grpcs://1.1.1.1:1010",
 				remote_3CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				Kuma4,
-				"grpcs://1.1.1.1:1010",
 				remote_4CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
