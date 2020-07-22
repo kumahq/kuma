@@ -195,7 +195,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - port: 59200
                 service: elastic
               transparentProxying:
-                redirectPort: 15001
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
 `,
 			profile:         mesh_core.ProfileDefaultProxy,
 			envoyConfigFile: "2-envoy-config.golden.yaml",
@@ -267,7 +268,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - port: 59200
                 service: elastic
               transparentProxying:
-                redirectPort: 15001
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
 `,
 			profile:         mesh_core.ProfileDefaultProxy,
 			envoyConfigFile: "4-envoy-config.golden.yaml",

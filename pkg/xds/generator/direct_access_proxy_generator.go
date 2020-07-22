@@ -32,7 +32,7 @@ type DirectAccessProxyGenerator struct {
 func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tproxy := proxy.Dataplane.Spec.Networking.GetTransparentProxying()
 	resources := core_xds.NewResourceSet()
-	if tproxy.GetRedirectPort() == 0 || len(tproxy.GetDirectAccessServices()) == 0 {
+	if tproxy.GetRedirectPortOutbound() == 0 || tproxy.GetRedirectPortInbound() == 0 || len(tproxy.GetDirectAccessServices()) == 0 {
 		return resources, nil
 	}
 
