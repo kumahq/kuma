@@ -48,6 +48,10 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
 	opts := newDeployOpt(fs...)
 
+	if opts.installationMode != KumactlInstallationMode {
+		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, opts.installationMode)
+	}
+
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE_MODE=" + mode}
 	if opts.globalAddress != "" {
@@ -103,7 +107,7 @@ func (c *UniversalCluster) RestartKuma() error {
 	return c.apps[AppModeCP].ReStart()
 }
 
-func (c *UniversalCluster) DeleteKuma() error {
+func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
 	err := c.apps[AppModeCP].Stop()
 	delete(c.apps, AppModeCP)
 	c.controlplane = nil

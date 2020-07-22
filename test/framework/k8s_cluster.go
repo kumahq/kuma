@@ -11,12 +11,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/random"
+
+	config_mode "github.com/kumahq/kuma/pkg/config/mode"
+
 	"github.com/onsi/gomega"
 
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/pkg/errors"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -197,11 +202,10 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	return str, nil
 }
 
-func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig,
-		c, c.loPort, c.hiPort, c.verbose)
+// deployKumaViaKubectl uses kubectl to install kuma
+// using the resources from the `kumactl install control-plane` command
+func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) error {
 	var args []string
-	opts := newDeployOpt(fs...)
 	if opts.globalAddress != "" {
 		args = append(args, "--kds-global-address", opts.globalAddress)
 	}
@@ -210,15 +214,79 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 		return err
 	}
 
-	err = k8s.KubectlApplyFromStringE(c.t,
+	return k8s.KubectlApplyFromStringE(c.t,
 		c.GetKubectlOptions(),
 		yaml)
+}
+
+// deployKumaViaHelm uses Helm to install kuma
+// using the kuma-cp helm chart
+func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
+	// run from test/e2e
+	helmChartPath, err := filepath.Abs("../../deployments/charts/kuma-cp")
+	if err != nil {
+		return err
+	}
+
+	values := map[string]string{
+		"controlPlane.mode":              mode,
+		"global.image.tag":               "latest",
+		"global.image.registry":          kumaImageRegistry,
+		"controlPlane.image.repository":  kumaCPImageRepo,
+		"dataPlane.image.repository":     kumaDPImageRepo,
+		"dataPlane.initImage.repository": kumaInitImageRepo,
+	}
+
+	switch mode {
+	case config_mode.Remote:
+		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
+		fallthrough
+	case config_mode.Global:
+		values["controlPlane.useNodePort"] = "true"
+	}
+
+	if opts.globalAddress != "" {
+		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
+	}
+
+	helmOpts := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: c.GetKubectlOptions(KumaNamespace),
+	}
+
+	releaseName := opts.helmReleaseName
+	if releaseName == "" {
+		releaseName = fmt.Sprintf(
+			"kuma-cp-%s",
+			strings.ToLower(random.UniqueId()),
+		)
+	}
+
+	return helm.InstallE(c.t, helmOpts, helmChartPath, releaseName)
+}
+
+func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig,
+		c, c.loPort, c.hiPort, c.verbose)
+
+	opts := newDeployOpt(fs...)
+
+	var err error
+	switch opts.installationMode {
+	case KumactlInstallationMode:
+		err = c.deployKumaViaKubectl(mode, opts)
+	case HelmInstallationMode:
+		err = c.deployKumaViaHelm(mode, opts)
+	default:
+		return errors.Errorf("invalid installation mode: %s", opts.installationMode)
+	}
+
 	if err != nil {
 		return err
 	}
 
 	k8s.WaitUntilNumPodsCreated(c.t,
-		c.GetKubectlOptions(kumaNamespace),
+		c.GetKubectlOptions(KumaNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + kumaServiceName,
 		},
@@ -232,7 +300,7 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	}
 
 	k8s.WaitUntilPodAvailable(c.t,
-		c.GetKubectlOptions(kumaNamespace),
+		c.GetKubectlOptions(KumaNamespace),
 		kumacpPods[0].Name,
 		DefaultRetries,
 		DefaultTimeout)
@@ -298,7 +366,7 @@ func (c *K8sCluster) RestartKuma() error {
 		})
 
 	k8s.WaitUntilNumPodsCreated(c.t,
-		c.GetKubectlOptions(kumaNamespace),
+		c.GetKubectlOptions(KumaNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + kumaServiceName,
 		},
@@ -315,7 +383,7 @@ func (c *K8sCluster) RestartKuma() error {
 	gomega.Expect(oldPod.Name).ToNot(gomega.Equal(newPod.Name))
 
 	k8s.WaitUntilPodAvailable(c.t,
-		c.GetKubectlOptions(kumaNamespace),
+		c.GetKubectlOptions(KumaNamespace),
 		newPod.Name,
 		DefaultRetries,
 		DefaultTimeout)
@@ -344,19 +412,44 @@ func (c *K8sCluster) VerifyKuma() error {
 	return nil
 }
 
-func (c *K8sCluster) DeleteKuma() error {
-	c.CleanupPortForwards()
+func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) error {
+	if opts.helmReleaseName == "" {
+		return errors.New("must supply a helm release name for cleanup")
+	}
 
+	helmOpts := &helm.Options{
+		KubectlOptions: c.GetKubectlOptions(KumaNamespace),
+	}
+
+	return helm.DeleteE(c.t, helmOpts, opts.helmReleaseName, true)
+}
+
+func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
 	yaml, err := c.controlplane.InstallCP()
 	if err != nil {
 		return err
 	}
 
-	err = k8s.KubectlDeleteFromStringE(c.t,
+	c.WaitNamespaceDelete(KumaNamespace)
+
+	return k8s.KubectlDeleteFromStringE(c.t,
 		c.GetKubectlOptions(),
 		yaml)
+}
 
-	c.WaitNamespaceDelete(kumaNamespace)
+func (c *K8sCluster) DeleteKuma(fs ...DeployOptionsFunc) error {
+	c.CleanupPortForwards()
+
+	opts := newDeployOpt(fs...)
+
+	var err error
+
+	switch opts.installationMode {
+	case HelmInstallationMode:
+		err = c.deleteKumaViaHelm(opts)
+	case KumactlInstallationMode:
+		err = c.deleteKumaViaKumactl(opts)
+	}
 
 	return err
 }

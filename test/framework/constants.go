@@ -51,12 +51,16 @@ const (
 
 	maxClusters = 3
 
-	kumaNamespace   = "kuma-system"
+	KumaNamespace   = "kuma-system"
 	kumaServiceName = "kuma-control-plane"
 
-	kumaCPImage   = "kuma/kuma-cp"
-	kumaDPImage   = "kuma/kuma-dp"
-	kumaInitImage = "kuma/kuma-init"
+	kumaImageRegistry = "kuma"
+	kumaCPImageRepo   = "kuma-cp"
+	kumaCPImage       = kumaImageRegistry + "/" + kumaCPImageRepo
+	kumaDPImageRepo   = "kuma-dp"
+	kumaDPImage       = kumaImageRegistry + "/" + kumaDPImageRepo
+	kumaInitImageRepo = "kuma-init"
+	kumaInitImage     = kumaImageRegistry + "/" + kumaInitImageRepo
 
 	confPath = "/kuma/kuma-cp.conf"
 
