@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+
 	"github.com/kumahq/kuma/pkg/config/mode"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
