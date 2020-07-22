@@ -136,7 +136,7 @@ define verify_example_outbound
 	@echo "Checking number of Outbound requests via Envoy ..."
 	test $$( $(1) \
 		wget -qO- http://localhost:9901/stats/prometheus | \
-		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="pass_through"}' | \
+		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="outbound:passthrough"}' | \
 		awk '{print $$2}' | tr -d [:space:] \
 	) -ge 1
 	@echo "Check passed!"
