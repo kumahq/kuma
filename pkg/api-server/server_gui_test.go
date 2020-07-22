@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	types "github.com/kumahq/kuma/pkg/api-server/types"
+	"github.com/kumahq/kuma/pkg/api-server/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -29,13 +29,13 @@ var _ = Describe("GUI Server", func() {
 		Environment: "kubernetes",
 	}
 
-	BeforeEach(func() {
+	beforeEach := func(enabelGUI bool) {
 		// given
 		cfg := config.DefaultApiServerConfig()
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, cfg)
+		apiServer := createTestApiServer(resourceStore, cfg, enabelGUI)
 
 		stop = make(chan struct{})
 		go func() {
@@ -58,97 +58,145 @@ var _ = Describe("GUI Server", func() {
 				Environment: "kubernetes",
 			},
 		}
-	})
-
-	AfterEach(func() {
-		close(stop)
-	})
-
-	type testCase struct {
-		urlPath      string
-		expectedFile string
 	}
-	DescribeTable("should expose file",
-		func(given testCase) {
-			// when
-			resp, err := http.Get(fmt.Sprintf("%s%s", baseUrl, given.urlPath))
 
-			// then
-			Expect(err).ToNot(HaveOccurred())
+	Describe("enabled",
+		func() {
 
-			// when
-			received, err := ioutil.ReadAll(resp.Body)
+			BeforeEach(func() { beforeEach(true) })
 
-			// then
-			Expect(resp.Body.Close()).To(Succeed())
-			Expect(err).ToNot(HaveOccurred())
+			AfterEach(func() {
+				close(stop)
+			})
 
-			// when
-			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "app", "kuma-ui", "data", "resources", given.expectedFile))
+			type testCase struct {
+				urlPath      string
+				expectedFile string
+			}
+			DescribeTable("should expose file",
+				func(given testCase) {
+					// when
+					resp, err := http.Get(fmt.Sprintf("%s%s", baseUrl, given.urlPath))
 
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(fileContent).To(Equal(received))
-		},
-		Entry("should serve index.html without path", testCase{
-			urlPath:      "/gui",
-			expectedFile: "index.html",
-		}),
-		Entry("should serve index.html with / path", testCase{
-			urlPath:      "/gui/",
-			expectedFile: "index.html",
-		}),
-	)
+					// then
+					Expect(err).ToNot(HaveOccurred())
 
-	It("should serve the gui config", func() {
-		// when
-		resp, err := http.Get(fmt.Sprintf("%s/gui/config", baseUrl))
+					// when
+					received, err := ioutil.ReadAll(resp.Body)
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
+					// then
+					Expect(resp.Body.Close()).To(Succeed())
+					Expect(err).ToNot(HaveOccurred())
 
-		// when
-		received, err := ioutil.ReadAll(resp.Body)
+					// when
+					fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "app", "kuma-ui", "data", "resources", given.expectedFile))
 
-		// then
-		Expect(resp.Body.Close()).To(Succeed())
-		Expect(err).ToNot(HaveOccurred())
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					Expect(fileContent).To(Equal(received))
+				},
+				Entry("should serve index.html without path", testCase{
+					urlPath:      "/gui",
+					expectedFile: "index.html",
+				}),
+				Entry("should serve index.html with / path", testCase{
+					urlPath:      "/gui/",
+					expectedFile: "index.html",
+				}),
+			)
 
-		// and
-		Expect(resp.Header.Get("content-type")).To(Equal("application/json"))
+			It("should serve the gui config", func() {
+				// when
+				resp, err := http.Get(fmt.Sprintf("%s/gui/config", baseUrl))
 
-		// when
-		cfg := types.GuiConfig{}
-		Expect(json.Unmarshal(received, &cfg)).To(Succeed())
+				// then
+				Expect(err).ToNot(HaveOccurred())
 
-		// then
-		Expect(cfg).To(Equal(guiConfig))
-	})
+				// when
+				received, err := ioutil.ReadAll(resp.Body)
 
-	It("should proxy requests to api server", func() {
-		// when
-		resp, err := http.Get(fmt.Sprintf("%s/api/meshes", baseUrl))
+				// then
+				Expect(resp.Body.Close()).To(Succeed())
+				Expect(err).ToNot(HaveOccurred())
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
+				// and
+				Expect(resp.Header.Get("content-type")).To(Equal("application/json"))
 
-		// when
-		received, err := ioutil.ReadAll(resp.Body)
+				// when
+				cfg := types.GuiConfig{}
+				Expect(json.Unmarshal(received, &cfg)).To(Succeed())
 
-		// then
-		Expect(resp.Body.Close()).To(Succeed())
-		Expect(err).ToNot(HaveOccurred())
+				// then
+				Expect(cfg).To(Equal(guiConfig))
+			})
 
-		// and
-		Expect(resp.Header.Get("content-type")).To(Equal("application/json"))
+			It("should proxy requests to api server", func() {
+				// when
+				resp, err := http.Get(fmt.Sprintf("%s/api/meshes", baseUrl))
 
-		// and
-		Expect(string(received)).To(Equal(`{
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				received, err := ioutil.ReadAll(resp.Body)
+
+				// then
+				Expect(resp.Body.Close()).To(Succeed())
+				Expect(err).ToNot(HaveOccurred())
+
+				// and
+				Expect(resp.Header.Get("content-type")).To(Equal("application/json"))
+
+				// and
+				Expect(string(received)).To(Equal(`{
  "total": 0,
  "items": [],
  "next": null
 }
 `))
-	})
+			})
+		})
+
+	Describe("disabled",
+		func() {
+			BeforeEach(func() { beforeEach(false) })
+
+			AfterEach(func() {
+				close(stop)
+			})
+
+			type testCase struct {
+				urlPath  string
+				expected string
+			}
+			DescribeTable("should not expose file",
+				func(given testCase) {
+					// when
+					resp, err := http.Get(fmt.Sprintf("%s%s", baseUrl, given.urlPath))
+
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					// when
+					received, err := ioutil.ReadAll(resp.Body)
+
+					// then
+					Expect(resp.Body.Close()).To(Succeed())
+					Expect(err).ToNot(HaveOccurred())
+
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(received)).To(Equal(given.expected))
+				},
+				Entry("should not serve index.html without path", testCase{
+					urlPath:  "/gui",
+					expected: "GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP.",
+				}),
+				Entry("should not serve index.html with / path", testCase{
+					urlPath:  "/gui/",
+					expected: "GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP.",
+				}),
+			)
+		})
 
 })

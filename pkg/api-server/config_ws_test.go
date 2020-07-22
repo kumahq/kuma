@@ -21,7 +21,7 @@ var _ = Describe("Config WS", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, cfg)
+		apiServer := createTestApiServer(resourceStore, cfg, true)
 
 		stop := make(chan struct{})
 		go func() {

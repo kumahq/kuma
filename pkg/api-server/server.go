@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	types "github.com/kumahq/kuma/pkg/api-server/types"
+	"github.com/kumahq/kuma/pkg/api-server/types"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
@@ -67,7 +67,8 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatusPoller, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg *kuma_cp.Config) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatusPoller, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool) (*ApiServer, error) {
+	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
@@ -108,15 +109,18 @@ func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatus
 	container.Filter(cors.Filter)
 
 	newApiServer := &ApiServer{
-		server:          srv,
-		GuiServerConfig: cfg.GuiServer,
+		server: srv,
 	}
 
 	// Handle the GUI
-	container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
-	container.Handle("/api/", http.StripPrefix("/api/", container))
-	container.ServeMux.HandleFunc("/gui/config/", newApiServer.configHandler)
-
+	if enableGUI {
+		newApiServer.GuiServerConfig = cfg.GuiServer
+		container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
+		container.Handle("/api/", http.StripPrefix("/api/", container))
+		container.ServeMux.HandleFunc("/gui/config/", newApiServer.configHandler)
+	} else {
+		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
+	}
 	return newApiServer, nil
 }
 
@@ -223,6 +227,14 @@ func (a *ApiServer) configHandler(writer http.ResponseWriter, request *http.Requ
 	}
 }
 
+func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *http.Request) {
+	writer.WriteHeader(http.StatusOK)
+	_, err := writer.Write([]byte("GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP."))
+	if err != nil {
+		log.Error(err, "could not write the response")
+	}
+}
+
 func fromServerConfig(config gui_server.GuiConfig) types.GuiConfig {
 	return types.GuiConfig{
 		ApiUrl:      config.ApiUrl,
@@ -232,6 +244,7 @@ func fromServerConfig(config gui_server.GuiConfig) types.GuiConfig {
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
+	enableGUI := cfg.Mode.Mode != mode.Remote
 	if cfg.Mode.Mode != mode.Standalone {
 		for i, definition := range definitions.All {
 			switch cfg.Mode.Mode {
@@ -246,7 +259,7 @@ func SetupServer(rt runtime.Runtime) error {
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.Zones(), definitions.All, rt.Config().ApiServer, &cfg)
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.Zones(), definitions.All, &cfg, enableGUI)
 	if err != nil {
 		return err
 	}

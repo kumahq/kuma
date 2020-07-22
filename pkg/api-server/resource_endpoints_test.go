@@ -34,7 +34,7 @@ var _ = Describe("Resource Endpoints", func() {
 		resourceStore = memory.NewStore()
 		serverConfig := config.DefaultApiServerConfig()
 		serverConfig.Catalog.ApiServer.Url = publicApiServerUrl
-		apiServer = createTestApiServer(resourceStore, serverConfig)
+		apiServer = createTestApiServer(resourceStore, serverConfig, true)
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/sample-traffic-routes",
