@@ -178,8 +178,8 @@ spec:
 {{- if ne .KumaCpMode "remote" }}
         - containerPort: 5683
 {{- end }}
-{{- if ne .KumaCpMode "global" }}
         - containerPort: 5443
+{{- if ne .KumaCpMode "global" }}
         - containerPort: 5677
         - containerPort: 5678
         - containerPort: 5679
@@ -307,7 +307,6 @@ webhooks:
         - pods
   sideEffects: None
 ---
-{{- if ne .KumaCpMode "remote" }}
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -383,4 +382,3 @@ webhooks:
         resources:
           - secrets
     sideEffects: None
-{{- end }}
