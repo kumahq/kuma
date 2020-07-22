@@ -123,6 +123,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--kds-tls-cert", "KdsCert",
 				"--kds-tls-key", "KdsKey",
 				"--mode", "remote",
+				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--zone", "zone-1",
 				"--use-node-port",
 			},
@@ -144,6 +145,7 @@ var _ = Describe("kumactl install control-plane", func() {
 			extraArgs: []string{
 				"--mode", "remote",
 				"--zone", "zone-1",
+				"--kds-global-address", "grpcs://192.168.0.1:5685",
 			},
 			goldenFile: "install-control-plane.remote.golden.yaml",
 		}),

@@ -7,32 +7,13 @@ import (
 	"github.com/kumahq/kuma/pkg/test/grpc"
 )
 
-type mockKDSClient struct {
-	kdsStream kds_client.KDSStream
-}
-
-func (m *mockKDSClient) StartStream(clientId string) (kds_client.KDSStream, error) {
-	return m.kdsStream, nil
-}
-
-func (m *mockKDSClient) Close() error {
-	return nil
-}
-
-func NewMockKDSClient(kdsStream kds_client.KDSStream) kds_client.KDSClient {
-	return &mockKDSClient{
-		kdsStream: kdsStream,
-	}
-}
-
 func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client.Callbacks) {
 	for i := 0; i < len(clientStreams); i++ {
 		item := clientStreams[i]
-		comp := kds_client.NewKDSSink(core.Log.Logger, "global", resourceTypes, func() (kds_client.KDSClient, error) {
-			return NewMockKDSClient(kds_client.NewKDSStream(item, "client-1")), nil
-		}, cb)
+		comp := kds_client.NewKDSSink(core.Log.Logger, resourceTypes, kds_client.NewKDSStream(item, "client-1"), cb)
 		go func() {
 			_ = comp.Start(stopCh)
+			_ = item.CloseSend()
 		}()
 	}
 }

@@ -45,9 +45,9 @@ func YamlPathK8s(path string) InstallFunc {
 	}
 }
 
-func Kuma(mode ...string) InstallFunc {
+func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		err := cluster.DeployKuma(mode...)
+		err := cluster.DeployKuma(mode, fs...)
 		return err
 	}
 }

@@ -18,20 +18,20 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-func NewSnapshotGenerator(rt core_runtime.Runtime, resourceTypes []model.ResourceType, filter reconcile.ResourceFilter) reconcile.SnapshotGenerator {
-	return reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), resourceTypes, filter)
+func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.ResourceType, serverID string, filter reconcile.ResourceFilter) (Server, error) {
+	hasher, cache := newKDSContext(log)
+	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter)
+	versioner := util_xds.SnapshotAutoVersioner{UUID: core.NewUUID}
+	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner)
+	syncTracker := newSyncTracker(log, reconciler, rt.Config().KDS.Server.RefreshInterval)
+	callbacks := util_xds.CallbacksChain{
+		util_xds.LoggingCallbacks{Log: log},
+		syncTracker,
+	}
+	return NewServer(cache, callbacks, log, serverID), nil
 }
 
-func NewVersioner() util_xds.SnapshotVersioner {
-	return util_xds.SnapshotAutoVersioner{UUID: core.NewUUID}
-}
-
-func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
-	generator reconcile.SnapshotGenerator, versioner util_xds.SnapshotVersioner) reconcile.Reconciler {
-	return reconcile.NewReconciler(hasher, cache, generator, versioner)
-}
-
-func NewSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {
+func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {
 	return util_xds.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
 		log := log.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
@@ -49,7 +49,7 @@ func NewSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 	})
 }
 
-func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, util_xds.SnapshotCache) {
+func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds.SnapshotCache) {
 	hasher := hasher{}
 	logger := util_xds.NewLogger(log)
 	return hasher, util_xds.NewSnapshotCache(false, hasher, logger)
