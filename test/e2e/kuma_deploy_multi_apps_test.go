@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/config/mode"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -35,7 +36,7 @@ metadata:
 		c1 = clusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma()).
+			Install(Kuma(mode.Standalone)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).

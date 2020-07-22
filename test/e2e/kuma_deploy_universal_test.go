@@ -14,7 +14,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = XDescribe("Test Universal deployment", func() {
+var _ = Describe("Test Universal deployment", func() {
 
 	meshDefaulMtlsOn := `
 type: Mesh
@@ -44,11 +44,23 @@ destinations:
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
+		// Global
+		global = clusters.GetCluster(Kuma1)
+
+		err = NewClusterSetup().
+			Install(Kuma(mode.Global)).
+			Setup(global)
+		Expect(err).ToNot(HaveOccurred())
+		err = global.VerifyKuma()
+		Expect(err).ToNot(HaveOccurred())
+
+		globalCP := global.GetKuma()
+
 		// Cluster 1
 		remote_1 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote)).
+			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(EchoServerUniversal()).
 			Install(DemoClientUniversal()).
 			Setup(remote_1)
@@ -60,47 +72,22 @@ destinations:
 		remote_2 = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote)).
+			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal()).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		// Global
-		global = clusters.GetCluster(Kuma1)
-
-		err = NewClusterSetup().
-			Install(Kuma(mode.Global)).
-			Setup(global)
-		Expect(err).ToNot(HaveOccurred())
-		err = global.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-
 		remote_1CP := remote_1.GetKuma()
 		remote_2CP := remote_2.GetKuma()
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateK8s,
-				remote_1CP.GetName(), "kuma-system",
-				remote_1CP.GetKDSServerAddress(),
-				remote_1CP.GetIngressAddress()))
+			fmt.Sprintf(ZoneTemplateUniversal, Kuma2, "grpcs://1.1.1.1:1010", remote_1CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateK8s,
-				remote_2CP.GetName(), "kuma-system",
-				remote_2CP.GetKDSServerAddress(),
-				remote_2CP.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
-		// remove these once Zones are added dynamically
-		globalCP := global.GetKuma()
-
-		err = globalCP.SetLbAddress(remote_1CP.GetName(), globalCP.GetKDSServerAddress())
-		Expect(err).ToNot(HaveOccurred())
-
-		err = global.RestartKuma()
+			fmt.Sprintf(ZoneTemplateUniversal, Kuma3, "grpcs://1.1.1.1:1010", remote_2CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(meshDefaulMtlsOn)(global)

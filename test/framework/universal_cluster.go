@@ -44,22 +44,24 @@ func (c *UniversalCluster) DismissCluster() (errs error) {
 	return
 }
 
-func (c *UniversalCluster) DeployKuma(mode ...string) error {
-	if len(mode) == 0 {
-		mode = []string{config_mode.Standalone}
-	}
-	c.controlplane = NewUniversalControlPlane(c.t, mode[0], c.name, c, c.verbose)
+func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
+	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
+	opts := newDeployOpt(fs...)
 
-	args := []string{"kuma-cp", "run"}
-	env := []string{"KUMA_MODE_MODE=" + mode[0]}
-	switch mode[0] {
+	cmd := []string{"kuma-cp", "run"}
+	env := []string{"KUMA_MODE_MODE=" + mode}
+	if opts.globalAddress != "" {
+		env = append(env, "KUMA_KDS_CLIENT_GLOBAL_ADDRESS="+opts.globalAddress)
+	}
+
+	switch mode {
 	case config_mode.Remote:
 		env = append(env, "KUMA_MODE_REMOTE_ZONE="+c.name)
 	case config_mode.Global:
-		args = append(args, "--config-file", confPath)
+		cmd = append(cmd, "--config-file", confPath)
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, true, env, args)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, true, env, cmd)
 	if err != nil {
 		return err
 	}
@@ -77,7 +79,7 @@ func (c *UniversalCluster) DeployKuma(mode ...string) error {
 
 	c.apps[AppModeCP] = app
 
-	switch mode[0] {
+	switch mode {
 	case config_mode.Remote:
 		dpyaml := fmt.Sprintf(IngressDataplane, app.ip, kdsPort)
 		err = c.CreateDP(app, "ingress", dpyaml)

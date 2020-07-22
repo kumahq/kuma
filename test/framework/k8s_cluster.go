@@ -13,8 +13,6 @@ import (
 
 	"github.com/onsi/gomega"
 
-	config_mode "github.com/kumahq/kuma/pkg/config/mode"
-
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/pkg/errors"
@@ -199,13 +197,15 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	return str, nil
 }
 
-func (c *K8sCluster) DeployKuma(mode ...string) error {
-	if len(mode) == 0 {
-		mode = []string{config_mode.Standalone}
-	}
-	c.controlplane = NewK8sControlPlane(c.t, mode[0], c.name, c.kubeconfig,
+func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig,
 		c, c.loPort, c.hiPort, c.verbose)
-	yaml, err := c.controlplane.InstallCP()
+	var args []string
+	opts := newDeployOpt(fs...)
+	if opts.globalAddress != "" {
+		args = append(args, "--kds-global-address", opts.globalAddress)
+	}
+	yaml, err := c.controlplane.InstallCP(args...)
 	if err != nil {
 		return err
 	}
