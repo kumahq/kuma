@@ -53,8 +53,8 @@ func Setup(rt runtime.Runtime) (err error) {
 	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
-		kdsGlobalLog.Info("new session created", "peerID", session.PeerID())
-		log := kdsGlobalLog.WithValues("zone", session.PeerID())
+		log := kdsGlobalLog.WithValues("peer-id", session.PeerID())
+		log.Info("new session created")
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
 				log.Error(err, "StreamKumaResources finished with an error")

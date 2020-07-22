@@ -57,7 +57,6 @@ func (s *server) Start(stop <-chan struct{}) error {
 		}
 		grpcOptions = append(grpcOptions, grpc.Creds(creds))
 	}
-	muxServerLog.Info("", "useTLS", useTLS)
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
@@ -95,17 +94,20 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	if !ok {
 		return errors.New("metadata is not provided")
 	}
+	if len(md["client-id"]) == 0 {
+		return errors.New("'client-id' is not present in metadata")
+	}
 	clientID := md["client-id"][0]
-	muxServerLog.Info("StreamMessage called", "client-id", clientID)
+	log := muxServerLog.WithValues("client-id", clientID)
+	log.Info("initializing KDS stream", "client-id", clientID)
 	stop := make(chan struct{})
 	session := NewSession(clientID, stream, stop)
-	defer func() {
-		close(stop)
-	}()
+	defer close(stop)
 	if err := s.callbacks.OnSessionStarted(session); err != nil {
 		return err
 	}
 	<-stream.Context().Done()
+	log.Info("KDS stream is closed")
 	return nil
 }
 

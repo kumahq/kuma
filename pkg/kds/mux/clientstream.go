@@ -31,15 +31,15 @@ func (k *kdsClientStream) Recv() (*envoy_api_v2.DiscoveryResponse, error) {
 }
 
 func (k *kdsClientStream) Header() (metadata.MD, error) {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (k *kdsClientStream) Trailer() metadata.MD {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (k *kdsClientStream) CloseSend() error {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (k *kdsClientStream) Context() context.Context {
@@ -47,9 +47,9 @@ func (k *kdsClientStream) Context() context.Context {
 }
 
 func (k *kdsClientStream) SendMsg(m interface{}) error {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (k *kdsClientStream) RecvMsg(m interface{}) error {
-	panic("implement me")
+	panic("not implemented")
 }

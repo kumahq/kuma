@@ -40,32 +40,31 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
-	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes, rt.Config().Mode.Remote.Zone, providedFilter(rt.Config().Mode.Remote.Zone))
+	zone := rt.Config().Mode.Remote.Zone
+	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes, zone, providedFilter(zone))
 	if err != nil {
 		return err
 	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsRemoteLog, rt.ResourceStore())
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
-		kdsRemoteLog.Info("new session created", "peerID", session.PeerID())
+		log := kdsRemoteLog.WithValues("peer-id", session.PeerID())
+		log.Info("new session created")
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
-				kdsRemoteLog.Error(err, "KDSSink finished with an error")
+				log.Error(err, "StreamKumaResources finished with an error")
 			}
 		}()
-		sink := kds_client.NewKDSSink(
-			kdsRemoteLog.WithValues("zone", session.PeerID()),
-			consumedTypes,
-			kds_client.NewKDSStream(session.ClientStream(), rt.Config().Mode.Remote.Zone),
-			Callbacks(resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, rt.Config().Mode.Remote.Zone),
+		sink := kds_client.NewKDSSink(log, consumedTypes, kds_client.NewKDSStream(session.ClientStream(), zone),
+			Callbacks(resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone),
 		)
 		go func() {
 			if err := sink.Start(session.Done()); err != nil {
-				kdsRemoteLog.Error(err, "KDSSink finished with an error")
+				log.Error(err, "KDSSink finished with an error")
 			}
 		}()
 		return nil
 	})
-	muxClient := mux.NewClient(rt.Config().KDS.Client.GlobalAddress, rt.Config().Mode.Remote.Zone, onSessionStarted, *rt.Config().KDS.Client)
+	muxClient := mux.NewClient(rt.Config().KDS.Client.GlobalAddress, zone, onSessionStarted, *rt.Config().KDS.Client)
 	return rt.Add(component.NewResilientComponent(kdsRemoteLog.WithName("mux-client"), muxClient))
 }
 

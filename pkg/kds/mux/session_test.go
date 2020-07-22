@@ -2,15 +2,11 @@ package mux_test
 
 import (
 	"context"
-	"time"
-
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/kds/mux"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 type testMultiplexStream struct {
@@ -86,13 +82,12 @@ var _ = Describe("Multiplex Session", func() {
 		})
 
 		Context("Recv", func() {
-			It("should block while proper Send called", func() {
-				wait := make(chan struct{})
+			It("should block while proper Send called", func(done Done) {
 				go func() {
 					request, err := serverSession.ServerStream().Recv()
 					Expect(err).ToNot(HaveOccurred())
 					Expect(request.VersionInfo).To(Equal("1"))
-					close(wait)
+					close(done)
 				}()
 				err := clientSession.ServerStream().Send(&envoy_api_v2.DiscoveryResponse{VersionInfo: "2"})
 				Expect(err).ToNot(HaveOccurred())
@@ -102,14 +97,7 @@ var _ = Describe("Multiplex Session", func() {
 				resp, err := serverSession.ClientStream().Recv()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp.VersionInfo).To(Equal("2"))
-
-				select {
-				case <-wait:
-				case <-time.After(1 * time.Second):
-					err = errors.New("timeout waiting for ServerStream.Recv()")
-				}
-				Expect(err).ToNot(HaveOccurred())
-			})
+			}, 1)
 		})
 	})
 })

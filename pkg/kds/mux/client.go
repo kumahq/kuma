@@ -24,7 +24,7 @@ type client struct {
 	config    kds_config.KdsClientConfig
 }
 
-func NewClient(globalURL string, clientID string, callbacks Callbacks, config kds_config.KdsClientConfig) component.Component { // todo: get globalURL and clientID from config
+func NewClient(globalURL string, clientID string, callbacks Callbacks, config kds_config.KdsClientConfig) component.Component {
 	return &client{
 		callbacks: callbacks,
 		globalURL: globalURL,
@@ -80,7 +80,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 }
 
 func (s *client) NeedLeaderElection() bool {
-	return false
+	return true
 }
 
 func tlsConfig(rootCaFile string) (*tls.Config, error) {
