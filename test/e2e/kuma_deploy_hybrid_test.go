@@ -180,7 +180,7 @@ metadata:
 		_ = global.DismissCluster()
 	})
 
-	FIt("should access allservices", func() {
+	It("should access allservices", func() {
 
 		// Remote 1
 		pods, err := k8s.ListPodsE(
