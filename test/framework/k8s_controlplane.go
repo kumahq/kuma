@@ -222,8 +222,8 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
 }
 
-func (c *K8sControlPlane) InstallCP() (string, error) {
-	return c.kumactl.KumactlInstallCP(c.mode)
+func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
+	return c.kumactl.KumactlInstallCP(c.mode, args...)
 }
 
 func (c *K8sControlPlane) InjectDNS() error {

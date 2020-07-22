@@ -10,11 +10,31 @@ type Clusters interface {
 	Cluster
 }
 
+type deployOptions struct {
+	globalAddress string
+}
+
+type DeployOptionsFunc func(*deployOptions)
+
+func WithGlobalAddress(address string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.globalAddress = address
+	}
+}
+
+func newDeployOpt(fs ...DeployOptionsFunc) *deployOptions {
+	rv := &deployOptions{}
+	for _, f := range fs {
+		f(rv)
+	}
+	return rv
+}
+
 type Cluster interface {
 	// Cluster
 	DismissCluster() error
 	// Generic
-	DeployKuma(mode ...string) error
+	DeployKuma(mode string, opts ...DeployOptionsFunc) error
 	GetKuma() ControlPlane
 	VerifyKuma() error
 	RestartKuma() error

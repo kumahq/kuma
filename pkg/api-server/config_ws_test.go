@@ -237,7 +237,8 @@ var _ = Describe("Config WS", func() {
               "tlsKeyFile": ""
             },
             "client": {
-              "rootCaFile": ""
+              "rootCaFile": "",
+              "globalAddress": ""
             }
           }
         }

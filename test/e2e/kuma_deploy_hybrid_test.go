@@ -13,7 +13,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = XDescribe("Test Kubernetes/Universal deployment", func() {
+var _ = Describe("Test Kubernetes/Universal deployment", func() {
 
 	meshDefaulMtlsOn := `
 type: Mesh
@@ -60,11 +60,23 @@ metadata:
 			Verbose)
 		Expect(err).ToNot(HaveOccurred())
 
+		// Global
+		global = universalClusters.GetCluster(Kuma5)
+
+		err = NewClusterSetup().
+			Install(Kuma(mode.Global)).
+			Setup(global)
+		Expect(err).ToNot(HaveOccurred())
+		err = global.VerifyKuma()
+		Expect(err).ToNot(HaveOccurred())
+
+		globalCP := global.GetKuma()
+
 		// K8s Cluster 1
 		remote_1 = k8sClusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote)).
+			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
 			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
@@ -78,7 +90,7 @@ metadata:
 		remote_2 = k8sClusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote)).
+			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
 			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
@@ -93,7 +105,7 @@ metadata:
 		remote_3 = universalClusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote)).
+			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(EchoServerUniversal()).
 			Install(DemoClientUniversal()).
 			Setup(remote_3)
@@ -105,21 +117,11 @@ metadata:
 		remote_4 = universalClusters.GetCluster(Kuma4)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote)).
+			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal()).
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_4.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		// Global
-		global = universalClusters.GetCluster(Kuma5)
-
-		err = NewClusterSetup().
-			Install(Kuma(mode.Global)).
-			Setup(global)
-		Expect(err).ToNot(HaveOccurred())
-		err = global.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		remote_1CP := remote_1.GetKuma()
@@ -130,37 +132,29 @@ metadata:
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				remote_1CP.GetName(),
-				remote_1CP.GetKDSServerAddress(),
+				"grpcs://1.1.1.1:1010",
 				remote_1CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				remote_2CP.GetName(),
-				remote_2CP.GetKDSServerAddress(),
+				"grpcs://1.1.1.1:1010",
 				remote_2CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
-				remote_3CP.GetName(),
-				remote_3CP.GetKDSServerAddress(),
+				Kuma3,
+				"grpcs://1.1.1.1:1010",
 				remote_3CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
-				remote_4CP.GetName(),
-				remote_4CP.GetKDSServerAddress(),
+				Kuma4,
+				"grpcs://1.1.1.1:1010",
 				remote_4CP.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
-		// remove these once Zones are added dynamically
-		globalCP := global.GetKuma()
-		err = globalCP.SetLbAddress(remote_1CP.GetName(), globalCP.GetKDSServerAddress())
-		Expect(err).ToNot(HaveOccurred())
-
-		err = global.RestartKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(meshDefaulMtlsOn)(global)

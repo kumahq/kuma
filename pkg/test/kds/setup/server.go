@@ -4,22 +4,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	. "github.com/onsi/gomega"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	kds_config "github.com/kumahq/kuma/pkg/config/kds"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	test_grpc "github.com/kumahq/kuma/pkg/test/grpc"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 type testRuntimeContext struct {
@@ -43,21 +42,7 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 }
 
 func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter) *test_grpc.MockServerStream {
-	createServer := func(rt runtime.Runtime) kds_server.Server {
-		log := core.Log
-		hasher, cache := kds_server.NewXdsContext(log)
-		generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter)
-		versioner := kds_server.NewVersioner()
-		reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
-		syncTracker := kds_server.NewSyncTracker(core.Log, reconciler, rt.Config().KDS.Server.RefreshInterval)
-		callbacks := util_xds.CallbacksChain{
-			util_xds.LoggingCallbacks{Log: log},
-			syncTracker,
-		}
-		return kds_server.NewServer(cache, callbacks, log, clusterID)
-	}
-
-	srv := createServer(&testRuntimeContext{
+	rt := &testRuntimeContext{
 		rom: manager.NewResourceManager(store),
 		cfg: kuma_cp.Config{
 			KDS: &kds_config.KdsConfig{
@@ -66,8 +51,9 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string
 				},
 			},
 		},
-	})
-
+	}
+	srv, err := kds_server.New(core.Log, rt, providedTypes, clusterID, providedFilter)
+	Expect(err).ToNot(HaveOccurred())
 	stream := test_grpc.MakeMockStream()
 	go func() {
 		err := srv.StreamKumaResources(stream)
