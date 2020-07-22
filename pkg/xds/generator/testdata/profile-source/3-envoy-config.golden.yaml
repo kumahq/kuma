@@ -36,6 +36,7 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      http2ProtocolOptions: {}
       name: db
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -87,6 +88,7 @@ resources:
           tcpHealthCheck: {}
           timeout: 4s
           unhealthyThreshold: 3
+      http2ProtocolOptions: {}
       name: elastic
       transportSocket:
         name: envoy.transport_sockets.tls

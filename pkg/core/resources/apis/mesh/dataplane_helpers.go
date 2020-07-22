@@ -17,12 +17,15 @@ const (
 	ProtocolUnknown = "<unknown>"
 	ProtocolTCP     = "tcp"
 	ProtocolHTTP    = "http"
+	ProtocolHTTP2   = "http2"
 )
 
 func ParseProtocol(tag string) Protocol {
 	switch strings.ToLower(tag) {
 	case ProtocolHTTP:
 		return ProtocolHTTP
+	case ProtocolHTTP2:
+		return ProtocolHTTP2
 	case ProtocolTCP:
 		return ProtocolTCP
 	default:
@@ -44,6 +47,7 @@ func (l ProtocolList) Strings() []string {
 // SupportedProtocols is a list of supported protocols that will be communicated to a user.
 var SupportedProtocols = ProtocolList{
 	ProtocolHTTP,
+	ProtocolHTTP2,
 	ProtocolTCP,
 }
 
