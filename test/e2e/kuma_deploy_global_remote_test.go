@@ -123,7 +123,7 @@ metadata:
 				return 0, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
 			}
 			return len(clustersStatus), nil
-		}, DefaultTimeout, time.Minute).Should(Equal(1))
+		}, time.Minute, DefaultTimeout).Should(Equal(1))
 
 		// then
 		found := false
