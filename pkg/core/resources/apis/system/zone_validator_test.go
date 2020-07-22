@@ -32,8 +32,6 @@ var _ = Describe("Zone", func() {
 				Expect(verr).ToNot(HaveOccurred())
 			},
 			Entry("valid zone", `
-            remoteControlPlane:
-              address: grpcs://192.168.0.1:5681
             ingress:
               address: 192.168.0.2:10001`),
 		)
@@ -67,19 +65,13 @@ var _ = Describe("Zone", func() {
 				expected: `
                violations:
                  - field: address
-                   message: invalid URL
-                 - field: address
                    message: invalid address`}),
 			Entry("wrong format", testCase{
 				zone: `
-               remoteControlPlane:
-                 address: 192.168.0.1:5681
                ingress:
                  address: 192.168.0.2`,
 				expected: `
                violations:
-                 - field: address
-                   message: invalid URL
                  - field: address
                    message: invalid address`}),
 		)
