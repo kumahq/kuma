@@ -152,6 +152,7 @@ func (cs *UniversalClusters) DeleteApp(namespace, appname string) error {
 
 	return nil
 }
+
 func (cs *UniversalClusters) InjectDNS() error {
 	for name, c := range cs.clusters {
 		if err := c.InjectDNS(); err != nil {
@@ -161,7 +162,6 @@ func (cs *UniversalClusters) InjectDNS() error {
 
 	return nil
 }
-
 func (cs *UniversalClusters) GetTesting() testing.TestingT {
 	return cs.t
 }
@@ -172,4 +172,8 @@ func (cs *UniversalClusters) Exec(namespace, podName, containerName string, cmd 
 
 func (cs *UniversalClusters) ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error) {
 	panic("implement me")
+}
+
+func (cs *UniversalClusters) Tracing() Tracing {
+	panic("cannot aggregate tracing")
 }

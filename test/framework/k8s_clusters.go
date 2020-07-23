@@ -176,6 +176,7 @@ func (cs *K8sClusters) DeleteApp(namespace, appname string) error {
 
 	return nil
 }
+
 func (cs *K8sClusters) InjectDNS() error {
 	for name, c := range cs.clusters {
 		if err := c.InjectDNS(); err != nil {
@@ -185,7 +186,6 @@ func (cs *K8sClusters) InjectDNS() error {
 
 	return nil
 }
-
 func (cs *K8sClusters) GetTesting() testing.TestingT {
 	return cs.t
 }
@@ -193,4 +193,8 @@ func (cs *K8sClusters) GetTesting() testing.TestingT {
 func IsK8sClustersStarted() bool {
 	_, found := os.LookupEnv(envK8SCLUSTERS)
 	return found
+}
+
+func (cs *K8sClusters) Tracing() Tracing {
+	panic("cannot aggregate tracing")
 }

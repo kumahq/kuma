@@ -23,6 +23,7 @@ type UniversalCluster struct {
 	controlplane *UniversalControlPlane
 	apps         map[string]*UniversalApp
 	verbose      bool
+	tracing      *UniversalJaeger
 }
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
@@ -40,6 +41,9 @@ func (c *UniversalCluster) DismissCluster() (errs error) {
 		if err != nil {
 			errs = multierr.Append(errs, err)
 		}
+	}
+	if c.tracing != nil {
+		StopJaegerDocker(c.t, c.tracing)
 	}
 	return
 }
@@ -203,8 +207,13 @@ func (c *UniversalCluster) DeleteApp(namespace, appname string) error {
 	return app.Stop()
 }
 
-func (c *UniversalCluster) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	panic("not implementedv")
+func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...string) (string, string, error) {
+	app, ok := c.apps[appname]
+	if !ok {
+		return "", "", errors.Errorf("App %s not found", appname)
+	}
+	sshApp := NewSshApp(false, app.ports[sshPort], []string{}, cmd)
+	return sshApp.Out(), sshApp.Err(), sshApp.Run()
 }
 
 func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, cmd ...string) (string, string, error) {
@@ -234,4 +243,8 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 
 func (c *UniversalCluster) GetTesting() testing.TestingT {
 	return c.t
+}
+
+func (c *UniversalCluster) Tracing() Tracing {
+	return c.tracing
 }

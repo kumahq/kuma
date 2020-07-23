@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -37,6 +38,26 @@ type K8sCluster struct {
 	forwardedPortsChans map[uint32]chan struct{}
 	verbose             bool
 	clientset           *kubernetes.Clientset
+	tracing             *K8SJaeger
+}
+
+func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, error) {
+	cluster := &K8sCluster{
+		t:                   t,
+		name:                clusterName,
+		kubeconfig:          os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, clusterName)),
+		loPort:              uint32(kumaCPAPIPortFwdBase + 1000),
+		hiPort:              uint32(kumaCPAPIPortFwdBase + 1999),
+		forwardedPortsChans: map[uint32]chan struct{}{},
+		verbose:             verbose,
+	}
+
+	var err error
+	cluster.clientset, err = k8s.GetKubernetesClientFromOptionsE(t, cluster.GetKubectlOptions())
+	if err != nil {
+		return nil, errors.Wrapf(err, "error in getting access to K8S")
+	}
+	return cluster, nil
 }
 
 func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
@@ -45,6 +66,10 @@ func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
 	return k8s.KubectlApplyE(c.t,
 		options,
 		yamlPath)
+}
+
+func (c *K8sCluster) Tracing() Tracing {
+	return c.tracing
 }
 
 func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service string, yamlPath string) error {
@@ -457,5 +482,8 @@ func (c *K8sCluster) GetTesting() testing.TestingT {
 }
 
 func (c *K8sCluster) DismissCluster() error {
+	if c.tracing != nil {
+		return DeleteTracingK8S(c)
+	}
 	return nil
 }

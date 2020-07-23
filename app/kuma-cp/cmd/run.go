@@ -12,6 +12,7 @@ import (
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
+	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/zones"
 
@@ -80,7 +81,22 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up GUI server")
 					return err
 				}
-				fallthrough
+				if err := sds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up SDS server")
+					return err
+				}
+				if err := xds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up xDS server")
+					return err
+				}
+				if err := mads_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up Monitoring Assignment server")
+					return err
+				}
+				if err := dns.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up DNS server")
+					return err
+				}
 			case mode.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
@@ -94,10 +110,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-				//if err := kds_remote.Setup(rt); err != nil {
-				//	runLog.Error(err, "unable to set up KDS Remote")
-				//	return err
-				//}
+				if err := kds_remote.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Remote")
+					return err
+				}
 				if err := dns.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up DNS server")
 					return err

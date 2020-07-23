@@ -41,6 +41,7 @@ type Cluster interface {
 	DeleteKuma() error
 	InjectDNS() error
 	GetKumactlOptions() *KumactlOptions
+	Tracing() Tracing
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions

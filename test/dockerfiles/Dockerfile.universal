@@ -20,7 +20,7 @@ RUN apk add --no-cache openssh curl \
   && ssh-keygen -A \
   && sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config \
   && sed -i s/#PermitEmptyPasswords.*/PermitEmptyPasswords\ yes/ /etc/ssh/sshd_config \
-  && echo "root:*" | chpasswd -e
+  && passwd -d root
 
 # do not detach (-D), log to stderr (-e)
 ENTRYPOINT ["/usr/sbin/sshd", "-D", "-e"]

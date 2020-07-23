@@ -52,6 +52,7 @@ const (
 	maxClusters = 3
 
 	kumaNamespace   = "kuma-system"
+	tracingNamespace   = "kuma-tracing"
 	kumaServiceName = "kuma-control-plane"
 
 	kumaCPImage   = "kuma/kuma-cp"
