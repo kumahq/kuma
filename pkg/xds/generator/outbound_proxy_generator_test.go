@@ -121,67 +121,67 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 								Weight:      10,
-								Destination: mesh_proto.TagSelector{"service": "db", "role": "master"},
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "master"},
 							}, {
 								Weight:      90,
-								Destination: mesh_proto.TagSelector{"service": "db", "role": "replica"},
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "replica"},
 							}, {
 								Weight:      0, // should be excluded from Envoy configuration
-								Destination: mesh_proto.TagSelector{"service": "db", "role": "canary"},
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "canary"},
 							}},
 						},
 					},
 				},
 				OutboundSelectors: model.DestinationMap{
 					"api-http": model.TagSelectorSet{
-						{"service": "api-http"},
+						{"kuma.io/service": "api-http"},
 					},
 					"api-tcp": model.TagSelectorSet{
-						{"service": "api-tcp"},
+						{"kuma.io/service": "api-tcp"},
 					},
 					"backend": model.TagSelectorSet{
-						{"service": "backend"},
+						{"kuma.io/service": "backend"},
 					},
 					"db": model.TagSelectorSet{
-						{"service": "db", "role": "master"},
-						{"service": "db", "role": "replica"},
-						{"service": "db", "role": "canary"},
+						{"kuma.io/service": "db", "role": "master"},
+						{"kuma.io/service": "db", "role": "replica"},
+						{"kuma.io/service": "db", "role": "canary"},
 					},
 				},
 				OutboundTargets: model.EndpointMap{
-					"api-http": []model.Endpoint{ // notice that all endpoints have tag `protocol: http`
+					"api-http": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: http`
 						{
 							Target: "192.168.0.4",
 							Port:   8084,
-							Tags:   map[string]string{"service": "api-http", "protocol": "http", "region": "us"},
+							Tags:   map[string]string{"kuma.io/service": "api-http", "kuma.io/protocol": "http", "region": "us"},
 							Weight: 1,
 						},
 						{
 							Target: "192.168.0.5",
 							Port:   8085,
-							Tags:   map[string]string{"service": "api-http", "protocol": "http", "region": "eu"},
+							Tags:   map[string]string{"kuma.io/service": "api-http", "kuma.io/protocol": "http", "region": "eu"},
 							Weight: 1,
 						},
 					},
-					"api-tcp": []model.Endpoint{ // notice that not every endpoint has a `protocol: http` tag
+					"api-tcp": []model.Endpoint{ // notice that not every endpoint has a `kuma.io/protocol: http` tag
 						{
 							Target: "192.168.0.6",
 							Port:   8086,
-							Tags:   map[string]string{"service": "api-tcp", "protocol": "http", "region": "us"},
+							Tags:   map[string]string{"kuma.io/service": "api-tcp", "kuma.io/protocol": "http", "region": "us"},
 							Weight: 1,
 						},
 						{
 							Target: "192.168.0.7",
 							Port:   8087,
-							Tags:   map[string]string{"service": "api-tcp", "region": "eu"},
+							Tags:   map[string]string{"kuma.io/service": "api-tcp", "region": "eu"},
 							Weight: 1,
 						},
 					},
-					"backend": []model.Endpoint{ // notice that not every endpoint has a tag `protocol: http`
+					"backend": []model.Endpoint{ // notice that not every endpoint has a tag `kuma.io/protocol: http`
 						{
 							Target: "192.168.0.1",
 							Port:   8081,
-							Tags:   map[string]string{"service": "backend", "region": "us"},
+							Tags:   map[string]string{"kuma.io/service": "backend", "region": "us"},
 							Weight: 1,
 						},
 						{
@@ -194,7 +194,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						{
 							Target: "192.168.0.3",
 							Port:   5432,
-							Tags:   map[string]string{"service": "db", "role": "master"},
+							Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
 							Weight: 1,
 						},
 					},
@@ -269,7 +269,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
               address: 10.0.0.1
               gateway:
                 tags:
-                  service: gateway
+                  kuma.io/service: gateway
               outbound:
               - port: 18080
                 service: backend
@@ -290,7 +290,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
               inbound:
               - port: 8080
                 tags:
-                  service: web
+                  kuma.io/service: web
               outbound:
               - port: 18080
                 service: backend
@@ -349,17 +349,17 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					Spec: mesh_proto.TrafficRoute{
 						Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 							Weight:      100,
-							Destination: mesh_proto.TagSelector{"service": "db", "version": "3.2.0"},
+							Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
 						},
 						}},
 				},
 			},
 			OutboundSelectors: model.DestinationMap{
 				"backend.kuma-system": model.TagSelectorSet{
-					{"service": "backend.kuma-system"},
+					{"kuma.io/service": "backend.kuma-system"},
 				},
 				"db.kuma-system": model.TagSelectorSet{
-					{"service": "db", "version": "3.2.0"},
+					{"kuma.io/service": "db", "version": "3.2.0"},
 				},
 			},
 			OutboundTargets: model.EndpointMap{
@@ -374,7 +374,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					{
 						Target: "192.168.0.2",
 						Port:   5432,
-						Tags:   map[string]string{"service": "db", "role": "master"},
+						Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
 						Weight: 1,
 					},
 				},

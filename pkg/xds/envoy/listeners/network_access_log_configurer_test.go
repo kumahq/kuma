@@ -46,7 +46,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 								Port:        1234,
 								ServicePort: 8765,
 								Tags: map[string]string{
-									"service": "backend",
+									"kuma.io/service": "backend",
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{

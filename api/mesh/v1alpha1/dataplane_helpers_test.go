@@ -22,12 +22,12 @@ var _ = Describe("MultiValueTagSet", func() {
 			},
 			Entry("`service` and `services` tags", testCase{
 				value: MultiValueTagSet{
-					"versions": map[string]bool{},
-					"version":  map[string]bool{},
-					"services": map[string]bool{},
-					"service":  map[string]bool{},
+					"versions":        map[string]bool{},
+					"version":         map[string]bool{},
+					"services":        map[string]bool{},
+					"kuma.io/service": map[string]bool{},
 				},
-				expected: []string{"service", "services", "version", "versions"},
+				expected: []string{"kuma.io/service", "services", "version", "versions"},
 			}),
 		)
 	})
@@ -152,14 +152,14 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 		Entry("it should match *", testCase{
 			serviceTag: "backend",
 			selector: map[string]string{
-				"service": "*",
+				"kuma.io/service": "*",
 			},
 			expectedMatch: true,
 		}),
 		Entry("it should match service", testCase{
 			serviceTag: "backend",
 			selector: map[string]string{
-				"service": "backend",
+				"kuma.io/service": "backend",
 			},
 			expectedMatch: true,
 		}),
@@ -197,7 +197,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			Entry("inbound has `service` tag", testCase{
 				inbound: &Dataplane_Networking_Inbound{
 					Tags: map[string]string{
-						"service": "backend",
+						"kuma.io/service": "backend",
 					},
 				},
 				expected: "backend",
@@ -250,15 +250,15 @@ var _ = Describe("Dataplane with inbound", func() {
 			Inbound: []*Dataplane_Networking_Inbound{
 				{
 					Tags: map[string]string{
-						"service": "backend",
-						"version": "v1",
+						"kuma.io/service": "backend",
+						"version":         "v1",
 					},
 				},
 				{
 					Tags: map[string]string{
-						"service": "backend-metrics",
-						"version": "v1",
-						"role":    "metrics",
+						"kuma.io/service": "backend-metrics",
+						"version":         "v1",
+						"role":            "metrics",
 					},
 				},
 			},
@@ -271,7 +271,7 @@ var _ = Describe("Dataplane with inbound", func() {
 			tags := d.Tags()
 
 			// then
-			Expect(tags.Values("service")).To(Equal([]string{"backend", "backend-metrics"}))
+			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend", "backend-metrics"}))
 			Expect(tags.Values("version")).To(Equal([]string{"v1"}))
 			Expect(tags.Values("role")).To(Equal([]string{"metrics"}))
 		})
@@ -281,8 +281,8 @@ var _ = Describe("Dataplane with inbound", func() {
 		It("should match any inbound", func() {
 			// when
 			selector := TagSelector{
-				"service": "backend",
-				"version": "v1",
+				"kuma.io/service": "backend",
+				"version":         "v1",
 			}
 
 			// then
@@ -292,7 +292,7 @@ var _ = Describe("Dataplane with inbound", func() {
 		It("should not match if all inbounds did not match", func() {
 			// when
 			selector := TagSelector{
-				"service": "unknown",
+				"kuma.io/service": "unknown",
 			}
 
 			// then
@@ -306,8 +306,8 @@ var _ = Describe("Dataplane with gateway", func() {
 		Networking: &Dataplane_Networking{
 			Gateway: &Dataplane_Networking_Gateway{
 				Tags: map[string]string{
-					"service": "backend",
-					"version": "v1",
+					"kuma.io/service": "backend",
+					"version":         "v1",
 				},
 			},
 		},
@@ -319,7 +319,7 @@ var _ = Describe("Dataplane with gateway", func() {
 			tags := d.Tags()
 
 			// then
-			Expect(tags.Values("service")).To(Equal([]string{"backend"}))
+			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend"}))
 		})
 	})
 
@@ -327,8 +327,8 @@ var _ = Describe("Dataplane with gateway", func() {
 		It("should match gateway", func() {
 			// when
 			selector := TagSelector{
-				"service": "backend",
-				"version": "v1",
+				"kuma.io/service": "backend",
+				"version":         "v1",
 			}
 
 			// then
@@ -338,7 +338,7 @@ var _ = Describe("Dataplane with gateway", func() {
 		It("should not match if gateway did not match", func() {
 			// when
 			selector := TagSelector{
-				"service": "unknown",
+				"kuma.io/service": "unknown",
 			}
 
 			// then
@@ -358,8 +358,8 @@ var _ = Describe("TagSelector", func() {
 			func(given testCase) {
 				// given
 				dpTags := map[string]string{
-					"service": "mobile",
-					"version": "v1",
+					"kuma.io/service": "mobile",
+					"version":         "v1",
 				}
 
 				// when
@@ -373,24 +373,24 @@ var _ = Describe("TagSelector", func() {
 				match: true,
 			}),
 			Entry("should match 1 tag", testCase{
-				tags:  map[string]string{"service": "mobile"},
+				tags:  map[string]string{"kuma.io/service": "mobile"},
 				match: true,
 			}),
 			Entry("should match all tags", testCase{
 				tags: map[string]string{
-					"service": "mobile",
-					"version": "v1",
+					"kuma.io/service": "mobile",
+					"version":         "v1",
 				},
 				match: true,
 			}),
 			Entry("should match * tag", testCase{
-				tags:  map[string]string{"service": "*"},
+				tags:  map[string]string{"kuma.io/service": "*"},
 				match: true,
 			}),
 			Entry("should not match on one mismatch", testCase{
 				tags: map[string]string{
-					"service": "backend",
-					"version": "v1",
+					"kuma.io/service": "backend",
+					"version":         "v1",
 				},
 				match: false,
 			}),
@@ -430,23 +430,23 @@ var _ = Describe("TagSelector", func() {
 				expected: true,
 			}),
 			Entry("equal selectors of 1 tag", testCase{
-				one:      TagSelector{"service": "backend"},
-				another:  TagSelector{"service": "backend"},
+				one:      TagSelector{"kuma.io/service": "backend"},
+				another:  TagSelector{"kuma.io/service": "backend"},
 				expected: true,
 			}),
 			Entry("equal selectors of 2 tag", testCase{
-				one:      TagSelector{"service": "backend", "version": "v1"},
-				another:  TagSelector{"service": "backend", "version": "v1"},
+				one:      TagSelector{"kuma.io/service": "backend", "version": "v1"},
+				another:  TagSelector{"kuma.io/service": "backend", "version": "v1"},
 				expected: true,
 			}),
 			Entry("unequal selectors of 1 tag", testCase{
-				one:      TagSelector{"service": "backend"},
-				another:  TagSelector{"service": "redis"},
+				one:      TagSelector{"kuma.io/service": "backend"},
+				another:  TagSelector{"kuma.io/service": "redis"},
 				expected: false,
 			}),
 			Entry("one 1 tag selector and one 2 tags selector", testCase{
-				one:      TagSelector{"service": "backend"},
-				another:  TagSelector{"service": "redis", "version": "v1"},
+				one:      TagSelector{"kuma.io/service": "backend"},
+				another:  TagSelector{"kuma.io/service": "redis", "version": "v1"},
 				expected: false,
 			}),
 		)
@@ -457,7 +457,7 @@ var _ = Describe("Tags", func() {
 	It("should print tags", func() {
 		// given
 		tags := map[string]map[string]bool{
-			"service": {
+			"kuma.io/service": {
 				"backend-api":   true,
 				"backend-admin": true,
 			},
@@ -470,7 +470,7 @@ var _ = Describe("Tags", func() {
 		result := MultiValueTagSet(tags).String()
 
 		// then
-		Expect(result).To(Equal("service=backend-admin,backend-api version=v1"))
+		Expect(result).To(Equal("kuma.io/service=backend-admin,backend-api version=v1"))
 	})
 })
 

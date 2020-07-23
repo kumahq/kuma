@@ -46,8 +46,8 @@ var _ = Describe("Match", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "*",
-							"protocol": "http",
+							"service":          "*",
+							"kuma.io/protocol": "http",
 						},
 					},
 				},
@@ -91,10 +91,10 @@ var _ = Describe("Match", func() {
 				{
 					ServicePort: 8080,
 					Tags: map[string]string{
-						"service":  "web",
-						"version":  "0.1",
-						"region":   "eu",
-						"protocol": "http",
+						"service":          "web",
+						"version":          "0.1",
+						"region":           "eu",
+						"kuma.io/protocol": "http",
 					},
 				},
 			}),
@@ -102,16 +102,16 @@ var _ = Describe("Match", func() {
 				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"region":   "us",
-							"protocol": "http",
+							"region":           "us",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}),
 				policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "*",
-							"protocol": "http",
+							"service":          "*",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}),
@@ -123,8 +123,8 @@ var _ = Describe("Match", func() {
 				}: &policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "*",
-							"protocol": "http",
+							"service":          "*",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}).Spec,
@@ -134,19 +134,19 @@ var _ = Describe("Match", func() {
 				{
 					ServicePort: 8080,
 					Tags: map[string]string{
-						"service":  "web",
-						"version":  "0.1",
-						"region":   "eu",
-						"protocol": "http",
+						"service":          "web",
+						"version":          "0.1",
+						"region":           "eu",
+						"kuma.io/protocol": "http",
 					},
 				},
 				{
 					ServicePort: 8081,
 					Tags: map[string]string{
-						"service":  "web-api",
-						"version":  "0.1.2",
-						"region":   "us",
-						"protocol": "http",
+						"service":          "web-api",
+						"version":          "0.1.2",
+						"region":           "us",
+						"kuma.io/protocol": "http",
 					},
 				},
 			}),
@@ -154,8 +154,8 @@ var _ = Describe("Match", func() {
 				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "web-api",
-							"protocol": "http",
+							"service":          "web-api",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}),
@@ -167,8 +167,8 @@ var _ = Describe("Match", func() {
 				}: &policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "web-api",
-							"protocol": "http",
+							"service":          "web-api",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}).Spec,
