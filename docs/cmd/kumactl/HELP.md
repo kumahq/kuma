@@ -197,6 +197,9 @@ Usage:
 
 Available Commands:
   control-plane Install Kuma Control Plane on Kubernetes
+  dns           Install DNS to Kubernetes
+  ingress       Install Ingress on Kubernetes
+  logging       Install Logging backend in Kubernetes cluster (Loki)
   metrics       Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
   tracing       Install Tracing backend in Kubernetes cluster (Jaeger)
 
@@ -233,9 +236,15 @@ Flags:
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
+      --kds-global-address string           URL of Global Kuma CP
+      --kds-tls-cert string                 TLS certificate for the KDS server
+      --kds-tls-key string                  TLS key for the KDS server
+      --mode string                         kuma cp modes: one of standalone|remote|global (default "standalone")
       --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
       --sds-tls-cert string                 TLS certificate for the SDS server
       --sds-tls-key string                  TLS key for the SDS server
+      --use-node-port                       use NodePort instead of LoadBalancer
+      --zone string                         set the Kuma zone name
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -343,6 +352,8 @@ Usage:
   kumactl get [command]
 
 Available Commands:
+  circuit-breaker     Show a single CircuitBreaker resource
+  circuit-breakers    Show CircuitBreakers
   dataplane           Show a single Dataplane resource
   dataplanes          Show Dataplanes
   fault-injection     Show a single Fault-Injection resource
@@ -363,6 +374,8 @@ Available Commands:
   traffic-routes      Show TrafficRoutes
   traffic-trace       Show a single TrafficTrace resource
   traffic-traces      Show TrafficTraces
+  zone                Show a single Zone resource
+  zones               Show Zones
 
 Flags:
   -h, --help            help for get

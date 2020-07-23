@@ -11,21 +11,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	errors_types "github.com/Kong/kuma/pkg/core/rest/errors/types"
-	sample_api "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
-	"github.com/Kong/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	errors_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
+	sample_api "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_rest "github.com/Kong/kuma/pkg/core/resources/model/rest"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/remote"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
 
-	sample_core "github.com/Kong/kuma/pkg/test/resources/apis/sample"
+	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var _ = Describe("RemoteStore", func() {
@@ -362,7 +362,7 @@ var _ = Describe("RemoteStore", func() {
 		It("should successfully list known resources", func() {
 			// given
 			store := setupStore("list.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/demo/traffic-routes")))
+				Expect(req.URL.Path).To(Equal("/meshes/demo/traffic-routes"))
 			})
 
 			// when
@@ -391,7 +391,7 @@ var _ = Describe("RemoteStore", func() {
 		It("should list known resources using pagination", func() {
 			// given
 			store := setupStore("list-pagination.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/demo/traffic-routes")))
+				Expect(req.URL.Path).To(Equal("/meshes/demo/traffic-routes"))
 				Expect(req.URL.Query().Get("size")).To(Equal("1"))
 				Expect(req.URL.Query().Get("offset")).To(Equal("2"))
 			})
@@ -415,7 +415,7 @@ var _ = Describe("RemoteStore", func() {
 		It("should list meshes", func() {
 			// given
 			store := setupStore("list-meshes.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes")))
+				Expect(req.URL.Path).To(Equal("/meshes"))
 			})
 
 			// when

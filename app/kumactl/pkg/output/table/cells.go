@@ -48,9 +48,9 @@ func TimeSince(m time.Time, now time.Time) string {
 // Duration returns a readable representation of the provided time
 func Duration(d time.Duration) string {
 	if seconds := int(d.Seconds()); seconds < -1 {
-		return fmt.Sprintf("never")
+		return "never"
 	} else if seconds < 0 {
-		return fmt.Sprintf("0s")
+		return "0s"
 	} else if seconds < 60 {
 		return fmt.Sprintf("%ds", seconds)
 	} else if minutes := int(d.Minutes()); minutes < 60 {

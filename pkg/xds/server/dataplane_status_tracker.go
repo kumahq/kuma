@@ -9,12 +9,12 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/golang/protobuf/proto"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var (

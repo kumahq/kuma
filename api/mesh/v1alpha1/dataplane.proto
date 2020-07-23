@@ -14,31 +14,44 @@ message Dataplane {
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {
 
+    // Ingress allows us to configure dataplane in the Ingress mode. In this
+    // mode, dataplane has only inbound interfaces (outbound and gateway
+    // prohibited). Every inbound interface matches with services that reside in
+    // that cluster.
+    message Ingress {
+      // AvailableService contains tags that represent unique subset of
+      // endpoints
+      message AvailableService {
+        // tags of the service
+        map<string, string> tags = 1;
+        // number of instances available for given tags
+        uint32 instances = 2;
+        // mesh of the instances available for given tags
+        string mesh = 3;
+      }
+      repeated AvailableService availableServices = 1;
+    }
+
+    // Ingress if not nil, dataplane will be work in the Ingress mode
+    Ingress ingress = 6;
+
     // Public IP on which the dataplane is accessible in the network.
     // Host names and DNS are not allowed.
     string address = 5;
 
     // Inbound describes a service implemented by the dataplane.
     message Inbound {
-
-      // DEPRECATED: use networking.address, networking.inbound[].port and
-      // networking.inbound[].servicePort Interface describes networking rules
-      // for incoming traffic. The value is a string formatted as
-      // <DATAPLANE_IP>:<DATAPLANE_PORT>:<WORKLOAD_PORT>, which means
-      // that dataplane must listen on <DATAPLANE_IP>:<DATAPLANE_PORT>
-      // and must dispatch to 127.0.0.1:<WORKLOAD_PORT>.
-      //
-      // E.g.,
-      // "192.168.0.100:9090:8080" in case of IPv4 or
-      // "[2001:db8::1]:7070:6060" in case of IPv6.
-      string interface = 1;
-
       // Port of the inbound interface that will forward requests to the
       // service.
       uint32 port = 3;
 
       // Port of the service that requests will be forwarded to.
       uint32 servicePort = 4;
+
+      // Address of the service that requests will be forwarded to.
+      // Empty value defaults to '127.0.0.1', since Kuma DP should be deployed
+      // next to service.
+      string serviceAddress = 6;
 
       // Address on which inbound listener will be exposed. Defaults to
       // networking.address.
@@ -52,20 +65,6 @@ message Dataplane {
 
     // Outbound describes a service consumed by the dataplane.
     message Outbound {
-
-      // DEPRECATED: use networking.address and networking.outbound[].port
-      // Interface describes networking rules for outgoing traffic.
-      // The value is a string formatted as <DATAPLANE_IP>:<DATAPLANE_PORT>,
-      // which means that dataplane must listen on
-      // <DATAPLANE_IP>:<DATAPLANE_PORT> and must be dispatch to
-      // <SERVICE>:<SERVICE_PORT>.
-      //
-      // E.g.,
-      // "127.0.0.1:9090" in case of IPv4 or
-      // "[::1]:8080" in case of IPv6 or
-      // ":7070".
-      string interface = 1;
-
       // Address on which the service will be available to this dataplane.
       // Defaults to 127.0.0.1
       string address = 3;
@@ -73,8 +72,12 @@ message Dataplane {
       // Port on which the service will be available to this dataplane.
       uint32 port = 4;
 
+      // DEPRECATED: use networking.outbound[].tags
       // Service name.
       string service = 2 [ (validate.rules).string.hostname = true ];
+
+      // Tags
+      map<string, string> tags = 5;
     }
 
     // Gateway describes a service that ingress should not be proxied.
@@ -88,8 +91,16 @@ message Dataplane {
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
 
-      // Port on which all traffic is being transparently redirected.
-      uint32 redirect_port = 1 [ (validate.rules).uint32 = {lte : 65535} ];
+      // Port on which all inbound traffic is being transparently redirected.
+      uint32 redirect_port_inbound = 1
+          [ (validate.rules).uint32 = {lte : 65535} ];
+
+      // Port on which all outbound traffic is being transparently redirected.
+      uint32 redirect_port_outbound = 2
+          [ (validate.rules).uint32 = {lte : 65535} ];
+
+      // List of services that will be access directly via IP:PORT
+      repeated string direct_access_services = 3;
     }
 
     // Gateway describes configuration of gateway of the dataplane.

@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Mesh", func() {
@@ -23,6 +23,9 @@ var _ = Describe("Mesh", func() {
               backends:
               - name: builtin-1
                 type: builtin
+                dpCert:
+                  rotation:
+                    expiration: 2y
             logging:
               backends:
               - name: file-1
@@ -126,6 +129,21 @@ var _ = Describe("Mesh", func() {
                 violations:
                 - field: mtls.enabledBackend
                   message: has to be set to one of the backends in the mesh`,
+			}),
+			Entry("dpCert rotation invalid expiration time", testCase{
+				mesh: `
+                mtls:
+                  enabledBackend: backend-3
+                  backends:
+                  - name: backend-3
+                    type: builtin
+                    dpCert:
+                      rotation:
+                        expiration: 2e`,
+				expected: `
+                violations:
+                - field: mtls.dpcert.rotation.expiration
+                  message: has to be a valid format`,
 			}),
 			Entry("logging backend with empty name", testCase{
 				mesh: `

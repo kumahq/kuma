@@ -6,13 +6,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	api_server "github.com/Kong/kuma/pkg/api-server"
-	config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
-	"github.com/Kong/kuma/pkg/test/resources/apis/sample"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+	config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var _ = Describe("Read only Resource Endpoints", func() {

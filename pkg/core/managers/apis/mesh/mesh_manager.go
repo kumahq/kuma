@@ -4,21 +4,21 @@ import (
 	"context"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
 	"github.com/pkg/errors"
 
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_registry "github.com/Kong/kuma/pkg/core/resources/registry"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	secrets_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 func NewMeshManager(
 	store core_store.ResourceStore,
 	otherManagers core_manager.ResourceManager,
-	secretManager secrets_manager.SecretManager,
 	caManagers core_ca.Managers,
 	registry core_registry.TypeRegistry,
 	validator MeshValidator,
@@ -26,7 +26,6 @@ func NewMeshManager(
 	return &meshManager{
 		store:         store,
 		otherManagers: otherManagers,
-		secretManager: secretManager,
 		caManagers:    caManagers,
 		registry:      registry,
 		meshValidator: validator,
@@ -36,7 +35,6 @@ func NewMeshManager(
 type meshManager struct {
 	store         core_store.ResourceStore
 	otherManagers core_manager.ResourceManager
-	secretManager secrets_manager.SecretManager
 	caManagers    core_ca.Managers
 	registry      core_registry.TypeRegistry
 	meshValidator MeshValidator
@@ -101,7 +99,7 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	}
 	opts := core_store.NewDeleteOptions(fs...)
 	// delete all secrets
-	if err := m.secretManager.DeleteAll(ctx, core_store.DeleteAllByMesh(opts.Mesh)); err != nil {
+	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Mesh)); err != nil {
 		return errors.Wrap(err, "could not delete associated secrets")
 	}
 	return notFoundErr

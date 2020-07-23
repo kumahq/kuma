@@ -1,29 +1,33 @@
 package generator_test
 
 import (
+	"io/ioutil"
+	"path/filepath"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("PrometheusEndpointGenerator", func() {
 
 	type testCase struct {
-		ctx      xds_context.Context
-		proxy    *core_xds.Proxy
-		expected string
+		ctx          xds_context.Context
+		proxy        *core_xds.Proxy
+		expectedFile string
 	}
 
 	DescribeTable("should not generate Envoy xDS resources unless Prometheus metrics have been enabled Mesh-wide",
@@ -193,7 +197,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when
@@ -201,7 +205,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(actual).To(MatchYAML(given.expected))
+			expected, err := ioutil.ReadFile(filepath.Join("testdata", "prometheus-endpoint", given.expectedFile))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML(expected))
 		},
 		Entry("should support a Dataplane without custom metrics configuration", testCase{
 			ctx: xds_context.Context{
@@ -218,8 +224,12 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Name: "prometheus-1",
 										Type: mesh_proto.MetricsPrometheusType,
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-											Port: 1234,
-											Path: "/non-standard-path",
+											Port:     1234,
+											Path:     "/non-standard-path",
+											SkipMTLS: &wrappers.BoolValue{Value: false},
+											Tags: map[string]string{
+												"service": "dataplane-metrics",
+											},
 										}),
 									},
 								},
@@ -235,58 +245,17 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort: 9902,
 				},
 			},
-			expected: `
-            resources:
-            - name: kuma:envoy:admin
-              resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
-                connectTimeout: 5s
-                loadAssignment:
-                  clusterName: kuma:envoy:admin
-                  endpoints:
-                  - lbEndpoints:
-                    - endpoint:
-                        address:
-                          socketAddress:
-                            address: 127.0.0.1
-                            portValue: 9902
-                name: kuma:envoy:admin
-                altStatName: kuma_envoy_admin
-                type: STATIC
-            - name: kuma:metrics:prometheus
-              resource:
-                '@type': type.googleapis.com/envoy.api.v2.Listener
-                trafficDirection: INBOUND
-                address:
-                  socketAddress:
-                    address: 0.0.0.0
-                    portValue: 1234
-                filterChains:
-                - filters:
-                  - name: envoy.http_connection_manager
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                      httpFilters:
-                      - name: envoy.router
-                      routeConfig:
-                        virtualHosts:
-                        - domains:
-                          - '*'
-                          name: envoy_admin
-                          routes:
-                          - match:
-                              prefix: /non-standard-path
-                            route:
-                              cluster: kuma:envoy:admin
-                              prefixRewrite: /stats/prometheus
-                      statPrefix: kuma_metrics_prometheus
-                name: kuma:metrics:prometheus
-`,
+			expectedFile: "default.envoy-config.golden.yaml",
 		}),
 		Entry("should support a Dataplane with custom metrics configuration", testCase{
 			ctx: xds_context.Context{
@@ -321,6 +290,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Mesh: "demo",
 					},
 					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
 						Metrics: &mesh_proto.MetricsBackend{
 							Name: "prometheus-1",
 							Type: mesh_proto.MetricsPrometheusType,
@@ -335,53 +307,189 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					AdminPort: 9902,
 				},
 			},
-			expected: `
-            resources:
-            - name: kuma:envoy:admin
-              resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
-                connectTimeout: 5s
-                loadAssignment:
-                  clusterName: kuma:envoy:admin
-                  endpoints:
-                  - lbEndpoints:
-                    - endpoint:
-                        address:
-                          socketAddress:
-                            address: 127.0.0.1
-                            portValue: 9902
-                name: kuma:envoy:admin
-                altStatName: kuma_envoy_admin
-                type: STATIC
-            - name: kuma:metrics:prometheus
-              resource:
-                '@type': type.googleapis.com/envoy.api.v2.Listener
-                trafficDirection: INBOUND
-                address:
-                  socketAddress:
-                    address: 0.0.0.0
-                    portValue: 8765
-                filterChains:
-                - filters:
-                  - name: envoy.http_connection_manager
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                      httpFilters:
-                      - name: envoy.router
-                      routeConfig:
-                        virtualHosts:
-                        - domains:
-                          - '*'
-                          name: envoy_admin
-                          routes:
-                          - match:
-                              prefix: /even-more-non-standard-path
-                            route:
-                              cluster: kuma:envoy:admin
-                              prefixRewrite: /stats/prometheus
-                      statPrefix: kuma_metrics_prometheus
-                name: kuma:metrics:prometheus
-`,
+			expectedFile: "custom.envoy-config.golden.yaml",
+		}),
+		Entry("should support a Dataplane with mTLS on", testCase{
+			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					SdsLocation: "kuma-system:5677",
+					SdsTlsCert:  []byte("12345"),
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+						Spec: mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{
+								EnabledBackend: "builtin",
+								Backends: []*mesh_proto.CertificateAuthorityBackend{
+									{
+										Name: "builtin",
+										Type: "builtin",
+									},
+								},
+							},
+							Metrics: &mesh_proto.Metrics{
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port:     1234,
+											Path:     "/non-standard-path",
+											SkipMTLS: &wrappers.BoolValue{Value: false},
+											Tags: map[string]string{
+												"service": "dataplane-metrics",
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			proxy: &model.Proxy{
+				Id: model.ProxyId{Name: "demo.backend-01"},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
+				},
+				Metadata: &core_xds.DataplaneMetadata{
+					AdminPort: 9902,
+				},
+			},
+			expectedFile: "default-mtls.envoy-config.golden.yaml",
+		}),
+		Entry("should support a Dataplane with mTLS on (skipMTLS not explicitly defined)", testCase{
+			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					SdsLocation: "kuma-system:5677",
+					SdsTlsCert:  []byte("12345"),
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+						Spec: mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{
+								EnabledBackend: "builtin",
+								Backends: []*mesh_proto.CertificateAuthorityBackend{
+									{
+										Name: "builtin",
+										Type: "builtin",
+									},
+								},
+							},
+							Metrics: &mesh_proto.Metrics{
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port: 1234,
+											Path: "/non-standard-path",
+											Tags: map[string]string{
+												"service": "dataplane-metrics",
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			proxy: &model.Proxy{
+				Id: model.ProxyId{Name: "demo.backend-01"},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
+				},
+				Metadata: &core_xds.DataplaneMetadata{
+					AdminPort: 9902,
+				},
+			},
+			expectedFile: "default-mtls.envoy-config.golden.yaml",
+		}),
+		Entry("should support a Dataplane with mTLS on but skipMTLS true", testCase{
+			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					SdsLocation: "kuma-system:5677",
+					SdsTlsCert:  []byte("12345"),
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+						Spec: mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{
+								EnabledBackend: "builtin",
+								Backends: []*mesh_proto.CertificateAuthorityBackend{
+									{
+										Name: "builtin",
+										Type: "builtin",
+									},
+								},
+							},
+							Metrics: &mesh_proto.Metrics{
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port:     1234,
+											Path:     "/non-standard-path",
+											SkipMTLS: &wrappers.BoolValue{Value: true},
+											Tags: map[string]string{
+												"service": "dataplane-metrics",
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			proxy: &model.Proxy{
+				Id: model.ProxyId{Name: "demo.backend-01"},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
+					Spec: mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
+				},
+				Metadata: &core_xds.DataplaneMetadata{
+					AdminPort: 9902,
+				},
+			},
+			expectedFile: "default.envoy-config.golden.yaml",
 		}),
 	)
 
@@ -475,7 +583,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                 metrics:
                   type: prometheus
                   conf:
-                    port: 8080
+                    port: 80
 `,
 			}),
 			Entry("should not overshadow outbound listener port", testCase{
@@ -487,9 +595,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                     servicePort: 8080
                   outbound:
                   - port: 54321
+                    address: 192.168.0.1
                     service: db
-                  - port: 59200
-                    service: elastic
                 metrics:
                   type: prometheus
                   conf:

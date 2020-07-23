@@ -5,20 +5,32 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
 	"github.com/emicklei/go-restful"
 
-	"github.com/Kong/kuma/pkg/api-server/definitions"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	rest_errors "github.com/Kong/kuma/pkg/core/rest/errors"
-	"github.com/Kong/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 type meshFromRequestFn = func(*restful.Request) string
+
+const (
+	k8sReadOnlyMessage = "On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply' or via the HTTP API." +
+		" As a best practice, you should always be using 'kubectl apply' instead." +
+		" You can still use 'kumactl' or the HTTP API to make read-only operations. On Universal this limitation does not apply.\n"
+	//globalReadOnlyMessage = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
+	//	" You can still use 'kumactl' or the HTTP API to modify them on the remote control plane.\n"
+	//remoteReadOnlyMessage = "On remote control plane you can only modify dataplane resources with 'kumactl apply' or via the HTTP API." +
+	//	" You can still use 'kumactl' or the HTTP API to modify the rest of the resource on the global control plane.\n"
+)
 
 func meshFromPathParam(param string) meshFromRequestFn {
 	return func(request *restful.Request) string {
@@ -155,10 +167,7 @@ func (r *resourceEndpoints) addCreateOrUpdateEndpointReadOnly(ws *restful.WebSer
 }
 
 func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Request, response *restful.Response) {
-	err := response.WriteErrorString(http.StatusMethodNotAllowed,
-		"On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply' or via the HTTP API."+
-			" As a best practice, you should always be using 'kubectl apply' instead."+
-			" You can still use 'kumactl' or the HTTP API to make read-only operations. On Universal this limitation does not apply.\n")
+	err := response.WriteErrorString(http.StatusMethodNotAllowed, k8sReadOnlyMessage)
 	if err != nil {
 		core.Log.Error(err, "Could not write the response")
 	}
@@ -188,10 +197,7 @@ func (r *resourceEndpoints) addDeleteEndpointReadOnly(ws *restful.WebService, pa
 }
 
 func (r *resourceEndpoints) deleteResourceReadOnly(request *restful.Request, response *restful.Response) {
-	err := response.WriteErrorString(http.StatusMethodNotAllowed,
-		"On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply' or via the HTTP API."+
-			" As a best practice, you should always be using 'kubectl apply' instead."+
-			" You can still use 'kumactl' or the HTTP API to make read-only operations. On Universal this limitation does not apply.\n")
+	err := response.WriteErrorString(http.StatusMethodNotAllowed, k8sReadOnlyMessage)
 	if err != nil {
 		core.Log.Error(err, "Could not write the response")
 	}
@@ -207,7 +213,9 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if string(r.ResourceFactory().GetType()) != resource.Meta.Type {
 		err.AddViolation("type", "type from the URL has to be the same as in body")
 	}
-	if meshName != resource.Meta.Mesh && r.ResourceFactory().GetType() != mesh.MeshType {
+	if meshName != resource.Meta.Mesh &&
+		r.ResourceFactory().GetType() != mesh.MeshType &&
+		r.ResourceFactory().GetType() != system.ZoneType {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
 	err.AddError("", mesh.ValidateMeta(name, meshName))

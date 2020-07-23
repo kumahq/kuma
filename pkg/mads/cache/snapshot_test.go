@@ -6,9 +6,9 @@ import (
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
-	. "github.com/Kong/kuma/pkg/mads/cache"
+	. "github.com/kumahq/kuma/pkg/mads/cache"
 
-	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
+	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 )
 
 var _ = Describe("Snapshot", func() {

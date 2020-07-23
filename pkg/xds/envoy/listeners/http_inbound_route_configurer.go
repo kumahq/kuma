@@ -4,12 +4,12 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
-	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
-func HttpInboundRoute(service string, cluster envoy_common.ClusterInfo) FilterChainBuilderOpt {
+func HttpInboundRoute(service string, cluster envoy_common.ClusterSubset) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.Add(&HttpInboundRouteConfigurer{
 			service: service,
@@ -21,7 +21,7 @@ func HttpInboundRoute(service string, cluster envoy_common.ClusterInfo) FilterCh
 type HttpInboundRouteConfigurer struct {
 	service string
 	// Cluster to forward traffic to.
-	cluster envoy_common.ClusterInfo
+	cluster envoy_common.ClusterSubset
 }
 
 func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {

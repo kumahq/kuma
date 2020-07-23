@@ -8,8 +8,8 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/pkg/errors"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
 )
 
 func newAuthCallbacks(authenticator sds_auth.Authenticator) envoy_server.Callbacks {

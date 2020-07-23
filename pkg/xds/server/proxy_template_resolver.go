@@ -3,14 +3,14 @@ package server
 import (
 	"context"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core"
-	core_policy "github.com/Kong/kuma/pkg/core/policy"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	model "github.com/Kong/kuma/pkg/core/xds"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	core_policy "github.com/kumahq/kuma/pkg/core/policy"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	model "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 var (
@@ -46,4 +46,12 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 	}
 	log.V(2).Info("falling back to the default ProxyTemplate since there is no best match", "templates", templateList.Items)
 	return r.DefaultProxyTemplate
+}
+
+type staticProxyTemplateResolver struct {
+	template *mesh_proto.ProxyTemplate
+}
+
+func (r *staticProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
+	return r.template
 }

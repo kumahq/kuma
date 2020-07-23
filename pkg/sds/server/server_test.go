@@ -10,24 +10,23 @@ import (
 	envoy_api_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
-	"github.com/golang/protobuf/ptypes/duration"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	"github.com/Kong/kuma/pkg/core"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	"github.com/Kong/kuma/pkg/sds/server"
-	"github.com/Kong/kuma/pkg/test"
-	"github.com/Kong/kuma/pkg/test/runtime"
-	tokens_builtin "github.com/Kong/kuma/pkg/tokens/builtin"
-	tokens_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
+	"github.com/kumahq/kuma/pkg/sds/server"
+	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test/runtime"
+	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
+	tokens_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -71,9 +70,7 @@ var _ = Describe("SDS Server", func() {
 							Type: "builtin",
 							DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
 								Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
-									Expiration: &duration.Duration{
-										Seconds: 60,
-									},
+									Expiration: "1m",
 								},
 							},
 						},
@@ -82,9 +79,7 @@ var _ = Describe("SDS Server", func() {
 							Type: "builtin",
 							DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
 								Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
-									Expiration: &duration.Duration{
-										Seconds: 60,
-									},
+									Expiration: "1m",
 								},
 							},
 						},
@@ -115,7 +110,7 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup Auth with Dataplane Token
-		err = tokens_issuer.CreateDefaultSigningKey(runtime.SecretManager())
+		err = tokens_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
 		Expect(err).ToNot(HaveOccurred())
 
 		// retrieve example DP token

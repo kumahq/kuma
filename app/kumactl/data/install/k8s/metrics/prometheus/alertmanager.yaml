@@ -127,12 +127,6 @@ spec:
             - --web.external-url=http://localhost:9093
           ports:
             - containerPort: 9093
-          readinessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9093
-            initialDelaySeconds: 30
-            timeoutSeconds: 30
           resources:
             {}
           volumeMounts:
@@ -156,7 +150,6 @@ spec:
       securityContext:
         fsGroup: 65534
         runAsGroup: 65534
-        runAsNonRoot: true
         runAsUser: 65534
       volumes:
         - name: config-volume

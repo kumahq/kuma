@@ -8,12 +8,12 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
-	common_k8s "github.com/Kong/kuma/pkg/plugins/common/k8s"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -47,9 +47,13 @@ func NewStore(reader kube_client.Reader, writer kube_client.Writer, namespace st
 	}, nil
 }
 
-func (s *KubernetesStore) Create(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.CreateOptionsFunc) error {
+func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
+	secretRes, ok := r.(*secret_model.SecretResource)
+	if !ok {
+		return newInvalidTypeError()
+	}
 	opts := core_store.NewCreateOptions(fs...)
-	secret, err := s.converter.ToKubernetesObject(r)
+	secret, err := s.converter.ToKubernetesObject(secretRes)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
 	}
@@ -66,14 +70,18 @@ func (s *KubernetesStore) Create(ctx context.Context, r *secret_model.SecretReso
 		}
 		return errors.Wrap(err, "failed to create k8s Secret")
 	}
-	err = s.converter.ToCoreResource(secret, r)
+	err = s.converter.ToCoreResource(secret, secretRes)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
 	return nil
 }
-func (s *KubernetesStore) Update(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.UpdateOptionsFunc) error {
-	secret, err := s.converter.ToKubernetesObject(r)
+func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
+	secretRes, ok := r.(*secret_model.SecretResource)
+	if !ok {
+		return newInvalidTypeError()
+	}
+	secret, err := s.converter.ToKubernetesObject(secretRes)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
 	}
@@ -84,15 +92,19 @@ func (s *KubernetesStore) Update(ctx context.Context, r *secret_model.SecretReso
 		}
 		return errors.Wrap(err, "failed to update k8s Secret")
 	}
-	err = s.converter.ToCoreResource(secret, r)
+	err = s.converter.ToCoreResource(secret, secretRes)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
 	return nil
 }
-func (s *KubernetesStore) Delete(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.DeleteOptionsFunc) error {
+func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...core_store.DeleteOptionsFunc) error {
+	secretRes, ok := r.(*secret_model.SecretResource)
+	if !ok {
+		return newInvalidTypeError()
+	}
 	opts := core_store.NewDeleteOptions(fs...)
-	secret, err := s.converter.ToKubernetesObject(r)
+	secret, err := s.converter.ToKubernetesObject(secretRes)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
 	}
@@ -107,7 +119,11 @@ func (s *KubernetesStore) Delete(ctx context.Context, r *secret_model.SecretReso
 	}
 	return nil
 }
-func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.SecretResource, fs ...core_store.GetOptionsFunc) error {
+func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...core_store.GetOptionsFunc) error {
+	secretRes, ok := r.(*secret_model.SecretResource)
+	if !ok {
+		return newInvalidTypeError()
+	}
 	opts := core_store.NewGetOptions(fs...)
 	secret := &kube_core.Secret{}
 	if err := s.reader.Get(ctx, kube_client.ObjectKey{Namespace: s.namespace, Name: opts.Name}, secret); err != nil {
@@ -116,7 +132,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.SecretResourc
 		}
 		return errors.Wrap(err, "failed to get k8s secret")
 	}
-	if err := s.converter.ToCoreResource(secret, r); err != nil {
+	if err := s.converter.ToCoreResource(secret, secretRes); err != nil {
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
 	if r.GetMeta().GetMesh() != opts.Mesh {
@@ -127,7 +143,11 @@ func (s *KubernetesStore) Get(ctx context.Context, r *secret_model.SecretResourc
 	}
 	return nil
 }
-func (s *KubernetesStore) List(ctx context.Context, rs *secret_model.SecretResourceList, fs ...core_store.ListOptionsFunc) error {
+func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, fs ...core_store.ListOptionsFunc) error {
+	secretsRes, ok := rs.(*secret_model.SecretResourceList)
+	if !ok {
+		return newInvalidTypeError()
+	}
 	opts := core_store.NewListOptions(fs...)
 	secrets := &kube_core.SecretList{}
 
@@ -141,7 +161,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs *secret_model.SecretResou
 	if err := s.reader.List(ctx, secrets, kube_client.InNamespace(s.namespace), labels, fields); err != nil {
 		return errors.Wrap(err, "failed to list k8s Secrets")
 	}
-	if err := s.converter.ToCoreList(secrets, rs); err != nil {
+	if err := s.converter.ToCoreList(secrets, secretsRes); err != nil {
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
 	return nil
@@ -234,4 +254,8 @@ func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out *secret_model
 		out.Items[i] = r
 	}
 	return nil
+}
+
+func newInvalidTypeError() error {
+	return errors.New("resource has a wrong type")
 }

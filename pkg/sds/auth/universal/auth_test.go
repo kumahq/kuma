@@ -6,16 +6,16 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	"github.com/Kong/kuma/pkg/sds/auth"
-	"github.com/Kong/kuma/pkg/sds/auth/universal"
-	"github.com/Kong/kuma/pkg/sds/server"
-	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/sds/auth"
+	"github.com/kumahq/kuma/pkg/sds/auth/universal"
+	"github.com/kumahq/kuma/pkg/sds/server"
+	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 var _ = Describe("Authentication flow", func() {
@@ -70,7 +70,7 @@ var _ = Describe("Authentication flow", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(authIdentity.Service).To(Equal("web"))
+		Expect(authIdentity.Services[0]).To(Equal("web"))
 		Expect(authIdentity.Mesh).To(Equal(id.Mesh))
 	})
 

@@ -5,13 +5,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/ca"
-	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
-	"github.com/Kong/kuma/pkg/core/datasource"
-	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/plugins/ca/provided/config"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/ca"
+	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type providedCaManager struct {
@@ -82,6 +83,21 @@ func (p *providedCaManager) Ensure(ctx context.Context, mesh string, backend mes
 	return nil // Cert and Key are created by user and pointed in the configuration which is validated first
 }
 
+func (p *providedCaManager) UsedSecrets(mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]string, error) {
+	cfg := &config.ProvidedCertificateAuthorityConfig{}
+	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
+		return nil, errors.Wrap(err, "could not convert backend config to ProvidedCertificateAuthorityConfig")
+	}
+	var secrets []string
+	if cfg.GetCert().GetSecret() != "" {
+		secrets = append(secrets, cfg.GetCert().GetSecret())
+	}
+	if cfg.GetKey().GetSecret() != "" {
+		secrets = append(secrets, cfg.GetKey().GetSecret())
+	}
+	return secrets, nil
+}
+
 func (p *providedCaManager) GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]ca.Cert, error) {
 	meshCa, err := p.getCa(ctx, mesh, backend)
 	if err != nil {
@@ -90,20 +106,23 @@ func (p *providedCaManager) GetRootCert(ctx context.Context, mesh string, backen
 	return []ca.Cert{meshCa.CertPEM}, nil
 }
 
-func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (ca.KeyPair, error) {
+func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, services []string) (ca.KeyPair, error) {
 	meshCa, err := p.getCa(ctx, mesh, backend)
 	if err != nil {
 		return ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
 	}
 
 	var opts []ca_issuer.CertOptsFn
-	if backend.GetDpCert().GetRotation().GetExpiration() != nil {
-		duration := util_proto.ToDuration(*backend.GetDpCert().GetRotation().Expiration)
+	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
+		duration, err := mesh_helper.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		if err != nil {
+			return ca.KeyPair{}, err
+		}
 		opts = append(opts, ca_issuer.WithExpirationTime(duration))
 	}
-	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, service, opts...)
+	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, services, opts...)
 	if err != nil {
-		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for workload %q in Mesh %q using backend %q", service, mesh, backend.Name)
+		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for services %q in Mesh %q using backend %q", services, mesh, backend.Name)
 	}
 	return *keyPair, nil
 }

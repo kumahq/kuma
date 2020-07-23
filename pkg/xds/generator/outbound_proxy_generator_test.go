@@ -7,16 +7,15 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	gtypes "github.com/onsi/gomega/types"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("OutboundProxyGenerator", func() {
@@ -75,12 +74,17 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				Id: model.ProxyId{Name: "side-car", Mesh: "default"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
+						Name:    "dp-1",
+						Mesh:    given.ctx.Mesh.Resource.Meta.GetName(),
 						Version: "1",
 					},
 					Spec: dataplane,
 				},
 				TrafficRoutes: model.RouteMap{
-					"api-http": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 40001,
+					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 								Weight:      100,
@@ -88,7 +92,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							}},
 						},
 					},
-					"api-tcp": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 40002,
+					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 								Weight:      100,
@@ -96,7 +103,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							}},
 						},
 					},
-					"backend": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 18080,
+					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 								Weight:      100,
@@ -104,7 +114,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							}},
 						},
 					},
-					"db": &mesh_core.TrafficRouteResource{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 54321,
+					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 								Weight:      10,
@@ -137,19 +150,53 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				OutboundTargets: model.EndpointMap{
 					"api-http": []model.Endpoint{ // notice that all endpoints have tag `protocol: http`
-						{Target: "192.168.0.4", Port: 8084, Tags: map[string]string{"service": "api-http", "protocol": "http", "region": "us"}},
-						{Target: "192.168.0.5", Port: 8085, Tags: map[string]string{"service": "api-http", "protocol": "http", "region": "eu"}},
+						{
+							Target: "192.168.0.4",
+							Port:   8084,
+							Tags:   map[string]string{"service": "api-http", "protocol": "http", "region": "us"},
+							Weight: 1,
+						},
+						{
+							Target: "192.168.0.5",
+							Port:   8085,
+							Tags:   map[string]string{"service": "api-http", "protocol": "http", "region": "eu"},
+							Weight: 1,
+						},
 					},
 					"api-tcp": []model.Endpoint{ // notice that not every endpoint has a `protocol: http` tag
-						{Target: "192.168.0.6", Port: 8086, Tags: map[string]string{"service": "api-tcp", "protocol": "http", "region": "us"}},
-						{Target: "192.168.0.7", Port: 8087, Tags: map[string]string{"service": "api-tcp", "region": "eu"}},
+						{
+							Target: "192.168.0.6",
+							Port:   8086,
+							Tags:   map[string]string{"service": "api-tcp", "protocol": "http", "region": "us"},
+							Weight: 1,
+						},
+						{
+							Target: "192.168.0.7",
+							Port:   8087,
+							Tags:   map[string]string{"service": "api-tcp", "region": "eu"},
+							Weight: 1,
+						},
 					},
 					"backend": []model.Endpoint{ // notice that not every endpoint has a tag `protocol: http`
-						{Target: "192.168.0.1", Port: 8081, Tags: map[string]string{"service": "backend", "region": "us"}},
-						{Target: "192.168.0.2", Port: 8082},
+						{
+							Target: "192.168.0.1",
+							Port:   8081,
+							Tags:   map[string]string{"service": "backend", "region": "us"},
+							Weight: 1,
+						},
+						{
+							Target: "192.168.0.2",
+							Port:   8082,
+							Weight: 1,
+						},
 					},
 					"db": []model.Endpoint{
-						{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
+						{
+							Target: "192.168.0.3",
+							Port:   5432,
+							Tags:   map[string]string{"service": "db", "role": "master"},
+							Weight: 1,
+						},
 					},
 				},
 				Logs: model.LogMap{
@@ -169,6 +216,17 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 				Metadata: &model.DataplaneMetadata{},
+				CircuitBreakers: model.CircuitBreakerMap{
+					"api-http": &mesh_core.CircuitBreakerResource{
+						Spec: mesh_proto.CircuitBreaker{
+							Conf: &mesh_proto.CircuitBreaker_Conf{
+								Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
+									TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
+								},
+							},
+						},
+					},
+				},
 			}
 
 			// when
@@ -178,7 +236,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when
@@ -224,7 +282,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "03.envoy.golden.yaml",
 		}),
-		Entry("4. transparent_proxying=true, mtls=true, outbound=4", testCase{
+		Entry("04. transparent_proxying=true, mtls=true, outbound=4", testCase{
 			ctx: mtlsCtx,
 			dataplane: `
             networking:
@@ -243,7 +301,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
               - port: 40002
                 service: api-tcp
               transparentProxying:
-                redirectPort: 15001
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
 `,
 			expected: "04.envoy.golden.yaml",
 		}),
@@ -272,7 +331,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				Spec: dataplane,
 			},
 			TrafficRoutes: model.RouteMap{
-				"backend.kuma-system": &mesh_core.TrafficRouteResource{
+				mesh_proto.OutboundInterface{
+					DataplaneIP:   "127.0.0.1",
+					DataplanePort: 18080,
+				}: &mesh_core.TrafficRouteResource{
 					Spec: mesh_proto.TrafficRoute{
 						Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 							Weight:      100,
@@ -280,7 +342,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						}},
 					},
 				},
-				"db.kuma-system": &mesh_core.TrafficRouteResource{
+				mesh_proto.OutboundInterface{
+					DataplaneIP:   "127.0.0.1",
+					DataplanePort: 54321,
+				}: &mesh_core.TrafficRouteResource{
 					Spec: mesh_proto.TrafficRoute{
 						Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
 							Weight:      100,
@@ -299,10 +364,19 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			},
 			OutboundTargets: model.EndpointMap{
 				"backend.kuma-system": []model.Endpoint{
-					{Target: "192.168.0.1", Port: 8082},
+					{
+						Target: "192.168.0.1",
+						Port:   8082,
+						Weight: 1,
+					},
 				},
 				"db.kuma-system": []model.Endpoint{
-					{Target: "192.168.0.2", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
+					{
+						Target: "192.168.0.2",
+						Port:   5432,
+						Tags:   map[string]string{"service": "db", "role": "master"},
+						Weight: 1,
+					},
 				},
 			},
 			Metadata: &model.DataplaneMetadata{},
@@ -315,7 +389,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+		resp, err := rs.List().ToDeltaDiscoveryResponse()
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// when
@@ -326,146 +400,5 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		expected, err := ioutil.ReadFile(filepath.Join("testdata", "outbound-proxy", "cluster-dots.envoy.golden.yaml"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual).To(MatchYAML(expected))
-	})
-
-	Describe("fail when a user-defined configuration (Dataplane, TrafficRoute, etc) is not valid", func() {
-
-		type testCase struct {
-			ctx                xds_context.Context
-			dataplane          string
-			chaos              func(*model.Proxy)
-			expectedErrMatcher gtypes.GomegaMatcher
-		}
-
-		noExtraChaos := func(*model.Proxy) {}
-
-		DescribeTable("Generate Envoy xDS resources",
-			func(given testCase) {
-				// setup
-				gen := &generator.OutboundProxyGenerator{}
-
-				dataplane := mesh_proto.Dataplane{}
-				Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
-
-				proxy := &model.Proxy{
-					Id: model.ProxyId{Name: "side-car", Mesh: "default"},
-					Dataplane: &mesh_core.DataplaneResource{
-						Meta: &test_model.ResourceMeta{
-							Version: "1",
-						},
-						Spec: dataplane,
-					},
-					TrafficRoutes: model.RouteMap{
-						"backend": &mesh_core.TrafficRouteResource{
-							Spec: mesh_proto.TrafficRoute{
-								Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-									Weight:      100,
-									Destination: mesh_proto.MatchService("backend"),
-								}},
-							},
-						},
-						"db": &mesh_core.TrafficRouteResource{
-							Spec: mesh_proto.TrafficRoute{
-								Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-									Weight:      10,
-									Destination: mesh_proto.TagSelector{"service": "db", "role": "master"},
-								}, {
-									Weight:      90,
-									Destination: mesh_proto.TagSelector{"service": "db", "role": "replica"},
-								}, {
-									Weight:      0, // should be excluded from Envoy configuration
-									Destination: mesh_proto.TagSelector{"service": "db", "role": "canary"},
-								}},
-							},
-						},
-					},
-					OutboundSelectors: model.DestinationMap{
-						"backend": model.TagSelectorSet{
-							{"service": "backend"},
-						},
-						"db": model.TagSelectorSet{
-							{"service": "db", "role": "master"},
-							{"service": "db", "role": "replica"},
-							{"service": "db", "role": "canary"},
-						},
-					},
-					OutboundTargets: model.EndpointMap{
-						"backend": []model.Endpoint{
-							{Target: "192.168.0.1", Port: 8081, Tags: map[string]string{"service": "backend", "region": "us"}},
-							{Target: "192.168.0.2", Port: 8082},
-						},
-						"db": []model.Endpoint{
-							{Target: "192.168.0.3", Port: 5432, Tags: map[string]string{"service": "db", "role": "master"}},
-						},
-					},
-					Metadata: &model.DataplaneMetadata{},
-				}
-
-				By("introducing an error into configuration")
-				given.chaos(proxy)
-
-				// when
-				rs, err := gen.Generate(given.ctx, proxy)
-
-				// then
-				Expect(err).To(HaveOccurred())
-				// and
-				Expect(err.Error()).To(given.expectedErrMatcher)
-				// and
-				Expect(rs).To(BeNil())
-			},
-			Entry("dataplane with an invalid outbound interface", testCase{
-				ctx: plainCtx,
-				dataplane: `
-                networking:
-                  outbound:
-                  - interface: 127:not-a-port
-                    service: backend
-`,
-				chaos:              noExtraChaos,
-				expectedErrMatcher: HavePrefix(`invalid DATAPLANE_IP in "127:not-a-port": "127" is not a valid IP address`),
-			}),
-			Entry("dataplane with an outbound interface that has no route", testCase{
-				ctx: plainCtx,
-				dataplane: `
-                networking:
-                  outbound:
-                  - port: 18080
-                    service: backend
-`,
-				chaos: func(proxy *model.Proxy) {
-					// simulate missing route
-					proxy.TrafficRoutes = nil
-				},
-				expectedErrMatcher: Equal(`dataplane.networking.outbound[0]{service="backend"}: has no TrafficRoute`),
-			}),
-			Entry("dataplane with an outbound interface that has a route without destination", testCase{
-				ctx: plainCtx,
-				dataplane: `
-                networking:
-                  outbound:
-                  - port: 18080
-                    service: backend
-`,
-				chaos: func(proxy *model.Proxy) {
-					// simulate missing route
-					proxy.TrafficRoutes = model.RouteMap{
-						"backend": &mesh_core.TrafficRouteResource{
-							Meta: &test_model.ResourceMeta{
-								Name: "route-without-destination",
-							},
-							Spec: mesh_proto.TrafficRoute{
-								Sources:      []*mesh_proto.Selector{{Match: mesh_proto.MatchAnyService()}},
-								Destinations: []*mesh_proto.Selector{{Match: mesh_proto.MatchAnyService()}},
-								Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-									Weight: 100, Destination: map[string]string{"not-a-service": "value"},
-								}},
-							},
-						},
-					}
-				},
-				expectedErrMatcher: Equal(`trafficroute{name="route-without-destination"}.conf[0].destination: mandatory tag "service" is missing: map[not-a-service:value]`),
-			}),
-		)
 	})
 })

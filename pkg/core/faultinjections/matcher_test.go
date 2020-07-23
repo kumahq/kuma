@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -12,13 +12,13 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	. "github.com/Kong/kuma/pkg/core/faultinjections"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	"github.com/Kong/kuma/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/core/faultinjections"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("Match", func() {
@@ -73,7 +73,8 @@ var _ = Describe("Match", func() {
 			manager := core_manager.NewResourceManager(memory.NewStore())
 			matcher := FaultInjectionMatcher{ResourceManager: manager}
 
-			err := manager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default"))
+			mesh := &mesh.MeshResource{}
+			err := manager.Create(context.Background(), mesh, store.CreateByKey("default", "default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, p := range given.policies {
@@ -81,7 +82,7 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			bestMatched, err := matcher.Match(context.Background(), given.dataplane)
+			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bestMatched).To(Equal(given.expected))
 		},
@@ -117,6 +118,7 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8080,
 				}: &policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
@@ -160,6 +162,7 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8081,
 				}: &policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{

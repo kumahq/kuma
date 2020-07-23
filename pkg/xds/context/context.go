@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"net/url"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 type Context struct {
@@ -20,7 +20,8 @@ type ControlPlaneContext struct {
 }
 
 type MeshContext struct {
-	Resource *mesh_core.MeshResource
+	Resource   *mesh_core.MeshResource
+	Dataplanes *mesh_core.DataplaneResourceList
 }
 
 func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, error) {

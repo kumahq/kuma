@@ -4,18 +4,20 @@ import (
 	"context"
 	"os"
 
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+
 	"io/ioutil"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/datasource"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/secrets/cipher"
-	"github.com/Kong/kuma/pkg/core/secrets/manager"
-	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,11 +25,11 @@ import (
 
 var _ = Describe("DataSource Loader", func() {
 
-	var secretManager manager.SecretManager
+	var secretManager manager.ResourceManager
 	var dataSourceLoader datasource.Loader
 
 	BeforeEach(func() {
-		secretManager = manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None())
+		secretManager = secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil)
 		dataSourceLoader = datasource.NewDataSourceLoader(secretManager)
 	})
 

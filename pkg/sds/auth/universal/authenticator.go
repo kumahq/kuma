@@ -5,10 +5,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	common_auth "github.com/Kong/kuma/pkg/sds/auth/common"
-	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
+	common_auth "github.com/kumahq/kuma/pkg/sds/auth/common"
+	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer, dataplaneResolver common_auth.DataplaneResolver) sds_auth.Authenticator {

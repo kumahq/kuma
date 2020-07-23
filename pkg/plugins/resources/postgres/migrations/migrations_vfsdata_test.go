@@ -5,8 +5,8 @@ package migrations_test
 import (
 	"io/ioutil"
 
-	"github.com/Kong/kuma/pkg/plugins/resources/postgres/migrations"
-	"github.com/Kong/kuma/pkg/test/vfsgen"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/migrations"
+	"github.com/kumahq/kuma/pkg/test/vfsgen"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

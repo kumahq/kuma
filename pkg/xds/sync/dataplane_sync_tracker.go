@@ -4,10 +4,10 @@ import (
 	"context"
 	stdsync "sync"
 
-	"github.com/Kong/kuma/pkg/core"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
+	"github.com/kumahq/kuma/pkg/core"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"

@@ -8,16 +8,22 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
+	"github.com/kumahq/kuma/pkg/config/mode"
+
+	"github.com/kumahq/kuma/pkg/zones/poller"
+
 	"github.com/emicklei/go-restful"
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/api-server/definitions"
-	"github.com/Kong/kuma/pkg/config"
-	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	"github.com/kumahq/kuma/pkg/config"
+	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/runtime"
 )
 
 var (
@@ -26,6 +32,10 @@ var (
 
 type ApiServer struct {
 	server *http.Server
+}
+
+func (a *ApiServer) NeedLeaderElection() bool {
+	return false
 }
 
 func (a *ApiServer) Address() string {
@@ -50,7 +60,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatusPoller, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
@@ -85,6 +95,9 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	}
 	container.Add(configWs)
 
+	clustersWs := clustersWs(clusters)
+	container.Add(clustersWs)
+
 	container.Filter(cors.Filter)
 	return &ApiServer{
 		server: srv,
@@ -101,39 +114,58 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	endpoints.addListEndpoint(ws, "") // listing all resources in all meshes
 
 	for _, definition := range defs {
-		if definition.ResourceFactory().GetType() != mesh.MeshType {
-			endpoints := resourceEndpoints{
-				publicURL:            config.Catalog.ApiServer.Url,
-				resManager:           resManager,
-				ResourceWsDefinition: definition,
-				meshFromRequest:      meshFromPathParam("mesh"),
-			}
-			if !config.ReadOnly {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			} else {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
-				endpoints.addDeleteEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
-			}
-			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
-		} else {
+		switch definition.ResourceFactory().GetType() {
+		case mesh.MeshType:
 			endpoints := resourceEndpoints{
 				publicURL:            config.Catalog.ApiServer.Url,
 				resManager:           resManager,
 				ResourceWsDefinition: definition,
 				meshFromRequest:      meshFromPathParam("name"),
 			}
-			if !config.ReadOnly {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
-				endpoints.addDeleteEndpoint(ws, "/meshes")
-			} else {
+			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
 				endpoints.addDeleteEndpointReadOnly(ws, "/meshes")
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
+				endpoints.addDeleteEndpoint(ws, "/meshes")
 			}
 			endpoints.addFindEndpoint(ws, "/meshes")
 			endpoints.addListEndpoint(ws, "/meshes")
+		case system.ZoneType:
+			endpoints := resourceEndpoints{
+				publicURL:            config.Catalog.ApiServer.Url,
+				resManager:           resManager,
+				ResourceWsDefinition: definition,
+				meshFromRequest: func(request *restful.Request) string {
+					return "default"
+				},
+			}
+			if config.ReadOnly || definition.ReadOnly {
+				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/zones")
+				endpoints.addDeleteEndpointReadOnly(ws, "/zones")
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/zones")
+				endpoints.addDeleteEndpoint(ws, "/zones")
+			}
+			endpoints.addFindEndpoint(ws, "/zones")
+			endpoints.addListEndpoint(ws, "/zones")
+		default:
+			endpoints := resourceEndpoints{
+				publicURL:            config.Catalog.ApiServer.Url,
+				resManager:           resManager,
+				ResourceWsDefinition: definition,
+				meshFromRequest:      meshFromPathParam("mesh"),
+			}
+			if config.ReadOnly || definition.ReadOnly {
+				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
+				endpoints.addDeleteEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			}
+			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
 		}
 	}
 }
@@ -164,7 +196,21 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config().ApiServer, &cfg)
+	if cfg.Mode.Mode != mode.Standalone {
+		for i, definition := range definitions.All {
+			switch cfg.Mode.Mode {
+			case mode.Global:
+				if definition.ResourceFactory().GetType() == mesh.DataplaneType {
+					definitions.All[i].ReadOnly = true
+				}
+			case mode.Remote:
+				if definition.ResourceFactory().GetType() != mesh.DataplaneType {
+					definitions.All[i].ReadOnly = true
+				}
+			}
+		}
+	}
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.Zones(), definitions.All, rt.Config().ApiServer, &cfg)
 	if err != nil {
 		return err
 	}

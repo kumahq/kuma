@@ -1,14 +1,16 @@
 package mesh_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MeshResource", func() {
@@ -249,5 +251,35 @@ var _ = Describe("MeshResource", func() {
 			backends := mesh.GetTracingBackends()
 			Expect(backends).To(Equal(""))
 		})
+	})
+	Describe("ParseDuration", func() {
+
+		type testCase struct {
+			input  string
+			output time.Duration
+		}
+
+		DescribeTable("should return the correct duration",
+			func(given testCase) {
+				duration, _ := ParseDuration(given.input)
+				Expect(given.output).To(Equal(duration))
+			},
+			Entry("should return 0 if seconds is 0", testCase{
+				input:  "0s",
+				output: 0,
+			}),
+			Entry("should return minute", testCase{
+				input:  "5m",
+				output: 5 * time.Minute,
+			}),
+			Entry("should return day", testCase{
+				input:  "4d",
+				output: 4 * 24 * time.Hour,
+			}),
+			Entry("should return year", testCase{
+				input:  "5y",
+				output: 5 * 365 * 24 * time.Hour,
+			}),
+		)
 	})
 })

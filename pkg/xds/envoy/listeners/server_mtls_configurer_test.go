@@ -5,15 +5,16 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("ServerMtlsConfigurer", func() {
@@ -23,7 +24,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
-		clusters        []envoy_common.ClusterInfo
+		clusters        []envoy_common.ClusterSubset
 		ctx             xds_context.Context
 		metadata        core_xds.DataplaneMetadata
 		expected        string
@@ -52,7 +53,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
+			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsLocation: "kuma-control-plane:5677",
@@ -60,6 +61,10 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "default",
+						},
 						Spec: mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
@@ -91,6 +96,23 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
                   commonTlsContext:
+                    combinedValidationContext:
+                      defaultValidationContext:
+                        matchSubjectAltNames:
+                        - prefix: spiffe://default/
+                      validationContextSdsSecretConfig:
+                        name: mesh_ca
+                        sdsConfig:
+                          apiConfigSource:
+                            apiType: GRPC
+                            grpcServices:
+                            - googleGrpc:
+                                channelCredentials:
+                                  sslCredentials:
+                                    rootCerts:
+                                      inlineBytes: Q0VSVElGSUNBVEU=
+                                statPrefix: sds_mesh_ca
+                                targetUri: kuma-control-plane:5677
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
@@ -104,19 +126,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-control-plane:5677
-                    validationContextSdsSecretConfig:
-                      name: mesh_ca
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -127,7 +136,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterInfo{{Name: "localhost:8080", Weight: 200}},
+			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsLocation: "kuma-control-plane:5677",
@@ -135,6 +144,10 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "default",
+						},
 						Spec: mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
@@ -169,6 +182,31 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
                   commonTlsContext:
+                    combinedValidationContext:
+                      defaultValidationContext:
+                        matchSubjectAltNames:
+                        - prefix: spiffe://default/
+                      validationContextSdsSecretConfig:
+                        name: mesh_ca
+                        sdsConfig:
+                          apiConfigSource:
+                            apiType: GRPC
+                            grpcServices:
+                            - googleGrpc:
+                                callCredentials:
+                                - fromPlugin:
+                                    name: envoy.grpc_credentials.file_based_metadata
+                                    typedConfig:
+                                      '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+                                      secretData:
+                                        filename: /var/secret/token
+                                channelCredentials:
+                                  sslCredentials:
+                                    rootCerts:
+                                      inlineBytes: Q0VSVElGSUNBVEU=
+                                credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
+                                statPrefix: sds_mesh_ca
+                                targetUri: kuma-control-plane:5677
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
@@ -189,27 +227,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                               statPrefix: sds_identity_cert
-                              targetUri: kuma-control-plane:5677
-                    validationContextSdsSecretConfig:
-                      name: mesh_ca
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - googleGrpc:
-                              callCredentials:
-                              - fromPlugin:
-                                  name: envoy.grpc_credentials.file_based_metadata
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
-                                    secretData:
-                                      filename: /var/secret/token
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                              statPrefix: sds_mesh_ca
                               targetUri: kuma-control-plane:5677
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080

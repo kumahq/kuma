@@ -15,10 +15,10 @@ import (
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 
-	"github.com/Kong/kuma/pkg/core"
-	kuma_log "github.com/Kong/kuma/pkg/log"
+	"github.com/kumahq/kuma/pkg/core"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 
-	xds_client "github.com/Kong/kuma/pkg/test/xds/client"
+	xds_client "github.com/kumahq/kuma/pkg/test/xds/client"
 )
 
 func newRootCmd() *cobra.Command {

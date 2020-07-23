@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 var (
@@ -15,6 +15,10 @@ var (
 
 type diagnosticsServer struct {
 	port int
+}
+
+func (s *diagnosticsServer) NeedLeaderElection() bool {
+	return false
 }
 
 // Make sure that grpcServer implements all relevant interfaces

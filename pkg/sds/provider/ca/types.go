@@ -6,7 +6,7 @@ import (
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
-	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
+	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
 )
 
 type MeshCaSecret struct {

@@ -5,17 +5,17 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/mads/generator"
+	. "github.com/kumahq/kuma/pkg/mads/generator"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/proto"
 
-	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
+	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("MonitoringAssignmentsGenerator", func() {
@@ -151,8 +151,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/gateway-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/gateway-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/gateway-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -236,8 +235,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -311,8 +309,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -385,8 +382,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -507,8 +503,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/default/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/default/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/default/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -531,8 +526,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						},
 					},
 					{
-						Name:    "/meshes/demo/dataplanes/web-02",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/web-02",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/web-02",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -606,8 +600,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{

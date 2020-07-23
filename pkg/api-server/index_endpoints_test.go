@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var _ = Describe("Index Endpoints", func() {

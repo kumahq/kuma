@@ -5,8 +5,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 const (
@@ -126,6 +126,17 @@ func (l *DataplaneOverviewResourceList) RetainGatewayDataplanes() {
 	result := []*DataplaneOverviewResource{}
 	for _, overview := range l.Items {
 		if overview.Spec.GetDataplane().GetNetworking().GetGateway() != nil {
+			result = append(result, overview)
+		}
+	}
+	l.Items = result
+}
+
+// RetainIngressDataplanes to get only ingress Dataplanes
+func (l *DataplaneOverviewResourceList) RetainIngressDataplanes() {
+	result := []*DataplaneOverviewResource{}
+	for _, overview := range l.Items {
+		if overview.Spec.GetDataplane().GetNetworking().GetIngress() != nil {
 			result = append(result, overview)
 		}
 	}

@@ -12,15 +12,15 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
-	"github.com/Kong/kuma/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type BootstrapGenerator interface {
@@ -75,6 +75,11 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	if request.AdminPort != 0 {
 		adminPort = request.AdminPort
 	}
+
+	if err := b.verifyAdminPort(adminPort, dataplane); err != nil {
+		return nil, err
+	}
+
 	var certBytes string = ""
 	if b.xdsCertFile != "" {
 		cert, err := ioutil.ReadFile(b.xdsCertFile)
@@ -99,6 +104,18 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params)
+}
+
+func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_mesh.DataplaneResource) error {
+	//The admin port in kuma-dp is always bound to 127.0.0.1
+	if dataplane.UsesInboundInterface(core_mesh.IPv4Loopback, adminPort) {
+		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", adminPort)
+	}
+
+	if dataplane.UsesOutboundInterface(core_mesh.IPv4Loopback, adminPort) {
+		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", adminPort)
+	}
+	return nil
 }
 
 func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {

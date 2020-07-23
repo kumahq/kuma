@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
@@ -29,12 +29,14 @@ func (id ProxyId) String() string {
 type ServiceName = string
 
 // RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
-type RouteMap map[ServiceName]*mesh_core.TrafficRouteResource
+type RouteMap map[mesh_proto.OutboundInterface]*mesh_core.TrafficRouteResource
 
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
 
 // DestinationMap holds a set of selectors for all reachable Dataplanes grouped by service name.
+// DestinationMap is based on ServiceName and not on the OutboundInterface because TrafficRoute can introduce new service destinations that were not included in a outbound section.
+// Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
 type DestinationMap map[ServiceName]TagSelectorSet
 
 // Endpoint holds routing-related information about a single endpoint.
@@ -42,6 +44,7 @@ type Endpoint struct {
 	Target string
 	Port   uint32
 	Tags   map[string]string
+	Weight uint32
 }
 
 // EndpointList is a list of Endpoints with convenience methods.
@@ -55,6 +58,9 @@ type LogMap map[ServiceName]*mesh_proto.LoggingBackend
 
 // HealthCheckMap holds the most specific HealthCheck for each reachable service.
 type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
+
+// CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
+type CircuitBreakerMap map[ServiceName]*mesh_core.CircuitBreakerResource
 
 // FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
 type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
@@ -71,6 +77,7 @@ type Proxy struct {
 	OutboundSelectors  DestinationMap
 	OutboundTargets    EndpointMap
 	HealthChecks       HealthCheckMap
+	CircuitBreakers    CircuitBreakerMap
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	Metadata           *DataplaneMetadata
@@ -84,6 +91,15 @@ func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
 		}
 	}
 	return append(s, new)
+}
+
+func (s TagSelectorSet) Matches(tags map[string]string) bool {
+	for _, selector := range s {
+		if selector.Matches(tags) {
+			return true
+		}
+	}
+	return false
 }
 
 func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {

@@ -1,4 +1,4 @@
-module github.com/Kong/kuma/api
+module github.com/kumahq/kuma/api
 
 go 1.14
 

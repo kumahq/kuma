@@ -26,10 +26,17 @@ const (
 	KumaTransparentProxyingAnnotation = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingEnabled    = "enabled"
 
-	KumaTransparentProxyingPortAnnotation = "kuma.io/transparent-proxying-port"
+	KumaTransparentProxyingInboundPortAnnotation  = "kuma.io/transparent-proxying-inbound-port"
+	KumaTransparentProxyingOutboundPortAnnotation = "kuma.io/transparent-proxying-outbound-port"
 
 	KumaGatewayAnnotation = "kuma.io/gateway"
 	KumaGatewayEnabled    = "enabled"
+
+	KumaIngressAnnotation = "kuma.io/ingress"
+	KumaIngressEnabled    = "enabled"
+
+	KumaDirectAccess    = "kuma.io/direct-access-services"
+	KumaDirectAccessAll = "*"
 
 	KumaMetricsPrometheusPort = "prometheus.metrics.kuma.io/port"
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"

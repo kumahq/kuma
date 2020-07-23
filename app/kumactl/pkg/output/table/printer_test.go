@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 )
 
 var _ = Describe("printer", func() {

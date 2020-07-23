@@ -5,6 +5,7 @@ package kuma.mesh.v1alpha1;
 option go_package = "v1alpha1";
 
 import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
 
 // Metrics defines configuration for metrics that should be collected and
 // exposed by dataplanes.
@@ -38,4 +39,13 @@ message PrometheusMetricsBackendConfig {
   // Path on which a dataplane should expose HTTP endpoint with Prometheus
   // metrics.
   string path = 2;
+
+  // Tags associated with an application this dataplane is deployed next to,
+  // e.g. service=web, version=1.0.
+  // `service` tag is mandatory.
+  map<string, string> tags = 3;
+
+  // If true then endpoints for scraping metrics won't require mTLS even if mTLS
+  // is enabled in Mesh. If nil, then it is treated as false.
+  google.protobuf.BoolValue skipMTLS = 4;
 }

@@ -1,0 +1,5 @@
+*
+!build/artifacts-linux-amd64/kuma-dp/kuma-dp
+!tools/releases/templates/LICENSE
+!tools/releases/templates/NOTICE
+!tools/releases/templates/README

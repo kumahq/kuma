@@ -5,14 +5,14 @@ import (
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func DefaultRoute(clusters ...envoy_common.ClusterInfo) VirtualHostBuilderOpt {
+func DefaultRoute(subsets ...envoy_common.ClusterSubset) VirtualHostBuilderOpt {
 	return VirtualHostBuilderOptFunc(func(config *VirtualHostBuilderConfig) {
 		config.Add(&DefaultRouteConfigurer{
 			RouteConfigurer: RouteConfigurer{
-				clusters: clusters,
+				subsets: subsets,
 			},
 		})
 	})
@@ -38,27 +38,32 @@ func (c DefaultRouteConfigurer) Configure(virtualHost *envoy_route.VirtualHost) 
 }
 
 type RouteConfigurer struct {
-	// Clusters to forward traffic to.
-	clusters []envoy_common.ClusterInfo
+	// Subsets to forward traffic to.
+	subsets []envoy_common.ClusterSubset
 }
 
 func (c RouteConfigurer) routeAction() *envoy_route.RouteAction {
 	routeAction := envoy_route.RouteAction{}
-	if len(c.clusters) == 1 {
+	if len(c.subsets) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
-			Cluster: c.clusters[0].Name,
+			Cluster: c.subsets[0].ClusterName,
 		}
+		routeAction.MetadataMatch = envoy_common.LbMetadata(c.subsets[0].Tags)
 	} else {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
-		for _, cluster := range c.clusters {
+		var totalWeight uint32
+		for _, subset := range c.subsets {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
-				Name:   cluster.Name,
-				Weight: &wrappers.UInt32Value{Value: cluster.Weight},
+				Name:          subset.ClusterName,
+				Weight:        &wrappers.UInt32Value{Value: subset.Weight},
+				MetadataMatch: envoy_common.LbMetadata(subset.Tags),
 			})
+			totalWeight += subset.Weight
 		}
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_WeightedClusters{
 			WeightedClusters: &envoy_route.WeightedCluster{
-				Clusters: weightedClusters,
+				Clusters:    weightedClusters,
+				TotalWeight: &wrappers.UInt32Value{Value: totalWeight},
 			},
 		}
 	}

@@ -12,8 +12,8 @@ For a quick start, use the official `golang` Docker image (which has most of the
 
 ```bash
 docker run --rm -ti \
-  --volume `pwd`:/go/src/github.com/Kong/kuma/api \
-  --workdir /go/src/github.com/Kong/kuma/api \
+  --volume `pwd`:/go/src/github.com/kumahq/kuma/api \
+  --workdir /go/src/github.com/kumahq/kuma/api \
   --env HOME=/tmp/home \
   --env GO111MODULE=on \
   golang:1.12.12 bash

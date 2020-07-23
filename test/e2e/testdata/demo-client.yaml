@@ -1,0 +1,48 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-client
+  namespace: kuma-test
+spec:
+  ports:
+    - port: 3000
+      name: http
+  selector:
+    app: demo-client
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-client
+  namespace: kuma-test
+  labels:
+    app: demo-client
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: demo-client
+  template:
+    metadata:
+      labels:
+        app: demo-client
+    spec:
+      containers:
+        - name: demo-client
+          image: kong-docker-kuma-ci-docker.bintray.io/curl
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          command:
+            - nc
+            - -lvk
+            - -p
+            - "3000"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 32Mi

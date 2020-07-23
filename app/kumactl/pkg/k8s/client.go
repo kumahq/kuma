@@ -9,7 +9,7 @@ import (
 	kube_rest "k8s.io/client-go/rest"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	mesh_v1alpha1 "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	mesh_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 type Client interface {

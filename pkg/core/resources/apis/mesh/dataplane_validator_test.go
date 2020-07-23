@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -29,20 +29,6 @@ var _ = Describe("Dataplane", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		},
-		Entry("legacy - valid dataplane with inbounds", `
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              inbound:
-                - interface: 127.0.0.1:8080:9090
-                  tags:
-                    service: backend
-                    version: "1"
-              outbound:
-                - interface: :3333
-                  service: redis`,
-		),
 		Entry("dataplane with inbounds", `
             type: Dataplane
             name: dp-1
@@ -56,7 +42,8 @@ var _ = Describe("Dataplane", func() {
                     version: "1"
               outbound:
                 - port: 3333
-                  service: redis`,
+                  tags:
+                    service: redis`,
 		),
 		Entry("dataplane with full inbounds and outbounds", `
             type: Dataplane
@@ -71,6 +58,24 @@ var _ = Describe("Dataplane", func() {
                   tags:
                     service: backend
                     version: "1"
+              outbound:
+                - port: 3333
+                  address: 127.0.0.1
+                  tags:
+                    service: redis`,
+		),
+		Entry("dataplane with legacy outbounds", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 127.0.0.1
+                  tags:
+                    service: backend
               outbound:
                 - port: 3333
                   address: 127.0.0.1
@@ -100,10 +105,30 @@ var _ = Describe("Dataplane", func() {
                 tags:
                   service: backend
                   version: "1"
-                  valid: abc.0123-789.under_score:90
+                  kuma.io/valid: abc.0123-789.under_score:90
               outbound:
                 - port: 3333
-                  service: redis`,
+                  tags:
+                    service: redis`,
+		),
+		Entry("dataplane in ingress mode", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+                address: 192.168.0.1
+                ingress:
+                  availableServices:
+                    - tags:
+                        service: backend
+                        version: "1"
+                        region: us
+                    - tags:
+                        service: web
+                        version: v2
+                        region: eu
+                inbound:
+                  - port: 10001`,
 		),
 	)
 
@@ -312,7 +337,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["protocol"]'
-                  message: 'tag "protocol" has an invalid value "". Allowed values: http, tcp'
+                  message: 'tag "protocol" has an invalid value "". Allowed values: http, http2, tcp'
                 - field: 'networking.inbound[0].tags["protocol"]'
                   message: tag value cannot be empty`,
 		}),
@@ -334,7 +359,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["protocol"]'
-                  message: 'tag "protocol" has an invalid value "not-yet-supported-protocol". Allowed values: http, tcp'`,
+                  message: 'tag "protocol" has an invalid value "not-yet-supported-protocol". Allowed values: http, http2, tcp'`,
 		}),
 		Entry("networking.gateway: empty service tag", testCase{
 			dataplane: `
@@ -392,6 +417,27 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.outbound[0].service
                   message: cannot be empty`,
 		}),
+		Entry("networking.outbound: empty service tag", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 1234
+                      tags:
+                        service: backend
+                        version: "v1"
+                  outbound:
+                    - port: 3333
+                      tags:
+                        version: v1`,
+			expected: `
+                violations:
+                - field: networking.outbound[0].tags["service"]
+                  message: tag has to exist`,
+		}),
 		Entry("networking.outbound: port out of the range", testCase{
 			dataplane: `
                 type: Dataplane
@@ -436,25 +482,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.outbound[0].address
                   message: address has to be valid IP address`,
 		}),
-		Entry("legacy - networking.outbound: invalid interface", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  inbound:
-                    - interface: 192.168.0.1:1234:5678
-                      tags:
-                        service: backend
-                        version: "v1"
-                  outbound:
-                    - interface: invalid
-                      service: elastic`,
-			expected: `
-                violations:
-                - field: networking.outbound[0].interface
-                  message: 'invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT where DATAPLANE_IP is optional. E.g. 127.0.0.1:9090, :9090, [::1]:8080'`,
-		}),
 		Entry("networking.outbound: invalid address", testCase{
 			dataplane: `
                 type: Dataplane
@@ -476,100 +503,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.outbound[0].address
                   message: address has to be valid IP address`,
 		}),
-		Entry("legacy - networking.inbound: invalid interface", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  inbound:
-                    - interface: invalid
-                      tags:
-                        service: backend
-                        version: "v1"
-                  outbound:
-                    - interface: :3333
-                      service: elastic`,
-			expected: `
-                violations:
-                - field: networking.inbound[0].interface
-                  message: 'invalid format: expected format is DATAPLANE_IP:DATAPLANE_PORT:WORKLOAD_PORT , e.g. 192.168.0.100:9090:8080 or [2001:db8::1]:7070:6060'`,
-		}),
-		Entry("legacy - networking: networking.address with legacy inbounds", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - interface: 192.168.0.1:1234:5678
-                      tags:
-                        service: backend
-                        version: "v1"
-                  outbound:
-                    - interface: :3333
-                      service: elastic`,
-			expected: `
-                violations:
-                - field: networking.inbound[0].interface
-                  message: interface cannot be defined with networking.address. Replace it with port, servicePort and networking.address`,
-		}),
-		Entry("legacy - networking: mixing new inbounds with legacy inbounds", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - interface: 192.168.0.1:1234:5678
-                      address: 192.168.0.1
-                      port: 1234
-                      servicePort: 5678
-                      tags:
-                        service: backend
-                        version: "v1"
-                  outbound:
-                    - port: 3333
-                      service: elastic`,
-			expected: `
-                violations:
-                - field: networking.inbound[0].interface
-                  message: interface cannot be defined with port. Replace it with port, servicePort and networking.address
-                - field: networking.inbound[0].interface
-                  message: interface cannot be defined with servicePort. Replace it with port, servicePort and networking.address
-                - field: networking.inbound[0].interface
-                  message: interface cannot be defined with address. Replace it with port, servicePort and networking.address
-                - field: networking.inbound[0].interface
-                  message: interface cannot be defined with networking.address. Replace it with port, servicePort and networking.address`,
-		}),
-		Entry("legacy - networking: mixing new outbounds with legacy outbounds", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - address: 192.168.0.1
-                      port: 1234
-                      servicePort: 5678
-                      tags:
-                        service: backend
-                        version: "v1"
-                  outbound:
-                    - interface: :5678
-                      port: 5678
-                      address: 127.0.0.1
-                      service: elastic`,
-			expected: `
-                violations:
-                - field: networking.outbound[0].interface
-                  message: interface cannot be defined with port. Replace it with port and address
-                - field: networking.outbound[0].interface
-                  message: interface cannot be defined with address. Replace it with port and address`,
-		}),
 		Entry("networking.inbound: tag name with invalid characters", testCase{
 			dataplane: `
                 type: Dataplane
@@ -589,7 +522,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.inbound[0].tags["inv@lidT/gN%me"]
-                  message: tag name must consist of alphanumeric characters, dots, dashes and underscores`,
+                  message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`,
 		}),
 		Entry("networking.inbound: tag value with invalid characters", testCase{
 			dataplane: `
@@ -611,6 +544,221 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.inbound[0].tags["invalidTagValue"]
                   message: tag value must consist of alphanumeric characters, dots, dashes and underscores`,
+		}),
+		Entry("networking.ingress: outbound is not empty", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags:
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu
+                  inbound:
+                    - port: 10001
+                  outbound:
+                    - port: 3333
+                      service: redis`,
+			expected: `
+                violations:
+                - field: networking
+                  message: dataplane cannot have outbounds in the ingress mode`,
+		}),
+		Entry("networking.ingress: gateway defined", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags:
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu
+                  gateway: {}
+                  inbound:
+                    - port: 10001`,
+			expected: `
+                violations:
+                - field: networking
+                  message: gateway cannot be defined in the ingress mode`,
+		}),
+		Entry("networking.ingress: no inbound defined", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags: 
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu`,
+			expected: `
+                violations:
+                - field: networking
+                  message: dataplane must have one inbound interface`,
+		}),
+		Entry("networking.ingress: inbound with redundant fields", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags: 
+                          service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          service: web
+                          version: v2
+                          region: eu
+                  inbound:
+                    - port: 10001
+                      servicePort: 5050
+                      address: 1.1.1.1
+                      tags:
+                        name: ingress-dp`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].servicePort
+                  message: cannot be defined in the ingress mode
+                - field: networking.inbound[0].address
+                  message: cannot be defined in the ingress mode`,
+		}),
+		Entry("inbound service address", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      serviceAddress: 192.168.0.2
+                      servicePort: 5050
+                      address: 1.1.1.1
+                      tags:
+                        service: backend`,
+		}),
+		Entry("inbound service address invalid", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      serviceAddress: INVALID
+                      tags:
+                        service: backend`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].serviceAddress
+                  message: serviceAddress has to be valid IP address`,
+		}),
+		Entry("inbound service address overlap address", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      serviceAddress: 192.168.0.1
+                      tags:
+                        service: backend`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].serviceAddress
+                  message: serviceAddress and servicePort has to differ from address and port`,
+		}),
+		Entry("inbound service address overlap inbound address", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      address: 192.168.0.2
+                      serviceAddress: 192.168.0.2
+                      tags:
+                        service: backend`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].serviceAddress
+                  message: serviceAddress and servicePort has to differ from address and port`,
+		}),
+		Entry("inbound service address different inbound address and port", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 10001
+                      address: 192.168.0.2
+                      serviceAddress: 192.168.0.2
+                      servicePort: 10002
+                      tags:
+                        service: backend`,
+		}),
+		Entry("inbound service address and ingress", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    availableServices:
+                      - tags: 
+                          service: backend
+                          version: "1"
+                          region: us
+                  inbound:
+                    - port: 10001
+                      serviceAddress: 192.168.0.2
+                      servicePort: 5050
+                      address: 1.1.1.1
+                      tags:
+                        name: ingress-dp`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].servicePort
+                  message: cannot be defined in the ingress mode
+                - field: networking.inbound[0].serviceAddress
+                  message: cannot be defined in the ingress mode
+                - field: networking.inbound[0].address
+                  message: cannot be defined in the ingress mode`,
 		}),
 	)
 

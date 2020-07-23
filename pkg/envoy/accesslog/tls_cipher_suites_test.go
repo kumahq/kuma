@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/envoy/accesslog"
+	. "github.com/kumahq/kuma/pkg/envoy/accesslog"
 )
 
 var _ = Describe("TlsCipherSuite", func() {

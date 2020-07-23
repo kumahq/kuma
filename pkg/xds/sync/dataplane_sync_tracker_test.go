@@ -7,10 +7,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 
-	. "github.com/Kong/kuma/pkg/xds/sync"
+	. "github.com/kumahq/kuma/pkg/xds/sync"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"

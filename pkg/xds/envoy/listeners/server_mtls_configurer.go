@@ -3,11 +3,11 @@ package listeners
 import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	"github.com/golang/protobuf/ptypes"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/envoy"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func ServerSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) FilterChainBuilderOpt {
@@ -30,7 +30,7 @@ func (c *ServerSideMTLSConfigurer) Configure(filterChain *envoy_listener.FilterC
 		return err
 	}
 	if tlsContext != nil {
-		pbst, err := ptypes.MarshalAny(tlsContext)
+		pbst, err := proto.MarshalAnyDeterministic(tlsContext)
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,7 @@ package k8s
 import (
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config"
 )
 
 func DefaultKubernetesStoreConfig() *KubernetesStoreConfig {

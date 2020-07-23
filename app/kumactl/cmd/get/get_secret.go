@@ -3,15 +3,15 @@ package get
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/output"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
-	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 func newGetSecretCmd(pctx *getContext) *cobra.Command {

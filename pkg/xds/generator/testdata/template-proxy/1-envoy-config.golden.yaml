@@ -1,30 +1,16 @@
 resources:
-  - name: catch_all
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 0.0.0.0
-          portValue: 15001
-      filterChains:
-        - filters:
-            - name: envoy.tcp_proxy
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                cluster: pass_through
-                statPrefix: pass_through
-      name: catch_all
-      trafficDirection: OUTBOUND
-      useOriginalDst: true
-    version: "1"
-  - name: pass_through
+  - name: inbound:passthrough
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
+      altStatName: inbound_passthrough
       connectTimeout: 5s
       lbPolicy: CLUSTER_PROVIDED
-      name: pass_through
+      name: inbound:passthrough
       type: ORIGINAL_DST
-    version: "1"
+      upstreamBindConfig:
+        sourceAddress:
+          address: 127.0.0.6
+          portValue: 0
   - name: localhost:8080
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -40,6 +26,30 @@ resources:
                       address: 127.0.0.1
                       portValue: 8080
       name: localhost:8080
+      type: STATIC
+  - name: outbound:passthrough
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      altStatName: outbound_passthrough
+      connectTimeout: 5s
+      lbPolicy: CLUSTER_PROVIDED
+      name: outbound:passthrough
+      type: ORIGINAL_DST
+  - name: raw-name
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      altStatName: localhost_8443
+      connectTimeout: 5s
+      loadAssignment:
+        clusterName: localhost:8443
+        endpoints:
+          - lbEndpoints:
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: 127.0.0.1
+                      portValue: 8443
+      name: localhost:8443
       type: STATIC
   - name: inbound:192.168.0.1:80
     resource:
@@ -67,6 +77,23 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
               commonTlsContext:
+                combinedValidationContext:
+                  defaultValidationContext:
+                    matchSubjectAltNames:
+                      - prefix: spiffe://demo/
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-system:5677
                 tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -80,36 +107,40 @@ resources:
                                     inlineBytes: MTIzNDU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-system:5677
-                validationContextSdsSecretConfig:
-                  name: mesh_ca
-                  sdsConfig:
-                    apiConfigSource:
-                      apiType: GRPC
-                      grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: MTIzNDU=
-                            statPrefix: sds_mesh_ca
-                            targetUri: kuma-system:5677
               requireClientCertificate: true
       name: inbound:192.168.0.1:80
       trafficDirection: INBOUND
-  - name: raw-name
+  - name: inbound:passthrough
     resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      altStatName: localhost_8443
-      connectTimeout: 5s
-      loadAssignment:
-        clusterName: localhost:8443
-        endpoints:
-          - lbEndpoints:
-              - endpoint:
-                  address:
-                    socketAddress:
-                      address: 127.0.0.1
-                      portValue: 8443
-      name: localhost:8443
-      type: STATIC
-    version: raw-version
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 0.0.0.0
+          portValue: 15006
+      filterChains:
+        - filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: inbound:passthrough
+                statPrefix: inbound_passthrough
+      name: inbound:passthrough
+      trafficDirection: INBOUND
+      useOriginalDst: true
+  - name: outbound:passthrough
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 0.0.0.0
+          portValue: 15001
+      filterChains:
+        - filters:
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: outbound:passthrough
+                statPrefix: outbound_passthrough
+      name: outbound:passthrough
+      trafficDirection: OUTBOUND
+      useOriginalDst: true

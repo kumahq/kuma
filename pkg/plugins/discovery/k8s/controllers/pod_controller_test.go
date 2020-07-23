@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/plugins/discovery/k8s/controllers"
+	. "github.com/kumahq/kuma/pkg/plugins/discovery/k8s/controllers"
 
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core"
 
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -25,7 +25,7 @@ import (
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_record "k8s.io/client-go/tools/record"
 
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 var _ = Describe("PodReconciler", func() {
@@ -255,10 +255,10 @@ var _ = Describe("PodReconciler", func() {
             - port: 8080
               tags:
                 protocol: http
-                service: example.demo.svc:80
+                service: example_demo_svc_80
             - port: 6060
               tags:
-                service: example.demo.svc:6061
+                service: example_demo_svc_6061
                 protocol: tcp
 `))
 	})
@@ -325,10 +325,10 @@ var _ = Describe("PodReconciler", func() {
             - port: 8080
               tags:
                 protocol: http
-                service: example.demo.svc:80
+                service: example_demo_svc_80
             - port: 6060
               tags:
-                service: example.demo.svc:6061
+                service: example_demo_svc_6061
                 protocol: tcp
 `))
 	})

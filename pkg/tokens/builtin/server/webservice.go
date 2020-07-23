@@ -5,11 +5,11 @@ import (
 
 	"github.com/emicklei/go-restful"
 
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/rest/errors"
-	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/tokens/builtin/issuer"
-	"github.com/Kong/kuma/pkg/tokens/builtin/server/types"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 )
 
 var log = core.Log.WithName("dataplane-token-ws")

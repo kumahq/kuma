@@ -10,14 +10,14 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	api_server "github.com/Kong/kuma/pkg/api-server"
-	config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/core"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+	config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/core"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("HealthCheck Endpoints", func() {
@@ -73,14 +73,10 @@ var _ = Describe("HealthCheck Endpoints", func() {
         - match:
             service: backend
         conf:
-          activeChecks:
-            interval: 10s
-            timeout: 2s
-            unhealthyThreshold: 3
-            healthyThreshold: 1
-          passiveChecks:
-            unhealthyThreshold: 3
-            penaltyInterval: 5s
+          interval: 10s
+          timeout: 2s
+          unhealthyThreshold: 3
+          healthyThreshold: 1
 `
 		It("GET should return data saved by PUT", func() {
 			// given

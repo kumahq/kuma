@@ -8,16 +8,16 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var _ = Describe("TemplateProxyGenerator", func() {
+var _ = Describe("ProxyTemplateGenerator", func() {
 	Context("Error case", func() {
 		type testCase struct {
 			proxy    *model.Proxy
@@ -28,7 +28,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 		DescribeTable("Avoid producing invalid Envoy xDS resources",
 			func(given testCase) {
 				// setup
-				gen := &generator.TemplateProxyGenerator{
+				gen := &generator.ProxyTemplateGenerator{
 					ProxyTemplate: given.template,
 				}
 				ctx := xds_context.Context{
@@ -72,7 +72,8 @@ var _ = Describe("TemplateProxyGenerator", func() {
 									},
 								},
 								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-									RedirectPort: 15001,
+									RedirectPortOutbound: 15001,
+									RedirectPortInbound:  15006,
 								},
 							},
 						},
@@ -110,7 +111,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				ptBytes, err := ioutil.ReadFile(filepath.Join("testdata", "template-proxy", given.proxyTemplateFile))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(util_proto.FromYAML(ptBytes, &proxyTemplate)).To(Succeed())
-				gen := &generator.TemplateProxyGenerator{
+				gen := &generator.ProxyTemplateGenerator{
 					ProxyTemplate: &proxyTemplate,
 				}
 
@@ -162,7 +163,7 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+				resp, err := rs.List().ToDeltaDiscoveryResponse()
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -178,7 +179,8 @@ var _ = Describe("TemplateProxyGenerator", func() {
 				dataplane: `
                 networking:
                   transparentProxying:
-                    redirectPort: 15001
+                    redirectPortOutbound: 15001
+                    redirectPortInbound: 15006
                   address: 192.168.0.1
                   inbound:
                     - port: 80

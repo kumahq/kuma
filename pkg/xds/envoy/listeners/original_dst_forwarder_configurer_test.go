@@ -5,10 +5,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("OriginalDstForwarderConfigurer", func() {
@@ -18,7 +18,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 		listenerAddress string
 		listenerPort    uint32
 		statsName       string
-		clusters        []envoy_common.ClusterInfo
+		clusters        []envoy_common.ClusterSubset
 		expected        string
 	}
 
@@ -45,7 +45,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			listenerAddress: "0.0.0.0",
 			listenerPort:    12345,
 			statsName:       "pass_through",
-			clusters:        []envoy_common.ClusterInfo{{Name: "pass_through", Weight: 200}},
+			clusters:        []envoy_common.ClusterSubset{{ClusterName: "pass_through", Weight: 200}},
 			expected: `
             name: catch_all
             trafficDirection: OUTBOUND

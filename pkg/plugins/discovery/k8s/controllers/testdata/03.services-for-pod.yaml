@@ -1,0 +1,14 @@
+metadata:
+  namespace: demo
+  name: example
+  annotations:
+    80.service.kuma.io/protocol: http # should be ignored in case of a gateway
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - # protocol defaults to TCP
+      port: 80
+      targetPort: 8080
+    - protocol: TCP
+      port: 443
+      targetPort: 8443

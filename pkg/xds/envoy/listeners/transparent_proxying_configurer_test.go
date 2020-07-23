@@ -5,11 +5,11 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("TransparentProxyingConfigurer", func() {
@@ -43,7 +43,8 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			transparentProxying: mesh_proto.Dataplane_Networking_TransparentProxying{
-				RedirectPort: 12345,
+				RedirectPortOutbound: 12345,
+				RedirectPortInbound:  12346,
 			},
 			expected: `
             name: inbound:192.168.0.1:8080

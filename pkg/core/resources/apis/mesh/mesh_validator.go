@@ -7,10 +7,10 @@ import (
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/envoy/accesslog"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/envoy/accesslog"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func (m *MeshResource) Validate() error {
@@ -37,7 +37,14 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	if mtls.GetEnabledBackend() != "" && !usedNames[mtls.GetEnabledBackend()] {
 		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
 	}
-	// validation of CA backend type is omitted since it can change when you load plugins
+	for _, backend := range mtls.Backends {
+		if backend.GetDpCert() != nil {
+			_, err := ParseDuration(backend.GetDpCert().GetRotation().GetExpiration())
+			if err != nil {
+				verr.AddViolation("dpcert.rotation.expiration", "has to be a valid format")
+			}
+		}
+	}
 	return verr
 }
 

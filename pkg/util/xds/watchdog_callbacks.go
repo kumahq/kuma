@@ -8,7 +8,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
-	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
+	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 )
 
 type NewNodeWatchdogFunc func(ctx context.Context, node *envoy_core.Node, streamId int64) (util_watchdog.Watchdog, error)

@@ -1,11 +1,11 @@
 package common_test
 
 import (
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	auth_common "github.com/Kong/kuma/pkg/sds/auth/common"
-	"github.com/Kong/kuma/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
+	auth_common "github.com/kumahq/kuma/pkg/sds/auth/common"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,6 +30,13 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 								"service": "backend",
 							},
 						},
+						{
+							Port:        9080,
+							ServicePort: 90,
+							Tags: map[string]string{
+								"service": "backend-api",
+							},
+						},
 					},
 				},
 			},
@@ -43,8 +50,8 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 
 		// and
 		Expect(id).To(Equal(sds_auth.Identity{
-			Mesh:    "demo",
-			Service: "backend",
+			Mesh:     "demo",
+			Services: []string{"backend", "backend-api"},
 		}))
 	})
 
@@ -74,8 +81,8 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 
 		// and
 		Expect(id).To(Equal(sds_auth.Identity{
-			Mesh:    "demo",
-			Service: "edge",
+			Mesh:     "demo",
+			Services: []string{"edge"},
 		}))
 	})
 

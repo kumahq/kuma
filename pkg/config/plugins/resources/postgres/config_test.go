@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 )
 
 var _ = Describe("TLSPostgresStoreConfig", func() {

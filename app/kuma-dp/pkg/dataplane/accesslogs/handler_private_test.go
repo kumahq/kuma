@@ -7,9 +7,9 @@ import (
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 
-	"github.com/Kong/kuma/pkg/envoy/accesslog"
+	"github.com/kumahq/kuma/pkg/envoy/accesslog"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("handler", func() {

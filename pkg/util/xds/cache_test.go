@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/Kong/kuma/pkg/util/xds"
+	. "github.com/kumahq/kuma/pkg/util/xds"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"

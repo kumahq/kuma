@@ -3,9 +3,9 @@ package mesh
 import (
 	"context"
 
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/validators"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 type MeshValidator struct {

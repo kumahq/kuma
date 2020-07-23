@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 const grpcMaxConcurrentStreams = 1000000
@@ -25,6 +25,10 @@ type grpcServer struct {
 	port        int
 	tlsCertFile string
 	tlsKeyFile  string
+}
+
+func (s *grpcServer) NeedLeaderElection() bool {
+	return false
 }
 
 // Make sure that grpcServer implements all relevant interfaces

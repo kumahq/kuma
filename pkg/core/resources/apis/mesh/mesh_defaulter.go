@@ -3,8 +3,8 @@ package mesh
 import (
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func (mesh *MeshResource) Default() error {
@@ -21,6 +21,11 @@ func (mesh *MeshResource) Default() error {
 			}
 			if cfg.Path == "" {
 				cfg.Path = "/metrics"
+			}
+			if len(cfg.Tags) == 0 {
+				cfg.Tags = map[string]string{
+					mesh_proto.ServiceTag: "dataplane-metrics",
+				}
 			}
 
 			str, err := proto.ToStruct(&cfg)

@@ -1,13 +1,18 @@
 package mesh
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/validators"
+	"github.com/ghodss/yaml"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/validators"
 
 	"github.com/golang/protobuf/ptypes"
 	pduration "github.com/golang/protobuf/ptypes/duration"
@@ -30,9 +35,9 @@ type ValidateSelectorsOpts struct {
 	RequireAtLeastOneSelector bool
 }
 
-var tagNameCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:]*$`)
+var tagNameCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:/]*$`)
 var tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:]*$`)
-var selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:]*|\*)$`)
+var selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:/]*|\*)$`)
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) (err validators.ValidationError) {
 	if opts.RequireAtLeastOneSelector && len(sources) == 0 {
@@ -56,7 +61,7 @@ func ValidateSelector(path validators.PathBuilder, selector map[string]string, o
 			err.AddViolationAt(path, "tag name must be non-empty")
 		}
 		if !tagNameCharacterSet.MatchString(key) {
-			err.AddViolationAt(path.Key(key), `tag name must consist of alphanumeric characters, dots, dashes and underscores`)
+			err.AddViolationAt(path.Key(key), `tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`)
 		}
 		for _, validate := range opts.ExtraTagKeyValidators {
 			err.Add(validate(path, key))
@@ -67,7 +72,7 @@ func ValidateSelector(path validators.PathBuilder, selector map[string]string, o
 			err.AddViolationAt(path.Key(key), "tag value must be non-empty")
 		}
 		if !selectorCharacterSet.MatchString(value) {
-			err.AddViolationAt(path.Key(key), `tag value must consist of alphanumeric characters, dots, dashes and underscores or be "*"`)
+			err.AddViolationAt(path.Key(key), `tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`)
 		}
 		for _, validate := range opts.ExtraTagValueValidators {
 			err.Add(validate(path, key, value))
@@ -161,4 +166,29 @@ func ProtocolValidator(protocols ...string) SelectorValidatorFunc {
 			strings.Join(protocols, ", ")))
 		return
 	}
+}
+
+func ValidateResourceYAML(msg proto.Message, resYAML string) error {
+	json, err := yaml.YAMLToJSON([]byte(resYAML))
+	if err != nil {
+		json = []byte(resYAML)
+	}
+
+	if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), msg); err != nil {
+		return err
+	}
+	if v, ok := msg.(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ValidateResourceYAMLPatch(msg proto.Message, resYAML string) error {
+	json, err := yaml.YAMLToJSON([]byte(resYAML))
+	if err != nil {
+		json = []byte(resYAML)
+	}
+	return (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), msg)
 }

@@ -10,10 +10,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config"
-	conf "github.com/Kong/kuma/pkg/config/plugins/runtime/k8s"
-	"github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	inject "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
+	"github.com/kumahq/kuma/pkg/config"
+	conf "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	inject "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"

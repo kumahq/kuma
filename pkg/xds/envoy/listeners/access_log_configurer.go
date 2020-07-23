@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/golang/protobuf/ptypes"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
 
@@ -13,24 +12,32 @@ import (
 	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/envoy/accesslog"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/envoy/accesslog"
+	"github.com/kumahq/kuma/pkg/util/proto"
+)
+
+type TrafficDirection string
+
+const (
+	TrafficDirectionOutbound    TrafficDirection = "OUTBOUND"
+	TrafficDirectionInbound     TrafficDirection = "INBOUND"
+	TrafficDirectionUnspecified TrafficDirection = "UNSPECIFIED"
 )
 
 const accessLogSink = "access_log_sink"
 
 type AccessLogConfigurer struct {
 	mesh               string
-	trafficDirection   string
+	trafficDirection   TrafficDirection
 	sourceService      string
 	destinationService string
 	backend            *mesh_proto.LoggingBackend
 	proxy              *core_xds.Proxy
 }
 
-func convertLoggingBackend(mesh string, trafficDirection string, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*filter_accesslog.AccessLog, error) {
+func convertLoggingBackend(mesh string, trafficDirection TrafficDirection, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy, defaultFormat string) (*filter_accesslog.AccessLog, error) {
 	if backend == nil {
 		return nil, nil
 	}
@@ -38,7 +45,8 @@ func convertLoggingBackend(mesh string, trafficDirection string, sourceService s
 	if backend.Format != "" {
 		formatString = backend.Format
 	}
-	format, err := accesslog.ParseFormat(formatString)
+	format, err := accesslog.ParseFormat(formatString + "\n")
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid access log format string: %s", formatString)
 	}
@@ -49,7 +57,7 @@ func convertLoggingBackend(mesh string, trafficDirection string, sourceService s
 		accesslog.CMD_KUMA_SOURCE_SERVICE:              sourceService,
 		accesslog.CMD_KUMA_DESTINATION_SERVICE:         destinationService,
 		accesslog.CMD_KUMA_MESH:                        mesh,
-		accesslog.CMD_KUMA_TRAFFIC_DIRECTION:           trafficDirection,
+		accesslog.CMD_KUMA_TRAFFIC_DIRECTION:           string(trafficDirection),
 	}
 
 	format, err = format.Interpolate(variables)
@@ -88,7 +96,7 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 	if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
 	}
-	marshalled, err := ptypes.MarshalAny(httpGrpcAccessLog)
+	marshalled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", httpGrpcAccessLog)
 	}
@@ -112,7 +120,7 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 		},
 		Path: cfg.Path,
 	}
-	marshalled, err := ptypes.MarshalAny(fileAccessLog)
+	marshalled, err := proto.MarshalAnyDeterministic(fileAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", fileAccessLog)
 	}

@@ -5,10 +5,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/config/api-server/catalog"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	"github.com/Kong/kuma/pkg/config/core"
-	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
+	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/config/core"
+	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 )
 
 var _ = Describe("Auto configuration", func() {

@@ -3,17 +3,15 @@ package injector
 import (
 	"context"
 	"fmt"
-
 	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-
-	runtime_k8s "github.com/Kong/kuma/pkg/config/plugins/runtime/k8s"
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 
 	"github.com/pkg/errors"
 
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
@@ -293,7 +291,9 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Args: []string{
 			"-p",
-			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
+			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
+			"-z",
+			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
 			"-u",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
 			"-g",
@@ -329,10 +329,11 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
 	annotations := map[string]string{
-		metadata.KumaMeshAnnotation:                    mesh.GetMeta().GetName(), // either user-defined value or default
-		metadata.KumaSidecarInjectedAnnotation:         metadata.KumaSidecarInjected,
-		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
-		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
+		metadata.KumaMeshAnnotation:                            mesh.GetMeta().GetName(), // either user-defined value or default
+		metadata.KumaSidecarInjectedAnnotation:                 metadata.KumaSidecarInjected,
+		metadata.KumaTransparentProxyingAnnotation:             metadata.KumaTransparentProxyingEnabled,
+		metadata.KumaTransparentProxyingInboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
+		metadata.KumaTransparentProxyingOutboundPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
 	}
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI

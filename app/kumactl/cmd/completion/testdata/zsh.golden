@@ -314,6 +314,8 @@ function _kumactl_get {
   case $state in
   cmnds)
     commands=(
+      "circuit-breaker:Show a single CircuitBreaker resource"
+      "circuit-breakers:Show CircuitBreakers"
       "dataplane:Show a single Dataplane resource"
       "dataplanes:Show Dataplanes"
       "fault-injection:Show a single Fault-Injection resource"
@@ -334,12 +336,20 @@ function _kumactl_get {
       "traffic-routes:Show TrafficRoutes"
       "traffic-trace:Show a single TrafficTrace resource"
       "traffic-traces:Show TrafficTraces"
+      "zone:Show a single Zone resource"
+      "zones:Show Zones"
     )
     _describe "command" commands
     ;;
   esac
 
   case "$words[1]" in
+  circuit-breaker)
+    _kumactl_get_circuit-breaker
+    ;;
+  circuit-breakers)
+    _kumactl_get_circuit-breakers
+    ;;
   dataplane)
     _kumactl_get_dataplane
     ;;
@@ -400,7 +410,31 @@ function _kumactl_get {
   traffic-traces)
     _kumactl_get_traffic-traces
     ;;
+  zone)
+    _kumactl_get_zone
+    ;;
+  zones)
+    _kumactl_get_zones
+    ;;
   esac
+}
+
+function _kumactl_get_circuit-breaker {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_circuit-breakers {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
 function _kumactl_get_dataplane {
@@ -581,6 +615,24 @@ function _kumactl_get_traffic-traces {
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
+function _kumactl_get_zone {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_zones {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
 function _kumactl_help {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
@@ -641,6 +693,9 @@ function _kumactl_install {
   cmnds)
     commands=(
       "control-plane:Install Kuma Control Plane on Kubernetes"
+      "dns:Install DNS to Kubernetes"
+      "ingress:Install Ingress on Kubernetes"
+      "logging:Install Logging backend in Kubernetes cluster (Loki)"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
       "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
     )
@@ -651,6 +706,15 @@ function _kumactl_install {
   case "$words[1]" in
   control-plane)
     _kumactl_install_control-plane
+    ;;
+  dns)
+    _kumactl_install_dns
+    ;;
+  ingress)
+    _kumactl_install_ingress
+    ;;
+  logging)
+    _kumactl_install_logging
     ;;
   metrics)
     _kumactl_install_metrics
@@ -675,9 +739,44 @@ function _kumactl_install_control-plane {
     '--dataplane-init-image[init image of the Kuma Dataplane component]:' \
     '--image-pull-policy[image pull policy that applies to all components of the Kuma Control Plane]:' \
     '--injector-failure-policy[failue policy of the mutating web hook implemented by the Kuma Injector component]:' \
+    '--kds-global-address[URL of Global Kuma CP]:' \
+    '--kds-tls-cert[TLS certificate for the KDS server]:' \
+    '--kds-tls-key[TLS key for the KDS server]:' \
+    '--mode[kuma cp modes: one of standalone|remote|global]:' \
     '--namespace[namespace to install Kuma Control Plane to]:' \
     '--sds-tls-cert[TLS certificate for the SDS server]:' \
     '--sds-tls-key[TLS key for the SDS server]:' \
+    '--use-node-port[use NodePort instead of LoadBalancer]' \
+    '--zone[set the Kuma zone name]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_dns {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_ingress {
+  _arguments \
+    '--drain-time[drain time for Envoy proxy]:' \
+    '--image[image of the Ingress component]:' \
+    '--image-pull-policy[image pull policy for Ingress]:' \
+    '--kuma-cp-address[the address of Kuma CP]:' \
+    '--namespace[namespace to install Ingress to]:' \
+    '--use-node-port[use NodePort instead of LoadBalancer]' \
+    '--version[version of Ingress component]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_logging {
+  _arguments \
+    '--namespace[namespace to install logging to]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

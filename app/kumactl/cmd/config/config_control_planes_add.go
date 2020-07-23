@@ -4,9 +4,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/app/kumactl/pkg/config"
-	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 )
 
 func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {

@@ -4,21 +4,21 @@ import (
 	"bytes"
 	"context"
 
-	api_server "github.com/Kong/kuma/pkg/api-server"
-	"github.com/Kong/kuma/pkg/api-server/definitions"
-	config_api_server "github.com/Kong/kuma/pkg/config/api-server"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/test"
-	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
-	sample_model "github.com/Kong/kuma/pkg/test/resources/apis/sample"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/test"
+	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 
 	"net/http"
 
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 type resourceApiClient struct {
@@ -108,7 +108,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	resources := manager.NewResourceManager(store)
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, defs, cfg.ApiServer, &cfg)
+	apiServer, err := api_server.NewApiServer(resources, nil, defs, cfg.ApiServer, &cfg)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

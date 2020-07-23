@@ -132,15 +132,7 @@ func (m *BuiltinCertificateAuthorityConfig_CaCert) Validate() error {
 		}
 	}
 
-	if v, ok := interface{}(m.GetExpiration()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return BuiltinCertificateAuthorityConfig_CaCertValidationError{
-				field:  "Expiration",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for Expiration
 
 	return nil
 }

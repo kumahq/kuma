@@ -1,24 +1,52 @@
 resources:
   - name: backend.kuma-system
     resource:
+      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+      clusterName: backend.kuma-system
+      endpoints:
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8082
+              loadBalancingWeight: 1
+  - name: db
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+      clusterName: db
+      endpoints:
+        - {}
+  - name: backend.kuma-system
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      altStatName: backend_kuma-system
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+      http2ProtocolOptions: {}
+      name: backend.kuma-system
+      type: EDS
+  - name: db
+    resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
-      name: backend.kuma-system
-      altStatName: backend_kuma-system
+      http2ProtocolOptions: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - version
+      name: db
       type: EDS
-  - name: backend.kuma-system
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: backend.kuma-system
-      endpoints:
-        - {}
   - name: outbound:127.0.0.1:18080
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
-      trafficDirection: OUTBOUND
       address:
         socketAddress:
           address: 127.0.0.1
@@ -31,26 +59,10 @@ resources:
                 cluster: backend.kuma-system
                 statPrefix: backend_kuma-system
       name: outbound:127.0.0.1:18080
-  - name: db{version=3.2.0}
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-      name: db{version=3.2.0}
-      altStatName: db_version_3_2_0_
-      type: EDS
-  - name: db{version=3.2.0}
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: db{version=3.2.0}
-      endpoints:
-        - {}
+      trafficDirection: OUTBOUND
   - name: outbound:127.0.0.1:54321
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
-      trafficDirection: OUTBOUND
       address:
         socketAddress:
           address: 127.0.0.1
@@ -60,6 +72,11 @@ resources:
             - name: envoy.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                cluster: db{version=3.2.0}
+                cluster: db
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      version: 3.2.0
                 statPrefix: db_kuma-system
       name: outbound:127.0.0.1:54321
+      trafficDirection: OUTBOUND

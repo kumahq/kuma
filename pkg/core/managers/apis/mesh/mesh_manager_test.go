@@ -3,28 +3,28 @@ package mesh
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/datasource"
-	"github.com/Kong/kuma/pkg/plugins/ca/provided"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/secrets/cipher"
-	secrets_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	secrets_store "github.com/Kong/kuma/pkg/core/secrets/store"
-	"github.com/Kong/kuma/pkg/core/validators"
-	ca_builtin "github.com/Kong/kuma/pkg/plugins/ca/builtin"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	test_resources "github.com/Kong/kuma/pkg/test/resources"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	secrets_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	ca_builtin "github.com/kumahq/kuma/pkg/plugins/ca/builtin"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_resources "github.com/kumahq/kuma/pkg/test/resources"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Mesh Manager", func() {
@@ -35,7 +35,7 @@ var _ = Describe("Mesh Manager", func() {
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None())
+		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
 		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
 		providedCaManager := provided.NewProvidedCaManager(datasource.NewDataSourceLoader(secretManager))
 		caManagers := core_ca.Managers{
@@ -45,7 +45,7 @@ var _ = Describe("Mesh Manager", func() {
 
 		manager := manager.NewResourceManager(resStore)
 		validator := MeshValidator{CaManagers: caManagers}
-		resManager = NewMeshManager(resStore, manager, secretManager, caManagers, test_resources.Global(), validator)
+		resManager = NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
 	})
 
 	Describe("Create()", func() {
@@ -144,6 +144,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 5670
                           path: /metrics
+                          tags:
+                            service: dataplane-metrics
 `,
 				}),
 			)
@@ -328,7 +330,7 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
 				},
-				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are changed", testCase{
+				Entry("when both config is changed", testCase{
 					initial: `
                     metrics:
                       enabledBackend: prometheus-1
@@ -345,6 +347,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 					expected: `
                     metrics:
@@ -355,9 +359,11 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 				}),
-				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` remain unchanged", testCase{
+				Entry("when config remain unchanged", testCase{
 					initial: `
                     metrics:
                       enabledBackend: prometheus-1
@@ -367,6 +373,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 					updated: `
                     metrics:
@@ -377,6 +385,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 					expected: `
                     metrics:
@@ -387,6 +397,8 @@ var _ = Describe("Mesh Manager", func() {
                         conf:
                           port: 1234
                           path: /non-standard-path
+                          tags:
+                            service: custom-prom
 `,
 				}),
 			)

@@ -3,16 +3,16 @@ package delete
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	"github.com/Kong/kuma/pkg/core/resources/store"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -46,16 +46,22 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				resourceType = mesh.TrafficTraceType
 			case "fault-injection":
 				resourceType = mesh.FaultInjectionType
+			case "circuit-breaker":
+				resourceType = mesh.CircuitBreakerType
 			case "secret":
 				resourceType = system.SecretType
-
+			case "zone":
+				resourceType = system.ZoneType
 			default:
-				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, secret", resourceTypeArg)
+				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret, zone", resourceTypeArg)
 			}
 
 			currentMesh := pctx.CurrentMesh()
-			if resourceType == mesh.MeshType {
+			switch resourceType {
+			case mesh.MeshType:
 				currentMesh = name
+			case system.ZoneType:
+				currentMesh = "default"
 			}
 
 			var rs store.ResourceStore

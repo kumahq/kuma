@@ -14,12 +14,12 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	admin_server "github.com/Kong/kuma/pkg/config/admin-server"
-	config_core "github.com/Kong/kuma/pkg/config/core"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/tokens/builtin"
-	tokens_server "github.com/Kong/kuma/pkg/tokens/builtin/server"
+	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
+	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 )
 
 var (
@@ -29,6 +29,10 @@ var (
 type AdminServer struct {
 	cfg       admin_server.AdminServerConfig
 	container *restful.Container
+}
+
+func (a *AdminServer) NeedLeaderElection() bool {
+	return false
 }
 
 func NewAdminServer(cfg admin_server.AdminServerConfig, services ...*restful.WebService) *AdminServer {
@@ -158,7 +162,7 @@ func SetupServer(rt runtime.Runtime) error {
 	ws := new(restful.WebService).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
-	endpoints := secretsEndpoints{rt.SecretManager()}
+	endpoints := secretsEndpoints{rt.ResourceManager()}
 	endpoints.addFindEndpoint(ws)
 	endpoints.addListEndpoint(ws)
 	if !rt.Config().ApiServer.ReadOnly {

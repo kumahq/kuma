@@ -3,14 +3,14 @@ package auth
 import (
 	"context"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 type Credential string
 
 type Identity struct {
-	Mesh    string
-	Service string
+	Mesh     string
+	Services []string
 }
 
 type Authenticator interface {

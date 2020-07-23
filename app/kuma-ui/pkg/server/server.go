@@ -9,12 +9,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Kong/kuma/app/kuma-ui/pkg/resources"
-	"github.com/Kong/kuma/app/kuma-ui/pkg/server/types"
-	gui_server "github.com/Kong/kuma/pkg/config/gui-server"
-	"github.com/Kong/kuma/pkg/core"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
+	"github.com/kumahq/kuma/app/kuma-ui/pkg/server/types"
+	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
+	"github.com/kumahq/kuma/pkg/core"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 var log = core.Log.WithName("gui-server")
@@ -31,6 +31,10 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 type Server struct {
 	Config *gui_server.GuiServerConfig
+}
+
+func (g *Server) NeedLeaderElection() bool {
+	return false
 }
 
 var _ component.Component = &Server{}

@@ -4,27 +4,29 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	core_ca "github.com/Kong/kuma/pkg/core/ca"
-	ca_issuer "github.com/Kong/kuma/pkg/core/ca/issuer"
-	core_system "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	core_validators "github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/plugins/ca/builtin/config"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
+	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_validators "github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type builtinCaManager struct {
-	secretManager secret_manager.SecretManager
+	secretManager manager.ResourceManager
 }
 
-func NewBuiltinCaManager(secretManager secret_manager.SecretManager) core_ca.Manager {
+func NewBuiltinCaManager(secretManager manager.ResourceManager) core_ca.Manager {
 	return &builtinCaManager{
 		secretManager: secretManager,
 	}
@@ -54,6 +56,13 @@ func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, bac
 	return nil
 }
 
+func (b *builtinCaManager) UsedSecrets(mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]string, error) {
+	return []string{
+		certSecretResKey(mesh, backend.Name).Name,
+		keySecretResKey(mesh, backend.Name).Name,
+	}, nil
+}
+
 func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error {
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
@@ -61,9 +70,12 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh
 	}
 
 	var opts []certOptsFn
-	if cfg.GetCaCert().GetExpiration() != nil {
-		util_proto.ToDuration(*cfg.GetCaCert().GetExpiration())
-		opts = append(opts, withExpirationTime(util_proto.ToDuration(*cfg.GetCaCert().GetExpiration())))
+	if cfg.GetCaCert().GetExpiration() != "" {
+		duration, err := mesh_helper.ParseDuration(cfg.GetCaCert().GetExpiration())
+		if err != nil {
+			return err
+		}
+		opts = append(opts, withExpirationTime(duration))
 	}
 	keyPair, err := newRootCa(mesh, int(cfg.GetCaCert().GetRSAbits().GetValue()), opts...)
 	if err != nil {
@@ -116,20 +128,23 @@ func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend
 	return []core_ca.Cert{ca.CertPEM}, nil
 }
 
-func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, service string) (core_ca.KeyPair, error) {
+func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, services []string) (core_ca.KeyPair, error) {
 	ca, err := b.getCa(ctx, mesh, backend.Name)
 	if err != nil {
 		return core_ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
 	}
 
 	var opts []ca_issuer.CertOptsFn
-	if backend.GetDpCert().GetRotation().GetExpiration() != nil {
-		duration := util_proto.ToDuration(*backend.GetDpCert().GetRotation().Expiration)
+	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
+		duration, err := mesh_helper.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		if err != nil {
+			return core_ca.KeyPair{}, err
+		}
 		opts = append(opts, ca_issuer.WithExpirationTime(duration))
 	}
-	keyPair, err := ca_issuer.NewWorkloadCert(ca, mesh, service, opts...)
+	keyPair, err := ca_issuer.NewWorkloadCert(ca, mesh, services, opts...)
 	if err != nil {
-		return core_ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for workload %q in Mesh %q using backend %q", service, mesh, backend)
+		return core_ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for services %q in Mesh %q using backend %q", services, mesh, backend)
 	}
 	return *keyPair, nil
 }

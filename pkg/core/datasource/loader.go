@@ -4,12 +4,13 @@ import (
 	"context"
 	"io/ioutil"
 
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+
 	"github.com/pkg/errors"
 
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/secrets/manager"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type Loader interface {
@@ -17,12 +18,12 @@ type Loader interface {
 }
 
 type loader struct {
-	secretManager manager.SecretManager
+	secretManager manager.ResourceManager
 }
 
 var _ Loader = &loader{}
 
-func NewDataSourceLoader(secretManager manager.SecretManager) Loader {
+func NewDataSourceLoader(secretManager manager.ResourceManager) Loader {
 	return &loader{
 		secretManager: secretManager,
 	}

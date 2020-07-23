@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Config WS", func() {
@@ -110,7 +110,12 @@ var _ = Describe("Config WS", func() {
             }
           },
           "defaults": {
-            "mesh": "type: Mesh\nname: default\n"
+            "skipMeshCreation": false
+          },
+          "dnsServer": {
+            "domain": "mesh",
+            "port": 5653,
+            "CIDR": "240.0.0.0/4"
           },
           "environment": "universal",
           "general": {
@@ -120,6 +125,17 @@ var _ = Describe("Config WS", func() {
             "port": 5683,
             "apiServerUrl": ""
           },
+          "metrics": {
+            "dataplane": {
+              "enabled": true,
+              "subscriptionLimit": 10
+            }
+          },
+          "mode": {
+           "global": {},
+           "remote": {},
+           "mode": "standalone"
+        },
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
             "grpcPort": 5676
@@ -157,7 +173,8 @@ var _ = Describe("Config WS", func() {
                     "successThreshold": 1,
                     "timeoutSeconds": 3
                   },
-                  "redirectPort": 15001,
+                  "redirectPortInbound": 15006,
+                  "redirectPortOutbound": 15001,
                   "resources": {
                     "limits": {
                       "cpu": "1000m",
@@ -211,6 +228,18 @@ var _ = Describe("Config WS", func() {
             "grpcPort": 5678,
             "tlsCertFile": "",
             "tlsKeyFile": ""
+          },
+          "kds": {
+            "server": {
+              "grpcPort": 5685,
+              "refreshInterval": "1s",
+              "tlsCertFile": "",
+              "tlsKeyFile": ""
+            },
+            "client": {
+              "rootCaFile": "",
+              "globalAddress": ""
+            }
           }
         }
 		`, port)

@@ -13,10 +13,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/catalog"
-	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/catalog"
+	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 var (
@@ -50,6 +50,10 @@ var _ component.Component = &Envoy{}
 
 type Envoy struct {
 	opts Opts
+}
+
+func (e *Envoy) NeedLeaderElection() bool {
+	return false
 }
 
 func getSelfPath() (string, error) {
@@ -98,7 +102,7 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 func (e *Envoy) Start(stop <-chan struct{}) error {
 	bootstrapConfig, err := e.opts.Generator(e.opts.Catalog.Apis.Bootstrap.Url, e.opts.Config)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate Envoy bootstrap config")
+		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 	}
 	configFile, err := newConfigFile(e.opts.Config.DataplaneRuntime, bootstrapConfig)
 	if err != nil {

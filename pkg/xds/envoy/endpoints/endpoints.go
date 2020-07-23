@@ -1,17 +1,17 @@
 package endpoints
 
 import (
-	pstruct "github.com/golang/protobuf/ptypes/struct"
-
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	proto_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.ClusterLoadAssignment {
-	return &v2.ClusterLoadAssignment{
+func CreateStaticEndpoint(clusterName string, address string, port uint32) *envoy_api.ClusterLoadAssignment {
+	return &envoy_api.ClusterLoadAssignment{
 		ClusterName: clusterName,
 		Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
 			LbEndpoints: []*envoy_endpoint.LbEndpoint{{
@@ -35,11 +35,14 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *v2.C
 	}
 }
 
-func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint) *v2.ClusterLoadAssignment {
+func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint) *envoy_api.ClusterLoadAssignment {
 	lbEndpoints := make([]*envoy_endpoint.LbEndpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
 		lbEndpoints = append(lbEndpoints, &envoy_endpoint.LbEndpoint{
-			Metadata: CreateLbMetadata(ep.Tags),
+			LoadBalancingWeight: &proto_wrappers.UInt32Value{
+				Value: ep.Weight,
+			},
+			Metadata: envoy_common.EndpointMetadata(ep.Tags),
 			HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoy_endpoint.Endpoint{
 					Address: &envoy_core.Address{
@@ -56,31 +59,10 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 				}},
 		})
 	}
-	return &v2.ClusterLoadAssignment{
+	return &envoy_api.ClusterLoadAssignment{
 		ClusterName: clusterName,
 		Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
 			LbEndpoints: lbEndpoints,
 		}},
-	}
-}
-
-func CreateLbMetadata(tags map[string]string) *envoy_core.Metadata {
-	if len(tags) == 0 {
-		return nil
-	}
-	fields := map[string]*pstruct.Value{}
-	for key, value := range tags {
-		fields[key] = &pstruct.Value{
-			Kind: &pstruct.Value_StringValue{
-				StringValue: value,
-			},
-		}
-	}
-	return &envoy_core.Metadata{
-		FilterMetadata: map[string]*pstruct.Struct{
-			"envoy.lb": &pstruct.Struct{
-				Fields: fields,
-			},
-		},
 	}
 }
