@@ -22,6 +22,13 @@ reusable:
         tags:
           only: /.*/
 
+    # filters for the kuma-commit workflow
+    commit_workflow_filters: &commit_workflow_filters
+      filters:
+        branches:
+          # don't run on gh-pages
+          ignore: /gh-pages/
+
 executors:
   golang:
     docker:
@@ -526,6 +533,14 @@ jobs:
           tar -xz -C /tmp -f /tmp/docker-$VER.tgz
           mv /tmp/docker/docker /usr/bin
     - run:
+        name: "Install Helm Chart Releaser"
+        command: |
+          VER="1.0.0-beta.1"
+          curl -L -o /tmp/cr-$VER.tgz https://github.com/helm/chart-releaser/releases/download/v$VER/chart-releaser_$VER_linux_amd64.tar.gz
+          mkdir -p /tmp/cr
+          tar -xz -C /tmp/cr -f /tmp/cr-$VER.tgz
+          mv /tmp/cr/cr /usr/bin
+    - run:
         name: Build Packages
         command: ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
     - run:
@@ -537,6 +552,12 @@ jobs:
     - run:
         name: Push Docker
         command: ./tools/releases/docker.sh --push --version $CIRCLE_TAG
+    - run:
+        name: Package Helm Charts
+        command: ./tools/releases/helm.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+    - run:
+        name: Release Helm Charts
+        command: ./tools/releases/helm.sh --release --version $CIRCLE_TAG --sha $CIRCLE_SHA1
 
 #
 # Below, the tag filter needs to be in all jobs
@@ -550,37 +571,45 @@ workflows:
   version: 2
   kuma-commit:
     jobs:
-    - dev_golang
-    - dev_mac
-    - dev_ubuntu
-    - go_cache
+    - dev_golang: *commit_workflow_filters
+    - dev_mac: *commit_workflow_filters
+    - dev_ubuntu: *commit_workflow_filters
+    - go_cache: *commit_workflow_filters
     - api_check:
+        <<: *commit_workflow_filters
         requires:
         - go_cache
     - check:
+        <<: *commit_workflow_filters
         requires:
         - go_cache
     - build:
+        <<: *commit_workflow_filters
         requires:
         - go_cache
     - test:
+        <<: *commit_workflow_filters
         requires:
         - api_check
         - check
     - integration:
+        <<: *commit_workflow_filters
         requires:
         - api_check
         - check
     - images:
+        <<: *commit_workflow_filters
         requires:
         - build
     - example_docker-compose:
+        <<: *commit_workflow_filters
         name: docker-compose
         requires:
         - images
         # custom parameters
         use_local_kuma_images: true
     - example_minikube:
+        <<: *commit_workflow_filters
         name: minikube_v1_13_0
         requires:
         - images
@@ -588,6 +617,7 @@ workflows:
         kubernetes_version: v1.13.0
         use_local_kuma_images: true
     - example_minikube:
+        <<: *commit_workflow_filters
         name: minikube_v1_14_0
         requires:
         - images
@@ -595,6 +625,7 @@ workflows:
         kubernetes_version: v1.14.0
         use_local_kuma_images: true
     - example_minikube:
+        <<: *commit_workflow_filters
         name: minikube_v1_15_0
         requires:
         - images
@@ -602,6 +633,7 @@ workflows:
         kubernetes_version: v1.15.0
         use_local_kuma_images: true
     - example_minikube:
+        <<: *commit_workflow_filters
         name: minikube_v1_16_0
         requires:
         - images
@@ -609,6 +641,7 @@ workflows:
         kubernetes_version: v1.16.0
         use_local_kuma_images: true
     - example_minikube:
+        <<: *commit_workflow_filters
         name: minikube_v1_17_0
         requires:
         - images
@@ -616,6 +649,7 @@ workflows:
         kubernetes_version: v1.17.0
         use_local_kuma_images: true
     - example_minikube:
+        <<: *commit_workflow_filters
         name: minikube_v1_18_2
         requires:
           - images
@@ -623,6 +657,7 @@ workflows:
         kubernetes_version: v1.18.2
         use_local_kuma_images: true
     - integration:
+        <<: *commit_workflow_filters
         name: test/e2e
         requires:
           - images
