@@ -3,8 +3,9 @@ package injector
 import (
 	"context"
 	"fmt"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
+
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/pkg/errors"
 
