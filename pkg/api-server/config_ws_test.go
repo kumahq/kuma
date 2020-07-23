@@ -131,10 +131,23 @@ var _ = Describe("Config WS", func() {
               "subscriptionLimit": 10
             }
           },
-          "mode": {
-           "remote": {},
-           "mode": "standalone"
-        },
+          "mode": "standalone",
+          "multicluster": {
+            "global": {
+              "kds": {
+                "grpcPort": 5685,
+                "refreshInterval": "1s",
+                "tlsCertFile": "",
+                "tlsKeyFile": ""
+              }
+            },
+            "remote": {
+              "kds": {
+                "refreshInterval": "1s",
+                "rootCaFile": ""
+              }
+            }
+          },
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
             "grpcPort": 5676
@@ -227,18 +240,6 @@ var _ = Describe("Config WS", func() {
             "grpcPort": 5678,
             "tlsCertFile": "",
             "tlsKeyFile": ""
-          },
-          "kds": {
-            "server": {
-              "grpcPort": 5685,
-              "refreshInterval": "1s",
-              "tlsCertFile": "",
-              "tlsKeyFile": ""
-            },
-            "client": {
-              "rootCaFile": "",
-              "globalAddress": ""
-            }
           }
         }
 		`, port)

@@ -18,12 +18,12 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.ResourceType, serverID string, filter reconcile.ResourceFilter) (Server, error) {
+func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.ResourceType, serverID string, refresh time.Duration, filter reconcile.ResourceFilter) (Server, error) {
 	hasher, cache := newKDSContext(log)
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter)
 	versioner := util_xds.SnapshotAutoVersioner{UUID: core.NewUUID}
 	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := newSyncTracker(log, reconciler, rt.Config().KDS.Server.RefreshInterval)
+	syncTracker := newSyncTracker(log, reconciler, refresh)
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: log},
 		syncTracker,

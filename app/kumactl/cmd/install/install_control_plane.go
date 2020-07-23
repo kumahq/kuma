@@ -3,7 +3,7 @@ package install
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -61,7 +61,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		SdsTlsKey:               "",
 		CNIImage:                "lobkovilya/install-cni",
 		CNIVersion:              "0.0.1",
-		KumaCpMode:              mode.Standalone,
+		KumaCpMode:              core.Standalone,
 		Zone:                    "",
 		GlobalRemotePortType:    "LoadBalancer",
 	}
@@ -71,13 +71,13 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Kuma Control Plane on Kubernetes",
 		Long:  `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := mode.ValidateCpMode(args.KumaCpMode); err != nil {
+			if err := core.ValidateCpMode(args.KumaCpMode); err != nil {
 				return err
 			}
-			if args.KumaCpMode == mode.Remote && args.Zone == "" {
+			if args.KumaCpMode == core.Remote && args.Zone == "" {
 				return errors.Errorf("--zone is mandatory with `remote` mode")
 			}
-			if useNodePort && args.KumaCpMode != mode.Standalone {
+			if useNodePort && args.KumaCpMode != core.Standalone {
 				args.GlobalRemotePortType = "NodePort"
 			}
 			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {

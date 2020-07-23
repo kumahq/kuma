@@ -8,9 +8,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/kumahq/kuma/pkg/zones/poller"
 
@@ -196,14 +196,14 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	if cfg.Mode.Mode != mode.Standalone {
+	if cfg.Mode != config_core.Standalone {
 		for i, definition := range definitions.All {
-			switch cfg.Mode.Mode {
-			case mode.Global:
+			switch cfg.Mode {
+			case config_core.Global:
 				if definition.ResourceFactory().GetType() == mesh.DataplaneType {
 					definitions.All[i].ReadOnly = true
 				}
-			case mode.Remote:
+			case config_core.Remote:
 				if definition.ResourceFactory().GetType() != mesh.DataplaneType {
 					definitions.All[i].ReadOnly = true
 				}

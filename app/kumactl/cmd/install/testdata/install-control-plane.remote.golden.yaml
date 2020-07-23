@@ -5026,11 +5026,11 @@ spec:
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
         - name: KUMA_SDS_SERVER_TLS_KEY_FILE
           value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
-        - name: KUMA_KDS_CLIENT_GLOBAL_ADDRESS
+        - name: KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
           value: grpcs://192.168.0.1:5685
-        - name: KUMA_KDS_SERVER_TLS_CERT_FILE
+        - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE
           value: /var/run/secrets/kuma.io/kuma-kds/tls-cert/tls.crt
-        - name: KUMA_KDS_SERVER_TLS_KEY_FILE
+        - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE
           value: /var/run/secrets/kuma.io/kuma-kds/tls-cert/tls.key
         - name: KUMA_API_SERVER_PORT
           value: "5681"
@@ -5046,9 +5046,9 @@ spec:
           value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
         - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
           value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
-        - name: KUMA_MODE_MODE
+        - name: KUMA_MODE
           value: remote
-        - name: KUMA_MODE_REMOTE_ZONE
+        - name: KUMA_MULTICLUSTER_REMOTE_ZONE
           value: zone-1
         args:
         - run

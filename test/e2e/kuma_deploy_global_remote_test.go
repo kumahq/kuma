@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-errors/errors"
+	"github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/go-errors/errors"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 
@@ -48,7 +48,7 @@ metadata:
 		c2 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Global)).
+			Install(Kuma(core.Global)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -56,7 +56,7 @@ metadata:
 		Expect(global).ToNot(BeNil())
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(global.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(global.GetKDSServerAddress()))).
 			Install(KumaDNS()).
 			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).

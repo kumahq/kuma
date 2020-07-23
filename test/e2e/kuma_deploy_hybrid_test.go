@@ -3,12 +3,12 @@ package e2e_test
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kumahq/kuma/pkg/config/mode"
 
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -64,7 +64,7 @@ metadata:
 		global = universalClusters.GetCluster(Kuma5)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Global)).
+			Install(Kuma(core.Global)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -76,7 +76,7 @@ metadata:
 		remote_1 = k8sClusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
 			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
@@ -90,7 +90,7 @@ metadata:
 		remote_2 = k8sClusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
 			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
@@ -105,7 +105,7 @@ metadata:
 		remote_3 = universalClusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(EchoServerUniversal()).
 			Install(DemoClientUniversal()).
 			Setup(remote_3)
@@ -117,7 +117,7 @@ metadata:
 		remote_4 = universalClusters.GetCluster(Kuma4)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal()).
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/config/mode"
 
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -48,7 +48,7 @@ destinations:
 		global = clusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Global)).
+			Install(Kuma(core.Global)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -60,7 +60,7 @@ destinations:
 		remote_1 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(EchoServerUniversal()).
 			Install(DemoClientUniversal()).
 			Setup(remote_1)
@@ -72,7 +72,7 @@ destinations:
 		remote_2 = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal()).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
