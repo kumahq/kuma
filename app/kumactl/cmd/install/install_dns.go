@@ -23,13 +23,18 @@ const (
 	corednsAppendTemplate = `mesh:53 {
         errors
         cache 3
-        %s . %s:5653
+        %s . %s
     }`
 )
 
 var resourceHeader = []byte("---\napiVersion: v1\nkind: ConfigMap\n")
 
 func newInstallDNS() *cobra.Command {
+	args := struct {
+		port string
+	}{
+		port: "5653",
+	}
 	cmd := &cobra.Command{
 		Use:   "dns",
 		Short: "Install DNS to Kubernetes",
@@ -57,11 +62,11 @@ This command requires that the KUBECONFIG environment is set`,
 				return err
 			}
 
-			cpaddress := kumaCPSVC.Spec.ClusterIP
+			kumaDNSAddress := fmt.Sprintf("%s:%s", kumaCPSVC.Spec.ClusterIP, args.port)
 
 			var errs error
 			generated := false
-			corednsConfigMap, err := handleCoreDNS(clientset, cpaddress)
+			corednsConfigMap, err := handleCoreDNS(clientset, kumaDNSAddress)
 			if err != nil {
 				errs = multierr.Append(errs, err)
 			} else {
@@ -72,7 +77,7 @@ This command requires that the KUBECONFIG environment is set`,
 				generated = true
 			}
 
-			kubednsConfigMap, err := handleKubeDNS(clientset, cpaddress)
+			kubednsConfigMap, err := handleKubeDNS(clientset, kumaDNSAddress)
 			if err != nil {
 				errs = multierr.Append(errs, err)
 			} else {
@@ -90,6 +95,7 @@ This command requires that the KUBECONFIG environment is set`,
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&args.port, "port", args.port, "port of the Kuma DNS server")
 
 	return cmd
 }
@@ -113,7 +119,7 @@ func cleanupCoreConfigMap(configMap *v1.ConfigMap) {
 	configMap.Data["Corefile"] = string(regex.ReplaceAll([]byte(inConfigMap), []byte("")))
 }
 
-func handleCoreDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.ConfigMap, error) {
+func handleCoreDNS(clientset *kubernetes.Clientset, kumaDNSAddress string) (*v1.ConfigMap, error) {
 	corednsConfigMap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(context.TODO(),
 		"coredns", metav1.GetOptions{})
 	if err != nil {
@@ -123,13 +129,13 @@ func handleCoreDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.Confi
 	cleanupCoreConfigMap(corednsConfigMap)
 
 	forwardVerb := getCoreFileForwardVerb(corednsConfigMap.Data["Corefile"])
-	toappend := fmt.Sprintf(corednsAppendTemplate, forwardVerb, cpaddress)
+	toappend := fmt.Sprintf(corednsAppendTemplate, forwardVerb, kumaDNSAddress)
 	corednsConfigMap.Data["Corefile"] += toappend
 
 	return corednsConfigMap, nil
 }
 
-func handleKubeDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.ConfigMap, error) {
+func handleKubeDNS(clientset *kubernetes.Clientset, kumaDNSAddress string) (*v1.ConfigMap, error) {
 	corednsConfigMap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(context.TODO(),
 		"kube-dns", metav1.GetOptions{})
 	if err != nil {
@@ -147,9 +153,7 @@ func handleKubeDNS(clientset *kubernetes.Clientset, cpaddress string) (*v1.Confi
 		return nil, err
 	}
 
-	if _, found := stubDomains["mesh"]; !found {
-		stubDomains["mesh"] = []string{cpaddress}
-	}
+	stubDomains["mesh"] = []string{kumaDNSAddress}
 
 	json, err := json.Marshal(stubDomains)
 	if err != nil {
