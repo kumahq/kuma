@@ -1,5 +1,5 @@
 # using Envoy's base to inherit the Envoy binary
-FROM envoyproxy/envoy-alpine:v1.14.3
+FROM envoyproxy/envoy-alpine:v1.15.0
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
@@ -20,7 +20,7 @@ RUN apk add --no-cache openssh curl \
   && ssh-keygen -A \
   && sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config \
   && sed -i s/#PermitEmptyPasswords.*/PermitEmptyPasswords\ yes/ /etc/ssh/sshd_config \
-  && echo "root:" | chpasswd
+  && echo "root:*" | chpasswd -e
 
 # do not detach (-D), log to stderr (-e)
 ENTRYPOINT ["/usr/sbin/sshd", "-D", "-e"]
