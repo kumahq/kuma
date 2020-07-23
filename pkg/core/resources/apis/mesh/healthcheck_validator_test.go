@@ -60,11 +60,11 @@ var _ = Describe("HealthCheck", func() {
                 - field: sources[0].match
                   message: must have at least one tag
                 - field: sources[0].match
-                  message: mandatory tag "service" is missing
+                  message: mandatory tag "kuma.io/service" is missing
                 - field: destinations[0].match
-                  message: must consist of exactly one tag "service"
+                  message: must consist of exactly one tag "kuma.io/service"
                 - field: destinations[0].match
-                  message: mandatory tag "service" is missing
+                  message: mandatory tag "kuma.io/service" is missing
                 - field: conf
                   message: has to be defined
 `,
@@ -73,26 +73,26 @@ var _ = Describe("HealthCheck", func() {
 				healthCheck: `
                 sources:
                 - match:
-                    service:
+                    kuma.io/service:
                     region:
                 destinations:
                 - match:
-                    service:
+                    kuma.io/service:
                     region:
 `,
 				expected: `
                 violations:
+                - field: sources[0].match["kuma.io/service"]
+                  message: tag value must be non-empty
                 - field: sources[0].match["region"]
                   message: tag value must be non-empty
-                - field: sources[0].match["service"]
-                  message: tag value must be non-empty
                 - field: destinations[0].match
-                  message: must consist of exactly one tag "service"
+                  message: must consist of exactly one tag "kuma.io/service"
+                - field: destinations[0].match["kuma.io/service"]
+                  message: tag value must be non-empty
                 - field: destinations[0].match["region"]
                   message: tag "region" is not allowed
                 - field: destinations[0].match["region"]
-                  message: tag value must be non-empty
-                - field: destinations[0].match["service"]
                   message: tag value must be non-empty
                 - field: conf
                   message: has to be defined`,
@@ -101,11 +101,11 @@ var _ = Describe("HealthCheck", func() {
 				healthCheck: `
                 sources:
                 - match:
-                    service: web
+                    kuma.io/service: web
                     region: eu
                 destinations:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   interval: 0s
                   timeout: 0s

@@ -55,7 +55,7 @@ var _ = Describe("MeshResource", func() {
                       port: 5670
                       path: /metrics
                       tags:
-                        service: dataplane-metrics
+                        kuma.io/service: dataplane-metrics
 `,
 			}),
 			Entry("when defaults are set", testCase{
@@ -69,7 +69,7 @@ var _ = Describe("MeshResource", func() {
                       path: /non-standard-path
                       port: 1234
                       tags:
-                        service: dataplane-metrics
+                        kuma.io/service: dataplane-metrics
                       skipMTLS: true
 `,
 				expected: `
@@ -82,7 +82,7 @@ var _ = Describe("MeshResource", func() {
                       path: /non-standard-path
                       port: 1234
                       tags:
-                        service: dataplane-metrics
+                        kuma.io/service: dataplane-metrics
                       skipMTLS: true
 `,
 			}),

@@ -64,7 +64,7 @@ var _ = Describe("Match", func() {
 									Port: 1234,
 									Path: "/non-standard-path",
 									Tags: map[string]string{
-										"service": "dataplane-metrics",
+										"kuma.io/service": "dataplane-metrics",
 									},
 								}),
 							},
@@ -85,20 +85,20 @@ var _ = Describe("Match", func() {
 								Port:        8080,
 								ServicePort: 8081,
 								Tags: map[string]string{
-									"service":  "web",
-									"version":  "0.1",
-									"region":   "eu",
-									"protocol": "http",
+									"kuma.io/service":  "web",
+									"version":          "0.1",
+									"region":           "eu",
+									"kuma.io/protocol": "http",
 								},
 							},
 							{
 								Port:        8081,
 								ServicePort: 8082,
 								Tags: map[string]string{
-									"service":  "web-api",
-									"version":  "0.1.2",
-									"region":   "us",
-									"protocol": "http",
+									"kuma.io/service":  "web-api",
+									"version":          "0.1.2",
+									"region":           "us",
+									"kuma.io/protocol": "http",
 								},
 							},
 						},
@@ -115,15 +115,15 @@ var _ = Describe("Match", func() {
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "kong",
+									"kuma.io/service": "kong",
 								},
 							},
 						},
 						Destinations: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "web",
-									"version": "0.1",
+									"kuma.io/service": "web",
+									"version":         "0.1",
 								},
 							},
 						},
@@ -138,14 +138,14 @@ var _ = Describe("Match", func() {
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "kong",
+									"kuma.io/service": "kong",
 								},
 							},
 						},
 						Destinations: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "web",
+									"kuma.io/service": "web",
 								},
 							},
 						},
@@ -160,14 +160,14 @@ var _ = Describe("Match", func() {
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "prometheus",
+									"kuma.io/service": "prometheus",
 								},
 							},
 						},
 						Destinations: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "dataplane-metrics",
+									"kuma.io/service": "dataplane-metrics",
 								},
 							},
 						},
