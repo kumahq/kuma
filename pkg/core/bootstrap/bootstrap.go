@@ -317,7 +317,7 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 }
 
 func initializeZones(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	poller, err := poller.NewZonesStatusPoller(builder.ReadOnlyResourceManager())
+	poller, err := poller.NewZonesStatusPoller(builder.ReadOnlyResourceManager(), cfg.Multicluster.Global.PollTimeout)
 	if err != nil {
 		return err
 	}

@@ -36,19 +36,20 @@ type (
 		sync.RWMutex
 		zones             Zones
 		roResourceManager manager.ReadOnlyResourceManager
+		dialTimeout       time.Duration
 		newTicker         func() *time.Ticker
 	}
 )
 
 const (
-	tickInterval = 15 * time.Second
-	dialTimeout  = 100 * time.Millisecond
+	tickInterval = 5 * time.Second
 )
 
-func NewZonesStatusPoller(roResourceManager manager.ReadOnlyResourceManager) (ZoneStatusPoller, error) {
+func NewZonesStatusPoller(roResourceManager manager.ReadOnlyResourceManager, dialTimeout time.Duration) (ZoneStatusPoller, error) {
 	poller := &ZonesStatusPoller{
 		zones:             Zones{},
 		roResourceManager: roResourceManager,
+		dialTimeout:       dialTimeout,
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
 		},
@@ -113,7 +114,7 @@ func (p *ZonesStatusPoller) pollZones() {
 	defer p.Unlock()
 
 	for i, zone := range p.zones {
-		conn, err := net.DialTimeout("tcp", zone.Address, dialTimeout)
+		conn, err := net.DialTimeout("tcp", zone.Address, p.dialTimeout)
 		if err != nil {
 			if zone.Active {
 				zonesStatusLog.Info(fmt.Sprintf("%s at %s did not respond", zone.Name, zone.Address))

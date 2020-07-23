@@ -128,6 +128,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Mode).To(Equal(config_core.Remote))
 			Expect(cfg.Multicluster.Remote.Zone).To(Equal("zone-1"))
 
+			Expect(cfg.Multicluster.Global.PollTimeout).To(Equal(750 * time.Millisecond))
 			Expect(cfg.Multicluster.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
 			Expect(cfg.Multicluster.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
 			Expect(cfg.Multicluster.Global.KDS.TlsCertFile).To(Equal("/cert"))
@@ -218,6 +219,7 @@ guiServer:
 mode: remote
 multicluster:
   global:
+    pollTimeout: 750ms
     kds:
       grpcPort: 1234
       refreshInterval: 2s
@@ -289,6 +291,7 @@ defaults:
 				"KUMA_DNS_SERVER_PORT":                                          "15653",
 				"KUMA_DNS_CIDR":                                                 "127.1.0.0/16",
 				"KUMA_MODE":                                                     "remote",
+				"KUMA_MULTICLUSTER_GLOBAL_POLL_TIMEOUT":                         "750ms",
 				"KUMA_MULTICLUSTER_GLOBAL_KDS_GRPC_PORT":                        "1234",
 				"KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL":                 "2s",
 				"KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE":                    "/cert",

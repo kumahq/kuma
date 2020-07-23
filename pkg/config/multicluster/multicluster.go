@@ -14,6 +14,8 @@ var _ config.Config = &MulticlusterConfig{}
 
 // Global configuration
 type GlobalConfig struct {
+	PollTimeout time.Duration `yaml:"pollTimeout,omitempty" envconfig:"kuma_multicluster_global_poll_timeout"`
+	// KDS Configuration
 	KDS *KdsServerConfig `yaml:"kds,omitempty"`
 }
 
@@ -27,6 +29,7 @@ func (g *GlobalConfig) Validate() error {
 
 func DefaultGlobalConfig() *GlobalConfig {
 	return &GlobalConfig{
+		PollTimeout: 500 * time.Millisecond,
 		KDS: &KdsServerConfig{
 			GrpcPort:        5685,
 			RefreshInterval: 1 * time.Second,

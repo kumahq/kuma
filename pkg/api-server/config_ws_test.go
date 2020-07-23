@@ -134,6 +134,7 @@ var _ = Describe("Config WS", func() {
           "mode": "standalone",
           "multicluster": {
             "global": {
+              "pollTimeout": "500ms",
               "kds": {
                 "grpcPort": 5685,
                 "refreshInterval": "1s",

@@ -258,7 +258,8 @@ dnsServer:
 # ControlPlane mode
 multicluster:
   global:
-    pollTimeout: 500 ms
+    # The Zone status poller timeout
+    pollTimeout: 500ms # ENV: KUMA_MULTICLUSTER_GLOBAL_POLL_TIMEOUT
     kds:
       # Port of GRPC server that Local Kuma CP connects to
       grpcPort: 5685 # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_GRPC_PORT
