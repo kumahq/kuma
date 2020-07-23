@@ -8,8 +8,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/mode"
 
-	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
-
 	"github.com/spf13/cobra"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -96,10 +94,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-				if err := kds_remote.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Remote")
-					return err
-				}
+				//if err := kds_remote.Setup(rt); err != nil {
+				//	runLog.Error(err, "unable to set up KDS Remote")
+				//	return err
+				//}
 				if err := dns.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up DNS server")
 					return err

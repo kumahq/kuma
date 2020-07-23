@@ -1,7 +1,13 @@
 package listeners
 
 import (
+	envoy_config_trace_v2 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v2"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/pkg/errors"
+	net_url "net/url"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
@@ -32,6 +38,63 @@ func (c *TracingConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 				Value: c.backend.Sampling.Value,
 			}
 		}
+		switch c.backend.Type {
+		case mesh_proto.TracingZipkinType:
+			tracing, err := zipkinConfig(c.backend.Conf, c.backend.Name)
+			if err != nil {
+				return err
+			}
+			hcm.Tracing.Provider = tracing
+		}
 		return nil
 	})
+}
+
+func zipkinConfig(cfgStr *structpb.Struct, backendName string) (*envoy_config_trace_v2.Tracing_Http, error) {
+	cfg := mesh_proto.ZipkinTracingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		return nil, errors.Wrap(err, "could not convert backend")
+	}
+	url, err := net_url.ParseRequestURI(cfg.Url)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid URL of Zipkin")
+	}
+
+	zipkinConfig := envoy_config_trace_v2.ZipkinConfig{
+		CollectorCluster:         names.GetTracingCluster(backendName),
+		CollectorEndpoint:        url.Path,
+		TraceId_128Bit:           cfg.TraceId128Bit,
+		CollectorEndpointVersion: apiVersion(&cfg, url),
+	}
+	zipkinConfigAny, err := proto.MarshalAnyDeterministic(&zipkinConfig)
+	if err != nil {
+		return nil, err
+	}
+	tracingConfig := &envoy_config_trace_v2.Tracing_Http{
+		Name: "envoy.zipkin",
+		ConfigType: &envoy_config_trace_v2.Tracing_Http_TypedConfig{
+			TypedConfig: zipkinConfigAny,
+		},
+	}
+	return tracingConfig, nil
+}
+
+func apiVersion(zipkin *mesh_proto.ZipkinTracingBackendConfig, url *net_url.URL) envoy_config_trace_v2.ZipkinConfig_CollectorEndpointVersion {
+	if zipkin.ApiVersion == "" { // try to infer it from the URL
+		if url.Path == "/api/v1/spans" {
+			return envoy_config_trace_v2.ZipkinConfig_HTTP_JSON_V1
+		} else if url.Path == "/api/v2/spans" {
+			return envoy_config_trace_v2.ZipkinConfig_HTTP_JSON
+		}
+	} else {
+		switch zipkin.ApiVersion {
+		case "httpJsonV1":
+			return envoy_config_trace_v2.ZipkinConfig_HTTP_JSON_V1
+		case "httpJson":
+			return envoy_config_trace_v2.ZipkinConfig_HTTP_JSON
+		case "httpProto":
+			return envoy_config_trace_v2.ZipkinConfig_HTTP_PROTO
+		}
+	}
+	return envoy_config_trace_v2.ZipkinConfig_HTTP_JSON
 }
