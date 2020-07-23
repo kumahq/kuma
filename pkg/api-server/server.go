@@ -8,8 +8,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/api-server/types"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 
@@ -223,13 +221,6 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 		"</html>"))
 	if err != nil {
 		log.Error(err, "could not write the response")
-	}
-}
-
-func fromServerConfig(config gui_server.GuiConfig) types.GuiConfig {
-	return types.GuiConfig{
-		ApiUrl:      config.ApiUrl,
-		Environment: config.Environment,
 	}
 }
 
