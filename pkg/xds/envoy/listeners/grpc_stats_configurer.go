@@ -4,6 +4,8 @@ import (
 	envoy_grpc_stats "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/grpc_stats/v2alpha"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/kumahq/kuma/pkg/util/proto"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -21,6 +23,9 @@ func GrpcStats() FilterChainBuilderOpt {
 func (g *GrpcStatsConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	config := &envoy_grpc_stats.FilterConfig{
 		EmitFilterState: true,
+		PerMethodStatSpecifier: &envoy_grpc_stats.FilterConfig_StatsForAllMethods{
+			StatsForAllMethods: &wrappers.BoolValue{Value: true},
+		},
 	}
 	pbst, err := proto.MarshalAnyDeterministic(config)
 	if err != nil {

@@ -13,7 +13,7 @@ var (
 	// TCP  has a protocol stack [TCP].
 	protocolStacks = map[mesh_core.Protocol]mesh_core.ProtocolList{
 		mesh_core.ProtocolGRPC:  {mesh_core.ProtocolGRPC, mesh_core.ProtocolHTTP2, mesh_core.ProtocolTCP},
-		mesh_core.ProtocolHTTP2: {mesh_core.ProtocolHTTP2, mesh_core.ProtocolHTTP, mesh_core.ProtocolTCP},
+		mesh_core.ProtocolHTTP2: {mesh_core.ProtocolHTTP2, mesh_core.ProtocolTCP},
 		mesh_core.ProtocolHTTP:  {mesh_core.ProtocolHTTP, mesh_core.ProtocolTCP},
 		mesh_core.ProtocolTCP:   {mesh_core.ProtocolTCP},
 	}
