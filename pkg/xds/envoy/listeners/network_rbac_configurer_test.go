@@ -62,16 +62,16 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 					Sources: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
-								"service": "web1",
-								"version": "1.0",
+								"kuma.io/service": "web1",
+								"version":         "1.0",
 							},
 						},
 					},
 					Destinations: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
-								"service": "backend1",
-								"env":     "dev",
+								"kuma.io/service": "backend1",
+								"env":             "dev",
 							},
 						},
 					},
@@ -122,16 +122,16 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 					Sources: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
-								"service": "web1",
-								"version": "1.0",
+								"kuma.io/service": "web1",
+								"version":         "1.0",
 							},
 						},
 					},
 					Destinations: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
-								"service": "backend1",
-								"env":     "dev",
+								"kuma.io/service": "backend1",
+								"env":             "dev",
 							},
 						},
 					},

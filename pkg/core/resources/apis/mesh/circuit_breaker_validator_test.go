@@ -30,11 +30,11 @@ var _ = Describe("CircuitBreaker", func() {
 			Entry("full example", `
                 sources:
                 - match:
-                    service: frontend
+                    kuma.io/service: frontend
                     region: us
                 destinations:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   interval: 1s
                   baseEjectionTime: 30s
@@ -58,11 +58,11 @@ var _ = Describe("CircuitBreaker", func() {
 			Entry("one detector with default values", `
                 sources:
                 - match:
-                    service: frontend
+                    kuma.io/service: frontend
                     region: us
                 destinations:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                     detectors:
                       totalErrors: {}
@@ -107,11 +107,11 @@ var _ = Describe("CircuitBreaker", func() {
 				circuitBreaker: `
                 sources:
                 - match:
-                    service: frontend
+                    kuma.io/service: frontend
                     region: us
                 destinations:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                     region: eu
                 conf:
                     maxEjectionPercent: 120
@@ -121,7 +121,7 @@ var _ = Describe("CircuitBreaker", func() {
 				expected: `
                violations:
                - field: destinations[0].match
-                 message: must consist of exactly one tag "service"
+                 message: must consist of exactly one tag "kuma.io/service"
                - field: destinations[0].match["region"]
                  message: tag "region" is not allowed
                - field: conf.maxEjectionPercent

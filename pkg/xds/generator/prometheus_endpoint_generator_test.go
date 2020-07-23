@@ -228,7 +228,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 											Path:     "/non-standard-path",
 											SkipMTLS: &wrappers.BoolValue{Value: false},
 											Tags: map[string]string{
-												"service": "dataplane-metrics",
+												"kuma.io/service": "dataplane-metrics",
 											},
 										}),
 									},
@@ -341,7 +341,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 											Path:     "/non-standard-path",
 											SkipMTLS: &wrappers.BoolValue{Value: false},
 											Tags: map[string]string{
-												"service": "dataplane-metrics",
+												"kuma.io/service": "dataplane-metrics",
 											},
 										}),
 									},
@@ -401,7 +401,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 											Port: 1234,
 											Path: "/non-standard-path",
 											Tags: map[string]string{
-												"service": "dataplane-metrics",
+												"kuma.io/service": "dataplane-metrics",
 											},
 										}),
 									},
@@ -462,7 +462,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 											Path:     "/non-standard-path",
 											SkipMTLS: &wrappers.BoolValue{Value: true},
 											Tags: map[string]string{
-												"service": "dataplane-metrics",
+												"kuma.io/service": "dataplane-metrics",
 											},
 										}),
 									},

@@ -68,11 +68,11 @@ var _ = Describe("FaultInjection Endpoints", func() {
         sources:
         - match:
             service: web
-            protocol: http
+            kuma.io/protocol: http
         destinations:
         - match:
             service: backend
-            protocol: http
+            kuma.io/protocol: http
         conf:
           abort:
             httpStatus: 500

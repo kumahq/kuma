@@ -14,10 +14,10 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
-                    protocol: http
+                    kuma.io/protocol: http
                     region: us
                   envoy.transport_socket_match:
-                    protocol: http
+                    kuma.io/protocol: http
                     region: us
             - endpoint:
                 address:
@@ -28,10 +28,10 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
-                    protocol: http
+                    kuma.io/protocol: http
                     region: eu
                   envoy.transport_socket_match:
-                    protocol: http
+                    kuma.io/protocol: http
                     region: eu
   - name: api-tcp
     resource:
@@ -48,10 +48,10 @@ resources:
               metadata:
                 filterMetadata:
                   envoy.lb:
-                    protocol: http
+                    kuma.io/protocol: http
                     region: us
                   envoy.transport_socket_match:
-                    protocol: http
+                    kuma.io/protocol: http
                     region: us
             - endpoint:
                 address:
@@ -353,7 +353,7 @@ resources:
       requestHeadersToAdd:
         - header:
             key: x-kuma-tags
-            value: '&service=web&'
+            value: '&kuma.io/service=web&'
       validateClusters: true
       virtualHosts:
         - domains:

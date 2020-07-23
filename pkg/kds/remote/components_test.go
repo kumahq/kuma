@@ -44,8 +44,8 @@ var _ = Describe("Remote Sync", func() {
 				Ingress: &mesh_proto.Dataplane_Networking_Ingress{
 					AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{{
 						Tags: map[string]string{
-							"service": "backend",
-							"zone":    fmt.Sprintf("not-%s", zone),
+							mesh_proto.ServiceTag: "backend",
+							mesh_proto.ZoneTag:    fmt.Sprintf("not-%s", zone),
 						},
 					}},
 				},

@@ -93,13 +93,13 @@ var _ = Describe("Endpoints", func() {
 					{
 						Target: "192.168.0.1",
 						Port:   8081,
-						Tags:   map[string]string{"service": "backend", "region": "us"},
+						Tags:   map[string]string{"kuma.io/service": "backend", "region": "us"},
 						Weight: 1,
 					},
 					{
 						Target: "192.168.0.2",
 						Port:   8082,
-						Tags:   map[string]string{"service": "backend", "region": "eu"},
+						Tags:   map[string]string{"kuma.io/service": "backend", "region": "eu"},
 						Weight: 2,
 					},
 				},
