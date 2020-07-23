@@ -127,7 +127,7 @@ var _ = Describe("GUI Server", func() {
 
 					// then
 					Expect(err).ToNot(HaveOccurred())
-					Expect(string(received)).To(Equal(given.expected))
+					Expect(string(received)).To(ContainSubstring(given.expected))
 				},
 				Entry("should not serve index.html without path", testCase{
 					urlPath:  "/gui",

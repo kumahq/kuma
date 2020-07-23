@@ -214,7 +214,13 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	_, err := writer.Write([]byte("GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP."))
+	_, err := writer.Write([]byte("" +
+		"<!DOCTYPE html><html lang=en>" +
+		"<head>\n<style>\n.center {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  height: 200px;\n  border: 3px solid green; \n}\n</style>\n</head>" +
+		"<body><div class=\"center\"><strong>" +
+		"GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP." +
+		"</strong></div></body>" +
+		"</html>"))
 	if err != nil {
 		log.Error(err, "could not write the response")
 	}
