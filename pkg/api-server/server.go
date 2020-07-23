@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 
 	"github.com/pkg/errors"
 
@@ -35,8 +34,7 @@ var (
 )
 
 type ApiServer struct {
-	server          *http.Server
-	GuiServerConfig *gui_server.GuiServerConfig
+	server *http.Server
 }
 
 func (a *ApiServer) NeedLeaderElection() bool {
@@ -112,7 +110,6 @@ func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatus
 
 	// Handle the GUI
 	if enableGUI {
-		newApiServer.GuiServerConfig = cfg.GuiServer
 		container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
 	} else {
 		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)

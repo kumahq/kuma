@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	config "github.com/kumahq/kuma/pkg/config/api-server"
-	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -21,7 +20,7 @@ var _ = Describe("GUI Server", func() {
 	var stop chan struct{}
 	var baseUrl string
 
-	beforeEach := func(enabelGUI bool) {
+	setupServer := func(enabelGUI bool) {
 		// given
 		cfg := config.DefaultApiServerConfig()
 
@@ -44,63 +43,55 @@ var _ = Describe("GUI Server", func() {
 		}, "3s").ShouldNot(HaveOccurred())
 
 		baseUrl = "http://localhost:" + port
-		apiServer.GuiServerConfig = &gui_server.GuiServerConfig{
-			GuiConfig: &gui_server.GuiConfig{
-				ApiUrl:      "http://localhost:5681",
-				Environment: "kubernetes",
-			},
-		}
 	}
 
-	Describe("enabled",
-		func() {
+	Describe("enabled", func() {
 
-			BeforeEach(func() { beforeEach(true) })
+		BeforeEach(func() { setupServer(true) })
 
-			AfterEach(func() {
-				close(stop)
-			})
-
-			type testCase struct {
-				urlPath      string
-				expectedFile string
-			}
-			DescribeTable("should expose file",
-				func(given testCase) {
-					// when
-					resp, err := http.Get(fmt.Sprintf("%s%s", baseUrl, given.urlPath))
-
-					// then
-					Expect(err).ToNot(HaveOccurred())
-
-					// when
-					received, err := ioutil.ReadAll(resp.Body)
-
-					// then
-					Expect(resp.Body.Close()).To(Succeed())
-					Expect(err).ToNot(HaveOccurred())
-
-					// when
-					fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "app", "kuma-ui", "data", "resources", given.expectedFile))
-
-					// then
-					Expect(err).ToNot(HaveOccurred())
-					Expect(fileContent).To(Equal(received))
-				},
-				Entry("should serve index.html without path", testCase{
-					urlPath:      "/gui",
-					expectedFile: "index.html",
-				}),
-				Entry("should serve index.html with / path", testCase{
-					urlPath:      "/gui/",
-					expectedFile: "index.html",
-				}),
-			)
+		AfterEach(func() {
+			close(stop)
 		})
+
+		type testCase struct {
+			urlPath      string
+			expectedFile string
+		}
+		DescribeTable("should expose file", func(given testCase) {
+			// when
+			resp, err := http.Get(fmt.Sprintf("%s%s", baseUrl, given.urlPath))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			received, err := ioutil.ReadAll(resp.Body)
+
+			// then
+			Expect(resp.Body.Close()).To(Succeed())
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "app", "kuma-ui", "data", "resources", given.expectedFile))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fileContent).To(Equal(received))
+		},
+			Entry("should serve index.html without path", testCase{
+				urlPath:      "/gui",
+				expectedFile: "index.html",
+			}),
+			Entry("should serve index.html with / path", testCase{
+				urlPath:      "/gui/",
+				expectedFile: "index.html",
+			}),
+		)
+	})
 
 	Describe("disabled",
 		func() {
-			BeforeEach(func() { beforeEach(false) })
+			BeforeEach(func() { setupServer(false) })
 
 			AfterEach(func() {
 				close(stop)
@@ -110,25 +101,24 @@ var _ = Describe("GUI Server", func() {
 				urlPath  string
 				expected string
 			}
-			DescribeTable("should not expose file",
-				func(given testCase) {
-					// when
-					resp, err := http.Get(fmt.Sprintf("%s%s", baseUrl, given.urlPath))
+			DescribeTable("should not expose file", func(given testCase) {
+				// when
+				resp, err := http.Get(fmt.Sprintf("%s%s", baseUrl, given.urlPath))
 
-					// then
-					Expect(err).ToNot(HaveOccurred())
+				// then
+				Expect(err).ToNot(HaveOccurred())
 
-					// when
-					received, err := ioutil.ReadAll(resp.Body)
+				// when
+				received, err := ioutil.ReadAll(resp.Body)
 
-					// then
-					Expect(resp.Body.Close()).To(Succeed())
-					Expect(err).ToNot(HaveOccurred())
+				// then
+				Expect(resp.Body.Close()).To(Succeed())
+				Expect(err).ToNot(HaveOccurred())
 
-					// then
-					Expect(err).ToNot(HaveOccurred())
-					Expect(string(received)).To(ContainSubstring(given.expected))
-				},
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(received)).To(ContainSubstring(given.expected))
+			},
 				Entry("should not serve index.html without path", testCase{
 					urlPath:  "/gui",
 					expected: "GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP.",
