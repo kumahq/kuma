@@ -34,7 +34,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 		clusterBuilder := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.StaticCluster(localClusterName, endpoint.WorkloadIP, endpoint.WorkloadPort))
-		if protocol == mesh_core.ProtocolHTTP2 {
+		if protocol == mesh_core.ProtocolHTTP2 || protocol == mesh_core.ProtocolGRPC {
 			clusterBuilder.Configure(envoy_clusters.Http2())
 		}
 		cluster, err := clusterBuilder.Build()
@@ -57,6 +57,13 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 				// configuration for HTTP case
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
+					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
+					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
+					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterSubset{ClusterName: localClusterName}))
+			case mesh_core.ProtocolGRPC:
+				filterChainBuilder.
+					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
+					Configure(envoy_listeners.GrpcStats()).
 					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
 					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterSubset{ClusterName: localClusterName}))

@@ -466,7 +466,7 @@ var _ = Describe("ParseProtocol()", func() {
 		}),
 		Entry("grpc", testCase{
 			tag:      "grpc",
-			expected: ProtocolUnknown,
+			expected: ProtocolGRPC,
 		}),
 		Entry("mongo", testCase{
 			tag:      "mongo",
