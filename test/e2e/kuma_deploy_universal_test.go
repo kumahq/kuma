@@ -31,10 +31,10 @@ name: traffic-permission-all
 mesh: default
 sources:
 - match:
-   service: "*"
+   kuma.io/service: "*"
 destinations:
 - match:
-   service: "*"
+   kuma.io/service: "*"
 `
 	var global, remote_1, remote_2 Cluster
 
