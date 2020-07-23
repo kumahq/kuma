@@ -38,12 +38,12 @@ var _ = Describe("Dataplane", func() {
               inbound:
                 - port: 8080
                   tags:
-                    service: backend
+                    kuma.io/service: backend
                     version: "1"
               outbound:
                 - port: 3333
                   tags:
-                    service: redis`,
+                    kuma.io/service: redis`,
 		),
 		Entry("dataplane with full inbounds and outbounds", `
             type: Dataplane
@@ -56,13 +56,13 @@ var _ = Describe("Dataplane", func() {
                   servicePort: 7777
                   address: 127.0.0.1
                   tags:
-                    service: backend
+                    kuma.io/service: backend
                     version: "1"
               outbound:
                 - port: 3333
                   address: 127.0.0.1
                   tags:
-                    service: redis`,
+                    kuma.io/service: redis`,
 		),
 		Entry("dataplane with legacy outbounds", `
             type: Dataplane
@@ -75,7 +75,7 @@ var _ = Describe("Dataplane", func() {
                   servicePort: 7777
                   address: 127.0.0.1
                   tags:
-                    service: backend
+                    kuma.io/service: backend
               outbound:
                 - port: 3333
                   address: 127.0.0.1
@@ -89,7 +89,7 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               gateway:
                 tags:
-                  service: backend
+                  kuma.io/service: backend
                   version: "1"
               outbound:
                 - port: 3333
@@ -103,13 +103,13 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               gateway:
                 tags:
-                  service: backend
+                  kuma.io/service: backend
                   version: "1"
                   kuma.io/valid: abc.0123-789.under_score:90
               outbound:
                 - port: 3333
                   tags:
-                    service: redis`,
+                    kuma.io/service: redis`,
 		),
 		Entry("dataplane in ingress mode", `
             type: Dataplane
@@ -120,11 +120,11 @@ var _ = Describe("Dataplane", func() {
                 ingress:
                   availableServices:
                     - tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "1"
                         region: us
                     - tags:
-                        service: web
+                        kuma.io/service: web
                         version: v2
                         region: eu
                 inbound:
@@ -182,11 +182,11 @@ var _ = Describe("Dataplane", func() {
                     - port: 8080
                       servicePort: 7777
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "1"
                   gateway:
                     tags:
-                      service: kong
+                      kuma.io/service: kong
                   outbound:
                     - port: 3333
                       service: redis`,
@@ -206,7 +206,7 @@ var _ = Describe("Dataplane", func() {
                     - port: 8080
                       servicePort: 7777
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "1"
                   outbound:
                     - port: 3333
@@ -225,11 +225,11 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   inbound:
                     - tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "1"
                     - port: 65536
                       tags:
-                        service: sub-backend
+                        kuma.io/service: sub-backend
                   outbound:
                     - port: 3333
                       service: redis`,
@@ -251,7 +251,7 @@ var _ = Describe("Dataplane", func() {
                     - port: 1234
                       servicePort: 65536
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                   outbound:
                     - port: 3333
                       service: redis`,
@@ -271,7 +271,7 @@ var _ = Describe("Dataplane", func() {
                     - port: 1234
                       address: invalid-address
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                   outbound:
                     - port: 3333
                       service: redis`,
@@ -296,7 +296,7 @@ var _ = Describe("Dataplane", func() {
                       service: redis`,
 			expected: `
                 violations:
-                - field: networking.inbound[0].tags["service"]
+                - field: networking.inbound[0].tags["kuma.io/service"]
                   message: tag has to exist`,
 		}),
 		Entry("networking.inbound: empty tag value", testCase{
@@ -309,7 +309,7 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version:
                   outbound:
                     - port: 3333
@@ -329,16 +329,16 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
-                        protocol:
+                        kuma.io/service: backend
+                        kuma.io/protocol:
                   outbound:
                     - port: 3333
                       service: redis`,
 			expected: `
                 violations:
-                - field: 'networking.inbound[0].tags["protocol"]'
-                  message: 'tag "protocol" has an invalid value "". Allowed values: grpc, http, http2, tcp'
-                - field: 'networking.inbound[0].tags["protocol"]'
+                - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
+                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: http, http2, tcp'
+                - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
                   message: tag value cannot be empty`,
 		}),
 		Entry("networking.inbound: `protocol` tag with unsupported value", testCase{
@@ -351,15 +351,15 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
-                        protocol: not-yet-supported-protocol
+                        kuma.io/service: backend
+                        kuma.io/protocol: not-yet-supported-protocol
                   outbound:
                     - port: 3333
                       service: redis`,
 			expected: `
                 violations:
-                - field: 'networking.inbound[0].tags["protocol"]'
-                  message: 'tag "protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, tcp'`,
+                - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
+                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: http, http2, tcp'`,
 		}),
 		Entry("networking.gateway: empty service tag", testCase{
 			dataplane: `
@@ -376,7 +376,7 @@ var _ = Describe("Dataplane", func() {
                       service: redis`,
 			expected: `
                 violations:
-                - field: 'networking.gateway.tags["service"]'
+                - field: 'networking.gateway.tags["kuma.io/service"]'
                   message: tag has to exist`,
 		}),
 		Entry("networking.gateway: empty tag value", testCase{
@@ -388,7 +388,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   gateway:
                     tags:
-                      service: backend
+                      kuma.io/service: backend
                       version:
                   outbound:
                     - port: 3333
@@ -408,13 +408,13 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "v1"
                   outbound:
                     - port: 3333`,
 			expected: `
                 violations:
-                - field: networking.outbound[0].service
+                - field: networking.outbound[0].kuma.io/service
                   message: cannot be empty`,
 		}),
 		Entry("networking.outbound: empty service tag", testCase{
@@ -427,7 +427,7 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "v1"
                   outbound:
                     - port: 3333
@@ -435,7 +435,7 @@ var _ = Describe("Dataplane", func() {
                         version: v1`,
 			expected: `
                 violations:
-                - field: networking.outbound[0].tags["service"]
+                - field: networking.outbound[0].tags["kuma.io/service"]
                   message: tag has to exist`,
 		}),
 		Entry("networking.outbound: port out of the range", testCase{
@@ -448,7 +448,7 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "v1"
                   outbound:
                     - service: redis
@@ -471,7 +471,7 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "v1"
                   outbound:
                     - port: 3333
@@ -492,7 +492,7 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "v1"
                   outbound:
                     - port: 3333
@@ -513,7 +513,7 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "v1"
                         inv@lidT/gN%me: value
                   outbound:
@@ -534,7 +534,7 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "v1"
                         invalidTagValue: inv@lid+t@g
                   outbound:
@@ -555,11 +555,11 @@ var _ = Describe("Dataplane", func() {
                   ingress:
                     availableServices:
                       - tags:
-                          service: backend
+                          kuma.io/service: backend
                           version: "1"
                           region: us
                       - tags:
-                          service: web
+                          kuma.io/service: web
                           version: v2
                           region: eu
                   inbound:
@@ -582,11 +582,11 @@ var _ = Describe("Dataplane", func() {
                   ingress:
                     availableServices:
                       - tags:
-                          service: backend
+                          kuma.io/service: backend
                           version: "1"
                           region: us
                       - tags:
-                          service: web
+                          kuma.io/service: web
                           version: v2
                           region: eu
                   gateway: {}
@@ -607,11 +607,11 @@ var _ = Describe("Dataplane", func() {
                   ingress:
                     availableServices:
                       - tags: 
-                          service: backend
+                          kuma.io/service: backend
                           version: "1"
                           region: us
                       - tags:
-                          service: web
+                          kuma.io/service: web
                           version: v2
                           region: eu`,
 			expected: `
@@ -629,11 +629,11 @@ var _ = Describe("Dataplane", func() {
                   ingress:
                     availableServices:
                       - tags: 
-                          service: backend
+                          kuma.io/service: backend
                           version: "1"
                           region: us
                       - tags:
-                          service: web
+                          kuma.io/service: web
                           version: v2
                           region: eu
                   inbound:
@@ -662,7 +662,7 @@ var _ = Describe("Dataplane", func() {
                       servicePort: 5050
                       address: 1.1.1.1
                       tags:
-                        service: backend`,
+                        kuma.io/service: backend`,
 		}),
 		Entry("inbound service address invalid", testCase{
 			dataplane: `
@@ -675,7 +675,7 @@ var _ = Describe("Dataplane", func() {
                     - port: 10001
                       serviceAddress: INVALID
                       tags:
-                        service: backend`,
+                        kuma.io/service: backend`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].serviceAddress
@@ -692,7 +692,7 @@ var _ = Describe("Dataplane", func() {
                     - port: 10001
                       serviceAddress: 192.168.0.1
                       tags:
-                        service: backend`,
+                        kuma.io/service: backend`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].serviceAddress
@@ -710,7 +710,7 @@ var _ = Describe("Dataplane", func() {
                       address: 192.168.0.2
                       serviceAddress: 192.168.0.2
                       tags:
-                        service: backend`,
+                        kuma.io/service: backend`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].serviceAddress
@@ -729,7 +729,7 @@ var _ = Describe("Dataplane", func() {
                       serviceAddress: 192.168.0.2
                       servicePort: 10002
                       tags:
-                        service: backend`,
+                        kuma.io/service: backend`,
 		}),
 		Entry("inbound service address and ingress", testCase{
 			dataplane: `
@@ -741,7 +741,7 @@ var _ = Describe("Dataplane", func() {
                   ingress:
                     availableServices:
                       - tags: 
-                          service: backend
+                          kuma.io/service: backend
                           version: "1"
                           region: us
                   inbound:

@@ -7,6 +7,6 @@ spec:
     - # protocol defaults to TCP
       port: 80
       targetPort: 8080
-    - protocol: TCP
+    - kuma.io/protocol: TCP
       port: 443
       targetPort: 8443

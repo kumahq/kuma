@@ -53,9 +53,9 @@ func (cs *UniversalClusters) GetCluster(name string) Cluster {
 	return c
 }
 
-func (cs *UniversalClusters) DeployKuma(mode ...string) error {
+func (cs *UniversalClusters) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployKuma(mode...); err != nil {
+		if err := c.DeployKuma(mode, fs...); err != nil {
 			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
 		}
 	}

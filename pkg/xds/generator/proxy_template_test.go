@@ -72,7 +72,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 									},
 								},
 								TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-									RedirectPort: 15001,
+									RedirectPortOutbound: 15001,
+									RedirectPortInbound:  15006,
 								},
 							},
 						},
@@ -178,7 +179,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				dataplane: `
                 networking:
                   transparentProxying:
-                    redirectPort: 15001
+                    redirectPortOutbound: 15001
+                    redirectPortInbound: 15006
                   address: 192.168.0.1
                   inbound:
                     - port: 80

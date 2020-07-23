@@ -105,12 +105,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "legendFormat": "Bytes sent",
           "refId": "A"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "legendFormat": "Bytes received",
           "refId": "B"
         }
@@ -201,44 +201,44 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "hide": true,
           "legendFormat": "Connection destroyed by the client",
           "refId": "A"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "legendFormat": "Connection timeout",
           "refId": "B"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "hide": true,
           "legendFormat": "Connection destroyed by local Envoy",
           "refId": "C"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "legendFormat": "Pending failure ejection",
           "refId": "D"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "legendFormat": "Pending overflow",
           "refId": "E"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "legendFormat": "Request timeout",
           "refId": "F"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "legendFormat": "Response reset",
           "refId": "G"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
           "legendFormat": "Request reset",
           "refId": "H"
         }
@@ -326,7 +326,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(envoy_cluster_upstream_cx_active{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
+          "expr": "sum(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
           "legendFormat": "Connections",
           "refId": "A"
         }
@@ -414,7 +414,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m])))",
+          "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m])))",
           "legendFormat": "Time",
           "refId": "A"
         }
@@ -503,7 +503,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m])))",
+          "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m])))",
           "legendFormat": "Time",
           "refId": "A"
         }
@@ -607,7 +607,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(envoy_cluster_health_check_healthy{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
+          "expr": "sum(envoy_cluster_health_check_healthy{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
           "legendFormat": "Healthy destinations",
           "refId": "A"
         }
@@ -697,7 +697,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
+          "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
           "legendFormat": "Healthy destinations",
           "refId": "A"
         }
@@ -775,14 +775,14 @@
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, service)",
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
         "hide": 0,
         "includeAll": false,
         "label": "Source service",
         "multi": false,
         "name": "source_service",
         "options": [],
-        "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, service)",
+        "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -797,14 +797,14 @@
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(envoy_cluster_upstream_cx_active{service=\"$source_service\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}, envoy_cluster_name)",
+        "definition": "label_values(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}, envoy_cluster_name)",
         "hide": 0,
         "includeAll": false,
         "label": "Destination service",
         "multi": false,
         "name": "destination_cluster",
         "options": [],
-        "query": "label_values(envoy_cluster_upstream_cx_active{service=\"$source_service\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}, envoy_cluster_name)",
+        "query": "label_values(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}, envoy_cluster_name)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

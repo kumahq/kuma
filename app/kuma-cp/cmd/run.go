@@ -96,8 +96,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-				if err := kds_remote.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Remote Server")
+				if err := kds_remote.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Remote")
 					return err
 				}
 				if err := dns.SetupServer(rt); err != nil {
@@ -117,12 +117,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Clusters server")
 					return err
 				}
-				if err := kds_global.SetupComponent(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Global Sink")
-					return err
-				}
-				if err := kds_global.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Global Server")
+				if err := kds_global.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Global")
 					return err
 				}
 			}

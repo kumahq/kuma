@@ -169,24 +169,24 @@ var _ = Describe("RegexOR", func() {
 		Entry("should match 2 services of 3", testCase{
 			servicesTags: []mesh_proto.MultiValueTagSet{
 				{
-					"service": {"web": true, "web-api": true},
+					"kuma.io/service": {"web": true, "web-api": true},
 				},
 				{
-					"service": {"backend": true},
-					"version": {"3": true},
+					"kuma.io/service": {"backend": true},
+					"version":         {"3": true},
 				},
 				{
-					"service": {"backend": true},
-					"version": {"2": true},
+					"kuma.io/service": {"backend": true},
+					"version":         {"2": true},
 				},
 			},
 			selectors: []mesh_proto.SingleValueTagSet{
 				{
-					"service": "web",
+					"kuma.io/service": "web",
 				},
 				{
-					"service": "backend",
-					"version": "3",
+					"kuma.io/service": "backend",
+					"version":         "3",
 				},
 			},
 			expected: []bool{true, true, false},

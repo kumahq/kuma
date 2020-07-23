@@ -54,10 +54,10 @@ var _ = Describe("HealthCheckConfigurer", func() {
 			healthCheck: &mesh_core.HealthCheckResource{
 				Spec: mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "backend"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 					},
 					Destinations: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "redis"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
 						Interval:           ptypes.DurationProto(5 * time.Second),

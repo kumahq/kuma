@@ -48,7 +48,7 @@ networking:
     servicePort: %s
     tags:
       service: echo-server_kuma-test_svc_%s
-      protocol: http
+      kuma.io/protocol: http
 `
 	AppModeDemoClient   = "demo-client"
 	DemoClientDataplane = `

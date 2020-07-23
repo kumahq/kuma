@@ -27,14 +27,14 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 							Port:        8080,
 							ServicePort: 80,
 							Tags: map[string]string{
-								"service": "backend",
+								"kuma.io/service": "backend",
 							},
 						},
 						{
 							Port:        9080,
 							ServicePort: 90,
 							Tags: map[string]string{
-								"service": "backend-api",
+								"kuma.io/service": "backend-api",
 							},
 						},
 					},
@@ -66,7 +66,7 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 				Networking: &mesh_proto.Dataplane_Networking{
 					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 						Tags: map[string]string{
-							"service": "edge",
+							"kuma.io/service": "edge",
 						},
 					},
 				},

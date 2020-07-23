@@ -7,6 +7,6 @@ spec:
     gateway:
       tags:
         app: example
-        service: example_demo_svc_80
+        kuma.io/service: example_demo_svc_80
         version: "0.1"
-        zone: "zone-1"
+        kuma.io/zone: "zone-1"

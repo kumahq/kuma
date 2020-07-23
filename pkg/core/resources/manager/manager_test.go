@@ -86,14 +86,14 @@ var _ = Describe("Resource Manager", func() {
 					Sources: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
-								"service": "*",
+								"kuma.io/service": "*",
 							},
 						},
 					},
 					Destinations: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
-								"service": "*",
+								"kuma.io/service": "*",
 							},
 						},
 					},

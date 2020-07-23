@@ -45,7 +45,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 								Port:        80,
 								ServicePort: 8080,
 								Tags: map[string]string{
-									"service": "web",
+									"kuma.io/service": "web",
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{

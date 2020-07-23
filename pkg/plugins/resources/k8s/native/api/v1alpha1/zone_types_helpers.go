@@ -33,7 +33,7 @@ func (cb *Zone) SetSpec(spec map[string]interface{}) {
 }
 
 func (cb *Zone) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func (l *ZoneList) GetItems() []model.KubernetesObject {
