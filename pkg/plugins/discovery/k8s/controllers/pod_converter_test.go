@@ -459,6 +459,17 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"protocol": "tcp",
 			},
 		}),
+		Entry("Pod with empty labels", testCase{
+			isGateway: true,
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "",
+			},
+			expected: map[string]string{
+				"app":     "example",
+				"service": "example_demo_svc_80",
+			},
+		}),
 	)
 })
 
