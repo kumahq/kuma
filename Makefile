@@ -1,6 +1,6 @@
 .PHONY: help clean clean/build clean/proto \
 		generate protoc/plugins protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 generate/kumactl/install/k8s/control-plane generate/kumactl/install/k8s/metrics generate/kumactl/install/k8s/tracing generate/kuma-cp/migrations generate/gui generate/envoy-imports\
-		fmt fmt/go fmt/proto vet golangci-lint imports check test integration build run/universal/memory run/universal/postgres \
+		fmt fmt/go fmt/proto vet lint golangci-lint helm-lint imports check test integration build run/universal/memory run/universal/postgres \
 		images image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd \
 		docker/build docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-init docker/build/kuma-prometheus-sd \
 		docker/save docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd \
@@ -252,13 +252,23 @@ tidy:
 		cd $$TOP; \
 	done
 
+lint: golangci-lint helm-lint
+
 golangci-lint: ## Dev: Runs golangci-lint linter
 	$(GOLANGCI_LINT_DIR)/golangci-lint run --timeout=10m -v
+
+helm-lint:
+	for c in ./deployments/charts/*; do \
+  		if [ -d $$c ]; then \
+			echo $$c ; \
+			helm lint $$c ; \
+		fi \
+	done
 
 imports: ## Dev: Runs goimports in order to organize imports
 	goimports -w -local github.com/kumahq/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
 
-check: generate fmt vet docs golangci-lint imports tidy ## Dev: Run code checks (go fmt, go vet, ...)
+check: generate fmt vet docs lint imports tidy ## Dev: Run code checks (go fmt, go vet, ...)
 	make generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 

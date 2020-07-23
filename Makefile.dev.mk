@@ -4,7 +4,7 @@
 		dev/install/ginkgo \
 		dev/install/kubebuilder dev/install/kustomize \
 		dev/install/kubectl dev/install/kind dev/install/minikube \
-		dev/install/golangci-lint dev/install/goimports
+		dev/install/golangci-lint dev/install/goimports dev/install/helm3
 
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 
@@ -14,7 +14,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/kubebuilder dev/install/kustomize \
 	dev/install/kubectl dev/install/kind dev/install/minikube \
 	dev/install/golangci-lint \
-	dev/install/goimports
+	dev/install/goimports \
+	dev/install/helm3
 
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 	@if [ -e $(PROTOC_PATH) ]; then echo "Protoc $$( $(PROTOC_PATH) --version ) is already installed at $(PROTOC_PATH)" ; fi
@@ -129,3 +130,6 @@ dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 
 dev/install/goimports: ## Bootstrap: Install goimports
 	go get golang.org/x/tools/cmd/goimports
+
+dev/install/helm3: ## Bootstrap: Install Helm 3
+	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
