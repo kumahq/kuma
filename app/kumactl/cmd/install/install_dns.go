@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	defaultKubeConfig     = "$HOME/.kube/config"
 	corednsAppendTemplate = `mesh:53 {
         errors
         cache 3
@@ -43,7 +44,7 @@ This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			kubeconfigPath := os.Getenv("KUBECONFIG")
 			if kubeconfigPath == "" {
-				return errors.Errorf("Please set KUBECONFIG before running the commands")
+				kubeconfigPath = os.ExpandEnv(defaultKubeConfig)
 			}
 
 			config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
