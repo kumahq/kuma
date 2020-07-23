@@ -153,12 +153,12 @@ spec:
     inbound:
       - port: 12343
         tags:
-          service: backend
-          zone: %s
+          kuma.io/service: backend
+          kuma.io/zone: %s
     outbound:
       - port: 1212
         tags:
-          service: web
+          kuma.io/service: web
 `, name, namespace, cluster)
 		}
 

@@ -35,7 +35,7 @@ networking:
   inbound:
   - port: %d	
     tags:
-      service: ingress
+      kuma.io/service: ingress
 `
 	EchoServerDataplane = `
 type: Dataplane
@@ -47,7 +47,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      service: echo-server_kuma-test_svc_%s
+      kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http
 `
 	AppModeDemoClient   = "demo-client"
@@ -61,7 +61,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      service: demo-client
+      kuma.io/service: demo-client
   outbound:
   - port: 4000
     service: echo-server_kuma-test_svc_%s
