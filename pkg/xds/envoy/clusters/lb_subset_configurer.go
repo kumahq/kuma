@@ -14,10 +14,10 @@ import (
 //      outbound:
 //      - port: 1234
 //        tags:
-//          service: backend
+//          kuma.io/service: backend
 //      - port: 1234
 //        tags:
-//          service: backend
+//          kuma.io/service: backend
 //          version: v1
 //    Only one cluster "backend" is generated for such dataplane, but with lb subset by version.
 func LbSubset(keySets [][]string) ClusterBuilderOptFunc {

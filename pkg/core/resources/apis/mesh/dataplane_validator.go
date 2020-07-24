@@ -138,7 +138,7 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 
 	if len(outbound.Tags) == 0 {
 		if outbound.Service == "" {
-			result.AddViolation("service", "cannot be empty")
+			result.AddViolation("kuma.io/service", "cannot be empty")
 		}
 	} else {
 		if _, exist := outbound.Tags[mesh_proto.ServiceTag]; !exist {

@@ -94,8 +94,8 @@ networking:
   - port: {{ PUBLIC_PORT }}
     servicePort: {{ LOCAL_PORT }}
     tags:
-      service: kuma-example-app
-      protocol: http
+      kuma.io/service: kuma-example-app
+      kuma.io/protocol: http
 "
 
 #
@@ -112,7 +112,7 @@ networking:
   - port: {{ PUBLIC_PORT }}
     servicePort: {{ LOCAL_PORT }}
     tags:
-      service: kuma-example-client
+      kuma.io/service: kuma-example-client
   outbound:
   - port: 4000
     service: kuma-example-app"
@@ -131,7 +131,7 @@ networking:
   - port: {{ PUBLIC_PORT }}
     servicePort: {{ LOCAL_PORT }}
     tags:
-      service: kuma-example-web
+      kuma.io/service: kuma-example-web
       version: v8
       env: prod
   outbound:
@@ -152,7 +152,7 @@ networking:
   - port: {{ PUBLIC_PORT }}
     servicePort: {{ LOCAL_PORT }}
     tags:
-      service: kuma-example-backend
+      kuma.io/service: kuma-example-backend
       version: v1
       env: prod"
 
@@ -170,6 +170,6 @@ networking:
   - port: {{ PUBLIC_PORT }}
     servicePort: {{ LOCAL_PORT }}
     tags:
-      service: kuma-example-backend
+      kuma.io/service: kuma-example-backend
       version: v2
       env: intg"

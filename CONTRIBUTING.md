@@ -159,6 +159,24 @@ naming scheme when pushing your branch(es):
 
 [Back to TOC](#table-of-contents)
 
+### Sign Your Work
+
+The sign-off is a simple line at the end of the explanation for a commit. All
+commits needs to be signed. Your signature certifies that you wrote the patch or
+otherwise have the right to contribute the material. The rules are pretty simple,
+if you can certify the below (from [developercertificate.org](https://developercertificate.org/)):
+
+To signify that you agree to the DCO for a commit, you add a line to the git
+commit message:
+
+```txt
+Signed-off-by: Jane Smith <jane.smith@example.com>
+```
+
+In most cases, you can add this signoff to your commit automatically with the
+`-s` flag to `git commit`. You must use your real name and a reachable email
+address (sorry, no pseudonyms or anonymous contributions).
+
 #### Commit atomicity
 
 When submitting patches, it is important that you organize your commits in

@@ -68,12 +68,12 @@ var _ = Describe("IngressGenerator", func() {
                 availableServices:
                   - mesh: mesh1
                     tags:
-                      service: backend
+                      kuma.io/service: backend
                       version: v1
                       region: eu
                   - mesh: mesh1
                     tags:
-                      service: backend
+                      kuma.io/service: backend
                       version: v2
                       region: us
               inbound:
@@ -86,9 +86,9 @@ var _ = Describe("IngressGenerator", func() {
 						Target: "192.168.0.1",
 						Port:   2521,
 						Tags: map[string]string{
-							"service": "backend",
-							"version": "v1",
-							"region":  "eu",
+							"kuma.io/service": "backend",
+							"version":         "v1",
+							"region":          "eu",
 						},
 						Weight: 1,
 					},
@@ -96,9 +96,9 @@ var _ = Describe("IngressGenerator", func() {
 						Target: "192.168.0.2",
 						Port:   2521,
 						Tags: map[string]string{
-							"service": "backend",
-							"version": "v2",
-							"region":  "us",
+							"kuma.io/service": "backend",
+							"version":         "v2",
+							"region":          "us",
 						},
 						Weight: 1,
 					},

@@ -56,7 +56,7 @@ metadata:
 		Expect(global).ToNot(BeNil())
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote)).
+			Install(Kuma(mode.Remote, WithGlobalAddress(global.GetKDSServerAddress()))).
 			Install(KumaDNS()).
 			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
@@ -78,18 +78,11 @@ metadata:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.SetLbAddress(remote.GetName(),
-			global.GetKDSServerAddress())
-		Expect(err).ToNot(HaveOccurred())
-
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(),
 			fmt.Sprintf(ZoneTemplateK8s,
-				remote.GetName(), "kuma-system",
+				remote.GetName(),
 				remote.GetKDSServerAddress(),
 				remote.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = c1.RestartKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -161,12 +154,12 @@ spec:
     inbound:
       - port: 12343
         tags:
-          service: backend
-          zone: %s
+          kuma.io/service: backend
+          kuma.io/zone: %s
     outbound:
       - port: 1212
         tags:
-          service: web
+          kuma.io/service: web
 `, name, namespace, cluster)
 		}
 

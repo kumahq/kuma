@@ -31,11 +31,15 @@ Built by Envoy contributors at Kong 🦍.
 
 ## Why Kuma?
 
+Built with enterprise use-cases in mind, Kuma is a universal service mesh that supports both Kubernetes and VMs deployments across single and multi-zone setups, with turnkey mesh policies to get up and running easily while supporting multi-tenancy and multi-mesh on the same control plane. Kuma is a donated CNCF Sandbox project.
+
 Modern applications will inevitably make requests over a network to communicate to other services, like databases, caches or microservices. But - as we all know - the network is by default unreliable and unsecure, and can introduce significant challenges to any modern environment like security, tracing and routing among the others.
 
 Kuma is a better way to build L4/L7 connectivity among your services and applications (Service Mesh) by reducing the code that application teams have to write, enabling to ship products faster and improve the reliability and security of the overall architecture with minimal effort. 
 
 Kuma embraces the sidecar proxy model by bundling Envoy as its sidecar data-plane technology and by providing a platform-agnostic Control Plane that can run on both modern Kubernetes and existing VM/Bare Metal architectures in order to deliver business value across every team in the organization with one comprehensive solution.
+
+Kuma has been built with universality and scalability in mind. Kubernetes and VMs are both first class citizens, it supports multiple isolated meshes on one control plane and offers global/remote CPs deployments for both single and multi zone setups across different platforms, clouds and data-centers in order to tackle the most complex deployments. With built-in connectivity thanks to the automatic ingress mode and built-in discovery, Kuma abstracts away connectivity across the entire mesh.
 
 [![][kuma-benefits]][kuma-url]
 
@@ -44,7 +48,10 @@ Kuma embraces the sidecar proxy model by bundling Envoy as its sidecar data-plan
 * **Universal Control Plane**: Easy to use, distributed, runs anywhere on both Kubernetes and VM/Bare Metal.
 * **Lightweight Data Plane**: Powered by Envoy to process any L4/L7 traffic, with automatic Envoy bootstrapping.
 * **Automatic DP Injection**: No code changes required in K8s. Easy YAML specification for VM and Bare Metal deployments.
-* **Multi-Tenancy**: To setup multiple isolated Meshes in one cluster and one Control Plane, lowering OPs cost.
+* **Multi-Mesh**: To setup multiple isolated Meshes in one cluster and one Control Plane, lowering OPs cost.
+* **Single and Multi Zone**: To deploy a service mesh that is cross-platform, cross-cloud and cross-cluster.
+* **Automatic Discovery & Ingress**: With built-in service discovery and connectivity across single and multi-zones.
+* **Global & Remote CPs**: For scalability across deployments with multiple zones, including hybrid VMs + K8s meshes.
 * **mTLS**: Automatic mTLS issuing, identity and encryption with optional support for third-party CA.
 * **TLS Rotation**: Automatic certificate rotation for all the data planes, with configurable settings.
 * **Traffic Permissions**: To firewall traffic between the services of a Mesh.

@@ -30,7 +30,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("full example", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   imports:
                   - default-proxy
@@ -55,12 +55,12 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("empty conf", `
                 selectors:
                 - match:
-                    service: backend`,
+                    kuma.io/service: backend`,
 			),
 			Entry("cluster modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - cluster:
@@ -100,7 +100,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("listener modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - listener:
@@ -148,7 +148,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("network filter modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - networkFilter:
@@ -201,7 +201,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("http filter modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - httpFilter:
@@ -334,7 +334,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - ""
                 selectors:
                 - match:
-                    service: backend`,
+                    kuma.io/service: backend`,
 				expected: `
                 violations:
                 - field: conf.imports[0]
@@ -347,7 +347,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - unknown-profile
                 selectors:
                 - match:
-                    service: backend`,
+                    kuma.io/service: backend`,
 				expected: `
                 violations:
                 - field: conf.imports[0]
@@ -357,7 +357,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   resources:
                   - name:
@@ -381,7 +381,7 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: selectors[0].match
                   message: must have at least one tag
                 - field: selectors[0].match
-                  message: mandatory tag "service" is missing`,
+                  message: mandatory tag "kuma.io/service" is missing`,
 			}),
 			Entry("empty tag", testCase{
 				proxyTemplate: `
@@ -393,23 +393,23 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: selectors[0].match
                   message: tag name must be non-empty
                 - field: selectors[0].match
-                  message: mandatory tag "service" is missing`,
+                  message: mandatory tag "kuma.io/service" is missing`,
 			}),
 			Entry("empty tag value", testCase{
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service:`,
+                    kuma.io/service:`,
 				expected: `
                 violations:
-                - field: 'selectors[0].match["service"]'
+                - field: 'selectors[0].match["kuma.io/service"]'
                   message: tag value must be non-empty`,
 			}),
 			Entry("validation error from envoy protobuf resource", testCase{
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   resources:
                   - name: additional
@@ -434,7 +434,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   resources:
                   - name: additional
@@ -449,7 +449,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - cluster:
@@ -481,7 +481,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - listener:
@@ -517,7 +517,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - networkFilter:
@@ -554,7 +554,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - httpFilter:

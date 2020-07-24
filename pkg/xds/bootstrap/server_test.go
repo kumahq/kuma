@@ -83,7 +83,7 @@ var _ = Describe("Bootstrap Server", func() {
 								Port:        443,
 								ServicePort: 8443,
 								Tags: map[string]string{
-									"service": "backend",
+									"kuma.io/service": "backend",
 								},
 							},
 						},

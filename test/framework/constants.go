@@ -22,18 +22,17 @@ const (
 	ZoneTemplateK8s = `
 apiVersion: kuma.io/v1alpha1
 kind: Zone
+mesh: default
 metadata:
   name: %s
-  namespace: %s
 spec:
   remoteControlPlane:
     address: %s
   ingress:
     address: %s
-  mesh: default
 `
 	ZoneTemplateUniversal = `
-type: zone
+type: Zone
 mesh: default
 name: %s
 remoteControlPlane:
