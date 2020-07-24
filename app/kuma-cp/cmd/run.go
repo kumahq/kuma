@@ -82,7 +82,22 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up GUI server")
 					return err
 				}
-				fallthrough
+				if err := sds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up SDS server")
+					return err
+				}
+				if err := xds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up xDS server")
+					return err
+				}
+				if err := mads_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up Monitoring Assignment server")
+					return err
+				}
+				if err := dns.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up DNS server")
+					return err
+				}
 			case mode.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
