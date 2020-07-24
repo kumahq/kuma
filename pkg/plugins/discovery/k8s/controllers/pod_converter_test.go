@@ -468,8 +468,8 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"version": "",
 			},
 			expected: map[string]string{
-				"app":     "example",
-				"service": "example_demo_svc_80",
+				"app":             "example",
+				"kuma.io/service": "example_demo_svc_80",
 			},
 		}),
 	)
