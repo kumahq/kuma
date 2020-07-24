@@ -36,6 +36,19 @@ destinations:
    kuma.io/service: "*"
 `
 
+	trafficPermissionToKuma2 := `
+type: TrafficPermission
+name: traffic-permission-kuma-2
+mesh: default
+sources:
+- match:
+   kuma.io/service: "*"
+destinations:
+- match:
+   kuma.io/service: "*"
+   kuma.io/zone: kuma-2-remote
+`
+
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -229,5 +242,28 @@ metadata:
 			"curl", "-v", "-m", "3", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+	})
+
+	It("should sync traffic permissions", func() {
+		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "traffic-permission-all")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = YamlUniversal(trafficPermissionToKuma2)(global)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Remote 3
+		// universal access remote k8s service
+		stdout, _, err := remote_3.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "localhost:4000")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+
+		// Remote 4
+		// universal can't access remote universal service
+		stdout, _, err = remote_4.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "localhost:4001")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 503 Service Unavailable"))
+
 	})
 })
