@@ -33,7 +33,7 @@ spec:
 {{- end }}
   selector:
     app: kuma-control-plane
-{{- if ne .KumaCpMode "standalone" }}
+{{- if eq .KumaCpMode "global" }}
 ---
 apiVersion: v1
 kind: Service

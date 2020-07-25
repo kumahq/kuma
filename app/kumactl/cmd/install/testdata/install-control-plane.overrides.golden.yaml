@@ -4967,20 +4967,6 @@ spec:
   selector:
     app: kuma-control-plane
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: global-remote-sync
-  namespace: kuma
-spec:
-  type: NodePort
-  ports:
-    - port: 5685
-      nodePort: 30685
-      name: global-remote-sync
-  selector:
-    app: kuma-control-plane
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:

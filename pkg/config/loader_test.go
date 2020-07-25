@@ -133,7 +133,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multicluster.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
 			Expect(cfg.Multicluster.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multicluster.Global.KDS.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.Multicluster.Remote.GlobalAddress).To(Equal("1.1.1.1"))
+			Expect(cfg.Multicluster.Remote.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multicluster.Remote.Zone).To(Equal("zone-1"))
 			Expect(cfg.Multicluster.Remote.KDS.RootCAFile).To(Equal("/rootCa"))
 
@@ -226,7 +226,7 @@ multicluster:
       tlsCertFile: /cert
       tlsKeyFile: /key
   remote:
-    globalAddress: "1.1.1.1"
+    globalAddress: "grpc://1.1.1.1:5685"
     zone: "zone-1"
     kds:
       rootCaFile: /rootCa
@@ -296,7 +296,7 @@ defaults:
 				"KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL":                 "2s",
 				"KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE":                    "/cert",
 				"KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE":                     "/key",
-				"KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS":                       "1.1.1.1",
+				"KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS":                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTICLUSTER_REMOTE_ZONE":                                 "zone-1",
 				"KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE":                     "/rootCa",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                              "true",
