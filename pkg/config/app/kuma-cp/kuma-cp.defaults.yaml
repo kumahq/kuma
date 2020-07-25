@@ -255,26 +255,27 @@ dnsServer:
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
 
 
-# ControlPlane mode
+# Multicluster mode
 multicluster:
   global:
     # The Zone status poller timeout
     pollTimeout: 500ms # ENV: KUMA_MULTICLUSTER_GLOBAL_POLL_TIMEOUT
     kds:
-      # Port of GRPC server that Local Kuma CP connects to
+      # Port of a gRPC server that serves Kuma Discovery Service (KDS).
       grpcPort: 5685 # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_GRPC_PORT
-      # Interval for regenerating Snapshot
+      # Interval for refreshing state of the world
       refreshInterval: 1s # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL
       # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
       tlsCertFile: # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE
-      # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
+      # TTlsKeyFile defines a path to a file with PEM-encoded TLS key.
       tlsKeyFile: # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE
-  remote: # Remote CP configuration
-    zone: "" # ENV: KUMA_MULTICLUSTER_REMOTE_ZONE the name of the zone for this Remote CP
+  remote:
+    # Kuma Zone name used to mark the remote dataplane resources
+    zone: "" # ENV: KUMA_MULTICLUSTER_REMOTE_ZONE
     # GlobalAddress URL of Global Kuma CP
     globalAddress: # ENV KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
     kds:
-      # Interval for regenerating Snapshot
+      # Interval for refreshing state of the world
       refreshInterval: 1s # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
       rootCaFile: # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE
