@@ -5171,3 +5171,79 @@ webhooks:
         resources:
           - pods
     sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: kuma-validating-webhook-configuration
+webhooks:
+  - clientConfig:
+      caBundle: QWRtaXNzaW9uQ2VydA==
+      service:
+        name: kuma-ctrl-plane
+        namespace: kuma
+        path: /validate-kuma-io-v1alpha1
+    failurePolicy: Fail
+    name: validator.kuma-admission.kuma.io
+    rules:
+      - apiGroups:
+          - kuma.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - circuitbreakers
+          - faultinjections
+          - trafficlogs
+          - trafficpermissions
+          - trafficroutes
+          - traffictraces
+          - dataplanes
+          - healthchecks
+          - meshes
+          - proxytemplates
+  - clientConfig:
+      caBundle: QWRtaXNzaW9uQ2VydA==
+      service:
+        name: kuma-ctrl-plane
+        namespace: kuma
+        path: /validate-v1-service
+    failurePolicy: Fail
+    name: service.validator.kuma-admission.kuma.io
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - services
+    sideEffects: None
+  - clientConfig:
+      caBundle: QWRtaXNzaW9uQ2VydA==
+      service:
+        name: kuma-ctrl-plane
+        namespace: kuma
+        path: /validate-v1-secret
+    failurePolicy: Ignore
+    name: secret.validator.kuma-admission.kuma.io
+    namespaceSelector:
+      matchLabels:
+        kuma.io/system-namespace: "true"
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - secrets
+    sideEffects: None
