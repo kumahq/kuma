@@ -88,14 +88,14 @@ var _ = Describe("Validation", func() {
                 "sources":[
                   {
                     "match":{
-                      "service":"web"
+                      "kuma.io/service":"web"
                     }
                   }
                 ],
                 "destinations":[
                   {
                     "match":{
-                      "service":"backend"
+                      "kuma.io/service":"backend"
                     }
                   }
                 ],
@@ -103,7 +103,7 @@ var _ = Describe("Validation", func() {
                   {
                     "weight":100,
                     "destination":{
-                      "service":"backend"
+                      "kuma.io/service":"backend"
                     }
                   }
                 ]
@@ -163,14 +163,14 @@ var _ = Describe("Validation", func() {
                 "sources":[
                   {
                     "match":{
-                      "service":"web"
+                      "kuma.io/service":"web"
                     }
                   }
                 ],
                 "destinations":[
                   {
                     "match":{
-                      "service":"backend"
+                      "kuma.io/service":"backend"
                     }
                   }
                 ],
@@ -178,7 +178,7 @@ var _ = Describe("Validation", func() {
                   {
                     "weight":100,
                     "destination":{
-                      "service":"backend"
+                      "kuma.io/service":"backend"
                     }
                   }
                 ]
@@ -217,7 +217,7 @@ var _ = Describe("Validation", func() {
                     {
                       "port": 11011,
                       "tags": {
-                        "service": "backend"
+                        "kuma.io/service": "backend"
                       }
                     }
                   ]
@@ -254,7 +254,7 @@ var _ = Describe("Validation", func() {
                     {
                       "port": 11011,
                       "tags": {
-                        "service": "backend"
+                        "kuma.io/service": "backend"
                       }
                     }
                   ]

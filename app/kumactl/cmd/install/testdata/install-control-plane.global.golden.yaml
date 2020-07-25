@@ -5018,6 +5018,7 @@ spec:
         ports:
         - containerPort: 5681
         - containerPort: 5683
+        - containerPort: 5443
         livenessProbe:
           httpGet:
             path: /healthy
