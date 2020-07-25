@@ -77,6 +77,9 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if args.KumaCpMode == core.Remote && args.Zone == "" {
 				return errors.Errorf("--zone is mandatory with `remote` mode")
 			}
+			if args.KumaCpMode == core.Remote && args.KdsGlobalAddress == "" {
+				return errors.Errorf("--kds-global-address is mandatory with `remote` mode")
+			}
 			if useNodePort && args.KumaCpMode != core.Standalone {
 				args.GlobalRemotePortType = "NodePort"
 			}
