@@ -159,7 +159,7 @@ func DefaultConfig() Config {
 }
 
 func (c *Config) Validate() error {
-	if err := c.Multicluster.Validate(); err != nil {
+	if err := core.ValidateCpMode(c.Mode); err != nil {
 		return errors.Wrap(err, "Mode validation failed")
 	}
 	switch c.Mode {
@@ -167,12 +167,41 @@ func (c *Config) Validate() error {
 		if err := c.GuiServer.Validate(); err != nil {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
+		if err := c.Multicluster.Global.Validate(); err != nil {
+			return errors.Wrap(err, "Multicluster Global validation failed")
+		}
 	case core.Standalone:
 		if err := c.GuiServer.Validate(); err != nil {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
-		fallthrough
+		if err := c.XdsServer.Validate(); err != nil {
+			return errors.Wrap(err, "Xds Server validation failed")
+		}
+		if err := c.BootstrapServer.Validate(); err != nil {
+			return errors.Wrap(err, "Bootstrap Server validation failed")
+		}
+		if err := c.SdsServer.Validate(); err != nil {
+			return errors.Wrap(err, "SDS Server validation failed")
+		}
+		if err := c.DataplaneTokenServer.Validate(); err != nil {
+			return errors.Wrap(err, "Dataplane Token Server validation failed")
+		}
+		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
+			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
+		}
+		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
+			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
+		}
+		if err := c.Runtime.Validate(c.Environment); err != nil {
+			return errors.Wrap(err, "Runtime validation failed")
+		}
+		if err := c.Metrics.Validate(); err != nil {
+			return errors.Wrap(err, "Metrics validation failed")
+		}
 	case core.Remote:
+		if err := c.Multicluster.Remote.Validate(); err != nil {
+			return errors.Wrap(err, "Multicluster Remote validation failed")
+		}
 		if err := c.XdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "Xds Server validation failed")
 		}
