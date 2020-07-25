@@ -1,6 +1,9 @@
 package multicluster
 
 import (
+	"crypto/x509"
+	"io/ioutil"
+	"net/url"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -56,6 +59,28 @@ func (r *RemoteConfig) Validate() error {
 		return errors.Errorf("Zone is mandatory in remote mode")
 	} else if !govalidator.IsDNSName(r.Zone) {
 		return errors.Errorf("Wrong zone name %s", r.Zone)
+	}
+	u, err := url.Parse(r.GlobalAddress)
+	if err != nil {
+		return errors.Wrapf(err, " unable to parse remote GlobaAddress.")
+	}
+	switch u.Scheme {
+	case "grpc":
+	case "grpcs":
+		rootCaFile := r.KDS.RootCAFile
+		if rootCaFile != "" {
+			roots := x509.NewCertPool()
+			caCert, err := ioutil.ReadFile(rootCaFile)
+			if err != nil {
+				return errors.Wrapf(err, "could not read certificate %s", rootCaFile)
+			}
+			ok := roots.AppendCertsFromPEM(caCert)
+			if !ok {
+				return errors.New("failed to parse root certificate")
+			}
+		}
+	default:
+		return errors.Errorf("unsupported scheme %q in remote GlobalAddress. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
 	}
 	return r.KDS.Validate()
 }
