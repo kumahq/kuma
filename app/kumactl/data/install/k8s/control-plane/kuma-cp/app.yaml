@@ -175,8 +175,8 @@ spec:
         - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
         ports:
         - containerPort: 5681
-{{- if ne .KumaCpMode "global" }}
         - containerPort: 5443
+{{- if ne .KumaCpMode "global" }}
         - containerPort: 5677
         - containerPort: 5678
         - containerPort: 5679
@@ -304,7 +304,6 @@ webhooks:
         - pods
   sideEffects: None
 ---
-{{- if ne .KumaCpMode "remote" }}
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -380,4 +379,3 @@ webhooks:
         resources:
           - secrets
     sideEffects: None
-{{- end }}

@@ -77,7 +77,22 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode.Mode))
 			switch cfg.Mode.Mode {
 			case mode.Standalone:
-				fallthrough
+				if err := sds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up SDS server")
+					return err
+				}
+				if err := xds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up xDS server")
+					return err
+				}
+				if err := mads_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up Monitoring Assignment server")
+					return err
+				}
+				if err := dns.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up DNS server")
+					return err
+				}
 			case mode.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")

@@ -53,10 +53,8 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	if rt.Config().Mode.Mode != mode.Remote {
-		if err := addValidators(mgr, rt); err != nil {
-			return err
-		}
+	if err := addValidators(mgr, rt); err != nil {
+		return err
 	}
 
 	addMutators(mgr, rt)
@@ -128,7 +126,7 @@ func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	composite := k8s_webhooks.CompositeValidator{}
 
-	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global())
+	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global(), rt.Config().Mode.Mode)
 	composite.AddValidator(handler)
 
 	coreMeshValidator := managers_mesh.MeshValidator{CaManagers: rt.CaManagers()}

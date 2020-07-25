@@ -49,6 +49,11 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 
 func InboundTagsFor(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
+	for key, value := range tags {
+		if value == "" {
+			delete(tags, key)
+		}
+	}
 	if tags == nil {
 		tags = make(map[string]string)
 	}
