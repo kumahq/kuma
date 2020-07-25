@@ -3,6 +3,8 @@ package webhooks_test
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -15,7 +17,6 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/mode"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -38,7 +39,7 @@ var _ = Describe("Validation", func() {
 	type testCase struct {
 		objTemplate core_model.ResourceSpec
 		obj         string
-		mode        mode.CpMode
+		mode        core.CpMode
 		resp        kube_admission.Response
 	}
 	DescribeTable("Validation",
@@ -72,7 +73,7 @@ var _ = Describe("Validation", func() {
 			Expect(resp).To(Equal(given.resp))
 		},
 		Entry("should pass validation", testCase{
-			mode:        mode.Standalone,
+			mode:        core.Standalone,
 			objTemplate: &mesh_proto.TrafficRoute{},
 			obj: `
             {
@@ -120,7 +121,7 @@ var _ = Describe("Validation", func() {
 			},
 		}),
 		Entry("should pass default mesh on remote", testCase{
-			mode:        mode.Remote,
+			mode:        core.Remote,
 			objTemplate: &mesh_proto.Mesh{},
 			obj: `
             {
@@ -144,7 +145,7 @@ var _ = Describe("Validation", func() {
 			},
 		}),
 		Entry("should pass validation for synced policy from Global to Remote", testCase{
-			mode:        mode.Remote,
+			mode:        core.Remote,
 			objTemplate: &mesh_proto.TrafficRoute{},
 			obj: `
             {
@@ -195,7 +196,7 @@ var _ = Describe("Validation", func() {
 			},
 		}),
 		Entry("should pass validation for synced policy from Remote to Global", testCase{
-			mode:        mode.Remote,
+			mode:        core.Remote,
 			objTemplate: &mesh_proto.Dataplane{},
 			obj: `
             {
@@ -235,7 +236,7 @@ var _ = Describe("Validation", func() {
 			},
 		}),
 		Entry("should pass validation for not synced Dataplane in Remote", testCase{
-			mode:        mode.Remote,
+			mode:        core.Remote,
 			objTemplate: &mesh_proto.Dataplane{},
 			obj: `
             {
@@ -272,7 +273,7 @@ var _ = Describe("Validation", func() {
 			},
 		}),
 		Entry("should fail validation due to invalid spec", testCase{
-			mode:        mode.Global,
+			mode:        core.Global,
 			objTemplate: &mesh_proto.TrafficRoute{},
 			obj: `
 			{
@@ -323,7 +324,7 @@ var _ = Describe("Validation", func() {
 			},
 		}),
 		Entry("should fail validation due to applying policy manually on Remote CP", testCase{
-			mode:        mode.Remote,
+			mode:        core.Remote,
 			objTemplate: &mesh_proto.TrafficRoute{},
 			obj: `
 			{
@@ -360,7 +361,7 @@ var _ = Describe("Validation", func() {
 			},
 		}),
 		Entry("should fail validation due to applying Dataplane manually on Global CP", testCase{
-			mode:        mode.Global,
+			mode:        core.Global,
 			objTemplate: &mesh_proto.Dataplane{},
 			obj: `
 			{
