@@ -36,9 +36,9 @@ destinations:
    kuma.io/service: "*"
 `
 
-	trafficPermissionToKuma2 := `
+	trafficPermissionAllTo2Remote := `
 type: TrafficPermission
-name: traffic-permission-kuma-2
+name: all-to-2-remote
 mesh: default
 sources:
 - match:
@@ -248,7 +248,7 @@ metadata:
 		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "traffic-permission-all")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlUniversal(trafficPermissionToKuma2)(global)
+		err = YamlUniversal(trafficPermissionAllTo2Remote)(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Remote 3

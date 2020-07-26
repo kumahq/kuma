@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -62,7 +61,7 @@ func (r *RemoteConfig) Validate() error {
 	}
 	u, err := url.Parse(r.GlobalAddress)
 	if err != nil {
-		return errors.Wrapf(err, " unable to parse remote GlobaAddress.")
+		return errors.Wrapf(err, "unable to parse remote GlobaAddress.")
 	}
 	switch u.Scheme {
 	case "grpc":
@@ -102,31 +101,12 @@ type MulticlusterConfig struct {
 }
 
 func (m *MulticlusterConfig) Sanitize() {
-	if m.Global != nil {
-		m.Global.Sanitize()
-	}
-	if m.Remote != nil {
-		m.Remote.Sanitize()
-	}
+	m.Global.Sanitize()
+	m.Remote.Sanitize()
 }
 
 func (m *MulticlusterConfig) Validate() error {
-	var result error
-	if m.Global != nil {
-		err := m.Global.Validate()
-		if err != nil {
-			_ = multierror.Append(result, err)
-		}
-	}
-
-	if m.Remote != nil {
-		err := m.Remote.Validate()
-		if err != nil {
-			_ = multierror.Append(result, err)
-		}
-	}
-
-	return result
+	panic("not implemented. Call Global and Remote validators as needed.")
 }
 
 func DefaultMulticlusterConfig() *MulticlusterConfig {

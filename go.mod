@@ -22,7 +22,6 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.8.0
 	github.com/golang/protobuf v1.3.2
 	github.com/gruntwork-io/terratest v0.27.5
-	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0

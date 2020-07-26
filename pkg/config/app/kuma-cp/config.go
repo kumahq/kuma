@@ -102,7 +102,7 @@ type Config struct {
 	Reports *Reports `yaml:"reports,omitempty"`
 	// GUI Server Config
 	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer,omitempty"`
-	// Kuma CP Mode
+	// Multicluster Config
 	Multicluster *multicluster.MulticlusterConfig `yaml:"multicluster,omitempty"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
