@@ -27,10 +27,6 @@ func (t *k8SDeployment) TracedServices() ([]string, error) {
 
 var _ Deployment = &k8SDeployment{}
 
-func (t *k8SDeployment) Name() string {
-	return DeploymentName
-}
-
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	kumactl, _ := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
 	yaml, err := kumactl.KumactlInstallTracing()

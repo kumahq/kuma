@@ -24,7 +24,9 @@ type universalDeployment struct {
 var _ Deployment = &universalDeployment{}
 
 func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
-	u.allocatePublicPortsFor("16686")
+	if err := u.allocatePublicPortsFor("16686"); err != nil {
+		return err
+	}
 
 	opts := docker.RunOptions{
 		Detach:               true,
@@ -56,14 +58,15 @@ func getIP(t testing.TestingT, container string) (string, error) {
 	return shell.RunCommandAndGetStdOutE(t, cmd)
 }
 
-func (j *universalDeployment) allocatePublicPortsFor(ports ...string) {
+func (j *universalDeployment) allocatePublicPortsFor(ports ...string) error {
 	for i, port := range ports {
 		pubPortUInt32, err := util_net.PickTCPPort("", uint32(33204+i), uint32(34204+i))
 		if err != nil {
-			panic(err)
+			return err
 		}
 		j.ports[port] = strconv.Itoa(int(pubPortUInt32))
 	}
+	return nil
 }
 
 func (j *universalDeployment) publishPortsForDocker() (args []string) {

@@ -46,7 +46,7 @@ spec:
 `, zipkinURL)
 	}
 
-	zipkinAll := `
+	traceAll := `
 apiVersion: kuma.io/v1alpha1
 kind: TrafficTrace
 mesh: default
@@ -87,7 +87,7 @@ spec:
 		// given TrafficTrace and mesh with tracing backend
 		err := YamlK8s(meshWithTracing(tracing.From(cluster).ZipkinCollectorURL()))(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = YamlK8s(zipkinAll)(cluster)
+		err = YamlK8s(traceAll)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when client sends requests to server

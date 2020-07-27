@@ -57,25 +57,23 @@ var _ = Describe("TracingProxyGenerator", func() {
 
 	DescribeTable("should generate Envoy xDS resources if tracing backend is present",
 		func(given testCase) {
-			// setup
+			// given
 			gen := &generator.TracingProxyGenerator{}
 
 			// when
 			rs, err := gen.Generate(given.ctx, given.proxy)
+
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			// when
 			resp, err := rs.List().ToDeltaDiscoveryResponse()
-			// then
 			Expect(err).ToNot(HaveOccurred())
-			// when
 			actual, err := util_proto.ToYAML(resp)
-			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			expected, err := ioutil.ReadFile(filepath.Join("testdata", "tracing", given.expectedFile))
 			Expect(err).ToNot(HaveOccurred())
+
 			Expect(actual).To(MatchYAML(expected))
 		},
 		Entry("should create cluster for Zipkin", testCase{

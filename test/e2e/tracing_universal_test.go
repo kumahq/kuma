@@ -30,7 +30,7 @@ tracing:
 `, zipkinURL)
 	}
 
-	zipkinAll := `
+	traceAll := `
 type: TrafficTrace
 name: traffic-trace-all
 mesh: default
@@ -64,7 +64,7 @@ selectors:
 		// given TrafficTrace and mesh with tracing backend
 		err := YamlUniversal(meshWithTracing(tracing.From(cluster).ZipkinCollectorURL()))(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = YamlUniversal(zipkinAll)(cluster)
+		err = YamlUniversal(traceAll)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		retry.DoWithRetry(cluster.GetTesting(), "check traced services", DefaultRetries, DefaultTimeout, func() (string, error) {
