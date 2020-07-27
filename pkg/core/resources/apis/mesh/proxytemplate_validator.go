@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -55,6 +56,29 @@ func validateModification(modification *mesh_proto.ProxyTemplate_Modifications) 
 		verr.AddError("networkFilter", validateNetworkFilterModification(modification.GetNetworkFilter()))
 	case *mesh_proto.ProxyTemplate_Modifications_HttpFilter_:
 		verr.AddError("httpFilter", validateHTTPFilterModification(modification.GetHttpFilter()))
+	case *mesh_proto.ProxyTemplate_Modifications_VirtualHost_:
+		verr.AddError("virtualHost", validateVirtualHostModification(modification.GetVirtualHost()))
+	}
+	return verr
+}
+
+func validateVirtualHostModification(vHostMod *mesh_proto.ProxyTemplate_Modifications_VirtualHost) validators.ValidationError {
+	verr := validators.ValidationError{}
+	switch vHostMod.Operation {
+	case mesh_proto.OpAdd:
+		if vHostMod.GetMatch().GetName() != "" {
+			verr.AddViolation("match.name", "cannot be defined")
+		}
+		if err := ValidateResourceYAML(&envoy_route.VirtualHost{}, vHostMod.Value); err != nil {
+			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+		}
+	case mesh_proto.OpPatch:
+		if err := ValidateResourceYAMLPatch(&envoy_route.VirtualHost{}, vHostMod.Value); err != nil {
+			verr.AddViolation("value", fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+		}
+	case mesh_proto.OpRemove:
+	default:
+		verr.AddViolation("operation", fmt.Sprintf("invalid operation. Available operations: %q, %q, %q", mesh_proto.OpAdd, mesh_proto.OpPatch, mesh_proto.OpRemove))
 	}
 	return verr
 }
