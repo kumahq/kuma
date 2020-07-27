@@ -248,7 +248,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("virtual host modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - virtualHost:
@@ -591,7 +591,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - virtualHost:
