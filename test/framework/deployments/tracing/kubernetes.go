@@ -1,15 +1,14 @@
 package tracing
 
 import (
-	"encoding/json"
 	"fmt"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/test/framework"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
-	"sort"
+
+	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/test/framework"
 )
 
 const tracingNamespace = "kuma-tracing"
@@ -23,16 +22,7 @@ func (t *k8SDeployment) ZipkinCollectorURL() string {
 }
 
 func (t *k8SDeployment) TracedServices() ([]string, error) {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/api/services", t.port))
-	if err != nil {
-		return nil, err
-	}
-	output := &jaegerServicesOutput{}
-	if err := json.NewDecoder(resp.Body).Decode(output); err != nil {
-		return nil, err
-	}
-	sort.Strings(output.Data)
-	return output.Data, nil
+	return tracedServices(fmt.Sprintf("http://localhost:%d", t.port))
 }
 
 var _ Deployment = &k8SDeployment{}
@@ -99,7 +89,9 @@ func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
 	err = k8s.KubectlDeleteFromStringE(cluster.GetTesting(),
 		cluster.GetKubectlOptions(),
 		yaml)
-
+	if err != nil {
+		return err
+	}
 	cluster.(*framework.K8sCluster).WaitNamespaceDelete(tracingNamespace)
 	return nil
 }

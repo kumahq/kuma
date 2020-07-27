@@ -177,4 +177,3 @@ func (cs *UniversalClusters) ExecWithRetries(namespace, podName, containerName s
 func (cs *UniversalClusters) Deployment(name string) Deployment {
 	panic("not supported")
 }
-

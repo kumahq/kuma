@@ -2,6 +2,7 @@ package clusters
 
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 )
 

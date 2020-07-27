@@ -2,16 +2,18 @@ package e2e_test
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/kumahq/kuma/pkg/config/mode"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/tracing"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
+
+	"github.com/kumahq/kuma/pkg/config/mode"
+	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/tracing"
 )
 
 var _ = Describe("Tracing K8S", func() {

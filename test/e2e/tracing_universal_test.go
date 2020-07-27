@@ -2,14 +2,16 @@ package e2e_test
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/kumahq/kuma/pkg/config/mode"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/tracing"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"reflect"
+
+	"github.com/kumahq/kuma/pkg/config/mode"
+	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/tracing"
 )
 
 var _ = Describe("Tracing Universal", func() {
