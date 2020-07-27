@@ -461,6 +461,17 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				mesh_proto.ProtocolTag: "tcp",
 			},
 		}),
+		Entry("Pod with empty labels", testCase{
+			isGateway: true,
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "",
+			},
+			expected: map[string]string{
+				"app":             "example",
+				"kuma.io/service": "example_demo_svc_80",
+			},
+		}),
 	)
 })
 

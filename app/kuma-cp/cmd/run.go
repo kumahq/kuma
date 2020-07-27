@@ -8,15 +8,15 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/mode"
 
+	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
+
 	"github.com/spf13/cobra"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
-	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/zones"
 
-	ui_server "github.com/kumahq/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -77,10 +77,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode.Mode))
 			switch cfg.Mode.Mode {
 			case mode.Standalone:
-				if err := ui_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up GUI server")
-					return err
-				}
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
 					return err
@@ -121,10 +117,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			case mode.Global:
 				if err := xds_server.SetupDiagnosticsServer(rt); err != nil {
 					runLog.Error(err, "unable to set up xDS server")
-					return err
-				}
-				if err := ui_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up GUI server")
 					return err
 				}
 				if err := zones.SetupServer(rt); err != nil {

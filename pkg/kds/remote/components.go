@@ -93,3 +93,12 @@ func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool, localZone string
 		},
 	}
 }
+
+func ConsumesType(typ model.ResourceType) bool {
+	for _, consumedTyp := range consumedTypes {
+		if consumedTyp == typ {
+			return true
+		}
+	}
+	return false
+}
