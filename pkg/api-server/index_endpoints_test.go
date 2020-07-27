@@ -35,7 +35,7 @@ var _ = Describe("Index Endpoints", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig())
+		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true)
 
 		stop := make(chan struct{})
 		go func() {
