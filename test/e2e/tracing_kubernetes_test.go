@@ -6,6 +6,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/kumahq/kuma/pkg/config/mode"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/tracing"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -13,7 +14,7 @@ import (
 	"reflect"
 )
 
-var _ = Describe("Test Tracing K8S", func() {
+var _ = Describe("Tracing K8S", func() {
 
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
@@ -69,7 +70,7 @@ spec:
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Install(EchoServerK8s()).
-			Install(JaegerTracing()).
+			Install(tracing.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -82,7 +83,7 @@ spec:
 
 	It("should emit traces to jaeger", func() {
 		// given TrafficTrace and mesh with tracing backend
-		err := YamlK8s(meshWithTracing(cluster.Tracing().ZipkinCollectorURL()))(cluster)
+		err := YamlK8s(meshWithTracing(tracing.From(cluster).ZipkinCollectorURL()))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = YamlK8s(zipkinAll)(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -110,7 +111,7 @@ spec:
 				}
 
 				// then traces are published
-				services, err := cluster.Tracing().TracedServices()
+				services, err := tracing.From(cluster).TracedServices()
 				if err != nil {
 					return "", err
 				}

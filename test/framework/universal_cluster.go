@@ -23,15 +23,16 @@ type UniversalCluster struct {
 	controlplane *UniversalControlPlane
 	apps         map[string]*UniversalApp
 	verbose      bool
-	tracing      *UniversalJaeger
+	Deployments  map[string]Deployment
 }
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
 	return &UniversalCluster{
-		t:       t,
-		name:    name,
-		apps:    map[string]*UniversalApp{},
-		verbose: verbose,
+		t:           t,
+		name:        name,
+		apps:        map[string]*UniversalApp{},
+		verbose:     verbose,
+		Deployments: map[string]Deployment{},
 	}
 }
 
@@ -42,8 +43,10 @@ func (c *UniversalCluster) DismissCluster() (errs error) {
 			errs = multierr.Append(errs, err)
 		}
 	}
-	if c.tracing != nil {
-		StopJaegerDocker(c.t, c.tracing)
+	for _, deployment := range c.Deployments {
+		if err := deployment.Delete(c); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 	return
 }
@@ -245,6 +248,6 @@ func (c *UniversalCluster) GetTesting() testing.TestingT {
 	return c.t
 }
 
-func (c *UniversalCluster) Tracing() Tracing {
-	return c.tracing
+func (c *UniversalCluster) Deployment(name string) Deployment {
+	return c.Deployments[name]
 }

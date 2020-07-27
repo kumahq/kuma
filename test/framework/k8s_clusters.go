@@ -34,6 +34,7 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 			hiPort:              uint32(kumaCPAPIPortFwdBase + (i+1)*1000 - 1),
 			forwardedPortsChans: map[uint32]chan struct{}{},
 			verbose:             verbose,
+			Deployments:         map[string]Deployment{},
 		}
 
 		var err error
@@ -186,15 +187,15 @@ func (cs *K8sClusters) InjectDNS() error {
 
 	return nil
 }
+
 func (cs *K8sClusters) GetTesting() testing.TestingT {
 	return cs.t
 }
-
 func IsK8sClustersStarted() bool {
 	_, found := os.LookupEnv(envK8SCLUSTERS)
 	return found
 }
 
-func (cs *K8sClusters) Tracing() Tracing {
-	panic("cannot aggregate tracing")
+func (cs *K8sClusters) Deployment(name string) Deployment {
+	panic("not supported")
 }

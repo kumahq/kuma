@@ -162,10 +162,10 @@ func (cs *UniversalClusters) InjectDNS() error {
 
 	return nil
 }
+
 func (cs *UniversalClusters) GetTesting() testing.TestingT {
 	return cs.t
 }
-
 func (cs *UniversalClusters) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
 	panic("implement me")
 }
@@ -174,6 +174,7 @@ func (cs *UniversalClusters) ExecWithRetries(namespace, podName, containerName s
 	panic("implement me")
 }
 
-func (cs *UniversalClusters) Tracing() Tracing {
-	panic("cannot aggregate tracing")
+func (cs *UniversalClusters) Deployment(name string) Deployment {
+	panic("not supported")
 }
+

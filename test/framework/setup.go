@@ -173,28 +173,6 @@ func DemoClientUniversal() InstallFunc {
 	}
 }
 
-func JaegerTracing() InstallFunc {
-	return func(cluster Cluster) error {
-		switch cluster.(type) {
-		case *K8sCluster:
-			k8sCluster := cluster.(*K8sCluster)
-			tracing, err := DeployTracingK8S(k8sCluster)
-			if err != nil {
-				return err
-			}
-			k8sCluster.tracing = tracing
-		case *UniversalCluster:
-			universalCluster := cluster.(*UniversalCluster)
-			tracing, err := DeployJaegerInDocker(cluster.GetTesting())
-			if err != nil {
-				return err
-			}
-			universalCluster.tracing = tracing
-		}
-		return nil
-	}
-}
-
 func Combine(fs ...InstallFunc) InstallFunc {
 	return func(cluster Cluster) error {
 		for _, f := range fs {

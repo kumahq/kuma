@@ -30,6 +30,11 @@ func newDeployOpt(fs ...DeployOptionsFunc) *deployOptions {
 	return rv
 }
 
+type Deployment interface {
+	Deploy(cluster Cluster) error
+	Delete(cluster Cluster) error
+}
+
 type Cluster interface {
 	// Cluster
 	DismissCluster() error
@@ -41,7 +46,7 @@ type Cluster interface {
 	DeleteKuma() error
 	InjectDNS() error
 	GetKumactlOptions() *KumactlOptions
-	Tracing() Tracing
+	Deployment(name string) Deployment
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions

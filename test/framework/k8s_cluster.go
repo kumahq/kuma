@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"go.uber.org/multierr"
 	"io"
 	"net/http"
 	"net/url"
@@ -38,7 +39,7 @@ type K8sCluster struct {
 	forwardedPortsChans map[uint32]chan struct{}
 	verbose             bool
 	clientset           *kubernetes.Clientset
-	tracing             *K8SJaeger
+	Deployments         map[string]Deployment
 }
 
 func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, error) {
@@ -50,6 +51,7 @@ func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, erro
 		hiPort:              uint32(kumaCPAPIPortFwdBase + 1999),
 		forwardedPortsChans: map[uint32]chan struct{}{},
 		verbose:             verbose,
+		Deployments:         map[string]Deployment{},
 	}
 
 	var err error
@@ -68,8 +70,8 @@ func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
 		yamlPath)
 }
 
-func (c *K8sCluster) Tracing() Tracing {
-	return c.tracing
+func (c *K8sCluster) Deployment(name string) Deployment {
+	return c.Deployments[name]
 }
 
 func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service string, yamlPath string) error {
@@ -481,9 +483,11 @@ func (c *K8sCluster) GetTesting() testing.TestingT {
 	return c.t
 }
 
-func (c *K8sCluster) DismissCluster() error {
-	if c.tracing != nil {
-		return DeleteTracingK8S(c)
+func (c *K8sCluster) DismissCluster() (errs error) {
+	for _, deployment := range c.Deployments {
+		if err := deployment.Delete(c); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 	return nil
 }

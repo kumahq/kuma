@@ -5,13 +5,14 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/kumahq/kuma/pkg/config/mode"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/tracing"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"reflect"
 )
 
-var _ = Describe("Test Tracing Universal", func() {
+var _ = Describe("Tracing Universal", func() {
 
 	meshWithTracing := func(zipkinURL string) string {
 		return fmt.Sprintf(`
@@ -45,7 +46,7 @@ selectors:
 			Install(Kuma(mode.Standalone)).
 			Install(EchoServerUniversal()).
 			Install(DemoClientUniversal()).
-			Install(JaegerTracing()).
+			Install(tracing.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = cluster.VerifyKuma()
@@ -59,7 +60,7 @@ selectors:
 
 	It("should emit traces to jaeger", func() {
 		// given TrafficTrace and mesh with tracing backend
-		err := YamlUniversal(meshWithTracing(cluster.Tracing().ZipkinCollectorURL()))(cluster)
+		err := YamlUniversal(meshWithTracing(tracing.From(cluster).ZipkinCollectorURL()))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = YamlUniversal(zipkinAll)(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -72,7 +73,7 @@ selectors:
 			}
 
 			// then traces are published
-			services, err := cluster.Tracing().TracedServices()
+			services, err := tracing.From(cluster).TracedServices()
 			if err != nil {
 				return "", err
 			}
