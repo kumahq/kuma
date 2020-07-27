@@ -82,7 +82,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - cluster:
                       operation: patch
                       match:
-                        direction: inbound
+                        origin: inbound
                       value: |
                         connectTimeout: 5s
                   - cluster:
@@ -94,7 +94,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - cluster:
                       operation: remove
                       match:
-                        direction: inbound
+                        origin: inbound
                   `,
 			),
 			Entry("listener modifications", `
@@ -128,7 +128,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - listener:
                       operation: patch
                       match:
-                        direction: inbound
+                        origin: inbound
                       value: |
                         address:
                           socketAddress:
@@ -142,7 +142,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - listener:
                       operation: remove
                       match:
-                        direction: inbound
+                        origin: inbound
                   `,
 			),
 			Entry("network filter modifications", `
@@ -243,6 +243,62 @@ var _ = Describe("ProxyTemplate", func() {
                           dynamicStats: false
                   - httpFilter:
                       operation: remove
+                  `,
+			),
+			Entry("virtual host modifications", `
+                selectors:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  modifications:
+                  - virtualHost:
+                      operation: add
+                      match:
+                        origin: outbound
+                        routeConfigurationName: outbound:backend
+                      value: |
+                        name: backend
+                        domains:
+                        - backend.com
+                        routes:
+                        - match:
+                            prefix: /
+                          route:
+                            cluster: backend
+                  - virtualHost:
+                      operation: patch
+                      value: |
+                        retryPolicy:
+                          retryOn: 5xx
+                          numRetries: 3
+                  - virtualHost:
+                      operation: patch
+                      match:
+                        origin: outbound
+                      value: |
+                        retryPolicy:
+                          retryOn: 5xx
+                          numRetries: 3
+                  - virtualHost:
+                      operation: patch
+                      match:
+                        routeConfigurationName: outbound:backend
+                        name: backend
+                      value: |
+                        retryPolicy:
+                          retryOn: 5xx
+                          numRetries: 3
+                  - cluster:
+                      operation: remove
+                  - cluster:
+                      operation: remove
+                      match:
+                        routeConfigurationName: outbound:backend
+                        name: backend
+                  - cluster:
+                      operation: remove
+                      match:
+                        origin: inbound
                   `,
 			),
 		)
@@ -529,6 +585,35 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: conf.modifications[3].httpFilter.match.name
                   message: cannot be empty
                 - field: conf.modifications[3].httpFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'`,
+			}),
+			Entry("invalid virtual host operation", testCase{
+				proxyTemplate: `
+                selectors:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  modifications:
+                  - virtualHost:
+                      operation: add
+                      match:
+                        name: xyz
+                      value: '{'
+                  - virtualHost:
+                      operation: addFirst
+                  - virtualHost:
+                      operation: patch
+                      value: '{'
+`,
+				expected: `
+                violations:
+                - field: conf.modifications[0].virtualHost.match.name
+                  message: cannot be defined
+                - field: conf.modifications[0].virtualHost.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[1].virtualHost.operation
+                  message: 'invalid operation. Available operations: "add", "patch", "remove"'
+                - field: conf.modifications[2].virtualHost.value
                   message: 'native Envoy resource is not valid: unexpected EOF'`,
 			}),
 		)

@@ -141,3 +141,12 @@ func dedupIngresses(rs model.ResourceList) model.ResourceList {
 	}
 	return rv
 }
+
+func ConsumesType(typ model.ResourceType) bool {
+	for _, consumedTyp := range consumedTypes {
+		if consumedTyp == typ {
+			return true
+		}
+	}
+	return false
+}

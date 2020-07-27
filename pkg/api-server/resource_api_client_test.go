@@ -98,7 +98,7 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig) *api_server.ApiServer {
+func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, enableGUI bool) *api_server.ApiServer {
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
@@ -108,7 +108,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	resources := manager.NewResourceManager(store)
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, nil, defs, cfg.ApiServer, &cfg)
+	apiServer, err := api_server.NewApiServer(resources, nil, defs, &cfg, enableGUI)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

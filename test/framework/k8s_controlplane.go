@@ -23,7 +23,6 @@ type PortFwd struct {
 	lowFwdPort   uint32
 	hiFwdPort    uint32
 	localAPIPort uint32
-	localGUIPort uint32
 }
 
 type K8sControlPlane struct {
@@ -52,7 +51,6 @@ func NewK8sControlPlane(t testing.TestingT, mode mode.CpMode, clusterName string
 		cluster:    cluster,
 		portFwd: PortFwd{
 			localAPIPort: loPort,
-			localGUIPort: hiPort,
 		},
 		verbose: verbose,
 	}
@@ -102,7 +100,7 @@ func (c *K8sControlPlane) SetLbAddress(name, lbAddress string) error {
 }
 
 func (c *K8sControlPlane) PortForwardKumaCP() error {
-	var apiPort, guiPort uint32
+	var apiPort uint32
 	var err error
 
 	kumacpPods := c.GetKumaCPPods()
@@ -119,17 +117,7 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 	}
 
 	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
-
-	// GUI
-	guiPort, err = util_net.PickTCPPort("", c.portFwd.lowFwdPort+2, c.portFwd.hiFwdPort)
-	if err != nil {
-		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
-	}
-
-	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, guiPort, kumaCPGUIPort)
-
 	c.portFwd.localAPIPort = apiPort
-	c.portFwd.localGUIPort = guiPort
 
 	return nil
 }
@@ -176,13 +164,9 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 		return nil
 	}
 
-	if c.portFwd.localGUIPort == 0 {
-		return errors.Errorf("API port not forwarded")
-	}
-
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
-		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localGUIPort), 10),
+		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)+"/gui",
 		&tls.Config{},
 		3,
 		DefaultTimeout,
