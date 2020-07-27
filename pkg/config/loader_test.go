@@ -125,7 +125,6 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.General.AdvertisedHostname).To(Equal("kuma.internal"))
 
-			Expect(cfg.GuiServer.Port).To(Equal(uint32(8888)))
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
 			Expect(cfg.Mode.Mode).To(Equal(mode.Remote))
 			Expect(cfg.Mode.Remote.Zone).To(Equal("zone-1"))
@@ -213,7 +212,6 @@ reports:
 general:
   advertisedHostname: kuma.internal
 guiServer:
-  port: 8888
   apiServerUrl: http://localhost:1234
 mode:
   mode: remote
