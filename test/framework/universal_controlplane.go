@@ -3,21 +3,21 @@ package framework
 import (
 	"strconv"
 
-	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/gruntwork-io/terratest/modules/testing"
 )
 
 type UniversalControlPlane struct {
 	t       testing.TestingT
-	mode    mode.CpMode
+	mode    core.CpMode
 	name    string
 	kumactl *KumactlOptions
 	cluster *UniversalCluster
 	verbose bool
 }
 
-func NewUniversalControlPlane(t testing.TestingT, mode mode.CpMode, clusterName string, cluster *UniversalCluster, verbose bool) *UniversalControlPlane {
+func NewUniversalControlPlane(t testing.TestingT, mode core.CpMode, clusterName string, cluster *UniversalCluster, verbose bool) *UniversalControlPlane {
 	name := clusterName + "-" + mode
 	kumactl, err := NewKumactlOptions(t, name, verbose)
 	if err != nil {
@@ -35,27 +35,6 @@ func NewUniversalControlPlane(t testing.TestingT, mode mode.CpMode, clusterName 
 
 func (c *UniversalControlPlane) GetName() string {
 	return c.name
-}
-
-func (c *UniversalControlPlane) SetLbAddress(name, lbAddress string) error {
-	cat := NewSshApp(false, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{
-		"cat", confPath,
-	})
-	err := cat.Run()
-	if err != nil {
-		return err
-	}
-
-	resultYAML, err := addGlobal(cat.Out(), lbAddress)
-	if err != nil {
-		return err
-	}
-
-	err = NewSshApp(false, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{
-		"echo", "\"" + resultYAML + "\"", ">", confPath,
-	}).Run()
-
-	return err
 }
 
 func (c *UniversalControlPlane) GetKumaCPLogs() (string, error) {

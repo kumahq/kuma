@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/config/multicluster"
+
 	"google.golang.org/grpc/metadata"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/credentials"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kds_config "github.com/kumahq/kuma/pkg/config/kds"
-
 	"google.golang.org/grpc"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -34,7 +35,7 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 }
 
 type server struct {
-	config    kds_config.KdsServerConfig
+	config    multicluster.KdsServerConfig
 	callbacks Callbacks
 }
 
@@ -42,7 +43,7 @@ var (
 	_ component.Component = &server{}
 )
 
-func NewServer(callbacks Callbacks, config kds_config.KdsServerConfig) component.Component {
+func NewServer(callbacks Callbacks, config multicluster.KdsServerConfig) component.Component {
 	return &server{callbacks: callbacks, config: config}
 }
 

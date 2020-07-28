@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	"github.com/onsi/gomega"
 
 	"k8s.io/client-go/kubernetes"
@@ -202,7 +204,11 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 		c, c.loPort, c.hiPort, c.verbose)
 	var args []string
 	opts := newDeployOpt(fs...)
-	if opts.globalAddress != "" {
+	switch mode {
+	case core.Remote:
+		if opts.globalAddress == "" {
+			return errors.Errorf("GlobalAddress expected for remote")
+		}
 		args = append(args, "--kds-global-address", opts.globalAddress)
 	}
 	yaml, err := c.controlplane.InstallCP(args...)
@@ -347,18 +353,24 @@ func (c *K8sCluster) VerifyKuma() error {
 func (c *K8sCluster) DeleteKuma() error {
 	c.CleanupPortForwards()
 
-	yaml, err := c.controlplane.InstallCP()
+	args := []string{}
+	switch c.controlplane.mode {
+	case core.Remote:
+		// kumactl remote deployment will fail if GlobalAddress is not specified
+		args = append(args, "--kds-global-address", "grpc://0.0.0.0:5685")
+	}
+	yaml, err := c.controlplane.InstallCP(args...)
 	if err != nil {
 		return err
 	}
 
-	err = k8s.KubectlDeleteFromStringE(c.t,
+	_ = k8s.KubectlDeleteFromStringE(c.t,
 		c.GetKubectlOptions(),
 		yaml)
 
 	c.WaitNamespaceDelete(kumaNamespace)
 
-	return err
+	return nil
 }
 
 func (c *K8sCluster) GetKumactlOptions() *KumactlOptions {

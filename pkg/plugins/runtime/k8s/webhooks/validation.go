@@ -10,7 +10,7 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -23,7 +23,7 @@ import (
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode mode.CpMode) AdmissionValidator {
+func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode) AdmissionValidator {
 	return &validatingHandler{
 		coreRegistry: coreRegistry,
 		k8sRegistry:  k8sRegistry,
@@ -37,7 +37,7 @@ type validatingHandler struct {
 	k8sRegistry  k8s_registry.TypeRegistry
 	converter    k8s_resources.Converter
 	decoder      *admission.Decoder
-	mode         mode.CpMode
+	mode         core.CpMode
 }
 
 func (h *validatingHandler) InjectDecoder(d *admission.Decoder) error {
@@ -88,25 +88,25 @@ func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8
 		return admission.Allowed("")
 	}
 	switch h.mode {
-	case mode.Remote:
+	case core.Remote:
 		// Although Remote CP consumes Dataplane (Ingress) we also apply Dataplane on Remote
 		if resType != core_mesh.DataplaneType && kds_remote.ConsumesType(resType) && obj.GetAnnotations()[common_k8s.K8sSynced] != "true" {
-			return syncErrorResponse(resType, mode.Remote)
+			return syncErrorResponse(resType, core.Remote)
 		}
-	case mode.Global:
+	case core.Global:
 		if kds_global.ConsumesType(resType) && obj.GetAnnotations()[common_k8s.K8sSynced] != "true" {
-			return syncErrorResponse(resType, mode.Global)
+			return syncErrorResponse(resType, core.Global)
 		}
 	}
 	return admission.Allowed("")
 }
 
-func syncErrorResponse(resType core_model.ResourceType, cpMode mode.CpMode) admission.Response {
+func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admission.Response {
 	otherCpMode := ""
-	if cpMode == mode.Remote {
-		otherCpMode = mode.Global
-	} else if cpMode == mode.Global {
-		otherCpMode = mode.Remote
+	if cpMode == core.Remote {
+		otherCpMode = core.Global
+	} else if cpMode == core.Global {
+		otherCpMode = core.Remote
 	}
 	return admission.Response{
 		AdmissionResponse: v1beta1.AdmissionResponse{
