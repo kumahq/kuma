@@ -14,8 +14,6 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/random"
 
-	config_mode "github.com/kumahq/kuma/pkg/config/mode"
-
 	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/pkg/errors"
@@ -265,10 +263,10 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	}
 
 	switch mode {
-	case config_mode.Remote:
+	case core.Remote:
 		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
 		fallthrough
-	case config_mode.Global:
+	case core.Global:
 		values["controlPlane.useNodePort"] = "true"
 	}
 
