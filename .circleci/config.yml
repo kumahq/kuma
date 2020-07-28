@@ -49,7 +49,7 @@ executors:
   mac:
     resource_class: large
     macos:
-      xcode: "11.5.0"
+      xcode: "11.6.0"
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
