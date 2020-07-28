@@ -4855,7 +4855,7 @@ spec:
       serviceAccountName: prometheus-node-exporter
       containers:
         - name: prometheus-node-exporter
-          image: "prom/node-exporter:v0.18.1"
+          image: "prom/node-exporter:v1.0.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --path.procfs=/host/proc
@@ -4913,7 +4913,7 @@ spec:
         runAsUser: 472
       containers:
         - name: grafana
-          image: "grafana/grafana:7.0.5"
+          image: "grafana/grafana:7.1.1"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -4985,7 +4985,7 @@ spec:
       serviceAccountName: prometheus-alertmanager
       containers:
         - name: prometheus-alertmanager
-          image: "prom/alertmanager:v0.20.0"
+          image: "prom/alertmanager:v0.21.0"
           imagePullPolicy: "IfNotPresent"
           env:
             - name: POD_IP
@@ -5009,7 +5009,7 @@ spec:
               mountPath: "/data"
               subPath: ""
         - name: prometheus-alertmanager-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.3.0"
+          image: "jimmidyson/configmap-reload:v0.4.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
@@ -5055,7 +5055,7 @@ spec:
       serviceAccountName: prometheus-kube-state-metrics
       containers:
         - name: prometheus-kube-state-metrics
-          image: "quay.io/coreos/kube-state-metrics:v1.9.1"
+          image: "quay.io/coreos/kube-state-metrics:v1.9.7"
           imagePullPolicy: "IfNotPresent"
           ports:
             - name: metrics
@@ -5090,7 +5090,7 @@ spec:
       serviceAccountName: prometheus-pushgateway
       containers:
         - name: prometheus-pushgateway
-          image: "prom/pushgateway:v1.0.1"
+          image: "prom/pushgateway:v1.2.0"
           imagePullPolicy: "IfNotPresent"
           args:
           ports:
@@ -5125,7 +5125,7 @@ spec:
       serviceAccountName: prometheus-server
       containers:
         - name: prometheus-server-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.3.0"
+          image: "jimmidyson/configmap-reload:v0.4.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
@@ -5137,7 +5137,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.15.2"
+          image: "prom/prometheus:v2.18.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d
