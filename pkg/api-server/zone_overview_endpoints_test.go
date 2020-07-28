@@ -114,18 +114,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
     "globalInstanceId": "cp-1",
     "connectTime": "2019-07-01T00:00:00Z",
     "status": {
-     "total": {},
-     "mesh": {},
-     "ingress": {},
-     "circuitBreaker": {},
-     "faultInjection": {},
-     "healthCheck": {},
-     "trafficLog": {},
-     "trafficPermission": {},
-     "trafficRoute": {},
-     "trafficTrace": {},
-     "proxyTemplate": {},
-     "secret": {}
+     "total": {}
     }
    }
   ]
@@ -154,18 +143,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
     "globalInstanceId": "cp-1",
     "connectTime": "2019-07-01T00:00:00Z",
     "status": {
-     "total": {},
-     "mesh": {},
-     "ingress": {},
-     "circuitBreaker": {},
-     "faultInjection": {},
-     "healthCheck": {},
-     "trafficLog": {},
-     "trafficPermission": {},
-     "trafficRoute": {},
-     "trafficTrace": {},
-     "proxyTemplate": {},
-     "secret": {}
+     "total": {}
     }
    }
   ]
@@ -194,18 +172,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
     "globalInstanceId": "cp-1",
     "connectTime": "2019-07-01T00:00:00Z",
     "status": {
-     "total": {},
-     "mesh": {},
-     "ingress": {},
-     "circuitBreaker": {},
-     "faultInjection": {},
-     "healthCheck": {},
-     "trafficLog": {},
-     "trafficPermission": {},
-     "trafficRoute": {},
-     "trafficTrace": {},
-     "proxyTemplate": {},
-     "secret": {}
+     "total": {}
     }
    }
   ]
