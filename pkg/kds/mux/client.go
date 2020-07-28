@@ -7,13 +7,14 @@ import (
 	"io/ioutil"
 	"net/url"
 
+	"github.com/kumahq/kuma/pkg/config/multicluster"
+
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kds_config "github.com/kumahq/kuma/pkg/config/kds"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
@@ -21,10 +22,10 @@ type client struct {
 	callbacks Callbacks
 	globalURL string
 	clientID  string
-	config    kds_config.KdsClientConfig
+	config    multicluster.KdsClientConfig
 }
 
-func NewClient(globalURL string, clientID string, callbacks Callbacks, config kds_config.KdsClientConfig) component.Component {
+func NewClient(globalURL string, clientID string, callbacks Callbacks, config multicluster.KdsClientConfig) component.Component {
 	return &client{
 		callbacks: callbacks,
 		globalURL: globalURL,

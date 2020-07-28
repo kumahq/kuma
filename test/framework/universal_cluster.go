@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"go.uber.org/multierr"
-
-	config_mode "github.com/kumahq/kuma/pkg/config/mode"
 )
 
 const (
@@ -23,14 +23,16 @@ type UniversalCluster struct {
 	controlplane *UniversalControlPlane
 	apps         map[string]*UniversalApp
 	verbose      bool
+	deployments  map[string]Deployment
 }
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
 	return &UniversalCluster{
-		t:       t,
-		name:    name,
-		apps:    map[string]*UniversalApp{},
-		verbose: verbose,
+		t:           t,
+		name:        name,
+		apps:        map[string]*UniversalApp{},
+		verbose:     verbose,
+		deployments: map[string]Deployment{},
 	}
 }
 
@@ -38,6 +40,11 @@ func (c *UniversalCluster) DismissCluster() (errs error) {
 	for _, app := range c.apps {
 		err := app.Stop()
 		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+	for _, deployment := range c.deployments {
+		if err := deployment.Delete(c); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
@@ -53,15 +60,15 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	}
 
 	cmd := []string{"kuma-cp", "run"}
-	env := []string{"KUMA_MODE_MODE=" + mode}
+	env := []string{"KUMA_MODE=" + mode}
 	if opts.globalAddress != "" {
-		env = append(env, "KUMA_KDS_CLIENT_GLOBAL_ADDRESS="+opts.globalAddress)
+		env = append(env, "KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
 	}
 
 	switch mode {
-	case config_mode.Remote:
-		env = append(env, "KUMA_MODE_REMOTE_ZONE="+c.name)
-	case config_mode.Global:
+	case core.Remote:
+		env = append(env, "KUMA_MULTICLUSTER_REMOTE_ZONE="+c.name)
+	case core.Global:
 		cmd = append(cmd, "--config-file", confPath)
 	}
 
@@ -84,7 +91,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	c.apps[AppModeCP] = app
 
 	switch mode {
-	case config_mode.Remote:
+	case core.Remote:
 		dpyaml := fmt.Sprintf(IngressDataplane, app.ip, kdsPort)
 		err = c.CreateDP(app, "ingress", dpyaml)
 		if err != nil {
@@ -207,8 +214,13 @@ func (c *UniversalCluster) DeleteApp(namespace, appname string) error {
 	return app.Stop()
 }
 
-func (c *UniversalCluster) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	panic("not implementedv")
+func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...string) (string, string, error) {
+	app, ok := c.apps[appname]
+	if !ok {
+		return "", "", errors.Errorf("App %s not found", appname)
+	}
+	sshApp := NewSshApp(false, app.ports[sshPort], []string{}, cmd)
+	return sshApp.Out(), sshApp.Err(), sshApp.Run()
 }
 
 func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, cmd ...string) (string, string, error) {
@@ -238,4 +250,13 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 
 func (c *UniversalCluster) GetTesting() testing.TestingT {
 	return c.t
+}
+
+func (c *UniversalCluster) Deployment(name string) Deployment {
+	return c.deployments[name]
+}
+
+func (c *UniversalCluster) Deploy(deployment Deployment) error {
+	c.deployments[deployment.Name()] = deployment
+	return deployment.Deploy(c)
 }

@@ -3,7 +3,7 @@ package kuma_cp
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/multicluster"
 
 	"github.com/kumahq/kuma/pkg/config"
 	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
-	"github.com/kumahq/kuma/pkg/config/kds"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
 	"github.com/kumahq/kuma/pkg/config/sds"
@@ -75,6 +74,8 @@ type Config struct {
 	General *GeneralConfig `yaml:"general,omitempty"`
 	// Environment Type, can be either "kubernetes" or "universal"
 	Environment core.EnvironmentType `yaml:"environment,omitempty" envconfig:"kuma_environment"`
+	// Mode
+	Mode core.CpMode `yaml:"mode" envconfig:"kuma_mode"`
 	// Resource Store configuration
 	Store *store.StoreConfig `yaml:"store,omitempty"`
 	// Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
@@ -101,12 +102,10 @@ type Config struct {
 	Reports *Reports `yaml:"reports,omitempty"`
 	// GUI Server Config
 	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer,omitempty"`
-	// Kuma CP Mode
-	Mode *mode.ModeConfig `yaml:"mode,omitempty"`
+	// Multicluster Config
+	Multicluster *multicluster.MulticlusterConfig `yaml:"multicluster,omitempty"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
-	// KDS configuration
-	KDS *kds.KdsConfig `yaml:"kds,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -124,13 +123,13 @@ func (c *Config) Sanitize() {
 	c.Defaults.Sanitize()
 	c.GuiServer.Sanitize()
 	c.DNSServer.Sanitize()
-	c.Mode.Sanitize()
-	c.KDS.Sanitize()
+	c.Multicluster.Sanitize()
 }
 
 func DefaultConfig() Config {
 	return Config{
 		Environment:                core.UniversalEnvironment,
+		Mode:                       core.Standalone,
 		Store:                      store.DefaultStoreConfig(),
 		XdsServer:                  xds.DefaultXdsServerConfig(),
 		SdsServer:                  sds.DefaultSdsServerConfig(),
@@ -152,29 +151,57 @@ func DefaultConfig() Config {
 		Reports: &Reports{
 			Enabled: true,
 		},
-		General:   DefaultGeneralConfig(),
-		GuiServer: gui_server.DefaultGuiServerConfig(),
-		DNSServer: dns_server.DefaultDNSServerConfig(),
-		Mode:      mode.DefaultModeConfig(),
-		KDS:       kds.DefaultKdsConfig(),
+		General:      DefaultGeneralConfig(),
+		GuiServer:    gui_server.DefaultGuiServerConfig(),
+		DNSServer:    dns_server.DefaultDNSServerConfig(),
+		Multicluster: multicluster.DefaultMulticlusterConfig(),
 	}
 }
 
 func (c *Config) Validate() error {
-	if err := c.Mode.Validate(); err != nil {
+	if err := core.ValidateCpMode(c.Mode); err != nil {
 		return errors.Wrap(err, "Mode validation failed")
 	}
-	switch c.Mode.Mode {
-	case mode.Global:
+	switch c.Mode {
+	case core.Global:
 		if err := c.GuiServer.Validate(); err != nil {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
-	case mode.Standalone:
+		if err := c.Multicluster.Global.Validate(); err != nil {
+			return errors.Wrap(err, "Multicluster Global validation failed")
+		}
+	case core.Standalone:
 		if err := c.GuiServer.Validate(); err != nil {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
-		fallthrough
-	case mode.Remote:
+		if err := c.XdsServer.Validate(); err != nil {
+			return errors.Wrap(err, "Xds Server validation failed")
+		}
+		if err := c.BootstrapServer.Validate(); err != nil {
+			return errors.Wrap(err, "Bootstrap Server validation failed")
+		}
+		if err := c.SdsServer.Validate(); err != nil {
+			return errors.Wrap(err, "SDS Server validation failed")
+		}
+		if err := c.DataplaneTokenServer.Validate(); err != nil {
+			return errors.Wrap(err, "Dataplane Token Server validation failed")
+		}
+		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
+			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
+		}
+		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
+			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
+		}
+		if err := c.Runtime.Validate(c.Environment); err != nil {
+			return errors.Wrap(err, "Runtime validation failed")
+		}
+		if err := c.Metrics.Validate(); err != nil {
+			return errors.Wrap(err, "Metrics validation failed")
+		}
+	case core.Remote:
+		if err := c.Multicluster.Remote.Validate(); err != nil {
+			return errors.Wrap(err, "Multicluster Remote validation failed")
+		}
 		if err := c.XdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "Xds Server validation failed")
 		}
@@ -214,9 +241,6 @@ func (c *Config) Validate() error {
 	}
 	if err := c.DNSServer.Validate(); err != nil {
 		return errors.Wrap(err, "DNSServer validation failed")
-	}
-	if err := c.KDS.Validate(); err != nil {
-		return errors.Wrap(err, "KDS validation failed")
 	}
 	return nil
 }

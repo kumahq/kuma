@@ -5,8 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
-
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -126,14 +124,17 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.AdvertisedHostname).To(Equal("kuma.internal"))
 
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
-			Expect(cfg.Mode.Mode).To(Equal(mode.Remote))
-			Expect(cfg.Mode.Remote.Zone).To(Equal("zone-1"))
+			Expect(cfg.Mode).To(Equal(config_core.Remote))
+			Expect(cfg.Multicluster.Remote.Zone).To(Equal("zone-1"))
 
-			Expect(cfg.KDS.Server.GrpcPort).To(Equal(uint32(1234)))
-			Expect(cfg.KDS.Server.RefreshInterval).To(Equal(time.Second * 2))
-			Expect(cfg.KDS.Server.TlsCertFile).To(Equal("/cert"))
-			Expect(cfg.KDS.Server.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.KDS.Client.RootCAFile).To(Equal("/rootCa"))
+			Expect(cfg.Multicluster.Global.PollTimeout).To(Equal(750 * time.Millisecond))
+			Expect(cfg.Multicluster.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
+			Expect(cfg.Multicluster.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
+			Expect(cfg.Multicluster.Global.KDS.TlsCertFile).To(Equal("/cert"))
+			Expect(cfg.Multicluster.Global.KDS.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.Multicluster.Remote.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
+			Expect(cfg.Multicluster.Remote.Zone).To(Equal("zone-1"))
+			Expect(cfg.Multicluster.Remote.KDS.RootCAFile).To(Equal("/rootCa"))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 		},
@@ -213,24 +214,23 @@ general:
   advertisedHostname: kuma.internal
 guiServer:
   apiServerUrl: http://localhost:1234
-mode:
-  mode: remote
+mode: remote
+multicluster:
   global:
-    lbaddress: ""
-    zones: []
+    pollTimeout: 750ms
+    kds:
+      grpcPort: 1234
+      refreshInterval: 2s
+      tlsCertFile: /cert
+      tlsKeyFile: /key
   remote:
+    globalAddress: "grpc://1.1.1.1:5685"
     zone: "zone-1"
+    kds:
+      rootCaFile: /rootCa
 dnsServer:
   port: 15653
   CIDR: 127.1.0.0/16
-kds:
-  server:
-    grpcPort: 1234
-    refreshInterval: 2s
-    tlsCertFile: /cert
-    tlsKeyFile: /key
-  client:
-    rootCaFile: /rootCa
 defaults:
   skipMeshCreation: true
 `,
@@ -288,13 +288,15 @@ defaults:
 				"KUMA_GUI_SERVER_API_SERVER_URL":                                "http://localhost:1234",
 				"KUMA_DNS_SERVER_PORT":                                          "15653",
 				"KUMA_DNS_CIDR":                                                 "127.1.0.0/16",
-				"KUMA_MODE_MODE":                                                "remote",
-				"KUMA_MODE_REMOTE_ZONE":                                         "zone-1",
-				"KUMA_KDS_SERVER_GRPC_PORT":                                     "1234",
-				"KUMA_KDS_SERVER_REFRESH_INTERVAL":                              "2s",
-				"KUMA_KDS_SERVER_TLS_CERT_FILE":                                 "/cert",
-				"KUMA_KDS_SERVER_TLS_KEY_FILE":                                  "/key",
-				"KUMA_KDS_CLIENT_ROOT_CA_FILE":                                  "/rootCa",
+				"KUMA_MODE":                                                     "remote",
+				"KUMA_MULTICLUSTER_GLOBAL_POLL_TIMEOUT":                         "750ms",
+				"KUMA_MULTICLUSTER_GLOBAL_KDS_GRPC_PORT":                        "1234",
+				"KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL":                 "2s",
+				"KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE":                    "/cert",
+				"KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE":                     "/key",
+				"KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS":                       "grpc://1.1.1.1:5685",
+				"KUMA_MULTICLUSTER_REMOTE_ZONE":                                 "zone-1",
+				"KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE":                     "/rootCa",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                              "true",
 			},
 			yamlFileConfig: "",

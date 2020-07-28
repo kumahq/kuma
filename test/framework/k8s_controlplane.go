@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -27,7 +27,7 @@ type PortFwd struct {
 
 type K8sControlPlane struct {
 	t          testing.TestingT
-	mode       mode.CpMode
+	mode       core.CpMode
 	name       string
 	kubeconfig string
 	kumactl    *KumactlOptions
@@ -36,7 +36,7 @@ type K8sControlPlane struct {
 	verbose    bool
 }
 
-func NewK8sControlPlane(t testing.TestingT, mode mode.CpMode, clusterName string,
+func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, clusterName string,
 	kubeconfig string, cluster *K8sCluster,
 	loPort, hiPort uint32,
 	verbose bool) *K8sControlPlane {
@@ -70,33 +70,6 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	}
 
 	return options
-}
-
-func (c *K8sControlPlane) SetLbAddress(name, lbAddress string) error {
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
-		c.GetKubectlOptions())
-	if err != nil {
-		return err
-	}
-
-	kumaCM, err := clientset.CoreV1().ConfigMaps("kuma-system").Get(context.TODO(), "kuma-control-plane-config", metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	newYAML, err := addGlobal(kumaCM.Data["config.yaml"], lbAddress)
-	if err != nil {
-		return err
-	}
-
-	kumaCM.Data["config.yaml"] = newYAML
-
-	_, err = clientset.CoreV1().ConfigMaps("kuma-system").Update(context.TODO(), kumaCM, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (c *K8sControlPlane) PortForwardKumaCP() error {
@@ -160,7 +133,7 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
-	if c.mode == mode.Remote {
+	if c.mode == core.Remote {
 		return nil
 	}
 

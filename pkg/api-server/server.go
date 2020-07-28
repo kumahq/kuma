@@ -5,16 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/pkg/errors"
+
 	"io"
 	"net/http"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 
-	"github.com/pkg/errors"
-
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	"github.com/kumahq/kuma/pkg/config/mode"
 
 	"github.com/kumahq/kuma/pkg/zones/poller"
 
@@ -223,15 +223,15 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	enableGUI := cfg.Mode.Mode != mode.Remote
-	if cfg.Mode.Mode != mode.Standalone {
+	enableGUI := cfg.Mode != config_core.Remote
+	if cfg.Mode != config_core.Standalone {
 		for i, definition := range definitions.All {
-			switch cfg.Mode.Mode {
-			case mode.Global:
+			switch cfg.Mode {
+			case config_core.Global:
 				if definition.ResourceFactory().GetType() == mesh.DataplaneType {
 					definitions.All[i].ReadOnly = true
 				}
-			case mode.Remote:
+			case config_core.Remote:
 				if definition.ResourceFactory().GetType() != mesh.DataplaneType {
 					definitions.All[i].ReadOnly = true
 				}

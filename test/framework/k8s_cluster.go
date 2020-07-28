@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -15,9 +16,7 @@ import (
 
 	config_mode "github.com/kumahq/kuma/pkg/config/mode"
 
-	"github.com/onsi/gomega"
-
-	"k8s.io/client-go/kubernetes"
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/pkg/errors"
 
@@ -25,8 +24,11 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/onsi/gomega"
+	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
@@ -42,6 +44,27 @@ type K8sCluster struct {
 	forwardedPortsChans map[uint32]chan struct{}
 	verbose             bool
 	clientset           *kubernetes.Clientset
+	deployments         map[string]Deployment
+}
+
+func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, error) {
+	cluster := &K8sCluster{
+		t:                   t,
+		name:                clusterName,
+		kubeconfig:          os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, clusterName)),
+		loPort:              uint32(kumaCPAPIPortFwdBase + 1000),
+		hiPort:              uint32(kumaCPAPIPortFwdBase + 1999),
+		forwardedPortsChans: map[uint32]chan struct{}{},
+		verbose:             verbose,
+		deployments:         map[string]Deployment{},
+	}
+
+	var err error
+	cluster.clientset, err = k8s.GetKubernetesClientFromOptionsE(t, cluster.GetKubectlOptions())
+	if err != nil {
+		return nil, errors.Wrapf(err, "error in getting access to K8S")
+	}
+	return cluster, nil
 }
 
 func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
@@ -50,6 +73,10 @@ func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
 	return k8s.KubectlApplyE(c.t,
 		options,
 		yamlPath)
+}
+
+func (c *K8sCluster) Deployment(name string) Deployment {
+	return c.deployments[name]
 }
 
 func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service string, yamlPath string) error {
@@ -270,6 +297,12 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 		c, c.loPort, c.hiPort, c.verbose)
 
 	opts := newDeployOpt(fs...)
+	switch mode {
+	case core.Remote:
+		if opts.globalAddress == "" {
+			return errors.Errorf("GlobalAddress expected for remote")
+		}
+	}
 
 	var err error
 	switch opts.installationMode {
@@ -425,16 +458,24 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) error {
 }
 
 func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
-	yaml, err := c.controlplane.InstallCP()
+	args := []string{}
+	switch c.controlplane.mode {
+	case core.Remote:
+		// kumactl remote deployment will fail if GlobalAddress is not specified
+		args = append(args, "--kds-global-address", "grpc://0.0.0.0:5685")
+	}
+	yaml, err := c.controlplane.InstallCP(args...)
 	if err != nil {
 		return err
 	}
 
-	c.WaitNamespaceDelete(KumaNamespace)
-
-	return k8s.KubectlDeleteFromStringE(c.t,
+	_ = k8s.KubectlDeleteFromStringE(c.t,
 		c.GetKubectlOptions(),
 		yaml)
+
+	c.WaitNamespaceDelete(KumaNamespace)
+
+	return nil
 }
 
 func (c *K8sCluster) DeleteKuma(fs ...DeployOptionsFunc) error {
@@ -443,7 +484,6 @@ func (c *K8sCluster) DeleteKuma(fs ...DeployOptionsFunc) error {
 	opts := newDeployOpt(fs...)
 
 	var err error
-
 	switch opts.installationMode {
 	case HelmInstallationMode:
 		err = c.deleteKumaViaHelm(opts)
@@ -549,6 +589,16 @@ func (c *K8sCluster) GetTesting() testing.TestingT {
 	return c.t
 }
 
-func (c *K8sCluster) DismissCluster() error {
+func (c *K8sCluster) DismissCluster() (errs error) {
+	for _, deployment := range c.deployments {
+		if err := deployment.Delete(c); err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
 	return nil
+}
+
+func (c *K8sCluster) Deploy(deployment Deployment) error {
+	c.deployments[deployment.Name()] = deployment
+	return deployment.Deploy(c)
 }
