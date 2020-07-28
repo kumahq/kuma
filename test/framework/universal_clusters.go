@@ -177,3 +177,12 @@ func (cs *UniversalClusters) ExecWithRetries(namespace, podName, containerName s
 func (cs *UniversalClusters) Deployment(name string) Deployment {
 	panic("not supported")
 }
+
+func (cs *UniversalClusters) Deploy(deployment Deployment) error {
+	for name, c := range cs.clusters {
+		if err := c.Deploy(deployment); err != nil {
+			return errors.Wrapf(err, "deployment %s failed on %s cluster", deployment.Name(), name)
+		}
+	}
+	return nil
+}

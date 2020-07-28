@@ -34,7 +34,7 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 			hiPort:              uint32(kumaCPAPIPortFwdBase + (i+1)*1000 - 1),
 			forwardedPortsChans: map[uint32]chan struct{}{},
 			verbose:             verbose,
-			Deployments:         map[string]Deployment{},
+			deployments:         map[string]Deployment{},
 		}
 
 		var err error
@@ -198,4 +198,13 @@ func IsK8sClustersStarted() bool {
 
 func (cs *K8sClusters) Deployment(name string) Deployment {
 	panic("not supported")
+}
+
+func (cs *K8sClusters) Deploy(deployment Deployment) error {
+	for name, c := range cs.clusters {
+		if err := c.Deploy(deployment); err != nil {
+			return errors.Wrapf(err, "deployment %s failed on %s cluster", deployment.Name(), name)
+		}
+	}
+	return nil
 }

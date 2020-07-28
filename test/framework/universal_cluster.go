@@ -23,7 +23,7 @@ type UniversalCluster struct {
 	controlplane *UniversalControlPlane
 	apps         map[string]*UniversalApp
 	verbose      bool
-	Deployments  map[string]Deployment
+	deployments  map[string]Deployment
 }
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
@@ -32,7 +32,7 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		name:        name,
 		apps:        map[string]*UniversalApp{},
 		verbose:     verbose,
-		Deployments: map[string]Deployment{},
+		deployments: map[string]Deployment{},
 	}
 }
 
@@ -43,7 +43,7 @@ func (c *UniversalCluster) DismissCluster() (errs error) {
 			errs = multierr.Append(errs, err)
 		}
 	}
-	for _, deployment := range c.Deployments {
+	for _, deployment := range c.deployments {
 		if err := deployment.Delete(c); err != nil {
 			errs = multierr.Append(errs, err)
 		}
@@ -249,5 +249,10 @@ func (c *UniversalCluster) GetTesting() testing.TestingT {
 }
 
 func (c *UniversalCluster) Deployment(name string) Deployment {
-	return c.Deployments[name]
+	return c.deployments[name]
+}
+
+func (c *UniversalCluster) Deploy(deployment Deployment) error {
+	c.deployments[deployment.Name()] = deployment
+	return deployment.Deploy(c)
 }

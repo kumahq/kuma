@@ -52,7 +52,7 @@ func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend)
 		return nil, err
 	}
 
-	clusterName := names.GetTracingCluster(backend.Name)
+	clusterName := names.GetTracingClusterName(backend.Name)
 	cluster, err := clusters.NewClusterBuilder().
 		Configure(clusters.DNSCluster(clusterName, url.Hostname(), uint32(port))).
 		Build()

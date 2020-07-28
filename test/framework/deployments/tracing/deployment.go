@@ -24,24 +24,17 @@ func From(cluster framework.Cluster) Tracing {
 
 func Install() framework.InstallFunc {
 	return func(cluster framework.Cluster) error {
-		switch c := cluster.(type) {
+		var deployment Deployment
+		switch cluster.(type) {
 		case *framework.K8sCluster:
-			deployment := &k8SDeployment{}
-			c.Deployments[DeploymentName] = deployment
-			if err := deployment.Deploy(cluster); err != nil {
-				return err
-			}
+			deployment = &k8SDeployment{}
 		case *framework.UniversalCluster:
-			deployment := &universalDeployment{
+			deployment = &universalDeployment{
 				ports: map[string]string{},
-			}
-			c.Deployments[DeploymentName] = deployment
-			if err := deployment.Deploy(cluster); err != nil {
-				return err
 			}
 		default:
 			return errors.New("invalid cluster")
 		}
-		return nil
+		return cluster.Deploy(deployment)
 	}
 }

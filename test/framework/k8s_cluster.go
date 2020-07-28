@@ -37,7 +37,7 @@ type K8sCluster struct {
 	forwardedPortsChans map[uint32]chan struct{}
 	verbose             bool
 	clientset           *kubernetes.Clientset
-	Deployments         map[string]Deployment
+	deployments         map[string]Deployment
 }
 
 func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, error) {
@@ -49,7 +49,7 @@ func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, erro
 		hiPort:              uint32(kumaCPAPIPortFwdBase + 1999),
 		forwardedPortsChans: map[uint32]chan struct{}{},
 		verbose:             verbose,
-		Deployments:         map[string]Deployment{},
+		deployments:         map[string]Deployment{},
 	}
 
 	var err error
@@ -69,7 +69,7 @@ func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
 }
 
 func (c *K8sCluster) Deployment(name string) Deployment {
-	return c.Deployments[name]
+	return c.deployments[name]
 }
 
 func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service string, yamlPath string) error {
@@ -482,10 +482,15 @@ func (c *K8sCluster) GetTesting() testing.TestingT {
 }
 
 func (c *K8sCluster) DismissCluster() (errs error) {
-	for _, deployment := range c.Deployments {
+	for _, deployment := range c.deployments {
 		if err := deployment.Delete(c); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 	return nil
+}
+
+func (c *K8sCluster) Deploy(deployment Deployment) error {
+	c.deployments[deployment.Name()] = deployment
+	return deployment.Deploy(c)
 }

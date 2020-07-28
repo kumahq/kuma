@@ -17,6 +17,8 @@ type k8SDeployment struct {
 	port uint32
 }
 
+var _ Deployment = &k8SDeployment{}
+
 func (t *k8SDeployment) ZipkinCollectorURL() string {
 	return "http://jaeger-collector.kuma-tracing:9411/api/v2/spans"
 }
@@ -25,7 +27,9 @@ func (t *k8SDeployment) TracedServices() ([]string, error) {
 	return tracedServices(fmt.Sprintf("http://localhost:%d", t.port))
 }
 
-var _ Deployment = &k8SDeployment{}
+func (t *k8SDeployment) Name() string {
+	return DeploymentName
+}
 
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	kumactl, _ := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)

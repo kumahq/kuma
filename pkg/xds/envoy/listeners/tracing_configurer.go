@@ -63,7 +63,7 @@ func zipkinConfig(cfgStr *structpb.Struct, backendName string) (*envoy_trace.Tra
 	}
 
 	zipkinConfig := envoy_trace.ZipkinConfig{
-		CollectorCluster:         names.GetTracingCluster(backendName),
+		CollectorCluster:         names.GetTracingClusterName(backendName),
 		CollectorEndpoint:        url.Path,
 		TraceId_128Bit:           cfg.TraceId128Bit,
 		CollectorEndpointVersion: apiVersion(&cfg, url),

@@ -23,6 +23,10 @@ type universalDeployment struct {
 
 var _ Deployment = &universalDeployment{}
 
+func (u *universalDeployment) Name() string {
+	return DeploymentName
+}
+
 func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	if err := u.allocatePublicPortsFor("16686"); err != nil {
 		return err
