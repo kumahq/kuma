@@ -98,13 +98,19 @@ destinations:
 	})
 
 	AfterEach(func() {
-		_ = remote_1.DeleteKuma()
-		_ = remote_2.DeleteKuma()
-		_ = global.DeleteKuma()
+		err := remote_1.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
+		err = remote_2.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
+		err = global.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
 
-		_ = remote_1.DismissCluster()
-		_ = remote_2.DismissCluster()
-		_ = global.DismissCluster()
+		err = remote_1.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+		err = remote_2.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+		err = global.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("Should deploy two apps", func() {

@@ -100,7 +100,8 @@ metadata:
 		err := c2.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		_ = clusters.DeleteKuma()
+		err = clusters.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("Should deploy Remote and Global on 2 clusters", func() {

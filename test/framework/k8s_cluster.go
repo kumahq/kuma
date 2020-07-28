@@ -352,13 +352,13 @@ func (c *K8sCluster) DeleteKuma() error {
 		return err
 	}
 
-	err = k8s.KubectlDeleteFromStringE(c.t,
+	_ = k8s.KubectlDeleteFromStringE(c.t,
 		c.GetKubectlOptions(),
 		yaml)
 
 	c.WaitNamespaceDelete(kumaNamespace)
 
-	return err
+	return nil
 }
 
 func (c *K8sCluster) GetKumactlOptions() *KumactlOptions {
