@@ -28,7 +28,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true)
 		client := resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes",
