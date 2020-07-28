@@ -104,7 +104,7 @@ metadata:
 		_ = clusters.DeleteKuma()
 	})
 
-	FIt("Should deploy Remote and Global on 2 clusters", func() {
+	It("Should deploy Remote and Global on 2 clusters", func() {
 		clustersStatus := api_server.Zones{}
 		Eventually(func() (bool, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
