@@ -52,27 +52,7 @@ message KDSSubscriptionStatus {
   // Total defines an aggregate over individual KDS stats.
   KDSServiceStats total = 2;
 
-  KDSServiceStats mesh = 3;
-
-  KDSServiceStats ingress = 4;
-
-  KDSServiceStats circuitBreaker = 5;
-
-  KDSServiceStats faultInjection = 6;
-
-  KDSServiceStats healthCheck = 7;
-
-  KDSServiceStats trafficLog = 8;
-
-  KDSServiceStats trafficPermission = 9;
-
-  KDSServiceStats trafficRoute = 10;
-
-  KDSServiceStats trafficTrace = 11;
-
-  KDSServiceStats proxyTemplate = 12;
-
-  KDSServiceStats secret = 13;
+  map<string, KDSServiceStats> stat = 3;
 }
 
 // DiscoveryServiceStats defines all stats over a single xDS service.

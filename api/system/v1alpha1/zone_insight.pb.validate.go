@@ -257,114 +257,21 @@ func (m *KDSSubscriptionStatus) Validate() error {
 		}
 	}
 
-	if v, ok := interface{}(m.GetMesh()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "Mesh",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	for key, val := range m.GetStat() {
+		_ = val
 
-	if v, ok := interface{}(m.GetIngress()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "Ingress",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+		// no validation rules for Stat[key]
 
-	if v, ok := interface{}(m.GetCircuitBreaker()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "CircuitBreaker",
-				reason: "embedded message failed validation",
-				cause:  err,
+		if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return KDSSubscriptionStatusValidationError{
+					field:  fmt.Sprintf("Stat[%v]", key),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
 			}
 		}
-	}
 
-	if v, ok := interface{}(m.GetFaultInjection()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "FaultInjection",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetHealthCheck()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "HealthCheck",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetTrafficLog()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "TrafficLog",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetTrafficPermission()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "TrafficPermission",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetTrafficRoute()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "TrafficRoute",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetTrafficTrace()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "TrafficTrace",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetProxyTemplate()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "ProxyTemplate",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetSecret()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return KDSSubscriptionStatusValidationError{
-				field:  "Secret",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
 	}
 
 	return nil

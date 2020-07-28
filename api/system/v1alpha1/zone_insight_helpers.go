@@ -8,18 +8,8 @@ import (
 
 func NewSubscriptionStatus() *KDSSubscriptionStatus {
 	return &KDSSubscriptionStatus{
-		Total:             &KDSServiceStats{},
-		Mesh:              &KDSServiceStats{},
-		Ingress:           &KDSServiceStats{},
-		CircuitBreaker:    &KDSServiceStats{},
-		FaultInjection:    &KDSServiceStats{},
-		HealthCheck:       &KDSServiceStats{},
-		TrafficLog:        &KDSServiceStats{},
-		TrafficPermission: &KDSServiceStats{},
-		TrafficRoute:      &KDSServiceStats{},
-		TrafficTrace:      &KDSServiceStats{},
-		ProxyTemplate:     &KDSServiceStats{},
-		Secret:            &KDSServiceStats{},
+		Total: &KDSServiceStats{},
+		Stat:  map[string]*KDSServiceStats{},
 	}
 }
 

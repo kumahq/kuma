@@ -79,49 +79,51 @@ var _ = Describe("kumactl inspect zones", func() {
 										ResponsesSent:     22,
 										ResponsesRejected: 11,
 									},
-									Mesh: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									Ingress: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									FaultInjection: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									CircuitBreaker: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									HealthCheck: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									TrafficTrace: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									TrafficRoute: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									TrafficPermission: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									TrafficLog: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									ProxyTemplate: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
-									},
-									Secret: &system_proto.KDSServiceStats{
-										ResponsesSent:     2,
-										ResponsesRejected: 1,
+									Stat: map[string]*system_proto.KDSServiceStats{
+										"Mesh": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"Ingress": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"FaultInjection": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"CircuitBreaker": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"HealthCheck": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"TrafficTrace": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"TrafficRoute": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"TrafficPermission": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"TrafficLog": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"ProxyTemplate": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"Secret": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
 									},
 								},
 							},

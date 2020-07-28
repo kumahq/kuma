@@ -13,42 +13,43 @@ items:
           globalInstanceId: node-001
           id: "1"
           status:
-            circuitBreaker:
-              responsesRejected: "1"
-              responsesSent: "2"
-            faultInjection:
-              responsesRejected: "1"
-              responsesSent: "2"
-            healthCheck:
-              responsesRejected: "1"
-              responsesSent: "2"
-            ingress:
-              responsesRejected: "1"
-              responsesSent: "2"
-            mesh:
-              responsesRejected: "1"
-              responsesSent: "2"
-            proxyTemplate:
-              responsesRejected: "1"
-              responsesSent: "2"
-            secret:
-              responsesRejected: "1"
-              responsesSent: "2"
+            stat:
+              CircuitBreaker:
+                responsesRejected: "1"
+                responsesSent: "2"
+              FaultInjection:
+                responsesRejected: "1"
+                responsesSent: "2"
+              HealthCheck:
+                responsesRejected: "1"
+                responsesSent: "2"
+              Ingress:
+                responsesRejected: "1"
+                responsesSent: "2"
+              Mesh:
+                responsesRejected: "1"
+                responsesSent: "2"
+              ProxyTemplate:
+                responsesRejected: "1"
+                responsesSent: "2"
+              Secret:
+                responsesRejected: "1"
+                responsesSent: "2"
+              TrafficLog:
+                responsesRejected: "1"
+                responsesSent: "2"
+              TrafficPermission:
+                responsesRejected: "1"
+                responsesSent: "2"
+              TrafficRoute:
+                responsesRejected: "1"
+                responsesSent: "2"
+              TrafficTrace:
+                responsesRejected: "1"
+                responsesSent: "2"
             total:
               responsesRejected: "11"
               responsesSent: "22"
-            trafficLog:
-              responsesRejected: "1"
-              responsesSent: "2"
-            trafficPermission:
-              responsesRejected: "1"
-              responsesSent: "2"
-            trafficRoute:
-              responsesRejected: "1"
-              responsesSent: "2"
-            trafficTrace:
-              responsesRejected: "1"
-              responsesSent: "2"
         - connectTime: "2019-07-17T16:05:36.995Z"
           globalInstanceId: node-002
           id: "2"

@@ -7,11 +7,8 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/golang/protobuf/ptypes"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -102,63 +99,10 @@ func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType model.Reso
 	if status == nil {
 		return &system_proto.KDSServiceStats{}
 	}
-	switch resourceType {
-	case mesh.MeshType:
-		if status.Mesh == nil {
-			status.Mesh = &system_proto.KDSServiceStats{}
-		}
-		return status.Mesh
-	case mesh.DataplaneType:
-		if status.Ingress == nil {
-			status.Ingress = &system_proto.KDSServiceStats{}
-		}
-		return status.Ingress
-	case mesh.CircuitBreakerType:
-		if status.CircuitBreaker == nil {
-			status.CircuitBreaker = &system_proto.KDSServiceStats{}
-		}
-		return status.CircuitBreaker
-	case mesh.FaultInjectionType:
-		if status.FaultInjection == nil {
-			status.FaultInjection = &system_proto.KDSServiceStats{}
-		}
-		return status.FaultInjection
-	case mesh.HealthCheckType:
-		if status.HealthCheck == nil {
-			status.HealthCheck = &system_proto.KDSServiceStats{}
-		}
-		return status.HealthCheck
-	case mesh.TrafficLogType:
-		if status.TrafficLog == nil {
-			status.TrafficLog = &system_proto.KDSServiceStats{}
-		}
-		return status.TrafficLog
-	case mesh.TrafficPermissionType:
-		if status.TrafficPermission == nil {
-			status.TrafficPermission = &system_proto.KDSServiceStats{}
-		}
-		return status.TrafficPermission
-	case mesh.TrafficRouteType:
-		if status.TrafficRoute == nil {
-			status.TrafficRoute = &system_proto.KDSServiceStats{}
-		}
-		return status.TrafficRoute
-	case mesh.TrafficTraceType:
-		if status.TrafficTrace == nil {
-			status.TrafficTrace = &system_proto.KDSServiceStats{}
-		}
-		return status.TrafficTrace
-	case mesh.ProxyTemplateType:
-		if status.ProxyTemplate == nil {
-			status.ProxyTemplate = &system_proto.KDSServiceStats{}
-		}
-		return status.ProxyTemplate
-	case system.SecretType:
-		if status.Secret == nil {
-			status.Secret = &system_proto.KDSServiceStats{}
-		}
-		return status.Secret
-	default:
-		return &system_proto.KDSServiceStats{}
+	stat, ok := status.Stat[string(resourceType)]
+	if !ok {
+		stat = &system_proto.KDSServiceStats{}
+		status.Stat[string(resourceType)] = stat
 	}
+	return stat
 }

@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 	"sync"
-	"time"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/util"
 
@@ -16,15 +16,8 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/golang/protobuf/proto"
 
-	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-)
-
-var (
-	// overridable by unit tests
-	now     = time.Now
-	newUUID = core.NewUUID
 )
 
 type StatusTracker interface {
@@ -73,9 +66,9 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 
 	// initialize subscription
 	subscription := &system_proto.KDSSubscription{
-		Id:               newUUID(),
+		Id:               core.NewUUID(),
 		GlobalInstanceId: c.runtimeInfo.GetInstanceId(),
-		ConnectTime:      util_proto.MustTimestampProto(now()),
+		ConnectTime:      util_proto.MustTimestampProto(core.Now()),
 		Status:           system_proto.NewSubscriptionStatus(),
 	}
 	// initialize state per ADS stream
@@ -102,7 +95,7 @@ func (c *statusTracker) OnStreamClosed(streamID int64) {
 	// finilize subscription
 	state.mu.Lock() // write access to the per Dataplane info
 	subscription := state.subscription
-	subscription.DisconnectTime = util_proto.MustTimestampProto(now())
+	subscription.DisconnectTime = util_proto.MustTimestampProto(core.Now())
 	state.mu.Unlock()
 
 	// trigger final flush
@@ -131,7 +124,7 @@ func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequ
 	// update Dataplane status
 	subscription := state.subscription
 	if req.ResponseNonce != "" {
-		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(now())
+		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
 		if req.ErrorDetail != nil {
 			subscription.Status.Total.ResponsesRejected++
 			util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesRejected++
@@ -157,7 +150,7 @@ func (c *statusTracker) OnStreamResponse(streamID int64, req *envoy.DiscoveryReq
 
 	// update Dataplane status
 	subscription := state.subscription
-	subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(now())
+	subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
 	subscription.Status.Total.ResponsesSent++
 	util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesSent++
 
