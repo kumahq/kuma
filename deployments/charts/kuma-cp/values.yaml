@@ -5,6 +5,9 @@ global:
     # Defaults to .Chart.AppVersion
     # tag: ""
 
+# Whether or not to patch the target namespace with the system label
+patchSystemNamespace: true
+
 controlPlane:
   logLevel: "info"
   mode: "standalone"
