@@ -30,7 +30,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -118,7 +117,7 @@ func onStartup(runtime core_runtime.Runtime) error {
 	if err := createDefaultSigningKey(runtime); err != nil {
 		return err
 	}
-	return startReporter(runtime)
+	return nil
 }
 
 func createDefaultSigningKey(runtime core_runtime.Runtime) error {
@@ -146,14 +145,6 @@ func createDefaultMesh(runtime core_runtime.Runtime) error {
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}
-}
-
-func startReporter(runtime core_runtime.Runtime) error {
-	return runtime.Add(component.ComponentFunc(func(stop <-chan struct{}) error {
-		runtime_reports.Init(runtime, runtime.Config())
-		<-stop
-		return nil
-	}))
 }
 
 func initializeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {

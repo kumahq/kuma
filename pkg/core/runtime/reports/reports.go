@@ -15,7 +15,9 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -25,40 +27,79 @@ const (
 	pingPort     = 61831
 )
 
-var (
-	log = core.Log.WithName("core").WithName("reports")
-)
+var log = core.Log.WithName("core").WithName("reports")
 
-/*
-  - buffer initialized upon Init call
-  - append adds more keys onto it
-*/
+type reporter struct {
+	resManager manager.ReadOnlyResourceManager
 
-type reportsBuffer struct {
 	sync.Mutex
 	mutable   map[string]string
 	immutable map[string]string
 }
 
-func fetchDataplanes(rt core_runtime.Runtime) (*mesh.DataplaneResourceList, error) {
+var _ component.Component = &reporter{}
+
+func newReporter(config kuma_cp.Config, instanceID string, resourceManager manager.ReadOnlyResourceManager) *reporter {
+	reporter := &reporter{
+		resManager: resourceManager,
+		mutable:    map[string]string{},
+		immutable:  map[string]string{},
+	}
+	reporter.initImmutable(config, instanceID)
+	return reporter
+}
+
+func Setup(rt core_runtime.Runtime) error {
+	if !rt.Config().Reports.Enabled {
+		return nil
+	}
+	return rt.Add(newReporter(rt.Config(), rt.GetInstanceId(), rt.ReadOnlyResourceManager()))
+}
+
+func (b *reporter) Start(stop <-chan struct{}) error {
+	go func() {
+		if err := b.dispatch(pingHost, pingPort, "start"); err != nil {
+			log.V(2).Info("Failed sending usage info", "err", err)
+		}
+		ticker := time.NewTicker(time.Second * pingInterval)
+		for {
+			select {
+			case <-ticker.C:
+				if err := b.dispatch(pingHost, pingPort, "ping"); err != nil {
+					log.V(2).Info("Failed sending usage info", "err", err)
+				}
+			case <-stop:
+				return
+			}
+		}
+	}()
+	<-stop
+	return nil
+}
+
+func (b *reporter) NeedLeaderElection() bool {
+	return true
+}
+
+func (b *reporter) fetchDataplanes() (*mesh.DataplaneResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := rt.ReadOnlyResourceManager().List(context.Background(), &dataplanes); err != nil {
+	if err := b.resManager.List(context.Background(), &dataplanes); err != nil {
 		return nil, errors.Wrap(err, "Could not fetch dataplanes")
 	}
 
 	return &dataplanes, nil
 }
 
-func fetchMeshes(rt core_runtime.Runtime) (*mesh.MeshResourceList, error) {
+func (b *reporter) fetchMeshes() (*mesh.MeshResourceList, error) {
 	meshes := mesh.MeshResourceList{}
-	if err := rt.ReadOnlyResourceManager().List(context.Background(), &meshes); err != nil {
+	if err := b.resManager.List(context.Background(), &meshes); err != nil {
 		return nil, errors.Wrap(err, "Could not fetch meshes")
 	}
 
 	return &meshes, nil
 }
 
-func (b *reportsBuffer) marshall() (string, error) {
+func (b *reporter) marshall() (string, error) {
 	var builder strings.Builder
 
 	_, err := fmt.Fprintf(&builder, "<14>")
@@ -86,14 +127,14 @@ func (b *reportsBuffer) marshall() (string, error) {
 // XXX this function retrieves all dataplanes and all meshes;
 // ideally, the number of dataplanes and number of meshes
 // should be pushed from the outside rather than pulled
-func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
-	dps, err := fetchDataplanes(rt)
+func (b *reporter) updateEntitiesReport() error {
+	dps, err := b.fetchDataplanes()
 	if err != nil {
 		return err
 	}
 	b.mutable["dps_total"] = strconv.Itoa(len(dps.Items))
 
-	meshes, err := fetchMeshes(rt)
+	meshes, err := b.fetchMeshes()
 	if err != nil {
 		return err
 	}
@@ -101,8 +142,8 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	return nil
 }
 
-func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int, pingType string) error {
-	if err := b.updateEntitiesReport(rt); err != nil {
+func (b *reporter) dispatch(host string, port int, pingType string) error {
+	if err := b.updateEntitiesReport(); err != nil {
 		return err
 	}
 	b.mutable["signal"] = pingType
@@ -110,6 +151,7 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 	if err != nil {
 		return err
 	}
+	log.V(2).Info("dispatching usage statistics", "data", pingData)
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
@@ -124,52 +166,14 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 	return nil
 }
 
-// Append information to the mutable portion of the reports buffer
-func (b *reportsBuffer) Append(info map[string]string) {
-	b.Lock()
-	defer b.Unlock()
-
-	for key, value := range info {
-		b.mutable[key] = value
-	}
-}
-
-func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
+func (b *reporter) initImmutable(config kuma_cp.Config, instanceID string) {
 	b.immutable["version"] = kuma_version.Build.Version
-	b.immutable["unique_id"] = rt.GetInstanceId()
-	b.immutable["backend"] = rt.Config().Store.Type
-	b.immutable["mode"] = rt.Config().Mode
+	b.immutable["unique_id"] = instanceID
+	b.immutable["backend"] = config.Store.Type
+	b.immutable["mode"] = config.Mode
 
 	hostname, err := os.Hostname()
 	if err == nil {
 		b.immutable["hostname"] = hostname
-	}
-}
-
-func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer) {
-	go func() {
-		err := buffer.dispatch(rt, pingHost, pingPort, "start")
-		if err != nil {
-			log.V(2).Info("Failed sending usage info", err)
-		}
-		for range time.Tick(time.Second * pingInterval) {
-			err := buffer.dispatch(rt, pingHost, pingPort, "ping")
-			if err != nil {
-				log.V(2).Info("Failed sending usage info", err)
-			}
-		}
-	}()
-}
-
-// Init core reports
-func Init(rt core_runtime.Runtime, cfg kuma_cp.Config) {
-	var buffer reportsBuffer
-	buffer.immutable = make(map[string]string)
-	buffer.mutable = make(map[string]string)
-
-	buffer.initImmutable(rt)
-
-	if cfg.Reports.Enabled {
-		startReportTicker(rt, &buffer)
 	}
 }

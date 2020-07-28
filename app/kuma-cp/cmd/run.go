@@ -22,6 +22,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
+	"github.com/kumahq/kuma/pkg/core/runtime/reports"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
 	sds_server "github.com/kumahq/kuma/pkg/sds/server"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
@@ -136,6 +137,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			if err := admin_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up Admin server")
 				return err
+			}
+			if err := reports.Setup(rt); err != nil {
+				runLog.Error(err, "could not start reporter")
+				// CP should continue to work even if reporter fails
 			}
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
