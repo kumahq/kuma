@@ -251,7 +251,15 @@ metadata:
 	})
 
 	It("should sync traffic permissions", func() {
-		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "traffic-permission-all")
+
+		// Remote 4
+		// universal access remote universal service
+		stdout, _, err := remote_4.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "localhost:4001")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+
+		err = global.GetKumactlOptions().KumactlDelete("traffic-permission", "traffic-permission-all")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(trafficPermissionAllTo2Remote)(global)
@@ -259,7 +267,7 @@ metadata:
 
 		// Remote 3
 		// universal access remote k8s service
-		stdout, _, err := remote_3.ExecWithRetries("", "", "demo-client",
+		stdout, _, err = remote_3.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "localhost:4000")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -270,6 +278,5 @@ metadata:
 			"curl", "-v", "-m", "3", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 503 Service Unavailable"))
-
 	})
 })
