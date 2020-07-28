@@ -104,19 +104,22 @@ metadata:
 		_ = clusters.DeleteKuma()
 	})
 
-	It("Should deploy Remote and Global on 2 clusters", func() {
+	FIt("Should deploy Remote and Global on 2 clusters", func() {
 		clustersStatus := api_server.Zones{}
-		Eventually(func() (int, error) {
+		Eventually(func() (bool, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
 			if status != http.StatusOK {
-				return 0, errors.Errorf("unable to contact server %s with status %d", global.GetGlobaStatusAPI(), status)
+				return false, errors.Errorf("unable to contact server %s with status %d", global.GetGlobaStatusAPI(), status)
 			}
 			err := json.Unmarshal([]byte(response), &clustersStatus)
 			if err != nil {
-				return 0, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
+				return false, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
 			}
-			return len(clustersStatus), nil
-		}, time.Minute, DefaultTimeout).Should(Equal(1))
+			if len(clustersStatus) != 1 {
+				return false, nil
+			}
+			return clustersStatus[0].Active, nil
+		}, time.Minute, DefaultTimeout).Should(BeTrue())
 
 		// then
 		found := false
