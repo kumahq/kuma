@@ -1,4 +1,0 @@
-# Helm Chart Releaser config
-# see: https://github.com/helm/chart-releaser
-owner: kumahq
-git-repo: kuma

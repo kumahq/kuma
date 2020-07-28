@@ -6,8 +6,9 @@ CHARTS_REPO_URL="https://kumahq.github.io/kuma"
 CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
-CR_CONFIG_PATH="cr.yaml"
 GH_PAGES_BRANCH="gh-pages"
+GH_OWNER="kumahq"
+GH_REPO="kuma"
 
 function msg_green {
   builtin echo -en "\033[1;32m"
@@ -59,7 +60,8 @@ function package {
 function release {
   # First upload the packaged charts to the release
   cr upload \
-    --config "$CR_CONFIG_PATH" \
+    --owner "$GH_OWNER" \
+    --git-repo "$GH_REPO" \
     --token "$GH_TOKEN" \
     --package-path "$CHARTS_PACKAGE_PATH"
 
@@ -67,7 +69,8 @@ function release {
   git checkout "$GH_PAGES_BRANCH"
 
   cr index \
-    --config "$CR_CONFIG_PATH" \
+    --owner "$GH_OWNER" \
+    --git-repo "$GH_REPO" \
     --charts-repo "$CHARTS_REPO_URL" \
     --package-path "$CHARTS_PACKAGE_PATH" \
     --index-path "$CHARTS_INDEX_FILE"
