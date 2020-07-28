@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"os"
 
-	config_mode "github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/pkg/errors"
 
@@ -121,10 +121,10 @@ func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 
 	cmd = append(cmd, "--mode", mode)
 	switch mode {
-	case config_mode.Remote:
+	case core.Remote:
 		cmd = append(cmd, "--zone", o.CPName)
 		fallthrough
-	case config_mode.Global:
+	case core.Global:
 		cmd = append(cmd, "--use-node-port")
 	}
 

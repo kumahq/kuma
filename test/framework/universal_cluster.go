@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"go.uber.org/multierr"
-
-	config_mode "github.com/kumahq/kuma/pkg/config/mode"
 )
 
 const (
@@ -56,15 +56,15 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	opts := newDeployOpt(fs...)
 
 	cmd := []string{"kuma-cp", "run"}
-	env := []string{"KUMA_MODE_MODE=" + mode}
+	env := []string{"KUMA_MODE=" + mode}
 	if opts.globalAddress != "" {
-		env = append(env, "KUMA_KDS_CLIENT_GLOBAL_ADDRESS="+opts.globalAddress)
+		env = append(env, "KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
 	}
 
 	switch mode {
-	case config_mode.Remote:
-		env = append(env, "KUMA_MODE_REMOTE_ZONE="+c.name)
-	case config_mode.Global:
+	case core.Remote:
+		env = append(env, "KUMA_MULTICLUSTER_REMOTE_ZONE="+c.name)
+	case core.Global:
 		cmd = append(cmd, "--config-file", confPath)
 	}
 
@@ -87,7 +87,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	c.apps[AppModeCP] = app
 
 	switch mode {
-	case config_mode.Remote:
+	case core.Remote:
 		dpyaml := fmt.Sprintf(IngressDataplane, app.ip, kdsPort)
 		err = c.CreateDP(app, "ingress", dpyaml)
 		if err != nil {

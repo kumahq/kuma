@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/tracing"
 )
@@ -45,7 +45,7 @@ selectors:
 		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(mode.Standalone)).
+			Install(Kuma(core.Standalone)).
 			Install(EchoServerUniversal()).
 			Install(DemoClientUniversal()).
 			Install(tracing.Install()).

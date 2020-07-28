@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/tracing"
 )
@@ -67,7 +67,7 @@ spec:
 		cluster = c
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Standalone)).
+			Install(Kuma(core.Standalone)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).

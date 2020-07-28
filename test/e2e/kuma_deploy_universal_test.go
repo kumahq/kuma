@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/config/mode"
 
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -48,7 +48,7 @@ destinations:
 		global = clusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Global)).
+			Install(Kuma(core.Global)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -60,7 +60,7 @@ destinations:
 		remote_1 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(EchoServerUniversal()).
 			Install(DemoClientUniversal()).
 			Setup(remote_1)
@@ -72,7 +72,7 @@ destinations:
 		remote_2 = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal()).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
@@ -83,11 +83,11 @@ destinations:
 		remote_2CP := remote_2.GetKuma()
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal, Kuma2, "grpcs://1.1.1.1:1010", remote_1CP.GetIngressAddress()))
+			fmt.Sprintf(ZoneTemplateUniversal, Kuma2, remote_1CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal, Kuma3, "grpcs://1.1.1.1:1010", remote_2CP.GetIngressAddress()))
+			fmt.Sprintf(ZoneTemplateUniversal, Kuma3, remote_2CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(meshDefaulMtlsOn)(global)
@@ -98,13 +98,19 @@ destinations:
 	})
 
 	AfterEach(func() {
-		_ = remote_1.DeleteKuma()
-		_ = remote_2.DeleteKuma()
-		_ = global.DeleteKuma()
+		err := remote_1.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
+		err = remote_2.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
+		err = global.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
 
-		_ = remote_1.DismissCluster()
-		_ = remote_2.DismissCluster()
-		_ = global.DismissCluster()
+		err = remote_1.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+		err = remote_2.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+		err = global.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("Should deploy two apps", func() {

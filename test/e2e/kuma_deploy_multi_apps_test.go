@@ -3,7 +3,7 @@ package e2e_test
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -37,7 +37,7 @@ metadata:
 		c1 = clusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Standalone)).
+			Install(Kuma(core.Standalone)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
@@ -47,8 +47,9 @@ metadata:
 	})
 
 	AfterEach(func() {
-		_ = c1.DeleteKuma()
 		_ = k8s.KubectlDeleteFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
+		err := c1.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("Should deploy two apps", func() {
