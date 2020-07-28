@@ -43,6 +43,21 @@ rules:
       - update
       - patch
       - delete
+  {{- if eq .Values.controlPlane.mode "global" }}
+  - apiGroups:
+      - kuma.io
+    resources:
+      - zones
+      - zoneinsights
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  {{- end }}
   - apiGroups:
       - kuma.io
     resources:
@@ -73,11 +88,16 @@ rules:
       - faultinjections
       - circuitbreakers
       - healthchecks
-      - zones
     verbs:
       - get
       - list
       - watch
+    {{- if eq .Values.controlPlane.mode "remote" }}
+      - create
+      - update
+      - patch
+      - delete
+    {{- end }}
   - apiGroups:
       - ""
     resources:

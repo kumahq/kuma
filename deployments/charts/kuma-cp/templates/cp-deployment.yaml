@@ -50,12 +50,12 @@ spec:
               value: /var/run/secrets/kuma-cp.io/kuma-sds/tls-cert/tls.key
             {{- end }}
             {{- if eq .Values.controlPlane.mode "remote" }}
-            - name: KUMA_KDS_CLIENT_GLOBAL_ADDRESS
+            - name: KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
               value: {{ .Values.controlPlane.kdsGlobalAddress }}
             {{- end }}
-            - name: KUMA_KDS_SERVER_TLS_CERT_FILE
+            - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE
               value: /var/run/secrets/kuma-cp.io/kuma-kds/tls-cert/tls.crt
-            - name: KUMA_KDS_SERVER_TLS_KEY_FILE
+            - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE
               value: /var/run/secrets/kuma-cp.io/kuma-kds/tls-cert/tls.key
             - name: KUMA_API_SERVER_PORT
               value: "5681"
@@ -73,10 +73,10 @@ spec:
               value: {{ include "kuma-cp.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
-            - name: KUMA_MODE_MODE
+            - name: KUMA_MODE
               value: {{ .Values.controlPlane.mode | quote }}
             {{- if .Values.controlPlane.zone }}
-            - name: KUMA_MODE_REMOTE_ZONE
+            - name: KUMA_MULTICLUSTER_REMOTE_ZONE
               value: {{ .Values.controlPlane.zone | quote }}
             {{- end }}
           args:
@@ -85,9 +85,6 @@ spec:
             - --config-file=/etc/kuma-cp.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5681
-            {{- if ne .Values.controlPlane.mode "remote" }}
-            - containerPort: 5683
-            {{- end }}
             {{- if ne .Values.controlPlane.mode "global" }}
             - containerPort: 5443
             - containerPort: 5677

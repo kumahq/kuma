@@ -9,10 +9,6 @@ spec:
   ports:
     - port: 5681
       name: http-api-server
-    {{- if ne .Values.controlPlane.mode "remote" }}
-    - port: 5683
-      name: gui-server
-    {{- end }}
     - port: 443
       name: https-admission-server
       targetPort: 5443

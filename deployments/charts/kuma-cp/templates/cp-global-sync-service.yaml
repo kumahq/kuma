@@ -1,4 +1,4 @@
-{{- if ne .Values.controlPlane.mode "standalone" }}
+{{- if eq .Values.controlPlane.mode "global" }}
 apiVersion: v1
 kind: Service
 metadata:
