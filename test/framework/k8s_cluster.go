@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/config/core"
 	"io"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/onsi/gomega"
 

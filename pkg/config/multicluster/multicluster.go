@@ -59,7 +59,7 @@ func (r *RemoteConfig) Validate() error {
 	} else if !govalidator.IsDNSName(r.Zone) {
 		return errors.Errorf("Wrong zone name %s", r.Zone)
 	}
-	if r.GlobalAddress == ""{
+	if r.GlobalAddress == "" {
 		return errors.Errorf("GlobalAddress is mandatory in remote mode")
 	}
 	u, err := url.Parse(r.GlobalAddress)
