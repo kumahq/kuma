@@ -61,7 +61,7 @@ var _ = Describe("KDS Server", func() {
 		ctx := context.Background()
 
 		// Just to don't forget to update this test after updating 'kds.SupportedTypes
-		Expect([]proto.Message{&kds_samples.Mesh1, &kds_samples.Ingress, &kds_samples.DataplaneInsight, &kds_samples.CircuitBreaker, &kds_samples.FaultInjection, &kds_samples.HealthCheck, &kds_samples.TrafficLog, &kds_samples.TrafficPermission, &kds_samples.TrafficRoute, &kds_samples.TrafficTrace, &kds_samples.ProxyTemplate, &kds_samples.Secret}).To(HaveLen(len(kds.SupportedTypes)))
+		Expect([]proto.Message{&kds_samples.Mesh1, &kds_samples.Ingress, &kds_samples.DataplaneInsight, &kds_samples.CircuitBreaker, &kds_samples.FaultInjection, &kds_samples.HealthCheck, &kds_samples.TrafficLog, &kds_samples.TrafficPermission, &kds_samples.TrafficRoute, &kds_samples.TrafficTrace, &kds_samples.ProxyTemplate, &kds_samples.Secret, &kds_samples.Config}).To(HaveLen(len(kds.SupportedTypes)))
 
 		vrf := kds_verifier.New().
 			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: kds_samples.Mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).

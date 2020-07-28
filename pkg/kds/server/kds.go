@@ -69,6 +69,7 @@ type watches struct {
 	trafficTraces      chan envoy_cache.Response
 	proxyTemplates     chan envoy_cache.Response
 	secrets            chan envoy_cache.Response
+	config             chan envoy_cache.Response
 
 	meshesCancel             func()
 	ingressesCancel          func()
@@ -82,6 +83,7 @@ type watches struct {
 	trafficTracesCancel      func()
 	proxyTemplatesCancel     func()
 	secretsCancel            func()
+	configCancel             func()
 
 	meshesNonce             string
 	ingressesNonce          string
@@ -95,6 +97,7 @@ type watches struct {
 	trafficTracesNonce      string
 	proxyTemplatesNonce     string
 	secretsNonce            string
+	configNonce             string
 }
 
 // Cancel all watches
@@ -134,6 +137,9 @@ func (values watches) Cancel() {
 	}
 	if values.secretsCancel != nil {
 		values.secretsCancel()
+	}
+	if values.configCancel != nil {
+		values.configCancel()
 	}
 }
 
@@ -340,6 +346,16 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			}
 			values.secretsNonce = nonce
 
+		case resp, more := <-values.config:
+			if !more {
+				return status.Errorf(codes.Unavailable, "config watch failed")
+			}
+			nonce, err := send(resp, system.ConfigType)
+			if err != nil {
+				return err
+			}
+			values.configNonce = nonce
+
 		case req, more := <-reqCh:
 			// input stream ended or errored out
 			if !more {
@@ -433,6 +449,11 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 					values.secretsCancel()
 				}
 				values.secrets, values.secretsCancel = s.cache.CreateWatch(*req)
+			case requestResourceType == system.ConfigType && (values.configNonce == "" || values.configNonce == nonce):
+				if values.configCancel != nil {
+					values.configCancel()
+				}
+				values.config, values.configCancel = s.cache.CreateWatch(*req)
 			}
 		}
 	}

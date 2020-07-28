@@ -10,6 +10,8 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
+const ClusterIdConfigKey = "kuma-cluster-id"
+
 type ConfigManager interface {
 	Create(context.Context, *config_model.ConfigResource, ...core_store.CreateOptionsFunc) error
 	Update(context.Context, *config_model.ConfigResource, ...core_store.UpdateOptionsFunc) error

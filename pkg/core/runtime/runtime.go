@@ -29,6 +29,8 @@ type Runtime interface {
 
 type RuntimeInfo interface {
 	GetInstanceId() string
+	SetClusterId(clusterId string) error
+	GetClusterId() string
 }
 
 type RuntimeContext interface {
@@ -58,10 +60,20 @@ var _ RuntimeInfo = &runtimeInfo{}
 
 type runtimeInfo struct {
 	instanceId string
+	clusterId  string
 }
 
 func (i *runtimeInfo) GetInstanceId() string {
 	return i.instanceId
+}
+
+func (i *runtimeInfo) SetClusterId(clusterId string) error {
+	i.clusterId = clusterId
+	return nil
+}
+
+func (i *runtimeInfo) GetClusterId() string {
+	return i.clusterId
 }
 
 var _ RuntimeContext = &runtimeContext{}

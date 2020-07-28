@@ -191,4 +191,7 @@ var (
 	Secret = system_proto.Secret{
 		Data: &wrappers.BytesValue{Value: []byte("secret key")},
 	}
+	Config = system_proto.Config{
+		Config: "sample config",
+	}
 )

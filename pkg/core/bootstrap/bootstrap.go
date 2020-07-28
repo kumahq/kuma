@@ -118,6 +118,9 @@ func onStartup(runtime core_runtime.Runtime) error {
 	if err := createDefaultSigningKey(runtime); err != nil {
 		return err
 	}
+	if err := createClusterID(runtime); err != nil {
+		return err
+	}
 	return startReporter(runtime)
 }
 
