@@ -1,0 +1,191 @@
+package server
+
+import (
+	"context"
+	"sync"
+	"time"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/kds/util"
+
+	"github.com/go-logr/logr"
+
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	"github.com/golang/protobuf/proto"
+
+	"github.com/kumahq/kuma/pkg/core"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+)
+
+var (
+	// overridable by unit tests
+	now     = time.Now
+	newUUID = core.NewUUID
+)
+
+type StatusTracker interface {
+	envoy_xds.Callbacks
+	GetStatusAccessor(streamID int64) (StatusAccessor, bool)
+}
+
+type StatusAccessor interface {
+	GetStatus() (string, *system_proto.KDSSubscription)
+}
+
+type ZoneInsightSinkFactoryFunc = func(StatusAccessor, logr.Logger) ZoneInsightSink
+
+func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
+	createStatusSink ZoneInsightSinkFactoryFunc, log logr.Logger) StatusTracker {
+	return &statusTracker{
+		runtimeInfo:      runtimeInfo,
+		createStatusSink: createStatusSink,
+		streams:          make(map[int64]*streamState),
+		log:              log,
+	}
+}
+
+var _ StatusTracker = &statusTracker{}
+
+type statusTracker struct {
+	runtimeInfo      core_runtime.RuntimeInfo
+	createStatusSink ZoneInsightSinkFactoryFunc
+	mu               sync.RWMutex // protects access to the fields below
+	streams          map[int64]*streamState
+	log              logr.Logger
+}
+
+type streamState struct {
+	stop         chan struct{} // is used for stopping a goroutine that flushes Dataplane status periodically
+	mu           sync.RWMutex  // protects access to the fields below
+	zone         string
+	subscription *system_proto.KDSSubscription
+}
+
+// OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
+// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
+	c.mu.Lock() // write access to the map of all ADS streams
+	defer c.mu.Unlock()
+
+	// initialize subscription
+	subscription := &system_proto.KDSSubscription{
+		Id:               newUUID(),
+		GlobalInstanceId: c.runtimeInfo.GetInstanceId(),
+		ConnectTime:      util_proto.MustTimestampProto(now()),
+		Status:           system_proto.NewSubscriptionStatus(),
+	}
+	// initialize state per ADS stream
+	state := &streamState{
+		stop:         make(chan struct{}),
+		subscription: subscription,
+	}
+	// save
+	c.streams[streamID] = state
+
+	c.log.V(1).Info("OnStreamOpen", "context", ctx, "streamid", streamID, "type", typ, "subscription", subscription)
+	return nil
+}
+
+// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
+func (c *statusTracker) OnStreamClosed(streamID int64) {
+	c.mu.Lock() // write access to the map of all ADS streams
+	defer c.mu.Unlock()
+
+	state := c.streams[streamID]
+
+	delete(c.streams, streamID)
+
+	// finilize subscription
+	state.mu.Lock() // write access to the per Dataplane info
+	subscription := state.subscription
+	subscription.DisconnectTime = util_proto.MustTimestampProto(now())
+	state.mu.Unlock()
+
+	// trigger final flush
+	state.Close()
+
+	c.log.V(1).Info("OnStreamClosed", "streamid", streamID, "subscription", subscription)
+}
+
+// OnStreamRequest is called once a request is received on a stream.
+// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequest) error {
+	c.mu.RLock() // read access to the map of all ADS streams
+	defer c.mu.RUnlock()
+
+	state := c.streams[streamID]
+
+	state.mu.Lock() // write access to the per Dataplane info
+	defer state.mu.Unlock()
+
+	// infer Dataplane id
+	if state.zone == "" {
+		state.zone = req.Node.Id
+		go c.createStatusSink(state, c.log).Start(state.stop)
+	}
+
+	// update Dataplane status
+	subscription := state.subscription
+	if req.ResponseNonce != "" {
+		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(now())
+		if req.ErrorDetail != nil {
+			subscription.Status.Total.ResponsesRejected++
+			util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesRejected++
+		} else {
+			subscription.Status.Total.ResponsesAcknowledged++
+			util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesAcknowledged++
+		}
+	}
+
+	c.log.V(1).Info("OnStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
+	return nil
+}
+
+// OnStreamResponse is called immediately prior to sending a response on a stream.
+func (c *statusTracker) OnStreamResponse(streamID int64, req *envoy.DiscoveryRequest, resp *envoy.DiscoveryResponse) {
+	c.mu.RLock() // read access to the map of all ADS streams
+	defer c.mu.RUnlock()
+
+	state := c.streams[streamID]
+
+	state.mu.Lock() // write access to the per Dataplane info
+	defer state.mu.Unlock()
+
+	// update Dataplane status
+	subscription := state.subscription
+	subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(now())
+	subscription.Status.Total.ResponsesSent++
+	util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesSent++
+
+	c.log.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
+}
+
+// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
+// request and respond with an error.
+func (c *statusTracker) OnFetchRequest(context.Context, *envoy.DiscoveryRequest) error {
+	return nil
+}
+
+// OnFetchResponse is called immediately prior to sending a response.
+func (c *statusTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {}
+
+func (c *statusTracker) GetStatusAccessor(streamID int64) (StatusAccessor, bool) {
+	state, ok := c.streams[streamID]
+	return state, ok
+}
+
+var _ StatusAccessor = &streamState{}
+
+func (s *streamState) GetStatus() (string, *system_proto.KDSSubscription) {
+	s.mu.RLock() // read access to the per Dataplane info
+	defer s.mu.RUnlock()
+	return s.zone, proto.Clone(s.subscription).(*system_proto.KDSSubscription)
+}
+
+func (s *streamState) Close() {
+	close(s.stop)
+}

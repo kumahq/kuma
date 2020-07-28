@@ -1,0 +1,116 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "type": "ZoneOverview",
+      "mesh": "default",
+      "name": "zone-1",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
+      "zone": {
+        "ingress": {
+          "address": "192.168.1.1:1000"
+        }
+      },
+      "zoneInsight": {
+        "subscriptions": [
+          {
+            "id": "1",
+            "globalInstanceId": "node-001",
+            "connectTime": "2018-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "22",
+                "responsesRejected": "11"
+              },
+              "mesh": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "ingress": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "circuitBreaker": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "faultInjection": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "healthCheck": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "trafficLog": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "trafficPermission": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "trafficRoute": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "trafficTrace": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "proxyTemplate": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              },
+              "secret": {
+                "responsesSent": "2",
+                "responsesRejected": "1"
+              }
+            }
+          },
+          {
+            "id": "2",
+            "globalInstanceId": "node-002",
+            "connectTime": "2019-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "20",
+                "responsesRejected": "2"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ZoneOverview",
+      "mesh": "default",
+      "name": "zone-2",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
+      "zone": {
+        "ingress": {
+          "address": "192.168.1.2:1000"
+        }
+      },
+      "zoneInsight": {
+        "subscriptions": [
+          {
+            "id": "1",
+            "globalInstanceId": "node-001"
+          },
+          {
+            "id": "2",
+            "globalInstanceId": "node-002"
+          },
+          {
+            "id": "3",
+            "globalInstanceId": "node-003"
+          }
+        ]
+      }
+    }
+  ],
+  "next": null
+}

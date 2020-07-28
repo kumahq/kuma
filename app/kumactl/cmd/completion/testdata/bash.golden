@@ -1667,6 +1667,36 @@ _kumactl_inspect_dataplanes()
     noun_aliases=()
 }
 
+_kumactl_inspect_zones()
+{
+    last_command="kumactl_inspect_zones"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_inspect()
 {
     last_command="kumactl_inspect"
@@ -1675,6 +1705,7 @@ _kumactl_inspect()
 
     commands=()
     commands+=("dataplanes")
+    commands+=("zones")
 
     flags=()
     two_word_flags=()

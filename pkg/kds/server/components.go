@@ -18,7 +18,7 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.ResourceType, serverID string, filter reconcile.ResourceFilter) (Server, error) {
+func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.ResourceType, serverID string, filter reconcile.ResourceFilter, insight bool) (Server, error) {
 	hasher, cache := newKDSContext(log)
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter)
 	versioner := util_xds.SnapshotAutoVersioner{UUID: core.NewUUID}
@@ -28,7 +28,22 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 		util_xds.LoggingCallbacks{Log: log},
 		syncTracker,
 	}
+	if insight {
+		callbacks = append(callbacks, DefaultStatusTracker(rt, log))
+	}
 	return NewServer(cache, callbacks, log, serverID), nil
+}
+
+func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
+	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) ZoneInsightSink {
+		return NewZoneInsightSink(
+			accessor,
+			func() *time.Ticker {
+				return time.NewTicker(1 * time.Second)
+			},
+			NewDataplaneInsightStore(rt.ResourceManager()),
+			l)
+	}, log)
 }
 
 func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {

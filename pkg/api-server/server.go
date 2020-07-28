@@ -16,8 +16,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/mode"
 
-	"github.com/kumahq/kuma/pkg/zones/poller"
-
 	"github.com/emicklei/go-restful"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
@@ -63,7 +61,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatusPoller, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 	srv := &http.Server{
@@ -99,8 +97,8 @@ func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatus
 	}
 	container.Add(configWs)
 
-	clustersWs := clustersWs(clusters)
-	container.Add(clustersWs)
+	zonesWs := zonesWs(resManager)
+	container.Add(zonesWs)
 
 	container.Filter(cors.Filter)
 
@@ -125,6 +123,13 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	endpoints.addListEndpoint(ws, "/meshes/{mesh}")
 	endpoints.addFindEndpoint(ws, "/meshes/{mesh}")
 	endpoints.addListEndpoint(ws, "") // listing all resources in all meshes
+
+	zoneOverviewEndpoints := zoneOverviewEndpoints{
+		publicURL:  config.Catalog.ApiServer.Url,
+		resManager: resManager,
+	}
+	zoneOverviewEndpoints.addFindEndpoint(ws)
+	zoneOverviewEndpoints.addListEndpoint(ws)
 
 	for _, definition := range defs {
 		switch definition.ResourceFactory().GetType() {
@@ -238,7 +243,7 @@ func SetupServer(rt runtime.Runtime) error {
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.Zones(), definitions.All, &cfg, enableGUI)
+	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, rt.Config().ApiServer, &cfg, enableGUI)
 	if err != nil {
 		return err
 	}

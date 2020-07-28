@@ -47,7 +47,7 @@ var (
 )
 
 func Setup(rt runtime.Runtime) (err error) {
-	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes, "global", ProvidedFilter)
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes, "global", ProvidedFilter, true)
 	if err != nil {
 		return err
 	}

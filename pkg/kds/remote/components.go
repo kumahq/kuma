@@ -41,7 +41,7 @@ var (
 
 func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Mode.Remote.Zone
-	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes, zone, providedFilter(zone))
+	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes, zone, providedFilter(zone), false)
 	if err != nil {
 		return err
 	}

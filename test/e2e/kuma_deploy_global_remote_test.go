@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+
 	"github.com/go-errors/errors"
 
 	"github.com/kumahq/kuma/pkg/config/mode"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
-
-	"github.com/kumahq/kuma/pkg/zones/poller"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -105,7 +105,7 @@ metadata:
 	})
 
 	It("Should deploy Remote and Global on 2 clusters", func() {
-		clustersStatus := poller.Zones{}
+		clustersStatus := api_server.Zones{}
 		Eventually(func() (int, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
 			if status != http.StatusOK {
