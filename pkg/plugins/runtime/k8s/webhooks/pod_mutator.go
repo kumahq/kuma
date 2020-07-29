@@ -27,6 +27,7 @@ func (h *podMutatingHandler) Handle(ctx context.Context, req kube_webhook.Admiss
 	if err := json.Unmarshal(req.Object.Raw, &pod); err != nil {
 		return kube_admission.Errored(http.StatusBadRequest, err)
 	}
+	pod.Namespace = req.Namespace
 	if err := h.mutator(&pod); err != nil {
 		return kube_admission.Errored(http.StatusInternalServerError, err)
 	}

@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+
 	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/go-errors/errors"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
-
-	"github.com/kumahq/kuma/pkg/zones/poller"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -28,7 +28,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: %s
-  labels:
+  annotations:
     kuma.io/sidecar-injection: "enabled"
 `, namespace)
 	}
@@ -105,18 +105,21 @@ metadata:
 	})
 
 	It("Should deploy Remote and Global on 2 clusters", func() {
-		clustersStatus := poller.Zones{}
-		Eventually(func() (int, error) {
+		clustersStatus := api_server.Zones{}
+		Eventually(func() (bool, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
 			if status != http.StatusOK {
-				return 0, errors.Errorf("unable to contact server %s with status %d", global.GetGlobaStatusAPI(), status)
+				return false, errors.Errorf("unable to contact server %s with status %d", global.GetGlobaStatusAPI(), status)
 			}
 			err := json.Unmarshal([]byte(response), &clustersStatus)
 			if err != nil {
-				return 0, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
+				return false, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
 			}
-			return len(clustersStatus), nil
-		}, time.Minute, DefaultTimeout).Should(Equal(1))
+			if len(clustersStatus) != 1 {
+				return false, nil
+			}
+			return clustersStatus[0].Active, nil
+		}, time.Minute, DefaultTimeout).Should(BeTrue())
 
 		// then
 		found := false

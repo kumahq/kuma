@@ -6,6 +6,66 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `0.7.0`
+Support for `kuma.io/sidecar-injection` annotation. On Kubernetes change the namespace resources that host Kuma mesh services with the aforementioned annotation and delete the label. 
+
+Prefix the Kuma built-in tags with `kuma.io/` as follows: `kuma.io/service`, `kuma.io/protocol`, `kuma.io/zone`.
+
+### Suggested Upgrade Path on Kubernetes
+
+Update the applied policy tag selector to include the `kuma.io/` prefix. A sample traffic resource follows:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  namespace: default
+  name: allow-all-traffic
+spec:
+  sources:
+    - match:
+        kuma.io/service: '*'
+  destinations:
+    - match:
+        kuma.io/service: '*'
+```
+
+The Kuma Control Plane will update the relevant Dataplane resources accordingly
+
+### Suggested Upgrade Path on Universal
+
+Update the applied policy tag selector to include the `kuma.io/` prefix. A sample traffic resource follows:
+
+```yaml
+type: TrafficPermission
+name: allow-all-traffic
+mesh: default
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+```
+
+Update the dataplane resources with the new tag format as well. Example:
+
+```bash
+echo "type: Dataplane
+mesh: default
+name: redis-1
+networking:
+  address: 192.168.0.1
+  inbound:
+  - port: 9000
+    servicePort: 6379
+    tags:
+      kuma.io/service: redis" | kumactl apply -f -
+```
+
+This release changes the way that Distributed and Hybrid Kuma Control planes are deployed. Please refer to the [documentation](https://kuma.io/docs/0.7.0/documentation/deployments/#usage) for more details.
+
 ## Upgrade to `0.6.0`
 
 [Passive Health Check](https://kuma.io/docs/0.5.1/policies/health-check/) were removed in favor of [Circuit Breaking](https://kuma.io/docs/0.6.0/policies/circuit-breaker/).

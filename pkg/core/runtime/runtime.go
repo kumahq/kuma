@@ -7,8 +7,6 @@ import (
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 
-	"github.com/kumahq/kuma/pkg/zones/poller"
-
 	"github.com/kumahq/kuma/pkg/dns"
 
 	"github.com/kumahq/kuma/pkg/core/ca"
@@ -29,6 +27,8 @@ type Runtime interface {
 
 type RuntimeInfo interface {
 	GetInstanceId() string
+	SetClusterId(clusterId string)
+	GetClusterId() string
 }
 
 type RuntimeContext interface {
@@ -41,7 +41,6 @@ type RuntimeContext interface {
 	CaManagers() ca.Managers
 	Extensions() context.Context
 	DNSResolver() dns.DNSResolver
-	Zones() poller.ZoneStatusPoller
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 }
@@ -58,10 +57,19 @@ var _ RuntimeInfo = &runtimeInfo{}
 
 type runtimeInfo struct {
 	instanceId string
+	clusterId  string
 }
 
 func (i *runtimeInfo) GetInstanceId() string {
 	return i.instanceId
+}
+
+func (i *runtimeInfo) SetClusterId(clusterId string) {
+	i.clusterId = clusterId
+}
+
+func (i *runtimeInfo) GetClusterId() string {
+	return i.clusterId
 }
 
 var _ RuntimeContext = &runtimeContext{}
@@ -76,7 +84,6 @@ type runtimeContext struct {
 	xds      core_xds.XdsContext
 	ext      context.Context
 	dns      dns.DNSResolver
-	zones    poller.ZoneStatusPoller
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 }
@@ -108,10 +115,6 @@ func (rc *runtimeContext) Extensions() context.Context {
 
 func (rc *runtimeContext) DNSResolver() dns.DNSResolver {
 	return rc.dns
-}
-
-func (rc *runtimeContext) Zones() poller.ZoneStatusPoller {
-	return rc.zones
 }
 
 func (rc *runtimeContext) ConfigManager() config_manager.ConfigManager {

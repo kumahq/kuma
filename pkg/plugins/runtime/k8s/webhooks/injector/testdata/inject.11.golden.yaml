@@ -4,7 +4,7 @@ metadata:
   annotations:
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
-    kuma.io/sidecar-injection: any-value-other-than-disabled
+    kuma.io/sidecar-injection: enabled
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/transparent-proxying-inbound-port: "15006"

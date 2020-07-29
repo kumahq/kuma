@@ -656,6 +656,7 @@ function _kumactl_inspect {
   cmnds)
     commands=(
       "dataplanes:Inspect Dataplanes"
+      "zones:Inspect Zones"
     )
     _describe "command" commands
     ;;
@@ -665,6 +666,9 @@ function _kumactl_inspect {
   dataplanes)
     _kumactl_inspect_dataplanes
     ;;
+  zones)
+    _kumactl_inspect_zones
+    ;;
   esac
 }
 
@@ -672,6 +676,14 @@ function _kumactl_inspect_dataplanes {
   _arguments \
     '--gateway[filter gateway dataplanes]' \
     '--tag[filter by tag in format of key=value. You can provide many tags]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_inspect_zones {
+  _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \

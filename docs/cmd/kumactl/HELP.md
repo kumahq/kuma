@@ -632,6 +632,7 @@ Usage:
 
 Available Commands:
   dataplanes  Inspect Dataplanes
+  zones       Inspect Zones
 
 Flags:
   -h, --help            help for inspect

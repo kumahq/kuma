@@ -1,28 +1,123 @@
 # CHANGELOG
 
+
+## [0.7.0]
+> Released on  2020/07/29
+
+Changes:
+ 
+* feat: Updated Proxy Template [#883](https://github.com//kumahq/kuma/pull/883)
+[#877](https://github.com//kumahq/kuma/pull/877)
+[#909](https://github.com//kumahq/kuma/pull/909) 
+
+* chore: CNCF donation [#896](https://github.com//kumahq/kuma/pull/896)
+[#897](https://github.com//kumahq/kuma/pull/897)
+[#899](https://github.com//kumahq/kuma/pull/899)
+[#931](https://github.com//kumahq/kuma/pull/931)
+ 
+* docs: update contributing readme [#918](https://github.com//kumahq/kuma/pull/918) 
+ 👍contributed by @tharun208
+ 
+* feat: add Zone resource to register Remotes to Global [#895](https://github.com//kumahq/kuma/pull/895) 
+[#917](https://github.com//kumahq/kuma/pull/917)
+[#919](https://github.com//kumahq/kuma/pull/919)
+[#921](https://github.com//kumahq/kuma/pull/921)
+[#932](https://github.com//kumahq/kuma/pull/932)
+⚠️ warning: breaking change of Distributed Kuma
+
+*  feat: support selectively enabling Pods [#748](https://github.com//kumahq/kuma/pull/748) 
+ ⚠️ warning: breaking change of K8s
+
+*  feat: move the GUI from :5683 to :5681/gui [#915](https://github.com//kumahq/kuma/pull/915) 
+ ⚠️ warning: breaking change of GUI
+
+*  chore: prefix Kuma native tags with `kuma.io` [#910](https://github.com//kumahq/kuma/pull/910) 
+ ⚠️ warning: breaking change of Dataplanes on Universal and Policies on both Kubernetes and Universal
+
+* chore: updated versions 
+[#855](https://github.com//kumahq/kuma/pull/855)
+[#927](https://github.com//kumahq/kuma/pull/927)
+[#933](https://github.com//kumahq/kuma/pull/933)
+
+    - jaegertracing/all-in-one:1.17.1 -> 1.18
+    - envoy 1.14.2 -> 1.15.0
+    - jimmidyson/configmap-reload 0.3.0 -> 0.4.0
+    - grafana/grafana 7.0.5 -> 7.1.1
+    - prom/alertmanager 0.20.0 -> 0.21.0
+    - quay.io/coreos/kube-state-metrics 1.9.1 -> 1.9.7
+    - prom/node-exporter 0.18.1 -> 1.0.1
+    - prom/pushgateway 1.0.1 -> 1.2.0
+    - prom/prometheus 2.15.2 -> 2.18.2
+
+* feat: dynamic tracing [#930](https://github.com//kumahq/kuma/pull/930) 
+ 
+* fix: support empty labels on Pod [#922](https://github.com//kumahq/kuma/pull/922) 
+ 👍contributed by @tharun208
+ 
+* feat: statefulset support [#901](https://github.com//kumahq/kuma/pull/901) 
+
+* fix: add creation time on synced resources [#903](https://github.com//kumahq/kuma/pull/903) 
+
+* feat: support for http2 [#911](https://github.com//kumahq/kuma/pull/911) 
+ 
+* feat: add flag to skip default mesh creation, remove config option [#904](https://github.com//kumahq/kuma/pull/904) 
+ 👍contributed by @austince
+
+* feat: add ServiceAddress to dataplane Inbound [#892](https://github.com//kumahq/kuma/pull/892) 
+
+* fix: safely delete the kuma-system namespace [#908](https://github.com//kumahq/kuma/pull/908) 
+
+* feat: added total weight for route configurer [#905](https://github.com//kumahq/kuma/pull/905) 
+ 👍contributed by @tharun208
+
+* fix: suport dry run [#906](https://github.com//kumahq/kuma/pull/906) 
+
+* fix: reduce size of access log address [#894](https://github.com//kumahq/kuma/pull/894) 
+ 👍contributed by @xbauquet 
+
+* feat: check for incompatible versions on kumactl init [#736](https://github.com//kumahq/kuma/pull/736) 
+ 👍contributed by @tharun208
+
+* fix: ingress per cluster (not per mesh) [#881](https://github.com//kumahq/kuma/pull/881)
+ 
+* chore: skip Ingress endpoint if mTLS is off [#925](https://github.com//kumahq/kuma/pull/925) 
+
+*  fix(kuma-cp): Add the permissions to create and patch events [#884](https://github.com//kumahq/kuma/pull/884) 
+ 👍contributed by @andrew-teirney
+
+*  feat(kumactl) add install loki for log aggregation [#820](https://github.com//kumahq/kuma/pull/820) 
+ 👍contributed by @xbauquet
+
+Breaking changes:
+* ⚠️ This release changes the namespace label `kuma.io/sidecar-injection` to an annotation
+* ⚠️ This release moves the GUI from a dedicated port, which defaults to `:5683` to a `/gui` path on the API server (`:5681`)
+* ⚠️ This release prefixes the Kuma built-in tags with `kuma.io` as follows: `kuma.io/service`, `kuma.io/protocol`, `kuma.io/zone`
+* ⚠️ This release changes the way that Distributed and Hybrid Kuma Control planes are deployed. Please refer to the [documentation](https://kuma.io/docs/0.7.0/documentation/deployments/#usage) for more details.
+
+
 ## [0.6.0]
 > Released on  2020/06/30
 
 Changes:
-*  feat(gui) new GUI build files and binaries generated. [#873](github.com/kumahq/kuma/pull/873) 
-*  feat: Kuma Discovery Service (KDS) [#870](github.com/kumahq/kuma/pull/870) [#871](github.com/kumahq/kuma/pull/871) [#864](github.com/kumahq/kuma/pull/864) [#866](github.com/kumahq/kuma/pull/866) [#865](github.com/kumahq/kuma/pull/865) [#861](github.com/kumahq/kuma/pull/861) [#860](github.com/kumahq/kuma/pull/860) [#857](github.com/kumahq/kuma/pull/857) [#839](github.com/kumahq/kuma/pull/839) [#833](github.com/kumahq/kuma/pull/833) [#847](github.com/kumahq/kuma/pull/847) [#843](github.com/kumahq/kuma/pull/843) [#834](github.com/kumahq/kuma/pull/834) [#830](github.com/kumahq/kuma/pull/830) 
-*  feat: ingress for cross-cluster communication [#818](github.com/kumahq/kuma/pull/818) [#825](github.com/kumahq/kuma/pull/825) [#840](github.com/kumahq/kuma/pull/840) [#842](github.com/kumahq/kuma/pull/842) [#856](github.com/kumahq/kuma/pull/856) [#851](github.com/kumahq/kuma/pull/851)   
-*  feat: kuma-cp DNS service [#821](github.com/kumahq/kuma/pull/821) [#798](github.com/kumahq/kuma/pull/798) [#850](github.com/kumahq/kuma/pull/850) [#862](github.com/kumahq/kuma/pull/862)
-*  feat: flatten svc k8s tag [#848](github.com/kumahq/kuma/pull/848)
+*  feat(gui) new GUI build files and binaries generated. [#873](https://github.com/kumahq/kuma/pull/873) 
+*  feat: Kuma Discovery Service (KDS) [#870](https://github.com/kumahq/kuma/pull/870) [#871](https://github.com/kumahq/kuma/pull/871) [#864](https://github.com/kumahq/kuma/pull/864) [#866](https://github.com/kumahq/kuma/pull/866) [#865](https://github.com/kumahq/kuma/pull/865) [#861](https://github.com/kumahq/kuma/pull/861) [#860](https://github.com/kumahq/kuma/pull/860) [#857](https://github.com/kumahq/kuma/pull/857) [#839](https://github.com/kumahq/kuma/pull/839) [#833](https://github.com/kumahq/kuma/pull/833) [#847](https://github.com/kumahq/kuma/pull/847) [#843](https://github.com/kumahq/kuma/pull/843) [#834](https://github.com/kumahq/kuma/pull/834) [#830](https://github.com/kumahq/kuma/pull/830) 
+*  feat: ingress for cross-cluster communication [#818](https://github.com/kumahq/kuma/pull/818) [#825](https://github.com/kumahq/kuma/pull/825) [#840](https://github.com/kumahq/kuma/pull/840) [#842](https://github.com/kumahq/kuma/pull/842) [#856](https://github.com/kumahq/kuma/pull/856) [#851](https://github.com/kumahq/kuma/pull/851)   
+*  feat: kuma-cp DNS service [#821](https://github.com/kumahq/kuma/pull/821) [#798](https://github.com/kumahq/kuma/pull/798) [#850](https://github.com/kumahq/kuma/pull/850) [#862](https://github.com/kumahq/kuma/pull/862)
+*  feat: flatten svc k8s tag [#848](https://github.com/kumahq/kuma/pull/848)
 ⚠️ warning: breaking change for service tag format 
-*  feat: multiple outbound tags [#831](github.com/kumahq/kuma/pull/831)
-*  chore: remove interface from dataplane model [#832](github.com/kumahq/kuma/pull/832)
+*  feat: multiple outbound tags [#831](https://github.com/kumahq/kuma/pull/831)
+*  chore: remove interface from dataplane model [#832](https://github.com/kumahq/kuma/pull/832)
 ⚠️ warning: breaking change for dataplane model
-*  feat: block resources based on kuma-cp mode [#812](github.com/kumahq/kuma/pull/812) 
+*  feat: block resources based on kuma-cp mode [#812](https://github.com/kumahq/kuma/pull/812) 
  👍contributed by @tharun208
-*  feat: Multicluster config infrastructure [#788](github.com/kumahq/kuma/pull/788) 
+*  feat: Multicluster config infrastructure [#788](https://github.com/kumahq/kuma/pull/788) 
  👍contributed by @tharun208
-*  fix: expose Jaeger only inside of K8S cluster [#824](github.com/kumahq/kuma/pull/824) 
+*  fix: expose Jaeger only inside of K8S cluster [#824](https://github.com/kumahq/kuma/pull/824) 
  👍contributed by @xbauquet
-*  chore: update envoy 1.14.2 and alpine 3.12 [#829](github.com/kumahq/kuma/pull/829)
-*  chore: remove passive healthchecks [#869](github.com/kumahq/kuma/pull/869) 
+*  chore: update envoy 1.14.2 and alpine 3.12 [#829](https://github.com/kumahq/kuma/pull/829)
+*  chore: remove passive healthchecks [#869](https://github.com/kumahq/kuma/pull/869) 
 ⚠️ warning: breaking change of healthchecks
-*  chore: change default skipMTLS flag [#849](github.com/kumahq/kuma/pull/849)
+*  chore: change default skipMTLS flag [#849](https://github.com/kumahq/kuma/pull/849)
 ⚠️ warning: breaking change of metrics
 
 Breaking changes:
@@ -36,26 +131,26 @@ Breaking changes:
 
 Changes:
 
-*  chore: Prometheus overrides on Kubernetes [#808](github.com/kumahq/kuma/pull/808) 
-*  feat: Prometheus metrics over mTLS [#793](github.com/kumahq/kuma/pull/793) 
-*  feat: GUI build for 0.5.1 [#785](github.com/kumahq/kuma/pull/785)
-*  feat: circuit breaker [#751](github.com/kumahq/kuma/pull/751)[#781](github.com/kumahq/kuma/pull/781)
-*  feat: CA rotation time supports months and year [#750](github.com/kumahq/kuma/pull/750)
-[#794](github.com/kumahq/kuma/pull/794) 
+*  chore: Prometheus overrides on Kubernetes [#808](https://github.com/kumahq/kuma/pull/808) 
+*  feat: Prometheus metrics over mTLS [#793](https://github.com/kumahq/kuma/pull/793) 
+*  feat: GUI build for 0.5.1 [#785](https://github.com/kumahq/kuma/pull/785)
+*  feat: circuit breaker [#751](https://github.com/kumahq/kuma/pull/751)[#781](https://github.com/kumahq/kuma/pull/781)
+*  feat: CA rotation time supports months and year [#750](https://github.com/kumahq/kuma/pull/750)
+[#794](https://github.com/kumahq/kuma/pull/794) 
  👍contributed by @tharun208
-*  feat: send start signal [#783](github.com/kumahq/kuma/pull/783) 
-*  fix: mesh delete validation [#770](github.com/kumahq/kuma/pull/770) 
-*  feat: Improve certificate verification [#779](github.com/kumahq/kuma/pull/779) 
-*  feat: generate cert with multiple SAN URIs [#774](github.com/kumahq/kuma/pull/774) 
-*  fix: reject conflicting bootstrap when AdminPort is set [#758](github.com/kumahq/kuma/pull/758) 
-*  feat: limit number subscription [#747](github.com/kumahq/kuma/pull/747) 
-*  fix: OpenShift owner role [#780](github.com/kumahq/kuma/pull/780) 
-*  chore: refactor cluster generation [#752](github.com/kumahq/kuma/pull/752)
-*  feat: secrets delete validation [#746](github.com/kumahq/kuma/pull/746)
-*  fix: allow slash validation so standard K8S tags are supported [#762](github.com/kumahq/kuma/pull/762)
-*  feat: direct access to services and support for Headless Service [#749](github.com/kumahq/kuma/pull/749) [#790](github.com/kumahq/kuma/pull/790) 
-*  feat: owners for Dataplane on k8s [#742](github.com/kumahq/kuma/pull/742) 
-*  chore: updating Alpine to 3.11 [#672](github.com/kumahq/kuma/pull/672)
+*  feat: send start signal [#783](https://github.com/kumahq/kuma/pull/783) 
+*  fix: mesh delete validation [#770](https://github.com/kumahq/kuma/pull/770) 
+*  feat: Improve certificate verification [#779](https://github.com/kumahq/kuma/pull/779) 
+*  feat: generate cert with multiple SAN URIs [#774](https://github.com/kumahq/kuma/pull/774) 
+*  fix: reject conflicting bootstrap when AdminPort is set [#758](https://github.com/kumahq/kuma/pull/758) 
+*  feat: limit number subscription [#747](https://github.com/kumahq/kuma/pull/747) 
+*  fix: OpenShift owner role [#780](https://github.com/kumahq/kuma/pull/780) 
+*  chore: refactor cluster generation [#752](https://github.com/kumahq/kuma/pull/752)
+*  feat: secrets delete validation [#746](https://github.com/kumahq/kuma/pull/746)
+*  fix: allow slash validation so standard K8S tags are supported [#762](https://github.com/kumahq/kuma/pull/762)
+*  feat: direct access to services and support for Headless Service [#749](https://github.com/kumahq/kuma/pull/749) [#790](https://github.com/kumahq/kuma/pull/790) 
+*  feat: owners for Dataplane on k8s [#742](https://github.com/kumahq/kuma/pull/742) 
+*  chore: updating Alpine to 3.11 [#672](https://github.com/kumahq/kuma/pull/672)
 
 NOTE:
 

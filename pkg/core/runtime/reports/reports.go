@@ -106,6 +106,7 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 		return err
 	}
 	b.mutable["signal"] = pingType
+	b.mutable["cluster_id"] = rt.GetClusterId()
 	pingData, err := b.marshall()
 	if err != nil {
 		return err
