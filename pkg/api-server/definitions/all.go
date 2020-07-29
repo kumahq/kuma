@@ -13,4 +13,5 @@ var All = []ResourceWsDefinition{
 	FaultInjectionWsDefinition,
 	CircuitBreakerWsDefinition,
 	ZoneWsDefinition,
+	ZoneInsightWsDefinition,
 }

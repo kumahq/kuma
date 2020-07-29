@@ -12,18 +12,16 @@ import (
 
 	"github.com/spf13/cobra"
 
-	api_server "github.com/kumahq/kuma/pkg/api-server"
-	kds_global "github.com/kumahq/kuma/pkg/kds/global"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-	"github.com/kumahq/kuma/pkg/zones"
-
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
+	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
 	sds_server "github.com/kumahq/kuma/pkg/sds/server"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
@@ -117,10 +115,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			case config_core.Global:
 				if err := xds_server.SetupDiagnosticsServer(rt); err != nil {
 					runLog.Error(err, "unable to set up xDS server")
-					return err
-				}
-				if err := zones.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up Clusters server")
 					return err
 				}
 				if err := kds_global.Setup(rt); err != nil {
