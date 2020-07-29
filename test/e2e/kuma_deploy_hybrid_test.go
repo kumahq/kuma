@@ -250,8 +250,7 @@ metadata:
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
-	It("should sync traffic permissions", func() {
-
+	FIt("should sync traffic permissions", func() {
 		// Remote 4
 		// universal access remote universal service
 		stdout, _, err := remote_4.ExecWithRetries("", "", "demo-client",
@@ -271,12 +270,12 @@ metadata:
 			"curl", "-v", "-m", "3", "localhost:4000")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-
 		// Remote 4
 		// universal can't access remote universal service
-		stdout, _, err = remote_4.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4001")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 503 Service Unavailable"))
+		Eventually(func() (string, error) {
+			stdout, _, err = remote_4.ExecWithRetries("", "", "demo-client",
+				"curl", "-v", "-m", "3", "localhost:4001")
+			return stdout, err
+		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 503 Service Unavailable"))
 	})
 })
