@@ -5137,9 +5137,6 @@ webhooks:
           - proxytemplates
     sideEffects: None
   - name: kuma-injector.kuma.io
-    namespaceSelector:
-      matchLabels:
-        kuma.io/sidecar-injection: enabled
     failurePolicy: Crash
     clientConfig:
       caBundle: QWRtaXNzaW9uQ2VydA==
